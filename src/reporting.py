@@ -9,6 +9,7 @@ from typing import Any, Optional
 from docx_compat import Document
 
 from app_content import sanitize_filename
+from local_summary import LocalInterviewSummarizer
 
 
 class ReportingValidationError(ValueError):
@@ -281,6 +282,8 @@ class DocxExporter:
         track_cfg = ScoringEngine._get_track_config(rubric, track_key)
         track_label = str(track_cfg.get("label") or track_key)
 
+        summarizer = LocalInterviewSummarizer()
+
         doc = Document()
         doc.add_heading("Structured Behavioral Interview Report", level=1)
 
@@ -343,6 +346,10 @@ class DocxExporter:
         doc.add_paragraph(f"Any Absolute Disqualifier observed: {'Yes' if scoring['disqualifier_present'] else 'No'}")
         doc.add_paragraph(f"Outcome lock rule: {scoring['locked_rule'] if scoring['locked_rule'] else 'None'}")
 
+        doc.add_heading("Executive Candidate Summary", level=2)
+        executive_summary = summarizer.summarize_executive(self._extract_full_candidate_transcript(payload))
+        doc.add_paragraph(executive_summary)
+
         doc.add_heading("Interview Flow (Scored + Non-scored in asked order)", level=2)
         flow_transcript = payload.get("flow_transcript", []) or []
         if not flow_transcript:
@@ -358,8 +365,12 @@ class DocxExporter:
                 cand_tx = (item.get("candidate_transcript") or "").strip()
 
                 if itype == "trait":
+                    answer_summary = summarizer.summarize_answer(cand_tx, qtext)
+                    doc.add_paragraph(f"Answer Summary: {answer_summary}")
                     if cand_tx:
                         doc.add_paragraph(f"Candidate Answer (auto-transcribed): {cand_tx}")
+                    else:
+                        doc.add_paragraph("Candidate Answer (auto-transcribed): (No candidate transcript captured)")
                     raw = item.get("raw_score", None)
                     doc.add_paragraph(f"Raw Score: {'N/A' if raw is None else raw}")
                     ne = "Yes" if item.get("no_example_after_followups") else "No"
@@ -370,6 +381,8 @@ class DocxExporter:
                     dq = "Yes" if item.get("absolute_disqualifier") else "No"
                     doc.add_paragraph(f"Absolute Disqualifier Checked: {dq}")
                 else:
+                    answer_summary = summarizer.summarize_answer(cand_tx, qtext)
+                    doc.add_paragraph(f"Answer Summary: {answer_summary}")
                     if cand_tx:
                         doc.add_paragraph(f"Candidate Answer (auto-transcribed): {cand_tx}")
                     else:

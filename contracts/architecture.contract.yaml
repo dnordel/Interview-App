@@ -119,6 +119,7 @@ services:
     - email_security
     - integration_export
     - reporting
+    - local_summary
     - storage_utils
     - template_placeholders
     - transcription_diagnostics
