@@ -1,0 +1,108 @@
+module:
+  name: local_summary
+  language: python
+  path: src/local_summary.py
+  version: 1.0.0
+  description: Local Hugging Face summarization helpers for interview executive and per-answer summaries with safe fallbacks.
+functions: []
+classes:
+- name: SummarySettings
+  description: Immutable summarization settings for model selection and output lengths.
+  locked: false
+  attributes:
+    model_id:
+      type: str
+    max_input_chars:
+      type: int
+    executive_min_length:
+      type: int
+    executive_max_length:
+      type: int
+    answer_min_length:
+      type: int
+    answer_max_length:
+      type: int
+  methods: []
+- name: LocalInterviewSummarizer
+  description: Local transformer-backed summarizer with runtime-safe fallback strings.
+  locked: false
+  attributes: {}
+  methods:
+  - name: __init__
+    description: Initialize summarizer with optional settings.
+    locked: false
+    inputs:
+      settings:
+        type: SummarySettings | None
+        required: false
+        default: None
+    returns:
+      type: None
+    exceptions: []
+    side_effects: initializes lazy pipeline state
+  - name: summarize_executive
+    description: Generate evaluative executive summary for the full candidate transcript.
+    locked: false
+    inputs:
+      transcript_text:
+        type: str
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: summarize_answer
+    description: Generate evaluative summary for a single question answer.
+    locked: false
+    inputs:
+      answer_text:
+        type: str
+        required: true
+      question_text:
+        type: str
+        required: false
+        default: ""
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _normalize_input
+    description: Normalize and truncate input text for inference safety.
+    locked: false
+    inputs:
+      text:
+        type: str
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _get_generator
+    description: Lazily initialize and cache the summarization pipeline.
+    locked: false
+    inputs: {}
+    returns:
+      type: Any
+    exceptions: []
+    side_effects: initializes cached transformer pipeline
+  - name: _generate_summary
+    description: Run the transformer model and return normalized fallback on runtime failures.
+    locked: false
+    inputs:
+      prompt:
+        type: str
+        required: true
+      min_length:
+        type: int
+        required: true
+      max_length:
+        type: int
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: invokes local transformer inference
+
+data_structures: []
+dependencies:
+- transformers

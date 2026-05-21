@@ -2,7 +2,7 @@ module:
   name: reporting
   language: python
   path: src/reporting.py
-  version: 1.1.1
+  version: 1.1.2
   description: Scoring, draft persistence, and report document export services.
 functions: []
 classes:
@@ -218,3 +218,4 @@ data_structures: []
 dependencies:
 - app_content
 - docx_compat
+- local_summary

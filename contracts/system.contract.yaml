@@ -38,6 +38,9 @@ modules:
   docx_compat:
     path: src/docx_compat.py
     depends_on: []
+  local_summary:
+    path: src/local_summary.py
+    depends_on: []
   email_security:
     path: src/email_security.py
     depends_on: []
@@ -358,6 +361,7 @@ modules:
     depends_on:
     - app_content
     - docx_compat
+    - local_summary
   runtime_wrapper:
     path: src/runtime_wrapper.py
     depends_on: []

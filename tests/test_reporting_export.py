@@ -104,6 +104,48 @@ class TestDocxExporterValidation(unittest.TestCase):
         )
         self.assertNotIn("Interviewer note that should not replace transcript.", doc_text)
 
+    def test_export_includes_executive_and_answer_summaries(self):
+        payload = {
+            "candidate": {
+                "name": "Ada",
+                "interview_date": "2026-02-20",
+                "track": "general",
+            },
+            "flow_transcript": [
+                {
+                    "type": "trait",
+                    "title": "Trait Question",
+                    "question": "Tell me about conflict resolution.",
+                    "candidate_transcript": "I de-escalate tension and align expectations.",
+                }
+            ],
+            "custom_answers": [],
+        }
+
+        with tempfile.TemporaryDirectory() as td:
+            exporter = DocxExporter(Path(td))
+            exporter_summary = exporter.export.__globals__["LocalInterviewSummarizer"]
+
+            class _StubSummarizer:
+                def summarize_executive(self, transcript_text):
+                    return "Executive eval summary"
+
+                def summarize_answer(self, answer_text, question_text=""):
+                    return "Answer eval summary"
+
+            exporter.export.__globals__["LocalInterviewSummarizer"] = _StubSummarizer
+            try:
+                out_path = exporter.export(self._rubric(), payload, self._scoring())
+            finally:
+                exporter.export.__globals__["LocalInterviewSummarizer"] = exporter_summary
+            doc = Document(out_path)
+            doc_text = "\n".join(paragraph.text for paragraph in doc.paragraphs)
+
+        self.assertIn("Executive Candidate Summary", doc_text)
+        self.assertIn("Executive eval summary", doc_text)
+        self.assertIn("Answer Summary: Answer eval summary", doc_text)
+
+
 
 if __name__ == "__main__":
     unittest.main()

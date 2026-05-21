@@ -13,3 +13,6 @@
 - [x] Reformatted inline-parameter PowerShell function declarations so contract signature parsing matches `setup_and_run.ps1`.
 - [x] Added explicit typed PowerShell parameters for config-carrying setup helpers so contract signature extraction captures `cfg` inputs consistently.
 - [x] Regenerated `docs/contract_test_coverage_matrix.yaml` against current module contracts to eliminate symbol drift.
+
+## 2026-05-21
+- [x] Add local Hugging Face executive and per-answer interview-note summaries in DOCX export with safe "Summary unavailable" fallback behavior.
