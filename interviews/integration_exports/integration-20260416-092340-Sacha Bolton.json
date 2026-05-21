@@ -1,0 +1,213 @@
+{
+  "candidate": {
+    "name": "Sacha Bolton",
+    "interview_date": "2026-04-16",
+    "school": "Palmdale",
+    "track": "infant_toddler",
+    "qualification": {
+      "has_degree": true,
+      "degree_type": "AA",
+      "degree_in_ece": false,
+      "ece_units_completed": 14,
+      "infant_toddler_class_completed": false,
+      "total_units_completed": null,
+      "years_experience": 6
+    }
+  },
+  "percent_of_max": 83.81,
+  "decision": "hire",
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_8",
+        "trait_name": "Gentleness & Physical Awareness",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_9",
+        "trait_name": "Patience with Nonverbal Communication",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full-time",
+        "skipped": false
+      },
+      {
+        "question_text": "Tell me a little about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$20",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "asap",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying to our company, Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-04-16 - Palmdale - Sacha Bolton - Interview.docx",
+    "transcript_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Candidate_Sacha_Bolton_2026-04-16_live_transcript.docx"
+  },
+  "communication_log": [],
+  "flow_transcript_slices": [
+    {
+      "type": "custom",
+      "id": "Why-ECE",
+      "question": "Tell me a little about yourself and why early childhood education matters to you.",
+      "candidate_transcript": "[Q1 Attempt 1]\nUm, yes, I got it. So I initially got into like, the, I don't know, I don't want to say business. And I think of another word for it, but I got into like helping others. When I was younger, I've always helped like the elderly. And I did that. And then I recently I opened up an ARF, which is an adult residential facility. And I've kind of got, I guess I kind of hit like a plateau when I was like, I felt like I've done enough with the elderly, but I still want to do something with being able to have an impact on someone's lives. So then I recently, I'm going to say within the last six years or so, I got into working with kids with autism and special needs. And then I did, I've been doing that for six years, like I said, and then I was like, I want to work with like the littler kids, because then it was like the teenagers and everything. And I'm like, right now I want to work with the ones where their minds are still like, you know, a little sponge, and they want to absorb everything that you're teaching them. And then my son just had a baby. And I am like, loving the Meemaw stage of like teaching him everything and learning with him. And I was like, you know, I want to do that with other people's kids. Like, I guess I like being around kids, surprisingly, because, you know, 10 years ago, if you would have asked me that, I'd have been like, no, no, thank you. I'm okay. But now I'm like, I love it. Like, I was like, I just want to be around other people's kids that I can, help and then give them back to their parents. No, no, no bachelors. So I'm going for my bachelors in ABA. But I have my AA in business. Yes, through I don't know if it's through Penn Foster."
+    },
+    {
+      "type": "custom",
+      "id": "Why-LPL",
+      "question": "Why are you applying to our company, Launch Pad Learning?",
+      "candidate_transcript": "[Q2 Attempt 1]\nlike i said you guys are i'm in lancaster um so you guys are about 10 15 minutes away from me and i like the thought of being somewhere where everything is new so it's like we're all learning in this together we're all able to build together and like five years from now they can be like dang look at this we all were here when it started and look how our kids are growing and flourishing and look at the like family that we've made through the workers and everything you"
+    },
+    {
+      "type": "trait",
+      "id": "trait_1",
+      "question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+      "candidate_transcript": "[Q3 Attempt 1]\nThat's a good question. Let's see. So like I said, I was working with kids with autism. And I had a resident, he came into class, and I could just tell he was just having his whole vibe. Like normally when he walks in, you know, he's nonverbal. Let me say he's not nonverbal. He's very selective with his words. Normally when he come in, it's hi, Sasha. Hi, Sasha. Get a good three of those. But that day that he came in, he just kind of, he just, I don't know, it looked like he just didn't get enough sleep that night. So, you know, I pulled him to the corner. I got out his PEX board and I was like, you know, hey, what's wrong? For a minute, it took him a couple minutes to engage with me. He had told me he wasn't... He wasn't feeling well. And his mom didn't bring him. It was his dad who had bought him. So the mom would have bought him. He would have known like, hey, I'm going to keep my son home because he's not feeling well. But the dad just dropped him off. So he wasn't feeling well. So once he was initially able to get that out and, you know, let me know. I did talk to my supervisor to let her know. And she had to call the dad. He was like, I can't come pick him up right away. So for that about 35 minutes, you know, I just sat with him. I took him off to the side that way he wouldn't be interacting with any other kids. And we just kind of relaxed. I played like soft noises for him. I just kept him calm because I know if he was too overexcited, it was going to start stimming. And then, you know, with him not feeling well, he might have thrown up. So I think that was probably one of my most challenging ones was when he was sick and he couldn't verbally communicate fully what was wrong with him. So I just had to kind of, you know, wait for him to be able to express that. So I think that was probably one of my most challenging ones."
+    },
+    {
+      "type": "trait",
+      "id": "trait_2",
+      "question": "Tell me about a time you felt overwhelmed at work with children present. What did you do to manage yourself?",
+      "candidate_transcript": "[Q4 Attempt 1]\nI want to say the first day that I got into a classroom setting it was kind of they kind of just threw me in there they were like all right here's your classroom here you go and it was I don't know if you ever saw a kindergarten cop but you know when like he was trying to line all up that's what I felt like I was in I was like oh my goodness so um I was over I was over there like what did I sign up for but then um a couple of the other ladies saw that I was a little frazzled so they came in they're like hey you know if you need a breather so I ended up I went outside and I just had to collect myself together and I was like okay just calm down it's gonna work out eventually you guys are all just getting to know one another so once I was able to catch my breath and take a woosah moment I went back in um I collected my thoughts and I was like all right this is how we're gonna run this and yeah once I got them all to you know settle down and we were good it was it was smooth sailing from there but oh that first 30 seconds I walked in there I was like did I make a good decision"
+    },
+    {
+      "type": "trait",
+      "id": "trait_3",
+      "question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering, helping with clothing, or guiding them physically. They are pulling away or saying no. Walk me through exactly what you would do, step by step",
+      "candidate_transcript": "[Q5 Attempt 1]\nThat's a good one. I think redirection is a big thing that I would do. I would let them know, like, hey, we got to change ourselves so that way we can get ready to go do. Let's say they wanted to go outside. I'm like, you know, let's change you first and then we can go outside. And then if it's something that I have to do, like step by step, I think, all right, let's get on the table. If you get on the table, you can hold this toy. And then from there, then we take the diaper off. And then if they do good during that, you know, they got another toy to hold into their hand. Keep them like I would keep them distracted, but not too distracted to where they're not able to sit still and be focused on me changing them. You know, I'd probably give them a moment to cry, just to cry it out. Like, OK, hey, we got 30 seconds. Let's, you know, let's loose out and then we'll come back to changing. Like, I wouldn't let it be like, all right, you guys got 10 minutes and then we're going to change you guys. Give them like a gift. Give them like a short time to like catch their breath and, you know, just remind them that it's OK. Just going to be the you're going to get changed really fast. That way we can go back to doing something fun that we want to do."
+    },
+    {
+      "type": "trait",
+      "id": "trait_4",
+      "question": "Tell me about a time you received feedback you didn’t expect or didn’t fully agree with. What happened next?",
+      "candidate_transcript": "[Q6 Attempt 1]\nIt wasn't necessarily with the, it wasn't with the client. It was with the client's parents. One of them had asked, so when I was working with kids with autism, like we have like a set plan, like, okay, this is what we're doing. This is how we're going to go. So a lady was like, well, this is what we do at home and it works at home. And this is what I want you to do. So I kept trying to explain to her, I was like, you know, I can't do that today. But if you talk to my supervisor, it's something that we can implement into the classroom. So that way he continues to do it. And she was like, well, that's not what I'm asking you to do. I'm telling you to do this. And I said, well, you can't tell me to do anything because you're not my supervisor. I said, I understand you are his parent and you have his best interest. I said, but we still have the proper protocol and channels that we have to go through. So I just told her that she needed to address that with my supervisor. And when my supervisor had pulled me in, to talk to me, the way that I delivered it, it wasn't the way that the mom delivered it to my supervisor. She was just like, you know, she said he had a very condescending tone and you were aggressive and abrasive. And I just had to let her know, like, no, I wasn't. This is exactly what I said. And she was just like, well, you know, next time maybe you could address the situation a little nicer. And, you know, I told her, I said, well, your opinion is valid, but I was as nice as I could be. Like I was firm and direct with her. I said, I think her whole thing was, she just thought that she was going to try and like, no, this is what I want you to do. So that's what you're going to do it. Cause that's my kid. I said, and I had to let her know, like, that's not how the program is ran. I was like, but you know, if I, if she felt like I was too abrasive in my tone with her, then I do apologize for that. But I don't apologize for what I said. I was like, that's the only time that it was like a little riffraff. Other than that, I take criticism pretty well. And like, okay, I could see where I needed to improve on that."
+    },
+    {
+      "type": "trait",
+      "id": "trait_5",
+      "question": "Tell me about a time something didn’t go as planned at work and your role in it. How did you handle the responsibility piece?",
+      "candidate_transcript": "[Q7 Attempt 1]\nOh, let's see. I don't know. I kind of, I don't want to sound conceited or anything. I kind of feel like, you know, if I got a group activity, I'm pretty on top of everything that I need to be on. Oh, no. I'm really trying to think hard. Well, I did have an instance where I was in charge of like craft time and everything. And normally we start setting up crafts like five minutes prior to our last task being done. So that way we have enough time. And I think I had gotten sidetracked with another one of the students. So by the time all the kids came in, nothing was set up. So I was like trying to scramble and I pulled out the wrong craft for the wrong day. And that was completely my fault. We still ended up doing the craft. I just, we just, you know, we just had to roll with the punches and it was like a flip-flop. So we called that flip-flop Wednesday. So we turned that negative into a positive because I was like, oh, we did the wrong thing. But I didn't want the kids to get like agitated because, you know, they're firm on structure. So I was like flip-flop Wednesday. And that's what we did. I think that might be it. And the only time where I was like, oh, Sasha, you messed this up. Yeah, I think had I been staying on topic and not been so engaged with my lovely four-year-old, I would have been able to not have flip-flop Wednesday and we would have had the right task. We were just so engulfed in the conversation that time just got from me. And next thing I know, all the kids are in there like craft time. I'm like, oh, yeah."
+    },
+    {
+      "type": "trait",
+      "id": "trait_6",
+      "question": "Tell me about a time you had to work closely with another adult in a challenging situation. How did you navigate it?",
+      "candidate_transcript": "[Q8 Attempt 1]\nOh my God. So prior, before I got into any of this, I used to work at Northrop and I was the youngest one there. I didn't know anything about airplanes. I was fresh out of high school. I started working there. So, um, we had a, I don't know what part of the plane that they had us working on. I wasn't really working. I was just kind of standing there looking like a deer with my headlights. So the lady was like, I know you're new here, but I need you to figure out what you can do. And I was like, I don't think there's really too much that I can do. Cause I don't know what's going on. So at that, then I became like the tool runner. So once I was able to find like where I could fit in at and not mess up anything, that's where I was like, oh, okay, this, I could be used right here. Like use me right here. Cause right now this is the only thing that I understand. You guys put me somewhere else. One of these planes are liable not to work and I don't want that on my conscience at all. So yeah, I think, like when I'm put at a tap, when I'm put into like, Hey Sasha, you got to do this. I'm like, I'm on it. I'm top. I'm on top of it. Um, if it's something that I don't know, I would, you know, I eventually I'm going to learn."
+    },
+    {
+      "type": "trait",
+      "id": "trait_7",
+      "question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+      "candidate_transcript": "[Q9 Attempt 1]\nOh, patience. A lot, a lot, a lot of patience. And I've learned that patience is my biggest one. And just to relax, especially, you know, like working with kids, you know, they feed off your energy. They know, like, if you're having a bad day and you come in and you're not all bright eyed and chippy, it's going to reflect on them. So I've learned to just leave whatever it is at the door. I come in with happy smiles, a happy heart, positive energy, and just, you know, like a good outlook on just for that day. And that's what I've learned. Like, you got to leave all your problems at the door and you got to have patience."
+    },
+    {
+      "type": "trait",
+      "id": "trait_8",
+      "question": "Tell me about how you physically care for infants or toddlers during routines like feeding, diapering, or comforting.",
+      "candidate_transcript": "[Q10 Attempt 1]\num so um as far as comforting like i'm from like how the kids are like you know if they want to come up and you know give a hug then i'm okay with that i'm not one to like force like when you come into the classroom like you have to give me a hug you have to give me a high five like whatever the kids are comfortable with then that's where my comfortability comfortability would be at with them um as far as diapering you know i'm pretty i think i'm i'm pretty quick with it so it's kind of like you know if i keep them engaged with me we'll quick little hand movements and everything diapers done and then you know just pick them up and then they're good and they're like oh okay well we're done let me go"
+    },
+    {
+      "type": "trait",
+      "id": "trait_9",
+      "question": "How do you understand what a nonverbal child needs when they’re crying or upset? Can you walk me through how you respond in those moments?",
+      "candidate_transcript": "[Q11 Attempt 1]\num you know i would go let them um depending on like the cry i know like i think maybe being a parent this i never really believed this until i had a kid of my own like you kind of tell when the cries are different like you can tell like when you're in pain cry or like if you're in hungry some um definitely listen out for the cries and then if it's a cry that i can't understand i will definitely walk up to them um kneel down to them so they could see me at eye level and try and comfort them at first you know just tell them to relax everything's going to be okay and then i just you know point around the room is there something in the room that you want and you know most of the time they could take me to it they'll point at it um i'm a big like visual learner so i do have um i do have a lot of like the peck spores i keep those with me um ever since i started working with kids like if you looked in my purse i feel like mary poppins so like i have i'll have those and like you know like hey point to what you want let's show me what it is um so that's how i work with kids who are non-verbal and they're having they're having a little bit of a bad day"
+    },
+    {
+      "type": "custom",
+      "id": "Not-Avail",
+      "question": "Are there any hours you are absolutely not available to work?",
+      "candidate_transcript": "[Q13 Attempt 1]\nNope. What tips do you guys offer? If you don't mind me asking, I'm open to."
+    },
+    {
+      "type": "custom",
+      "id": "Start",
+      "question": "When could you start if we decide to move forward?",
+      "candidate_transcript": "[Q14 Attempt 1]\nYou guys could start me yesterday."
+    }
+  ]
+}

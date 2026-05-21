@@ -1,0 +1,277 @@
+{
+  "version": "1.0",
+  "description": "Shared cross-trait behavioral signal library for interview evaluation",
+  "signals": [
+    {
+      "id": "S_EMO_LABEL",
+      "label": "Explicitly names or labels a child’s emotion using clear feeling language",
+      "category": "Emotional Awareness",
+      "default_weight": 2
+    },
+    {
+      "id": "S_EMO_ACCURATE",
+      "label": "Accurately interprets the cause or context of a child’s emotional state",
+      "category": "Emotional Awareness",
+      "default_weight": 2
+    },
+    {
+      "id": "S_EMO_MISLABEL",
+      "label": "Mislabels or oversimplifies a child’s emotional experience",
+      "category": "Emotional Awareness",
+      "default_weight": -1
+    },
+    {
+      "id": "S_COREGULATION",
+      "label": "Uses co-regulation strategies such as calm presence, soothing voice, or proximity",
+      "category": "Response Strategy",
+      "default_weight": 2
+    },
+    {
+      "id": "S_SOOTHING",
+      "label": "Uses soothing techniques such as tone, rhythm, or gentle touch",
+      "category": "Response Strategy",
+      "default_weight": 1
+    },
+    {
+      "id": "S_DISTRACTION_PRIMARY",
+      "label": "Relies on distraction as the primary strategy instead of addressing underlying needs",
+      "category": "Response Strategy",
+      "default_weight": -2
+    },
+    {
+      "id": "S_VALIDATE",
+      "label": "Validates the child’s feelings verbally or behaviorally",
+      "category": "Language Used",
+      "default_weight": 2
+    },
+    {
+      "id": "S_MINIMIZE",
+      "label": "Minimizes, dismisses, or invalidates a child’s feelings",
+      "category": "Language Used",
+      "default_weight": -3,
+      "is_critical": true
+    },
+    {
+      "id": "S_RESPECTFUL_LANGUAGE",
+      "label": "Speaks about children or others in a respectful and non-judgmental way",
+      "category": "Language Used",
+      "default_weight": 1
+    },
+    {
+      "id": "S_NEGATIVE_LABELING",
+      "label": "Uses negative or judgmental labels to describe a child or person",
+      "category": "Language Used",
+      "default_weight": -2
+    },
+    {
+      "id": "S_CHILD_CENTERED",
+      "label": "Frames situation from the child’s perspective",
+      "category": "Child Orientation",
+      "default_weight": 2
+    },
+    {
+      "id": "S_ADULT_CENTERED",
+      "label": "Frames situation primarily around adult needs or compliance",
+      "category": "Child Orientation",
+      "default_weight": -2
+    },
+    {
+      "id": "S_SELF_REG_AWARE",
+      "label": "Recognizes their own emotional state or stress signals",
+      "category": "Self-Regulation",
+      "default_weight": 2
+    },
+    {
+      "id": "S_SELF_REG_ACTION",
+      "label": "Uses intentional strategies to regulate themselves",
+      "category": "Self-Regulation",
+      "default_weight": 2
+    },
+    {
+      "id": "S_CALM_PRESENCE",
+      "label": "Maintains calm tone and body language under stress",
+      "category": "Self-Regulation",
+      "default_weight": 2
+    },
+    {
+      "id": "S_ESCALATION",
+      "label": "Escalates tone, behavior, or emotional intensity",
+      "category": "Self-Regulation",
+      "default_weight": -3,
+      "is_critical": true
+    },
+    {
+      "id": "S_ADAPT",
+      "label": "Adjusts approach based on feedback or child response",
+      "category": "Adaptability",
+      "default_weight": 2
+    },
+    {
+      "id": "S_RIGID",
+      "label": "Remains rigid and does not adjust approach when needed",
+      "category": "Adaptability",
+      "default_weight": -3,
+      "is_critical": true
+    },
+    {
+      "id": "S_REPEAT_INEFFECTIVE",
+      "label": "Repeats ineffective strategies without adjusting",
+      "category": "Adaptability",
+      "default_weight": -2
+    },
+    {
+      "id": "S_OBSERVE_CUES",
+      "label": "Observes multiple behavioral or nonverbal cues",
+      "category": "Observation",
+      "default_weight": 2
+    },
+    {
+      "id": "S_SUBTLE_CUES",
+      "label": "Notices subtle or nuanced cues in behavior",
+      "category": "Observation",
+      "default_weight": 1
+    },
+    {
+      "id": "S_OWNERSHIP",
+      "label": "Takes responsibility for their role in a situation",
+      "category": "Accountability",
+      "default_weight": 2
+    },
+    {
+      "id": "S_BLAME",
+      "label": "Blames others or external factors without self-reflection",
+      "category": "Accountability",
+      "default_weight": -3,
+      "is_critical": true
+    },
+    {
+      "id": "S_OPEN_FEEDBACK",
+      "label": "Demonstrates openness to feedback",
+      "category": "Coachability",
+      "default_weight": 2
+    },
+    {
+      "id": "S_DEFENSIVE",
+      "label": "Responds defensively to feedback",
+      "category": "Coachability",
+      "default_weight": -2
+    },
+    {
+      "id": "S_PERSPECTIVE_TAKING",
+      "label": "Demonstrates understanding of another person’s perspective",
+      "category": "Teamwork",
+      "default_weight": 2
+    },
+    {
+      "id": "S_DISRESPECTFUL",
+      "label": "Speaks disrespectfully about others",
+      "category": "Teamwork",
+      "default_weight": -3,
+      "is_critical": true
+    },
+    {
+      "id": "S_GENTLE_HANDLING",
+      "label": "Uses slow, controlled, and gentle physical handling",
+      "category": "Physical Care",
+      "default_weight": 2
+    },
+    {
+      "id": "S_RUSHED_HANDLING",
+      "label": "Handles children in a rushed, rough, or task-focused way",
+      "category": "Physical Care",
+      "default_weight": -3,
+      "is_critical": true
+    },
+    {
+      "id": "S_RESPONDS_TO_CUES",
+      "label": "Adjusts actions based on child comfort or resistance",
+      "category": "Physical Care",
+      "default_weight": 2
+    },
+    {
+      "id": "S_REFLECT",
+      "label": "Reflects on what worked or what they learned",
+      "category": "Reflection",
+      "default_weight": 1
+    },
+    {
+      "id": "S_NO_REFLECTION",
+      "label": "Shows little or no reflection on their actions",
+      "category": "Reflection",
+      "default_weight": -1
+    },
+    {
+      "id": "S_GROWTH_MINDSET",
+      "label": "Demonstrates openness to growth and improvement",
+      "category": "Learning",
+      "default_weight": 2
+    },
+    {
+      "id": "S_FIXED_MINDSET",
+      "label": "Demonstrates resistance to change or improvement",
+      "category": "Learning",
+      "default_weight": -3,
+      "is_critical": true
+    },
+    {
+      "id": "S_BALANCE_EMPATHY_BOUNDARY",
+      "label": "Balances empathy with appropriate boundaries and limits",
+      "category": "Professional Judgment",
+      "default_weight": 2
+    },
+    {
+      "id": "S_BALANCE_FLEXIBILITY_STRUCTURE",
+      "label": "Balances flexibility with needed structure and consistency",
+      "category": "Professional Judgment",
+      "default_weight": 2
+    },
+    {
+      "id": "S_BALANCE_CHILD_GROUP",
+      "label": "Balances an individual child’s needs with the needs of the group",
+      "category": "Professional Judgment",
+      "default_weight": 2
+    },
+    {
+      "id": "S_BALANCE_EFFICIENCY_RELATIONSHIP",
+      "label": "Balances task efficiency with relational care and connection",
+      "category": "Professional Judgment",
+      "default_weight": 2
+    },
+    {
+      "id": "S_PROCESS_STRUCTURED",
+      "label": "Explains a clear, structured response process",
+      "category": "Reasoning Process",
+      "default_weight": 1
+    },
+    {
+      "id": "S_PROCESS_LOOP",
+      "label": "Describes an observe-respond-reassess loop or similar iterative process",
+      "category": "Reasoning Process",
+      "default_weight": 1
+    },
+    {
+      "id": "S_PROCESS_VAGUE",
+      "label": "Describes actions vaguely without a clear process",
+      "category": "Reasoning Process",
+      "default_weight": -1
+    },
+    {
+      "id": "S_REASONING_EXPLICIT",
+      "label": "Makes the reasoning behind actions explicit",
+      "category": "Reasoning Process",
+      "default_weight": 1
+    },
+    {
+      "id": "S_EFFECTIVENESS_EVAL",
+      "label": "Evaluates whether the chosen strategy worked",
+      "category": "Reasoning Process",
+      "default_weight": 1
+    },
+    {
+      "id": "S_LINK_TO_CHILD_DEVELOPMENT",
+      "label": "Links decisions to child development, learning, or developmental appropriateness",
+      "category": "Child Development",
+      "default_weight": 2
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-04-21T09:51:44",
+  "source": "tk_callback",
+  "error_type": "PermissionError",
+  "error_message": "[WinError 5] Access is denied: 'C:\\\\Users\\\\Dnord\\\\Dropbox\\\\David LPL work\\\\Initial Teacher Interview Guide\\\\config\\\\.question_overrides.json.h1w_b9n5.tmp' -> 'C:\\\\Users\\\\Dnord\\\\Dropbox\\\\David LPL work\\\\Initial Teacher Interview Guide\\\\config\\\\question_overrides.json'",
+  "origin": {
+    "function": "replace",
+    "line": 1188,
+    "file": "C:\\Program Files\\Python311\\Lib\\pathlib.py"
+  },
+  "python": "3.11.9 (tags/v3.11.9:de54cf5, Apr  2 2024, 10:12:12) [MSC v.1938 64 bit (AMD64)]",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "cwd": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\src",
+  "traceback": "Traceback (most recent call last):\n  File \"C:\\Program Files\\Python311\\Lib\\tkinter\\__init__.py\", line 1967, in __call__\n    return self.func(*args)\n           ^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\src\\ui_windows.py\", line 1188, in apply_changes\n    self.app.qstore.upsert_custom_question(tkey, dict(item))\n  File \"C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\src\\data_store.py\", line 197, in upsert_custom_question\n    self.save()\n  File \"C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\src\\data_store.py\", line 154, in save\n    atomic_write_json(self.path, self.data, indent=2, ensure_ascii=False)\n  File \"C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\src\\storage_utils.py\", line 26, in atomic_write_json\n    temp_path.replace(target_path)\n  File \"C:\\Program Files\\Python311\\Lib\\pathlib.py\", line 1188, in replace\n    os.replace(self, target)\nPermissionError: [WinError 5] Access is denied: 'C:\\\\Users\\\\Dnord\\\\Dropbox\\\\David LPL work\\\\Initial Teacher Interview Guide\\\\config\\\\.question_overrides.json.h1w_b9n5.tmp' -> 'C:\\\\Users\\\\Dnord\\\\Dropbox\\\\David LPL work\\\\Initial Teacher Interview Guide\\\\config\\\\question_overrides.json'"
+}

@@ -1,0 +1,78 @@
+module:
+  name: question_settings_window
+  language: python
+  path: src/question_settings_window.py
+  version: 1.0.0
+  description: Tkinter question-settings editor for rubric traits and trait runtime signal definitions.
+functions: []
+classes:
+  - name: QuestionSettingsWindow
+    description: Renders the question settings window, validates trait/signal/group edits, and persists rubric/runtime changes through services.
+    locked: false
+    attributes:
+      app:
+        type: InterviewApp
+      runtime_service:
+        type: QuestionRuntimeDefinitionService
+      service:
+        type: QuestionSettingsService
+      signal_definition:
+        type: dict[str, Any]
+    methods:
+      - name: refresh_trait_list
+        inputs: {}
+        returns:
+          type: None
+      - name: load_selected_trait
+        inputs: {}
+        returns:
+          type: None
+      - name: save_trait
+        inputs: {}
+        returns:
+          type: None
+      - name: add_trait
+        inputs: {}
+        returns:
+          type: None
+      - name: delete_trait
+        inputs: {}
+        returns:
+          type: None
+      - name: refresh_signal_lists
+        inputs: {}
+        returns:
+          type: None
+      - name: save_core_signal
+        inputs: {}
+        returns:
+          type: None
+      - name: save_group_signal
+        inputs: {}
+        returns:
+          type: None
+      - name: delete_core_signal
+        inputs: {}
+        returns:
+          type: None
+      - name: delete_group_signal
+        inputs: {}
+        returns:
+          type: None
+      - name: add_group
+        inputs: {}
+        returns:
+          type: None
+      - name: save_group
+        inputs: {}
+        returns:
+          type: None
+      - name: delete_group
+        inputs: {}
+        returns:
+          type: None
+data_structures: []
+dependencies:
+  - app_content
+  - question_runtime_definition_service
+  - question_settings_service

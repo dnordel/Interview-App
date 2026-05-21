@@ -1,0 +1,28 @@
+{
+  "trait_id": "T11_Flexibility",
+  "question": "Tell me about a time your plan had to change because of children’s needs.",
+
+  "core_signals": [
+    { "ref": "S_ADAPT", "label": "Adjusts approach based on feedback or response", "weight": 2, "group": "Adaptability" },
+    { "ref": "S_CHILD_CENTERED", "label": "Frames situation from the child’s perspective", "weight": 2, "group": "Child Orientation" },
+    { "ref": "S_BALANCE_FLEXIBILITY_STRUCTURE", "label": "Balances flexibility with structure and consistency", "weight": 2, "group": "Balance" },
+    { "ref": "S_BALANCE_CHILD_GROUP", "label": "Balances individual child needs with group needs", "weight": 2, "group": "Balance" },
+    { "ref": "S_PROCESS_STRUCTURED", "label": "Describes a clear step-by-step process for handling the situation", "weight": 2, "group": "Process" },
+    { "ref": "S_REASONING_EXPLICIT", "label": "Explains the reasoning behind their actions or decisions", "weight": 2, "group": "Thinking" },
+    { "ref": "S_CALM_PRESENCE", "label": "Maintains calm tone and body language", "weight": 2, "group": "Regulation / Presence" },
+    { "ref": "S_EFFECTIVENESS_EVAL", "label": "Evaluates whether their approach worked and why", "weight": 1, "group": "Thinking" },
+    { "ref": "S_RIGID", "label": "Remains rigid despite clear need to adjust", "weight": -3, "group": "Adaptability", "is_critical": true },
+    { "ref": "S_PROCESS_VAGUE", "label": "Describes actions without a clear or logical process", "weight": -1, "group": "Process" }
+  ],
+
+  "extended_signal_groups": [
+    {
+      "group_id": "G1",
+      "group_label": "Execution",
+      "signals": [
+        { "ref": "S_OBSERVE_CUES", "label": "Observes multiple behavioral or nonverbal cues", "weight": 1 },
+        { "ref": "S_SUBTLE_CUES", "label": "Notices subtle or nuanced cues", "weight": 1 }
+      ]
+    }
+  ]
+}

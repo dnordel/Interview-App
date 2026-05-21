@@ -1,0 +1,242 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-03-20T18:37:40.997890Z",
+  "updated_at": "2026-03-20T18:44:43.044998Z",
+  "interview": {
+    "interview_id": "Candidate_Aria_Nelson_Green_2026-03-20_bff1e642",
+    "candidate_name": "Aria Nelson-Green",
+    "interview_date": "2026-03-20"
+  },
+  "questions": {
+    "0": {
+      "flow_idx": 0,
+      "item_type": "custom",
+      "item_id": "Why-ECE",
+      "notes": {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q1 Attempt 1]\nof 16 so I've been caring I was a child and I always knew it's something I wanted to do um when I was younger I always knew it was kids I just never that's when I was like 10 and then",
+      "updated_at": "2026-03-20T18:37:49.755479Z"
+    },
+    "1": {
+      "flow_idx": 1,
+      "item_type": "custom",
+      "item_id": "Why-LPL",
+      "notes": {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-20T18:37:43.537981Z"
+    },
+    "2": {
+      "flow_idx": 2,
+      "item_type": "trait",
+      "item_id": "trait_1",
+      "notes": {
+        "raw_score": 3,
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": [
+          "S_CHILD_CENTERED",
+          "S_RESPONDS_TO_CUES",
+          "S_CALM_PRESENCE"
+        ]
+      },
+      "candidate_transcript": "[Q3 Attempt 1]",
+      "updated_at": "2026-03-20T18:38:53.058087Z"
+    },
+    "3": {
+      "flow_idx": 3,
+      "item_type": "trait",
+      "item_id": "trait_2",
+      "notes": {
+        "raw_score": 4,
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": [
+          "S_SELF_REG_AWARE",
+          "S_SELF_REG_ACTION",
+          "S_CALM_PRESENCE",
+          "S_CHILD_CENTERED",
+          "S_PROCESS_STRUCTURED",
+          "S_REASONING_EXPLICIT",
+          "S_EFFECTIVENESS_EVAL"
+        ]
+      },
+      "candidate_transcript": "[Q4 Attempt 1]",
+      "updated_at": "2026-03-20T18:40:06.729044Z"
+    },
+    "4": {
+      "flow_idx": 4,
+      "item_type": "trait",
+      "item_id": "trait_3",
+      "notes": {
+        "raw_score": null,
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false,
+        "selected_signal_ids": []
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-20T18:41:14.884088Z"
+    },
+    "5": {
+      "flow_idx": 5,
+      "item_type": "trait",
+      "item_id": "trait_4",
+      "notes": {
+        "raw_score": 4,
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": [
+          "S_OPEN_FEEDBACK",
+          "S_OWNERSHIP",
+          "S_GROWTH_MINDSET",
+          "S_ADAPT",
+          "S_PROCESS_STRUCTURED",
+          "S_REASONING_EXPLICIT",
+          "S_EFFECTIVENESS_EVAL",
+          "S_REFLECT"
+        ]
+      },
+      "candidate_transcript": "[Q6 Attempt 1]",
+      "updated_at": "2026-03-20T18:42:15.684359Z"
+    },
+    "6": {
+      "flow_idx": 6,
+      "item_type": "trait",
+      "item_id": "trait_5",
+      "notes": {
+        "raw_score": null,
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false,
+        "selected_signal_ids": []
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-20T18:42:18.401279Z"
+    },
+    "7": {
+      "flow_idx": 7,
+      "item_type": "trait",
+      "item_id": "trait_6",
+      "notes": {
+        "raw_score": null,
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false,
+        "selected_signal_ids": []
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-20T18:42:21.549841Z"
+    },
+    "8": {
+      "flow_idx": 8,
+      "item_type": "trait",
+      "item_id": "trait_7",
+      "notes": {
+        "raw_score": 4,
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": [
+          "S_LINK_TO_CHILD_DEVELOPMENT"
+        ]
+      },
+      "candidate_transcript": "[Q9 Attempt 1]",
+      "updated_at": "2026-03-20T18:44:04.466017Z"
+    },
+    "9": {
+      "flow_idx": 9,
+      "item_type": "trait",
+      "item_id": "trait_10",
+      "notes": {
+        "raw_score": null,
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false,
+        "selected_signal_ids": []
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-20T18:44:06.446469Z"
+    },
+    "10": {
+      "flow_idx": 10,
+      "item_type": "trait",
+      "item_id": "trait_11",
+      "notes": {
+        "raw_score": null,
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false,
+        "selected_signal_ids": []
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-20T18:44:08.290833Z"
+    },
+    "11": {
+      "flow_idx": 11,
+      "item_type": "custom",
+      "item_id": "FT-or-PT",
+      "notes": {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full, but open to part",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-20T18:44:19.448110Z"
+    },
+    "12": {
+      "flow_idx": 12,
+      "item_type": "custom",
+      "item_id": "Not-Avail",
+      "notes": {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-20T18:44:25.785421Z"
+    },
+    "13": {
+      "flow_idx": 13,
+      "item_type": "custom",
+      "item_id": "Pay",
+      "notes": {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$18+",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-20T18:44:35.557787Z"
+    },
+    "14": {
+      "flow_idx": 14,
+      "item_type": "custom",
+      "item_id": "Start",
+      "notes": {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "asap",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-20T18:44:43.044998Z"
+    }
+  }
+}

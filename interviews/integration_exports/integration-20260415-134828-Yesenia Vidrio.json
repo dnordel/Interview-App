@@ -1,0 +1,213 @@
+{
+  "candidate": {
+    "name": "Yesenia Vidrio",
+    "interview_date": "2026-04-15",
+    "school": "Palmdale",
+    "track": "preschool",
+    "qualification": {
+      "has_degree": true,
+      "degree_type": "AA",
+      "degree_in_ece": false,
+      "ece_units_completed": 24,
+      "infant_toddler_class_completed": true,
+      "total_units_completed": null,
+      "years_experience": 10
+    }
+  },
+  "percent_of_max": 79.17,
+  "decision": "hire",
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_10",
+        "trait_name": "Positive Behavior Guidance",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_11",
+        "trait_name": "Structure & Flexibility",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no, but prefer morning",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$24",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full-time",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "two-weeks",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-04-15 - Palmdale - Yesenia Vidrio - Interview.docx",
+    "transcript_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Candidate_Yesenia_Vidrio_2026-04-15_live_transcript.docx"
+  },
+  "communication_log": [],
+  "flow_transcript_slices": [
+    {
+      "type": "custom",
+      "id": "Why-ECE",
+      "question": "Tell me about yourself and why early childhood education matters to you.",
+      "candidate_transcript": "[Q1 Attempt 1]\nSo I, my journey started right after high school where I joined an after-school program as a coach. I started off from the very bottom and I liked it so much I actually went into child development major. And from there I proceeded to get promoted to what would be like an assistant director and then to a director for an after-school program. I did that for about six years and then I moved from California to Virginia and that's actually where I started my preschool journey. And I was a lead for about two years at a four-year-old, yeah four-year-old and then from there again I got promoted to assistant director. And then I just, I kept growing. I mean I think it's important because these children need such a strong base to grow from. That I've gotten both sides of it. I've gotten from me having to build that base when they're two or four to the kids that either got the base or did not during school age. So I know it's super important for the social-emotional development to happen from zero to five."
+    },
+    {
+      "type": "custom",
+      "id": "Why-LPL",
+      "question": "Why are you applying for this position, specifically at Launch Pad Learning?",
+      "candidate_transcript": "[Q2 Attempt 1]\nSo I actually want to get back into teaching. I want to get back in the classroom. And I think your morals and standards align with mine. I do believe that each child has to be nurtured in a way that sometimes only a teacher can do with the teamwork of the parents."
+    },
+    {
+      "type": "trait",
+      "id": "trait_1",
+      "question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+      "candidate_transcript": "[Q3 Attempt 1]\nWhen I used to teach the two-year-olds, they, when they get upset for everything, you know, everything's big to them, but it was a very hard time of them letting go of mom, right? It was the first week of school, and they were having a very hard time saying bye to mom during drop-off. What I did was form that connection with the student to make sure that they know that they're safe and that this is a warm and welcoming place, that they get to come play fun times here. And both building that relationship, it actually helped within like two weeks of that transition to even help mom kind of see, okay, yes, this is normal. But he did kind of... Not got over it, but saw the better side of the..."
+    },
+    {
+      "type": "trait",
+      "id": "trait_2",
+      "question": "Tell me about a time you felt overwhelmed at work with children present. What did you do to manage yourself?",
+      "candidate_transcript": "[Q4 Attempt 1]\nWhen I do feel stressed and I have students around me, I kind of take a step back mentally and sometimes physically, and I kind of think of all the scenarios of, okay, what are my next steps? Because I do remember that I am the adult, and I will always be the adult in the classroom, and sometimes the students just don't have the full capacity to kind of work through those emotions by themselves, and that's my job and my duty. To kind of guide them through it. So I always make sure that I'm okay and say, okay, this isn't about me. This is about them and what's the best way I can do to help them. So to answer your question, I guess I take a step back and kind of"
+    },
+    {
+      "type": "trait",
+      "id": "trait_3",
+      "question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering, helping with clothing, or guiding them physically. They are pulling away or saying no. Walk me through exactly what you would do, step by step",
+      "candidate_transcript": "[Q5 Attempt 1]\ni would tell them what's what's gonna happen i would tell them okay it's time to change your diaper we are now going i'm going to and then just guide them through the steps right if they're potty training we're gonna put we're gonna practice putting our pants down and we're gonna go ahead and sit on the toilet or if they're changing their diaper is hey i'm gonna carry you now this i'm gonna take your pants off i'm gonna go ahead and remove your diaper we're gonna go ahead and give you a wipe and just talk them through it and then make sure that they're safe"
+    },
+    {
+      "type": "trait",
+      "id": "trait_4",
+      "question": "Tell me about a time you received feedback you didn’t expect or didn’t fully agree with. What happened next?",
+      "candidate_transcript": "[Q6 Attempt 1]\nWhen, I like to believe I do get, I do receive criticism correctly, but there is times where we just kind of have to agree to disagree. What we ended up doing was compromising. It was about the stage of the child that they should be in, me versus another teacher. And I believe that they were exactly where they're supposed to be and they thought that the child was not fully to their potential. So what we ended up doing was giving that student, I guess like extra support on some things that she noticed. And then I also made sure that she realized, I gave her support on trainings on child development as well."
+    },
+    {
+      "type": "trait",
+      "id": "trait_5",
+      "question": "Tell me about a time something didn’t go as planned at work and your role in it. How did you handle the responsibility piece?",
+      "candidate_transcript": "[Q7 Attempt 1]\nI guess whenever you plan an activity or you plan a lesson plan, you imagine and you envision something that is not necessarily going to come true. Sometimes the students are not really into the activity or maybe it took less time than you had imagined. My part was to, I always have backup activities, so whenever something like that does happen, I pivot and sometimes I revert back to either the basics because it was too hard or if it was too easy, I go to my pocket activities that I have for just extra time."
+    },
+    {
+      "type": "trait",
+      "id": "trait_6",
+      "question": "Tell me about a time you had to work closely with another adult in a challenging situation. How did you navigate it?",
+      "candidate_transcript": "[Q8 Attempt 1]\nuh you know what talking it through is the best concept communication is always key i don't believe that there's over communication when it comes to co-workers and your peers everything has to be communicated that way"
+    },
+    {
+      "type": "trait",
+      "id": "trait_7",
+      "question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+      "candidate_transcript": "[Q9 Attempt 1]\nYes, I believe that students or children, I guess, have their own opinions that have nothing to do with ours. And just because we are the adults does not mean their opinions value less than ours. I've learned to kind of appreciate their different views of life because they are young."
+    },
+    {
+      "type": "trait",
+      "id": "trait_10",
+      "question": "Tell me about a time a child’s behavior was challenging for you. How did you approach it?",
+      "candidate_transcript": "[Q10 Attempt 1]\num when a student is difficult i would like it depends if they're kind of just red in the red zone or they're not hearing or seeing or thinking about anybody else but them and how they can get out of the classroom i like to just kind of separate them and kind of give them their space making sure that they know that i'm always going to be there when they're done um getting the moment over with um just like any other person everybody has days everybody has those moments where they kind of just blow up and i want to make sure that they are experiencing and i'm guiding them through those feelings correctly and respectfully with everybody else so i don't want them to hurt themselves or anybody around them so i give them strategies of different ways that they can call"
+    },
+    {
+      "type": "trait",
+      "id": "trait_11",
+      "question": "Can you share a time when your plan didn’t go as expected because of children’s needs? What did you do?",
+      "candidate_transcript": "[Q11 Attempt 1]\nYeah, so during field trips, it's important to kind of keep everybody together and making sure you have that headcount. We had a known runner, a known eloper in that classroom. So it basically became a one-on-one where we couldn't really do field trips with that student just because he was a security factor at that point and a liability for the whole school. But I pivoted to have."
+    },
+    {
+      "type": "custom",
+      "id": "Not-Avail",
+      "question": "Are there any hours you are absolutely not available to work?",
+      "candidate_transcript": "[Q13 Attempt 1]\nI prefer the morning times."
+    },
+    {
+      "type": "custom",
+      "id": "Pay",
+      "question": "What kind of pay are you looking for? Is that negotiable?",
+      "candidate_transcript": "[Q14 Attempt 1]\nI'm looking for anything honestly over 25. I think I do have I guess a few questions about the program and how it's run. How many classrooms are inside of school and do you happen to know when the transition from each classroom is is it like the school year where they wait until August or is it by the birthdays of the children? Because I prefer the school year. It just helps everybody stay kind of consistent."
+    }
+  ]
+}

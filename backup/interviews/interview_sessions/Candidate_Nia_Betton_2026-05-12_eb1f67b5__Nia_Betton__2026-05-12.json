@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-05-12T17:34:59.877571Z",
+  "updated_at": "2026-05-12T17:45:59.007049Z",
+  "interview": {
+    "interview_id": "Candidate_Nia_Betton_2026-05-12_eb1f67b5",
+    "candidate_name": "Nia Betton",
+    "interview_date": "2026-05-12"
+  },
+  "questions": {
+    "0": {
+      "flow_idx": 0,
+      "item_type": "custom",
+      "item_id": "Why-ECE",
+      "notes": {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q1 Attempt 1]\nLet me continue to interview. Okay. Okay, a little bit about me. Well, I've been in the child care industry for about six years through owning my own child care. I'm very passionate there. I pretty much kept bro record keeping. Also, you know, providing a curriculum for the kids and making sure they had a safe place to, you know, grow and thrive. And that's kind of where my early childhood love began. I worked in a daycare when I was younger, just doing like cleaning up for like 50 cents an hour. I always bring that up. But it inspired me to want to help kids develop and grow. I'm really passionate about it. I just started continuing my education in early childhood by now attending school. So I do have coursework in early childhood education now as well as my six years. And I have a lot of experience of owning my own daycare. No, I don't have my associate's degree. I actually have early childhood and education credits.",
+      "updated_at": "2026-05-12T17:35:04.921354Z"
+    },
+    "1": {
+      "flow_idx": 1,
+      "item_type": "custom",
+      "item_id": "Why-LPL",
+      "notes": {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q2 Attempt 1]\nWell, I was looking for an opportunity to become hands-on with the children. I'm also a substitute teacher in a Montessori setting right now. So it's just going along with my passion and also wanting to still create, you know, creative environments for infants and toddlers and young children while I pursue my...",
+      "updated_at": "2026-05-12T17:35:35.459716Z"
+    },
+    "2": {
+      "flow_idx": 2,
+      "item_type": "trait",
+      "item_id": "trait_1",
+      "notes": {
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q3 Attempt 1]\na time after nap time where we're in transition. This happened maybe two weeks ago at the school that I substitute at. We have a young child, a young boy. He doesn't like to get up after nap time. He likes to stay in long. And what I observed is he was feeling really aggravated, disturbed. He was really emotional about getting up. Yeah. And it took a few of us, what I did to help him out was pat him on his back and pretty much empathize with him on why he didn't want to get up. He was so tired. But this is something that he does every day. So we're just working with him day by day on getting him a better schedule or how we can improve his schedule.",
+      "updated_at": "2026-05-12T17:36:41.619672Z"
+    },
+    "3": {
+      "flow_idx": 3,
+      "item_type": "trait",
+      "item_id": "trait_2",
+      "notes": {
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q4 Attempt 1]\nUm, I think taking breaks is very important when you're, when you're able to and, and really like honing in and meditating and things like that. So that at times when you do, um, come into something where you may feel that you're getting frustrated, you can kind of do, um, you know, breath work and stuff like that. Um, something, something that you can, you know, control your emotion or control something. And, um, usually kids, um, I really never really get too frustrated around the children. Cause like I said, um, self-caring is, it works, it works a lot. So those instances kind of never really happened. Um, I'm great at like multitasking and, um, being very observant and, um, yeah.",
+      "updated_at": "2026-05-12T17:37:41.513834Z"
+    },
+    "4": {
+      "flow_idx": 4,
+      "item_type": "trait",
+      "item_id": "trait_3",
+      "notes": {
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q5 Attempt 1]\nIf the child is pulling away and doesn't want to go for diapering, I would definitely document that. I would also let the parents know that I offered to take the child to the restroom. Yeah, and from there, I wouldn't force the child to use the restroom. I would pretty much pay attention and observe the behaviors, maybe continue to ask later, give him a break, give him his space and ask later if he wanted to. But it would definitely be something that I would bring to the parents' attention. So we can find out why he's not wanting to use the restroom. And also to ask the child and just be patient with him and, you know, try to get to the bottom of that behavior.",
+      "updated_at": "2026-05-12T17:38:42.047118Z"
+    },
+    "5": {
+      "flow_idx": 5,
+      "item_type": "trait",
+      "item_id": "trait_4",
+      "notes": {
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q6 Attempt 1]\num a time that i received criticism or constructive feedback that i didn't want to hear um yeah um i guess what comes to my mind maybe during licensing where um one of my assistants the mandated reporting wasn't up to date and i didn't know when it was doing an inspection so that kind of caught me off guard um how i handled it is i did take full accountability for it and um i did apologize for it and i made sure that i got it done within a certain amount of time that licensing had asked me to i made sure my assistant did and i also coached her um and i also you know like i said i took accountability because record keeping is something that um",
+      "updated_at": "2026-05-12T17:39:53.280284Z"
+    },
+    "6": {
+      "flow_idx": 6,
+      "item_type": "trait",
+      "item_id": "trait_5",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q7 Attempt 1]\nUm, I think dealing with children, something always doesn't go as planned. So you kind of just yeah. Um, so you kind of just like go with the flow of the kids and try to stay according to a plan, I should say, or on, on a schedule and you try to do your best at doing it. Um, because with kids is something always unexpected, whether they're full of energy or whether someone's getting hurt or someone needs more attention than the others. You're always looking to adapt to every situation when you're dealing with young kids. Um, yeah, the transition with the young kid a couple of weeks ago, getting them up for nap time. We were having karate that day, the day I was substituting. We were having, um, yeah, they were having a karate class. Um, and we just had to improvise. We had to give them his time and, you know, not even convincing him like, Hey, karate is outside, you know, we'll get them up. So, um, just having that patience with them. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah.",
+      "updated_at": "2026-05-12T17:41:20.882498Z"
+    },
+    "7": {
+      "flow_idx": 7,
+      "item_type": "trait",
+      "item_id": "trait_6",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q8 Attempt 1]\num another adult in a challenging situation depending on the situation you know a lot of times i do um just from owning my own daycare i always i'm always taking the lead um that's kind of my um i guess my passion or my my my nurturing instinct um is to um look for what will work in challenges um or look for a best a best practice or something that could you know help us get through the challenge or fix the challenge or whatever the situation may be um i think looking for how to break it down piece by piece um and um yeah sometimes you have to take the lead sometimes you know you have to sit back but i think just being that nurturer and being able to have those eyes for where the challenge is um can be broken down or it's taking place um you kind of always have those ideas so sometimes you just fall into that role um just because you you know you",
+      "updated_at": "2026-05-12T17:42:39.894353Z"
+    },
+    "8": {
+      "flow_idx": 8,
+      "item_type": "trait",
+      "item_id": "trait_7",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q9 Attempt 1]\nAs I have been in my early childhood education classes, learning different types of child care, and learning how to respond to, just grow my social emotional behavior with children, because I've always been pretty emotionally intelligent, and I kind of, in my own daycare, it was a child-centered daycare, so I kind of created it around the Montessori. But just learning different techniques, and how different classrooms, and different forms of early childhood all comes together, and how they work together, you know, for the development of a child, and it's changed me in many ways, because just understanding now that as an adult, some of the things that I did, you know, and how it developed, and how I got there.",
+      "updated_at": "2026-05-12T17:43:44.516656Z"
+    },
+    "9": {
+      "flow_idx": 9,
+      "item_type": "trait",
+      "item_id": "trait_10",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-05-12T17:43:43.907308Z"
+    },
+    "10": {
+      "flow_idx": 10,
+      "item_type": "trait",
+      "item_id": "trait_11",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-05-12T17:43:47.913814Z"
+    },
+    "11": {
+      "flow_idx": 11,
+      "item_type": "custom",
+      "item_id": "FT-or-PT",
+      "notes": {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full-time or part-time",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q12 Attempt 1]\nI am looking for both. I am looking for stability. I am doing substitute work right now.",
+      "updated_at": "2026-05-12T17:44:04.560392Z"
+    },
+    "12": {
+      "flow_idx": 12,
+      "item_type": "custom",
+      "item_id": "Not-Avail",
+      "notes": {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q13 Attempt 1]\nOh, okay. Okay. Yeah, I'm",
+      "updated_at": "2026-05-12T17:44:35.416808Z"
+    },
+    "13": {
+      "flow_idx": 13,
+      "item_type": "custom",
+      "item_id": "Pay",
+      "notes": {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$19",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q14 Attempt 1]\nYou know, like per diem, sometimes they'll call me sometimes and they have me scheduled, but it is part time. So I'm Guy Post. Yeah, Guy Post Montessori School. So, yeah, they gave. Yeah. Oh, no, no, I'm I'm actually the school substitute. So they have a few that they kind of I kind of go around and help out at on days that they need it. So, yeah, they gave me that opportunity. I was really fortunate for it because, like I said, I'm continuing my education. So it's actually growing me. And, yeah, I love it. But I'm also looking for something full time and stable, reliable schedule. If I if that opportunity comes, then, yeah, I'll definitely be available for it. I am looking for something along along 18 to 19 dollars an hour.",
+      "updated_at": "2026-05-12T17:45:57.277729Z"
+    },
+    "14": {
+      "flow_idx": 14,
+      "item_type": "custom",
+      "item_id": "Start",
+      "notes": {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "asap",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-05-12T17:45:59.007049Z"
+    }
+  }
+}

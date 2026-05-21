@@ -1,0 +1,219 @@
+{
+  "candidate": {
+    "name": "Ariana Albrent",
+    "interview_date": "2026-03-30",
+    "school": "Palmdale",
+    "track": "preschool",
+    "qualification": {
+      "has_degree": true,
+      "degree_type": "BA",
+      "degree_in_ece": false,
+      "ece_units_completed": 15,
+      "infant_toddler_class_completed": false,
+      "total_units_completed": null,
+      "years_experience": 8
+    }
+  },
+  "percent_of_max": 92.71,
+  "decision": "hire",
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_10",
+        "trait_name": "Positive Behavior Guidance",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_11",
+        "trait_name": "Structure & Flexibility",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$24",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full-time, but part-time for first month",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "2-3 weeks",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-03-30 - Palmdale - Ariana Albrent - Interview.docx",
+    "transcript_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Candidate_Ariana_Albrent_2026-03-30_live_transcript.docx"
+  },
+  "communication_log": [],
+  "flow_transcript_slices": [
+    {
+      "type": "custom",
+      "id": "Why-ECE",
+      "question": "Tell me about yourself and why early childhood education matters to you.",
+      "candidate_transcript": "[Q1 Attempt 1]\nSo I've been in early childhood education for 10 plus years. I started off at a local college where I lived and I kind of got 15 units and kind of got my feet into that. And it's something I just totally fell in love with. Then I continued on to get my bachelor's degree in elementary teaching. So I did that. And recently I've been assistant director for a school for about four years. So definitely been in the education field for over 10 years. Children are just inspiring. There's so much to them. The growth is great. I love watching them learn. And I do have my own child now. So I've been able to see that and kind of take a lot of what I've learned and use it with my own child now. So that's been a great experience."
+    },
+    {
+      "type": "custom",
+      "id": "Why-LPL",
+      "question": "Why are you applying for this position, specifically at Launch Pad Learning?",
+      "candidate_transcript": "[Q2 Attempt 1]\nSo I looked at multiple schools. I've been in Colorado for the last five years. I used to live in the Antelope Valley before that. So you guys just seemed, it seemed like a different community. Like I said, I want a community. I want the culture. I want to be someone who can help. And I definitely have tons of experience."
+    },
+    {
+      "type": "trait",
+      "id": "trait_1",
+      "question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+      "candidate_transcript": "[Q3 Attempt 1]\nSo with them, just I start off with, depending on the age, if they're older, I start off with maybe asking, hey, do you want to talk about it? You know, if they're younger, a lot of just love, kind. I have tons of patients. So just trying to see, you know, what it is. Did they have a bad day? Sometimes they come in and it's the wrong breakfast or something happened at home. So trying to make sure that we, you know, if we can communicate with them, ask, if not just a lot of love, you know, making sure we've checked all of their needs. If they're young, is their diaper, are they fed? You know, a lot of times, like I said, sometimes they start off on a bad day. So, you know, making sure, did they eat?"
+    },
+    {
+      "type": "trait",
+      "id": "trait_2",
+      "question": "Tell me about a time you felt overwhelmed at work with children present. What did you do to manage yourself?",
+      "candidate_transcript": "[Q4 Attempt 1]\nSo for me, it's just taking a deep breath and knowing that, you know, we're there to support the kids. So, you know, they can't do a lot of things on their own. So just, you know, if it's to walk away, maybe. And like I said, if it's younger, you could still hold them and walk away, take a breather. But like I said, you're there for them. So sometimes you have to just, you know, it's more about thinking and logic. Like, okay, it's okay. They express themselves like babies. They cry. You know, the older ones, sometimes they can't express themselves, but they do that with, you know, sometimes anger. And I've dealt with a lot of situations. And sometimes leaning on your co-teacher, if you have one, like, you know, hey, you're really good with this child. Do you think you can calm them down? I'm a little bit overwhelmed. And I think it's okay to, you know, ask for help if there's help in there in a classroom. Correct. And like I said, it happens. I mean, I've had kids throw chairs at me. Like I said, I've had so many different dynamics that you have to kind of sometimes understand. Sometimes they have a really hard time at home. It's a home life kind of thing. So you want them to feel safe. So it's getting down to just, you know, and you're trying to find strategies. And sometimes that works, you know, before they get escalated or so. Like I said, I've dealt with a lot of things. I've been in many tough situations, also being in management. I've had tons of kids up in the office because, you know, teachers can't handle it. So just trying to deescalate."
+    },
+    {
+      "type": "trait",
+      "id": "trait_3",
+      "question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering, helping with clothing, or guiding them physically. They are pulling away or saying no. Walk me through exactly what you would do, step by step",
+      "candidate_transcript": "[Q5 Attempt 1]\nSo, if I see that they're not, you know, they don't want to go change their diaper, if I'm like, you know, hey, come over here, let's change your diaper, they say no, you know, I understand that, you know, obviously, if a kid is, you know, has a bowel movement, they do need to be changed, but never to force them. So, you know, maybe guide them with a toy that they like, and maybe go to the next child and say, hey, I'm, you know, they're a little bit older, hey, I'm going to come back in, you know, a few minutes, and we're going to go, or hey, you know, we're going to go potty after these two go. So, just trying to give them options, but also never forcing a child, even though we know that, you know, their needs are to not have a dirty diaper, but like I said, sometimes I would just say, okay, I'm going to come back, and, you know, maybe they would be fine, and also making sure they're safe. So, if they are cross-dressing. Trying if they're in a safe atmosphere to be at, and maybe distracting them with something, and then moving on to somebody else, and coming back would probably be."
+    },
+    {
+      "type": "trait",
+      "id": "trait_4",
+      "question": "Tell me about a time you received feedback you didn’t expect or didn’t fully agree with. What happened next?",
+      "candidate_transcript": "[Q6 Attempt 1]\nI would just, you know, when it comes to feedback, I like feedback. I like someone to say, hey, maybe we should try this next time or hey, maybe that didn't work out because that's how you grow. For me, that's very hard sometimes to give to people being in management saying, hey, you know, you've been late the last five days, you know, how can we improve it? So for me, it's not getting frustrated and saying, okay, maybe they're seeing something that I'm not. I'm going to take the feedback or say, hey, you know, can we try another option or, you know, I don't feel that that's maybe something like that's what works for me. That's what works for my classroom. But what do you see? What can you do to help me on? And I have no problem with that. I mean, when I've been in management the last four years, so like I said, I've done a lot of giving that kind of feedback to teachers. Maybe if a teacher said, hey, I'm not, you know, I don't agree with that. Then I would, my thing is, okay, let's do options. What, what, what can we do to fix it? Why, why do you think that that's, why do you think that I don't, I'm seeing it different than you? So, like I said, I've, I've given so much feedback and it's just, I think communication is key. Oh, that's, that happens all the time. But not feedback, I guess, towards me because I, it would just be giving feedback to parents. Let me try to think of anything that's kind of came up. I mean, I'm always punctual. I can't really. I can't really."
+    },
+    {
+      "type": "trait",
+      "id": "trait_5",
+      "question": "Tell me about a time something didn’t go as planned at work and your role in it. How did you handle the responsibility piece?",
+      "candidate_transcript": "[Q7 Attempt 1]\nSorry, it cut out the end. Can you repeat the end? I mean, when it comes to teaching, it happens all the time and it could be as simple as like we were supposed to go outside and it's raining now. So just trying to find a different activity, something else to do, kind of being able to roll with those punches of, you know, things do change."
+    },
+    {
+      "type": "trait",
+      "id": "trait_6",
+      "question": "Tell me about a time you had to work closely with another adult in a challenging situation. How did you navigate it?",
+      "candidate_transcript": "[Q8 Attempt 1]\nSo with my old director, we had to go through a lot of challenging moments of when it came to licensing that and those were just writing it down on a piece of paper. What you know, why are we you know, why did that come back, you know, bad on a licensing report? What do we need to do? And also when it comes to parents, a lot of upset parents, maybe their child got bit five times this week and just trying to navigate that, you know, we're trying our best. What are we doing in the classroom? Just trying to have great communication and working closely that so me and the other person are on the same page. Sometimes you're not always on the same page, but trying to come to an agreement on how we can fix the situation."
+    },
+    {
+      "type": "trait",
+      "id": "trait_7",
+      "question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+      "candidate_transcript": "[Q9 Attempt 1]\nOh, I mean, I've always had patience, but children have, you know, they've taught me patience. And like I said, being in this field for over 10 years, I have learned so much, but I get to apply so much to my child now. And that's, you know, something that I want to keep going with and growing and being able to, you know, achieve that. So kids, you know, kids change and to see a difference on, you know, say you start the school year in August and, you know, you see a kid and, you know, maybe they don't want to come to your classroom every day. And then, you know, each day gets better. You know, each day there's less crying, there's more interaction. So for me, it's just the growth that."
+    },
+    {
+      "type": "trait",
+      "id": "trait_10",
+      "question": "Tell me about a time a child’s behavior was challenging for you. How did you approach it?",
+      "candidate_transcript": "[Q10 Attempt 1]\nSo at one of the schools I worked with, we had a lot of challenging behaviors. And I would say that because we did after school program. So it was, you know, older kids that they were kind of in school all day. They had, you know, elementary school, kindergarten all day, and they would come to us late. I'll bring up the same situation of a kid taking a whole sack of chairs and throwing them at me. You know, in the moment you want to get frustrated because, you know, that's, I think it's more you don't know how to help in the moment. So it's trying to say, why did they throw the chair? And it wasn't me that they threw the chair. It's just because they were escalated with another child. So just trying to figure out just with that child, I could communicate, hey, why are you feeling like that? You're angry? Okay, why are you angry? Did you have a bad day at school? You know, are you hungry? Do you need to take a break? Do you need to take a nap? So just like I said, it happens all the time. I've had, I've had a kid almost bite me and sometimes they have other things going on. So you're just trying. You're just trying to figure out kind of the bottom line on, you know, how can you keep them safe? But I mean, stuff happens. We, a lot of people are like, oh, you're in childcare. It's like all fun. And it's, it's, it's not, it's, it's challenging. You know, you have hard days. Kids come to school with bad days, just like adults wake up on the wrong side of the bed. So, you know, just trying to be there."
+    },
+    {
+      "type": "trait",
+      "id": "trait_11",
+      "question": "Can you share a time when your plan didn’t go as expected because of children’s needs? What did you do?",
+      "candidate_transcript": "[Q11 Attempt 1]\nSo that would happen during circle time. I had an autistic child and we would be, you know, she kind of, even when we would sing the Pledge of Allegiance years ago when I first started, she would get, you know, pretty upset and circle time kind of had to stop. And I had to figure out how maybe we could keep the tone, you know, the voices down and the tone down that maybe, you know, she wouldn't interrupt our circle time every day because then that makes our kids not be able to learn. And at that time, honestly, I didn't have a co-teacher. I was at, you know, just ratio based with the kids. So I didn't have that support to say, you know, hey, can you help me with this child so we could get circle time done or this activity done? So, like I said, if we have a second teacher, which when I was in management, we always tried to have two or three in every room just so that you have that help. Like, hey, I'm going to work on this and maybe you can go help with this child or vice versa. A lot of kids... Grass to other teachers. So, you know, maybe, you know, those five kids are really attached to me and they listen really well. But the other five, you know, really listen to the other teacher. And that's, you know, it's like I said, it's a comfort thing. A lot of kids grab a..."
+    },
+    {
+      "type": "custom",
+      "id": "FT-or-PT",
+      "question": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+      "candidate_transcript": "[Q12 Attempt 1]\nSo, since I do have a kid, it would be nice if maybe the first month I could do part-time just to kind of get us both in a routine, and then yes, I do want full-time."
+    },
+    {
+      "type": "custom",
+      "id": "Not-Avail",
+      "question": "Are there any hours you are absolutely not available to work?",
+      "candidate_transcript": "[Q13 Attempt 1]\nno i don't think so uh i don't say i'm not picky with it i just like i said i the only reason i've always been a full-time person i've worked 50 plus hours i just want to make sure that me and my daughter could just get on a on a pace so i know that they're open 5 30 so that's probably a little bit difficult in the beginning because we're almost to a schedule she's three months right now so we're getting there we're starting a schedule she's getting kind of more of a bedtime routine so that's why i'm trying to go back to work and you know both of us get on a routine so i would say maybe you know a little bit later in the morning i don't know how how does how does the shifts work since it's such a you know it's a longer day that you guys are open okay okay okay yeah i guess whatever meets the needs i know that part-time is probably not something that's great maybe in the beginning but maybe if you know they you okay yeah i don't know what's easier or"
+    },
+    {
+      "type": "custom",
+      "id": "Pay",
+      "question": "What kind of pay are you looking for? Is that negotiable?",
+      "candidate_transcript": "[Q14 Attempt 1]\nthree days full-time, have two days off, or work four or five days every day. I don't know what works best for the school, so okay."
+    }
+  ]
+}

@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-03-23T16:07:57.942993Z",
+  "updated_at": "2026-03-23T16:16:51.397263Z",
+  "interview": {
+    "interview_id": "Candidate_Rizwana_Khan_2026-03-23_b6c31297",
+    "candidate_name": "Rizwana Khan",
+    "interview_date": "2026-03-23"
+  },
+  "questions": {
+    "0": {
+      "flow_idx": 0,
+      "item_type": "custom",
+      "item_id": "Why-ECE",
+      "notes": {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q1 Attempt 1]\nBecause I started work on the Torrens District and I decided why I'm not working on this field. So I started and learned and started for Al-Kamino College, go Al-Kamino College and done. And I love to be childhood programming and day cares. So that's why I want to work. Yes. In Karachi University, I did master on my own language as Urdu. And I came here. Then I done for Dental Assisting course also. Yes, I do. Here for Al-Kamino College. Yeah, it's for child.",
+      "updated_at": "2026-03-23T16:08:12.495451Z"
+    },
+    "1": {
+      "flow_idx": 1,
+      "item_type": "custom",
+      "item_id": "Why-LPL",
+      "notes": {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q2 Attempt 1]\nYou know what? I want to start it. And I look, you guys, it's a good opportunity to working with the team. So I'm a little interested for that. So I see and I apply.",
+      "updated_at": "2026-03-23T16:08:22.795340Z"
+    },
+    "2": {
+      "flow_idx": 2,
+      "item_type": "trait",
+      "item_id": "trait_1",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q3 Attempt 1]\nFirst, I just interact with the child and he or she feel comfortable. Then I may talk with him a little bit because I work for the practicum class also. So I've been six months with the little one. So I was, you have to be go on their comfort and then start to talking. And if it's like out, you have to be, they have to be comfortable with you and then do with you whatever they wanted. They do it with you, but it's take time. It's not right away.",
+      "updated_at": "2026-03-23T16:09:17.845364Z"
+    },
+    "3": {
+      "flow_idx": 3,
+      "item_type": "trait",
+      "item_id": "trait_2",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q4 Attempt 1]\nYou know, mostly time I'm not because I'm being mom also. I'm always have, I have a kid and I love to be, even kids are warm up or I warm up. I love to control myself because, you know, what's the difference if I'm acting like a child?",
+      "updated_at": "2026-03-23T16:09:52.000126Z"
+    },
+    "4": {
+      "flow_idx": 4,
+      "item_type": "trait",
+      "item_id": "trait_3",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q5 Attempt 1]\nif that happens so that's what i'm saying i'm started to when he start to be understand me then i start working and you know sometimes kids don't want to touch don't want to do it so you just do oh what what i do you do same thing so it's going to be help and they started and they're struggling like oh i can't i can't so then you started to do you",
+      "updated_at": "2026-03-23T16:10:43.231516Z"
+    },
+    "5": {
+      "flow_idx": 5,
+      "item_type": "trait",
+      "item_id": "trait_4",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q6 Attempt 1]\nso kids very understandable also sometimes not but most of time they know we are take care here for them so that's why they like that's what I'm telling I'm okay with if I don't like it I always respect other people opinion and I love to be doing right way and not not being like oh I can do it",
+      "updated_at": "2026-03-23T16:11:33.174497Z"
+    },
+    "6": {
+      "flow_idx": 6,
+      "item_type": "trait",
+      "item_id": "trait_5",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q7 Attempt 1]\num if it's not going around me so i will go for it to be understand where is the",
+      "updated_at": "2026-03-23T16:11:57.925462Z"
+    },
+    "7": {
+      "flow_idx": 7,
+      "item_type": "trait",
+      "item_id": "trait_6",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q8 Attempt 1]\nYeah, that's happened. But, you know, thank God I never had that happen most of time. But if it's happened. So that's what I'm saying. Even my colleagues and my where I work because I'm doing subbing. So I'm the person who go and merge with them, like whatever they need, I do it. So if sometimes they don't like it, it's okay. I will ask again. And that's what I'm doing all the time. Tell me what I have to do is correct for you. And if it's not correct, we have to negotiate to talk with you to fix this.",
+      "updated_at": "2026-03-23T16:12:54.197432Z"
+    },
+    "8": {
+      "flow_idx": 8,
+      "item_type": "trait",
+      "item_id": "trait_7",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q9 Attempt 1]\nYeah, that's true. Every time every personality is different and kids are very good personality, they know very well and they comfort you if they're comfortable and they know you help them or in that situation, they know who can help you. So I learn, I learn a lot with the kids.",
+      "updated_at": "2026-03-23T16:13:33.671686Z"
+    },
+    "9": {
+      "flow_idx": 9,
+      "item_type": "trait",
+      "item_id": "trait_10",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q10 Attempt 1]\nbeen trying to express themselves what they want and how they want they want you follow them then they like it um i don't rush i just give them time when they feel a little comfortable and challenging yes but you know if you are love forcing the more changeling come front of you so better to go like nicely and talkatively and they they see you they contact with your eyes then they understand uh because i have in my class those i do the practicum class we have two three kids for the challenging one but i have very good i get them one i say okay i take care of this one you do other things so i'll always be very comfortable with my teacher with my co-worker because you know we working like a team if i'm like oh i'm not do this i'm not do that no",
+      "updated_at": "2026-03-23T16:15:08.626747Z"
+    },
+    "10": {
+      "flow_idx": 10,
+      "item_type": "trait",
+      "item_id": "trait_11",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-23T16:15:06.874661Z"
+    },
+    "11": {
+      "flow_idx": 11,
+      "item_type": "custom",
+      "item_id": "FT-or-PT",
+      "notes": {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full-time",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q12 Attempt 1]\nI love to do full time, but I have one thing, it's very important, it's my pick up my kid, so I just want to",
+      "updated_at": "2026-03-23T16:15:31.032375Z"
+    },
+    "12": {
+      "flow_idx": 12,
+      "item_type": "custom",
+      "item_id": "Not-Avail",
+      "notes": {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "most of the time available",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q13 Attempt 1]\nChildcare is a start so early so I can manage my time. It depends. I don't know what time to what time I get the job. It depends. Most of the time I'm available.",
+      "updated_at": "2026-03-23T16:16:09.822994Z"
+    },
+    "13": {
+      "flow_idx": 13,
+      "item_type": "custom",
+      "item_id": "Pay",
+      "notes": {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "negotiable",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q14 Attempt 1]\nGood amount good because not the bad one good one",
+      "updated_at": "2026-03-23T16:16:28.381146Z"
+    },
+    "14": {
+      "flow_idx": 14,
+      "item_type": "custom",
+      "item_id": "Start",
+      "notes": {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "asap",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q15 Attempt 1]\num i can do it because you know i told you i do subbing so it's no any uh it's not my permanent job so i can do it like if you give me",
+      "updated_at": "2026-03-23T16:16:51.397263Z"
+    }
+  }
+}

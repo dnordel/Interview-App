@@ -1,0 +1,196 @@
+{
+  "track_trait_order": {},
+  "trait_question_overrides": {},
+  "custom_questions": {
+    "infant_toddler": [
+      {
+        "id": "FT-or-PT",
+        "text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "order": 6
+      },
+      {
+        "id": "Start",
+        "text": "When could you start if we decide to move forward?",
+        "order": 7
+      },
+      {
+        "id": "Not-Avail",
+        "text": "Are there any hours you are absolutely not available to work?",
+        "order": 6
+      },
+      {
+        "id": "Why-ECE",
+        "text": "Tell me a little about yourself and why early childhood education matters to you.",
+        "order": 7
+      },
+      {
+        "id": "Pay",
+        "text": "What kind of pay are you looking for? Is that negotiable?",
+        "order": 7
+      },
+      {
+        "id": "Why-LPL",
+        "text": "Why are you applying to our company, Launch Pad Learning?",
+        "order": 8
+      }
+    ],
+    "preschool": [
+      {
+        "id": "Why-ECE",
+        "text": "Tell me about yourself and why early childhood education matters to you.",
+        "order": 1
+      },
+      {
+        "id": "Why-LPL",
+        "text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "order": 2
+      },
+      {
+        "id": "Not-Avail",
+        "text": "Are there any hours you are absolutely not available to work?",
+        "order": 3
+      },
+      {
+        "id": "Pay",
+        "text": "What kind of pay are you looking for? Is that negotiable?",
+        "order": 4
+      },
+      {
+        "id": "FT-or-PT",
+        "text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "order": 5
+      },
+      {
+        "id": "Start",
+        "text": "When could you start if we decide to move forward?",
+        "order": 6
+      }
+    ]
+  },
+  "track_question_flow": {
+    "infant_toddler": [
+      {
+        "type": "custom",
+        "id": "Why-ECE"
+      },
+      {
+        "type": "custom",
+        "id": "Why-LPL"
+      },
+      {
+        "type": "trait",
+        "id": "trait_1"
+      },
+      {
+        "type": "trait",
+        "id": "trait_2"
+      },
+      {
+        "type": "trait",
+        "id": "trait_3"
+      },
+      {
+        "type": "trait",
+        "id": "trait_4"
+      },
+      {
+        "type": "trait",
+        "id": "trait_5"
+      },
+      {
+        "type": "trait",
+        "id": "trait_6"
+      },
+      {
+        "type": "trait",
+        "id": "trait_7"
+      },
+      {
+        "type": "trait",
+        "id": "trait_8"
+      },
+      {
+        "type": "trait",
+        "id": "trait_9"
+      },
+      {
+        "type": "custom",
+        "id": "FT-or-PT"
+      },
+      {
+        "type": "custom",
+        "id": "Not-Avail"
+      },
+      {
+        "type": "custom",
+        "id": "Start"
+      },
+      {
+        "type": "custom",
+        "id": "Pay"
+      }
+    ],
+    "preschool": [
+      {
+        "type": "custom",
+        "id": "Why-ECE"
+      },
+      {
+        "type": "custom",
+        "id": "Why-LPL"
+      },
+      {
+        "type": "trait",
+        "id": "trait_1"
+      },
+      {
+        "type": "trait",
+        "id": "trait_2"
+      },
+      {
+        "type": "trait",
+        "id": "trait_3"
+      },
+      {
+        "type": "trait",
+        "id": "trait_4"
+      },
+      {
+        "type": "trait",
+        "id": "trait_5"
+      },
+      {
+        "type": "trait",
+        "id": "trait_6"
+      },
+      {
+        "type": "trait",
+        "id": "trait_7"
+      },
+      {
+        "type": "trait",
+        "id": "trait_10"
+      },
+      {
+        "type": "trait",
+        "id": "trait_11"
+      },
+      {
+        "type": "custom",
+        "id": "FT-or-PT"
+      },
+      {
+        "type": "custom",
+        "id": "Not-Avail"
+      },
+      {
+        "type": "custom",
+        "id": "Pay"
+      },
+      {
+        "type": "custom",
+        "id": "Start"
+      }
+    ]
+  }
+}

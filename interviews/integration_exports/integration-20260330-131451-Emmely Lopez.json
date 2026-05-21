@@ -1,0 +1,201 @@
+{
+  "candidate": {
+    "name": "Emmely Lopez",
+    "interview_date": "2026-03-30",
+    "school": "Palmdale",
+    "track": "preschool",
+    "qualification": {
+      "has_degree": true,
+      "degree_type": "AA",
+      "degree_in_ece": false,
+      "ece_units_completed": 12,
+      "infant_toddler_class_completed": false,
+      "total_units_completed": null,
+      "years_experience": 5
+    }
+  },
+  "percent_of_max": 39.58,
+  "decision": "no_hire",
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_10",
+        "trait_name": "Positive Behavior Guidance",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_11",
+        "trait_name": "Structure & Flexibility",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$20",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full-time or part",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "asap",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-03-30 - Palmdale - Emmely Lopez - Interview.docx",
+    "transcript_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Candidate_Emmely_Lopez_2026-03-30_live_transcript.docx"
+  },
+  "communication_log": [],
+  "flow_transcript_slices": [
+    {
+      "type": "custom",
+      "id": "Why-ECE",
+      "question": "Tell me about yourself and why early childhood education matters to you.",
+      "candidate_transcript": "[Q1 Attempt 1]\nA little bit about myself is I'm really into trying to help other people. And I actually enjoy working with kids. I actually have a little sister where I sometimes go to her classroom and I help the teacher. If it's trying to help them with their homework or with arts and crafts. So, I really did want to look into it and I enjoy just like helping them out. My aim? Yes, I do."
+    },
+    {
+      "type": "custom",
+      "id": "Why-LPL",
+      "question": "Why are you applying for this position, specifically at Launch Pad Learning?",
+      "candidate_transcript": "[Q2 Attempt 1]\nUm, I'm current, um, I, well, in my, in my teacher's classroom, the, um, one of her, um, I guess the teacher's assistant referred me, and she said that she also started here, and this is what helped her get into it."
+    },
+    {
+      "type": "trait",
+      "id": "trait_1",
+      "question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+      "candidate_transcript": "[Q3 Attempt 1]\nWell, I used to work as a behavior technique. So I, my consumer, he was five years, five years old, and he didn't want to do the work that he had to do. He would get mad and start throwing stuff. So I try to help him relax. And I first did what he wanted to do. And we came to a conclusion that we would do 10 minutes, what he wanted to do, and then 10 minutes back to work. And that helped him balance everything out. And it helped him get used to doing the work as well."
+    },
+    {
+      "type": "trait",
+      "id": "trait_2",
+      "question": "Tell me about a time you felt overwhelmed at work with children present. What did you do to manage yourself?",
+      "candidate_transcript": "[Q4 Attempt 1]\nA time that I was stressed out is when I couldn't get the client to come and sit down and they were just running around or trying to hit like the teachers. So what I would do, I would take him outside and I would just like talk to him and calm him down and then go back inside and we would try it again in the corner, like just us two."
+    },
+    {
+      "type": "trait",
+      "id": "trait_3",
+      "question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering, helping with clothing, or guiding them physically. They are pulling away or saying no. Walk me through exactly what you would do, step by step",
+      "candidate_transcript": "[Q5 Attempt 1]\nI would first try to calm them down and explain to them what I'm going to do or what's going to happen and just let them relax and then I will try to like put on their diaper and talk to them through it or try like to make them laugh through it so that they don't be too overwhelmed."
+    },
+    {
+      "type": "trait",
+      "id": "trait_4",
+      "question": "Tell me about a time you received feedback you didn’t expect or didn’t fully agree with. What happened next?",
+      "candidate_transcript": "[Q6 Attempt 1]\num a feedback i will probably get a lot from my jobs is that i kind of i like care too much to a point where i like grow like a bond with them and they would always kind of tell me about that that i shouldn't do that because we're um because you never know if they get too attached to you and there's like a new change and they could have like um and they could start like reacting a certain way so that's the feedback that i would kind of always get in my jobs\n\n[Q6 Attempt 2]\nthe last time um yeah i would probably just the last time that happened would probably be like in january where it happened um the feedback is um to not that this is uh that this is a job it's not that that i come here to work not to make like friendships in a way or our bonds with the consumers yes yes well i try not to get close to them but it's just like i guess like the consumer just gets attached to it to me that i did not expect um probably in the behavior technique like me having me being too um nice and not me being too nice with them and not being um like kind of like firm with them so i didn't like i just yeah i would say that one because i was too used to being nice to them i was never really firm with them"
+    },
+    {
+      "type": "trait",
+      "id": "trait_5",
+      "question": "Tell me about a time something didn’t go as planned at work and your role in it. How did you handle the responsibility piece?",
+      "candidate_transcript": "[Q7 Attempt 1]\nsomething that didn't go as planned during work something that didn't go as planned is probably putting two siblings together and working with them together that became kind of overwhelmed and for the parents or for the consumer too my role was to get the two since the siblings were not really close to each other and couldn't be in the same room together my my i had to get them used to them being in the same room and relaxing them so what i would do is i would um do like an arts craft where the both of them would take turns in it and that's how they got used to working together or we would also do games where it would be like them too against me in a way or with mom as well"
+    },
+    {
+      "type": "trait",
+      "id": "trait_6",
+      "question": "Tell me about a time you had to work closely with another adult in a challenging situation. How did you navigate it?",
+      "candidate_transcript": "[Q8 Attempt 1]\nWhat we would do for my sister's classroom, a lot of them would not want to go outside in the playground or they would start throwing the little wood bricks to each other. So me and the other teacher, we would go in and try to relax them and trying to let them know that that's not okay and then trying to redirect them."
+    },
+    {
+      "type": "trait",
+      "id": "trait_7",
+      "question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+      "candidate_transcript": "[Q9 Attempt 1]\nYes, something that I would say is that throughout the time I've realized what you said, which is children or myself too. Something I have learned is will be patience and also the ways to communicate to the children as well."
+    },
+    {
+      "type": "custom",
+      "id": "FT-or-PT",
+      "question": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+      "candidate_transcript": "[Q12 Attempt 1]\nI was hoping for full time, but whatever is available, that would be okay."
+    },
+    {
+      "type": "custom",
+      "id": "Pay",
+      "question": "What kind of pay are you looking for? Is that negotiable?",
+      "candidate_transcript": "[Q14 Attempt 1]\nWhat is the rate for this job?"
+    }
+  ]
+}

@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-04-28T17:35:55.137785Z",
+  "updated_at": "2026-04-28T17:45:23.736168Z",
+  "interview": {
+    "interview_id": "Candidate_Veronica_Medrano_Gonzalez_2026-04-28_e438268f",
+    "candidate_name": "Veronica Medrano Gonzalez",
+    "interview_date": "2026-04-28"
+  },
+  "questions": {
+    "0": {
+      "flow_idx": 0,
+      "item_type": "custom",
+      "item_id": "Why-ECE",
+      "notes": {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-28T17:35:55.139341Z"
+    },
+    "1": {
+      "flow_idx": 1,
+      "item_type": "custom",
+      "item_id": "Why-LPL",
+      "notes": {
+        "question_text": "Why are you applying specifically to our company, Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-28T17:36:21.639188Z"
+    },
+    "2": {
+      "flow_idx": 2,
+      "item_type": "trait",
+      "item_id": "trait_1",
+      "notes": {
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-28T17:37:25.021683Z"
+    },
+    "3": {
+      "flow_idx": 3,
+      "item_type": "trait",
+      "item_id": "trait_2",
+      "notes": {
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-28T17:38:22.734667Z"
+    },
+    "4": {
+      "flow_idx": 4,
+      "item_type": "trait",
+      "item_id": "trait_3",
+      "notes": {
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-28T17:39:29.603498Z"
+    },
+    "5": {
+      "flow_idx": 5,
+      "item_type": "trait",
+      "item_id": "trait_4",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-28T17:40:09.307711Z"
+    },
+    "6": {
+      "flow_idx": 6,
+      "item_type": "trait",
+      "item_id": "trait_5",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-28T17:41:10.830509Z"
+    },
+    "7": {
+      "flow_idx": 7,
+      "item_type": "trait",
+      "item_id": "trait_6",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-28T17:41:48.630654Z"
+    },
+    "8": {
+      "flow_idx": 8,
+      "item_type": "trait",
+      "item_id": "trait_7",
+      "notes": {
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-28T17:42:57.047836Z"
+    },
+    "9": {
+      "flow_idx": 9,
+      "item_type": "trait",
+      "item_id": "trait_10",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-28T17:43:53.512593Z"
+    },
+    "10": {
+      "flow_idx": 10,
+      "item_type": "trait",
+      "item_id": "trait_11",
+      "notes": {
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-28T17:44:43.193280Z"
+    },
+    "11": {
+      "flow_idx": 11,
+      "item_type": "custom",
+      "item_id": "FT-or-PT",
+      "notes": {
+        "question_text": "Are you looking for full-time or part-time?",
+        "answer": "full-time",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-28T17:44:48.547094Z"
+    },
+    "12": {
+      "flow_idx": 12,
+      "item_type": "custom",
+      "item_id": "Not-Avail",
+      "notes": {
+        "question_text": "Are there any hours you are absolutely not available to work? Do you have any preference, in terms of shift or schedule?",
+        "answer": "no",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-28T17:44:55.034730Z"
+    },
+    "13": {
+      "flow_idx": 13,
+      "item_type": "custom",
+      "item_id": "Pay",
+      "notes": {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$20",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-28T17:45:11.108203Z"
+    },
+    "14": {
+      "flow_idx": 14,
+      "item_type": "custom",
+      "item_id": "Start",
+      "notes": {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "two weeks",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-28T17:45:23.736168Z"
+    }
+  }
+}

@@ -1,0 +1,518 @@
+{
+  "candidate": {
+    "name": "Ruby Jean Gamboa",
+    "interview_date": "2026-03-20",
+    "school": "North Long Beach",
+    "track": "infant_toddler",
+    "qualification": {
+      "has_degree": true,
+      "degree_type": "AA",
+      "degree_in_ece": true,
+      "ece_units_completed": null,
+      "infant_toddler_class_completed": true,
+      "total_units_completed": null,
+      "years_experience": 1
+    }
+  },
+  "current_index": 15,
+  "trait_inputs": {
+    "trait_1": {
+      "raw_score": 5,
+      "verbatim_notes": "",
+      "absolute_disqualifier": false,
+      "skipped": false,
+      "no_example_after_followups": false,
+      "selected_signal_ids": []
+    },
+    "trait_2": {
+      "raw_score": 4,
+      "verbatim_notes": "",
+      "absolute_disqualifier": false,
+      "skipped": false,
+      "no_example_after_followups": false,
+      "selected_signal_ids": [
+        "S_SELF_REG_AWARE",
+        "S_CALM_PRESENCE",
+        "S_CHILD_CENTERED",
+        "S_REASONING_EXPLICIT",
+        "S_ADAPT",
+        "S_RESPECTFUL_LANGUAGE",
+        "S_REFLECT"
+      ]
+    },
+    "trait_3": {
+      "raw_score": 5,
+      "verbatim_notes": "",
+      "absolute_disqualifier": false,
+      "skipped": false,
+      "no_example_after_followups": false,
+      "selected_signal_ids": [
+        "S_OBSERVE_CUES",
+        "S_PROCESS_STRUCTURED",
+        "S_ADAPT",
+        "S_RESPONDS_TO_CUES",
+        "S_CALM_PRESENCE",
+        "S_CHILD_CENTERED",
+        "S_REASONING_EXPLICIT",
+        "S_BALANCE_EMPATHY_BOUNDARY",
+        "S_VALIDATE"
+      ]
+    },
+    "trait_4": {
+      "raw_score": 4,
+      "verbatim_notes": "",
+      "absolute_disqualifier": false,
+      "skipped": false,
+      "no_example_after_followups": false,
+      "selected_signal_ids": [
+        "S_OPEN_FEEDBACK",
+        "S_OWNERSHIP",
+        "S_GROWTH_MINDSET",
+        "S_ADAPT",
+        "S_PROCESS_STRUCTURED",
+        "S_REASONING_EXPLICIT",
+        "S_EFFECTIVENESS_EVAL",
+        "S_REFLECT",
+        "S_RESPECTFUL_LANGUAGE"
+      ]
+    },
+    "trait_5": {
+      "raw_score": 4,
+      "verbatim_notes": "",
+      "absolute_disqualifier": false,
+      "skipped": false,
+      "no_example_after_followups": false,
+      "selected_signal_ids": [
+        "S_OWNERSHIP",
+        "S_PROCESS_STRUCTURED",
+        "S_REASONING_EXPLICIT",
+        "S_EFFECTIVENESS_EVAL",
+        "S_REFLECT",
+        "S_ADAPT",
+        "S_GROWTH_MINDSET",
+        "S_RESPECTFUL_LANGUAGE"
+      ]
+    },
+    "trait_6": {
+      "raw_score": 5,
+      "verbatim_notes": "",
+      "absolute_disqualifier": false,
+      "skipped": false,
+      "no_example_after_followups": false,
+      "selected_signal_ids": [
+        "S_PERSPECTIVE_TAKING",
+        "S_RESPECTFUL_LANGUAGE",
+        "S_OWNERSHIP",
+        "S_ADAPT",
+        "S_PROCESS_STRUCTURED",
+        "S_REASONING_EXPLICIT",
+        "S_BALANCE_CHILD_GROUP",
+        "S_EFFECTIVENESS_EVAL",
+        "S_VALIDATE",
+        "S_REFLECT"
+      ]
+    },
+    "trait_7": {
+      "raw_score": 5,
+      "verbatim_notes": "",
+      "absolute_disqualifier": false,
+      "skipped": false,
+      "no_example_after_followups": false,
+      "selected_signal_ids": [
+        "S_EFFECTIVENESS_EVAL",
+        "S_GROWTH_MINDSET",
+        "S_REFLECT",
+        "S_ADAPT"
+      ]
+    },
+    "trait_8": {
+      "raw_score": 5,
+      "verbatim_notes": "",
+      "absolute_disqualifier": false,
+      "skipped": false,
+      "no_example_after_followups": false,
+      "selected_signal_ids": [
+        "S_GENTLE_HANDLING",
+        "S_RESPONDS_TO_CUES",
+        "S_CALM_PRESENCE",
+        "S_BALANCE_EFFICIENCY_RELATIONSHIP",
+        "S_CHILD_CENTERED",
+        "S_ADAPT",
+        "S_PROCESS_STRUCTURED",
+        "S_REASONING_EXPLICIT"
+      ]
+    },
+    "trait_9": {
+      "raw_score": 5,
+      "verbatim_notes": "",
+      "absolute_disqualifier": false,
+      "skipped": false,
+      "no_example_after_followups": false,
+      "selected_signal_ids": [
+        "S_OBSERVE_CUES",
+        "S_SUBTLE_CUES",
+        "S_PROCESS_LOOP",
+        "S_ADAPT",
+        "S_CALM_PRESENCE",
+        "S_SOOTHING",
+        "S_REASONING_EXPLICIT",
+        "S_EFFECTIVENESS_EVAL",
+        "S_PROCESS_STRUCTURED"
+      ]
+    }
+  },
+  "custom_inputs": {
+    "Not-Avail": {
+      "question_text": "Are there any hours you are absolutely not available to work?",
+      "answer": "not available on Tuesdays, can work until 4 on Thursday.",
+      "skipped": false
+    },
+    "FT-or-PT": {
+      "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+      "answer": "full-time, but not available on Tuesdays, can work until 4 on Thursday.",
+      "skipped": false
+    },
+    "Why-ECE": {
+      "question_text": "Tell me a little about yourself and why early childhood education matters to you.",
+      "answer": "",
+      "skipped": false
+    },
+    "Pay": {
+      "question_text": "What kind of pay are you looking for? Is that negotiable?",
+      "answer": "$19-20.",
+      "skipped": false
+    },
+    "Start": {
+      "question_text": "When could you start if we decide to move forward?",
+      "answer": "asap",
+      "skipped": false
+    },
+    "Why-LPL": {
+      "question_text": "Why are you applying to our company, Launch Pad Learning?",
+      "answer": "",
+      "skipped": false
+    }
+  },
+  "flow_time_marks": [],
+  "flow_candidate_transcripts": {
+    "0": "[Q1 Attempt 1]",
+    "1": "[Q2 Attempt 1]",
+    "2": "[Q3 Attempt 1]",
+    "3": "[Q4 Attempt 1]",
+    "4": "[Q5 Attempt 1]",
+    "5": "[Q6 Attempt 1]",
+    "6": "[Q7 Attempt 1]",
+    "7": "[Q8 Attempt 1]",
+    "8": "[Q9 Attempt 1]",
+    "9": "[Q10 Attempt 1]",
+    "10": "[Q11 Attempt 1]",
+    "11": "[Q12 Attempt 1]",
+    "13": "[Q14 Attempt 1]"
+  },
+  "flow_recordings": {
+    "0": {
+      "attempts": [
+        {
+          "flow_index": 0,
+          "base_name": "Candidate_Ruby_Jean_Gamboa_2026-03-20_Q1_custom_Why_ECE",
+          "output_dir": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+          "mic_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q1_custom_Why_ECE_mic.wav",
+          "sys_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q1_custom_Why_ECE_sys.wav",
+          "transcript_txt": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q1_custom_Why_ECE_transcript.txt",
+          "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q1_custom_Why_ECE_transcript.jsonl",
+          "candidate_label": "CANDIDATE",
+          "candidate_transcript": ""
+        }
+      ],
+      "candidate_transcript": "[Q1 Attempt 1]",
+      "base_name": "Candidate_Ruby_Jean_Gamboa_2026-03-20_Q1_custom_Why_ECE",
+      "output_dir": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+      "mic_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q1_custom_Why_ECE_mic.wav",
+      "sys_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q1_custom_Why_ECE_sys.wav",
+      "transcript_txt": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q1_custom_Why_ECE_transcript.txt",
+      "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q1_custom_Why_ECE_transcript.jsonl",
+      "candidate_label": "CANDIDATE"
+    },
+    "1": {
+      "attempts": [
+        {
+          "flow_index": 1,
+          "base_name": "Candidate_Ruby_Jean_Gamboa_2026-03-20_Q2_custom_Why_LPL",
+          "output_dir": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+          "mic_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q2_custom_Why_LPL_mic.wav",
+          "sys_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q2_custom_Why_LPL_sys.wav",
+          "transcript_txt": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q2_custom_Why_LPL_transcript.txt",
+          "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q2_custom_Why_LPL_transcript.jsonl",
+          "candidate_label": "CANDIDATE",
+          "candidate_transcript": ""
+        }
+      ],
+      "candidate_transcript": "[Q2 Attempt 1]",
+      "base_name": "Candidate_Ruby_Jean_Gamboa_2026-03-20_Q2_custom_Why_LPL",
+      "output_dir": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+      "mic_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q2_custom_Why_LPL_mic.wav",
+      "sys_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q2_custom_Why_LPL_sys.wav",
+      "transcript_txt": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q2_custom_Why_LPL_transcript.txt",
+      "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q2_custom_Why_LPL_transcript.jsonl",
+      "candidate_label": "CANDIDATE"
+    },
+    "2": {
+      "attempts": [
+        {
+          "flow_index": 2,
+          "base_name": "Candidate_Ruby_Jean_Gamboa_2026-03-20_Q3_trait_trait_1",
+          "output_dir": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+          "mic_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q3_trait_trait_1_mic.wav",
+          "sys_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q3_trait_trait_1_sys.wav",
+          "transcript_txt": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q3_trait_trait_1_transcript.txt",
+          "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q3_trait_trait_1_transcript.jsonl",
+          "candidate_label": "CANDIDATE",
+          "candidate_transcript": ""
+        }
+      ],
+      "candidate_transcript": "[Q3 Attempt 1]",
+      "base_name": "Candidate_Ruby_Jean_Gamboa_2026-03-20_Q3_trait_trait_1",
+      "output_dir": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+      "mic_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q3_trait_trait_1_mic.wav",
+      "sys_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q3_trait_trait_1_sys.wav",
+      "transcript_txt": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q3_trait_trait_1_transcript.txt",
+      "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q3_trait_trait_1_transcript.jsonl",
+      "candidate_label": "CANDIDATE"
+    },
+    "3": {
+      "attempts": [
+        {
+          "flow_index": 3,
+          "base_name": "Candidate_Ruby_Jean_Gamboa_2026-03-20_Q4_trait_trait_2",
+          "output_dir": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+          "mic_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q4_trait_trait_2_mic.wav",
+          "sys_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q4_trait_trait_2_sys.wav",
+          "transcript_txt": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q4_trait_trait_2_transcript.txt",
+          "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q4_trait_trait_2_transcript.jsonl",
+          "candidate_label": "CANDIDATE",
+          "candidate_transcript": ""
+        }
+      ],
+      "candidate_transcript": "[Q4 Attempt 1]",
+      "base_name": "Candidate_Ruby_Jean_Gamboa_2026-03-20_Q4_trait_trait_2",
+      "output_dir": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+      "mic_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q4_trait_trait_2_mic.wav",
+      "sys_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q4_trait_trait_2_sys.wav",
+      "transcript_txt": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q4_trait_trait_2_transcript.txt",
+      "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q4_trait_trait_2_transcript.jsonl",
+      "candidate_label": "CANDIDATE"
+    },
+    "4": {
+      "attempts": [
+        {
+          "flow_index": 4,
+          "base_name": "Candidate_Ruby_Jean_Gamboa_2026-03-20_Q5_trait_trait_3",
+          "output_dir": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+          "mic_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q5_trait_trait_3_mic.wav",
+          "sys_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q5_trait_trait_3_sys.wav",
+          "transcript_txt": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q5_trait_trait_3_transcript.txt",
+          "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q5_trait_trait_3_transcript.jsonl",
+          "candidate_label": "CANDIDATE",
+          "candidate_transcript": ""
+        }
+      ],
+      "candidate_transcript": "[Q5 Attempt 1]",
+      "base_name": "Candidate_Ruby_Jean_Gamboa_2026-03-20_Q5_trait_trait_3",
+      "output_dir": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+      "mic_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q5_trait_trait_3_mic.wav",
+      "sys_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q5_trait_trait_3_sys.wav",
+      "transcript_txt": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q5_trait_trait_3_transcript.txt",
+      "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q5_trait_trait_3_transcript.jsonl",
+      "candidate_label": "CANDIDATE"
+    },
+    "5": {
+      "attempts": [
+        {
+          "flow_index": 5,
+          "base_name": "Candidate_Ruby_Jean_Gamboa_2026-03-20_Q6_trait_trait_4",
+          "output_dir": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+          "mic_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q6_trait_trait_4_mic.wav",
+          "sys_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q6_trait_trait_4_sys.wav",
+          "transcript_txt": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q6_trait_trait_4_transcript.txt",
+          "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q6_trait_trait_4_transcript.jsonl",
+          "candidate_label": "CANDIDATE",
+          "candidate_transcript": ""
+        }
+      ],
+      "candidate_transcript": "[Q6 Attempt 1]",
+      "base_name": "Candidate_Ruby_Jean_Gamboa_2026-03-20_Q6_trait_trait_4",
+      "output_dir": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+      "mic_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q6_trait_trait_4_mic.wav",
+      "sys_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q6_trait_trait_4_sys.wav",
+      "transcript_txt": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q6_trait_trait_4_transcript.txt",
+      "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q6_trait_trait_4_transcript.jsonl",
+      "candidate_label": "CANDIDATE"
+    },
+    "6": {
+      "attempts": [
+        {
+          "flow_index": 6,
+          "base_name": "Candidate_Ruby_Jean_Gamboa_2026-03-20_Q7_trait_trait_5",
+          "output_dir": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+          "mic_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q7_trait_trait_5_mic.wav",
+          "sys_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q7_trait_trait_5_sys.wav",
+          "transcript_txt": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q7_trait_trait_5_transcript.txt",
+          "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q7_trait_trait_5_transcript.jsonl",
+          "candidate_label": "CANDIDATE",
+          "candidate_transcript": ""
+        }
+      ],
+      "candidate_transcript": "[Q7 Attempt 1]",
+      "base_name": "Candidate_Ruby_Jean_Gamboa_2026-03-20_Q7_trait_trait_5",
+      "output_dir": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+      "mic_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q7_trait_trait_5_mic.wav",
+      "sys_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q7_trait_trait_5_sys.wav",
+      "transcript_txt": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q7_trait_trait_5_transcript.txt",
+      "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q7_trait_trait_5_transcript.jsonl",
+      "candidate_label": "CANDIDATE"
+    },
+    "7": {
+      "attempts": [
+        {
+          "flow_index": 7,
+          "base_name": "Candidate_Ruby_Jean_Gamboa_2026-03-20_Q8_trait_trait_6",
+          "output_dir": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+          "mic_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q8_trait_trait_6_mic.wav",
+          "sys_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q8_trait_trait_6_sys.wav",
+          "transcript_txt": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q8_trait_trait_6_transcript.txt",
+          "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q8_trait_trait_6_transcript.jsonl",
+          "candidate_label": "CANDIDATE",
+          "candidate_transcript": ""
+        }
+      ],
+      "candidate_transcript": "[Q8 Attempt 1]",
+      "base_name": "Candidate_Ruby_Jean_Gamboa_2026-03-20_Q8_trait_trait_6",
+      "output_dir": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+      "mic_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q8_trait_trait_6_mic.wav",
+      "sys_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q8_trait_trait_6_sys.wav",
+      "transcript_txt": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q8_trait_trait_6_transcript.txt",
+      "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q8_trait_trait_6_transcript.jsonl",
+      "candidate_label": "CANDIDATE"
+    },
+    "8": {
+      "attempts": [
+        {
+          "flow_index": 8,
+          "base_name": "Candidate_Ruby_Jean_Gamboa_2026-03-20_Q9_trait_trait_7",
+          "output_dir": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+          "mic_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q9_trait_trait_7_mic.wav",
+          "sys_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q9_trait_trait_7_sys.wav",
+          "transcript_txt": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q9_trait_trait_7_transcript.txt",
+          "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q9_trait_trait_7_transcript.jsonl",
+          "candidate_label": "CANDIDATE",
+          "candidate_transcript": ""
+        }
+      ],
+      "candidate_transcript": "[Q9 Attempt 1]",
+      "base_name": "Candidate_Ruby_Jean_Gamboa_2026-03-20_Q9_trait_trait_7",
+      "output_dir": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+      "mic_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q9_trait_trait_7_mic.wav",
+      "sys_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q9_trait_trait_7_sys.wav",
+      "transcript_txt": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q9_trait_trait_7_transcript.txt",
+      "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q9_trait_trait_7_transcript.jsonl",
+      "candidate_label": "CANDIDATE"
+    },
+    "9": {
+      "attempts": [
+        {
+          "flow_index": 9,
+          "base_name": "Candidate_Ruby_Jean_Gamboa_2026-03-20_Q10_trait_trait_8",
+          "output_dir": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+          "mic_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q10_trait_trait_8_mic.wav",
+          "sys_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q10_trait_trait_8_sys.wav",
+          "transcript_txt": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q10_trait_trait_8_transcript.txt",
+          "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q10_trait_trait_8_transcript.jsonl",
+          "candidate_label": "CANDIDATE",
+          "candidate_transcript": ""
+        }
+      ],
+      "candidate_transcript": "[Q10 Attempt 1]",
+      "base_name": "Candidate_Ruby_Jean_Gamboa_2026-03-20_Q10_trait_trait_8",
+      "output_dir": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+      "mic_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q10_trait_trait_8_mic.wav",
+      "sys_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q10_trait_trait_8_sys.wav",
+      "transcript_txt": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q10_trait_trait_8_transcript.txt",
+      "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q10_trait_trait_8_transcript.jsonl",
+      "candidate_label": "CANDIDATE"
+    },
+    "10": {
+      "attempts": [
+        {
+          "flow_index": 10,
+          "base_name": "Candidate_Ruby_Jean_Gamboa_2026-03-20_Q11_trait_trait_9",
+          "output_dir": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+          "mic_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q11_trait_trait_9_mic.wav",
+          "sys_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q11_trait_trait_9_sys.wav",
+          "transcript_txt": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q11_trait_trait_9_transcript.txt",
+          "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q11_trait_trait_9_transcript.jsonl",
+          "candidate_label": "CANDIDATE",
+          "candidate_transcript": ""
+        }
+      ],
+      "candidate_transcript": "[Q11 Attempt 1]",
+      "base_name": "Candidate_Ruby_Jean_Gamboa_2026-03-20_Q11_trait_trait_9",
+      "output_dir": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+      "mic_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q11_trait_trait_9_mic.wav",
+      "sys_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q11_trait_trait_9_sys.wav",
+      "transcript_txt": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q11_trait_trait_9_transcript.txt",
+      "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q11_trait_trait_9_transcript.jsonl",
+      "candidate_label": "CANDIDATE"
+    },
+    "11": {
+      "attempts": [
+        {
+          "flow_index": 11,
+          "base_name": "Candidate_Ruby_Jean_Gamboa_2026-03-20_Q12_custom_FT_or_PT",
+          "output_dir": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+          "mic_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q12_custom_FT_or_PT_mic.wav",
+          "sys_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q12_custom_FT_or_PT_sys.wav",
+          "transcript_txt": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q12_custom_FT_or_PT_transcript.txt",
+          "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q12_custom_FT_or_PT_transcript.jsonl",
+          "candidate_label": "CANDIDATE",
+          "candidate_transcript": ""
+        }
+      ],
+      "candidate_transcript": "[Q12 Attempt 1]",
+      "base_name": "Candidate_Ruby_Jean_Gamboa_2026-03-20_Q12_custom_FT_or_PT",
+      "output_dir": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+      "mic_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q12_custom_FT_or_PT_mic.wav",
+      "sys_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q12_custom_FT_or_PT_sys.wav",
+      "transcript_txt": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q12_custom_FT_or_PT_transcript.txt",
+      "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q12_custom_FT_or_PT_transcript.jsonl",
+      "candidate_label": "CANDIDATE"
+    },
+    "13": {
+      "attempts": [
+        {
+          "flow_index": 13,
+          "base_name": "Candidate_Ruby_Jean_Gamboa_2026-03-20_Q14_custom_Start",
+          "output_dir": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+          "mic_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q14_custom_Start_mic.wav",
+          "sys_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q14_custom_Start_sys.wav",
+          "transcript_txt": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q14_custom_Start_transcript.txt",
+          "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q14_custom_Start_transcript.jsonl",
+          "candidate_label": "CANDIDATE",
+          "candidate_transcript": ""
+        }
+      ],
+      "candidate_transcript": "[Q14 Attempt 1]",
+      "base_name": "Candidate_Ruby_Jean_Gamboa_2026-03-20_Q14_custom_Start",
+      "output_dir": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+      "mic_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q14_custom_Start_mic.wav",
+      "sys_wav": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q14_custom_Start_sys.wav",
+      "transcript_txt": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q14_custom_Start_transcript.txt",
+      "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q14_custom_Start_transcript.jsonl",
+      "candidate_label": "CANDIDATE"
+    }
+  },
+  "referral_packet": {
+    "interview_notes_path": "",
+    "transcript_path": ""
+  },
+  "communication_log": []
+}

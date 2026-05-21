@@ -1,0 +1,129 @@
+module:
+  name: onboarding_storage
+  language: python
+  path: src/onboarding_storage.py
+  version: 1.0.0
+  description: Contract for onboarding_storage module.
+functions: []
+classes:
+- name: AppState
+  description: AppState class in onboarding_storage.
+  locked: false
+  attributes:
+    employees:
+      type: list[Employee]
+    templates:
+      type: list[TaskTemplate]
+    email_settings:
+      type: EmailSettings
+    monthly_last_sent:
+      type: str | None
+    last_reminder_run_at:
+      type: str | None
+    reminder_run_history:
+      type: list[dict[str, Any]]
+    scheduler_settings:
+      type: dict[str, Any]
+    scheduler_status:
+      type: dict[str, Any]
+  methods: []
+- name: JsonStore
+  description: JsonStore class in onboarding_storage.
+  locked: false
+  attributes: {}
+  methods:
+  - name: __init__
+    description: __init__ method.
+    locked: false
+    inputs:
+      root_dir:
+        type: str | Path
+        required: true
+    returns:
+      type: Any
+    exceptions: []
+    side_effects: none
+  - name: load
+    description: load method.
+    locked: false
+    inputs: {}
+    returns:
+      type: AppState
+    exceptions: []
+    side_effects: none
+  - name: save
+    description: save method.
+    locked: false
+    inputs:
+      state:
+        type: AppState
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _load_json
+    description: _load_json method.
+    locked: false
+    inputs:
+      path:
+        type: Path
+        required: true
+    returns:
+      type: dict
+    exceptions: []
+    side_effects: none
+  - name: _atomic_write_json
+    description: _atomic_write_json method.
+    locked: false
+    inputs:
+      path:
+        type: Path
+        required: true
+      payload:
+        type: dict
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _optional_str
+    description: _optional_str method.
+    locked: false
+    inputs:
+      value:
+        type: Any
+        required: true
+    returns:
+      type: str | None
+    exceptions: []
+    side_effects: none
+  - name: _parse_dict_block
+    description: _parse_dict_block method.
+    locked: false
+    inputs:
+      value:
+        type: Any
+        required: true
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: none
+  - name: _parse_reminder_history
+    description: _parse_reminder_history method.
+    locked: false
+    inputs:
+      value:
+        type: Any
+        required: true
+    returns:
+      type: list[dict[str, Any]]
+    exceptions: []
+    side_effects: none
+data_structures:
+- name: DEFAULT_TEMPLATES
+  type: constant
+dependencies:
+- onboarding_migrations
+- onboarding_models
+- storage_utils

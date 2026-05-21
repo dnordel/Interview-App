@@ -1,0 +1,243 @@
+{
+  "candidate": {
+    "name": "Dominique Guerrero",
+    "interview_date": "2026-03-25",
+    "school": "North Long Beach",
+    "track": "preschool",
+    "qualification": {
+      "has_degree": true,
+      "degree_type": "MBA",
+      "degree_in_ece": false,
+      "ece_units_completed": 12,
+      "infant_toddler_class_completed": false,
+      "total_units_completed": null,
+      "years_experience": 1
+    }
+  },
+  "percent_of_max": 0.0,
+  "percent_of_max_label": "0.0%",
+  "percent_label": "0.0%",
+  "decision": "borderline",
+  "decision_metadata": {
+    "any_critical_selected": false,
+    "triggered_critical": false,
+    "locked_rule": null,
+    "override_rationale": null,
+    "configured_max_weighted_total": 96,
+    "max_weighted_total": 194,
+    "max_weighted_total_included_traits": 194,
+    "percent_denominator": 194,
+    "skipped_traits_count": 1,
+    "scored_traits_count": 8
+  },
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_10",
+        "trait_name": "Positive Behavior Guidance",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_11",
+        "trait_name": "Structure & Flexibility",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_8",
+        "trait_name": "trait_8",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_9",
+        "trait_name": "trait_9",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "Tuesday/Thursday/Friday 4:30",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$24 minimum",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full-time",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "two-weeks",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-03-25 - North Long Beach - Dominique Guerrero - Interview.docx",
+    "transcript_path": ""
+  },
+  "communication_log": [],
+  "flow_transcript_slices": [
+    {
+      "type": "custom",
+      "id": "Why-ECE",
+      "question": "Tell me about yourself and why early childhood education matters to you.",
+      "candidate_transcript": "[Q1 Attempt 1]\ni definitely enjoy working with younger children i'm currently working as a regional office supervisor at an autism learning center i am currently overseeing um three centers in downey compton and in torrance um i get to see the kiddos on a daily basis i think this age range between you know preschool up until maybe about seven or eight years old is a good age range i am also currently enrolled to get my master's degree in school counseling and i want to primarily focus on the elementary school side of things along with focusing on children with learning and intellectual disabilities as they are often i feel like misunderstood um i also definitely just enjoy you know being around the kids i used to be a soccer coach um i interned as well at a preschool in long beach it was called young horizons i did that for a semester and really fell in love with it i thought i enjoyed the corporate world but it turned out to be that i definitely did not"
+    },
+    {
+      "type": "custom",
+      "id": "Why-LPL",
+      "question": "Why are you applying for this position, specifically at Launch Pad Learning?",
+      "candidate_transcript": "[Q2 Attempt 1]\nresearch and talking to a few people who have kind of been around it I did like what they had said they provided you know good feedback whether it was parents who were joining or people who had just like you know researched on potentially"
+    },
+    {
+      "type": "trait",
+      "id": "trait_1",
+      "question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+      "candidate_transcript": "[Q3 Attempt 1]\nno worries of course so we working alongside children on the autism spectrum you know there are harder days um one thing that i did notice is how the environment around them definitely impacts them and how we're moving them from that environment and maybe placing them what we call in here is like a one-to-one room where it's very minimal there's you know dim lights and seeing how they react to maybe like calming their emotions and being able to really relate like what's actually going on and supporting them in um kind of relaxing taking a calmer approach and helping them get through what may have been bothering them"
+    },
+    {
+      "type": "trait",
+      "id": "trait_2",
+      "question": "Tell me about a time you felt overwhelmed or stressed at work with children present. What was going on, and how did you handle yourself in that moment?",
+      "candidate_transcript": "[Q4 Attempt 1]\nThere's definitely moments where it can be a little bit stressful. You know, sometimes we are working with children that are nonverbal, and it can get a little bit chaotic. For example, there may be a potty accident, vomit accident, and maybe somebody trying to elope. So we kind of have to prioritize the needs. First things first, I know the staff that works directly with the children is already probably on high alert, high stress. So coming in, taking over, reassuring them, and just remaining calm, present a calm tone, a calm voice, and just a calm demeanor overall definitely helps the situation, but still kind of showing a sense of urgency and addressing each of the responsibilities."
+    },
+    {
+      "type": "trait",
+      "id": "trait_3",
+      "question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering, helping with clothing, or guiding them physically. They are pulling away or saying no. Walk me through exactly what you would do, step by step",
+      "candidate_transcript": "[Q5 Attempt 1]\nFirst, I would obviously introduce and let them know what we are going to be doing. For example, if it's changing their clothes, I'm going to let them know, hey, we are going to be changing your clothes and kind of introduce it slowly. See how they're, you know, reacting to even just talking about it, then getting into the actual task at hand and kind of setting a reward system for them if they are having trouble with that task. So let's say they're like, no, I don't want to do that. Then, you know, kind of setting goals for them to reach and let's say they get free play or something, then kind of motivating them and rewarding them with that if we can get through the task at hand with no issues or little issues."
+    },
+    {
+      "type": "trait",
+      "id": "trait_4",
+      "question": "Tell me about a time you received feedback you didn’t expect or didn’t fully agree with. What happened next?",
+      "candidate_transcript": "[Q6 Attempt 1]\nOkay. Well, in my current position, feedback is kind of done on a weekly basis in my direct one-to-one with my supervisor. There was one instance where I was given feedback stating that I missed the deadline for something, and I did. I definitely missed the deadline on something. I was out, you know, the week prior, so I was kind of just catching up. I acknowledged, you know, where I fell short, took accountability, and between my manager and I, we kind of worked together to come up with a system so I don't feel so overwhelmed when, you know, I'm coming back to work after a week off, and we kind of implemented a calendar system."
+    },
+    {
+      "type": "trait",
+      "id": "trait_5",
+      "question": "Tell me about a time something didn’t go as planned at work and your role in it. How did you handle the responsibility piece?",
+      "candidate_transcript": "[Q7 Attempt 1]\nokay so i am in the middle of opening two new centers um and it can be very chaotic so i'm told to be in one place told to be in another place um i was supposed to be for example i was supposed to be in san gabriel valley but i was also scheduled to meet with our electrician in a compton location um my role was to be on site at the same time obviously i cannot be in two places at once and you know just communicating just communicating that with you know a manager and asking her like what can we reschedule um i was overbooked what needs to be done um in order to you know make sure that we are still meeting the deadlines that we have for opening each center um but i think the biggest takeaway is communication catering and ensuring that i'm not spreading myself too thin allowing enough time for drive time and just making sure that i'm still available to support in any way possible"
+    },
+    {
+      "type": "trait",
+      "id": "trait_6",
+      "question": "Tell me about a time you had to work closely with another adult in a challenging situation. How did you navigate it?",
+      "candidate_transcript": "[Q8 Attempt 1]\nSo, as a supervisor, I do give feedback to my direct reports, and one of them resulted in issuing a corrective action that did not go well. The employee stormed off and, you know, they began using profanity and felt language towards me. So, it did create a challenge in having to address her again, but I think the most important thing is to remain calm, remain professional, and understand that there is, you know, this isn't going to happen, you know, every time that a corrective action is issued, but some people take it better than others, and kind of really understanding, you know, their personalities, their emotional intelligence as well. So I already knew that this was going to be a challenge, given the history with this employee. So the way that I handled it was I scheduled it towards the end of the day. So that way, if she did fill in. I need to leave, then, you know, it wouldn't impact operations as well. And again, just remaining calm and professional, regardless of her attitude towards me."
+    },
+    {
+      "type": "trait",
+      "id": "trait_7",
+      "question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+      "candidate_transcript": "[Q9 Attempt 1]\nAbsolutely. So I think one thing that I've learned about others is not everybody is receptive to information the same way as like I would perceive it. So it's really important to remain neutral if like you are in a difficult situation, or even if it's something new being presented and just being open minded, changing the approach in which you're delivering the message. After supervising multiple admins, it's been something that I've learned about myself and about others that like, not everybody learns the same way, and kind of tailoring my approach to each individual as needed."
+    },
+    {
+      "type": "trait",
+      "id": "trait_11",
+      "question": "Can you share a time when your plan didn’t go as expected because of children’s needs? What did you do?",
+      "candidate_transcript": "[Q11 Attempt 1]\nAbsolutely. So on a recurring basis, I do have weekly meetings with different departments and different teams. But in an instance where there was a child who was being dropped off and was having a difficult time transitioning into the center, I did step away from that meeting to support the child and to support the behavior technician I was working directly with the child just to ensure, one, safety, but two, that parent was at ease, that, you know, we were able to get them into the center safely and quickly to avoid any future elopements and really just supporting the team in that need. Obviously, I did miss that meeting. The good thing is that it was a recorded meeting, so I was able to..."
+    },
+    {
+      "type": "custom",
+      "id": "FT-or-PT",
+      "question": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+      "candidate_transcript": "[Q12 Attempt 1]\nideally full-time."
+    },
+    {
+      "type": "custom",
+      "id": "Not-Avail",
+      "question": "Are there any hours you are absolutely not available to work?",
+      "candidate_transcript": "[Q13 Attempt 1]\nthat on Tuesdays and Thursdays um I do have my evening class that I do have to log on to and then every other Friday as well I meet with my cohort and those begin at 5 p.m."
+    },
+    {
+      "type": "custom",
+      "id": "Pay",
+      "question": "What kind of pay are you looking for? Is that negotiable?",
+      "candidate_transcript": "[Q14 Attempt 1]\nI'm looking for a minimum of $25 an hour. Yes, $25. Okay. Okay, understood. Yes. In two weeks. Yes, I believe it's 12 or maybe 15. I'd have to really go back and double check my undergrad transcripts."
+    }
+  ]
+}

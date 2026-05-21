@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-03-20T17:38:57.609271Z",
+  "updated_at": "2026-03-20T17:39:00.610870Z",
+  "interview": {
+    "interview_id": "Candidate_Candidate_2026-03-20_d74b38b0",
+    "candidate_name": "Ruby Jean Gamboa",
+    "interview_date": "2026-03-20"
+  },
+  "questions": {
+    "14": {
+      "flow_idx": 14,
+      "item_type": "custom",
+      "item_id": "Pay",
+      "notes": {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$19-20.",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-20T17:39:00.610870Z"
+    }
+  }
+}

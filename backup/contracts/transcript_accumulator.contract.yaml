@@ -1,0 +1,27 @@
+module:
+  name: transcript_accumulator
+  language: python
+  path: src/transcript_accumulator.py
+  version: 1.0.0
+  description: Candidate transcript accumulation utilities for incremental question transcription.
+functions:
+- name: append_candidate_segment_text
+  description: Append candidate-only text segments while preserving existing transcript content.
+  locked: false
+  inputs:
+    existing_text:
+      type: str
+      required: true
+    segments:
+      type: list[Any]
+      required: true
+    candidate_label:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+classes: []
+data_structures: []
+dependencies: []

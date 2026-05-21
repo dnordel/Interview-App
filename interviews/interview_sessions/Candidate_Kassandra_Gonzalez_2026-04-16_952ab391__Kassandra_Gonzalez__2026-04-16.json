@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-04-16T16:40:53.787762Z",
+  "updated_at": "2026-04-16T16:50:32.919426Z",
+  "interview": {
+    "interview_id": "Candidate_Kassandra_Gonzalez_2026-04-16_952ab391",
+    "candidate_name": "Kassandra Gonzalez",
+    "interview_date": "2026-04-16"
+  },
+  "questions": {
+    "0": {
+      "flow_idx": 0,
+      "item_type": "custom",
+      "item_id": "Why-ECE",
+      "notes": {
+        "question_text": "Tell me a little about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q1 Attempt 1]\nSo about myself, I kind of, starting from when I was 17, I started working with kids and I started working during the pandemic with the city of Palmdale and we would kind of, we were assigned a group of kind of like 20 students. It was kind of a lot, especially since I was pretty young and I was starting off too. And just from that, I just thought how important it is to just kind of always be there and try to be like the great example for these kids. And because I feel like you could also learn a lot when you work with kids too. And you also want to just share that experience with the kids and just guide them in the right direction. And since then, I started working with kids kind of, well, I'm 23 now. So kind of. My whole, from 17 to now, I've always worked with either ABA kids, one-on-ones, assisting teachers assistants, or after school programs and things like that. I have 55 credits. So this is my last semester to get it. So yes, almost. Yes. And science.",
+      "updated_at": "2026-04-16T16:40:58.872097Z"
+    },
+    "1": {
+      "flow_idx": 1,
+      "item_type": "custom",
+      "item_id": "Why-LPL",
+      "notes": {
+        "question_text": "Why are you applying to our company, Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q2 Attempt 1]\nI saw that what you guys will for me when I saw I saw that it was relatively new because I feel like I kind of know a lot of the programs we have here already and I just thought it was so nice how what you guys were doing and like how it was focused based on kind of year-round how you were saying and I even went on your guys's social media and I saw that like I just thought I was like oh wow like this is something that looks so that's like so good that came here and you know and for these kids here and even for young kids let's like you said sorry",
+      "updated_at": "2026-04-16T16:41:52.270224Z"
+    },
+    "2": {
+      "flow_idx": 2,
+      "item_type": "trait",
+      "item_id": "trait_1",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q3 Attempt 1]\nyeah so when I was working in one of my after-school programs the kid had came to me about a bullying situation and I was really confused because he was always such a funny kid during uh when just to everyone he was so funny he was so positive and uplifting and then when he told me that I felt really sad and I was and because I know he was really down and he was crying and obviously I wanted to help him as much as I can so I got into and told my supervisor and I said what is a way we could do about this because these kids are in my group with him and he's feeling this way and I don't want him to feel this way and I you know because he's always such a happy kid and he's always making jokes and making everybody laugh and I wanted to help him and I wanted to help him and I wanted to help him and I wanted to help him make sure that we could all work around this and I don't want to invalidate his feelings because he's coming to me and he's saying this and so we kind of just worked around and we separated the kids and to see if there was a positive difference and he seemed like he was better from that from separating the kids and and I just felt like okay I felt good that I was able to help him and not just like okay whatever just it's fine like they'll stop because I don't like saying that to kids like you know I do want to help them and if they're feeling a certain way you definitely don't want to shun their feelings away because you know",
+      "updated_at": "2026-04-16T16:43:56.017278Z"
+    },
+    "3": {
+      "flow_idx": 3,
+      "item_type": "trait",
+      "item_id": "trait_2",
+      "notes": {
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q4 Attempt 1]\nI would say that I'm a really patient person so I don't usually react in a lot of things that happen with kids but usually I kind of just take a moment to myself and I say and I ask someone to watch my kids or whoever's there if I could just take a second to just collect myself and go to the bathroom or just go to the break room and just breathe for a second because you know these are just kids and sometimes kids are just going to have a little bit more energy on certain days and all you can do is just work with that.",
+      "updated_at": "2026-04-16T16:44:50.766274Z"
+    },
+    "4": {
+      "flow_idx": 4,
+      "item_type": "trait",
+      "item_id": "trait_3",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q5 Attempt 1]\nWell, first, I would try to see if I could, best as possible, be able to help this child and change them, and if not, I will ask a supervisor, and if I could get help, or if they want to try coming in and changing them, because, you know, I don't, because to a certain while, I know kids start to get really fudgy, and I don't want to, like, be putting pressure on them, trying to hold them, and that's just not the case, and if I'm able to get help, or if somebody else is able to do it, then why not ask for that help?",
+      "updated_at": "2026-04-16T16:45:52.011374Z"
+    },
+    "5": {
+      "flow_idx": 5,
+      "item_type": "trait",
+      "item_id": "trait_4",
+      "notes": {
+        "raw_score": 1,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q6 Attempt 1]\nThe time when I experienced criticism, I think it was a time when a other person during after school program told me that I'm not yelling enough to the kids or I'm not putting my foot down enough, and I kind of didn't like that only because I feel like, to each their own, I feel like I had my own way in able to telling the kids this is the rules and this is what's going to happen, and I feel like I didn't. I just feel like every person has their own way of handling things, and I didn't tell or I didn't complain because I didn't think it's really necessary and it's only just a comment towards me. And it wasn't towards the kids or anything like that, so I kind of just took it and just was like, hey, you know, that's how you feel, but I feel like I have my own way of doing",
+      "updated_at": "2026-04-16T16:47:21.696240Z"
+    },
+    "6": {
+      "flow_idx": 6,
+      "item_type": "trait",
+      "item_id": "trait_5",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q7 Attempt 1]\nUsually if something doesn't go as planned at work, you know, depending on what it has to do with the kid, it could be, sometimes it could be a law or sometimes it could just be like, it's okay, like it's a little thing that happened. And all you have to do is just learn from what you did and be able to...",
+      "updated_at": "2026-04-16T16:47:57.138097Z"
+    },
+    "7": {
+      "flow_idx": 7,
+      "item_type": "trait",
+      "item_id": "trait_6",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-16T16:47:56.524822Z"
+    },
+    "8": {
+      "flow_idx": 8,
+      "item_type": "trait",
+      "item_id": "trait_7",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-16T16:47:57.237481Z"
+    },
+    "9": {
+      "flow_idx": 9,
+      "item_type": "trait",
+      "item_id": "trait_8",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-16T16:47:57.919774Z"
+    },
+    "10": {
+      "flow_idx": 10,
+      "item_type": "trait",
+      "item_id": "trait_9",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-16T16:47:58.579992Z"
+    },
+    "11": {
+      "flow_idx": 11,
+      "item_type": "custom",
+      "item_id": "FT-or-PT",
+      "notes": {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full-time",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q12 Attempt 1]\nis there any part-times available as well and in full-time is it just the monday through friday from the times that you said five to seven or is it like half schedules okay okay okay okay got it the only reason i ask is because i have school on thursday you",
+      "updated_at": "2026-04-16T16:48:42.958953Z"
+    },
+    "12": {
+      "flow_idx": 12,
+      "item_type": "custom",
+      "item_id": "Not-Avail",
+      "notes": {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "Thursdays until the first week of june",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q13 Attempt 1]\nAnd kind of, it would be from 11 to 3, because I have kind of school the whole day. That's until the first week of June.",
+      "updated_at": "2026-04-16T16:49:21.174233Z"
+    },
+    "13": {
+      "flow_idx": 13,
+      "item_type": "custom",
+      "item_id": "Start",
+      "notes": {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "asap",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q14 Attempt 1]\nI guess as soon as whatever, you know next week or",
+      "updated_at": "2026-04-16T16:49:36.520053Z"
+    },
+    "14": {
+      "flow_idx": 14,
+      "item_type": "custom",
+      "item_id": "Pay",
+      "notes": {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$20",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q15 Attempt 1]\num you know whatever we're able to kind of agree on i don't know what you guys usually start off with okay got it so okay yeah because i definitely do have experience i would say so anything",
+      "updated_at": "2026-04-16T16:50:32.919426Z"
+    }
+  }
+}

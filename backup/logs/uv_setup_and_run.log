@@ -1,0 +1,9 @@
+﻿[2026-03-23T09:02:32.5721746-07:00] Starting setup_and_run.ps1 DebugMode=False
+[2026-03-23T09:02:32.5841928-07:00] Set UV_NATIVE_TLS=true to improve compatibility with VPN/proxy TLS interception.
+[2026-03-23T09:02:32.6078183-07:00] Using uv from C:\Users\Dnord\.local\bin\uv.exe
+[2026-03-23T09:02:32.6167828-07:00] RUN uv python install 3.11
+[2026-03-23T09:02:34.6601603-07:00] Python 3.11 is already installed
+[2026-03-23T09:02:34.6702544-07:00] Using uv-managed Python 3.11.
+[2026-03-23T09:02:34.6753275-07:00] RUN uv sync --python 3.11
+[2026-03-23T09:02:36.6915612-07:00] error: Project virtual environment directory `C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\.venv` cannot be used because it is not a valid Python environment (no Python executable was found)
+[2026-03-23T09:02:36.7045368-07:00] System.Management.Automation.RuntimeException: uv command failed with exit code 2: uv sync --python 3.11

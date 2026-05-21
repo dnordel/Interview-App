@@ -1,0 +1,177 @@
+{
+  "candidate": {
+    "name": "Elena Hodges",
+    "interview_date": "2026-03-13",
+    "school": "Hawthorne",
+    "track": "preschool",
+    "qualification": {
+      "has_degree": true,
+      "degree_type": "AS",
+      "degree_in_ece": true,
+      "ece_units_completed": null,
+      "infant_toddler_class_completed": true,
+      "total_units_completed": null,
+      "years_experience": 2
+    }
+  },
+  "percent_of_max": 17.71,
+  "decision": "no_hire",
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": 2,
+        "question_notes": "child was yelling because he didn't want to go into circle time. both she and the other teacher talked to him about what he was feeling.",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": 1,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": 1,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_10",
+        "trait_name": "Positive Behavior Guidance",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_11",
+        "trait_name": "Structure & Flexibility",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "volunteer at a play-based church twice a week.",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "love our age range. like that it play based.",
+        "skipped": false
+      },
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$18",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full or part",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "asap",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-03-13 - Hawthorne - Elena Hodges - Interview.docx",
+    "transcript_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Candidate_Elena_Hodges_2026-03-13_live_transcript.docx"
+  },
+  "communication_log": [],
+  "flow_transcript_slices": [
+    {
+      "type": "custom",
+      "id": "Why-ECE",
+      "question": "Tell me about yourself and why early childhood education matters to you.",
+      "candidate_transcript": "[Q1 Attempt 1]\nI love working with kids, and I volunteer at a preschool every week in Mahana Beach called American Martyrs, and they're also play-based, and I help them with doing snack cleaning, doing circle time, reading books, and help out in the yard. And it's during the week, like two times a week, and I've been volunteering there for about two years. Yeah, I got it at El Camino."
+    },
+    {
+      "type": "custom",
+      "id": "Why-LPL",
+      "question": "Why are you applying for this position, specifically at Launch Pad Learning?",
+      "candidate_transcript": "[Q2 Attempt 1]\nBecause I love the age range of the children. I like working with babies up to four or five, and I like how it's play-based."
+    },
+    {
+      "type": "trait",
+      "id": "trait_1",
+      "question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+      "candidate_transcript": "[Q3 Attempt 1]\nOne of the kids, one time at American Martyrs, was yelling a lot because he didn't want to go into the circle time. So me and another teacher put him aside and talked out his feelings with him and asked him how he was feeling. And then we gave him an option of joining circle time or doing something else quietly. Yeah, then he joined circle time afterwards. Two others."
+    },
+    {
+      "type": "trait",
+      "id": "trait_2",
+      "question": "Tell me about a time you felt overwhelmed or stressed at work with children present. What was going on, and how did you handle yourself in that moment?",
+      "candidate_transcript": "[Q4 Attempt 1]\nwe were gathering to go outside one time and all the kids were like running around and they weren't listening to us so we we make like made up a song to have them join the line to go outside and that helped our anxiety and stress"
+    },
+    {
+      "type": "trait",
+      "id": "trait_3",
+      "question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering, helping with clothing, or guiding them physically. They are pulling away or saying no. Walk me through exactly what you would do, step by step",
+      "candidate_transcript": "[Q5 Attempt 1]\num maybe i would talk them through how i was gonna like every step of how i was going to change the diaper so they wouldn't feel uncomfortable then maybe they would let me do it"
+    },
+    {
+      "type": "trait",
+      "id": "trait_4",
+      "question": "Tell me about a time you received feedback you didn’t expect or didn’t fully agree with. What happened next?",
+      "candidate_transcript": "[Q6 Attempt 1]\nI was reading a I was doing circle time one time and I was reading a book that we did an activity and then the teacher gave me feedback afterwards she said I needed forgot she said I needed to get the children more involved in the activity I think but I sort of agree with that"
+    },
+    {
+      "type": "custom",
+      "id": "Pay",
+      "question": "What kind of pay are you looking for? Is that negotiable?",
+      "candidate_transcript": "[Q14 Attempt 1]\nAny pay is good. Is the job full-time or part-time?"
+    }
+  ]
+}

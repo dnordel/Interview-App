@@ -1,0 +1,231 @@
+{
+  "candidate": {
+    "name": "Merna Ammari",
+    "interview_date": "2026-03-25",
+    "school": "Palmdale",
+    "track": "preschool",
+    "qualification": {
+      "has_degree": true,
+      "degree_type": "BA",
+      "degree_in_ece": true,
+      "ece_units_completed": null,
+      "infant_toddler_class_completed": true,
+      "total_units_completed": null,
+      "years_experience": 7
+    }
+  },
+  "percent_of_max": 0.0,
+  "percent_of_max_label": "0.0%",
+  "percent_label": "0.0%",
+  "decision": "borderline",
+  "decision_metadata": {
+    "any_critical_selected": false,
+    "triggered_critical": false,
+    "locked_rule": null,
+    "override_rationale": null,
+    "configured_max_weighted_total": 96,
+    "max_weighted_total": 153,
+    "max_weighted_total_included_traits": 153,
+    "percent_denominator": 153,
+    "skipped_traits_count": 3,
+    "scored_traits_count": 6
+  },
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_10",
+        "trait_name": "Positive Behavior Guidance",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_11",
+        "trait_name": "Structure & Flexibility",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_8",
+        "trait_name": "trait_8",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_9",
+        "trait_name": "trait_9",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "before 8",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$22 negotiable",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "willing to not give two weeks notice",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-03-25 - Palmdale - Merna Ammari - Interview.docx",
+    "transcript_path": ""
+  },
+  "communication_log": [],
+  "flow_transcript_slices": [
+    {
+      "type": "custom",
+      "id": "Why-ECE",
+      "question": "Tell me about yourself and why early childhood education matters to you.",
+      "candidate_transcript": "[Q1 Attempt 1]\nI went to Los Angeles Mission College. I was based in the Valley. I knew that I wanted to run into this field because of my sister. She had special needs. So I really wanted to kind of learn, be more with like the child care. And so I started going into that field. I graduated with and then I transferred to CSUN. And so I was at Mission for about a couple of years. I transferred to CSUN and I got my bachelor's in three years. I then I started going into the field. I started working with my mom's friend. She worked at a daycare center. I did my also my I forgot that word was called like my internship with her. And then I moved to Palmdale. When I moved to Palmdale, I started looking around like daycare centers. So I first initially was based at a daycare center. I was the floater. I floated around, kind of got like a feel of things like the school based interacting with the children to kind of make me grow and kind of like learning from them itself. And then I they put they bumped me up to the two year old teacher. I was a two year old teacher for basically like about a year. And then I because I had to finish my bachelor's. I had to kind of take. Some time off, too, because it kind of like did not go well with the hours that I was there because it was like a set schedule. So I had to take the time off. I got my bachelor's. I finished my school year and then I started and then I went back to them. I was like, if you guys were still hiring, they were. Then they put me up to the three year old class and I've been there since. So I kind of got a feel of the kids. I kind of learned from them. I kind of they taught me. We learned. Like the curriculum. We did all of the school based important information."
+    },
+    {
+      "type": "custom",
+      "id": "Why-LPL",
+      "question": "Why are you applying for this position, specifically at Launch Pad Learning?",
+      "candidate_transcript": "[Q2 Attempt 1]\nno worries so um i wanted to kind of expand my horizons so i kind of wanted to get a different feel from a different facility so a friend of mine she works at launchpad the one in palmdale um she mentioned to me she worked with me um at the daycare center that i am at now um she reached out to me she's like oh they're hiring if you want to take a look into it so i did i applied um and then she gave my name to the staffing over there so i called um to see if i could kind of get a like go in person and kind of see the place for myself she loves it over there um so last week um i called i spoke with miss telma she told me to come in on wednesday so i went in on wednesday um and i got she gave me like a tour of the whole place and she told me to come in on wednesday um and i got she gave me like a tour of the whole place i really love the the staffing itself i could see how like the kids are kind of growing i see how like the place itself the establishment um it's a place that i do want to be at um i love how like i can compare and contrast from the place i am at now to launchpad and i really"
+    },
+    {
+      "type": "trait",
+      "id": "trait_1",
+      "question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+      "candidate_transcript": "[Q3 Attempt 1]\nCan you repeat the question? I am so sorry. So I have a child. He hasn't been diagnosed, but I do see some type of emotional and physical when he's around other kids. So I've seen like he kind of gets overstimulated. I kind of see that he kind of has like a little bit of a hard time. And the other kids, they've noticed that he kind of needs. So I kind of give that one on one attention with him to kind of like calm his nerves. Like, for example, if the class is like very noisy or, for example, there's like music playing in the background, he kind of gets like a little bit overstimulated and a little bit in a way for him to kind of because it's not very calm setting. So I kind of like. In a way for him to kind of like calm that, I kind of gave him like a like a squishy to kind of help calm his nerves down. To kind of in a way for him to kind of settle down, for him to kind of get back to the place where he's supposed to be when he can so that squishy or, for example, that type of like feeling where he can kind of put his feelings into kind of helped him and it calms himself down. And I've noticed that every single time he kind of gets a little bit out of place in his in that setting. I always. Kind of give him something to kind of I know like that specific child I have like on his name, I have like all of like the like the little toys that he knows that he kind of calms down. So that type of feeling for him to kind of calm down, it worked out. And I've seen that the more I'm with him, the more he kind of gets back to like that level of being more calmer and then less. Like less like like. Over stimulated."
+    },
+    {
+      "type": "trait",
+      "id": "trait_2",
+      "question": "Tell me about a time you felt overwhelmed or stressed at work with children present. What was going on, and how did you handle yourself in that moment?",
+      "candidate_transcript": "[Q4 Attempt 1]\nIf there's like a time, for example, like during the nap time, because they kind of come out from the playground, so they're very active, they're very hyper, they're very energetic to kind of like calm themselves down so that when it's all at once, it kind of gets a little bit overstimulating in a way. So I kind of, I patted them down, I put them down to sleep to kind of, for me, if it's, if I'm getting overwhelmed, that type of, and then I started putting them down so then it helps me out to kind of like, okay, I recruited, I took a step back, I kind of like stopped myself to kind of like get overwhelmed. And then I went back into a place where it's stress-free. In a way, for me, not to get overwhelmed, because the children, they can feel from that person, if they're feeling overstimulated or overwhelmed, they can feel that. So I kind of disconnect from that so they don't feel, if I'm feeling tense, so I kind of like put that aside and then help their needs to kind of help them."
+    },
+    {
+      "type": "trait",
+      "id": "trait_3",
+      "question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering, helping with clothing, or guiding them physically. They are pulling away or saying no. Walk me through exactly what you would do, step by step",
+      "candidate_transcript": "[Q5 Attempt 1]\nFor example, if there's a child that doesn't like, if he doesn't want to be touched and verbally saying no, I will kind of disconnect, kind of, for example, like, I forgot that word, like to kind of like, for example, like giving them a toy to distract themselves. I'll ask them, is it okay if I could change, for example, your diaper or change your clothes, giving them a toy to. They kind of like distract themselves and then asking for their confirmation, saying like, yes, that's when I will proceed and then continue from, for example, if it's changing their diaper or changing their clothes to kind of have them not have that feeling of constantly saying no. So they know like, okay, I'm going to, they know themselves, like they're going to stop saying no to kind of have them being comfortable with me. And then that's what I can kind of shift from that. So kind of like giving them something like to distract themselves and then asking their permission, if I could proceed or not. And most, for the most part, for the most part, it does."
+    },
+    {
+      "type": "trait",
+      "id": "trait_5",
+      "question": "Tell me about a time something didn’t go as planned at work and your role in it. How did you handle the responsibility piece?",
+      "candidate_transcript": "[Q7 Attempt 1]\nCan you repeat the question? Okay. Tell me about it. I have the, what I was going to say, I just wanted to fully hear the question again, if you don't mind saying it one more time. So where we are at now, it's low staffing. So it's kind of like, there's not a lot of time for me to do from being with the children and then also getting my physical work done and then getting it approved. And then it's just, it takes a lot because whoever has to cover my part, I'm trying to do what I needed to do. So for example, the lesson plan, or for example, getting the classroom ready. They mentioned to me, okay, you're going to have time at this time and you're going to have, for example, 30 minutes. Especially getting all that things done in 30 minutes, it goes by quick. So it goes in the blink of an eye and you're done. So I'm like, okay, perfect. I'm already planning out until that time comes. Okay, I'm going to do this, this, and this. For example, it's the lesson plan. I'm typing it all out. I have all my crafts ready. I'm waiting for it to get printed. I show the samples. I'm waiting for that to get done. And then they mentioned, okay, you're going to have to, we're going to pause this and you're going to go and do something else. So it kind of like pushes me back because I'm already planning it all out. I'm like, okay, I have 30 minutes. I'm going to do all of this in 30 minutes. So it kind of pushes me back. And so I'm going to have to find another day. And the more it gets pushed back, the more, the less time that I do have. So now it's going to be, for example, pushed back to another two days because the next day that's going to be that person's turn getting their stuff done. So it pushes me back. So it kind of throws me off in a way."
+    },
+    {
+      "type": "trait",
+      "id": "trait_6",
+      "question": "Tell me about a time you had to work closely with another adult in a challenging situation. How did you navigate it?",
+      "candidate_transcript": "[Q8 Attempt 1]\nSo, for example, like on the playground, if there's like a difficult child that does not want to to leave. So, for example, at that place, the ratio is 12 to 1. So I can't. There is, for example, I have 13 kids. I can't. I'm by myself. I'm not able to. It's very challenging because, for example, the other person is on break. So I'm trying to take my kids. I have to wait until they come back. And there's that difficult child that does not want to leave the playground. So it kind of they keep running around. Sometimes they'll fall. They'll get hurt. They'll start kicking and screaming. Oh, another. Oh, I'm so sorry. My mind is on the kids. There's a time to be with the try to think back. So, for example. There is trying to think of an example that I can give you, for example, if there's something with the child and I have to. If there's like a challenging parent and me and that the adult kind of. They're a little bit hard to deal with. Is it more of an adult as at a workplace or it can be any adult that I. So, for example, there's like a specific child I and they're coming towards me all, for example, all mad or all like difficult to work with because of that child, something happened with that child. So they're coming towards me and we all know, for example, that parent is a little bit more difficult to work with, so we're trying to meet eye to eye there. Raising their voices at me. So because there might be some parents that there feel so strongly about their child, so whatever that child does, they basically kind of blame or they see it. It's because of, for example, the teacher's fault. So they come to me. Excuse me. They come to me all. Angry and we're trying to meet eye to eye. I tried to calm them down. For example, if there's a situation, I explain the situation from step one to step ten. So we're explaining it all together. And then they mentioned, OK, I want to speak, for example, to your director. I'm like, OK, no problem over there. So we go and meet with the director. I'm trying to listen to what that parent has to say. And then the director is also the parents also going a little bit. Like verbally saying like words that shouldn't be said towards me, for example. So we're trying to kind of it's a little bit more of a difficult situation. So with that director, they kind of like see what the parent has to say and then they know, like, for example, that I didn't do anything wrong. So that type of situation where we are also with the director kind of like seeing eye to eye with that parent to see how they are feeling and seeing from their point of view and perspective. So it's a little bit of a difficult situation that I've been in."
+    },
+    {
+      "type": "trait",
+      "id": "trait_7",
+      "question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+      "candidate_transcript": "[Q9 Attempt 1]\nI have. I've always had the love for the kids. That hasn't changed. But I also, because children nowadays are different from my generation. So the kids now, so I can see how they've been evolving. I can see the more that I am working with them, I can see that it's changing how I am as a person. I'm learning from them. I am still learning. Whatever they do, how creative they are in their minds, how they play, how they are as an individual. So I see the more I am with them, the more experience and the more love that I do have. So I've seen that change in myself day to day. The second I go into work and I see that I am changing because of them."
+    },
+    {
+      "type": "custom",
+      "id": "FT-or-PT",
+      "question": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+      "candidate_transcript": "[Q12 Attempt 1]\nbut for the full-time positions what do you do have that you do know yes yes mm-hmm I could do full-time so I wanted to see like kind of like both shifts like for example if it's the full-time it can be like from like seven to three for example like I'm putting it out there um whatever positions that you guys do have um I wanted to mention I wanted to tell Miss Thelma but she wanted me to speak with you or wait from you um to kind of see I have like throughout the month um if I were to decide to start for example in these next couple weeks I already have something planned that's been months in advance I just wanted to put that out there okay okay I appreciate that now I just wanted to put it out there thank you thank you over here I don't know why like there's a lot of I don't know why like it's for example in the valley it's a little bit different but over here like it's it's hard to find it's it is hard it's a little bit challenging for that I know"
+    },
+    {
+      "type": "custom",
+      "id": "Not-Avail",
+      "question": "Are there any hours you are absolutely not available to work?",
+      "candidate_transcript": "[Q13 Attempt 1]\nuh like specific days i can do like uh like eight o'clock eight nine that's like the time frame that i can like uh i've never because for me i've never done earlier than that like for example like 6 a.m"
+    },
+    {
+      "type": "custom",
+      "id": "Pay",
+      "question": "What kind of pay are you looking for? Is that negotiable?",
+      "candidate_transcript": "[Q14 Attempt 1]\nso like 22 23 yes like whatever um that goes like for example like i know like each degree has like something specific um so maybe like around that that type like that number"
+    }
+  ]
+}

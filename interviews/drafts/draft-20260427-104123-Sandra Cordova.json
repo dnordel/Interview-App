@@ -1,0 +1,141 @@
+{
+  "candidate": {
+    "name": "Sandra Cordova",
+    "interview_date": "2026-04-27",
+    "school": "Palmdale",
+    "track": "infant_toddler",
+    "qualification": {
+      "has_degree": false,
+      "degree_type": "",
+      "degree_in_ece": true,
+      "ece_units_completed": 24,
+      "infant_toddler_class_completed": false,
+      "total_units_completed": 62,
+      "years_experience": 25
+    }
+  },
+  "current_index": 7,
+  "trait_inputs": {
+    "trait_1": {
+      "raw_score": 5,
+      "question_notes": "",
+      "trait_notes": "",
+      "verbatim_notes": "",
+      "absolute_disqualifier": false,
+      "skipped": false,
+      "no_example_after_followups": false
+    },
+    "trait_2": {
+      "raw_score": 3,
+      "question_notes": "",
+      "trait_notes": "",
+      "verbatim_notes": "",
+      "absolute_disqualifier": false,
+      "skipped": false,
+      "no_example_after_followups": false
+    },
+    "trait_3": {
+      "raw_score": 4,
+      "question_notes": "",
+      "trait_notes": "",
+      "verbatim_notes": "",
+      "absolute_disqualifier": false,
+      "skipped": false,
+      "no_example_after_followups": false
+    },
+    "trait_4": {
+      "raw_score": 4,
+      "question_notes": "",
+      "trait_notes": "",
+      "verbatim_notes": "",
+      "absolute_disqualifier": false,
+      "skipped": false,
+      "no_example_after_followups": false
+    },
+    "trait_5": {
+      "raw_score": 4,
+      "question_notes": "",
+      "trait_notes": "",
+      "verbatim_notes": "",
+      "absolute_disqualifier": false,
+      "skipped": false,
+      "no_example_after_followups": false
+    },
+    "trait_6": {
+      "raw_score": null,
+      "question_notes": "",
+      "trait_notes": "",
+      "verbatim_notes": "",
+      "absolute_disqualifier": false,
+      "skipped": false,
+      "no_example_after_followups": false
+    },
+    "trait_7": {
+      "raw_score": null,
+      "question_notes": "",
+      "trait_notes": "",
+      "verbatim_notes": "",
+      "absolute_disqualifier": false,
+      "skipped": false,
+      "no_example_after_followups": false
+    },
+    "trait_8": {
+      "raw_score": null,
+      "question_notes": "",
+      "trait_notes": "",
+      "verbatim_notes": "",
+      "absolute_disqualifier": false,
+      "skipped": false,
+      "no_example_after_followups": false
+    },
+    "trait_9": {
+      "raw_score": null,
+      "question_notes": "",
+      "trait_notes": "",
+      "verbatim_notes": "",
+      "absolute_disqualifier": false,
+      "skipped": false,
+      "no_example_after_followups": false
+    }
+  },
+  "custom_inputs": {
+    "Not-Avail": {
+      "question_text": "Are there any hours you are absolutely not available to work? Do you have any preference, in terms of shift or schedule?",
+      "answer": "",
+      "skipped": false
+    },
+    "FT-or-PT": {
+      "question_text": "Are you looking for full-time or part-time?",
+      "answer": "",
+      "skipped": false
+    },
+    "Why-ECE": {
+      "question_text": "Tell me a little about yourself and why early childhood education matters to you.",
+      "answer": "",
+      "skipped": false
+    },
+    "Pay": {
+      "question_text": "What kind of pay are you looking for? Is that negotiable?",
+      "answer": "",
+      "skipped": false
+    },
+    "Start": {
+      "question_text": "When could you start if we decide to move forward?",
+      "answer": "",
+      "skipped": false
+    },
+    "Why-LPL": {
+      "question_text": "Why are you applying specifically to our company, Launch Pad Learning?",
+      "answer": "",
+      "skipped": false
+    }
+  },
+  "flow_time_marks": [],
+  "flow_candidate_transcripts": {},
+  "flow_recordings": {},
+  "referral_packet": {
+    "interview_notes_path": "",
+    "transcript_path": ""
+  },
+  "communication_log": []
+}

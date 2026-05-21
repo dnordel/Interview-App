@@ -1,0 +1,163 @@
+system_name: Preschool Teacher Interview Guide
+layers:
+- ui
+- application_services
+- domain_logic
+- infrastructure
+services:
+  interview_runtime_service:
+    description: Interview flow orchestration, state transitions, transcription, and
+      finalization that produces one merged interview-notes document (interview_notes_document_path) including transcription content.
+    modules:
+    - candidate_profile
+    - director_referral_service
+    - integration_export
+    - interview_app
+    - interview_app___init__
+    - interview_app_audio_runtime
+    - interview_app_bootstrap
+    - interview_app_dashboard_controller
+    - interview_app_finalize_context
+    - interview_app_finalize_gateways
+    - interview_app_finalize_pipeline
+    - interview_app_flow_controller
+    - interview_app_history_actions
+    - interview_app_history_controller
+    - interview_app_retranscribe_progress
+    - interview_app_state
+    - interview_app_transcript_writer
+    - interview_app_transcript_processor
+    - interview_app_transcription_executor
+    - interview_app_transcription_queue
+    - interview_app_types
+    - interview_app_ui_router
+    - interview_app_view_protocols
+    - interview_app_ui_shell
+    - interview_app_whisper_runtime_policy
+    - interview_audio_recorder
+    - interview_session_store
+    - interview_state
+    - referral_packet
+    - reporting
+    - runtime_wrapper
+    - transcript_accumulator
+    - transcription_diagnostics
+    - interview_app_views
+    - interview_app_views_candidate_setup_view
+    - interview_app_views_signal_reference_view
+    - interview_app_views_start_screen_view
+    - ui_components_history_data_grid
+    - interview_app_session_context
+    - interview_app_session_manager
+  onboarding_operations_service:
+    description: Onboarding scheduling, reminders, dashboard actions, notifications,
+      and storage.
+    modules:
+    - dashboard_today
+    - email_security
+    - offer_letter
+    - onboarding_action_sections
+    - onboarding_app
+    - onboarding_dashboard_actions
+    - onboarding_migrations
+    - onboarding_models
+    - onboarding_notifier
+    - onboarding_reminder_health
+    - onboarding_reminder_runner
+    - onboarding_scheduler
+    - onboarding_scheduler_dialog
+    - onboarding_scheduler_status
+    - onboarding_send_guardrails
+    - onboarding_storage
+    - onboarding_task_filters
+    - onboarding_template_reference
+    - onboarding_ui_helpers
+    - template_placeholders
+  ui_composition_service:
+    description: Tkinter windows, routed shells, validation feedback surfaces, and
+      keyboard telemetry.
+    modules:
+    - initial_teacher_interview_guide
+    - interview_app
+    - interview_app_ui_router
+    - interview_app_view_protocols
+    - interview_app_ui_shell
+    - keyboard_telemetry
+    - onboarding_app
+    - onboarding_ui_helpers
+    - question_screens
+    - question_settings_service
+    - question_settings_window
+    - ui_feedback
+    - ui_windows
+    - interview_app_views
+    - interview_app_views_candidate_setup_view
+    - interview_app_views_signal_reference_view
+    - interview_app_views_start_screen_view
+    - ui_components_history_data_grid
+  shared_platform_service:
+    description: Shared content/configuration loading, logging, persistence helpers,
+      and runtime wrappers.
+    modules:
+    - app_content
+    - app_logging
+    - artifact_cleanup
+    - config_adapters
+    - data_store
+    - docx_compat
+    - question_settings_service
+    - runtime_wrapper
+    - storage_utils
+    - ux_metrics
+    - check_contract_review
+    - interview_app_session_context
+  shared_content_security_service:
+    description: Cross-cutting shared utilities for logging, templating, exports,
+      diagnostics, and email/input safety.
+    modules:
+    - app_logging
+    - email_security
+    - integration_export
+    - reporting
+    - storage_utils
+    - template_placeholders
+    - transcription_diagnostics
+datastores:
+  json_file_store:
+    type: file_system_json
+    used_by:
+    - data_store
+    - onboarding_storage
+    - question_settings_service
+    - interview_session_store
+external_apis:
+  openai_whisper_runtime:
+    Purpose: Speech-to-text transcription for interview responses.
+  director_referral_endpoint:
+    Purpose: Submit referral payloads generated during interview finalization.
+  local_docx_runtime:
+    Purpose: Generate interview and onboarding document artifacts.
+background_jobs:
+- onboarding_reminder_runner
+trust_boundaries:
+  user_input: Tkinter forms, free-text notes, and runtime settings are untrusted until
+    validated/sanitized.
+  filesystem: All read/write paths are constrained by guardrails and explicit user
+    choices, including strict path validation for merged interview-notes artifacts before finalize/referral/integration writes.
+  network: Referral/integration submission endpoints are treated as untrusted remote
+    dependencies.
+security_expectations:
+  input_validation: Validation feedback surfaces must block finalize/send paths on
+    invalid required fields and require merged-document sanitization before downstream handoff.
+  side_effect_controls: Finalize/send actions must be idempotent or deduplicated before
+    network calls.
+  authz: High-risk automation toggles require explicit operator confirmation.
+  idempotency: Referral sends should dedupe by deterministic key to avoid duplicate
+    submissions.
+  retry_controls: Onboarding reminder automation must enforce bounded retries for
+    SMTP operations and surface non-retriable failures without silent loops.
+  sensitive_output_redaction: Reminder and escalation failures must avoid logging
+    SMTP credentials, raw auth artifacts, or full recipient dumps in operator-visible
+    errors.
+  diagnostic_path_redaction: Operator-visible runtime and transcription diagnostics
+    must use shared path-redaction helpers before rendering or logging hints.

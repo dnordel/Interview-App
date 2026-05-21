@@ -1,0 +1,177 @@
+{
+  "candidate": {
+    "name": "Elizabeth Barrios",
+    "interview_date": "2026-05-08",
+    "school": "Palmdale",
+    "track": "preschool",
+    "qualification": {
+      "has_degree": true,
+      "degree_type": "AA",
+      "degree_in_ece": false,
+      "ece_units_completed": 12,
+      "infant_toddler_class_completed": false,
+      "total_units_completed": null,
+      "years_experience": 6
+    }
+  },
+  "percent_of_max": 18.75,
+  "decision": "no_hire",
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_10",
+        "trait_name": "Positive Behavior Guidance",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_11",
+        "trait_name": "Structure & Flexibility",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no, prefer mornings",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$22-23",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full-time",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "two-weeks",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-05-08 - Palmdale - Elizabeth Barrios - Interview.docx",
+    "transcript_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Candidate_Elizabeth_Barrios_2026-05-08_live_transcript.docx"
+  },
+  "communication_log": [],
+  "flow_transcript_slices": [
+    {
+      "type": "custom",
+      "id": "Why-ECE",
+      "question": "Tell me about yourself and why early childhood education matters to you.",
+      "candidate_transcript": "[Q1 Attempt 1]\nSo my name is Lizbeth. I've been working with child care for, I've been working with children basically my whole life. I always found an interest as a little kid. I always told everyone I will be a teacher. And as soon as I turned 18, my first job was an after school program. And from then I wanted third grade, but they gave me a garden. I fell in love with the little kids. I was like, okay, you know what? Like, it's a different type. I could truly be myself with them. You know, I just feel like they look up to you. And I have social anxiety, but with them it's like, you know, it's different. Like, it's just a different thing that they bring out of me. And I love working with children. I, child care, the little ones, it's just so, it's just a different type of bond that you build with them. And I truly say that they. Really appreciate it. You know, you're another role model. And then, especially with child care, the kids are with you for so long, you know, from morning."
+    },
+    {
+      "type": "custom",
+      "id": "Why-LPL",
+      "question": "Why are you applying for this position, specifically at Launch Pad Learning?",
+      "candidate_transcript": "[Q2 Attempt 1]\nUm, I was seeing, and I was seeing you guys, and I was like, that's a really, um, a really good company, so I'm gonna be honest, um, I, all the, um, you guys do for child care, um, I, um, so we could also get good education, I could, um, you know, also enter and, um, build, um, relationships. I think that you guys have small, um, sizes, it allows us to, me to bond, for me to be more interactive with them."
+    },
+    {
+      "type": "trait",
+      "id": "trait_1",
+      "question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+      "candidate_transcript": "[Q3 Attempt 1]\nNo worries. I notice I've been dealing with a lot of cases. Right now, a case where like a child is where they upset because a toy got taken away or another child, you know, took their toy and ran. And usually in that cases, I like to acknowledge both children. And, you know, they're going to take things away. But, you know, that's nice to get back into a conversation and tell them, I understand you're upset, but we're going to use our words. We're going to go get our toy and tell you that that wasn't us. Give it back. You know, take turns. I know it's been hard to drop off sometimes when they're dropping off with their parents. I always like to, you know, let them know, like, I hear you. I understand. And also, come to them. And also let them know, you know, I miss my mommy, too. Like, we."
+    },
+    {
+      "type": "trait",
+      "id": "trait_2",
+      "question": "Tell me about a time you felt overwhelmed at work with children present. What did you do to manage yourself?",
+      "candidate_transcript": "[Q4 Attempt 1]\nwhen i am stressed i like to take a deep breath um you know we're working with children it's not always going to go the way that you like it it's not always going to go your route or we're not always going to get to this activity or to this thing so um i always like to take a breath and take a step back and you know it's okay if all the time it's not where like all the activities are not done or um you know take a step back the kids also feel it so just go on based on the kids um how they're they're just done okay we're done let's move on to something else that they will enjoy"
+    },
+    {
+      "type": "custom",
+      "id": "FT-or-PT",
+      "question": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+      "candidate_transcript": "[Q12 Attempt 1]\nevery center that I worked at um and I know like just be more communicative with them more um I I learned to be more patient my patience comes from them um you know they're kids and all they want is just some comfort you know it's hard being away from their mom so being that patient with them taking that time to really get to know them taking that time to really um you know see a lot of people like one of the biggest misconceptions that kids don't see kids don't understand you know they're just kids but kids are really smart and and they know and just as much as you feel your emotions they do as well so um I would say I I never try to um like diminish a kid's feelings I always try to take them account and see what I can do to help them to the best of my ability"
+    },
+    {
+      "type": "custom",
+      "id": "Not-Avail",
+      "question": "Are there any hours you are absolutely not available to work?",
+      "candidate_transcript": "[Q13 Attempt 1]\nNo, just preferably mornings, but any hours are fine."
+    },
+    {
+      "type": "custom",
+      "id": "Pay",
+      "question": "What kind of pay are you looking for? Is that negotiable?",
+      "candidate_transcript": "[Q14 Attempt 1]\nearliest preferably any hours are fine um i am looking for 23 but i am willing to negotiate so um 22 is fine"
+    }
+  ]
+}

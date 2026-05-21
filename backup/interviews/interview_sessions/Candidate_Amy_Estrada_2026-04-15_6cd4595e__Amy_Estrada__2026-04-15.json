@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-04-15T21:43:31.154865Z",
+  "updated_at": "2026-04-15T21:45:28.276047Z",
+  "interview": {
+    "interview_id": "Candidate_Amy_Estrada_2026-04-15_6cd4595e",
+    "candidate_name": "Amy Estrada",
+    "interview_date": "2026-04-15"
+  },
+  "questions": {
+    "0": {
+      "flow_idx": 0,
+      "item_type": "custom",
+      "item_id": "Why-ECE",
+      "notes": {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q1 Attempt 1]\nso um i am 22 years old i am currently still um going to school um majoring for psychology um i've started working with with children since i turned 18 um but experience with kids i've had since i would say like for for a long time i have two kids of my um of myself i have a six-year-old and i have a two-year-old um and just working with children has always been a passion to me um i guess it just makes me feel like like i can be it feels great to be part of like their growth and development as well like having being able to like help them out with with reaching milestones and also like having having to create like fun curriculum or even lesson planning with them where not only they just learn but they also like get to like have fun um i've worked um and i've had i've had experience um in preschool side for well my first time i had experience um working with kids when i turned 18 which i used to used to go to work at kinder care located in irvine and um i ended up getting pregnant so i had to so i had to um discontinue working and then um once my child was my second daughter um when she was born i waited for my postpartum and maternity leave and and i just decided to look somewhere else which is currently where i used to work at now which is beach babies and i worked there for two years i was in infant teacher for a year and a half and half of the other year i was just floating around with the different ages of classes and honestly what i could say is is my passion is just to see how not only how kiddos grow but also how um parents um how can see the like the milestones that their kids have brought and also like being closer to to parents and telling them hey like you know like we're working with them here and knowing that at home they are working um they're doing the same thing we're doing at school just makes me feel like oh like you know like together we can help kiddos out um with their development and just um seeing them grow and yeah",
+      "updated_at": "2026-04-15T21:43:41.361109Z"
+    },
+    "1": {
+      "flow_idx": 1,
+      "item_type": "custom",
+      "item_id": "Why-LPL",
+      "notes": {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q2 Attempt 1]\nI'm sorry, I'm applying specifically because I enjoy like how you guys are dedicated to to the kiddos, like how you guys are dedicated with not only just not only like teaching, but also like the community is bringing in and like the environment you guys bring in with them for them. I mean, and like also like the support that you guys bring in with within staff wise and also like we can also give that to families as well. So it's it sounds to me like it would be amazing to be.",
+      "updated_at": "2026-04-15T21:44:28.213062Z"
+    },
+    "2": {
+      "flow_idx": 2,
+      "item_type": "trait",
+      "item_id": "trait_1",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-15T21:44:26.579868Z"
+    },
+    "3": {
+      "flow_idx": 3,
+      "item_type": "trait",
+      "item_id": "trait_2",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-15T21:44:27.089524Z"
+    },
+    "4": {
+      "flow_idx": 4,
+      "item_type": "trait",
+      "item_id": "trait_3",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-15T21:44:27.584699Z"
+    },
+    "5": {
+      "flow_idx": 5,
+      "item_type": "trait",
+      "item_id": "trait_4",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-15T21:44:28.079871Z"
+    },
+    "6": {
+      "flow_idx": 6,
+      "item_type": "trait",
+      "item_id": "trait_5",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-15T21:44:28.626999Z"
+    },
+    "7": {
+      "flow_idx": 7,
+      "item_type": "trait",
+      "item_id": "trait_6",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-15T21:44:29.242045Z"
+    },
+    "8": {
+      "flow_idx": 8,
+      "item_type": "trait",
+      "item_id": "trait_7",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-15T21:44:29.744991Z"
+    },
+    "9": {
+      "flow_idx": 9,
+      "item_type": "trait",
+      "item_id": "trait_10",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-15T21:44:30.210549Z"
+    },
+    "10": {
+      "flow_idx": 10,
+      "item_type": "trait",
+      "item_id": "trait_11",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-15T21:44:30.749879Z"
+    },
+    "11": {
+      "flow_idx": 11,
+      "item_type": "custom",
+      "item_id": "FT-or-PT",
+      "notes": {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "either",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-15T21:44:37.989653Z"
+    },
+    "12": {
+      "flow_idx": 12,
+      "item_type": "custom",
+      "item_id": "Not-Avail",
+      "notes": {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q13 Attempt 1]\nUh, so as of right now, I am going to school Mondays and Wednesdays. My classes are from 845 to 1015, but I can't always go, um, go in after, but I'm open from Monday to",
+      "updated_at": "2026-04-15T21:45:00.624883Z"
+    },
+    "13": {
+      "flow_idx": 13,
+      "item_type": "custom",
+      "item_id": "Pay",
+      "notes": {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$23",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q14 Attempt 1]\nSo previously in my other job I was getting paid $23.50 so I would say like around that that kind of pay rate would be fine with me.",
+      "updated_at": "2026-04-15T21:45:18.586176Z"
+    },
+    "14": {
+      "flow_idx": 14,
+      "item_type": "custom",
+      "item_id": "Start",
+      "notes": {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "asap",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q15 Attempt 1]\nI can start whenever it's possible.",
+      "updated_at": "2026-04-15T21:45:28.276047Z"
+    }
+  }
+}

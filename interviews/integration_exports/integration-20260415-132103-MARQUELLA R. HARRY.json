@@ -1,0 +1,213 @@
+{
+  "candidate": {
+    "name": "MARQUELLA R. HARRY",
+    "interview_date": "2026-04-15",
+    "school": "North Long Beach",
+    "track": "preschool",
+    "qualification": {
+      "has_degree": false,
+      "degree_type": "",
+      "degree_in_ece": false,
+      "ece_units_completed": 28,
+      "infant_toddler_class_completed": false,
+      "total_units_completed": 24,
+      "years_experience": 13
+    }
+  },
+  "percent_of_max": 95.83,
+  "decision": "hire",
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_10",
+        "trait_name": "Positive Behavior Guidance",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_11",
+        "trait_name": "Structure & Flexibility",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$21-23",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full-time",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "asap",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-04-15 - North Long Beach - MARQUELLA R. HARRY - Interview.docx",
+    "transcript_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Candidate_MARQUELLA_R_HARRY_2026-04-15_live_transcript.docx"
+  },
+  "communication_log": [],
+  "flow_transcript_slices": [
+    {
+      "type": "custom",
+      "id": "Why-ECE",
+      "question": "Tell me about yourself and why early childhood education matters to you.",
+      "candidate_transcript": "[Q1 Attempt 1]\nOkay, well, I am a hard worker, a hard, very hard worker, I believe, and working hard for myself to obtain personal goals. And my background in early childhood education stems from early as 2002, when I started Long Beach City College, and I started my education, my higher learning, with a love, a passion for children, wanting to teach children. And then I have experience working with children with autism. I'm currently, respite care, working with two children with autism, currently preschool age, ages three and four. And I love that I get to shape an innocent young mind to be a productive, caring, loving citizen in the world that we live in today. Yes. So I... 13 years of that came from me operating my own licensed family daycare. I used my certificates from school, the first year of school, my ECE associate teacher and assistant teacher. I went ahead and I worked from home. I love doing an emergent curriculum, which I really, really take dear to heart because I do believe that the child's interest is very important. And when they're developing and learning, but I took that opportunity to do it from home and to give back to my community and also being a mother myself, I know the importance of having community to help with the education of a child. So..."
+    },
+    {
+      "type": "custom",
+      "id": "Why-LPL",
+      "question": "Why are you applying for this position, specifically at Launch Pad Learning?",
+      "candidate_transcript": "[Q2 Attempt 1]\nYes, I would like a teacher role, and I would like to be part of a community with other teachers to aid in the development of the children and why you guys company. I just love the curriculum. I love the website. I love the mission statement. I love that you guys are advocates for children as early as preschool age. So I would like to be a part of that. I would like to give back to the community."
+    },
+    {
+      "type": "trait",
+      "id": "trait_1",
+      "question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+      "candidate_transcript": "[Q3 Attempt 1]\nYes. There was a time when I had a two-year-old that was not handling the parent leaving after dropping off. And the two-year-old went into hysterically crying and it was hard to soothe the child. But what I did was just emphasizing to the child that, you know, it's another day at school. It's another day that the parent is going to work and that the parent will be back. And I sat with the child and held the child close to me and sang songs and ABCs and just, you know, to distract the child. And that worked. It actually worked with singing some nursery rhymes and singing the ABCs and got the child to engage with me. To learn for the day. And before you knew it, the parent was back to get the child."
+    },
+    {
+      "type": "trait",
+      "id": "trait_2",
+      "question": "Tell me about a time you felt overwhelmed at work with children present. What did you do to manage yourself?",
+      "candidate_transcript": "[Q4 Attempt 1]\nYes. So, um, there was a time where I felt overwhelmed. I wouldn't say stress. Um, I don't really deal with stress at work. Um, but there was a time that I was overwhelmed, um, with the ratio of children and being understaffed. And I, I chose breathing techniques and grounding myself, um, during break time and meditation, um, during my break times to calm myself and to ground myself. So I'm a, I'm a firm believer in meditation and I believe in breathing skills."
+    },
+    {
+      "type": "trait",
+      "id": "trait_3",
+      "question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering, helping with clothing, or guiding them physically. They are pulling away or saying no. Walk me through exactly what you would do, step by step",
+      "candidate_transcript": "[Q5 Attempt 1]\nYes. First, I would lower myself to the child's eye level and have good eye contact with the child. I would ask permission to go ahead and proceed to touch the child if it's a matter of grabbing the child's hand to walk to a certain location to sit down. I would ask the child permission, is it okay if I grab your hand and we walk over to the sitting area to sit down so we can learn a little bit more about what's going on? I will always ask permission of the child to touch the child. In a diapering situation, if it's an infant or a baby, I would try soothing techniques like rocking the baby, holding the baby, massaging the baby, and getting the baby comfortable enough to place the baby down. I would ask the child to be able to change the diaper successfully."
+    },
+    {
+      "type": "trait",
+      "id": "trait_4",
+      "question": "Tell me about a time you received feedback you didn’t expect or didn’t fully agree with. What happened next?",
+      "candidate_transcript": "[Q6 Attempt 1]\num feedback for constructive criticism i haven't had any lately but if i can recall a time in the past um the constructive criticism would have been for me to use um a softer tone when speaking to the children and the result of that was me learning to um not necessarily yell because i don't yell but i am a passionate speaker so sometimes it comes off as firm so i've learned to take deep breaths and be calm and to speak with a softer tone"
+    },
+    {
+      "type": "trait",
+      "id": "trait_5",
+      "question": "Tell me about a time something didn’t go as planned at work and your role in it. How did you handle the responsibility piece?",
+      "candidate_transcript": "[Q7 Attempt 1]\nYes. There was a time when there was a curriculum that we were going to do a game, an apple game. And a coworker had brought to my attention that maybe it wasn't the best game that we came up with to do with the children because of germs. So the game consisted of having apples in a bucket and having the children use their face and mouth to obtain an apple. And because the coworker came to me and explained to me good reasoning of why we needed to change the activity, I went ahead and followed her instructions because I agreed. I agreed that it's the spread of germs and saliva and having each child go after the next wasn't the wisest thing to do. So I just adhered to the advice of my coworker and we came up with another activity and it was successful."
+    },
+    {
+      "type": "trait",
+      "id": "trait_6",
+      "question": "Tell me about a time you had to work closely with another adult in a challenging situation. How did you navigate it?",
+      "candidate_transcript": "[Q8 Attempt 1]\nYes. So recently I just worked with a patient that I have currently who had a hard time sharing a toy and I needed help, assistance from her mother. And what we did was the child started to scream and scratch and pull my hair. And I had an assistant with her mother to help me to hold the child, to talk to the child, to teach the child that, you know, we keep our hands and our feet to ourselves. And that when the child uses their hands to scratch, that it hurts me and that we don't want to hurt each other, that we want to make each other happy. So the mother was able to assist me with cleaning. By controlling the child physically, by soothing the child."
+    },
+    {
+      "type": "trait",
+      "id": "trait_7",
+      "question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+      "candidate_transcript": "[Q9 Attempt 1]\nYes. One thing that's changed over time for me with working with children is my patience. Being patient and knowing that children, timing is not our timing. So I've been able to implement the breathing techniques I do for myself with children. And I found that to be very successful. So teaching children how to ground themselves and when they're having a difficult time, how to take deep breaths has been tremendously a blessing to me."
+    },
+    {
+      "type": "trait",
+      "id": "trait_10",
+      "question": "Tell me about a time a child’s behavior was challenging for you. How did you approach it?",
+      "candidate_transcript": "[Q10 Attempt 1]\nYes, there was a time I had a young boy who was refused to share during circle time. And the way I navigated that was I went around the group and I had the child witness the other children sharing. And just emphasize to the child how when sharing makes the peers happy and it makes a pleasant environment for us all."
+    },
+    {
+      "type": "trait",
+      "id": "trait_11",
+      "question": "Can you share a time when your plan didn’t go as expected because of children’s needs? What did you do?",
+      "candidate_transcript": "[Q11 Attempt 1]\nYes. So diaper in time. What do we do about that? You know, we have nothing to do but to wait. There was a time when I needed to transition from circle time to nap time. And one of the infants had diarrhea and kept going. So it caused me to navigate with co-workers to divide up the time with the kids so that I have full attention of the baby that I was caring for to make sure to massage the baby's tummy and that the diaper was effective and that the baby was dry while my co-worker transitioned the children from circle time to nap time. But it was difficult because of the crying of the baby. The baby had discomfort. And, you know, the other children's being concerned about why is the baby crying and not understanding that the baby had a stomachache and it was time for diaper change for the baby. So being able to explain that to the children and to work with the co-worker to transition out smoothly was successful."
+    },
+    {
+      "type": "custom",
+      "id": "Not-Avail",
+      "question": "Are there any hours you are absolutely not available to work?",
+      "candidate_transcript": "[Q13 Attempt 1]\nUm, I'm not available on Sunday, which I don't think you guys are open on."
+    },
+    {
+      "type": "custom",
+      "id": "Pay",
+      "question": "What kind of pay are you looking for? Is that negotiable?",
+      "candidate_transcript": "[Q14 Attempt 1]\nI am currently looking from 20 anywhere between 21 to 23."
+    }
+  ]
+}

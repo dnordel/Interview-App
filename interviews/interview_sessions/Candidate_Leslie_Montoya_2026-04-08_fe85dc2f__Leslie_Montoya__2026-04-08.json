@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-04-08T20:09:40.350537Z",
+  "updated_at": "2026-04-08T20:18:30.372145Z",
+  "interview": {
+    "interview_id": "Candidate_Leslie_Montoya_2026-04-08_fe85dc2f",
+    "candidate_name": "Leslie Montoya",
+    "interview_date": "2026-04-08"
+  },
+  "questions": {
+    "0": {
+      "flow_idx": 0,
+      "item_type": "custom",
+      "item_id": "Why-ECE",
+      "notes": {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q1 Attempt 1]\nI love children in general. And I just love kids. I'm not able to have more kids. So I love being around other children. And that's why I have my, my schoolwork and early child development. I worked for Kinder Care for a year. I was a teacher there. I have worked as a babysitter. I have worked with people who had disabilities and stuff. Yeah. Yes, I had 20 child development units. I'm not sure. Yeah, I'm not really sure. But I did almost everything on my units. I think I have one class left for me to get my associates. I just needed to do my communication class. And you know, math and English. And but my I've already did almost all my units. I was have only one left for child development. I think it was the babysitter. Yeah.",
+      "updated_at": "2026-04-08T20:09:50.806303Z"
+    },
+    "1": {
+      "flow_idx": 1,
+      "item_type": "custom",
+      "item_id": "Why-LPL",
+      "notes": {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q2 Attempt 1]\noh i just love children in general and then i saw that you guys were hiring and i wanted to you know take a chance and see if there was an opportunity for me to get a job and there",
+      "updated_at": "2026-04-08T20:10:01.347499Z"
+    },
+    "2": {
+      "flow_idx": 2,
+      "item_type": "trait",
+      "item_id": "trait_1",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q3 Attempt 1]\nSome of the kids that I work with were autistic, and they have a lot of behavioral issues, and they were, you know, they were a little physical. So to calm them down, like I always sit down with them, give them hugs, breathe in with them, try to give them their favorite things that they like to calm them down and soothe them down. And so they were able to go back with the rest of the children. We kind of separate.",
+      "updated_at": "2026-04-08T20:10:59.810882Z"
+    },
+    "3": {
+      "flow_idx": 3,
+      "item_type": "trait",
+      "item_id": "trait_2",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q4 Attempt 1]\nHmm. I think I just try to breathe in as much as I can and drink water and just think positive. We all have hard days, so it's okay. Yes, I do. It was because, um, the child, okay. It was because the child was upset over his eating time. He didn't want to eat lunch and, um, I have, he had a specific rules and things that their parents wanted him to do or eat a specific times and he didn't want to eat. So he was really upset and he just throw all the food and start throwing the food in my face and stuff like that. Yeah.",
+      "updated_at": "2026-04-08T20:12:09.954949Z"
+    },
+    "4": {
+      "flow_idx": 4,
+      "item_type": "trait",
+      "item_id": "trait_3",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q5 Attempt 1]\ni would try to comfort him first i'll try to tell him it's okay that if he don't if he don't want me to do that if he is able to maybe help in a little bit so he's able to take off his own clothes and do it himself if that makes him feel more comfortable and then i would try to leave me as much as possible to touch just a lot when he's taking it out just kind of take pulling it away from himself fleeing and stuff like that when he needs a diaper change i will try to play with him tickle him or make her happy and disrupt him with other things so i could change him",
+      "updated_at": "2026-04-08T20:13:03.137070Z"
+    },
+    "5": {
+      "flow_idx": 5,
+      "item_type": "trait",
+      "item_id": "trait_4",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q6 Attempt 1]\ndid i not fall angry with maybe when the child had a hard time and because of um the hard time that he was having just keeping him away for the rest of the classroom for a while instead of having them all go out at the same time i understand it's you know they need time to calm down and i know it if they don't calm down it could hurt others depending of what they have or what's going on at the time with in the families um but i didn't like it that he had to stay out of the activity for a while i would have wished they were all together integrated yeah",
+      "updated_at": "2026-04-08T20:14:10.580625Z"
+    },
+    "6": {
+      "flow_idx": 6,
+      "item_type": "trait",
+      "item_id": "trait_5",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q7 Attempt 1]\nWe do Cheerios to do activities sometimes for them to glue it into paper or do art and stuff like that so we could decorate the classroom. They were having a hard time with the Cheerios instead of putting it on the paper or because they couldn't do the necklace. So we decided to do it as an art. They were eating it. So they were just eating everything and it was just a mess. Yeah.",
+      "updated_at": "2026-04-08T20:14:52.901031Z"
+    },
+    "7": {
+      "flow_idx": 7,
+      "item_type": "trait",
+      "item_id": "trait_6",
+      "notes": {
+        "raw_score": 1,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q8 Attempt 1]\ni tried to tell them my point of view but if whatever with the classroom or whatever was going on but if they didn't like it they didn't feel comfortable with it i kind of just followed the lead to keep everything you know in harmony and just went with the flow of stuff and just supported the role the assistant or the teacher whatever they feel like it was best to do",
+      "updated_at": "2026-04-08T20:15:38.471472Z"
+    },
+    "8": {
+      "flow_idx": 8,
+      "item_type": "trait",
+      "item_id": "trait_7",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q9 Attempt 1]\nThat they are all different and they all have different needs and that they all need to have a sense of belonging in the classroom so they could all feel integrated in the classroom. Because what works for that child is not going to work for the other child. So trying to be more open-minded, trying to find more ideas of things that I could do to accomplish those goals with that child and their needs. Thank you.",
+      "updated_at": "2026-04-08T20:16:21.037674Z"
+    },
+    "9": {
+      "flow_idx": 9,
+      "item_type": "trait",
+      "item_id": "trait_10",
+      "notes": {
+        "raw_score": 1,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q10 Attempt 1]\nA lot of patience. You have to be understandable. When I first started working, there were a couple of kids that have disabilities and they were integrated, you know, in the whole classroom of 12. And sometimes it was just by myself when, you know, the assistant had to go to another classroom. It was hard when one of the kids would go off and then the rest would go off. So just a lot of patience and I try to make it fun, try reading books, try doing puppets, laughing, or putting music, try to calm everybody.",
+      "updated_at": "2026-04-08T20:17:27.823133Z"
+    },
+    "10": {
+      "flow_idx": 10,
+      "item_type": "trait",
+      "item_id": "trait_11",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-08T20:17:28.206820Z"
+    },
+    "11": {
+      "flow_idx": 11,
+      "item_type": "custom",
+      "item_id": "FT-or-PT",
+      "notes": {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full-time open to part-time",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q12 Attempt 1]\nYes, I am looking for full time. But if there's part time, that's fine as well. I don't know if you guys just just doing preschool or if you guys have other, you know.",
+      "updated_at": "2026-04-08T20:17:50.177975Z"
+    },
+    "12": {
+      "flow_idx": 12,
+      "item_type": "custom",
+      "item_id": "Not-Avail",
+      "notes": {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q13 Attempt 1]\nNo, um",
+      "updated_at": "2026-04-08T20:18:00.096922Z"
+    },
+    "13": {
+      "flow_idx": 13,
+      "item_type": "custom",
+      "item_id": "Pay",
+      "notes": {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$20-21",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q14 Attempt 1]\nI'm looking for in between 20 to 21",
+      "updated_at": "2026-04-08T20:18:13.894000Z"
+    },
+    "14": {
+      "flow_idx": 14,
+      "item_type": "custom",
+      "item_id": "Start",
+      "notes": {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "asap",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q15 Attempt 1]\nI could start",
+      "updated_at": "2026-04-08T20:18:30.372145Z"
+    }
+  }
+}

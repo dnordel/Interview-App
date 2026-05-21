@@ -1,0 +1,389 @@
+{
+  "metadata": {
+    "title": "STRUCTURED BEHAVIORAL INTERVIEW SYSTEM",
+    "subtitle": "Initial Zoom Interview",
+    "notes": [
+      "ATS + VBA Ready",
+      "Single Canonical Output"
+    ],
+    "version": "1.1"
+  },
+  "scoring": {
+    "raw_score_range": [
+      1,
+      5
+    ],
+    "one_score_per_trait": true,
+    "primary_question_only": true,
+    "weights": {
+      "Critical": 3,
+      "High": 2,
+      "Medium": 1
+    },
+    "weighted_formula": "WeightedScore = RawScore * Weight",
+    "automatic_overrides": [
+      "Immediate NO HIRE if any Critical trait raw score = 1",
+      "Immediate NO HIRE if any Absolute Disqualifier observed",
+      "Interview continues but outcome is locked"
+    ],
+    "conflict_resolution": [
+      "Any disqualifier => No Hire",
+      "Any Critical raw score = 1 => No Hire",
+      "Any Critical raw score <3 blocks Hire"
+    ]
+  },
+  "tracks": {
+    "infant_toddler": {
+      "label": "Infant/Toddler",
+      "max_weighted_total": 105,
+      "thresholds": {
+        "hire_percent_min": 80,
+        "borderline_percent_min": 65,
+        "borderline_percent_max": 79,
+        "no_hire_percent_below": 65,
+        "hire_requires": [
+          "no disqualifiers",
+          "no Critical <3"
+        ],
+        "borderline_requires": [
+          "no disqualifiers",
+          "no Critical =1"
+        ]
+      }
+    },
+    "preschool": {
+      "label": "Preschool",
+      "max_weighted_total": 96,
+      "thresholds": {
+        "hire_percent_min": 80,
+        "borderline_percent_min": 65,
+        "borderline_percent_max": 79,
+        "no_hire_percent_below": 65,
+        "hire_requires": [
+          "no disqualifiers",
+          "no Critical <3"
+        ],
+        "borderline_requires": [
+          "no disqualifiers",
+          "no Critical =1"
+        ]
+      }
+    }
+  },
+  "absolute_disqualifiers": [
+    "Justifies yelling, shaming, intimidation, or force",
+    "Minimizes children’s rights or safety",
+    "Cannot regulate emotions",
+    "Resists supervision or feedback",
+    "Cynical or contemptuous language about children or families",
+    "Disregards licensing or safety standards",
+    "Interviewing while supervising children or working",
+    "Burnout language with no ownership or recovery plan"
+  ],
+  "interviewer_guidance": {
+    "what_to_evaluate": [
+      "Emotional safety",
+      "Values alignment",
+      "Self-regulation",
+      "Coachability",
+      "Risk profile"
+    ],
+    "scoring_principles": [
+      "Reflective ownership > polish",
+      "Child-centered language > control language"
+    ],
+    "probe_when": [
+      "Answers are vague or rehearsed",
+      "Responsibility is externalized",
+      "Emotion is skipped"
+    ],
+    "probe_prompt": "What was going on for you internally in that moment?"
+  },
+  "traits": [
+    {
+      "id": "trait_1",
+      "name": "Empathy & Respect for Children",
+      "priority": "Critical",
+      "weight": 3,
+      "applicable_tracks": [
+        "all"
+      ],
+      "primary_question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+      "descriptors": {
+        "5": "Speaks with warmth and respect. Describes curiosity about the child’s feelings. Frames behavior as communication. Acknowledges the child’s emotional experience and autonomy.",
+        "4": "Speaks with warmth and respect. Describes some emotional insight. Focuses on helping the child calm down and rejoin the group.",
+        "3": "Responds appropriately but focuses more on managing behavior than understanding emotion. Neutral tone.",
+        "2": "Focuses on adult needs or expectations. Emphasizes compliance. Tone may be flat or frustrated.",
+        "1": "Minimizes feelings. Uses dismissive or controlling language. Labels the child negatively or frames the child as the problem."
+      },
+      "sample_answers": {
+        "5": "The child was clearly overwhelmed and scared, not trying to be difficult. I got down to their level, named what I thought they were feeling, and stayed close until they felt safe enough to rejoin. I reminded myself their behavior was communication.",
+        "4": "They were very upset and crying. I tried to stay calm and help them calm down before moving on. I wanted to make sure they felt supported while also helping them get back to the group.",
+        "3": "They were having a meltdown. I followed our usual steps to help them settle and get back on track. It was a tough moment, but I managed it.",
+        "2": "They were acting out and needed redirection. I explained the rules again and had them sit until they were calm. It was frustrating, but I needed to make sure they understood what was expected.",
+        "1": "They were throwing a fit for attention. Sometimes you just have to be firm so they know it’s not okay. They needed to learn that behavior isn’t acceptable."
+      },
+      "score_1_auto_no_hire": true
+    },
+    {
+      "id": "trait_2",
+      "name": "Emotional Regulation Under Stress",
+      "priority": "Critical",
+      "weight": 3.0,
+      "applicable_tracks": [
+        "all"
+      ],
+      "primary_question": "Tell me about a time you felt overwhelmed at work with children present. What did you do to manage yourself?",
+      "descriptors": {
+        "5": "Acknowledges stress. Takes responsibility for self-regulation. Names specific coping strategies. Reflective tone.",
+        "4": "Describes effort to stay calm. Names some strategies. Tone is calm and intentional.",
+        "3": "Recognizes stress but coping strategies are vague or external. Tone may be more resigned or neutral.",
+        "2": "Normalizes frustration as just part of the job. Minimizes emotional experience.",
+        "1": "Admits to snapping, yelling, or losing control. Blames children or chaos."
+      },
+      "sample_answers": {
+        "5": "I noticed my stress rising and took a breath before responding. I focused on keeping my voice steady and asked for support later. I know my regulation affects the children.",
+        "4": "It was stressful, but I reminded myself to stay calm and worked through it. I might have taken a moment to step back mentally, but I stayed present with the kids and got through it.",
+        "3": "It was overwhelming, but I got through it and things settled eventually. I might have felt pretty stressed, but I managed to keep it together enough to get through the day.",
+        "2": "I was frustrated, but that’s part of the job. Kids can be a lot. I just had to push through and get things done.",
+        "1": "I lost my patience. Anyone would. The kids were out of control and it was too much."
+      },
+      "score_1_auto_no_hire": true
+    },
+    {
+      "id": "trait_3",
+      "name": "Respect for Children’s Rights & Safety",
+      "priority": "Critical",
+      "weight": 3,
+      "applicable_tracks": [
+        "all"
+      ],
+      "primary_question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering, helping with clothing, or guiding them physically. They are pulling away or saying no. Walk me through exactly what you would do, step by step",
+      "descriptors": {
+        "5": "Acknowledges the child’s communication and emotions, describes slowing down, narrating actions, offering choices, Uses respectful language about consent and dignity, mentions safety without using force or threats",
+        "4": "Acknowledges the child’s discomfort and follows safety rules, Uses respectful language but may not fully describe consent-oriented strategies, Focuses on keeping the child safe while trying to respect their boundaries",
+        "3": "Keeps the child safe but focuses on task completion, Uses redirection but minimal acknowledgment of feelings, Acceptable but adult-centered framing",
+        "2": "Complies with rules but expresses frustration or resentment, Minimizes the child’s communication, May acknowledge safety but emphasizes control or compliance",
+        "1": "Describes restraining, forcing, or overpowering, Uses language like “they have to,” “they’ll learn,” “I just do it”, Minimizes the child’s discomfort or autonomy."
+      },
+      "sample_answers": {
+        "5": "I slow myself down and prioritize consent and safety. I might say, “I see you don’t want to be touched right now. I’m going to wait here and give you some space. When you’re ready, I can help you.” I watch their cues and try to respect their boundaries while keeping them safe.",
+        "4": "I’m careful to follow safety rules. I might say, “I know you don’t like this, but I need to help you get your diaper changed to keep you clean and healthy. I’ll try to be as gentle as possible.” I try to respect their feelings while making sure they’re safe.",
+        "3": "I follow the guidelines. I might say, “I need to help you with this. It’s important for your health.” I focus on getting the task done while keeping them safe.",
+        "2": "Some rules feel excessive, but we follow them. I might say, “I know you don’t want to do this, but it’s part of the routine. Let’s get it done.” I try to get through the task while acknowledging it’s not fun.",
+        "1": "Kids are resilient. We’re too strict now. I just do it. I might say, “You have to let me help you. It’s not a choice.” I focus on control and minimizing their discomfort."
+      },
+      "score_1_auto_no_hire": true
+    },
+    {
+      "id": "trait_4",
+      "name": "Coachability",
+      "priority": "High",
+      "weight": 2,
+      "applicable_tracks": [
+        "all"
+      ],
+      "primary_question": "Tell me about a time you received feedback you didn’t expect or didn’t fully agree with. What happened next?",
+      "descriptors": {
+        "5": "Reflective, accountable, open to growth. Acknowledges discomfort but describes specific adjustments or learning.",
+        "4": "Accepts feedback with some adjustment. May acknowledge initial discomfort but focuses on how they made changes or learned from it.",
+        "3": "Accepts feedback but with some defensiveness. No clear indication of reflection or growth.",
+        "2": "Defensive acceptance. May acknowledge the feedback but emphasizes disagreement or external factors.",
+        "1": "Dismisses feedback or blames others. Rejects feedback outright."
+      },
+      "sample_answers": {
+        "5": "At first it was uncomfortable, but it helped me grow. I adjusted my approach and appreciated the perspective later.",
+        "4": "I listened and made changes, even if I didn’t fully agree at first. I tried to understand where the feedback was coming from and how I could use it to improve.",
+        "3": "I took the feedback. I wasn’t thrilled about it, but I accepted it and tried to apply it.",
+        "2": "I didn’t fully agree. I thought the feedback was a bit off, but I tried to take it into account while still doing things my way.",
+        "1": "They were wrong. I didn’t agree with the feedback at all and I don’t think it was fair."
+      },
+      "score_1_auto_no_hire": true
+    },
+    {
+      "id": "trait_5",
+      "name": "Reliability & Accountability",
+      "priority": "High",
+      "weight": 2,
+      "applicable_tracks": [
+        "all"
+      ],
+      "primary_question": "Tell me about a time something didn’t go as planned at work and your role in it. How did you handle the responsibility piece?",
+      "descriptors": {
+        "5": "Owns mistakes. Describes follow-through and responsibility. Takes corrective action if needed.",
+        "4": "Accepts responsibility and may describe some follow-through. Acknowledges their role without overemphasizing external factors.",
+        "3": "Some ownership but mixed with external blame. Focuses on resolution but not personal role.",
+        "2": "Externalizes blame to others or circumstances. Minimizes personal responsibility.",
+        "1": "Avoids accountability or minimizes reliability. Blames others or denies any role in the outcome."
+      },
+      "sample_answers": {
+        "5": "I owned my part, communicated quickly, and corrected it. I acknowledged that I made a mistake and took steps to fix it and make sure it didn’t happen again. I also reflected on what I could learn from it to improve in the future.",
+        "4": "I took responsibility and made sure it didn’t happen again. I acknowledged that I had a role in what happened and I worked to make it right. I also tried to learn from it so I could do better in the future.",
+        "3": "It was handled once we figured it out. I had some involvement, but there were also other factors. We worked together to resolve it.",
+        "2": "It was mostly a system issue. There were a lot of things that contributed to it, and while I had some involvement, it wasn’t entirely on me.",
+        "1": "That wasn’t on me. I had nothing to do with it and I don’t think I could have done anything differently."
+      },
+      "score_1_auto_no_hire": false
+    },
+    {
+      "id": "trait_6",
+      "name": "Team Orientation",
+      "priority": "High",
+      "weight": 2,
+      "applicable_tracks": [
+        "all"
+      ],
+      "primary_question": "Tell me about a time you had to work closely with another adult in a challenging situation. How did you navigate it?",
+      "descriptors": {
+        "5": "Speaks respectfully about others. Emphasizes shared responsibility. Focuses on collaboration and child-centered problem-solving.",
+        "4": "Describes cooperative problem-solving. May acknowledge challenges but focuses on how they worked together to resolve it.",
+        "3": "Neutral teamwork description. Focuses on coexistence or getting through it without conflict, but no clear emphasis on collaboration or shared responsibility.",
+        "2": "Prefers independence. May describe working alongside others but emphasizes doing their own part or handling things themselves.",
+        "1": "Repeated conflict, blame, or isolation preference. May describe hostile interactions or a clear preference for working alone."
+      },
+      "sample_answers": {
+        "5": "We communicated openly and focused on what was best for the children. We had different perspectives, but we were able to listen to each other and find a solution that worked for everyone.",
+        "4": "We talked it through and found a solution. It was a bit challenging at times, but we were able to work together and figure out how to handle the situation.",
+        "3": "We got through it. We had some disagreements, but we managed to work alongside each other and get through the situation.",
+        "2": "I usually handle my own work. I don’t mind working with others, but I prefer to focus on my own responsibilities and not get too involved in others’ work.",
+        "1": "I work better alone. I find that working with others can be frustrating and I prefer to just do my own thing."
+      },
+      "score_1_auto_no_hire": false
+    },
+    {
+      "id": "trait_7",
+      "name": "Curiosity & Learning",
+      "priority": "Medium",
+      "weight": 1,
+      "applicable_tracks": [
+        "all"
+      ],
+      "primary_question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+      "descriptors": {
+        "5": "Demonstrates growth mindset and reflection. Describes specific insights and how they changed their approach. Shows ongoing curiosity.",
+        "4": "Describes learning and growth. May share specific strategies or insights they’ve gained. Shows openness to learning.",
+        "3": "General or surface-level learning. May describe learning by doing but without deep reflection or insight.",
+        "2": "Confidence in own approach with minimal learning. May acknowledge some learning but emphasizes that they already knew what works.",
+        "1": "Rigid beliefs or disinterest in growth. May express fixed ideas about children or teaching without acknowledging learning or change."
+      },
+      "sample_answers": {
+        "5": "My presence matters more than I realized. I used to think that as long as I was doing the activities and managing behavior, I was doing a good job. But I’ve learned that how I am with the kids emotionally is just as important, if not more so, than what I do with them.",
+        "4": "I’ve learned new strategies. I used to think that if I just kept kids busy and followed the curriculum, that was enough. But I’ve learned that I need to be more attuned to their emotional needs and that has changed how I interact with them.",
+        "3": "I learned by doing. I’ve picked up a lot of things through experience. I’m always learning on the job. I might not have specific insights, but I know I’ve grown a lot through my work with kids.",
+        "2": "I already know what works. I’ve been doing this for a while and I have a good sense of what works with kids. I’m not sure there’s anything new I’ve learned that has changed my approach.",
+        "1": "Kids should behave a certain way. I have a clear idea of how kids should act and I don’t really see the need to change my approach. I’ve learned what works and I stick to it."
+      },
+      "score_1_auto_no_hire": false
+    },
+    {
+      "id": "trait_8",
+      "name": "Gentleness & Physical Awareness",
+      "priority": "Critical",
+      "weight": 3,
+      "applicable_tracks": [
+        "infant_toddler"
+      ],
+      "primary_question": "Tell me about how you physically care for infants or toddlers during routines like feeding, diapering, or comforting.",
+      "descriptors": {
+        "5": "Uses gentle, respectful language. Names activity to child. Emphasizes safety and responsiveness. Describes pacing and watching for cues.",
+        "4": "Describes careful and respectful handling. May mention safety and being gentle but with less emphasis on child cues or autonomy.",
+        "3": "Describes routines without emotional awareness. Focuses on task completion.",
+        "2": "Efficiency-driven. May acknowledge safety but emphasizes getting through tasks.",
+        "1": "Casual or rough language. Impatience. May describe rushing or using force to complete tasks."
+      },
+      "sample_answers": {
+        "5": "I move slowly, narrate, and watch cues. For example, when I’m diapering, I might say, “I’m going to change your diaper now. I see you’re feeling uncomfortable. I’m going to be as gentle as possible.” I pay attention to their reactions and try to make it a calm and safe experience.",
+        "4": "I’m very gentle and careful. I make sure to follow safety guidelines and try to be respectful of the child’s feelings, even if they can’t express them clearly.",
+        "3": "I follow the steps. I make sure to get the task done and keep them safe, but I don’t always think about how they might be feeling during the routine.",
+        "2": "I get through it efficiently. I know the routines and I focus on getting them done. I try to be safe, but I also want to make sure we get through the day.",
+        "1": "You have to be quick. They cry. I do what I need to do to get it done. Sometimes that means rushing or being a bit rough, but it’s just part of the job."
+      },
+      "score_1_auto_no_hire": true
+    },
+    {
+      "id": "trait_9",
+      "name": "Patience with Nonverbal Communication",
+      "priority": "High",
+      "weight": 2,
+      "applicable_tracks": [
+        "infant_toddler"
+      ],
+      "primary_question": "How do you understand what a nonverbal child needs when they’re crying or upset? Can you walk me through how you respond in those moments?",
+      "descriptors": {
+        "5": "Describes attunement and patience. Emphasizes observing patterns and responding to cues. Reflective about the challenge but focused on connection.",
+        "4": "Describes trying different approaches calmly. Acknowledges the challenge but focuses on finding a way to meet the child’s needs.",
+        "3": "Relies on trial and error without reflection. Focuses on functional guessing rather than emotional connection.",
+        "2": "Acknowledges frustration but may express it in a way that suggests it’s just part of the job. May minimize the child’s experience.",
+        "1": "Expresses frustration with crying or repetition. May describe resentment or burnout related to nonverbal communication."
+      },
+      "sample_answers": {
+        "5": "I observe patterns and stay patient. I know they can’t tell me what they need, so I try to understand through their cues and stay calm.",
+        "4": "I calmly try different approaches. It can be tough, but I focus on finding a way to help them feel better.",
+        "3": "I test a few things. It’s a process of elimination to figure out what they need.",
+        "2": "It can be frustrating. Sometimes it feels like no matter what I do, they just keep crying.",
+        "1": "They cry constantly. It’s exhausting. I can’t wait until they can tell me what they need."
+      },
+      "score_1_auto_no_hire": false
+    },
+    {
+      "id": "trait_10",
+      "name": "Positive Behavior Guidance",
+      "priority": "High",
+      "weight": 2,
+      "applicable_tracks": [
+        "preschool"
+      ],
+      "primary_question": "Tell me about a time a child’s behavior was challenging for you. How did you approach it?",
+      "descriptors": {
+        "5": "Behavior framed as skill-building. Avoids punishment language. Emphasizes guiding and teaching. Reflective about the child’s experience.",
+        "4": "Calm guidance, may mention rules or expectations but with a focus on helping the child learn. Acknowledges the child’s feelings or perspective.",
+        "3": "Uses structure but limited reflection. May rely on rules or consequences without deeper insight.",
+        "2": "Consequence-focused, may express frustration. Emphasizes control or compliance.",
+        "1": "Emphasis on control or punishment. May describe the child as defiant or difficult without acknowledging their perspective."
+      },
+      "sample_answers": {
+        "5": "I saw it as a skill they were learning. I tried to understand what they were struggling with and guided them through it. For example, if a child was having trouble sharing, I would acknowledge their feelings and help them practice taking turns rather than just telling them to share.",
+        "4": "I guided them back to expectations. I might say, “I know it’s hard to wait your turn, but we need to share the toys. Let’s try to take turns.” I try to stay calm and help them understand what’s expected.",
+        "3": "I reminded them of rules. I might say, “We don’t hit. If you hit, you have to take a break.” I focus on enforcing the rules to manage behavior.",
+        "2": "There were consequences. I might say, “If you don’t stop, you’ll have to sit out.” I get frustrated when they don’t listen and I want to make sure they understand the consequences.",
+        "1": "They were defiant. I don’t like when kids act that way. I have to be firm and make sure they know who’s in charge."
+      },
+      "score_1_auto_no_hire": true
+    },
+    {
+      "id": "trait_11",
+      "name": "Structure & Flexibility",
+      "priority": "Medium",
+      "weight": 1,
+      "applicable_tracks": [
+        "preschool"
+      ],
+      "primary_question": "Can you share a time when your plan didn’t go as expected because of children’s needs? What did you do?",
+      "descriptors": {
+        "5": "Flexible, child-responsive problem solving. Emphasizes adjusting to meet children’s needs while maintaining a sense of structure. Reflective about the balance between plans and responsiveness.",
+        "4": "Adjusts smoothly, acknowledges the challenge but focuses on moving forward. May mention the importance of plans but shows willingness to change them.",
+        "3": "Adjusts but with frustration. May acknowledge the challenge but focuses on getting through it.",
+        "2": "Prefers rigidity, may express frustration. Emphasizes sticking to the plan and may minimize children’s needs.",
+        "1": "Rigid expectations and resentment. May express frustration when plans are disrupted and a preference for sticking to the schedule."
+      },
+      "sample_answers": {
+        "5": "I adapted calmly and followed their needs. For example, if I had planned an outdoor activity but it started raining, I would quickly shift to an indoor activity that still met our learning goals. I try to stay flexible and responsive to what the kids need in the moment.",
+        "4": "I changed the plan and moved on. I might have a preferred way of doing things, but I understand that with kids, things don’t always go as planned. I try to adjust and keep things moving.",
+        "3": "I adjusted, even though it was frustrating. I know that plans can change, but I do get a bit frustrated when they do. I try to make the best of it and keep going.",
+        "2": "I prefer sticking to plans. I understand that sometimes we have to change things up, but I do get frustrated when plans are disrupted. I try to get back on track as soon as possible.",
+        "1": "It frustrates me when kids disrupt plans. I prefer to have a clear schedule and I don’t like it when things don’t go as expected. I try to stick to the plan as much as possible."
+      },
+      "score_1_auto_no_hire": false
+    }
+  ],
+  "final_record_fields": [
+    "Track",
+    "Raw Scores",
+    "Weighted Total",
+    "Percent of Max",
+    "Disqualifier Present Yes/No",
+    "Final Outcome Hire/Borderline/No Hire",
+    "Hiring Manager Notes / Quotes"
+  ],
+  "canonical_text": "# STRUCTURED BEHAVIORAL INTERVIEW SYSTEM\n\nInitial Zoom Interview\nATS + VBA Ready\nSingle Canonical Output\n\nSECTION 1. GLOBAL SCORING & DECISION LOGIC\n1.1 Raw Scoring\n- Each trait scored 1–5\n- One score per trait\n- Based on primary question only\n\n1.2 Weighting\n- Critical = x3\n- High = x2\n- Medium = x1\n\n1.3 Weighted Score Formula\nWeightedScore = RawScore * Weight\n\n1.4 Max Scores\n- Infant/Toddler: 102 weighted\n- Preschool: 96 weighted\n\n1.5 Automatic Overrides\nImmediate NO HIRE if:\n- Any Critical trait = 1\n- Any Absolute Disqualifier observed\nInterview continues but outcome is locked.\n\n1.6 Final Recommendation Thresholds\nHire: ≥80%, no disqualifiers, no Critical <3\nBorderline: 65–79%, no disqualifiers, no Critical =1\nNo Hire: <65% OR any disqualifier OR any Critical =1\n\nSECTION 2. ABSOLUTE DISQUALIFIERS (GLOBAL)\n- Justifies yelling, shaming, intimidation, or force\n- Minimizes children’s rights or safety\n- Cannot regulate emotions\n- Resists supervision or feedback\n- Cynical or contemptuous language about children or families\n- Disregards licensing or safety standards\n- Interviewing while supervising children or working\n- Burnout language with no ownership or recovery plan\nLog verbatim quote. Mark Automatic No Hire.\n\nSECTION 3. INTERVIEWER GUIDANCE\nWhat to Evaluate\n- Emotional safety\n- Values alignment\n- Self-regulation\n- Coachability\n- Risk profile\nScoring Principle\nReflective ownership > polish\nChild-centered language > control language\nProbe When\n- Answers are vague or rehearsed\n- Responsibility is externalized\n- Emotion is skipped\nProbe: \"What was going on for you internally in that moment?\"\n\nSECTION 4. UNIVERSAL TRAITS (ALL TEACHERS)\n\nTRAIT 1. Empathy & Respect for Children\nCritical | x3\nQuestion: \"Tell me about a time a child was having a hard emotional moment. What did you notice, and how did you respond?\"\nScoring descriptors:\n5: Deeply empathetic, child-centered, reflective\n4: Warm and respectful, some emotional insight\n3: Appropriate but behavior-focused\n2: Adult-centric, compliance-focused\n1: Dismissive, minimizing, or controlling\nSample answers:\n5 \"They were overwhelmed, not misbehaving. I got to their level, named the feeling, and stayed close until they felt safe.\"\n4 \"I stayed calm and helped them settle before moving on.\"\n3 \"I followed our steps to calm them and rejoin the group.\"\n2 \"I redirected them and reminded them of expectations.\"\n1 \"They were throwing a fit for attention.\"\nScore 1 = automatic no hire.\n\nTRAIT 2. Emotional Regulation Under Stress\nCritical | x3\nQuestion: \"Tell me about a time you felt overwhelmed with children present. How did you manage yourself?\"\nDescriptors:\n5 Self-aware, intentional regulation, reflective\n4 Calm effort with basic strategies\n3 Endured stress without reflection\n2 Normalizes frustration\n1 Admits loss of control\nSample answers:\n5 \"I paused, regulated my tone, and focused on staying grounded.\"\n4 \"I reminded myself to stay calm and worked through it.\"\n3 \"It was stressful, but I got through it.\"\n2 \"That’s just part of working with kids.\"\n1 \"I lost my patience. Anyone would.\"\nScore 1 = automatic no hire.\n\nTRAIT 3. Respect for Children’s Rights & Safety\nCritical | x3\nQuestion: \"Tell me about a time you had to be mindful of a child’s safety or boundaries.\"\nDescriptors:\n5 Explicit safety, dignity, consent orientation\n4 Strong compliance and respect\n3 Rule-following only\n2 Compliance with resentment\n1 Minimizes protections\nSample answers:\n5 \"I slow myself down and prioritize consent and safety.\"\n4 \"I’m careful to follow safety rules.\"\n3 \"I follow the guidelines.\"\n2 \"Some rules feel excessive, but we follow them.\"\n1 \"Kids are resilient. We’re too strict now.\"\nScore 1 = automatic no hire.\n\nTRAIT 4. Coachability\nHigh | x2\nQuestion: \"Tell me about a time you received unexpected feedback.\"\nDescriptors:\n5 Reflective, growth-oriented\n4 Accepts feedback with adjustment\n3 Neutral acceptance\n2 Defensive acceptance\n1 Rejects feedback\nSample answers:\n5 \"It was uncomfortable, but it helped me grow.\"\n4 \"I listened and made changes.\"\n3 \"I took the feedback.\"\n2 \"I didn’t fully agree.\"\n1 \"They were wrong.\"\nScore 1 = automatic no hire.\n\nTRAIT 5. Reliability & Accountability\nHigh | x2\nQuestion: \"Tell me about a time something didn’t go as planned and your role.\"\nDescriptors:\n5 Owns mistakes, corrective action\n4 Accepts responsibility\n3 Outcome-focused\n2 Externalizes blame\n1 Avoids accountability\nSample answers:\n5 \"I owned it and fixed it.\"\n4 \"I took responsibility.\"\n3 \"It got resolved.\"\n2 \"It was mostly a system issue.\"\n1 \"That wasn’t on me.\"\n\nTRAIT 6. Team Orientation\nHigh | x2\nQuestion: \"Tell me about a challenge you worked through with another adult.\"\nDescriptors:\n5 Collaborative, child-focused\n4 Cooperative problem-solving\n3 Neutral coexistence\n2 Prefers independence\n1 Hostile or isolating\nSample answers:\n5 \"We worked together for the kids.\"\n4 \"We talked it through.\"\n3 \"We got through it.\"\n2 \"I usually handle my own work.\"\n1 \"I work better alone.\"\n\nTRAIT 7. Curiosity & Learning\nMedium | x1\nQuestion: \"Tell me something you’ve learned that changed your approach.\"\nDescriptors:\n5 Ongoing curiosity and insight\n4 Growth-oriented\n3 Passive learning\n2 Rigid confidence\n1 Fixed beliefs\nSample answers:\n5 \"My presence matters more than I realized.\"\n4 \"I’ve learned new strategies.\"\n3 \"I learned by doing.\"\n2 \"I already know what works.\"\n1 \"Kids should behave a certain way.\"\n\nSECTION 5. INFANT / TODDLER TRACK\n\nTRAIT 8. Gentleness & Physical Awareness\nCritical | x3\nQuestion: \"How do you physically care for infants or toddlers during routines?\"\nDescriptors:\n5 Gentle, paced, cue-responsive\n4 Careful and respectful\n3 Task-focused\n2 Efficiency-driven\n1 Casual or rough\nSample answers:\n5 \"I move slowly, narrate, and watch cues.\"\n4 \"I’m very gentle and careful.\"\n3 \"I follow the steps.\"\n2 \"I get through it efficiently.\"\n1 \"You have to be quick. They cry.\"\nScore 1 = automatic no hire.\n\nTRAIT 9. Patience with Nonverbal Communication\nHigh | x2\nQuestion: \"How do you understand what a nonverbal child needs?\"\nDescriptors:\n5 Patient, attuned, reflective\n4 Calm trial-and-error\n3 Functional guessing\n2 Frustration acknowledged\n1 Resentment or burnout\nSample answers:\n5 \"I observe patterns and stay patient.\"\n4 \"I calmly try different approaches.\"\n3 \"I test a few things.\"\n2 \"It can be frustrating.\"\n1 \"They cry constantly. It’s exhausting.\"\n\nSECTION 6. PRESCHOOL TRACK\n\nTRAIT 10. Positive Behavior Guidance\nHigh | x2\nQuestion: \"Tell me about a challenging behavior and how you handled it.\"\nDescriptors:\n5 Skill-building, relational\n4 Calm guidance\n3 Rule-based\n2 Consequence-focused\n1 Punitive or controlling\nSample answers:\n5 \"I saw it as a skill they were learning.\"\n4 \"I guided them back to expectations.\"\n3 \"I reminded them of rules.\"\n2 \"There were consequences.\"\n1 \"They were defiant.\"\nScore 1 = automatic no hire.\n\nTRAIT 11. Structure & Flexibility\nMedium | x1\nQuestion: \"Tell me about a time your plan changed due to children’s needs.\"\nDescriptors:\n5 Flexible and calm\n4 Adjusts smoothly\n3 Adjusts with frustration\n2 Prefers rigidity\n1 Rigid and resentful\nSample answers:\n5 \"I adapted calmly and followed their needs.\"\n4 \"I changed the plan and moved on.\"\n3 \"I adjusted, even though it was frustrating.\"\n2 \"I prefer sticking to plans.\"\n1 \"It frustrates me when kids disrupt plans.\"\n\nSECTION 7. FINAL RECORD (report fields)\n- Track\n- Raw Scores\n- Weighted Total\n- Percent of Max\n- Disqualifier Present Yes/No\n- Final Outcome Hire/Borderline/No Hire\n- Hiring Manager Notes / Quotes"
+}

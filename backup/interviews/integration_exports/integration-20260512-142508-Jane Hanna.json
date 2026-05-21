@@ -1,0 +1,213 @@
+{
+  "candidate": {
+    "name": "Jane Hanna",
+    "interview_date": "2026-05-12",
+    "school": "Palmdale",
+    "track": "preschool",
+    "qualification": {
+      "has_degree": true,
+      "degree_type": "BA",
+      "degree_in_ece": false,
+      "ece_units_completed": 18,
+      "infant_toddler_class_completed": false,
+      "total_units_completed": null,
+      "years_experience": 2
+    }
+  },
+  "percent_of_max": 98.96,
+  "decision": "hire",
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_10",
+        "trait_name": "Positive Behavior Guidance",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_11",
+        "trait_name": "Structure & Flexibility",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$19-21",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full-time",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "June 11th, full time, but could start part time from 2-7 asap.",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-05-12 - Palmdale - Jane Hanna - Interview.docx",
+    "transcript_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Candidate_Jane_Hanna_2026-05-12_live_transcript.docx"
+  },
+  "communication_log": [],
+  "flow_transcript_slices": [
+    {
+      "type": "custom",
+      "id": "Why-ECE",
+      "question": "Tell me about yourself and why early childhood education matters to you.",
+      "candidate_transcript": "[Q1 Attempt 1]\nSo I just turned 21. I'm graduating from Cal State Northridge this Sunday with a major in psychology, minoring in child development. And I'm a Christian. Thank you. I'm a Christian. So I also attend church. That's like one big part of my life also. I love child development and watching kids learn. I think it's very important because kids at this young age, they learn everything from the people around them and their environment and the behaviors they see. And it's really, I believe it's very important for kids to get that right like environment around them, especially in school settings. And it's like very intriguing for me."
+    },
+    {
+      "type": "custom",
+      "id": "Why-LPL",
+      "question": "Why are you applying for this position, specifically at Launch Pad Learning?",
+      "candidate_transcript": "[Q2 Attempt 1]\nWell, I looked at your Indeed and it seemed very good. I've heard very little about Launchpad Learning, but I did have a peer tell me that their child went there. I'm not sure if it was specifically. I'm pretty sure it was Palmdale. But yeah, and I just wanted to apply. I thought it was really cool. And I liked like the description you got."
+    },
+    {
+      "type": "trait",
+      "id": "trait_1",
+      "question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+      "candidate_transcript": "[Q3 Attempt 1]\nSure. So I work at, I volunteer at my church. I'm a Sunday school teacher and I work with preschool. So a lot of the time, especially in the beginning of the year, we have students who it's like their very first time leaving their parents and not being around them 24-7. So we'll have students here, there, and as I mentioned in the beginning of the year, all of them will have a little freak out and be very upset that their parents are leaving them because they're feeling abandoned and sad and they'll be crying and very emotional. So what I had noticed is, like I mentioned, they feel very abandoned. And I believe the best way for... to teach a child, like, hey, it's okay, is like to redirect them instead of just saying, like, no, you're fine. This is it. You redirect their thought process and get their mind off of it and then teach them, like, that it's okay to be away from their parents and that this is a safe environment and making them feel loved and reassured and trying to redirect them from the abandonment that they have."
+    },
+    {
+      "type": "trait",
+      "id": "trait_2",
+      "question": "Tell me about a time you felt overwhelmed at work with children present. What did you do to manage yourself?",
+      "candidate_transcript": "[Q4 Attempt 1]\nSo, as I mentioned, there's sometimes in the beginning of the year, a lot of kids are crying. So, for example, our most recent start of the school year, which was in August, the kids were one time all crying and very sad and very emotional because their parents had left them. And I usually work in a classroom with like three or four teachers. And this day, I was one of the only teachers. I think I had maybe one assistant with me. And it was very difficult because we have about 30 to 35 kids in the class, depending on the day. But, yeah, so having a classroom of 35 and just two teachers is a lot to handle. And that day where all the kids were crying was very stressful for me. But I took a second and, like, I, first of all, took a deep breath, prayed about it really quick. And then thought of, like, what is the best? What is the best way to go about this? And then I realized that in reality, like, the kids, they just want love and just want to feel reassured and not abandoned. So, I made sure to take the time and understand, not make any assumptions of why they're upset, but understand each one."
+    },
+    {
+      "type": "trait",
+      "id": "trait_3",
+      "question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering, helping with clothing, or guiding them physically. They are pulling away or saying no. Walk me through exactly what you would do, step by step",
+      "candidate_transcript": "[Q5 Attempt 1]\nOkay, so let's say we were changing a child with their clothes and they're not, they don't enjoy the physical contact. I would first of all back up. I don't ever want to make them feel like I'm doing anything against their will necessarily. So I would take a step back, understand and talk to them and say, hey, I understand you're feeling a certain way. Maybe we can play for five more minutes and then come back and change our clothes. If it's very urgent, then I can say, hey, I understand you're feeling a certain way. I understand you're feeling upset. Let's talk about it. Do you need a hug? Is there any way I can help you? And if the child is saying no, no, no, I would give them a second. Go back to breathing techniques, breathe, breathe in, breathe out and help. Help them understand why we have to do what we're doing, whether it's changing our diaper. Oh, we can't stay in this diaper. It's dirty or changing our clothes. Oh, we got our shirt dirty during lunch and we have to change and help them understand why I'm doing it instead of just like."
+    },
+    {
+      "type": "trait",
+      "id": "trait_4",
+      "question": "Tell me about a time you received feedback you didn’t expect or didn’t fully agree with. What happened next?",
+      "candidate_transcript": "[Q6 Attempt 1]\nThis happens quite often at my church because our Sunday school is not, it's not really, it's not a professional environment, so there's not really any strict guidelines necessarily. So sometimes parents will come and tell me how to teach and will, for example, be like, one example I had was I had a parent come up to me and tell me that me being too friendly with the kids was, like, distracting them in a way and that they felt like their child wasn't getting the correct, they wanted me to be more firm, but although, of course, the parent knows a lot about their child, I see the child. I see the child during the class, and there's someone who's very, like, on the side, very antisocial, and this student needs some more support, some more love and reassurance so that they are able to feel comfortable enough to interact and be active in what we're doing. So the way I went about it was I heard the parent fully, understood why they said that and why they felt that way, and I reassured them that. I will, of course, take it into consideration. If someone ever gives me a piece of advice, I'll take something into consideration for sure. And if I feel like it doesn't really match with what I think is the best option, I'll let them know that although I really appreciate what they're telling me, I feel like it is best to continue this route that I am taking, and I would explain why I wouldn't just say no."
+    },
+    {
+      "type": "trait",
+      "id": "trait_5",
+      "question": "Tell me about a time something didn’t go as planned at work and your role in it. How did you handle the responsibility piece?",
+      "candidate_transcript": "[Q7 Attempt 1]\nYes. So a lot of the times, actually, our lessons plan sometimes falls through because the kids are at such a young age and our kids are very vocal. So they'll tell us, hey, I'm bored or I don't like this or something. So whenever I feel like, for example, one time I had an activity and the kids were not engaged, they did not like it and they were very bored, sidetracked. And it was like a little boat and then they had to like color in the animals of it's like for Noah's Ark. And yeah, and they had to color it in and they were not amused because we do we do tense color quite often. So they did not like it. So instead, I I have two ways of going about things. I either could change the activity. I could change the activity fully into something else that I have to think of on the spot or I try to change the activity that I have in a way that I'll make it more entertaining and more engaging for them. So in that case, what I did was scratch the whole idea because we were short on time. It had already been close to the end of time. So I played the song that all the kids love and I was dancing with them, got them hyped up, engaged. And I brought back their focus. And then I had them sit on the carpet and I just told them the story instead. And that."
+    },
+    {
+      "type": "trait",
+      "id": "trait_6",
+      "question": "Tell me about a time you had to work closely with another adult in a challenging situation. How did you navigate it?",
+      "candidate_transcript": "[Q8 Attempt 1]\nSure. So as I mentioned, I work with three to four teachers. And I also work with one of the teachers in my professional job that I have now. And sometimes it can be a conflict. Not in any way that will hurt the environment or children or anything. I just think that sometimes like I, we can have different ways of teaching, everyone teaches differently and, and has different ways of going about things. And sometimes I don't agree with a certain thing, or someone won't agree with how I'll how I teach or how I redirect a child. And so one time I had a conflict with what that teacher in Sunday school because she felt that I was bringing my professional quote unquote attitude to my Sunday school classroom. And I sat down and I explained to her that, although Sunday school isn't a job, it's not like professional or anything like that. We're not getting paid, of course. But I think it's important that we bring the really good aspects that we have in a professional setting to that setting because it helps the kids feel some kind of structure instead of it being loosey goosey, just a classroom where they can run around and have fun for an hour. And then go back to their parents. So I sat down and explained to her why I sit down with the kids and, and, and more I sat down and explained to her why I sit down with the kids and, and, and more I sat down and explained to her why I sit down with the kids and, and, and more I sat down and explained to her why I sit down with the kids and, and, and more I sat down and explained to her why I sit down with the kids and, and, and more I sat down and explained to her why I sit down with the kids and, and, and more I sat down and explained to her why I sit down with the kids and, and, and more I sat down and explained to her why I sit down with the kids and, and, and more I sat down and explained to her why I sit down with the kids and, and, and more"
+    },
+    {
+      "type": "trait",
+      "id": "trait_7",
+      "question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+      "candidate_transcript": "[Q9 Attempt 1]\nFor sure. When I first started working with children, I didn't realize how much of a communicator I had to be because I feel like with the older generations and especially like with my generation, the teachers and parents, they always were just like, don't do this and do this and didn't really explain why. I didn't know why I couldn't like I had this boundary or such. So when I started working with kids, I found it was much easier to get a child to agree or to do a task I'm asking them to do if they understand why I'm asking them to be very communicative and teach them that I'm asking you not to hit this child because it hurts their feelings and explain why this behavior is not OK. And why another behavior is OK and why it's a good thing and how it can benefit or not benefit them. So being communicative is something that I've had to learn and realize that this is very important, especially for for the children that are still growing and developing and understanding between right and wrong."
+    },
+    {
+      "type": "trait",
+      "id": "trait_10",
+      "question": "Tell me about a time a child’s behavior was challenging for you. How did you approach it?",
+      "candidate_transcript": "[Q10 Attempt 1]\nI once had this child. I work with her now in the school I'm at, in TK, and she was very aggressive in the beginning of the school year. She would always kick and scream and say, no, I don't want you to tell me this. Don't tell me to stay in line. And such as if I were to tell her, like, stay in line or go pick up the trash or go sit in your seat, please. She was very aggressive and would scream and say, stop, don't tell me this and things like that. And of course, when a child is screaming, it's like very rocky waters. So I learned, first of all, I had to take a deep breath every time. And I asked a peer for help because I didn't know how to react to this child. So I asked the child's teacher, how, what do you, think is the best way that I can go about redirecting this child? Because the teacher knows best and has been with this child much longer than I see them on a daily basis. And the teacher told me that the best way to go about it is to be calm, to be loving, to not make them, not agitate them. Because we realized that screaming back at the child, of course, is not going to do anything. If the child is screaming at you to stop and you're also telling them to stop, there's no communication. It's just walls talking to a wall. So I realized I had to calm not only my body, but help her calm her body and help her realize that maybe we shouldn't kick and shouldn't scream and say, okay, maybe I'll give you a little break. We can come back and talk about why that wasn't okay. And now it's much different environment, no kicking, no screaming. And I'm able to talk to her without and redirect her behaviors without there being any, you know, any, you know, any, you know, any, you know, any, you know, any, you know, any, you know, any, you know, any, you know, any, you know, any, you know, any, you know, any, you know,"
+    },
+    {
+      "type": "trait",
+      "id": "trait_11",
+      "question": "Can you share a time when your plan didn’t go as expected because of children’s needs? What did you do?",
+      "candidate_transcript": "[Q11 Attempt 1]\nA lot of the time, I feel like parents nowadays have those sign languages like thank you, please, more. So that's a really good thing. If we can teach them or if they already know it, that would be great. I think another thing is to look at their body language, to look at what they're looking at, and to think about what had happened. And maybe they saw another child eating and then they started crying, or they are looking at another child crying, then I can tell there was a conflict there. And little things like that, really looking at body language."
+    },
+    {
+      "type": "custom",
+      "id": "Not-Avail",
+      "question": "Are there any hours you are absolutely not available to work?",
+      "candidate_transcript": "[Q13 Attempt 1]\nRight now, I work at my job until June, I believe, 10 or 11, and then after that, I'm fully free. I do have one week at the end of August where I'm out of town because I have a church trip."
+    },
+    {
+      "type": "custom",
+      "id": "Pay",
+      "question": "What kind of pay are you looking for? Is that negotiable?",
+      "candidate_transcript": "[Q14 Attempt 1]\nI know that my experience isn't super high with the younger age, so anything between 19 to 21, I'm okay with. I'm very reasonable. I understand that I don't have much experience with the younger grade levels."
+    }
+  ]
+}

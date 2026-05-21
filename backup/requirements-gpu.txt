@@ -1,0 +1,4 @@
+# GPU runtime add-ons for faster-whisper (CUDA 12 stack)
+ctranslate2>=4.5.0
+nvidia-cublas-cu12
+nvidia-cudnn-cu12

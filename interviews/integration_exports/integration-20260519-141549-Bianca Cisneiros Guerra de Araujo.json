@@ -1,0 +1,195 @@
+{
+  "candidate": {
+    "name": "Bianca Cisneiros Guerra de Araujo",
+    "interview_date": "2026-05-19",
+    "school": "Hawthorne",
+    "track": "preschool",
+    "qualification": {
+      "has_degree": true,
+      "degree_type": "BA",
+      "degree_in_ece": false,
+      "ece_units_completed": 21,
+      "infant_toddler_class_completed": false,
+      "total_units_completed": null,
+      "years_experience": 2
+    }
+  },
+  "percent_of_max": 70.67,
+  "decision": "borderline",
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_10",
+        "trait_name": "Positive Behavior Guidance",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_11",
+        "trait_name": "Structure & Flexibility",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$22, negotiable",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full-time",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "two months",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-05-19 - Hawthorne - Bianca Cisneiros Guerra de Araujo - Interview.docx",
+    "transcript_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Candidate_Bianca_Cisneiros_Guerra_de_Araujo_2026-05-19_live_transcript.docx"
+  },
+  "communication_log": [],
+  "flow_transcript_slices": [
+    {
+      "type": "custom",
+      "id": "Why-ECE",
+      "question": "Tell me about yourself and why early childhood education matters to you.",
+      "candidate_transcript": "[Q1 Attempt 1]\nSo I am 29 years old. I'm from Brazil and I've been living here in the US for about three years and I always like working with kids. In Brazil, I was working with children. I once was a teacher aid intern and I had family here and one of my aunts, she had a baby. So I actually came here to help her with my little cousin to help her with her support system. And now I'm just getting my child development certificate. Yes, in Brazil, in social work."
+    },
+    {
+      "type": "custom",
+      "id": "Why-LPL",
+      "question": "Why are you applying for this position, specifically at Launch Pad Learning?",
+      "candidate_transcript": "[Q2 Attempt 1]\nbecause I want to work at a daycare or preschool so I can work with kids directly and stay there because I was looking that I can work with kids or be a substitute teacher and I like to to have a schedule of routine the same kids so they can get to know me so I can water"
+    },
+    {
+      "type": "trait",
+      "id": "trait_1",
+      "question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+      "candidate_transcript": "[Q3 Attempt 1]\nNo. When I was a teacher aide, I used to work with autistic kids and one of the little boy, he was non-verbal, so he easily got frustrated because he couldn't express his feelings. So as I was with him through the day, I could understand what he was trying to say. So I would come to him and talk what he was trying to say and he would confirm that what he wanted. But he usually got frustrated and we wanted to leave the classroom and we had to do something. So I would just like calmly look at him and say, like, do you want to go to the bathroom so we can walk a little bit? He used to love washing his hands, so this would make him calm down."
+    },
+    {
+      "type": "trait",
+      "id": "trait_2",
+      "question": "Tell me about a time you felt overwhelmed at work with children present. What did you do to manage yourself?",
+      "candidate_transcript": "[Q4 Attempt 1]\nIn this first grade class that I helped, I was talking about, they were just really loud, like really, really loud, and they, it was like a lot of, a little overwhelming, but I always, I just take a deep breath, or I step out a little bit of the room and go back, but you get used to the routine, and I'm a really patient person, so it's really hard to make me feel overwhelmed."
+    },
+    {
+      "type": "trait",
+      "id": "trait_3",
+      "question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering, helping with clothing, or guiding them physically. They are pulling away or saying no. Walk me through exactly what you would do, step by step",
+      "candidate_transcript": "[Q5 Attempt 1]\nIf a child is being like that with the diaper change, I would start distracting them first to make them stop crying first, like talking peek-a-boo or where's your feet, where's your hand or give them something to distract them and after the child is calm down and happy again, I would go back to the changing routine and I would explain, I would just change your diaper really quick, I would just clean you and then we can go back to play or eat or whatever is next on the routine."
+    },
+    {
+      "type": "trait",
+      "id": "trait_4",
+      "question": "Tell me about a time you received feedback you didn’t expect or didn’t fully agree with. What happened next?",
+      "candidate_transcript": "[Q6 Attempt 1]\nI never had that actually. And I'm good with feedbacks. When I was the teacher aid intern, the teacher of the classroom, she was like expert on it. She had like 40 years in education. So every time she got me a feedback, I was always glad because she had more experience than me. So I'm good receiving feedbacks. When I started, I wanted to show how active I was. So everything like everything that was needed before people finish this, I can do it. I can do it. It's like, you can keep more calm, you know, like, wait for them to ask for your help before just already like, I want to do it because people knew that I was available to do it. And they're like, okay, it does make sense. And it helped me be more instead of being like too active, be more calm and wait for others. too."
+    },
+    {
+      "type": "trait",
+      "id": "trait_7",
+      "question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+      "candidate_transcript": "[Q9 Attempt 1]\nSo I'm from Brazil and they do sleep training different in here So here I learn everything about sleep training and how to do it that it is different for us like we rock the baby into the baby's asleep and then you lay down at the crib and here you know, we Follow the routine. We put the baby away. We turn on the light sound machine. So This is one of the"
+    },
+    {
+      "type": "trait",
+      "id": "trait_10",
+      "question": "Tell me about a time a child’s behavior was challenging for you. How did you approach it?",
+      "candidate_transcript": "[Q10 Attempt 1]\nUsually when they're doing tantrums and they don't want to do something that you're being asked to it, I usually try to distract with the conversation about something else. Then I try to guide again for what they have to do it. My little cousin, I had to dress her up so we could go. She didn't want to dress it anything. She wanted, I want to play with the puzzles first, puzzle first. So I just started like playing with her around the room. And then I said like, princess, it's time to get ready. Your garage is coming because her mom was coming to pick her up. And then I said, do you want to choose your clothes? It's like, yes. And then she chose what she wanted. So this was easier for me to make her put her clothes on."
+    },
+    {
+      "type": "trait",
+      "id": "trait_11",
+      "question": "Can you share a time when your plan didn’t go as expected because of children’s needs? What did you do?",
+      "candidate_transcript": "[Q11 Attempt 1]\nyes i can tell when a non-verbal child is trying to say me something and how do i behave i'm just thinking how to explain to you can you ask again the question sorry big oh i can understand because whether they're frustrated or they're sad about something and they're crying you can still tell their emotion by their faces or about their bodies reacting or because they want to get something they can't reach and in this situation i usually like take a step back so that they can have like more space instead of like going through the child and like making them his feel overwhelmed i get to the child level and i try if the child is good with listening and calming down by listening i would talk through them to make them feel more calm or not get something to distract like a steam toy i would handle it to him"
+    },
+    {
+      "type": "custom",
+      "id": "Pay",
+      "question": "What kind of pay are you looking for? Is that negotiable?",
+      "candidate_transcript": "[Q14 Attempt 1]\nStarting $22."
+    }
+  ]
+}

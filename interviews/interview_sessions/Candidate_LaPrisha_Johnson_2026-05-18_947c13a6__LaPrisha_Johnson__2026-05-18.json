@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-05-18T20:37:02.068539Z",
+  "updated_at": "2026-05-18T20:49:28.416490Z",
+  "interview": {
+    "interview_id": "Candidate_LaPrisha_Johnson_2026-05-18_947c13a6",
+    "candidate_name": "LaPrisha Johnson",
+    "interview_date": "2026-05-18"
+  },
+  "questions": {
+    "0": {
+      "flow_idx": 0,
+      "item_type": "custom",
+      "item_id": "Why-ECE",
+      "notes": {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q1 Attempt 1]\num actually i've been in an education setting for a very long time i actually love the education setting i i love school i love everything about school um i did it fresh out of high school um i graduated early um with my associate's degree and my high school diploma at the same time and i immediately went into um preschool and that's just something i fell in love with ever since yes sir yes yes that's my best friend right there i had a great time no that's what i'm pursuing um that's what i'm in school and for right now at cal state san bernardino um further down the line i am studying to be a criminal justice lawyer and um i just um preschool like i said i'm studying to be a criminal justice i always loved the school setting so i was like excuse me excuse me um i figured why not do this and you know study that while i'm on the way",
+      "updated_at": "2026-05-18T20:37:27.631517Z"
+    },
+    "1": {
+      "flow_idx": 1,
+      "item_type": "custom",
+      "item_id": "Why-LPL",
+      "notes": {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q2 Attempt 1]\nUm, I see that your company, um, like, um, it opened up my eyes. I love the description you guys had on Indeed. I just feel like I fit it perfectly, I should say. Um, I'm very, I just.",
+      "updated_at": "2026-05-18T20:37:33.801167Z"
+    },
+    "2": {
+      "flow_idx": 2,
+      "item_type": "trait",
+      "item_id": "trait_1",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q3 Attempt 1]\nI was in a preschool classroom, my preschool classroom, my main teacher, the main teacher wasn't there. It was during vacation time. It was Thanksgiving break, actually, and it was two days before Thanksgiving, so it was only basically nothing but teacher's assistants at the school because majority of the main teachers was out, and we just had a child transfer from the infant side, so she was the first three-year-old, and so her transferring the infant side to the preschool side was, you know, definitely a big change for her. She's not used to bigger kids and definitely a bigger classroom. A little bit more noisy and a little bit more active and, you know, so I know that was a hard time. It was snack time. She had a hard time of sitting in, and sitting in, I'm saying as we had a tablet where I played music, and she was so in tune with the music, but she would, I would say, hawk the tablet, but that's what I noticed. And me using a softer tone with her and a different tone that I use with preschool kids, I have to let her know that this is a sharing environment that, you know, you have friends as well nearby that would like to listen, you know, listen to the music as well, and she was not very happy about it the first couple of times, but as I'm just showing her, everybody else is just, you know, just, you know, just enjoying the music like her, she ended up easing up and, you know, and started, she decided to listen to the music and, you know, just, you know, just, you know, just, you know, just, you know, just listening to the music and, you know, just, you know, just, you know, just, you know, just, you know, just listening to the music and, you know, just, you know, just, you know, just, you know, just, you know, just listening to the music and, you know, just, you know, just, you know, just, you know, just, you know, just listening to the music and, you know, just, you know, just, you know, just, you know, just, you know, just listening to the music and, you know, just, you know, just, you know, just, you know, just, you know, just",
+      "updated_at": "2026-05-18T20:40:12.515708Z"
+    },
+    "3": {
+      "flow_idx": 3,
+      "item_type": "trait",
+      "item_id": "trait_2",
+      "notes": {
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q4 Attempt 1]\nWhen we do outside play, I've been in a situation where kids, the children, was very, very naughty that day, just not following the rules or the protocols that day. I don't know what it was, but it was just a little more jumpy than usual, and I just decided to let my main teacher know that I just need to go take a little bathroom break, just real quick, just to gather up my thoughts, you know, throw some water on my face. And then I was able to come back in the classroom a little bit, refresh. Probably I just needed like a little water break. And then it was, I was working in Victorville, and Victorville is very hot, so maybe the heat just had got to me, and I just needed to cool down and refresh.",
+      "updated_at": "2026-05-18T20:41:27.947741Z"
+    },
+    "4": {
+      "flow_idx": 4,
+      "item_type": "trait",
+      "item_id": "trait_3",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q5 Attempt 1]\nUm, the first thing I would do, I would try to initiate why, um, or where is the problem coming from, why they don't want me touching them, or why they have enough fussy time. Um, second, once I figure out, um, what's that particular issue is, I would try to ease my way into, um, like, I would ease my way doing small different gestures, whether it's me showing them what I'm trying to do, or letting them hold whatever, um, hold the item, say if I'm changing a diaper, or it's feeding time, or whatever, I will let them hold the item to see, or to let them know what I'm doing, or they know what, what time it is. And then, um, I'm pretty sure one of those two outcomes will work, and I just got to stay patient, and thirdly, just, finish.",
+      "updated_at": "2026-05-18T20:42:49.925748Z"
+    },
+    "5": {
+      "flow_idx": 5,
+      "item_type": "trait",
+      "item_id": "trait_4",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q6 Attempt 1]\nWould this be in a preschool setting or would this be any time? Okay. Oh, one time I had to float around all the time because it was short on teacher's assistant. And I'm normally in my main classroom, and this is the day I decided not, they didn't decide me to float me around. And we had another teacher come in as a teacher assistant. So it's both of us in the same classroom. She's older. I'm younger. This particular day we was doing handwriting or hand tracing. And her more side was, I believe in the dotted lines for, how should I say this, the regular tracing where you have the numbers or the letters set up for them, right? And that's how I normally do it. And she had told me, like, the children is not learning that way, basically. She suggested that I let them freehand write. And I really didn't. I really didn't like that because I didn't grow up free writing. I, you know, I learned by tracing. So I just took it, I talked to her, and then we decided to just do half and half. And that's how we, that's how we concluded in a small.",
+      "updated_at": "2026-05-18T20:44:59.068900Z"
+    },
+    "6": {
+      "flow_idx": 6,
+      "item_type": "trait",
+      "item_id": "trait_5",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q7 Attempt 1]\nOh, what's the plan? I didn't go as planned. Hmm. It was, it was a week where we have to do, we was learning about ocean, about ocean graph re. And we will start on materials or we'll just, yeah, we will just start on materials. And basically we just have to improvise of what we had. And we still, me and my other teacher and I, we still went through our lesson plan, even though that we were short on materials, we still made it work.",
+      "updated_at": "2026-05-18T20:46:18.903747Z"
+    },
+    "7": {
+      "flow_idx": 7,
+      "item_type": "trait",
+      "item_id": "trait_6",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q8 Attempt 1]\nMr. David, this particular time was with a parent. She expressed to me that, she expressed to me why is her child always coming home with no diaper, or not diaper, pamper, and the child, he was autistic, and I had to let her know that he is potty trained. We definitely throw a pamper on him while we do the napping time, but he's potty trained. He goes to the restroom on his own, he flushes on his own, everything on his own, so I had to just bring my child home. I had to bring my supervisor in because she was just so adamant that her child was not potty trained, because I guess at home it's a different story. He still uses the pampers at home, but when he's at school, he...",
+      "updated_at": "2026-05-18T20:48:07.182630Z"
+    },
+    "8": {
+      "flow_idx": 8,
+      "item_type": "trait",
+      "item_id": "trait_7",
+      "notes": {
+        "raw_score": 1,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q9 Attempt 1]\nI can say that I am very patient. I have dealt with a lot of different challenging kids in my time.",
+      "updated_at": "2026-05-18T20:48:35.888640Z"
+    },
+    "9": {
+      "flow_idx": 9,
+      "item_type": "trait",
+      "item_id": "trait_10",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-05-18T20:48:36.447047Z"
+    },
+    "10": {
+      "flow_idx": 10,
+      "item_type": "trait",
+      "item_id": "trait_11",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-05-18T20:48:38.271991Z"
+    },
+    "11": {
+      "flow_idx": 11,
+      "item_type": "custom",
+      "item_id": "FT-or-PT",
+      "notes": {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full-time",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-05-18T20:48:45.249357Z"
+    },
+    "12": {
+      "flow_idx": 12,
+      "item_type": "custom",
+      "item_id": "Not-Avail",
+      "notes": {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q13 Attempt 1]\nNo, I should be free to go.",
+      "updated_at": "2026-05-18T20:48:55.459200Z"
+    },
+    "13": {
+      "flow_idx": 13,
+      "item_type": "custom",
+      "item_id": "Pay",
+      "notes": {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$20",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q14 Attempt 1]\nUm, I see on Indeed, you guys had it, um, had it listed for $22, I think. Oh, okay. And then, um, we could start in the middle of $20.",
+      "updated_at": "2026-05-18T20:49:21.610704Z"
+    },
+    "14": {
+      "flow_idx": 14,
+      "item_type": "custom",
+      "item_id": "Start",
+      "notes": {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "asap",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-05-18T20:49:28.416490Z"
+    }
+  }
+}

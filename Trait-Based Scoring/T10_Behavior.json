@@ -1,0 +1,28 @@
+{
+  "trait_id": "T10_Behavior",
+  "question": "Tell me about a time a child’s behavior was challenging for you. How did you approach it?",
+
+  "core_signals": [
+    { "ref": "S_CHILD_CENTERED", "label": "Frames situation from the child’s perspective", "weight": 2, "group": "Mindset" },
+    { "ref": "S_EMO_ACCURATE", "label": "Accurately interprets the cause or context of a child’s emotional state", "weight": 2, "group": "Analysis" },
+    { "ref": "S_COREGULATION", "label": "Uses co-regulation strategies such as calm presence, soothing voice, or proximity", "weight": 2, "group": "Response Strategy" },
+    { "ref": "S_BALANCE_EMPATHY_BOUNDARY", "label": "Balances emotional support with clear expectations or boundaries", "weight": 2, "group": "Balance" },
+    { "ref": "S_ADAPT", "label": "Adjusts approach based on feedback or response", "weight": 2, "group": "Adaptability" },
+    { "ref": "S_PROCESS_STRUCTURED", "label": "Describes a clear step-by-step process for handling the situation", "weight": 2, "group": "Process" },
+    { "ref": "S_REASONING_EXPLICIT", "label": "Explains the reasoning behind their actions or decisions", "weight": 2, "group": "Thinking" },
+    { "ref": "S_EFFECTIVENESS_EVAL", "label": "Evaluates whether their approach worked and why", "weight": 1, "group": "Thinking" },
+    { "ref": "S_NEGATIVE_LABELING", "label": "Uses judgmental or negative labels", "weight": -2, "group": "Language Used" },
+    { "ref": "S_ESCALATION", "label": "Escalates tone, behavior, or emotional intensity", "weight": -3, "group": "Response Strategy", "is_critical": true }
+  ],
+
+  "extended_signal_groups": [
+    {
+      "group_id": "G1",
+      "group_label": "Language",
+      "signals": [
+        { "ref": "S_VALIDATE", "label": "Validates the child’s feelings verbally or behaviorally", "weight": 1 },
+        { "ref": "S_RESPECTFUL_LANGUAGE", "label": "Uses respectful, non-judgmental language", "weight": 1 }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,126 @@
+module:
+  name: interview_app_history_controller
+  language: python
+  path: src/interview_app/history_controller.py
+  version: 1.1.0
+  description: Controller coordinating interview history data and HistoryDataGrid callbacks.
+functions: []
+classes:
+- name: HistoryController
+  description: Coordinates history data loading, selected row state, and action callback routing.
+  locked: false
+  attributes: {}
+  methods:
+  - name: build_history_table
+    description: Creates the history table section and mounts the HistoryDataGrid widget.
+    locked: false
+    inputs:
+      parent:
+        type: ttk.Frame
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: refresh_history_tree
+    description: Refreshes row data and filtering for the history grid.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: selected_history_row
+    description: Returns the currently selected history row from the grid.
+    locked: false
+    inputs: {}
+    returns:
+      type: dict[str, Any] | None
+    exceptions: []
+    side_effects: none
+  - name: _on_sort_changed
+    description: Synchronizes app sort state when grid sorting changes.
+    locked: false
+    inputs:
+      column:
+        type: str
+        required: true
+      desc:
+        type: bool
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: _on_row_selected
+    description: Captures the currently selected row on the app runtime object.
+    locked: false
+    inputs:
+      row:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: _on_offer_action
+    description: Forwards offer action callback for a selected row.
+    locked: false
+    inputs:
+      row:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: invokes application service callbacks
+  - name: _on_retranscribe_action
+    description: Forwards retranscribe action callback for a selected row.
+    locked: false
+    inputs:
+      row:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: invokes application service callbacks
+  - name: _on_open_transcript_link
+    description: Opens transcript path for a selected row when available.
+    locked: false
+    inputs:
+      row:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: opens filesystem path in default app
+  - name: _on_open_notes_link
+    description: Opens interview notes path for a selected row when available.
+    locked: false
+    inputs:
+      row:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: opens filesystem path in default app
+  - name: _open_history_link
+    description: Validates and opens a path field from a row.
+    locked: false
+    inputs:
+      row:
+        type: dict[str, Any]
+        required: true
+      key:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: opens filesystem path in default app
+data_structures: []
+dependencies:
+- ui_components_history_data_grid

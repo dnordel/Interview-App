@@ -1,0 +1,207 @@
+{
+  "candidate": {
+    "name": "Skylar Gonzales",
+    "interview_date": "2026-05-15",
+    "school": "Palmdale",
+    "track": "infant_toddler",
+    "qualification": {
+      "has_degree": true,
+      "degree_type": "BA",
+      "degree_in_ece": true,
+      "ece_units_completed": null,
+      "infant_toddler_class_completed": false,
+      "total_units_completed": null,
+      "years_experience": 5
+    }
+  },
+  "percent_of_max": 80.0,
+  "decision": "hire",
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_8",
+        "trait_name": "Gentleness & Physical Awareness",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_9",
+        "trait_name": "Patience with Nonverbal Communication",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "prefer morning shift, but flexible",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full-time",
+        "skipped": false
+      },
+      {
+        "question_text": "Tell me a little about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": true
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$22",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "two-weeks (moving to palmdale)",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying to our company, Launch Pad Learning?",
+        "answer": "moving to CA from AZ",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-05-15 - Palmdale - Skylar Gonzales - Interview.docx",
+    "transcript_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Candidate_Skylar_Gonzales_2026-05-15_live_transcript.docx"
+  },
+  "communication_log": [],
+  "flow_transcript_slices": [
+    {
+      "type": "custom",
+      "id": "Why-LPL",
+      "question": "Why are you applying to our company, Launch Pad Learning?",
+      "candidate_transcript": "[Q2 Attempt 1]\nUm, honestly, I looked at a lot of the\n\n[Q2 Attempt 2]\nthe parents feedback as well about how great the company is so I wanted to give it a shot and"
+    },
+    {
+      "type": "trait",
+      "id": "trait_1",
+      "question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+      "candidate_transcript": "[Q3 Attempt 1]\nOh my goodness. So many things come to mind. Let me see, which one should I use in particular? Time a student was having a really hard time. I had one student, it wasn't necessarily behavioral. They were just kind of having a hard time in their day. Their like grandparents had passed away and they it was like their first day back in class and they didn't know. They didn't really know how to process it yet or how to say anything. And they were sort of acting out of character, you know, brushing things off their desk, throwing things kind of just had an off day. But it was very out of character. So I was able to pull him out of the classroom and tell him at my school, you saw my training. So a lot of that language, I see you're doing this, you know, it looks like you're feeling upset. And that's sort of what we use at my school. So I used our summer training and. He felt comfortable enough. He actually started crying and was saying, Ms. Gonzalez, like, I'm so sorry, I know he's the second grader that, you know, I know I was throwing my stuff. I shouldn't do that. And then he was able to open up and tell me about his day. My most important thing, working with kids is definitely building that relationship first. So that when they do. Have a hard time or a difficult time, you already have that foundation and rapport with them. So."
+    },
+    {
+      "type": "trait",
+      "id": "trait_2",
+      "question": "Tell me about a time you felt overwhelmed at work with children present. What did you do to manage yourself?",
+      "candidate_transcript": "[Q4 Attempt 1]\nthat's a good question um at my school i have a ta and um we have also grown this relationship with each other of we kind of know when the other one needs a break or we know kind of when the other one has had um kind of just like back to back things happen with kids you know recently one of my students got their finger stuck in a door like at pe um lots of lots of crazy things and that day was a little bit um overwhelming um but i think just being able to like you know realize that you're there for the kids and that you kind of have to like wait to feel those things or to feel overwhelmed until after because we're supposed to be there for the kids and we're supposed to um you know be their support i don't really ever show it at work um for me personally i wait until sort of the end of the day when everything has calmed down and then i'm able to like go through my feelings and like oh that was that was kind of a lot today who we we got through it though and um that is typically how i deal with it um an um i just try to look at it for what it is and um i don't really get too um like too stressed out um in the moment i'm able to kind of put it to the side to be able to um just be there and be supportive"
+    },
+    {
+      "type": "trait",
+      "id": "trait_3",
+      "question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering, helping with clothing, or guiding them physically. They are pulling away or saying no. Walk me through exactly what you would do, step by step",
+      "candidate_transcript": "[Q5 Attempt 1]\nOkay. For a three-year-old, when I have worked, I worked as an RBT, and that was typically the age range for the clients that we had was anywhere from two to five. So I have worked with the younger kids, and they were diagnosed with autism or they were nonverbal. So what I did in that situation, also because they can't tell you that, hey, I don't want you to change my diaper right now. I would just, in that situation, if they were not letting me change their diaper, maybe see if they're... I guess I'm just kind of like, is there a um, situation? Like, do they have a rash or, like, what is, what's going on with the child? Um, I would see if maybe there was a bigger issue, like I said before, like a rash or some reason why they wouldn't want it or, like, wouldn't want a diaper changed. Um, make sure that, um, they are, maybe not change them in that moment, but not wait, like, kind of, just get them to be, um, get them back to that baseline of being, um, calm and, um, kind of figure out what is going on with the baby, and then not change the diaper until we were back to that point."
+    },
+    {
+      "type": "trait",
+      "id": "trait_4",
+      "question": "Tell me about a time you received feedback you didn’t expect or didn’t fully agree with. What happened next?",
+      "candidate_transcript": "[Q6 Attempt 1]\nHmm. A time I received feedback or constructive criticism. I actually love feedback and constructive criticism. I receive kind of a lot at my current job and I feel like it's helped me grow in my position and in my confidence in working with kids a lot. But a particular time that comes to mind is I was doing lesson planning and I was fairly new to it and at the school we sort of have a pre-outline of what the lesson plans are and then we are supposed to just critique it to the time and then give the lesson plans out to the classroom. But I needed a lot of growth in the in the in the in the lesson planning when I first started and they just gave me feedback like pretend like you're a child learning this for the first time and we're not teaching it as you know an adult already having prior knowledge. They have no prior knowledge. So just giving me different perspectives on how to be a teacher and how to sort of navigate teaching those."
+    },
+    {
+      "type": "trait",
+      "id": "trait_5",
+      "question": "Tell me about a time something didn’t go as planned at work and your role in it. How did you handle the responsibility piece?",
+      "candidate_transcript": "[Q7 Attempt 1]\nUm, there was a time when it was another teacher's lesson plan and, um, the way it was laid out, it just didn't, um, the kids weren't really understanding the point we were trying to get across. Um, I didn't have any of the materials that I needed for the lesson plan that they gave us. Um, and it kind of just put me in a position to learn how to improvise in the moment that, okay, I just need to make sure this is as beneficial of a lesson or activity for the kids as I can, even though I don't necessarily have everything I need for what was given, I'm going to figure it out and I'm going to make it the best lesson possible for the kids. So it definitely, um, helped me learn. How to improvise in the moment and be able to, um, like redirect, even if something isn't going exactly how it's supposed to. Um, it was in math and it was asking to use manipulatives in the classroom. And, um, we weren't given, um, my school just didn't have the manipulatives at the time. Um, and I was able to, um, um, um, um, um, um, um, um, um, um, um, um, um, um, um, um, um, um, to, um, kind of just pull things from the classroom and have the kids use those for manipulative. So they're still getting the hands-on aspect of the math."
+    },
+    {
+      "type": "trait",
+      "id": "trait_6",
+      "question": "Tell me about a time you had to work closely with another adult in a challenging situation. How did you navigate it?",
+      "candidate_transcript": "[Q8 Attempt 1]\nIn my previous school year, me and I was in a TA position at the time, and my lead teacher and I didn't see eye to eye on how we should be running our classroom. I felt like the lead at the time was supposed to be in charge of the classroom, and then I was supposed to just do my TA duties and then behavioral management. But my lead would get mad at me or upset with me because I wouldn't be in the classroom because I would be redirecting the behavioral kids, and it sort of felt like this tension in the classroom between her and I because we were not on the same page. And so I asked her if we don't have to talk about it right now, but I would prefer if we talk about it before we go home today. Just so that when we come into the classroom tomorrow, we're able to be here for the kids and not because when you're off with your coworker, the kids can feel it and they can tell maybe something's going on if they don't know what it is. But I made sure we had that conversation and I didn't approach her in any type of accusatory way. I just said, I would love it if we could sit down and just have a conversation about. The expectations in the classroom and how."
+    },
+    {
+      "type": "trait",
+      "id": "trait_7",
+      "question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+      "candidate_transcript": "[Q9 Attempt 1]\nhow i approach my work um wow i've learned i've learned so much from teaching and from my students around me um i guess the biggest lesson as someone who works with kids is just realizing no two kids are the same and that one specific thing is not going to work for every single kid and that you need to be able to be flexible and be able to be what that particular kid needs in the moment and there's no cookie cutter way to support a child you need to be able to be"
+    },
+    {
+      "type": "trait",
+      "id": "trait_9",
+      "question": "How do you understand what a nonverbal child needs when they’re crying or upset? Can you walk me through how you respond in those moments?",
+      "candidate_transcript": "[Q11 Attempt 1]\nIf a nonverbal child is crying or upset, I guess just going through a mental checklist, making sure that they have everything else that they need before moving forward with babies or younger children. They're sort of a mental checklist because they don't know what they need, so you have to fill in, okay, have they been fed, are they hungry, do they need a drink, like do they need, like earlier the diaper change, just sort of being able to figure out for that particular kid what they need in the moment. Yeah, I've had to do it a lot because I worked as an RVT. And I mean, crying, it's going to happen, but it's just figuring out how to support them the best way in the moment that they need. It is a little bit more difficult than, let's say, asking a second grader, but also they're babies, they're going to need you to help them and support them. I'm sure you know, you said you have a two-year-old, I'm sure you're filling in the blanks all the time for them. Oh my goodness. Wow. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah."
+    },
+    {
+      "type": "custom",
+      "id": "FT-or-PT",
+      "question": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+      "candidate_transcript": "[Q12 Attempt 1]\nThat's crazy. You have a lot on your plate then."
+    },
+    {
+      "type": "custom",
+      "id": "Not-Avail",
+      "question": "Are there any hours you are absolutely not available to work?",
+      "candidate_transcript": "[Q13 Attempt 1]\nfull-time perfect um I would prefer to have the morning shift just because of school but since we already have the weekends off which is when I do most of my schooling anyway yeah I'm I'm perfect but I would prefer the morning shift and I can do any days mm-hmm oh wow oh wow right exactly yeah"
+    },
+    {
+      "type": "custom",
+      "id": "Start",
+      "question": "When could you start if we decide to move forward?",
+      "candidate_transcript": "[Q14 Attempt 1]\nNo worries. I'm honestly open for any of them. I would just prefer the morning one. Yes."
+    }
+  ]
+}

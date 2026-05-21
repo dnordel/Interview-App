@@ -1,0 +1,77 @@
+module:
+  name: interview_app_bootstrap
+  language: python
+  path: src/interview_app/bootstrap.py
+  version: 1.1.0
+  description: Contracts for bootstrap module.
+functions:
+- name: build_default_settings
+  description: build_default_settings function.
+  locked: false
+  inputs: {}
+  returns:
+    type: dict[str, Any]
+  exceptions: []
+  side_effects: none
+- name: create_fonts
+  description: create_fonts function.
+  locked: false
+  inputs:
+    root:
+      type: tk.Tk
+      required: true
+  returns:
+    type: IntroFonts
+  exceptions: []
+  side_effects: none
+- name: wire_controllers
+  description: wire_controllers function.
+  locked: false
+  inputs:
+    app:
+      type: Any
+      required: true
+    shared_state:
+      type: AppSharedState
+      required: true
+  returns:
+    type: None
+  exceptions: []
+  side_effects: none
+- name: wire_views
+  description: wire_views function.
+  locked: false
+  inputs:
+    app:
+      type: Any
+      required: true
+  returns:
+    type: None
+  exceptions: []
+  side_effects: initializes view renderer instances on app
+classes:
+- name: IntroFonts
+  description: IntroFonts class.
+  locked: false
+  attributes:
+    intro_body_font:
+      type: tkfont.Font
+    intro_heading_font:
+      type: tkfont.Font
+  methods: []
+data_structures:
+- name: IntroFonts
+  type: dataclass
+dependencies:
+- app_content
+- director_referral_service
+- interview_app_audio_runtime
+- interview_app_dashboard_controller
+- interview_app_finalize_pipeline
+- interview_app_flow_controller
+- interview_app_history_controller
+- interview_app_state
+- interview_app_transcript_writer
+- interview_app_ui_router
+- interview_app_ui_shell
+- interview_app_views

@@ -1,0 +1,105 @@
+module:
+  name: interview_app_transcript_summary
+  language: python
+  path: src/interview_app/transcript_summary.py
+  version: 1.1.0
+  description: Transcript summarization helpers with robust runtime fallback behavior for reporting.
+functions:
+- name: _build_summarizer_pipeline
+  description: Build and cache a transformers summarization pipeline with automatic fallback to text2text-generation when summarization task aliases are unavailable.
+  locked: false
+  inputs: {}
+  returns:
+    type: tuple[Optional[Callable[..., Any]], Optional[str]]
+  exceptions: []
+  side_effects: Imports transformers runtime when available.
+- name: _build_text2text_summarizer_pipeline
+  description: Build a text2text-generation pipeline wrapper that prefixes prompts with summarize instructions compatible with T5-style models.
+  locked: false
+  inputs:
+    pipeline_factory:
+      type: Callable[..., Any]
+      required: true
+  returns:
+    type: tuple[Optional[Callable[..., Any]], Optional[str]]
+  exceptions: []
+  side_effects: Initializes a transformers text2text-generation pipeline.
+- name: _format_runtime_error
+  description: Combine primary and fallback runtime errors into one sanitized diagnostic string.
+  locked: false
+  inputs:
+    primary_error:
+      type: Exception
+      required: true
+    secondary_error:
+      type: Optional[str]
+      required: false
+      default: None
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _normalize_runtime_error_text
+  description: Replace noisy unknown-task diagnostics with a stable message suitable for interview export artifacts.
+  locked: false
+  inputs:
+    message:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _normalize_transcript_text
+  description: Normalize transcript values into compact whitespace-trimmed strings.
+  locked: false
+  inputs:
+    transcript_text:
+      type: Any
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _chunk_text
+  description: Split long transcript text into overlap-aware character windows safe for summarization models.
+  locked: false
+  inputs:
+    text:
+      type: str
+      required: true
+    max_chars:
+      type: int
+      required: false
+      default: 2600
+    overlap_chars:
+      type: int
+      required: false
+      default: 200
+  returns:
+    type: list[str]
+  exceptions: []
+  side_effects: none
+- name: summarize_transcript
+  description: Summarize transcript text via transformers pipelines with graceful placeholder fallback when runtime/model execution fails.
+  locked: false
+  inputs:
+    transcript_text:
+      type: Any
+      required: true
+    summarizer:
+      type: Optional[Callable[..., Any]]
+      required: false
+      default: None
+    max_chars:
+      type: int
+      required: false
+      default: 2600
+  returns:
+    type: str
+  exceptions: []
+  side_effects: May initialize cached transformers pipeline.
+classes: []
+data_structures: []
+dependencies:
+- transformers

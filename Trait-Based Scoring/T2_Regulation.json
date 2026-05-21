@@ -1,0 +1,44 @@
+{
+  "trait_id": "T2_Regulation",
+  "question": "Tell me about a time you felt overwhelmed at work with children present. What did you do to manage yourself?",
+
+  "core_signals": [
+    { "ref": "S_SELF_REG_AWARE", "label": "Recognizes their own emotional state or stress signals", "weight": 2, "group": "Self-Regulation" },
+    { "ref": "S_SELF_REG_ACTION", "label": "Uses intentional strategies to regulate themselves", "weight": 2, "group": "Self-Regulation" },
+    { "ref": "S_CALM_PRESENCE", "label": "Maintains calm tone and body language", "weight": 2, "group": "Self-Regulation" },
+    { "ref": "S_CHILD_CENTERED", "label": "Frames situation from the child’s perspective", "weight": 2, "group": "Child Orientation" },
+    { "ref": "S_PROCESS_STRUCTURED", "label": "Describes a clear step-by-step process for handling the situation", "weight": 2, "group": "Process" },
+    { "ref": "S_PROCESS_LOOP", "label": "Uses an observe → interpret → respond → reassess loop", "weight": 2, "group": "Process" },
+    { "ref": "S_REASONING_EXPLICIT", "label": "Explains the reasoning behind their actions or decisions", "weight": 2, "group": "Thinking" },
+    { "ref": "S_EFFECTIVENESS_EVAL", "label": "Evaluates whether their approach worked and why", "weight": 2, "group": "Thinking" },
+    { "ref": "S_ESCALATION", "label": "Escalates tone, behavior, or emotional intensity", "weight": -3, "group": "Self-Regulation", "is_critical": true },
+    { "ref": "S_BLAME", "label": "Blames others or external factors without self-reflection", "weight": -2, "group": "Accountability" }
+  ],
+
+  "extended_signal_groups": [
+    {
+      "group_id": "G1",
+      "group_label": "Adaptability",
+      "signals": [
+        { "ref": "S_ADAPT", "label": "Adjusts approach based on feedback or response", "weight": 2 },
+        { "ref": "S_REPEAT_INEFFECTIVE", "label": "Repeats ineffective strategies without adjusting", "weight": -2 }
+      ]
+    },
+    {
+      "group_id": "G2",
+      "group_label": "Language / Framing",
+      "signals": [
+        { "ref": "S_RESPECTFUL_LANGUAGE", "label": "Uses respectful, non-judgmental language", "weight": 1 },
+        { "ref": "S_NEGATIVE_LABELING", "label": "Uses judgmental or negative labels", "weight": -1 }
+      ]
+    },
+    {
+      "group_id": "G3",
+      "group_label": "Reflection",
+      "signals": [
+        { "ref": "S_REFLECT", "label": "Reflects on what worked or what they learned", "weight": 1 },
+        { "ref": "S_NO_REFLECTION", "label": "Shows little or no reflection", "weight": -1 }
+      ]
+    }
+  ]
+}

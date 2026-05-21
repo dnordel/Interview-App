@@ -1,0 +1,207 @@
+{
+  "candidate": {
+    "name": "Siniqua Hamilton",
+    "interview_date": "2026-03-31",
+    "school": "Palmdale",
+    "track": "infant_toddler",
+    "qualification": {
+      "has_degree": false,
+      "degree_type": "",
+      "degree_in_ece": false,
+      "ece_units_completed": 14,
+      "infant_toddler_class_completed": false,
+      "total_units_completed": 45,
+      "years_experience": 14
+    }
+  },
+  "percent_of_max": 36.19,
+  "decision": "no_hire",
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": 1,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": 1,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": 1,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_8",
+        "trait_name": "Gentleness & Physical Awareness",
+        "raw_score": 1,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_9",
+        "trait_name": "Patience with Nonverbal Communication",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full-time, but open to part",
+        "skipped": false
+      },
+      {
+        "question_text": "Tell me a little about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "open",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "asap",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying to our company, Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-03-31 - Palmdale - Siniqua Hamilton - Interview.docx",
+    "transcript_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Candidate_Siniqua_Hamilton_2026-03-31_live_transcript.docx"
+  },
+  "communication_log": [],
+  "flow_transcript_slices": [
+    {
+      "type": "custom",
+      "id": "Why-ECE",
+      "question": "Tell me a little about yourself and why early childhood education matters to you.",
+      "candidate_transcript": "[Q1 Attempt 1]\nHi, my name is Tanika Hamilton, and I've been a teacher since I was 18 years old. I started off as an assistant teacher, and I always loved kids. I'm 32 now, and I just like to see kids develop and grow, and I like being that first step of learning, and I love kids. I'm currently in school right now for political science, American Military University. I'm like a junior."
+    },
+    {
+      "type": "custom",
+      "id": "Why-LPL",
+      "question": "Why are you applying to our company, Launch Pad Learning?",
+      "candidate_transcript": "[Q2 Attempt 1]\nWell, I'm new to the area, and I'm planning on opening a profound daycare one day, and I just moved to California like two weeks ago, and I just want to continue teaching. Thank you."
+    },
+    {
+      "type": "trait",
+      "id": "trait_1",
+      "question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+      "candidate_transcript": "[Q3 Attempt 1]\nWell, I'm sorry about that. I was going to call in. Can you hear me? Okay, I'm sorry. When a child was emotional, I basically had them calm down and I asked, like, what's the problem? I let them communicate and talk to me and be patient and see how we can fix the problem together."
+    },
+    {
+      "type": "trait",
+      "id": "trait_2",
+      "question": "Tell me about a time you felt overwhelmed at work with children present. What did you do to manage yourself?",
+      "candidate_transcript": "[Q4 Attempt 1]\nUm, I really don't feel overwhelmed. And if I do, like if my classroom do get too rowdy, I'll have another teacher come in and like help me out. And like, you know, I have an assistant come in to help me."
+    },
+    {
+      "type": "trait",
+      "id": "trait_3",
+      "question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering, helping with clothing, or guiding them physically. They are pulling away or saying no. Walk me through exactly what you would do, step by step",
+      "candidate_transcript": "[Q5 Attempt 1]\nWell, first I will see, like, do they have a rash? I'll see if it's anything wrong with them. And just let them know, hey, it's time to get your diaper changed. And you're going to get your diaper changed and see what's the problem."
+    },
+    {
+      "type": "trait",
+      "id": "trait_4",
+      "question": "Tell me about a time you received feedback you didn’t expect or didn’t fully agree with. What happened next?",
+      "candidate_transcript": "[Q6 Attempt 1]\nAnd what, okay, go ahead. I'm sorry. Excuse me. Can you repeat the question? Um, just parents not coming to get their children on time after hours and they expect not to pay daycare fees, like late fees. And I'll just communicate, Hey, this is a warning. You need to bring your kids on. Come pick up your kids on time. And we open at this time. We close at this time and just be direct and firm and let them know that there's a fee for that. And"
+    },
+    {
+      "type": "trait",
+      "id": "trait_5",
+      "question": "Tell me about a time something didn’t go as planned at work and your role in it. How did you handle the responsibility piece?",
+      "candidate_transcript": "[Q7 Attempt 1]\nWell, one time kids didn't have money for field trips, and I'll pay their way so we can all go on the field trip together."
+    },
+    {
+      "type": "trait",
+      "id": "trait_6",
+      "question": "Tell me about a time you had to work closely with another adult in a challenging situation. How did you navigate it?",
+      "candidate_transcript": "[Q8 Attempt 1]\nUm, well, some of the teachers don't have the same agreeance with stuff, and they'll talk about personal things at work when it's time to work, like gossip and things like that, and I'll just let them know, hey, you have to work, so I'm not here to gossip, we're going to work, and it's about the children, not our personal lives, because we're not on break, and I'll just communicate that."
+    },
+    {
+      "type": "trait",
+      "id": "trait_7",
+      "question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+      "candidate_transcript": "[Q9 Attempt 1]\nYou just have to be patient and understanding and fun, and you can't be strict or else they're not going to like you, but you have to be firm enough so that they listen and get along with everybody and all kids are different and understand they have different personalities."
+    },
+    {
+      "type": "trait",
+      "id": "trait_8",
+      "question": "Tell me about how you physically care for infants or toddlers during routines like feeding, diapering, or comforting.",
+      "candidate_transcript": "[Q10 Attempt 1]\nUm, well, I'll see who's wet, who's not wet, write it down on the chart at the time I change them."
+    },
+    {
+      "type": "trait",
+      "id": "trait_9",
+      "question": "How do you understand what a nonverbal child needs when they’re crying or upset? Can you walk me through how you respond in those moments?",
+      "candidate_transcript": "[Q11 Attempt 1]\num just understand what they're saying and look at well they're not saying anything they're communicating i know sign language so if they're like deaf or something i just speak in sign language and you just have to know what they want even if they can't communicate like most of the time they're wet they're hungry they just want attention they need a distraction or either to be held and sing music"
+    },
+    {
+      "type": "custom",
+      "id": "FT-or-PT",
+      "question": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+      "candidate_transcript": "[Q12 Attempt 1]\nI'm looking for full-time, but I'm open to part-time if that's all that you have."
+    }
+  ]
+}

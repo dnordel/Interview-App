@@ -1,0 +1,23 @@
+module:
+  name: interview_app_dashboard_controller
+  language: python
+  path: src/interview_app/dashboard_controller.py
+  version: 1.0.0
+  description: Contracts for dashboard_controller module.
+functions: []
+classes:
+- name: DashboardController
+  description: DashboardController class.
+  locked: false
+  attributes: {}
+  methods:
+  - name: refresh_dashboard
+    description: DashboardController.refresh_dashboard method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: updates in-memory state
+data_structures: []
+dependencies: []

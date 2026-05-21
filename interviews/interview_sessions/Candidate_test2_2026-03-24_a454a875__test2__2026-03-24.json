@@ -1,0 +1,275 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-03-24T20:32:02.082944Z",
+  "updated_at": "2026-03-24T20:33:27.080862Z",
+  "interview": {
+    "interview_id": "Candidate_test2_2026-03-24_a454a875",
+    "candidate_name": "test2",
+    "interview_date": "2026-03-24"
+  },
+  "questions": {
+    "0": {
+      "flow_idx": 0,
+      "item_type": "custom",
+      "item_id": "Why-ECE",
+      "notes": {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "test",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q1 Attempt 1]\nable to gain access to carrier records and draw a link between an IMSI number and a user's identity. Considering how powerful Stingrays are as a",
+      "updated_at": "2026-03-24T20:32:09.649378Z"
+    },
+    "1": {
+      "flow_idx": 1,
+      "item_type": "custom",
+      "item_id": "Why-LPL",
+      "notes": {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "test",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-24T20:32:04.021272Z"
+    },
+    "2": {
+      "flow_idx": 2,
+      "item_type": "trait",
+      "item_id": "trait_1",
+      "notes": {
+        "raw_score": 5,
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": [
+          "S_OBSERVE_CUES",
+          "S_EMO_LABEL",
+          "S_VALIDATE",
+          "S_ADAPT",
+          "S_RESPECTFUL_LANGUAGE"
+        ]
+      },
+      "candidate_transcript": "[Q3 Attempt 1]\na warrant. Essentially, it must have a directed purpose towards finding a specific device or individual. Of course, this can be limited to a specific device, but it can also be a",
+      "updated_at": "2026-03-24T20:32:19.166236Z"
+    },
+    "3": {
+      "flow_idx": 3,
+      "item_type": "trait",
+      "item_id": "trait_2",
+      "notes": {
+        "raw_score": 5,
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": [
+          "S_SELF_REG_AWARE",
+          "S_SELF_REG_ACTION",
+          "S_CALM_PRESENCE",
+          "S_PROCESS_STRUCTURED",
+          "S_EFFECTIVENESS_EVAL",
+          "S_CHILD_CENTERED"
+        ]
+      },
+      "candidate_transcript": "[Q4 Attempt 1]\nis at home or at work, for example. There is, however, a long, long history of ICE ignoring its own policies",
+      "updated_at": "2026-03-24T20:32:28.172481Z"
+    },
+    "4": {
+      "flow_idx": 4,
+      "item_type": "trait",
+      "item_id": "trait_3",
+      "notes": {
+        "raw_score": 4,
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": [
+          "S_OBSERVE_CUES",
+          "S_SUBTLE_CUES",
+          "S_RESPONDS_TO_CUES",
+          "S_ADAPT",
+          "S_VALIDATE"
+        ]
+      },
+      "candidate_transcript": "[Q5 Attempt 1]\na warrant. It's so pervasive, in fact, that there's a whole Inspector General report about the issue. But there's also some circumstantial",
+      "updated_at": "2026-03-24T20:32:37.598771Z"
+    },
+    "5": {
+      "flow_idx": 5,
+      "item_type": "trait",
+      "item_id": "trait_4",
+      "notes": {
+        "raw_score": 5,
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": [
+          "S_OPEN_FEEDBACK",
+          "S_OWNERSHIP",
+          "S_GROWTH_MINDSET",
+          "S_ADAPT",
+          "S_PROCESS_STRUCTURED",
+          "S_EFFECTIVENESS_EVAL"
+        ]
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-24T20:32:40.283609Z"
+    },
+    "6": {
+      "flow_idx": 6,
+      "item_type": "trait",
+      "item_id": "trait_5",
+      "notes": {
+        "raw_score": 4,
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": [
+          "S_OWNERSHIP",
+          "S_PROCESS_STRUCTURED",
+          "S_REASONING_EXPLICIT",
+          "S_EFFECTIVENESS_EVAL",
+          "S_ADAPT"
+        ]
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-24T20:32:47.334726Z"
+    },
+    "7": {
+      "flow_idx": 7,
+      "item_type": "trait",
+      "item_id": "trait_6",
+      "notes": {
+        "raw_score": 5,
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": [
+          "S_PERSPECTIVE_TAKING",
+          "S_RESPECTFUL_LANGUAGE",
+          "S_OWNERSHIP",
+          "S_ADAPT",
+          "S_BALANCE_CHILD_GROUP"
+        ]
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-24T20:32:52.307019Z"
+    },
+    "8": {
+      "flow_idx": 8,
+      "item_type": "trait",
+      "item_id": "trait_7",
+      "notes": {
+        "raw_score": 5,
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": [
+          "S_PROCESS_STRUCTURED",
+          "S_LINK_TO_CHILD_DEVELOPMENT",
+          "S_GROWTH_MINDSET",
+          "S_ADAPT",
+          "S_REASONING_EXPLICIT"
+        ]
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-24T20:32:57.715288Z"
+    },
+    "9": {
+      "flow_idx": 9,
+      "item_type": "trait",
+      "item_id": "trait_10",
+      "notes": {
+        "raw_score": 5,
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": [
+          "S_CHILD_CENTERED",
+          "S_EMO_ACCURATE",
+          "S_COREGULATION",
+          "S_BALANCE_EMPATHY_BOUNDARY",
+          "S_ADAPT",
+          "S_PROCESS_STRUCTURED",
+          "S_REASONING_EXPLICIT"
+        ]
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-24T20:33:05.563521Z"
+    },
+    "10": {
+      "flow_idx": 10,
+      "item_type": "trait",
+      "item_id": "trait_11",
+      "notes": {
+        "raw_score": 3,
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": [
+          "S_OBSERVE_CUES",
+          "S_BALANCE_FLEXIBILITY_STRUCTURE",
+          "S_PROCESS_STRUCTURED"
+        ]
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-24T20:33:11.000560Z"
+    },
+    "11": {
+      "flow_idx": 11,
+      "item_type": "custom",
+      "item_id": "FT-or-PT",
+      "notes": {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "test",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-24T20:33:15.660539Z"
+    },
+    "12": {
+      "flow_idx": 12,
+      "item_type": "custom",
+      "item_id": "Not-Avail",
+      "notes": {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "test $$$$$",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-24T20:33:20.371620Z"
+    },
+    "13": {
+      "flow_idx": 13,
+      "item_type": "custom",
+      "item_id": "Pay",
+      "notes": {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "test",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-24T20:33:24.290504Z"
+    },
+    "14": {
+      "flow_idx": 14,
+      "item_type": "custom",
+      "item_id": "Start",
+      "notes": {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "test",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-24T20:33:27.080862Z"
+    }
+  }
+}

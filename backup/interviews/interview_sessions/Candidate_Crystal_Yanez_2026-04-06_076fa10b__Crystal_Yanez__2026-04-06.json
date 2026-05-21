@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-04-06T17:35:27.755891Z",
+  "updated_at": "2026-04-06T17:51:22.774056Z",
+  "interview": {
+    "interview_id": "Candidate_Crystal_Yanez_2026-04-06_076fa10b",
+    "candidate_name": "Crystal Yanez",
+    "interview_date": "2026-04-06"
+  },
+  "questions": {
+    "0": {
+      "flow_idx": 0,
+      "item_type": "custom",
+      "item_id": "Why-ECE",
+      "notes": {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q1 Attempt 1]\nSo I have been working with children for about two and a half years. Now this would be my third year coming up. I have been working with them for ages five to six, and currently I am working with students as well, ages three to four. I've always been drawn to working with children ever since I can remember, because I like to, I enjoy being part of their growth and development. Like I said, currently I am working with students ages three to four, and I just enjoy, I enjoy working with children.",
+      "updated_at": "2026-04-06T17:35:41.735905Z"
+    },
+    "1": {
+      "flow_idx": 1,
+      "item_type": "custom",
+      "item_id": "Why-LPL",
+      "notes": {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "saw us on social media",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q2 Attempt 1]\nI wanted to further go into working with children as well. I am currently working with children, but down in Canoga Park. So I am currently moving up to Palmdale, and I wanted just to keep going with the same career path that I have going on for me. So like I said, I do enjoy working with children. So right now I am working with them, but it's all the way in Canoga Park. So I just keep looking and you guys, I found you guys and I was like, let me go for this one.",
+      "updated_at": "2026-04-06T17:36:18.463530Z"
+    },
+    "2": {
+      "flow_idx": 2,
+      "item_type": "trait",
+      "item_id": "trait_1",
+      "notes": {
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q3 Attempt 1]\nSo a time that I had was when a child had a hard time transitioning. So we had outside play and then it was time to go inside to wash their hands. The child didn't want to come back inside and actually was crying and threw themselves on the floor. What I did was I actually, I stayed calm with them. I did give them their five minutes. And honestly, I feel like it helped a lot because it helped the child express their feelings instead of just going into the child and telling them, like, what's wrong or come on, we have to go. I feel like just giving them a break and, you know, giving them their time to themselves would help them express their feelings a lot.",
+      "updated_at": "2026-04-06T17:37:17.567490Z"
+    },
+    "3": {
+      "flow_idx": 3,
+      "item_type": "trait",
+      "item_id": "trait_2",
+      "notes": {
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q4 Attempt 1]\num a time that i felt overwhelmed was um so right now it's it's for me it's 12 students per teacher um but we do have some students that do need you know a one-on-one and it's kind of hard uh to deal with the with the students because i feel like with those students i need the one-on-one i feel like they need your certain attention so the other students will start acting up and it's kind of hard for me when i'm by myself because then the other students are going to get into trouble or get hurt um what i did honestly i just had all my students sit down and i started reading to them and you know just asking them questions and then about the book and um having them calm instead of just having one student over here and the other students in the other area so what i did i just have them as a whole group i have the students that was having trouble um with me at all times just so i can have all the all the students come together what i do for myself is honestly i take a quick breather so if i need a quick breather i will call um my director or my assistant director like hey can you step in so i can go use the restroom and you know just take a quick breather a five minutes most and then i'll come back and you know be ready for this",
+      "updated_at": "2026-04-06T17:39:03.488983Z"
+    },
+    "4": {
+      "flow_idx": 4,
+      "item_type": "trait",
+      "item_id": "trait_3",
+      "notes": {
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q5 Attempt 1]\nUm, first, what I would do, because I do, I do have that at times when they don't want to, you know, get their diaper changed, or they don't want to get their clothes changed, what I would do is calmly, like, ask them, like, what's going on, or I will honestly just give them five minutes, again, like I said to themselves, and then after those five minutes, I would just, um, I'll grab them by the hand, and then I'll just, you know, like, assist them to the restroom, and I will go with them, and, you know, help them, and if they want to do it on their own, I will still be there, but, like, let's say for clothing, I will change them, and if they want to try to do it on their own, they can do it on their own, um, but honestly, I do have that problem, but it has helped me to give them their breaks, um, as the five minutes the most that I give them, and then they'll be redirected, and then calmly just talk to them, like, oh, like, I like your shoes, like, they're so pretty, and I'm like, well, how about we'll change, and then we'll put your shoes back on, so I will honestly just play around with them, and then calmly, like, tell them, like, okay, we have to change, and then change their diaper if it's needed.",
+      "updated_at": "2026-04-06T17:40:29.992801Z"
+    },
+    "5": {
+      "flow_idx": 5,
+      "item_type": "trait",
+      "item_id": "trait_4",
+      "notes": {
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q6 Attempt 1]\nhonestly there hasn't been a time that i haven't um that i have received feedback and i didn't agree with it um i've always i'm like yeah um honestly not that i can remember right now but i know i always say i always like constructive criticism just so i can know what to do but next so if i think for example if i did have like one that i didn't agree on um what i would do is you know i would sit down and talk to him like what's like why didn't why did you give me this feedback like um i wouldn't i would take it but i would still like be like question like oh like why like what did i do wrong or what's going on or how can i better it next i believe the way i would like let's say with my lesson planning there would be time there was a time where i didn't um do it um correctly so what i do right there is um we do uh it's called our curriculum um i didn't do the work like the worksheet that students needed i didn't really follow through it um so what i would get i would just get constructive constructive criticism from the director like hey this is how we do it here like um this is step by step on how we do it and i just took it um i feel like it'll it was better for me so i can do it better the next",
+      "updated_at": "2026-04-06T17:42:30.540452Z"
+    },
+    "6": {
+      "flow_idx": 6,
+      "item_type": "trait",
+      "item_id": "trait_5",
+      "notes": {
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q7 Attempt 1]\nLike a lesson plan? There was a time when, oh my goodness, like I said, with my lesson plan, I was a bit new still, so I didn't really know how to follow through it. Um, so there was a time where I had to do a certain activity with a certain shape. Um, the other teacher didn't really mention it to me, so I did have a little bit of problem with, uh, problems with that. Um, and, oh my goodness, I'm over here. Um, yeah, I'm so sorry. I'm like, I'm trying to remember. Okay. Uh, and then... So there was a bit of problems with that, and I did take responsibility. Like, okay, I didn't know. Um, there was a little bit of a, of a disagreement right there. Um, I didn't take the responsibility because I just, I skimmed through it. I didn't really look into it at that time, and that's when I got the constructive criticism as well. And I did, I did take the responsibility with the other teacher. Okay.",
+      "updated_at": "2026-04-06T17:44:09.726893Z"
+    },
+    "7": {
+      "flow_idx": 7,
+      "item_type": "trait",
+      "item_id": "trait_6",
+      "notes": {
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q8 Attempt 1]\nI did work with a challenging adult. It was pretty hard because we were dealing with, like I said, we have certain students that do need another person for themselves, like a one-on-one. We both tried to work with it and it was really challenging for both of us because, like I said, we do have other students. We do have other students and, like I said, it was really challenging because we were both focused on that one student when the other students were just, you know, all over, like all over the place because they saw us, you know, having a hard time with the student. So that's when I actually, it comes to my other question, that's when I actually... Pulled the students all together and then that's how we all, like that's how we resolved it. But other than that, I think we did pretty good. It was hard, but I feel like we did pretty good with that. Some parents do take it to, like, a heart, I guess you can say. But I feel like it's just the way how you approach a parent. So I feel like, let's say, like I did have a parent, you know, I did have to mention to the parent about the student and how the student... Has challenges in the classroom and, you know, some parents just don't like to hear it. But I feel like the way I approach it is not in a bad way. The parent actually took it, like, okay, like, you know, they took it and they said, okay, we will get the help. So now it helps me and then it helps the other students and the teachers and also the parents to get the help that they need. But I feel like with the parents, I feel like... If they were to be in the same page as us, I feel like they would, we would both work with...",
+      "updated_at": "2026-04-06T17:46:40.896206Z"
+    },
+    "8": {
+      "flow_idx": 8,
+      "item_type": "trait",
+      "item_id": "trait_7",
+      "notes": {
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q9 Attempt 1]\nUm, can I get an example for that one? Okay. So the way that it helped my self-care, something that I learned about children, honestly, it takes a lot of patience to work with children. Like I said, I've always wanted to work with children. Um, but I feel like we have to be on the same page as them. Uh, that's what I learned. Um, obviously not give them their way all the times, but I feel like we just have to be really reasonable with them. That's also what I learned because if, let's say a student's having a hard time and you're just pushing and pushing and pushing with the student, um, you're just really not going to get nowhere because the student's just going to keep on with.",
+      "updated_at": "2026-04-06T17:47:59.786409Z"
+    },
+    "9": {
+      "flow_idx": 9,
+      "item_type": "trait",
+      "item_id": "trait_10",
+      "notes": {
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-06T17:48:00.840743Z"
+    },
+    "10": {
+      "flow_idx": 10,
+      "item_type": "trait",
+      "item_id": "trait_11",
+      "notes": {
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q11 Attempt 1]\nUm, there was, there is some times actually recently, um, it was just me by myself in the classroom with all 12 students. Um, the child that didn't need help, actually, he was having a really rough day. So I couldn't really go throughout my lesson plan, my activities that I had planned. Um, so I just had to, um, honestly just had all the students all together and I just decided to, you know what, like today's going to be just like, let's say like a, like a little, um, exercise day. So what I did was I had them all around the carpet and we did, um, some dancing, some little exercises and, and it helped the other student as well because the other student was involved in what the students were doing. Um, but it just, it kind of threw, threw me back.",
+      "updated_at": "2026-04-06T17:49:26.509032Z"
+    },
+    "11": {
+      "flow_idx": 11,
+      "item_type": "custom",
+      "item_id": "FT-or-PT",
+      "notes": {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full-time",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-04-06T17:49:31.847995Z"
+    },
+    "12": {
+      "flow_idx": 12,
+      "item_type": "custom",
+      "item_id": "Not-Avail",
+      "notes": {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no. prefer earlier",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q13 Attempt 1]\nno I feel like all the hours would be fine um the earliest possible if that would be okay with you like the earliest possible so like starting maybe like 7 a.m which I don't mind okay",
+      "updated_at": "2026-04-06T17:50:24.560203Z"
+    },
+    "13": {
+      "flow_idx": 13,
+      "item_type": "custom",
+      "item_id": "Pay",
+      "notes": {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$21, negotiable",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q14 Attempt 1]\nUm, Ranger from like 22 to 23.",
+      "updated_at": "2026-04-06T17:50:42.456576Z"
+    },
+    "14": {
+      "flow_idx": 14,
+      "item_type": "custom",
+      "item_id": "Start",
+      "notes": {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "May 4",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q15 Attempt 1]\ndid have a question oh sorry um i i believe in like the next three to four weeks just because i am still you know transitioning up here and then i would have to you know let my other job uh know for my two weeks yeah um i could do the fourth of may yes",
+      "updated_at": "2026-04-06T17:51:22.774056Z"
+    }
+  }
+}

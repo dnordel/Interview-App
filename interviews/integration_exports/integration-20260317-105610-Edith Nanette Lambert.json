@@ -1,0 +1,189 @@
+{
+  "candidate": {
+    "name": "Edith Nanette Lambert",
+    "interview_date": "2026-03-17",
+    "school": "North Long Beach",
+    "track": "preschool",
+    "qualification": {
+      "has_degree": true,
+      "degree_type": "MS",
+      "degree_in_ece": true,
+      "ece_units_completed": null,
+      "infant_toddler_class_completed": true,
+      "total_units_completed": null,
+      "years_experience": 20
+    }
+  },
+  "percent_of_max": 59.38,
+  "decision": "hire",
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_10",
+        "trait_name": "Positive Behavior Guidance",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_11",
+        "trait_name": "Structure & Flexibility",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$24",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full-time or part time.",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "April 1st",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-03-17 - North Long Beach - Edith Nanette Lambert - Interview.docx",
+    "transcript_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Candidate_Edith_Nanette_Lambert_2026-03-17_live_transcript.docx"
+  },
+  "communication_log": [],
+  "flow_transcript_slices": [
+    {
+      "type": "custom",
+      "id": "Why-ECE",
+      "question": "Tell me about yourself and why early childhood education matters to you.",
+      "candidate_transcript": "[Q1 Attempt 1]\nfive for just under 20 years. I'm very passionate about it, helping children grow, providing them with age-appropriate learning activities, and I just want to continue on in that endeavor. Yes, I do, in e-learning. I do believe my AA degree in child and adolescent development, um, I believe there were four, four classes that emphasized infant development, if I'm not mistaken. I have a total of about 200 credits at Santa Monica College, and I, yeah, I'm pretty"
+    },
+    {
+      "type": "custom",
+      "id": "Why-LPL",
+      "question": "Why are you applying for this position, specifically at Launch Pad Learning?",
+      "candidate_transcript": "[Q2 Attempt 1]\nYeah. And I also have an associate teacher certificate that emphasizes children from the age of zero to five. So I do believe that was a requirement for that as well. Well, I like that it's a play based curriculum. I also love that you offer free care to families and subsidized care to families who need it, because that is just so important. And it's also very close to where I live, which is a plus."
+    },
+    {
+      "type": "trait",
+      "id": "trait_1",
+      "question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+      "candidate_transcript": "[Q3 Attempt 1]\nyes definitely well it's every child is different every human being is different and it's always important to just use what you know about that person in particular you know when you're responding to the behavior um so I'll I never go in with any preconceived notions of oh well the last time this happened with another child this is what I did and this is what worked I always look at that child as an individual and approach the issue um in gentleness and kindness I'm a very gentle kind um relaxed person I don't get wound up some people I've seen that they get equally they respond with anxiety which I think can escalate a behavior like that or you know a situation like that so I just approach it with a kindness and gentleness um which I think is is most helpful in you know diffusing and escalating problem or issue you know that the one time that stands out to me in particular that was a very extreme behavior it was probably over 10 years ago where a child started banging her head against the wall she was like she was about three years old and it was a situation where she was creating self-harm um and in that situation you know a I didn't want her to harm herself B I didn't want her to harm the other children that were around her so I picked her up and I ended up with bruises on my face arms and chest but what I did was I just I just held her um because I I just felt because I've worked with her for a couple of months and I felt that she responded well to touch um so I just held her in my arms um and and it probably took three or four minutes until she finally stopped kind of like I'll use the word thrashing around um and she eventually she fell asleep so it was it was a really extreme response I think to her being tired um yeah so but but that was um the most extreme and to be honest I have not dealt with a lot of um extreme behaviors like that like um so that's why that one really stands out uh because it was one one of the only very extreme behaviors I ever dealt with but um yes yes and I'm grateful that that was the only one and I know that's that's not the norm but I I was you know grateful that I was able to"
+    },
+    {
+      "type": "trait",
+      "id": "trait_2",
+      "question": "Tell me about a time you felt overwhelmed or stressed at work with children present. What was going on, and how did you handle yourself in that moment?",
+      "candidate_transcript": "[Q4 Attempt 1]\nand help her to fall asleep. Just, I was just singing to her and, you know, rocking her kind of side to side, um, in a baby posture, you know, um, and that helped her. Yeah. And she just fell asleep. So, yeah, I can't say I've ever experienced that. Um, I leave, you know, if I'm having a personal issue or something, I leave it at the door. I don't bring problems over that threshold with me because I don't find that to be professional. Um, yeah, I just don't do it. Um, if I were ever in a situation where I felt that I was struggling to, to deal with a personal issue, I would definitely just reach out to a coworker or a supervisor, you know, to step in. Um, I definitely would not try to navigate something like that by myself while I was, you know, working with children. Definitely not. Yeah. Well, I mean, I wouldn't be human if, if, if I didn't, but yeah, again, I, I would always just, um, reach out, you know, reach out for help. You, you, that's just, I mean, we're teaching children to do that and we have to do that ourselves. Reach out for help if you need it. Yeah. Oh, definitely. I mean, you know, I, I do believe in meditation, you know, and, um, spiritual healing. And, you know, and that, that's a lifestyle. So I think that by living a lifestyle like that, it helps me to, you know, have the patience because you, you know, definitely need a lot of patience when dealing with preschool age children and babies and newborns. Um, so yeah, it's a lifestyle for me, um, to, you know, keep myself in a place of peace with prayer and meditation and, and, and just, you know, living a lifestyle that's conducive to that. Um, but yeah. Definitely. And, uh, but again, you know, if it's always, you know, counting to three, taking three deep breaths, you know, doing the things that we instruct children to do."
+    },
+    {
+      "type": "trait",
+      "id": "trait_3",
+      "question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering, helping with clothing, or guiding them physically. They are pulling away or saying no. Walk me through exactly what you would do, step by step",
+      "candidate_transcript": "[Q5 Attempt 1]\nMm hmm. Well, it's half of dealing with, with young children is it's a lot of negotiating. So you just have to choose once again, hopefully, you know, this child somewhat, and you're familiar with this child, and you just lean on the behaviors you've seen, and what your interactions have been previously. Absolutely. Um, okay. Well, I would just just you have to just keep communicating with them open communication, I think is the key to all things. And if they're verbal, which obviously they are, if they're staying, if they're saying no, don't touch me, or this or that, I would just keep talking. And I'm a strategy I've often used with kids that especially don't enjoy diaper changes. I don't know, there's something about the ABC song singing the ABC song. Um, the alphabet song, where they, they, I don't know if they're, if they're attaching to the musical lyricism of it, or just the fact that they're thinking to themselves, Oh, yeah, I'm learning the ABCs, what letter comes next, you know, by singing the ABC song really slowly, I've managed to change and I changed diapers very quickly, I've become a master at that. Um, so yeah, that's kind of my strategy. That's what I'm doing. Um, and, you know, and again, if, if, and if that isn't working, you know, they're setting the reset button, allowing them to go down and saying, Okay, we're going to go read one book. And when we're done with that, we're going to change your diaper. Okay, all right, let's go, you know, just, yeah, just just"
+    },
+    {
+      "type": "trait",
+      "id": "trait_4",
+      "question": "Tell me about a time you received feedback you didn’t expect or didn’t fully agree with. What happened next?",
+      "candidate_transcript": "[Q6 Attempt 1]\nYou know, having a frank discussion and sometimes parents, they tend to become very uncomfortable when, as the caregiver, you're posing questions to them because you want them to substantiate their claims and things like that. And it is very disarming, especially if a parent is, you know, coming at you with kind of an accusatory attitude. That is disarming. And I do have to say that my response in the past, and unfortunately, because I'm really sensitive, I have cried. I started crying because it's just been my response a couple of times. Because it's hurtful when you know you're doing your best and you know that you have everyone's best intentions at heart. And it's hurtful. But after, you know, you become a little bit seasoned with those types of situations, I know it's important to take a deep breath, you know, try not to take it to heart and then deal with it professionally without bursting into tears. And just have it. And a conversation about it. And, you know, you have to ask questions, you have to, because every family has their own way of doing things, whether it's, you know, we have cultural differences or, or just whatever it may be. It's just important to make sure that they feel heard. But I think it's equally as important for them to hear you as the educator. Just to, you know, level the playing field a little bit. And, and come to a resolution that feels good for both of you. And yeah, I've never left anything unresolved. I think unresolved issues can lead to more problems down the road. So yeah, just clear communication is really important."
+    },
+    {
+      "type": "trait",
+      "id": "trait_7",
+      "question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+      "candidate_transcript": "[Q9 Attempt 1]\nWell, I have a growth mindset for sure. I'm a lifelong learner. I think that every day presents new challenges, new opportunities for growth. And there are learning opportunities in everything that we do. And especially with children, because children are looking at the world through a lens that is just clear and bright. And so, yeah, I learned so much from them. I mean, sometimes, you know, especially if you're, you know, maybe have been experiencing a situation in your own life, maybe that you're trying to navigate and you can see a child and their response to a situation and just how simple and pure it is. And it can help to remind you as an adult, wow, I can respond in that way too. It doesn't matter that I'm not three years old. I can still respond in that way. And I think a lot of times, it is the right way. Yeah, I think we can learn a lot, a lot from children."
+    },
+    {
+      "type": "custom",
+      "id": "FT-or-PT",
+      "question": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+      "candidate_transcript": "[Q12 Attempt 1]\nI would be open to full-time or part-time, either one."
+    },
+    {
+      "type": "custom",
+      "id": "Pay",
+      "question": "What kind of pay are you looking for? Is that negotiable?",
+      "candidate_transcript": "[Q14 Attempt 1]\nUm, I'm accustomed to making, you know, when I'm working with families one-on-one, I'm accustomed to making between 30 and $35 an hour. I know that that is not generally the pay scale working at a preschool. So I'm, I'm open to, you know, to exploring what the, what the pay range is. Yeah, I would hope so. Wonderful. Thank you. Thank you."
+    }
+  ]
+}

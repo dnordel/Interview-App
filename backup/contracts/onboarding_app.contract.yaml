@@ -1,0 +1,1219 @@
+module:
+  name: onboarding_app
+  language: python
+  path: src/onboarding_app.pyw
+  version: 1.0.0
+  description: Contract for onboarding_app module.
+functions:
+- name: _load_launch_context
+  description: _load_launch_context function in onboarding_app.
+  locked: false
+  inputs:
+    args:
+      type: argparse.Namespace
+      required: true
+  returns:
+    type: dict[str, object]
+  exceptions: []
+  side_effects: none
+- name: _read_launch_context_file
+  description: _read_launch_context_file function in onboarding_app.
+  locked: false
+  inputs:
+    path_value:
+      type: str | None
+      required: true
+  returns:
+    type: dict[str, object]
+  exceptions: []
+  side_effects: none
+- name: _sanitize_employee_id
+  description: _sanitize_employee_id function in onboarding_app.
+  locked: false
+  inputs:
+    value:
+      type: object
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _build_arg_parser
+  description: _build_arg_parser function in onboarding_app.
+  locked: false
+  inputs: {}
+  returns:
+    type: argparse.ArgumentParser
+  exceptions: []
+  side_effects: none
+- name: _run_reminders_from_cli
+  description: _run_reminders_from_cli function in onboarding_app.
+  locked: false
+  inputs:
+    args:
+      type: argparse.Namespace
+      required: true
+  returns:
+    type: int
+  exceptions: []
+  side_effects: none
+- name: main
+  description: main function in onboarding_app.
+  locked: false
+  inputs: {}
+  returns:
+    type: None
+  exceptions: []
+  side_effects: none
+classes:
+- name: OnboardingTrackerApp
+  description: OnboardingTrackerApp class in onboarding_app.
+  locked: false
+  attributes: {}
+  methods:
+  - name: __init__
+    description: __init__ method.
+    locked: false
+    inputs:
+      root:
+        type: tk.Tk
+        required: true
+      launch_context:
+        type: dict[str, object] | None
+        required: false
+        default: null
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _build_layout
+    description: _build_layout method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _log_onboarding_canonical_event
+    description: _log_onboarding_canonical_event method.
+    locked: false
+    inputs:
+      event_name:
+        type: str
+        required: true
+      '**fields':
+        type: object
+        required: false
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _build_action_sections
+    description: _build_action_sections method.
+    locked: false
+    inputs:
+      parent:
+        type: ttk.Frame
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _set_global_validation_message
+    description: _set_global_validation_message method.
+    locked: false
+    inputs:
+      message:
+        type: str
+        required: true
+      severity:
+        type: str
+        required: false
+        default: VALIDATION_SEVERITY_ERROR
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _clear_global_validation_message
+    description: _clear_global_validation_message method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _resolve_action_command
+    description: _resolve_action_command method.
+    locked: false
+    inputs:
+      command_name:
+        type: str
+        required: true
+    returns:
+      type: Callable[[], None]
+    exceptions: []
+    side_effects: none
+  - name: _on_primary_reminder_cta_click
+    description: _on_primary_reminder_cta_click method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _run_reminders_dry_run_from_ui
+    description: _run_reminders_dry_run_from_ui method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _run_secondary_action
+    description: _run_secondary_action method.
+    locked: false
+    inputs:
+      command:
+        type: Callable[[], None]
+        required: true
+      action_key:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _build_reminder_health_banner
+    description: _build_reminder_health_banner method.
+    locked: false
+    inputs:
+      parent:
+        type: ttk.Frame
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _refresh_reminder_health_banner
+    description: _refresh_reminder_health_banner method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _build_today_dashboard
+    description: _build_today_dashboard method.
+    locked: false
+    inputs:
+      parent:
+        type: ttk.Frame
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _refresh_today_dashboard
+    description: _refresh_today_dashboard method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _configure_today_kpi
+    description: _configure_today_kpi method.
+    locked: false
+    inputs:
+      kpi_key:
+        type: str
+        required: true
+      count:
+        type: int
+        required: true
+      label:
+        type: str
+        required: true
+      filter_key:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _on_dashboard_kpi_click
+    description: _on_dashboard_kpi_click method.
+    locked: false
+    inputs:
+      kpi_key:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _navigate_from_kpi
+    description: _navigate_from_kpi method.
+    locked: false
+    inputs:
+      kpi_key:
+        type: str
+        required: true
+    returns:
+      type: dict[str, str] | None
+    exceptions: []
+    side_effects: none
+  - name: _on_recommended_action_click
+    description: _on_recommended_action_click method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _open_interview_app
+    description: _open_interview_app method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _launch_interview_process
+    description: _launch_interview_process method.
+    locked: false
+    inputs:
+      interview_path:
+        type: Path
+        required: true
+    returns:
+      type: str | None
+    exceptions: []
+    side_effects: none
+  - name: _interview_launch_log_path
+    description: _interview_launch_log_path method.
+    locked: false
+    inputs:
+      app_root:
+        type: Path
+        required: true
+    returns:
+      type: Path
+    exceptions: []
+    side_effects: none
+  - name: _write_interview_launch_log
+    description: _write_interview_launch_log method.
+    locked: false
+    inputs:
+      log_path:
+        type: Path
+        required: true
+      diagnostics:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _launch_diagnostics_text
+    description: _launch_diagnostics_text method.
+    locked: false
+    inputs:
+      interview_path:
+        type: Path
+        required: true
+      app_root:
+        type: Path
+        required: true
+      return_code:
+        type: int | None
+        required: true
+      stdout_text:
+        type: str
+        required: true
+      stderr_text:
+        type: str
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _format_launch_error
+    description: _format_launch_error method.
+    locked: false
+    inputs:
+      log_path:
+        type: Path
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _open_next_critical_from_dashboard
+    description: _open_next_critical_from_dashboard method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _reminder_banner_text
+    description: _reminder_banner_text method.
+    locked: false
+    inputs:
+      health:
+        type: Any
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _reminder_banner_colors
+    description: _reminder_banner_colors method.
+    locked: false
+    inputs:
+      severity:
+        type: str
+        required: true
+    returns:
+      type: dict[str, str]
+    exceptions: []
+    side_effects: none
+  - name: _apply_launch_context
+    description: _apply_launch_context method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _select_employee_by_id
+    description: _select_employee_by_id method.
+    locked: false
+    inputs:
+      employee_id:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _label_for_employee
+    description: _label_for_employee method.
+    locked: false
+    inputs:
+      employee:
+        type: Employee
+        required: true
+    returns:
+      type: int | None
+    exceptions: []
+    side_effects: none
+  - name: _build_task_filter_bar
+    description: _build_task_filter_bar method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _set_task_filter
+    description: _set_task_filter method.
+    locked: false
+    inputs:
+      filter_key:
+        type: str
+        required: true
+      source:
+        type: str
+        required: false
+        default: programmatic
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _toggle_compact_mode
+    description: _toggle_compact_mode method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _refresh_selected_tasks
+    description: _refresh_selected_tasks method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _sync_canvas
+    description: _sync_canvas method.
+    locked: false
+    inputs:
+      _event:
+        type: tk.Event
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _on_canvas_resize
+    description: _on_canvas_resize method.
+    locked: false
+    inputs:
+      event:
+        type: tk.Event
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: change_storage_folder
+    description: change_storage_folder method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: refresh_employee_list
+    description: refresh_employee_list method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _on_select_employee
+    description: _on_select_employee method.
+    locked: false
+    inputs:
+      _event:
+        type: tk.Event
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: render_tasks_for_selected
+    description: render_tasks_for_selected method.
+    locked: false
+    inputs:
+      employee:
+        type: Employee | None
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _task_title_wraplength
+    description: _task_title_wraplength method.
+    locked: false
+    inputs:
+      compact_mode:
+        type: bool
+        required: true
+    returns:
+      type: int
+    exceptions: []
+    side_effects: none
+  - name: _invoke_button_from_keyboard
+    description: _invoke_button_from_keyboard method.
+    locked: false
+    inputs:
+      button:
+        type: tk.Widget
+        required: true
+      surface:
+        type: str
+        required: true
+      target:
+        type: str
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _install_focus_visible_behavior
+    description: _install_focus_visible_behavior method.
+    locked: false
+    inputs:
+      widget:
+        type: tk.Widget
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _task_countdown_text
+    description: _task_countdown_text method.
+    locked: false
+    inputs:
+      task:
+        type: Any
+        required: true
+      today:
+        type: date
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _toggle_task
+    description: _toggle_task method.
+    locked: false
+    inputs:
+      task:
+        type: Any
+        required: true
+      var:
+        type: tk.BooleanVar
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _log_kpi_completion_if_applicable
+    description: _log_kpi_completion_if_applicable method.
+    locked: false
+    inputs:
+      task:
+        type: Any
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _employee_by_id
+    description: _employee_by_id method.
+    locked: false
+    inputs:
+      employee_id:
+        type: str | None
+        required: true
+    returns:
+      type: Employee | None
+    exceptions: []
+    side_effects: none
+  - name: _employee_summary_label
+    description: _employee_summary_label method.
+    locked: false
+    inputs:
+      employee:
+        type: Employee
+        required: true
+      today:
+        type: date
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: open_add_employee_dialog
+    description: open_add_employee_dialog method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _save_employee
+    description: _save_employee method.
+    locked: false
+    inputs:
+      dialog:
+        type: tk.Toplevel
+        required: true
+      fields:
+        type: dict[str, tk.Entry]
+        required: true
+      inline_validation:
+        type: Any
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: open_custom_template_dialog
+    description: open_custom_template_dialog method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _toggle_specific_date_picker
+    description: _toggle_specific_date_picker method.
+    locked: false
+    inputs:
+      reference_input:
+        type: ttk.Combobox
+        required: true
+      specific_date_picker:
+        type: DateEntry
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _save_custom_template
+    description: _save_custom_template method.
+    locked: false
+    inputs:
+      dialog:
+        type: tk.Toplevel
+        required: true
+      vars_map:
+        type: dict[str, tk.StringVar]
+        required: true
+      specific_date_picker:
+        type: DateEntry
+        required: true
+      inline_validation:
+        type: Any
+        required: true
+      controls:
+        type: dict[str, tk.Widget]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: open_email_settings
+    description: open_email_settings method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _build_email_settings_fields
+    description: _build_email_settings_fields method.
+    locked: false
+    inputs:
+      parent:
+        type: ttk.LabelFrame
+        required: true
+      vars_map:
+        type: dict[str, tk.Variable]
+        required: true
+    returns:
+      type: dict[str, tk.Text]
+    exceptions: []
+    side_effects: none
+  - name: _build_onboarding_placeholder_picker
+    description: _build_onboarding_placeholder_picker method.
+    locked: false
+    inputs:
+      parent:
+        type: ttk.LabelFrame
+        required: true
+      row_index:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _insert_onboarding_placeholder
+    description: _insert_onboarding_placeholder method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _refresh_recipient_warnings
+    description: _refresh_recipient_warnings method.
+    locked: false
+    inputs:
+      vars_map:
+        type: dict[str, tk.Variable]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _recipient_validation_errors
+    description: _recipient_validation_errors method.
+    locked: false
+    inputs:
+      vars_map:
+        type: dict[str, tk.Variable]
+        required: true
+    returns:
+      type: list[str]
+    exceptions: []
+    side_effects: none
+  - name: _build_scheduler_settings_fields
+    description: _build_scheduler_settings_fields method.
+    locked: false
+    inputs:
+      parent:
+        type: ttk.LabelFrame
+        required: true
+      vars_map:
+        type: dict[str, tk.Variable]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _render_scheduler_status_rows
+    description: _render_scheduler_status_rows method.
+    locked: false
+    inputs:
+      parent:
+        type: ttk.LabelFrame
+        required: true
+      start_row:
+        type: int
+        required: true
+      rows:
+        type: list[tuple[str, str]]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _render_scheduler_setup_steps
+    description: _render_scheduler_setup_steps method.
+    locked: false
+    inputs:
+      parent:
+        type: ttk.LabelFrame
+        required: true
+      start_row:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _scheduler_setup_steps
+    description: _scheduler_setup_steps method.
+    locked: false
+    inputs: {}
+    returns:
+      type: list[str]
+    exceptions: []
+    side_effects: none
+  - name: _scheduler_enabled_status_label
+    description: _scheduler_enabled_status_label method.
+    locked: false
+    inputs:
+      vars_map:
+        type: dict[str, tk.Variable]
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _save_email_settings
+    description: _save_email_settings method.
+    locked: false
+    inputs:
+      dialog:
+        type: tk.Toplevel
+        required: true
+      vars_map:
+        type: dict[str, tk.Variable]
+        required: true
+      template_widgets:
+        type: dict[str, tk.Text]
+        required: true
+      inline_validation:
+        type: Any
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _onboarding_template_contexts
+    description: _onboarding_template_contexts method.
+    locked: false
+    inputs: {}
+    returns:
+      type: dict[str, str]
+    exceptions: []
+    side_effects: none
+  - name: _onboarding_template_values
+    description: _onboarding_template_values method.
+    locked: false
+    inputs:
+      vars_map:
+        type: dict[str, tk.Variable]
+        required: true
+      template_widgets:
+        type: dict[str, tk.Text]
+        required: true
+    returns:
+      type: dict[str, str]
+    exceptions: []
+    side_effects: none
+  - name: _validate_placeholder_templates_for_run
+    description: _validate_placeholder_templates_for_run method.
+    locked: false
+    inputs: {}
+    returns:
+      type: bool
+    exceptions: []
+    side_effects: none
+  - name: _collect_runtime_placeholder_values
+    description: _collect_runtime_placeholder_values method.
+    locked: false
+    inputs:
+      runner:
+        type: OnboardingReminderRunner
+        required: true
+    returns:
+      type: dict[str, str] | None
+    exceptions: []
+    side_effects: none
+  - name: _prompt_for_missing_values
+    description: _prompt_for_missing_values method.
+    locked: false
+    inputs:
+      missing:
+        type: list[str]
+        required: true
+      values:
+        type: dict[str, str]
+        required: true
+    returns:
+      type: bool
+    exceptions: []
+    side_effects: none
+  - name: _runtime_recipient_validation_errors
+    description: _runtime_recipient_validation_errors method.
+    locked: false
+    inputs: {}
+    returns:
+      type: list[str]
+    exceptions: []
+    side_effects: none
+  - name: run_reminders_now
+    description: run_reminders_now method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: run_reminders_dry_run
+    description: run_reminders_dry_run method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _build_reminder_runner
+    description: _build_reminder_runner method.
+    locked: false
+    inputs: {}
+    returns:
+      type: OnboardingReminderRunner
+    exceptions: []
+    side_effects: none
+  - name: _show_presend_reminder_dialog
+    description: _show_presend_reminder_dialog method.
+    locked: false
+    inputs:
+      result:
+        type: Any
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _prepare_modal_dialog
+    description: _prepare_modal_dialog method.
+    locked: false
+    inputs:
+      dialog:
+        type: tk.Toplevel
+        required: true
+      first_widget:
+        type: tk.Widget | None
+        required: false
+        default: null
+      on_close:
+        type: Callable[[], None] | None
+        required: false
+        default: null
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _enable_modal_keyboard_navigation
+    description: _enable_modal_keyboard_navigation method.
+    locked: false
+    inputs:
+      dialog:
+        type: tk.Toplevel
+        required: true
+      first_widget:
+        type: tk.Widget
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _cycle_modal_focus
+    description: _cycle_modal_focus method.
+    locked: false
+    inputs:
+      event:
+        type: tk.Event
+        required: true
+      dialog:
+        type: tk.Toplevel
+        required: true
+      forward:
+        type: bool
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _focusable_children
+    description: _focusable_children method.
+    locked: false
+    inputs:
+      root:
+        type: tk.Misc
+        required: true
+    returns:
+      type: list[tk.Widget]
+    exceptions: []
+    side_effects: none
+  - name: _close_reminder_dialog
+    description: _close_reminder_dialog method.
+    locked: false
+    inputs:
+      dialog:
+        type: tk.Toplevel
+        required: true
+      chosen_action:
+        type: tk.StringVar
+        required: true
+      action:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _presend_dialog_text
+    description: _presend_dialog_text method.
+    locked: false
+    inputs:
+      result:
+        type: Any
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _finalize_reminder_run
+    description: _finalize_reminder_run method.
+    locked: false
+    inputs:
+      result:
+        type: Any
+        required: true
+      run_source:
+        type: str
+        required: false
+        default: manual
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _show_reminder_run_message
+    description: _show_reminder_run_message method.
+    locked: false
+    inputs:
+      result:
+        type: Any
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _reminder_mode_label
+    description: _reminder_mode_label method.
+    locked: false
+    inputs:
+      dry_run:
+        type: bool
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _record_reminder_run_metadata
+    description: _record_reminder_run_metadata method.
+    locked: false
+    inputs:
+      result:
+        type: Any
+        required: true
+      run_source:
+        type: str
+        required: false
+        default: manual
+    returns:
+      type: bool
+    exceptions: []
+    side_effects: none
+  - name: _should_update_last_reminder_run_at
+    description: _should_update_last_reminder_run_at method.
+    locked: false
+    inputs:
+      result:
+        type: Any
+        required: true
+    returns:
+      type: bool
+    exceptions: []
+    side_effects: none
+  - name: _log_task_created_events
+    description: _log_task_created_events method.
+    locked: false
+    inputs:
+      employee:
+        type: Employee
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _log_new_tasks_for_employee
+    description: _log_new_tasks_for_employee method.
+    locked: false
+    inputs:
+      employee:
+        type: Employee
+        required: true
+      before_ids:
+        type: set[str]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _log_reminder_events
+    description: _log_reminder_events method.
+    locked: false
+    inputs:
+      tasks:
+        type: list[dict[str, str | None]]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _log_overdue_events
+    description: _log_overdue_events method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: _is_valid_date
+    description: _is_valid_date method.
+    locked: false
+    inputs:
+      value:
+        type: str
+        required: true
+    returns:
+      type: bool
+    exceptions: []
+    side_effects: none
+  - name: save_state
+    description: save_state method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+- name: WindowState
+  description: WindowState class in onboarding_app.
+  locked: false
+  attributes: {}
+  methods:
+  - name: __init__
+    description: __init__ method.
+    locked: false
+    inputs:
+      root:
+        type: Any
+        required: true
+      path:
+        type: Any
+        required: false
+        default: window_state.json
+    returns:
+      type: Any
+    exceptions: []
+    side_effects: none
+  - name: load
+    description: load method.
+    locked: false
+    inputs: {}
+    returns:
+      type: Any
+    exceptions: []
+    side_effects: none
+  - name: save
+    description: save method.
+    locked: false
+    inputs: {}
+    returns:
+      type: Any
+    exceptions: []
+    side_effects: none
+- name: TwoPaneShell
+  description: TwoPaneShell class in onboarding_app.
+  locked: false
+  attributes: {}
+  methods:
+  - name: __init__
+    description: __init__ method.
+    locked: false
+    inputs:
+      master:
+        type: Any
+        required: true
+    returns:
+      type: Any
+    exceptions: []
+    side_effects: none
+data_structures: []
+dependencies:
+- dashboard_today
+- email_security
+- keyboard_telemetry
+- onboarding_action_sections
+- onboarding_dashboard_actions
+- onboarding_models
+- onboarding_reminder_health
+- onboarding_reminder_runner
+- onboarding_scheduler
+- onboarding_scheduler_dialog
+- onboarding_scheduler_status
+- onboarding_send_guardrails
+- onboarding_storage
+- onboarding_task_filters
+- onboarding_template_reference
+- onboarding_ui_helpers
+- template_placeholders
+- ui_feedback
+- ux_metrics

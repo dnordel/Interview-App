@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-05-07T20:35:38.505048Z",
+  "updated_at": "2026-05-07T20:42:24.937513Z",
+  "interview": {
+    "interview_id": "Candidate_Jessalyn_Espinoza_Valcourt_2026-05-07_ae874d4e",
+    "candidate_name": "Jessalyn Espinoza-Valcourt",
+    "interview_date": "2026-05-07"
+  },
+  "questions": {
+    "0": {
+      "flow_idx": 0,
+      "item_type": "custom",
+      "item_id": "Why-ECE",
+      "notes": {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q1 Attempt 1]\nand my associates of science and early childhood education in 2024 I've always had an interest for working with kids even more so when I was like when people would ask me oh what do you want to be when you grew up I always said I wanted to work with young children I guess you could say be a teacher but I think it's more so like aside from the curriculum just like the love and the care that they received that I was leaning more towards when I first started because I know that the curriculum is important but to me it's just them knowing that they can be comfortable around uh the educator that that means more to me",
+      "updated_at": "2026-05-07T20:35:51.392941Z"
+    },
+    "1": {
+      "flow_idx": 1,
+      "item_type": "custom",
+      "item_id": "Why-LPL",
+      "notes": {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q2 Attempt 1]\nwell i for sure want something that's full year round that that for me i'm not big on working just throughout the school year i feel like i i can't really afford to just work during the school year i have to do summers and winters as well so that was one thing the full year round and then i saw that um it was a a company and not private owned oh you are are there different locations or is it just the one in hawthorne okay oh wow that's quite a way yeah my cousin lives out there that yeah that's quite a drive",
+      "updated_at": "2026-05-07T20:36:49.155367Z"
+    },
+    "2": {
+      "flow_idx": 2,
+      "item_type": "trait",
+      "item_id": "trait_1",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q3 Attempt 1]\nRecently, I had a child. Mom kind of told us that they were having problems like her and dad, so I noticed that his behavior was changing a lot, and he was becoming more aggressive with the children. I mean, I would sit him down, but I wouldn't just sit him down by himself. I would actually sit down with him and talk to him and tell him, everything's okay. Relax your body. Calm yourself. It's fine. Don't worry. Don't get upset because I knew there was more going on than just...",
+      "updated_at": "2026-05-07T20:37:36.910613Z"
+    },
+    "3": {
+      "flow_idx": 3,
+      "item_type": "trait",
+      "item_id": "trait_2",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q4 Attempt 1]\nSo right now I'm dealing with the problem where I feel like there's not enough of us and we're taking in all these children. And a lot of them, they have autism, either like full blown autism or they're on the spectrum. And it's frustrating for me to have to try to get through a day and then I can't because they they can't keep up. We're not qualified to have special needs children with us. So they can't keep up and it becomes a huge distraction. Usually what I do is just move on from activity and just go to something more play based.",
+      "updated_at": "2026-05-07T20:38:29.396513Z"
+    },
+    "4": {
+      "flow_idx": 4,
+      "item_type": "trait",
+      "item_id": "trait_3",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q5 Attempt 1]\nWell, I'll start by trying to assure them that everything's okay. I usually would just give them space for a little bit and then just let them ease on their own. If that doesn't work, a lot of the times if there's another adult present, I'll have them help me. But if there isn't, I honestly just wait, give them space, let them breathe, let them relax. And I'll just try to keep reassuring.",
+      "updated_at": "2026-05-07T20:39:16.796816Z"
+    },
+    "5": {
+      "flow_idx": 5,
+      "item_type": "trait",
+      "item_id": "trait_4",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q6 Attempt 1]\nI mean I usually do get a lot of feedback and criticism from my boss it's more so I guess the way my tone I don't mean to come off strong but I know I do I just try my best to just remind myself to just be more soft-spoken I don't get upset I know that the feedback it's necessary if I need if I want to grow",
+      "updated_at": "2026-05-07T20:39:59.700734Z"
+    },
+    "6": {
+      "flow_idx": 6,
+      "item_type": "trait",
+      "item_id": "trait_5",
+      "notes": {
+        "raw_score": 1,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q7 Attempt 1]\nI'm sorry? Well, sometimes licensing comes in, so what I'll usually do is just try my best to tidy up the classroom and make sure that the, well, I always make sure my kids are clean, but regardless, I make sure their faces and their hands are clean as well. I just, I really just try to make sure everything's in order when events like that happen, because licensing, usually they come in randomly. It's usually because they got a phone call.",
+      "updated_at": "2026-05-07T20:40:43.881513Z"
+    },
+    "7": {
+      "flow_idx": 7,
+      "item_type": "trait",
+      "item_id": "trait_6",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q8 Attempt 1]\nI've had a couple co-workers that I just feel like they don't have a sense of urgency when it comes to having the kids cleaned or making sure that they don't get injured. So a lot of the times I feel like I have to step it up and just really be aware of what the children are doing. And I feel like sometimes I have to think for others as well. So that can be a challenge when working with other co-workers.",
+      "updated_at": "2026-05-07T20:41:19.597928Z"
+    },
+    "8": {
+      "flow_idx": 8,
+      "item_type": "trait",
+      "item_id": "trait_7",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-05-07T20:41:17.430720Z"
+    },
+    "9": {
+      "flow_idx": 9,
+      "item_type": "trait",
+      "item_id": "trait_10",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-05-07T20:41:18.263143Z"
+    },
+    "10": {
+      "flow_idx": 10,
+      "item_type": "trait",
+      "item_id": "trait_11",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-05-07T20:41:20.093092Z"
+    },
+    "11": {
+      "flow_idx": 11,
+      "item_type": "custom",
+      "item_id": "FT-or-PT",
+      "notes": {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full-time",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-05-07T20:41:24.679866Z"
+    },
+    "12": {
+      "flow_idx": 12,
+      "item_type": "custom",
+      "item_id": "Not-Avail",
+      "notes": {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-05-07T20:41:31.023399Z"
+    },
+    "13": {
+      "flow_idx": 13,
+      "item_type": "custom",
+      "item_id": "Pay",
+      "notes": {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$19.50",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q14 Attempt 1]\num above above 1950 i was going to ask do you guys take subsidy do you guys take subsidy like public assistance yes",
+      "updated_at": "2026-05-07T20:42:02.765230Z"
+    },
+    "14": {
+      "flow_idx": 14,
+      "item_type": "custom",
+      "item_id": "Start",
+      "notes": {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "two weeks",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q15 Attempt 1]\nand crystal stairs so that is one thing that if i were to move somewhere else i have to be able to transfer her with me not necessarily in the same classroom but just in the same okay okay i'd have to give it to me",
+      "updated_at": "2026-05-07T20:42:24.937513Z"
+    }
+  }
+}

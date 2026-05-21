@@ -1,0 +1,237 @@
+{
+  "candidate": {
+    "name": "RaeNelle McDougal",
+    "interview_date": "2026-03-25",
+    "school": "Palmdale",
+    "track": "infant_toddler",
+    "qualification": {
+      "has_degree": true,
+      "degree_type": "BS",
+      "degree_in_ece": false,
+      "ece_units_completed": 30,
+      "infant_toddler_class_completed": false,
+      "total_units_completed": null,
+      "years_experience": 12
+    }
+  },
+  "percent_of_max": 0.0,
+  "percent_of_max_label": "0.0%",
+  "percent_label": "0.0%",
+  "decision": "borderline",
+  "decision_metadata": {
+    "any_critical_selected": false,
+    "triggered_critical": false,
+    "locked_rule": null,
+    "override_rationale": null,
+    "configured_max_weighted_total": 105,
+    "max_weighted_total": 198,
+    "max_weighted_total_included_traits": 198,
+    "percent_denominator": 198,
+    "skipped_traits_count": 1,
+    "scored_traits_count": 8
+  },
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_10",
+        "trait_name": "trait_10",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_11",
+        "trait_name": "trait_11",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_8",
+        "trait_name": "Gentleness & Physical Awareness",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_9",
+        "trait_name": "Patience with Nonverbal Communication",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full-time.",
+        "skipped": false
+      },
+      {
+        "question_text": "Tell me a little about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "asap. not currently working",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "$24, minimum",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying to our company, Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-03-25 - Palmdale - RaeNelle McDougal - Interview.docx",
+    "transcript_path": ""
+  },
+  "communication_log": [],
+  "flow_transcript_slices": [
+    {
+      "type": "custom",
+      "id": "Why-ECE",
+      "question": "Tell me a little about yourself and why early childhood education matters to you.",
+      "candidate_transcript": "[Q1 Attempt 1]\nWell, my name is Rayno McDougall. I graduated in 2012, and then I hopped right into education in about 2026, coming from a family that works in the education field. So in 2016, I started with first grade. I did first grade for about six years. In between that, I worked with different age groups, as I am also a cheer and dance coach as well. After working with first grade, I decided to move up in age, and I began fourth grade, and now I'm just looking to experience something new. Again, I would have to look at my transcripts. I'm not positive. Maybe 30? Okay. Yeah, from about 2016 to now, yeah."
+    },
+    {
+      "type": "custom",
+      "id": "Why-LPL",
+      "question": "Why are you applying to our company, Launch Pad Learning?",
+      "candidate_transcript": "[Q2 Attempt 1]\nYou guys just stood out to me with the infant, from the infant to the toddler."
+    },
+    {
+      "type": "trait",
+      "id": "trait_1",
+      "question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+      "candidate_transcript": "[Q3 Attempt 1]\num I've had a few incidents where a child has felt left out playing with um their peers and I had I just broke it down to them and let them know that I've been in their shoes before I've experienced this as well and I've gave them solutions to how they can solve this problem and not feel like this again um it couldn't be it couldn't have been more than a month ago you"
+    },
+    {
+      "type": "trait",
+      "id": "trait_2",
+      "question": "Tell me about a time you felt overwhelmed or stressed at work with children present. What was going on, and how did you handle yourself in that moment?",
+      "candidate_transcript": "[Q4 Attempt 1]\nthat's okay um well working with children multiple them multiple of them at the same time can be overwhelming and just them needing you at the same time can be very overwhelming so the way i handle that is just letting taking it one by one one student by student letting them know okay i'm gonna start with joe once i'm done with joe i will get to you sarah and then after sarah i will you know let them know the chain of events that is going to occur this will teach them patience as well and it will calm my nerves"
+    },
+    {
+      "type": "trait",
+      "id": "trait_3",
+      "question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering, helping with clothing, or guiding them physically. They are pulling away or saying no. Walk me through exactly what you would do, step by step",
+      "candidate_transcript": "[Q5 Attempt 1]\num first things first I would ask them what's bothering them to see if we can figure this out by communicating um if they're able to communicate with me what's bothering them then I will communicate back with them well these are the reasons why we have to do this for example changing a diaper we have to change your diaper or else you're going to be stinky or uh you might go through your clothes or something like that and um if it's like for example I don't know why this example popped into my head but if I needed to change a poopy diaper I can use like peanut butter on a plate for example to show them this is what it looks like inside your diaper that's nasty we need to change that something like that along those lines you feel like I would need to bring that to higher attention because why would they be scared to get their diaper changed or get changed"
+    },
+    {
+      "type": "trait",
+      "id": "trait_4",
+      "question": "Tell me about a time you received feedback you didn’t expect or didn’t fully agree with. What happened next?",
+      "candidate_transcript": "[Q6 Attempt 1]\nI'm always open to all feedback, and I always just take note of what that person may be feeling or what I need to be changing, and I try to apply it in the next go-round. I'm always open to everything. Let me see. Let me see. I would say probably during one of my coaching sessions, I had a parent tell me that maybe I should let them kind of more so be free rather than it being so structured. So I took notes from that, and I inserted free play into practices rather than everything being so structured. Pretty well. I feel like they're definitely more comfortable now. Thank you."
+    },
+    {
+      "type": "trait",
+      "id": "trait_5",
+      "question": "Tell me about a time something didn’t go as planned at work and your role in it. How did you handle the responsibility piece?",
+      "candidate_transcript": "[Q7 Attempt 1]\nLet's see. I would have to say during an IEP, I was asked what I felt was best for the student. And once I voiced what I felt was best for the student, they kind of went around everything I said and just did what they felt they needed to do. And how I handled that was I just followed their directions, and I just kept suggesting that, well, maybe we should try this, the things that I was suggesting in the meeting. And eventually, once they saw that what they were doing was not working, that's when they decided to give what I was mentioning a shot. I had a student who did not want to sit close to the teacher, and they wanted to sit in the furthest seat away possible. However, the student could not focus, and the parent was not believing that they were going to be able to sit close to the teacher. So I just kept suggesting that the student could not focus. So I just suggested, well, maybe he should sit closer to me. And the parent was just so against it. I'm not sure why. I guess just because the student didn't want to. And they continued on with their normal routine with him, just trying to do like check-ins with me instead of him sitting right in front of me, and it just wasn't working. So I brought up the idea of him sitting closer to me, and they just went for it. And his grades started to soar, and he became more independent, and he was able to ask for help more. It just helped him out a lot more."
+    },
+    {
+      "type": "trait",
+      "id": "trait_6",
+      "question": "Tell me about a time you had to work closely with another adult in a challenging situation. How did you navigate it?",
+      "candidate_transcript": "[Q8 Attempt 1]\nI would say having to come up with a routine with my assistant coach within a matter of days with only an hour of practice per day. How we did that was just teamwork overnight. We came up with a routine. We executed it the next day. We just perfected it. And if we needed to get on Zoom with anybody to practice anything, we did that. We were just all open for the students at that point. And we just kind of put our lives on hold at that point and made sure that that..."
+    },
+    {
+      "type": "trait",
+      "id": "trait_7",
+      "question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+      "candidate_transcript": "[Q9 Attempt 1]\nUm, I would have to say patience. Um, rushing to do anything isn't going to solve anything. Um, being, uh, using your first response to answer to somebody isn't always the best. It's just patience. Take time to breathe. If you're upset, take time to breathe. Um, that's for students and myself as well. If you need time to step away, then do that. Um, communication also, communication is very big. Um, if we just voice how we're feeling to one another, the day can just go along so much smoother."
+    },
+    {
+      "type": "trait",
+      "id": "trait_9",
+      "question": "How do you understand what a nonverbal child needs when they’re crying or upset? Can you walk me through how you respond in those moments?",
+      "candidate_transcript": "[Q11 Attempt 1]\nI actually have a non-verbal nephew and what we've been doing is we've been trying to teach him sign language, sign language motions for what he needs. If that before we were teaching him the sign language things, we would kind of just if it was something in the kitchen, we would walk around the kitchen and just point to things to see if that's what he wanted. And what are some other things? Yeah, that's really what's been working for us. That's all I can think of right now."
+    },
+    {
+      "type": "custom",
+      "id": "FT-or-PT",
+      "question": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+      "candidate_transcript": "[Q12 Attempt 1]\nYes."
+    },
+    {
+      "type": "custom",
+      "id": "Start",
+      "question": "When could you start if we decide to move forward?",
+      "candidate_transcript": "[Q14 Attempt 1]\num i saw your highest was 24 is that correct um well yeah i'm definitely willing to start at the 24 and um move up if i'm able to um i'm coming from 32 so i'm gonna say"
+    }
+  ]
+}

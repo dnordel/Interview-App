@@ -1,0 +1,145 @@
+module:
+  name: interview_app_session_manager
+  language: python
+  path: src/interview_app/session_manager.py
+  version: 1.0.0
+  description: Session payload validation, normalization, and resume navigation instructions.
+functions: []
+classes:
+- name: SessionPayloadValidationError
+  description: Raised when persisted payload structures are invalid for hydration.
+  locked: false
+  attributes: {}
+  methods: []
+- name: ResumeInstruction
+  description: Instruction object describing where the UI should resume.
+  locked: false
+  attributes:
+    target:
+      type: str
+    flow_index:
+      type: int | None
+  methods: []
+- name: InterviewSessionManager
+  description: Service for loading persisted sessions, hydrating InterviewState, and building resume targets.
+  locked: false
+  attributes: {}
+  methods:
+  - name: __init__
+    description: Configure draft/session data providers and date provider.
+    locked: false
+    inputs:
+      draft_manager:
+        type: DraftManager
+        required: true
+      session_store:
+        type: InterviewSessionStore | None
+        required: false
+      today_provider:
+        type: Callable[[], date]
+        required: false
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: load_draft_payload
+    description: Load and normalize persisted draft JSON payload.
+    locked: false
+    inputs:
+      draft_path:
+        type: Path
+        required: true
+    returns:
+      type: dict[str, Any]
+    exceptions:
+    - SessionPayloadValidationError
+    side_effects: Reads draft file from disk.
+  - name: load_session_payload
+    description: Load and normalize persisted interview session payload.
+    locked: false
+    inputs:
+      interview_id:
+        type: str
+        required: true
+      candidate_name:
+        type: str
+        required: true
+      interview_date:
+        type: str
+        required: true
+    returns:
+      type: dict[str, Any]
+    exceptions:
+    - SessionPayloadValidationError
+    side_effects: Reads session file from disk.
+  - name: normalize_payload
+    description: Validate and normalize draft payload schema.
+    locked: false
+    inputs:
+      payload:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: dict[str, Any]
+    exceptions:
+    - SessionPayloadValidationError
+    side_effects: none
+  - name: normalize_session_payload
+    description: Validate and normalize interview session payload schema.
+    locked: false
+    inputs:
+      payload:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: dict[str, Any]
+    exceptions:
+    - SessionPayloadValidationError
+    side_effects: none
+  - name: hydrate_state
+    description: Hydrate InterviewState from normalized draft payload values.
+    locked: false
+    inputs:
+      payload:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: InterviewState
+    exceptions:
+    - SessionPayloadValidationError
+    side_effects: none
+  - name: hydrate_state_from_session_payload
+    description: Apply normalized question/session snapshot data into a state object.
+    locked: false
+    inputs:
+      state:
+        type: InterviewState
+        required: true
+      payload:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: None
+    exceptions:
+    - SessionPayloadValidationError
+    side_effects: Mutates InterviewState in place.
+  - name: build_resume_instruction
+    description: Return target screen and flow index for post-load resume routing.
+    locked: false
+    inputs:
+      state:
+        type: InterviewState
+        required: true
+      flow_length:
+        type: int
+        required: true
+    returns:
+      type: ResumeInstruction
+    exceptions: []
+    side_effects: none
+data_structures: []
+dependencies:
+- candidate_profile
+- interview_session_store
+- interview_state
+- reporting

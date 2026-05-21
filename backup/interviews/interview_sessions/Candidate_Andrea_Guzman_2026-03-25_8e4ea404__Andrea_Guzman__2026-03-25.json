@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-03-25T22:13:22.634469Z",
+  "updated_at": "2026-03-25T22:23:32.324519Z",
+  "interview": {
+    "interview_id": "Candidate_Andrea_Guzman_2026-03-25_8e4ea404",
+    "candidate_name": "Andrea Guzman",
+    "interview_date": "2026-03-25"
+  },
+  "questions": {
+    "0": {
+      "flow_idx": 0,
+      "item_type": "custom",
+      "item_id": "Why-ECE",
+      "notes": {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q1 Attempt 1]\nA little bit about myself is I used to work in human resources. I recently left that this past year. I started working at Small World Preschool, so it's going to be my first year finishing up as a teacher. And I chose early childhood education because that was something that sparked my interest. I wanted to work with kids, and I knew I wanted to be a teacher when I started going to school. Yes. Yes, I did.",
+      "updated_at": "2026-03-25T22:13:30.220861Z"
+    },
+    "1": {
+      "flow_idx": 1,
+      "item_type": "custom",
+      "item_id": "Why-LPL",
+      "notes": {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q2 Attempt 1]\nI feel like having the experience as a preschool teacher, I feel like it allows me to bring my expertise to your company.",
+      "updated_at": "2026-03-25T22:13:43.424998Z"
+    },
+    "2": {
+      "flow_idx": 2,
+      "item_type": "trait",
+      "item_id": "trait_1",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q3 Attempt 1]\nI had this one incident with a child where they just had a total miscommunication of emotions. They were yelling, screaming. They were kind of having a hard time breathing. I noticed they got really red, and it was just too much emotion for them at once. I helped them by talking to them, doing some breathing exercises, and just assuring them that at school they're safe, there's no need to worry about anything, and that they're just in a safe environment with other children.",
+      "updated_at": "2026-03-25T22:14:39.186433Z"
+    },
+    "3": {
+      "flow_idx": 3,
+      "item_type": "trait",
+      "item_id": "trait_2",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q4 Attempt 1]\nAt work, I usually don't get stressed around children, but I do like to take some time to myself during my 10-minute breaks or my lunch just to de-stress and decompose by coloring or just reading.",
+      "updated_at": "2026-03-25T22:15:18.491578Z"
+    },
+    "4": {
+      "flow_idx": 4,
+      "item_type": "trait",
+      "item_id": "trait_3",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q5 Attempt 1]\nSo if a child doesn't want to be touched, I would go down to their eye level and start asking them how they're feeling and assuring them that it's okay, it's the transition time, or if they need to be changed, it's time for them to get changed. I'm also doing a reward system where, hey, come on and let's go get you changed, or let's go do this transition, and you'll get a sticker, or just making transition time, or anything that needs to get done, having it to be fun for them, rather than like a chore or a task. If that didn't work, I would try to call my team for help. If not... It escalated to that further.",
+      "updated_at": "2026-03-25T22:16:37.462546Z"
+    },
+    "5": {
+      "flow_idx": 5,
+      "item_type": "trait",
+      "item_id": "trait_4",
+      "notes": {
+        "raw_score": 1,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q6 Attempt 1]\nWell, we were having an issue with scheduling just because some kids get hungrier earlier in the day and sometimes when we do circle time, some kids say they're hungry and they're not really paying attention because they're hungry or they want to go outside and play. We would just switch up the schedule and see what works for each children. Everybody was receptive of the feedback of changing the schedule because I pay attention to them. Over the schedule change, I received positive feedback. I haven't received any negative feedback over the schedule change. No.",
+      "updated_at": "2026-03-25T22:18:05.591207Z"
+    },
+    "6": {
+      "flow_idx": 6,
+      "item_type": "trait",
+      "item_id": "trait_5",
+      "notes": {
+        "raw_score": 1,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q7 Attempt 1]\nI don't think I've had anything in that case that has happened to me at work. Yeah, at my school, we create our own lesson plans, and we just",
+      "updated_at": "2026-03-25T22:18:42.309695Z"
+    },
+    "7": {
+      "flow_idx": 7,
+      "item_type": "trait",
+      "item_id": "trait_6",
+      "notes": {
+        "raw_score": 1,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q8 Attempt 1]\nyeah in the challenging situation I would say just having a full class of kids where I work right now it's currently 12 kids per class and either two teachers or a teacher and a teacher aide so just having that communication between our",
+      "updated_at": "2026-03-25T22:19:23.552509Z"
+    },
+    "8": {
+      "flow_idx": 8,
+      "item_type": "trait",
+      "item_id": "trait_7",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q9 Attempt 1]\nMy approach to work for myself, being a first-year teacher, I felt that working with children helped me grow more, learning to have more patience and just knowing how to do things more fun with children, getting them interacting with each other.",
+      "updated_at": "2026-03-25T22:20:03.849734Z"
+    },
+    "9": {
+      "flow_idx": 9,
+      "item_type": "trait",
+      "item_id": "trait_10",
+      "notes": {
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q10 Attempt 1]\nDuring one of our Christmas shows, we had one of the children just completely scream and crying, throw themselves on the floor. What I did is just I took that child to the side and then I tried to comfort them the best way I could by ensuring them, you know, their parents were in the crowd, that it's okay to be scared, and just assure them that they're safe with their teacher.",
+      "updated_at": "2026-03-25T22:20:50.143208Z"
+    },
+    "10": {
+      "flow_idx": 10,
+      "item_type": "trait",
+      "item_id": "trait_11",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q11 Attempt 1]\nUm, I don't think I have anything that comes to mind. The closest thing I could think of is maybe them wanting to play outside in a different area when it's not our turn with that specific playground for the day. I assured them, I made them a little schedule on a little note and made them a schedule of each time we're at each playground for each day. You know, today we're on the grass yard and tomorrow we'll be on the sandbox and then we'll have the train yard just so they know the schedule and what's going on.",
+      "updated_at": "2026-03-25T22:21:58.017418Z"
+    },
+    "11": {
+      "flow_idx": 11,
+      "item_type": "custom",
+      "item_id": "FT-or-PT",
+      "notes": {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "part-time. earlier prefered.",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q12 Attempt 1]\nPart-time, early mornings.",
+      "updated_at": "2026-03-25T22:22:17.573807Z"
+    },
+    "12": {
+      "flow_idx": 12,
+      "item_type": "custom",
+      "item_id": "Not-Avail",
+      "notes": {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "Wednesday morning",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q13 Attempt 1]\nUm, it would be Wednesdays because I'm still continuing my education. Um, Wednesday afternoon. I mean, I'm sorry, Wednesday in the morning.",
+      "updated_at": "2026-03-25T22:23:08.127962Z"
+    },
+    "13": {
+      "flow_idx": 13,
+      "item_type": "custom",
+      "item_id": "Pay",
+      "notes": {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$20",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q14 Attempt 1]\nAt 20",
+      "updated_at": "2026-03-25T22:23:19.712229Z"
+    },
+    "14": {
+      "flow_idx": 14,
+      "item_type": "custom",
+      "item_id": "Start",
+      "notes": {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "two-weeks.",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q15 Attempt 1]\nIn two weeks.",
+      "updated_at": "2026-03-25T22:23:32.324519Z"
+    }
+  }
+}

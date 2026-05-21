@@ -1,0 +1,213 @@
+{
+  "candidate": {
+    "name": "Janet Guzman Rosas",
+    "interview_date": "2026-03-16",
+    "school": "Palmdale",
+    "track": "infant_toddler",
+    "qualification": {
+      "has_degree": false,
+      "degree_type": "",
+      "degree_in_ece": false,
+      "ece_units_completed": 12,
+      "infant_toddler_class_completed": false,
+      "total_units_completed": 30,
+      "years_experience": 1
+    }
+  },
+  "percent_of_max": 80.0,
+  "decision": "hire",
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_8",
+        "trait_name": "Gentleness & Physical Awareness",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_9",
+        "trait_name": "Patience with Nonverbal Communication",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "before 8:30",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full, but part",
+        "skipped": false
+      },
+      {
+        "question_text": "Tell me a little about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$22-24, negotiable",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "two-weeks",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying to our company, Launch Pad Learning?",
+        "answer": "only get 3 hours/day now.",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-03-16 - Palmdale - Janet Guzman Rosas - Interview.docx",
+    "transcript_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Candidate_Janet_Guzman_Rosas_2026-03-16_live_transcript.docx"
+  },
+  "communication_log": [],
+  "flow_transcript_slices": [
+    {
+      "type": "custom",
+      "id": "Why-ECE",
+      "question": "Tell me a little about yourself and why early childhood education matters to you.",
+      "candidate_transcript": "[Q1 Attempt 1]\nSo I have been taking care of kids since I was really young, since I was around 12. And at the time, it was just for family. And I slowly went developing it into taking care of other people that were family friends and helping them with their kids. And once I was out of high school, I started going to school for children's psychology after I had my daughter. I kind of realized that the psychology aspect wasn't for me. Um, and I did a few other things since then, but I never stopped caring for children. I did some nannying jobs and I did a lot of child care. Since now, the family that I worked for is going to be moving. I started working at my daughter's school. Um, for a TK class as a teaching assistant. And I just enjoy the energy and the day-to-day of teaching new kids, um, kids that young, like different things. I have two kids of my own. I currently, like, my oldest is seven and my youngest is two. And, you know, my two kids have struggled with speech specifically. Now, my kids are struggling with speech. So, I have a lot of reference to things that kids that age can struggle with."
+    },
+    {
+      "type": "custom",
+      "id": "Why-LPL",
+      "question": "Why are you applying to our company, Launch Pad Learning?",
+      "candidate_transcript": "[Q2 Attempt 1]\nuh I saw that you guys have good hours as far as um a lot of other daycares I feel like their hours are very low and the district that I am in currently right now as well um they only offer like three hours a day and so I am looking for somewhere where I can continue to grow and um continue to have I guess more of a career in and not just where I'm at right now where it is just kind of I I don't want to say temporary because it is a career but um somewhere where I can continue growing whereas this like this district only"
+    },
+    {
+      "type": "trait",
+      "id": "trait_1",
+      "question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+      "candidate_transcript": "[Q3 Attempt 1]\nI think a lot of the times when children react with anger or with crying or fits, it's usually they have an issue that has went on and they haven't said anything. There is a young girl in the class that I'm currently in that she does struggle with those things. One of her things is when she goes to the bathroom, the bathrooms in our class, she will never go to the girls because it's too dark for her and she gets scared and she'd rather hold it than go in and she will have a complete meltdown. So we have to take her to the boys where it is sunnier, but she still doesn't like the noise in there. So instead of letting her, you know, just hold it, that's going to cause damage. To her and having her do all of these things, we kind of figured out a way that if we put the stool at the door, like it helps her face that fear. And if she's, if it's someone new and she's having a meltdown, I like to show them like, okay, this is all she needs and she's going to be okay. She's just in a panic because she doesn't know what to do. She's in pain because she has to go to the bathroom. She just needs a little bit of extra help."
+    },
+    {
+      "type": "trait",
+      "id": "trait_2",
+      "question": "Tell me about a time you felt overwhelmed or stressed at work with children present. What was going on, and how did you handle yourself in that moment?",
+      "candidate_transcript": "[Q4 Attempt 1]\nWhen I have gone through things in my personal life that have made me feel overwhelmed and stressed in general, it can get really tough. But I know that when I'm at work, it's so hard to feel that way when you are at work and there's a bunch of kids just like laughing and making jokes and telling you about your day. I just try and let go of everything else and focus on what I am doing then and there because they are what matters at the time. Yeah. Yeah. Oh, a lot. But I think that a lot of them just need some extra attention, especially a lot of them when they are in daycare all day. We have a few kids right now that, you know, they go. To their TK class, but immediately after they go to daycare, they go to boys and girls and they need more attention because they aren't receiving as much at home. I think that it's easier just to go about your day and make sure that. You know, in your mind, like, oh, to pay a little bit of attention to them, just say good morning to them, ask them how their how their day was. Just little things to give them a little bit of attention. And I find that that makes the rest of the day go by smoother when they know they are getting a little bit more one on one a lot. Yeah. That I am right now, I know different things work for different class groups, and I think this sounds a little silly, I guess, but what works for the current class that I am in right now, I tell them, let's do the quiet game and they love that. I know not all kids love that, but they do. And then when we ask a question. And we are able to see them, we do something that's them holding their bubble so they'll and so since we're doing the quiet game, they hold their bubble and when we ask a question, they'll hold it while raising their hand and I find it a little less overwhelming than."
+    },
+    {
+      "type": "trait",
+      "id": "trait_3",
+      "question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering, helping with clothing, or guiding them physically. They are pulling away or saying no. Walk me through exactly what you would do, step by step",
+      "candidate_transcript": "[Q5 Attempt 1]\nI think that if they are having a meltdown in that moment and like saying no and not wanting to be touched, I know it's a little bit difficult with diapering, but I think in that moment, just give them a minute and without touching them and sit down with them. Let them calm down because forcing them is going to make it worse and it's going to freak them out and make every other diaper change go about the same way. I think just giving them a minute to hear them out and listening to what they're concerned about or what is happening can fix a lot of that. We do have some kids right now that we have in diapers and a lot of the time they say no. It works sometimes if we give them the keys so that they feel like, oh, they're in control of something or just having them carry some of their stuff, having them feel in control of something I think helps a lot."
+    },
+    {
+      "type": "trait",
+      "id": "trait_4",
+      "question": "Tell me about a time you received feedback you didn’t expect or didn’t fully agree with. What happened next?",
+      "candidate_transcript": "[Q6 Attempt 1]\nI guess that kind of would apply more towards my nannying job. I try and do things very specifically, like I like to stick to a schedule. I think that kids thrive a lot more when they have a routine and that they have these things going on. I think one of the situations where I didn't agree in was a parent telling me to not let their younger child nap so that they can sleep. Better at night. I didn't agree with it, and I did inform them, you know, like having an overly tired child isn't going to make them sleep better at night. It might make the sleep a lot worse and just try to talk to them about it. And it was able to get resolved after them trying their way for a few days and then realizing that, yeah, their kid isn't sleeping better. They're cranky. They're cranky throughout the day, and it's harder to manage that way."
+    },
+    {
+      "type": "trait",
+      "id": "trait_5",
+      "question": "Tell me about a time something didn’t go as planned at work and your role in it. How did you handle the responsibility piece?",
+      "candidate_transcript": "[Q7 Attempt 1]\nI think when it comes to kids and crafts, that's probably a lot of the daily issues that I face right now. I think that there are a lot of kids that need, like I said, more one-on-one attention and that is harder to manage when you are doing crafts and the kids aren't at this, there's specific kids that aren't at the same level as other ones. It's hard to manage a big group, but if I'm able to explain the task to everyone and then focus more on the one kid, that is normally what I do because at the moment that is more so what doesn't go my way at work."
+    },
+    {
+      "type": "trait",
+      "id": "trait_6",
+      "question": "Tell me about a time you had to work closely with another adult in a challenging situation. How did you navigate it?",
+      "candidate_transcript": "[Q8 Attempt 1]\num right now um at the moment we are working closely with um together as the people working um in the classroom that I am in um all adults because we have to be all full hands on um we just got a new student who is on the spectrum and who hasn't been evaluated who um probably won't be given any um extra help until the end of the year so we are all working very closely and just trying our best to manage everything as the day goes by and not put all the pressure on one person um it is hard but I I think with a lot of communication a lot of like understanding we're able to all do it and make sure that no one feels like they're the only ones who have um this new challenge on them it's it can be difficult sometimes because um he is non-verbal and he is on the spectrum and we are going back and forth with um people in the office to try and get him extra help um so it's challenging but I think as a team we're able to make it work and we take turns doing um tasks like diapering and you know um sitting with him and trying to make sure he doesn't get a hold of it"
+    },
+    {
+      "type": "trait",
+      "id": "trait_7",
+      "question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+      "candidate_transcript": "[Q9 Attempt 1]\nI think when I was growing up I grew up in a stricter household and when I first started taking care of kids I was a little stricter and I think once I started going to school and learning more about the emotional side of kids and how important certain things are like just getting down to eye level and talking to them and you know doing things that I didn't grow up seeing over time I think that has changed a lot and I have been huge on understanding more of the emotional side of the kids because I know that not everyone has that at home and I know that a lot of kids need that so I think that's probably the biggest change"
+    },
+    {
+      "type": "trait",
+      "id": "trait_8",
+      "question": "Tell me about how you physically care for infants or toddlers during routines like feeding, diapering, or comforting.",
+      "candidate_transcript": "[Q10 Attempt 1]\num diapering for example uh first getting everything together before um setting them down um just because once they are on a changing table or anything higher level they can easily roll over and fall off so just having everything at hand already and if they're a little bit older like infants that are a little bit older getting closer to one um possibly giving them a toy so that they have something in their hands and they aren't um freaking out and just making sure that they are immediately cleaned because um my my kids were both super prone to rashes so it's it's super i'm very um on that because i know how bad it can get"
+    },
+    {
+      "type": "trait",
+      "id": "trait_9",
+      "question": "How do you understand what a nonverbal child needs when they’re crying or upset? Can you walk me through how you respond in those moments?",
+      "candidate_transcript": "[Q11 Attempt 1]\nI think to start off with, just paying attention to them. I know it's easy to, I don't want to say forget, but to not pay as much attention to the nonverbal child instead of the ones that are yelling in your face and asking for attention. But just to make sure that you're always keeping an eye on what they are doing, because if you see that they are playing with a ball and you see that all of a sudden they don't have it and they're having a meltdown, you know that something happened to the ball. You are aware that that is more than likely the issue, rather than not knowing what is happening at all because you weren't paying attention at all. And also, again, I think trying to stick to a schedule, for example, food, like you will know that they are hungry. If you are paying attention and if they didn't eat their snack, if they didn't do certain things, I think just."
+    },
+    {
+      "type": "custom",
+      "id": "FT-or-PT",
+      "question": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+      "candidate_transcript": "[Q12 Attempt 1]\ni'm open to either um what are the hours like for both uh-huh okay got it i i think that at the moment i would be more open to a"
+    },
+    {
+      "type": "custom",
+      "id": "Not-Avail",
+      "question": "Are there any hours you are absolutely not available to work?",
+      "candidate_transcript": "[Q13 Attempt 1]\nNo, I think before."
+    }
+  ]
+}

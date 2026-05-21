@@ -1,0 +1,64 @@
+module:
+  name: interview_app_retranscribe_progress
+  language: python
+  path: src/interview_app/retranscribe_progress.py
+  version: 1.0.0
+  description: Progress dialog helpers for history retranscription workflows.
+functions: []
+classes:
+- name: RetranscriptionProgressState
+  description: Tracks deterministic progress state for retry transcription dialogs.
+  locked: false
+  attributes:
+    total_steps:
+      type: int
+    completed_steps:
+      type: int
+    status_text:
+      type: str
+  methods: []
+- name: RetranscriptionProgressDialog
+  description: Non-modal Tkinter progress dialog for retranscription background tasks.
+  locked: false
+  attributes: {}
+  methods:
+  - name: show
+    description: Render and display the progress dialog if it has not already been created.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: update
+    description: Update progress indicators and status text for the active dialog.
+    locked: false
+    inputs:
+      completed_steps:
+        type: int
+        required: true
+      status_text:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: close
+    description: Close and dispose the progress dialog.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: _format_progress
+    description: Format the numeric progress status for display.
+    locked: false
+    inputs: {}
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+data_structures: []
+dependencies: []

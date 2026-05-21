@@ -1,0 +1,60 @@
+module:
+  name: interview_app_audio_devices
+  language: python
+  path: src/interview_app/audio_devices.py
+  version: 1.0.0
+  description: Windows audio-device probing and fallback resolution for DirectShow capture.
+functions:
+- name: _extract_dshow_audio_device_names
+  description: Parse quoted audio device names from ffmpeg DirectShow stderr output.
+  locked: false
+  inputs:
+    stderr_text:
+      type: str
+      required: true
+  returns:
+    type: list[str]
+  exceptions: []
+  side_effects: none
+- name: list_windows_dshow_audio_devices
+  description: Probe ffmpeg DirectShow devices and return detected audio device names.
+  locked: false
+  inputs:
+    ffmpeg_exe:
+      type: str | None
+      required: false
+      default: null
+  returns:
+    type: list[str]
+  exceptions: []
+  side_effects: executes ffmpeg subprocess for device enumeration
+- name: resolve_preferred_windows_audio_device
+  description: Resolve the best available device using preferred name and alias candidates.
+  locked: false
+  inputs:
+    preferred_name:
+      type: str
+      required: true
+    aliases:
+      type: Sequence[str] | None
+      required: false
+      default: null
+    available_devices:
+      type: Sequence[str] | None
+      required: false
+      default: null
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: resolve_default_windows_system_device
+  description: Resolve VB-CABLE system capture device using probing and known aliases.
+  locked: false
+  inputs: {}
+  returns:
+    type: str
+  exceptions: []
+  side_effects: probes local ffmpeg audio devices when available
+classes: []
+data_structures: []
+dependencies: []

@@ -1,0 +1,79 @@
+{
+  "trait_id": "trait_1",
+  "question": "Tell me about a time a child was upset or having a hard time emotionally. How did you respond?",
+
+  "core_signals": [
+    {
+      "id": "Q1_NOTICES_SPECIFIC_CUES",
+      "label": "Describes specific observable cues (facial expression, body language, tone)",
+      "maps_to": ["S_OBSERVE_CUES"],
+      "base_weight": 2,
+      "evidence_hint": "Mentions crying, posture, tone, avoidance, etc.",
+      "auto_detect_tags": ["nonverbal", "observation"]
+    },
+    {
+      "id": "Q1_NAMES_CHILD_EMOTION",
+      "label": "Explicitly names the child’s emotional state",
+      "maps_to": ["S_EMO_LABEL", "S_EMO_ACCURATE"],
+      "base_weight": 2,
+      "evidence_hint": "Uses phrases like 'they were frustrated/sad'",
+      "auto_detect_tags": ["emotion_label"]
+    },
+    {
+      "id": "Q1_VALIDATES_EXPERIENCE",
+      "label": "Validates the child’s feelings before redirecting",
+      "maps_to": ["S_VALIDATE"],
+      "base_weight": 2,
+      "evidence_hint": "Acknowledges feelings before solving behavior",
+      "auto_detect_tags": ["validation"]
+    },
+    {
+      "id": "Q1_CO_REGULATES",
+      "label": "Uses calm presence, proximity, or tone to support regulation",
+      "maps_to": ["S_COREGULATION", "S_CALM_PRESENCE"],
+      "base_weight": 2,
+      "evidence_hint": "Describes staying calm, kneeling, soft tone",
+      "auto_detect_tags": ["co_regulation"]
+    },
+    {
+      "id": "Q1_ADAPTS_TO_CHILD_RESPONSE",
+      "label": "Adjusts approach based on how the child responds",
+      "maps_to": ["S_ADAPT", "S_RESPONDS_TO_CUES"],
+      "base_weight": 2,
+      "evidence_hint": "Changes approach if child resists or escalates",
+      "auto_detect_tags": ["adaptation"]
+    },
+    {
+      "id": "Q1_EXPLAINS_IMPACT",
+      "label": "Explains why their response helped the child",
+      "maps_to": ["S_REASONING_EXPLICIT", "S_EFFECTIVENESS_EVAL"],
+      "base_weight": 1,
+      "evidence_hint": "Connects action → outcome",
+      "auto_detect_tags": ["reasoning"]
+    },
+    {
+      "id": "Q1_MINIMIZES_FEELINGS",
+      "label": "Dismisses or minimizes the child’s emotions",
+      "maps_to": ["S_MINIMIZE"],
+      "base_weight": -3,
+      "is_critical": true,
+      "evidence_hint": "Says things like 'they were fine' or ignores feelings",
+      "auto_detect_tags": ["dismissive"]
+    }
+  ],
+
+  "extended_signals": [
+    {
+      "id": "Q1_RESPECTFUL_LANGUAGE",
+      "label": "Uses respectful, non-judgmental language",
+      "maps_to": ["S_RESPECTFUL_LANGUAGE"],
+      "base_weight": 1
+    },
+    {
+      "id": "Q1_REFLECTION",
+      "label": "Reflects on what worked or what they learned",
+      "maps_to": ["S_REFLECT"],
+      "base_weight": 1
+    }
+  ]
+}

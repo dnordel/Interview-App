@@ -1,0 +1,15 @@
+module:
+  name: interview_app_views_candidate_setup_view
+  language: python
+  path: src/interview_app/views/candidate_setup_view.py
+  version: 1.0.0
+  description: Candidate setup screen view composition for interview startup.
+functions: []
+classes:
+- name: CandidateSetupView
+  description: Renders candidate profile, track selection, and intro script setup UI.
+  locked: false
+  attributes: {}
+  methods: []
+data_structures: []
+dependencies: []

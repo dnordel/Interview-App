@@ -1,0 +1,207 @@
+{
+  "candidate": {
+    "name": "Zaira Merino",
+    "interview_date": "2026-05-05",
+    "school": "Palmdale",
+    "track": "preschool",
+    "qualification": {
+      "has_degree": true,
+      "degree_type": "BA",
+      "degree_in_ece": false,
+      "ece_units_completed": 12,
+      "infant_toddler_class_completed": false,
+      "total_units_completed": null,
+      "years_experience": 4
+    }
+  },
+  "percent_of_max": 40.63,
+  "decision": "no_hire",
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": 1,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": 1,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": 1,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_10",
+        "trait_name": "Positive Behavior Guidance",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_11",
+        "trait_name": "Structure & Flexibility",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "after 5:30 pm",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$20",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "asap",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-05-05 - Palmdale - Zaira Merino - Interview.docx",
+    "transcript_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Candidate_Zaira_Merino_2026-05-05_live_transcript.docx"
+  },
+  "communication_log": [],
+  "flow_transcript_slices": [
+    {
+      "type": "custom",
+      "id": "Why-ECE",
+      "question": "Tell me about yourself and why early childhood education matters to you.",
+      "candidate_transcript": "[Q1 Attempt 1]\nWell, first of all, I do like working with children. I care about kids a lot, and I'm always trying to make sure they're safe and they get the care that they need. Yeah, it's very important that they are also getting the right education. I try my best to help them with homeworks and make sure that they're learning. I've experienced having a classroom, so I'm very interested in making sure the kids are learning when I have them in my class. It's important for kids to play because they're learning a lot as they're playing, and overall, their whole development is very important to me. Yes, I had a classroom. I had a classroom, and right now I'm just doing behavior learning, ABA. Yeah, I think I must have turned in the different application that's on the Indeed, but I do have a regular. Yeah, I must have not added."
+    },
+    {
+      "type": "custom",
+      "id": "Why-LPL",
+      "question": "Why are you applying for this position, specifically at Launch Pad Learning?",
+      "candidate_transcript": "[Q2 Attempt 1]\nWell, I'm interested in working with children and I am looking forward to, to getting more experience also, but I like my priority is working with children. Well, you guys do look like you have a, a, a nice system because you guys work through, um, you have the infant through two, I noticed. And also you guys work, uh, you have a preschool from, I think ages two to nine, I think, or five and, um, pretty experienced in working with, um, I'm experienced in working with kids at that age range. Um, not particularly, not, I haven't done particularly, um, uh, infants, but I have worked with, I have worked with, um, kids, uh, ages four through seven. Um, and, uh, yeah, usually, uh, because I was working at a, at a daycare that, um, had specifics with, um, K through, uh, fifth grade. It was at, um, uh, in Acton. Um, but it's, it's not like, um, it's actually not a school, but it, it was more like an afterschool program in Acton. And, uh, company I was with was Sunny Days. Currently I'm with Behavior Learning Center. Well, I haven't been working at my other location and I'm looking for, uh, more, um, more experience for, um, but, um, I also want to, yes, more consistent hours."
+    },
+    {
+      "type": "trait",
+      "id": "trait_1",
+      "question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+      "candidate_transcript": "[Q3 Attempt 1]\nWell, I just get down to their level and just offer them some help. Like, is everything okay? What is going on? Like, can you tell me what's going on? And sometimes they'll shut down and they don't want to tell you what's going on. But sometimes you just got to let them, like their emotions go. But like, you always have to make sure they're okay. Because there's a lot of situations where kids are not okay. So sometimes I'll let them be. But if it's consistent, I'll just make sure I ask them if I can help with anything. Because it's important that their emotions are, that they express their emotions as well. And you don't want them to shut down. You want them to express everything that they're feeling. There are situations where we do have to call a parent. But most likely, they will tell you. But I just, I just tell them, like, you know, like, just try to like, like, help them out, telling them that it's okay with whatever situation that they're going through, that they can. It just depends, because there's a lot of situations that I've gone through. And it's really hard to think of one scenario. And I think it's really hard to think of one scenario that I've gone through, that I've gone through."
+    },
+    {
+      "type": "trait",
+      "id": "trait_2",
+      "question": "Tell me about a time you felt overwhelmed at work with children present. What did you do to manage yourself?",
+      "candidate_transcript": "[Q4 Attempt 1]\nbut you just like most importantly you just have to be patient with them yeah that's the like I said most importantly you just have to like always important to be patient um because it could get stressful but you just gotta breathe be patient with them and like yeah you just gotta do your best because if they see you stressed out they're gonna get more stressed out themselves I'm pretty good at managing my my emotions so I just sort of like there's situations where if they're like can't if they can't like manage their emotions I just try to like calm them down and there's sometimes situations where like I'll ask another teammate if they can help out with a certain situation um so maybe sometimes you gotta let the kid um"
+    },
+    {
+      "type": "trait",
+      "id": "trait_3",
+      "question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering, helping with clothing, or guiding them physically. They are pulling away or saying no. Walk me through exactly what you would do, step by step",
+      "candidate_transcript": "[Q5 Attempt 1]\nAre you talking about an infant situation? Toddlers. Well, let me see. Because I haven't been working with younger infants and toddlers. But I think hypothetically, I would just sort of just try to like, oh, well, I think what could help with that, I would make sure to see if they like any of the toys. Maybe they want to play with a toy, calm them down with a toy. And once they calm down with the toy, I can start prepping them for diaper change. So that would be an idea to deal with that situation. Thank you."
+    },
+    {
+      "type": "trait",
+      "id": "trait_4",
+      "question": "Tell me about a time you received feedback you didn’t expect or didn’t fully agree with. What happened next?",
+      "candidate_transcript": "[Q6 Attempt 1]\nOh, feedback. I'm always open to, for feedback because it's, it's always important to get feedback, especially when you're working with kids. I'm all open about teamwork because that's very important. Teamwork is important. Yeah. In my other job, it was always like stress to, to get feedback and always have, have like, it was, it was strength, like teamwork is very important because it's like, well, just make sure, well, a lot of the situations where make sure the kids are safe, make sure they're not wandering around, things like that. Constructive, um, constructive criticism. I'm not sure. I can't remember, but, but I do remember that it was always stressed."
+    },
+    {
+      "type": "trait",
+      "id": "trait_5",
+      "question": "Tell me about a time something didn’t go as planned at work and your role in it. How did you handle the responsibility piece?",
+      "candidate_transcript": "[Q7 Attempt 1]\num a situation that has not gone as planned in my role um okay so like a situation where um I'm trying to think of situations like when you have to sort of like um make the situation like or or like maybe just adjust the situation to to meet the children's um expectations like learning wise um so maybe yeah maybe like if I had a lesson plan that the that the program leader had um I would probably just like um if it's a lesson plan that I didn't create for the children I would probably just um tweak the lesson plan to meet the the kids age levels because there was uh I do remember situations where um I had lesson plans that were given to me that I needed to sort of improve to meet um my kindergarten class or my preschool class um if it was too advanced for them I would just sort of tweak it to meet the level of um age approach"
+    },
+    {
+      "type": "trait",
+      "id": "trait_6",
+      "question": "Tell me about a time you had to work closely with another adult in a challenging situation. How did you navigate it?",
+      "candidate_transcript": "[Q8 Attempt 1]\na challenging situation with another adult um i've been lucky that i haven't had those situations um usually the adults that i've worked with that have all been very um cooperative and they're very mature and and it was like always like it was we were always a team so i can't recall uh with parents no i can't recall either well we will always try to make sure the parents knew of their children's situation like whether it was a a situation that maybe the child wanted to go home or you just gotta let parents know um because we can't force the children like it was um um"
+    },
+    {
+      "type": "trait",
+      "id": "trait_7",
+      "question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+      "candidate_transcript": "[Q9 Attempt 1]\nSorry, can you repeat the question? Something that has changed how I approach my work. I always try to improve and get other people's feedback for the good. Because it's not about me. It's more about the children. So I always got to set my own feelings aside. Especially when you're working with kids. Because the kids do come first."
+    },
+    {
+      "type": "custom",
+      "id": "FT-or-PT",
+      "question": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+      "candidate_transcript": "[Q12 Attempt 1]\nYes."
+    },
+    {
+      "type": "custom",
+      "id": "Not-Avail",
+      "question": "Are there any hours you are absolutely not available to work?",
+      "candidate_transcript": "[Q13 Attempt 1]\nI'm still, I still have my kiddo from ABA. So I would like to finish that. It starts his, his, my ABA with him starts at 530. So I would like to have that still available. Right."
+    },
+    {
+      "type": "custom",
+      "id": "Pay",
+      "question": "What kind of pay are you looking for? Is that negotiable?",
+      "candidate_transcript": "[Q14 Attempt 1]\nSo I would say, well, I've been getting currently $20."
+    }
+  ]
+}

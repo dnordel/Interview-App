@@ -1,0 +1,52 @@
+module:
+  name: interview_state
+  language: python
+  path: src/interview_state.py
+  version: 1.0.1
+  description: Interview session state model persisted across UI flow steps.
+functions: []
+classes:
+- name: InterviewState
+  description: Dataclass storing candidate fields, per-flow response state, and referral metadata.
+  locked: false
+  attributes:
+    candidate_name:
+      type: str
+    interview_date:
+      type: str
+    school:
+      type: str
+    track:
+      type: str
+    qualification:
+      type: CandidateQualification
+    current_index:
+      type: int
+    trait_inputs:
+      type: dict[str, dict[str, Any]]
+    custom_inputs:
+      type: dict[str, dict[str, Any]]
+    flow_time_marks:
+      type: list[dict[str, Any]]
+    flow_candidate_transcripts:
+      type: dict[int, str]
+    flow_recordings:
+      type: dict[int, dict[str, Any]]
+    referral_packet:
+      type: dict[str, str]
+    communication_log:
+      type: list[dict[str, Any]]
+  methods:
+  - name: to_dict
+    description: Serialize interview state to persistence-friendly dictionary structure.
+    locked: false
+    inputs: {}
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: none
+data_structures:
+- name: InterviewState
+  type: dataclass
+dependencies:
+- candidate_profile

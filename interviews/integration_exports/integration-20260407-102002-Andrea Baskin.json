@@ -1,0 +1,207 @@
+{
+  "candidate": {
+    "name": "Andrea Baskin",
+    "interview_date": "2026-04-07",
+    "school": "Palmdale",
+    "track": "infant_toddler",
+    "qualification": {
+      "has_degree": true,
+      "degree_type": "BA",
+      "degree_in_ece": true,
+      "ece_units_completed": null,
+      "infant_toddler_class_completed": true,
+      "total_units_completed": null,
+      "years_experience": 6
+    }
+  },
+  "percent_of_max": 91.43,
+  "decision": "hire",
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_8",
+        "trait_name": "Gentleness & Physical Awareness",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_9",
+        "trait_name": "Patience with Nonverbal Communication",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full-time",
+        "skipped": false
+      },
+      {
+        "question_text": "Tell me a little about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$21",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "two-weeks",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying to our company, Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-04-07 - Palmdale - Andrea Baskin - Interview.docx",
+    "transcript_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Candidate_Andrea_Baskin_2026-04-07_live_transcript.docx"
+  },
+  "communication_log": [],
+  "flow_transcript_slices": [
+    {
+      "type": "custom",
+      "id": "Why-ECE",
+      "question": "Tell me a little about yourself and why early childhood education matters to you.",
+      "candidate_transcript": "[Q1 Attempt 1]\nI am Madison because I, as you guys, I also believe that the best age to create a foundation is when children are young and able to give them the opportunity to succeed in the future. A little bit about me, I went to California State University, Northridge, University of Northridge. I started child development there. I graduated with a major in child development, and then I proceeded to work at a school. And I also did a program where I taught children and parents how to handle behavior. And as right now, I'm a behavioral therapist, and I've been helping children with the struggles and also helping parents how to navigate through this time that the children suffer. I started struggling with, and I'm just very passionate about helping children and also creating that."
+    },
+    {
+      "type": "custom",
+      "id": "Why-LPL",
+      "question": "Why are you applying to our company, Launch Pad Learning?",
+      "candidate_transcript": "[Q2 Attempt 1]\nOne of the reasons I like that you guys focus on the early foundation for the children and creating a safe space where they can learn, not only have fun, but also navigate. Like I saw you guys have a garden and I thought that was really cute the way they can interact with experiences in life, in nature. Also, I just recently moved here to Lancaster. So the community."
+    },
+    {
+      "type": "trait",
+      "id": "trait_1",
+      "question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+      "candidate_transcript": "[Q3 Attempt 1]\nOne of my clients, I think they're moving. They have to move homes. And at the new school, the new house, everything was, it was hard for him to kind of engage, come out of his comfort zone, make friends. Um, so what I started doing, um, I started creating like a small activities, just like one-on-one peers. So they can start like getting to know each other without pushing, um, my, my student to interact in a big group. So little by little, he got to meet his peers individually. And that helped a lot. Um, also I communicated a lot with the parents about the behavior and the parents also let me know, like, oh, this is what I'm going to do. The changes that it was going on at home."
+    },
+    {
+      "type": "trait",
+      "id": "trait_2",
+      "question": "Tell me about a time you felt overwhelmed at work with children present. What did you do to manage yourself?",
+      "candidate_transcript": "[Q4 Attempt 1]\nI think for one of the biggest stress for me one time was when something personal happened at home and my aunt passed away. And the behavior wasn't helping with the children. Since children with needs, they do require a lot of patience and a lot of understanding. And at the moment, I wasn't able to provide that. So I did ask my manager if there was someone that can substitute me for the rest of the day while I could get myself together and come back with a more clear head in mind to provide that session for my kid to provide safe sexment for them. I think that was the hardest part. But my team was very supportive. At the moment, they jumped in to help. And I was thankful for that. I just take a walk to the bathroom, take a deep breath, remember that everything is okay and able to succeed not only personally but for the best benefit of the children."
+    },
+    {
+      "type": "trait",
+      "id": "trait_3",
+      "question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering, helping with clothing, or guiding them physically. They are pulling away or saying no. Walk me through exactly what you would do, step by step",
+      "candidate_transcript": "[Q5 Attempt 1]\nFirst, I will let the client know what's, my student know what's happening. So I'll be like, hey, like, looks like there's, oh, ask them, like, oh, do you poop? But it looks like we may need to change the diaper, like start preparing them what's happening. If they're refusing, set them timers and be like, oh, what about if we start in five minutes? And then be like, hey, like in three minutes, we're going to start heading to the bathroom and we got to change and explain to them why we're changing them. And also ask them, give them the opportunity to say, how about in five minutes? You think in five minutes your body will be ready to, for us to change you, to see what they say. Because sometimes kids will be like, no, 10 minutes, and that's okay too, to allow them to let us know when their bodies are. Ready for a change that they're not used to."
+    },
+    {
+      "type": "trait",
+      "id": "trait_4",
+      "question": "Tell me about a time you received feedback you didn’t expect or didn’t fully agree with. What happened next?",
+      "candidate_transcript": "[Q6 Attempt 1]\nAnd at a school, one of my colleagues believed that if the children didn't have everything prepared or given by the parents, we shouldn't provide it. I strongly disagree with that. So when she gave me that feedback, I was like, that's not what I agreed. So I did communicate it with my manager if we could come up with maybe some side tools or some side equipment for those who either parents forgot to send or the kid just couldn't do them. Because sometimes there's different levels in classrooms and there's different activities that some kids can't do. So I didn't want to let that kid. Left out just for the reason that he or the equipment or the materials were not provided to him. It was like a school materials also sometimes at lunches. And I know some parents are very strict with the type of meals. So that was another struggle that I was like, how can we give? Provide food to this kid without interrupting their meal plans that are created at home."
+    },
+    {
+      "type": "trait",
+      "id": "trait_5",
+      "question": "Tell me about a time something didn’t go as planned at work and your role in it. How did you handle the responsibility piece?",
+      "candidate_transcript": "[Q7 Attempt 1]\nOne time I created a schedule for the day and I thought all of my kids were able to do the activity and during the activity I realized that a lot of my kids were not able to do it and I was like we were doing some Aramamic paper plane and I was teaching them how to fold the paper and some of their just couldn't keep up with the instructions and later on in the day I realized that I had just picked out an activity that was a little bit too hard for the level grade so the next day I came back with something much easier that I knew it was everyone's level and the next day I picked out the same activity paper plane but like the simple you just fold in fold in half and then put the wings out and have them color it so nothing too fancy and they actually enjoyed it more the coloring"
+    },
+    {
+      "type": "trait",
+      "id": "trait_6",
+      "question": "Tell me about a time you had to work closely with another adult in a challenging situation. How did you navigate it?",
+      "candidate_transcript": "[Q8 Attempt 1]\nShine. Right now, my recent job, our children have special needs and a lot of our kids are aggressive. And we were put in two rooms and one of the kiddos burst into anger and started throwing a lot of things. In that case, I have to right away keep my kids safe. But the teacher right away said, oh, I'm going to go get the manager. And I have to stand up to her and say, I'm sorry, but you cannot leave him out of mind. If you want, you can take him with you. But I cannot be here in one room when Joaquin is throwing things. So I was happy that she was understanding and not wanting to get out of the situation right away because we had another kid also present. So that was a little bit challenging because I kind of understood where she was coming from, wanting to go get the manager. But also in a classroom, there's a lot of things that can hurt someone."
+    },
+    {
+      "type": "trait",
+      "id": "trait_7",
+      "question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+      "candidate_transcript": "[Q9 Attempt 1]\nUm, but children love to explore, um, and they love to learn. Um, and I feel like part of me sometimes feels like I'm, I'm still learning a lot, even though, um, so one of my kids, we use the word, um, unique and he was like, what Andrea was unique. So I started explaining what unique was. And then I was also started thinking about like all the unique things that I like to do while explaining to him how that made me as a person unique versus another person or how I can stand out. And then also started thinking about how they stood out and things that they like. Um, so I think we always, sometimes we give it for granted, like little things that we teach in kids, but that."
+    },
+    {
+      "type": "trait",
+      "id": "trait_8",
+      "question": "Tell me about how you physically care for infants or toddlers during routines like feeding, diapering, or comforting.",
+      "candidate_transcript": "[Q10 Attempt 1]\nFor diaper, I really like to tell them and like guide them through the process. I like to say, hey, like, do you go potty? Do you do number two? It's like kind of small, so you do number two. We're going to go change you. And then I kind of, depending on the age, I like to, if they're two and they're kind of like, can I guess, oh, let's find your diaper. Like, let's see. Like, G for Gabby. It looks like here's Gabby's diaper. And then I kind of talk to them throughout the whole process for an infant. I just gently pick them up and take them and change them and, yeah, like wipe them. Sometimes I give them a toy to keep them distracted so they don't, like, move too much around or their favorite toy so they don't cry. If they're playing with something, I tell them if it's, if it's not, if it can be movable. I will bring it with them. I will bring it with them. I will bring it with them."
+    },
+    {
+      "type": "trait",
+      "id": "trait_9",
+      "question": "How do you understand what a nonverbal child needs when they’re crying or upset? Can you walk me through how you respond in those moments?",
+      "candidate_transcript": "[Q11 Attempt 1]\nYes. I tend to, since they're nonverbal, I'm like, oh, it sounds like you're frustrated or are you upset? And I just kind of keep talking until I see, like, their responses. Or I say, like, oh, are you struggling with something? Do you need help? Let me help you. I also look around. What is it? Sometimes they're playing with something and they can't open. And I'm like, oh, is it the toy that you can't open? Let's see. Can I help you open it? Look, if we twist here or other times it's like they're next to a peer and they don't know how to tell that they want to play. I'm like, oh, you want to tap Johnny's shoulder and ask him if you want to play with you? Do you want to play tag or show them a ball? Do you want to play ball with Johnny? So I tend to look around their surroundings to kind of figure. Out what it is and start mentioning a couple of things to see the reaction. And based on that, kind of like help them figure out what they need. And I also learned with nonverbal kids, it takes a long time to understand their clues because a lot. One of my kiddos, she uses animals to express her emotions. So that took me a while to understand when she was happy. She's like, I love flamingos. And I was like, oh. You're feeling happy. And like. Yeah. She was like, oh, Barney. Barney's her dog. She's like, oh, Barney. So I was like, oh, you're feeling frustrated right now. I was like, OK, let's just use that word frustrated. So sometimes it just takes a minute to understand their vocabulary. I know my kiddos always says tickles. He doesn't."
+    },
+    {
+      "type": "custom",
+      "id": "Not-Avail",
+      "question": "Are there any hours you are absolutely not available to work?",
+      "candidate_transcript": "[Q13 Attempt 1]\nAs right now, I still have my current job, so I do have to give them two weeks notice, but once I'm out there, I'm fully full-time. I can do Friday."
+    }
+  ]
+}

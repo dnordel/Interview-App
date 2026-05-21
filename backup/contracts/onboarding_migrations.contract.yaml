@@ -1,0 +1,106 @@
+module:
+  name: onboarding_migrations
+  language: python
+  path: src/onboarding_migrations.py
+  version: 1.0.0
+  description: Contract for onboarding_migrations module.
+functions:
+- name: backfill_onboarding_metadata
+  description: backfill_onboarding_metadata function in onboarding_migrations.
+  locked: false
+  inputs:
+    state_data:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: tuple[dict[str, Any], bool, OnboardingMigrationSummary]
+  exceptions: []
+  side_effects: none
+- name: _backfill_templates
+  description: _backfill_templates function in onboarding_migrations.
+  locked: false
+  inputs:
+    templates:
+      type: list[Any]
+      required: true
+  returns:
+    type: tuple[bool, int]
+  exceptions: []
+  side_effects: none
+- name: _backfill_tasks
+  description: _backfill_tasks function in onboarding_migrations.
+  locked: false
+  inputs:
+    employees:
+      type: list[Any]
+      required: true
+  returns:
+    type: tuple[bool, int]
+  exceptions: []
+  side_effects: none
+- name: _backfill_task_created_at
+  description: _backfill_task_created_at function in onboarding_migrations.
+  locked: false
+  inputs:
+    employees:
+      type: list[Any]
+      required: true
+  returns:
+    type: tuple[bool, int]
+  exceptions: []
+  side_effects: none
+- name: _apply_missing_metadata
+  description: _apply_missing_metadata function in onboarding_migrations.
+  locked: false
+  inputs:
+    item:
+      type: dict[str, Any]
+      required: true
+    metadata:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+- name: _is_missing_bool
+  description: _is_missing_bool function in onboarding_migrations.
+  locked: false
+  inputs:
+    value:
+      type: Any
+      required: true
+    has_key:
+      type: bool
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+- name: _is_missing_text
+  description: _is_missing_text function in onboarding_migrations.
+  locked: false
+  inputs:
+    value:
+      type: Any
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+classes:
+- name: OnboardingMigrationSummary
+  description: OnboardingMigrationSummary class in onboarding_migrations.
+  locked: false
+  attributes:
+    templates_backfilled:
+      type: int
+    tasks_backfilled:
+      type: int
+    task_created_at_backfilled:
+      type: int
+  methods: []
+data_structures:
+- name: CANONICAL_TEMPLATE_METADATA
+  type: dict[str, dict[str, Any]]
+dependencies: []

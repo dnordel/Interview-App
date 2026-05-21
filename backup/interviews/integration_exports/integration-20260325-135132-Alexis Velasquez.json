@@ -1,0 +1,243 @@
+{
+  "candidate": {
+    "name": "Alexis Velasquez",
+    "interview_date": "2026-03-25",
+    "school": "Palmdale",
+    "track": "preschool",
+    "qualification": {
+      "has_degree": true,
+      "degree_type": "BA",
+      "degree_in_ece": false,
+      "ece_units_completed": 32,
+      "infant_toddler_class_completed": false,
+      "total_units_completed": null,
+      "years_experience": 4
+    }
+  },
+  "percent_of_max": 0.0,
+  "percent_of_max_label": "0.0%",
+  "percent_label": "0.0%",
+  "decision": "borderline",
+  "decision_metadata": {
+    "any_critical_selected": false,
+    "triggered_critical": false,
+    "locked_rule": null,
+    "override_rationale": null,
+    "configured_max_weighted_total": 96,
+    "max_weighted_total": 219,
+    "max_weighted_total_included_traits": 219,
+    "percent_denominator": 219,
+    "skipped_traits_count": 0,
+    "scored_traits_count": 9
+  },
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_10",
+        "trait_name": "Positive Behavior Guidance",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_11",
+        "trait_name": "Structure & Flexibility",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_8",
+        "trait_name": "trait_8",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_9",
+        "trait_name": "trait_9",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$22-25",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full-time.",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "next week",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-03-25 - Palmdale - Alexis Velasquez - Interview.docx",
+    "transcript_path": ""
+  },
+  "communication_log": [],
+  "flow_transcript_slices": [
+    {
+      "type": "custom",
+      "id": "Why-ECE",
+      "question": "Tell me about yourself and why early childhood education matters to you.",
+      "candidate_transcript": "[Q1 Attempt 1]\nSo, I am, I just moved back to California about a year ago. I've been working in education for a little while. So, I started off working as a substitute for a school district in Rosemont, and then gradually I, you know, got into the daycare centers. So, I've worked with pretty much all ages, mostly two- to five-year-olds. I'm just really passionate about working in the education field. I also have two kids of my own, so I know that early childhood education is, like, super important. Like, the development stages between zero and five were the most crucial. So, I just love being a part of that, getting to know. You know, the kids in the community and, you know, just helping them grow and develop. And then education, I do have my bachelor's degree. It's in HR and flag management. However, I do have ECE credits, and I'm working on my elementary, I'm sorry, early childhood education degree right now."
+    },
+    {
+      "type": "custom",
+      "id": "Why-LPL",
+      "question": "Why are you applying for this position, specifically at Launch Pad Learning?",
+      "candidate_transcript": "[Q2 Attempt 1]\nOkay, I saw you guys on Indeed. I've been looking for a stable company to be at right now. I'm just subbing for Lancaster School District. So I just really want to be part of a tight knit team and somewhere long term. So you guys caught my attention on on the website. And like I said, I checked out your your company as well online."
+    },
+    {
+      "type": "trait",
+      "id": "trait_1",
+      "question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+      "candidate_transcript": "[Q3 Attempt 1]\nSo I've had plenty of cases like that, especially working in the four and five-year-old classrooms. There's a lot of emotions there. Usually I try to take them aside and give them time to talk about how they're feeling and then just kind of motivate them to think more positively, like redirect them and then just create that positive environment for them. And, you know, like they just, they really want to know that you're paying attention to them, you're hearing them and their feelings."
+    },
+    {
+      "type": "trait",
+      "id": "trait_2",
+      "question": "Tell me about a time you felt overwhelmed or stressed at work with children present. What was going on, and how did you handle yourself in that moment?",
+      "candidate_transcript": "[Q4 Attempt 1]\num so one of the classrooms i went in was a little more chaotic the there wasn't a lot of structure um so you know kids were running a mock and um so it did create a little bit of um stress but uh one of the things that i've learned over the years working with children is you have to be patient um and so uh basically it's just um i don't know it's all about your your mindset right so if you're overwhelmed they're gonna feel overwhelmed so um i always you know kind of implement the same um the same um what's the word like skills uh habits to do myself so for instance if you're trying to say let's take 10 breaths and calm down kind of do that that same technique for myself so that um i was in a good mindset for the kids"
+    },
+    {
+      "type": "trait",
+      "id": "trait_3",
+      "question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering, helping with clothing, or guiding them physically. They are pulling away or saying no. Walk me through exactly what you would do, step by step",
+      "candidate_transcript": "[Q5 Attempt 1]\nUm, so I, I would say it's important to get, make sure they, um, are given their space. You never want to, you know, tug on a child accidentally with them. Um, you kind of just want to like get down on their level and, um, like I said, redirection or, um, instead of, uh, continuously telling them, Hey, um, you know, this is what we're going to do. You can give them like two choices, like, Hey, um, first we're going to do this and then we're going to do this. So, um, first we're going to use the bathroom and then we're going to do, um, Play-Doh for example. So, um, kind of giving them that direction and then something positive afterwards so that they know, Hey, if I do this and I do a good job, I'm going to earn this."
+    },
+    {
+      "type": "trait",
+      "id": "trait_4",
+      "question": "Tell me about a time you received feedback you didn’t expect or didn’t fully agree with. What happened next?",
+      "candidate_transcript": "[Q6 Attempt 1]\nthere's there's gonna be times where if you back was given that I may not agree with I think it's just important to take that information and even if I don't necessarily agree with it but just try try to use that as a positive critique in you know apply it to the skills I'm doing in the classroom"
+    },
+    {
+      "type": "trait",
+      "id": "trait_5",
+      "question": "Tell me about a time something didn’t go as planned at work and your role in it. How did you handle the responsibility piece?",
+      "candidate_transcript": "[Q7 Attempt 1]\nso again i mean that's just one of the things you kind of um this happens all the time where you know kids emotions are high um sometimes you get a bunch of kids that don't want to do the work or anything like that it's important to be adaptable so um i always like try to have backups um like plan a b c okay um if this isn't going to work out the kids are not in the mood today um we're going to go to plan b and you know just uh you just sometimes have to improvise while you go um because every day is just completely different and yeah um like circle times for instance there there was one point circle time none of the kids wanted to sit still they didn't want to do um you know the regular like calendar weather um number counting um so we just took a little brain break um gave them you know like a we let them just dance their jitters out and play the game and then we went back to circle time when they were all kind of got the energy out and we're ready to you know um do it again"
+    },
+    {
+      "type": "trait",
+      "id": "trait_6",
+      "question": "Tell me about a time you had to work closely with another adult in a challenging situation. How did you navigate it?",
+      "candidate_transcript": "[Q8 Attempt 1]\num communication with the other staff members is super important um even if we're not getting along or um if we have uh something challenging going on like behaviors and stuff um communication is just super important um i've you know had times where i've looked at teachers and we do communicate our thoughts on what we should be doing um how how we can make it work and uh we would basically just put those ideas together and um figure it out if that makes sense"
+    },
+    {
+      "type": "trait",
+      "id": "trait_7",
+      "question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+      "candidate_transcript": "[Q9 Attempt 1]\nI've learned that I've had to adapt to the new times. Obviously, you know, even this last decade, teaching has changed a lot. So I've learned about myself that I emphasize with the kids a lot. I have learned to be very patient. And then I've also learned that a lot of the students, you know, stuff outside of school happens or I'm sorry, the stuff outside of school and their personal lives is, you know, super critical to how the, you know, the daily activities and stuff in the classroom are going to happen. So I guess that's something I would say is. Basically, keeping an open mindset of the kids backgrounds and what they're going through in their personal lives, because that's basically how you're going to be able to get them to to want to learn in the classroom and be a part of the group and stuff like that. Yes."
+    },
+    {
+      "type": "trait",
+      "id": "trait_10",
+      "question": "Tell me about a time a child’s behavior was challenging for you. How did you approach it?",
+      "candidate_transcript": "[Q10 Attempt 1]\nkept me more open-minded because it's like okay they're not trying to you know um be defiant or disrespectful or um you know anything like that they're just they're trying to communicate and they just don't know how to live yes i i have worked in a lot of classrooms that were inclusive so um for example we had one child who he was very defiant he would run around classroom um didn't want to participate uh he would throw a lot of tantrums um things like that he had adhd so um we came up with a plan where he would at first come to my desk and he would sit with me i would give him fidgets um and then i would tell him hey uh if basically my expectations for the day for him and then um eventually he would sit down do his work the behaviors went away of course it happened here and there but um he significantly improved uh with those um helping him with his transitions and stuff like that so um getting to the root of that problem was helpful because then eventually he was able to go back to the table and sit with his classmates without um without as many um outbursts and challenging behaviors so he was able to go back to his classroom and he was able to go back to his classroom and he was able to go back to his classroom and he was able to go back to his classroom and he was able to go back to his classroom and he was able to go back to his classroom and he was able to go back to his classroom and he was able to go back to his classroom and he was able to go back to his classroom and he was able to go back to his classroom and he was able to go back to his classroom and he was able to go back to his classroom and he was able to go back to his classroom and he was able to go back to his classroom and he was able to go back to his classroom and he was able to go back to his classroom and he was able to go back to his classroom and he was able to go back to his classroom and he was able to go back to his classroom and he was able to go back to his classroom and"
+    },
+    {
+      "type": "trait",
+      "id": "trait_11",
+      "question": "Can you share a time when your plan didn’t go as expected because of children’s needs? What did you do?",
+      "candidate_transcript": "[Q11 Attempt 1]\nYes. So I would say probably during center time. I mean, so we would do like a sensory table and then have like a player section and then like a toy section. And so then they would basically transition between the tables. That didn't really go as planned because of a lot of behavior issues that day. There was one kid who was, you know, throwing toys, throwing chairs. He was just having a really, really bad day. So instead, we just put all the stuff, all the stuff away and we went outside earlier and he was able to. Run around and I. I or the other teacher would stay by his side and kind of just let him do his thing, let out his frustration. So we were not able to do those center times because, you know, all of the chaos in the classroom that was also triggering other kids. So just taking them outside earlier and, you know, scratching the plan for the day with the centers is. You know, I think that's one of the things that we're trying to do. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah. Yeah."
+    },
+    {
+      "type": "custom",
+      "id": "FT-or-PT",
+      "question": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+      "candidate_transcript": "[Q12 Attempt 1]\nI'm full time for free."
+    },
+    {
+      "type": "custom",
+      "id": "Pay",
+      "question": "What kind of pay are you looking for? Is that negotiable?",
+      "candidate_transcript": "[Q14 Attempt 1]\nUm, preferably anything between like 20 to 25, preferably."
+    }
+  ]
+}

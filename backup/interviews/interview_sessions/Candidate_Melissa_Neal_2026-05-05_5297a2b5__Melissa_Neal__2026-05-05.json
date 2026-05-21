@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-05-05T17:07:01.370430Z",
+  "updated_at": "2026-05-05T17:16:39.308290Z",
+  "interview": {
+    "interview_id": "Candidate_Melissa_Neal_2026-05-05_5297a2b5",
+    "candidate_name": "Melissa Neal",
+    "interview_date": "2026-05-05"
+  },
+  "questions": {
+    "0": {
+      "flow_idx": 0,
+      "item_type": "custom",
+      "item_id": "Why-ECE",
+      "notes": {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q1 Attempt 1]\nWell, I've been dealing, you know, with kids for basically my whole life. You know, I was a teenager. I babysat. And then I became a teacher. You know, I got older. And I had a home daycare out of my house, you know, for a couple years. And what else? You know, just been around kids my whole life, basically. I work with kids on Wednesdays night now and Sunday, sometimes Sunday mornings. So I'm always around kids. So that's why I want, you know, to go back to, you know, child development stuff, you know, to be a teacher or an aide or just, you know, help out in the office, whatever's needed.",
+      "updated_at": "2026-05-05T17:07:04.969474Z"
+    },
+    "1": {
+      "flow_idx": 1,
+      "item_type": "custom",
+      "item_id": "Why-LPL",
+      "notes": {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-05-05T17:07:08.068879Z"
+    },
+    "2": {
+      "flow_idx": 2,
+      "item_type": "trait",
+      "item_id": "trait_1",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q3 Attempt 1]\nI just went up there and asked the child, you know, what's going on, if they can talk. You know, some kids can't talk. So you just, if they don't talk, you just look and see, okay, what could happen? Or look at their body. Maybe they fell, you know, just comfort them, you know, give them hugs, tell them it's okay. And just find out what went wrong, basically. And you just deal with it that way. And then you go on with that, you know, just take steps.",
+      "updated_at": "2026-05-05T17:08:00.118524Z"
+    },
+    "3": {
+      "flow_idx": 3,
+      "item_type": "trait",
+      "item_id": "trait_2",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q4 Attempt 1]\nYou just, you know, take a deep breath, you know, count, you know, to like five or seven, you know, and just say, OK, you know, you have to keep going and you just go. You know, you can't. That's part of working with kids is a lot of, you know, sometimes stressful. So you just have to deal with it and just take a deep breath and go on.",
+      "updated_at": "2026-05-05T17:08:49.377583Z"
+    },
+    "4": {
+      "flow_idx": 4,
+      "item_type": "trait",
+      "item_id": "trait_3",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q5 Attempt 1]\nwell you explained to the child you know we need to get this done you know you want do you want to go outside do you want to go play with your toys you know you need to get this done before we can do that and you just you know talk to him you know talk to the child through it and um and you know hopefully they will respond to that if not you just keep you know talking to the child finding out why they don't want to get their diaper changed or put their jacket on or you know so you just find out what's going on and talk to them you know they talked about communication that why you know why are they feeling that",
+      "updated_at": "2026-05-05T17:10:10.989571Z"
+    },
+    "5": {
+      "flow_idx": 5,
+      "item_type": "trait",
+      "item_id": "trait_4",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q6 Attempt 1]\nJust you take that, you know, maybe it's not the one, you know, what you want to hear. It's just the other co-workers or other person's opinion. And you just ask them, you know, oh, OK, you know, you tell them, OK, I understand your side, but this is my side. And maybe you can just go and see what happens. You just think everything, you know, you just think positive and you just talk to each other, you know. Like I always say, you know, communication is always the key of working with teachers.",
+      "updated_at": "2026-05-05T17:11:08.215296Z"
+    },
+    "6": {
+      "flow_idx": 6,
+      "item_type": "trait",
+      "item_id": "trait_5",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q7 Attempt 1]\noh, it's always like that. You know, you just, you know, go with it and you just go on and see why it didn't work out and then change, change it. Say, okay, next time I would do it this way and not the way that I think was going to work. You just look at it, you know, look at the situation and see how you can change it.",
+      "updated_at": "2026-05-05T17:11:58.568490Z"
+    },
+    "7": {
+      "flow_idx": 7,
+      "item_type": "trait",
+      "item_id": "trait_6",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q8 Attempt 1]\nUm, it, it happens a lot, you know, when you're working with other people and you just, like I say, you know, communication, just, you know, talk, talk to them and say, Hey, you know, why are we, you know, what's going on and, you know, how can we fix it? And why do you think that way? And why do I think that way? And just, just go with it, you know, and just see how you can work it out as a team, you know, you know, when you work at school or, you know, you're working as a team and everybody has to, you know, communicate and find a way of working.",
+      "updated_at": "2026-05-05T17:12:55.809463Z"
+    },
+    "8": {
+      "flow_idx": 8,
+      "item_type": "trait",
+      "item_id": "trait_7",
+      "notes": {
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q9 Attempt 1]\nHave a lot of patience, you know, um, yeah, patience is the key. Um, you know, with working with kids and working with coworkers, you just have to be patient with each other and, you know, it just, and just take time and, you know, and take breaks when you need it, ask for help if you need it or pitch in when somebody needs to help, you know, when you see it, you know, a coworker struggling or maybe need a break or something, you just say, Hey, do you need just have like a five second break or a five minute break and you just pitch in when needed.",
+      "updated_at": "2026-05-05T17:14:01.421597Z"
+    },
+    "9": {
+      "flow_idx": 9,
+      "item_type": "trait",
+      "item_id": "trait_10",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q10 Attempt 1]\nWhat was the question? Just talk to them. You know, just ask them, you know, what's going on. Or if they don't talk, you know, you see, okay, what's the situation? What happened? Did a child, you know, throw a toy at them or, you know, or did they just having a bad day and they just need somebody to talk to? A lot of times kids have bad days and they just need somebody to talk to and give hugs and pet them and then they'd be fine, you know. And you just have to, you know, get to know the child, you know. And, yeah, so just to get to know the child and talk to them and find out what's going on.",
+      "updated_at": "2026-05-05T17:15:05.095555Z"
+    },
+    "10": {
+      "flow_idx": 10,
+      "item_type": "trait",
+      "item_id": "trait_11",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-05-05T17:15:05.472935Z"
+    },
+    "11": {
+      "flow_idx": 11,
+      "item_type": "custom",
+      "item_id": "FT-or-PT",
+      "notes": {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "either",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q12 Attempt 1]\nFull-time or part-time on which hours are you you need somebody? Okay, okay",
+      "updated_at": "2026-05-05T17:15:35.139485Z"
+    },
+    "12": {
+      "flow_idx": 12,
+      "item_type": "custom",
+      "item_id": "Not-Avail",
+      "notes": {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "monday and thursday after 2 pm",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q13 Attempt 1]\nkids um like mondays and thursdays i have to get off i get you know palmdale i can get off i get to 2 30. on mondays and thursdays",
+      "updated_at": "2026-05-05T17:15:54.270286Z"
+    },
+    "13": {
+      "flow_idx": 13,
+      "item_type": "custom",
+      "item_id": "Pay",
+      "notes": {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "open",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q14 Attempt 1]\nrest of the week I'm you know the rest of the week it's just you know what's that would you say like the light but what time do they work I'm open with pay if you can be",
+      "updated_at": "2026-05-05T17:16:14.699594Z"
+    },
+    "14": {
+      "flow_idx": 14,
+      "item_type": "custom",
+      "item_id": "Start",
+      "notes": {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "asap",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q15 Attempt 1]\nOr I can have, you know, my kids can sometimes can go to the daycare that they are at sometimes. So I just have to ask, you know, communicate with them about it. I can start as soon as possible.",
+      "updated_at": "2026-05-05T17:16:39.308290Z"
+    }
+  }
+}

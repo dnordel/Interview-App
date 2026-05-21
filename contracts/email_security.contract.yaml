@@ -1,0 +1,54 @@
+module:
+  name: email_security
+  language: python
+  path: src/email_security.py
+  version: 1.0.0
+  description: Email address and subject validation/sanitization helpers.
+functions:
+- name: sanitize_email_subject
+  description: Normalize and trim an email subject line to a safe header value.
+  locked: false
+  inputs:
+    subject:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: is_valid_email_address
+  description: Validate email address format using project policy.
+  locked: false
+  inputs:
+    value:
+      type: str
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+- name: sender_email_error_reason
+  description: Return policy reason code for rejected sender addresses.
+  locked: false
+  inputs:
+    value:
+      type: str
+      required: true
+  returns:
+    type: str | None
+  exceptions: []
+  side_effects: none
+- name: sender_email_domain_type
+  description: Classify sender domain as public, school, or custom type.
+  locked: false
+  inputs:
+    value:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+classes: []
+data_structures: []
+dependencies: []

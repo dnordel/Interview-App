@@ -1,0 +1,132 @@
+{
+  "candidate": {
+    "name": "Lashanique Slaughter",
+    "interview_date": "2026-03-11",
+    "school": "North Long Beach",
+    "track": "infant_toddler",
+    "qualification": {
+      "has_degree": true,
+      "degree_type": "AA",
+      "degree_in_ece": true,
+      "ece_units_completed": null,
+      "infant_toddler_class_completed": false,
+      "total_units_completed": null
+    }
+  },
+  "percent_of_max": 71.43,
+  "decision": "borderline",
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": 4,
+        "question_notes": "every day she has a kid who goes into his own area. like to climb trees/gates. keep fidget toys on hand to help soothe.",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": 5,
+        "question_notes": "child ate chocolate mushrooms. she had no idea what to do at first. kept calm, talked to parents and administrator.",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": 5,
+        "question_notes": "give them options. help them be comfortable",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": 5,
+        "question_notes": "issue with another teacher while she was out, and kids were mis-pronouncing the teacher name.",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": 5,
+        "question_notes": "co-worker just out of high school and was too close to the kids. asked boss to place him with her, so she could observe him and train him.",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": 5,
+        "question_notes": "children are just like us. kids are spounges. You can soak it or dry it out. every kid is different.",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_8",
+        "trait_name": "Gentleness & Physical Awareness",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_9",
+        "trait_name": "Patience with Nonverbal Communication",
+        "raw_score": 4,
+        "question_notes": "pay attention obersserve cues. talk to them and narrate to them.",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "part-time, but open to full-time.",
+        "skipped": false
+      },
+      {
+        "question_text": "Tell me a little about yourself and why early childhood education matters to you.",
+        "answer": "works at after school program currently. love working with kids. they keep her motivated as well. 15+ years total exp.",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$20-$22",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "two-weeks",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying to our company, Launch Pad Learning?",
+        "answer": "likes how we offer free preschool. wants to have her own daycare eventually.",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Downloads/Preschool-Teacher-Interview-Guide-main (8)/Preschool-Teacher-Interview-Guide-main/interviews/Indeed Interview Notes/2026-03-11 - North Long Beach - Lashanique Slaughter - Interview.docx",
+    "transcript_path": "C:/Users/Dnord/Downloads/Preschool-Teacher-Interview-Guide-main (8)/Preschool-Teacher-Interview-Guide-main/interviews/Candidate_Lashanique_Slaughter_2026-03-11_live_transcript.docx"
+  },
+  "communication_log": []
+}

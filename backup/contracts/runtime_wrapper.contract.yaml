@@ -1,0 +1,71 @@
+module:
+  name: runtime_wrapper
+  language: python
+  path: src/runtime_wrapper.py
+  version: 1.0.0
+  description: Runtime launcher wrapper that configures logging, exception hooks, and crash reporting for interview UI entrypoints.
+functions:
+- name: parse_args
+  description: Parse wrapper CLI arguments.
+  locked: false
+  inputs:
+    argv:
+      type: list[str] | None
+      required: false
+      default: null
+  returns:
+    type: argparse.Namespace
+  exceptions:
+  - SystemExit
+  side_effects: none
+- name: main
+  description: Execute a target script with runtime logging and crash-report guards.
+  locked: false
+  inputs:
+    argv:
+      type: list[str] | None
+      required: false
+      default: null
+  returns:
+    type: int
+  exceptions:
+  - FileNotFoundError
+  - BaseException
+  side_effects: writes logs and crash-report artifacts
+- name: write_wrapper_crash_report
+  description: Persist structured crash details for uncaught wrapper-level failures.
+  locked: false
+  inputs:
+    app_root:
+      type: Path
+      required: true
+    source:
+      type: str
+      required: true
+    exc_type:
+      type: type[BaseException]
+      required: true
+    exc_value:
+      type: BaseException
+      required: true
+    exc_traceback:
+      type: TracebackType | None
+      required: true
+  returns:
+    type: Path | None
+  exceptions: []
+  side_effects: writes crash-report JSON files
+- name: traceback_origin
+  description: Resolve final traceback frame metadata for crash diagnostics.
+  locked: false
+  inputs:
+    exc_traceback:
+      type: TracebackType | None
+      required: true
+  returns:
+    type: dict[str, Any]
+  exceptions: []
+  side_effects: none
+classes: []
+data_structures: []
+dependencies: []

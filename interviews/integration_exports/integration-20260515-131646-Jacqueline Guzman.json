@@ -1,0 +1,207 @@
+{
+  "candidate": {
+    "name": "Jacqueline Guzman",
+    "interview_date": "2026-05-15",
+    "school": "Hawthorne",
+    "track": "preschool",
+    "qualification": {
+      "has_degree": false,
+      "degree_type": "",
+      "degree_in_ece": false,
+      "ece_units_completed": 24,
+      "infant_toddler_class_completed": false,
+      "total_units_completed": 50,
+      "years_experience": 4
+    }
+  },
+  "percent_of_max": 47.92,
+  "decision": "no_hire",
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_10",
+        "trait_name": "Positive Behavior Guidance",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_11",
+        "trait_name": "Structure & Flexibility",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "after 6",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$22",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full-time",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-05-15 - Hawthorne - Jacqueline Guzman - Interview.docx",
+    "transcript_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Candidate_Jacqueline_Guzman_2026-05-15_live_transcript.docx"
+  },
+  "communication_log": [],
+  "flow_transcript_slices": [
+    {
+      "type": "custom",
+      "id": "Why-ECE",
+      "question": "Tell me about yourself and why early childhood education matters to you.",
+      "candidate_transcript": "[Q1 Attempt 1]\nSo I started working with kids, I would say, around, it's been four years now. You know, I got into, I got interested in the aspect of children when I took some courses of child development at my school. And from there, I wanted to find a way where I'm able to teach them and, like, give them what they need, find a space, have a safe space for them, be that supporter, that provider for them. And so while working with children, I've enjoyed the way they're able to learn things, the way they soak up everything that you give them, that they're around them at times. And, yeah, they're willing. They're willing to trust you as long as you give them that trust. The majority. So I went to college, yeah, I would say the majority."
+    },
+    {
+      "type": "custom",
+      "id": "Why-LPL",
+      "question": "Why are you applying for this position, specifically at Launch Pad Learning?",
+      "candidate_transcript": "[Q2 Attempt 1]\nUm, well, mostly because, um, um, the place I used to work at, uh, unfortunately closed down due to a low ratio. So I've been, you know, I still want to continue. I do want to continue my career with, um, children. I wanted to get my credentials eventually and hopefully like build upon that. So I do want to find a place where I could work with kids again and just, you know, get to know the different, uh, teaching methods that are used in different like facilities. Cause I know each, each center is different and the way, you know, everything's set up is different."
+    },
+    {
+      "type": "trait",
+      "id": "trait_1",
+      "question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+      "candidate_transcript": "[Q3 Attempt 1]\num a time where you know where we have kids that are like in terms of okay so like a situation for us would be drop-offs um you know kids times they have a hard time getting dropped off they don't want to they don't they want to stay with their parent you know they they don't want to come in we understand that it's the emotional attachment it's the letting go aspect that gets them really emotional about it so like one of the things we would do is you know we would try to find something that that child enjoyed doing in the classroom and we would tell that child like look we have this activity set up for you like you know it's okay like mom and dad are going to come back they always come back you know every day it's the same routine you know mom and dad are going to come like letting them know reassuring them that they're in a safe space that they know that their parents are going to come back and things like that so we would have something for them to do find something they like and then just letting them know like your friends are here we're gonna go play we're gonna have fun today and yeah"
+    },
+    {
+      "type": "trait",
+      "id": "trait_2",
+      "question": "Tell me about a time you felt overwhelmed at work with children present. What did you do to manage yourself?",
+      "candidate_transcript": "[Q4 Attempt 1]\nI know at times it could be overwhelming working with children. You know, sometimes there's good days and bad days. For those days, I mostly rely on the support of my coworkers, you know, having them around me. You know, if I'm struggling with the room, letting go."
+    },
+    {
+      "type": "trait",
+      "id": "trait_3",
+      "question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering, helping with clothing, or guiding them physically. They are pulling away or saying no. Walk me through exactly what you would do, step by step",
+      "candidate_transcript": "[Q5 Attempt 1]\nFor that situation, you know, I just let them know the process of what's going to happen. You know, they're very not on wanting me to touch them or, like, you know, for the diaper changing, it would be letting them know, like, hey, like, it's okay. You know, making sure they feel secure first and they understand what I'm trying to do, like, the task. And then, you know, letting them know, like, okay, like, I understand your feelings. You know, we could try again five minutes, you know, in five minutes or in a few, you know, in a few more minutes. But yeah, just letting them know that everything's okay, that they are safe, that, you know, everyone is going, all the kids go through it. It's fine. It's understandable. You know, just making them sure. They feel safe."
+    },
+    {
+      "type": "trait",
+      "id": "trait_4",
+      "question": "Tell me about a time you received feedback you didn’t expect or didn’t fully agree with. What happened next?",
+      "candidate_transcript": "[Q6 Attempt 1]\nWhen it comes to, so for me, it would be, so I would mostly be with preschool age and every now and then I would help with the toddler class. In the toddler class, you know, I wasn't familiar with their scheduling. So sometimes, you know, some things I would do as if I were in our class. So, you know, the teachers would correct me. They would tell me like, oh, this is done this way. And I would accept that criticism. I would, you know, I would rely on what they would say and I would thank them for it because that's what I want is for them to be communicative, to tell me like what I'm doing wrong. It needs to be fixed. I rely on that because I, you know, I take it as like, okay, I need to correct myself in hopes so I could build a better environment for the kids. Mostly just like for, snacks, you know, they have, not knowing if I should give all the snacks to the kids, like they would bring in home and home snacks from home. And, you know, they had a rule of like, okay, this certain, like if it was a yogurt, like a sweet snack, it would be after they've eaten their original like fruits and things like that. So it would be like when it came to like those instances where, you know, I would give everything. To the child. Cause I wasn't sure of, of how they, cause I, I would assume that it would be the same on how we would do it. So like when that would happen, they would let me know like, oh, we have this, it's a little bit different for, for us. We would, they would first eat the fruit. Then it's the yogurt pouch that comes."
+    },
+    {
+      "type": "trait",
+      "id": "trait_5",
+      "question": "Tell me about a time something didn’t go as planned at work and your role in it. How did you handle the responsibility piece?",
+      "candidate_transcript": "[Q7 Attempt 1]\nWe had instances where that would happen. We would, mostly in terms of like making an activity for the kids, we would think of an activity first. And then, you know, we would, you know, if it was an art piece or like a type of discussion during circle time, we would first write it down and then we would discuss it with one another. And then we would introduce it to the kids. And if we saw that the kids were not actively engaging in it, or if they were not fully relying, not fully relying, fully understanding on what was being said to them, then that's where we would, okay, let's try to think of something, something more easier for them to do. So we would change, we would change it from there. We would, you know, think of, we would think of a song to like better execute it or. We would think of like, okay, let's switch up, let's scrap that and make something."
+    },
+    {
+      "type": "trait",
+      "id": "trait_6",
+      "question": "Tell me about a time you had to work closely with another adult in a challenging situation. How did you navigate it?",
+      "candidate_transcript": "[Q8 Attempt 1]\nMostly through being, communicating to them, trying to put myself in their shoes, see from their point of view, try to be understanding of what, whatever is being said to one another, but mostly it's trying to communicate with them, trying to give my explanation, understand their explanation, and just finding a way we could both meet in the middle. No."
+    },
+    {
+      "type": "trait",
+      "id": "trait_7",
+      "question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+      "candidate_transcript": "[Q9 Attempt 1]\num one of the things is that is that every child learns differently you know it doesn't matter um you know if they're the same age or anything like that but every child is different so that's one of the things that i had to um come to like learn and like grow from that because you know some teaching methods don't work on every child you would have to like we would have to find a way to to include everyone and just have everyone engaged so that's one of the things that i learned a lot from them and also working with my uh co-workers as well that i learned how they're able to you know um find a method you know use that method and like have the kid have the kids engage with them so i learned from"
+    },
+    {
+      "type": "trait",
+      "id": "trait_10",
+      "question": "Tell me about a time a child’s behavior was challenging for you. How did you approach it?",
+      "candidate_transcript": "[Q10 Attempt 1]\nUh, mostly when they're, uh, being disruptive during like circle time, you know, and, um, having the attention on them rather on the teacher that's, you know, doing circle time at the, at the moment. So when that would happen, we will let the child know like, okay, right now, uh, we're doing circle time. You know, I know we're excited to, to, to have fun. We're going to have a, we're going to have fun outside soon, you know, but if I would see it, uh, consistently happen, you know, I would, um, pull the child aside, have them next to me and, you know, have them be next to them. And then we would look, we would, um, view circle time from where we were at. So I would let them know like, okay, we need some space. Let's give, let's give our bodies like five minutes. We're going to be here. We're going to see circle time from this standpoint. And once you're ready, we'll go back to circle time with the rest of the class. Awesome."
+    },
+    {
+      "type": "custom",
+      "id": "Not-Avail",
+      "question": "Are there any hours you are absolutely not available to work?",
+      "candidate_transcript": "[Q13 Attempt 1]\nUm, I would say from six and so on."
+    },
+    {
+      "type": "custom",
+      "id": "Pay",
+      "question": "What kind of pay are you looking for? Is that negotiable?",
+      "candidate_transcript": "[Q14 Attempt 1]\nUm, uh, 22 per hour."
+    }
+  ]
+}

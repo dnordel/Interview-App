@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="500" viewBox="0 0 1100 500">
+  <rect width="1100" height="500" fill="#f1f5f9"/>
+  <rect x="15" y="15" width="1070" height="470" rx="10" fill="#fff" stroke="#cbd5e1"/>
+  <text x="35" y="48" font-size="32" font-family="Arial" font-weight="700" fill="#111827">Settings</text>
+  <g font-family="Arial" font-size="26">
+    <rect x="35" y="80" width="120" height="42" rx="21" fill="#fff" stroke="#cbd5e1"/><text x="61" y="108">General</text>
+    <rect x="165" y="80" width="150" height="42" rx="21" fill="#dbeafe" stroke="#93c5fd"/><text x="188" y="108">Templates</text>
+    <rect x="325" y="80" width="185" height="42" rx="21" fill="#fff" stroke="#cbd5e1"/><text x="346" y="108">Notifications</text>
+    <rect x="520" y="80" width="125" height="42" rx="21" fill="#fff" stroke="#cbd5e1"/><text x="548" y="108">Storage</text>
+    <rect x="655" y="80" width="125" height="42" rx="21" fill="#fff" stroke="#cbd5e1"/><text x="685" y="108">Security</text>
+  </g>
+  <g font-family="Arial" font-size="20" fill="#991b1b">
+    <rect x="270" y="88" width="32" height="24" rx="12" fill="#fee2e2" stroke="#fecaca"/><text x="280" y="106">2</text>
+    <rect x="470" y="88" width="32" height="24" rx="12" fill="#fee2e2" stroke="#fecaca"/><text x="480" y="106">1</text>
+    <rect x="740" y="88" width="32" height="24" rx="12" fill="#fee2e2" stroke="#fecaca"/><text x="750" y="106">1</text>
+  </g>
+  <rect x="35" y="145" width="1030" height="95" rx="10" fill="#fff7ed" stroke="#fdba74"/>
+  <text x="50" y="180" font-size="28" font-family="Arial" font-weight="700">Templates</text>
+  <text x="50" y="214" font-size="26" font-family="Arial" fill="#b91c1c">Contains unsupported template placeholders.</text>
+  <text x="50" y="236" font-size="22" font-family="Arial" fill="#b91c1c">Guidance: Open Placeholders picker and replace unsupported token.</text>
+
+  <rect x="35" y="250" width="1030" height="95" rx="10" fill="#fff7ed" stroke="#fdba74"/>
+  <text x="50" y="285" font-size="28" font-family="Arial" font-weight="700">Notifications</text>
+  <text x="50" y="319" font-size="26" font-family="Arial" fill="#b91c1c">Director referral endpoint must start with http:// or https://.</text>
+  <text x="50" y="341" font-size="22" font-family="Arial" fill="#b91c1c">Guidance: Use &lt;https://...&gt; (or &lt;http://...&gt;).</text>
+
+  <rect x="35" y="355" width="1030" height="85" rx="10" fill="#fff7ed" stroke="#fdba74"/>
+  <text x="50" y="390" font-size="28" font-family="Arial" font-weight="700">Security</text>
+  <text x="50" y="422" font-size="26" font-family="Arial" fill="#b91c1c">Whisper temperature must be between 0.0 and 1.0.</text>
+</svg>

@@ -1,0 +1,96 @@
+module:
+  name: question_settings_service
+  language: python
+  path: src/question_settings_service.py
+  version: 1.0.0
+  description: Rubric question-settings service with coordinated runtime signal-definition ownership for trait CRUD.
+functions: []
+classes:
+  - name: QuestionSettingsService
+    description: Manages rubric edits, undo state, import/export, and synchronized trait runtime definition lifecycle operations.
+    locked: false
+    attributes:
+      rubric_path:
+        type: Path
+      runtime_definition_service:
+        type: QuestionRuntimeDefinitionService
+    methods:
+      - name: checkpoint
+        inputs:
+          rubric:
+            type: dict[str, Any]
+            required: true
+        returns:
+          type: None
+      - name: undo
+        inputs: {}
+        returns:
+          type: dict[str, Any] | None
+      - name: restore_defaults
+        inputs: {}
+        returns:
+          type: dict[str, Any]
+      - name: save_rubric
+        inputs:
+          rubric:
+            type: dict[str, Any]
+            required: true
+        returns:
+          type: None
+      - name: export_questions
+        inputs:
+          rubric:
+            type: dict[str, Any]
+            required: true
+          path:
+            type: Path
+            required: true
+        returns:
+          type: None
+      - name: import_questions
+        inputs:
+          rubric:
+            type: dict[str, Any]
+            required: true
+          path:
+            type: Path
+            required: true
+        returns:
+          type: dict[str, Any]
+      - name: update_trait
+        inputs:
+          rubric:
+            type: dict[str, Any]
+            required: true
+          trait_id:
+            type: str
+            required: true
+          updates:
+            type: dict[str, Any]
+            required: true
+        returns:
+          type: dict[str, Any]
+      - name: add_trait
+        inputs:
+          rubric:
+            type: dict[str, Any]
+            required: true
+          trait:
+            type: dict[str, Any]
+            required: true
+        returns:
+          type: dict[str, Any]
+      - name: delete_trait
+        inputs:
+          rubric:
+            type: dict[str, Any]
+            required: true
+          trait_id:
+            type: str
+            required: true
+        returns:
+          type: dict[str, Any]
+data_structures: []
+dependencies:
+  - question_runtime_definition_service
+  - storage_utils

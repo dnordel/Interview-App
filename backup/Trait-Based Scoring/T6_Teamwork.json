@@ -1,0 +1,44 @@
+{
+  "trait_id": "T6_Teamwork",
+  "question": "Tell me about a challenging situation you worked through with another adult.",
+
+  "core_signals": [
+    { "ref": "S_PERSPECTIVE_TAKING", "label": "Demonstrates understanding of another person’s perspective", "weight": 2, "group": "Teamwork" },
+    { "ref": "S_RESPECTFUL_LANGUAGE", "label": "Uses respectful, non-judgmental language", "weight": 1, "group": "Communication" },
+    { "ref": "S_OWNERSHIP", "label": "Takes responsibility for their role in a situation", "weight": 2, "group": "Accountability" },
+    { "ref": "S_ADAPT", "label": "Adjusts approach based on feedback or response", "weight": 2, "group": "Adaptability" },
+    { "ref": "S_PROCESS_STRUCTURED", "label": "Describes a clear step-by-step process for handling the situation", "weight": 2, "group": "Process" },
+    { "ref": "S_REASONING_EXPLICIT", "label": "Explains the reasoning behind their actions or decisions", "weight": 2, "group": "Thinking" },
+    { "ref": "S_BALANCE_CHILD_GROUP", "label": "Balances individual child needs with group needs", "weight": 2, "group": "Balance" },
+    { "ref": "S_EFFECTIVENESS_EVAL", "label": "Evaluates whether their approach worked and why", "weight": 1, "group": "Thinking" },
+    { "ref": "S_DISRESPECTFUL", "label": "Speaks disrespectfully about others", "weight": -3, "group": "Teamwork", "is_critical": true },
+    { "ref": "S_BLAME", "label": "Blames others or external factors without self-reflection", "weight": -2, "group": "Accountability" }
+  ],
+
+  "extended_signal_groups": [
+    {
+      "group_id": "G1",
+      "group_label": "Communication Depth",
+      "signals": [
+        { "ref": "S_VALIDATE", "label": "Validates the child’s feelings verbally or behaviorally", "weight": 1 },
+        { "ref": "S_NEGATIVE_LABELING", "label": "Uses judgmental or negative labels", "weight": -1 }
+      ]
+    },
+    {
+      "group_id": "G2",
+      "group_label": "Process Quality",
+      "signals": [
+        { "ref": "S_PROCESS_LOOP", "label": "Uses an observe → interpret → respond → reassess loop", "weight": 1 },
+        { "ref": "S_PROCESS_VAGUE", "label": "Describes actions without a clear or logical process", "weight": -1 }
+      ]
+    },
+    {
+      "group_id": "G3",
+      "group_label": "Reflection",
+      "signals": [
+        { "ref": "S_REFLECT", "label": "Reflects on what worked or what they learned", "weight": 1 },
+        { "ref": "S_NO_REFLECTION", "label": "Shows little or no reflection", "weight": -1 }
+      ]
+    }
+  ]
+}

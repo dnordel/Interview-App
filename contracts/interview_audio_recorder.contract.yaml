@@ -1,0 +1,107 @@
+module:
+  name: interview_audio_recorder
+  language: python
+  path: src/interview_audio_recorder.py
+  version: 1.0.0
+  description: Records interview audio with ffmpeg and transcribes tracks with faster-whisper.
+functions:
+- name: start_recording
+  description: Start a two-track ffmpeg recording session and return a RecordingSession handle.
+  locked: false
+  inputs:
+    os_name:
+      type: str
+      required: true
+    output_dir:
+      type: str | Path
+      required: true
+    base_name:
+      type: str | None
+      required: false
+      default: null
+  returns:
+    type: RecordingSession
+  exceptions:
+  - ValueError
+  - SystemExit
+  side_effects: starts ffmpeg subprocesses and writes wav files
+- name: _linux_parent_death_preexec
+  description: Configure linux child-process parent-death signal so ffmpeg exits if the parent process dies.
+  locked: false
+  inputs: {}
+  returns:
+    type: None
+  exceptions: []
+  side_effects: sets child-process prctl state
+- name: _create_windows_kill_on_close_job
+  description: Create a Windows Job Object configured to terminate child processes when closed.
+  locked: false
+  inputs: {}
+  returns:
+    type: Any | None
+  exceptions: []
+  side_effects: allocates a Windows job handle
+- name: _assign_process_to_windows_job
+  description: Attach a child process to a Windows Job Object for lifecycle tracking.
+  locked: false
+  inputs:
+    job_handle:
+      type: Any
+      required: true
+    process:
+      type: subprocess.Popen
+      required: true
+  returns:
+    type: None
+  exceptions: []
+  side_effects: associates process handles with job object
+- name: _close_windows_handle
+  description: Close a Windows native handle if available.
+  locked: false
+  inputs:
+    handle:
+      type: Any
+      required: true
+  returns:
+    type: None
+  exceptions: []
+  side_effects: closes OS handle
+classes:
+- name: RecordingSession
+  description: Manages ffmpeg recording subprocesses and transcription lifecycle.
+  locked: false
+  attributes:
+    _procs:
+      type: list[subprocess.Popen]
+    _windows_job_handle:
+      type: Any | None
+  methods:
+  - name: start
+    inputs:
+      mic_cmd:
+        type: list[str]
+      sys_cmd:
+        type: list[str]
+    returns:
+      type: None
+  - name: stop
+    inputs: {}
+    returns:
+      type: None
+  - name: stop_and_transcribe
+    inputs:
+      output_dir:
+        type: str | Path
+      base_name:
+        type: str
+      language:
+        type: str
+    returns:
+      type: RecordingResult
+data_structures:
+- name: RecordingResult
+  description: Output artifact paths for a completed recording session transcription.
+- name: ExistingTranscriptionResult
+  description: Output artifact paths and segment count for retranscribed recordings.
+dependencies:
+- transcription_diagnostics

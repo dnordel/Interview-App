@@ -1,0 +1,48 @@
+module:
+  name: check_contract_review
+  language: python
+  path: tools/check_contract_review.py
+  version: 1.0.0
+  description: Lightweight section-based drift checks for contract review workflows.
+functions:
+  - name: run_checks
+    description: Execute selected drift-check sections and return result summaries.
+    locked: false
+    inputs:
+      sections:
+        type: list[str]
+        required: true
+      max_age_days:
+        type: int
+        required: true
+    returns:
+      type: list[CheckResult]
+    exceptions: []
+    side_effects: reads baseline, locked validation, coverage matrix, and contract files
+  - name: main
+    description: Parse CLI options, run checks, and emit pass/fail status for CI usage.
+    locked: false
+    inputs: {}
+    returns:
+      type: int
+    exceptions:
+      - SystemExit
+    side_effects: prints to stdout and exits with non-zero code when checks fail
+classes:
+  - name: CheckResult
+    description: Structured status output for a single review section.
+    locked: false
+    attributes:
+      name:
+        type: str
+      ok:
+        type: bool
+      messages:
+        type: list[str]
+    methods: []
+data_structures: []
+dependencies:
+  - contracts/*.contract.yaml
+  - docs/contract_baseline_checklist.yaml
+  - docs/contract_locked_validation.yaml
+  - docs/contract_test_coverage_matrix.yaml

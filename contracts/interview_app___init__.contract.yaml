@@ -1,0 +1,29 @@
+module:
+  name: interview_app___init__
+  language: python
+  path: src/interview_app/__init__.py
+  version: 1.3.0
+  description: Contracts for __init__ module.
+functions: []
+classes: []
+data_structures: []
+dependencies:
+- interview_app_audio_runtime
+- interview_app_bootstrap
+- interview_app_dashboard_controller
+- interview_app_finalize_context
+- interview_app_finalize_gateways
+- interview_app_finalize_pipeline
+- interview_app_flow_controller
+- interview_app_history_actions
+- interview_app_history_controller
+- interview_app_state
+- interview_app_transcript_writer
+- interview_app_transcription_executor
+- interview_app_transcription_queue
+- interview_app_types
+- interview_app_ui_router
+- interview_app_ui_shell
+- interview_app_whisper_runtime_policy
+- interview_app_views
+- interview_app_session_manager

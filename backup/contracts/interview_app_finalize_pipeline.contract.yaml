@@ -1,0 +1,163 @@
+module:
+  name: interview_app_finalize_pipeline
+  language: python
+  path: src/interview_app/finalize_pipeline.py
+  version: 2.0.0
+  description: Contracts for finalize_pipeline module.
+functions:
+- name: validate_before_finalize
+  description: validate_before_finalize function.
+  locked: false
+  inputs:
+    app:
+      type: Any
+      required: true
+  returns:
+    type: None
+  exceptions: []
+  side_effects: none
+classes:
+- name: FinalizePipelineController
+  description: FinalizePipelineController class.
+  locked: false
+  attributes: {}
+  methods:
+  - name: finalize_interview
+    description: FinalizePipelineController.finalize_interview method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: run_finalize_pipeline
+    description: FinalizePipelineController.run_finalize_pipeline method.
+    locked: false
+    inputs: {}
+    returns:
+      type: FinalizePipelineResult
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: _dispatch_finalize_work
+    description: FinalizePipelineController._dispatch_finalize_work method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: _start_finalize_worker_non_blocking
+    description: FinalizePipelineController._start_finalize_worker_non_blocking method.
+    locked: false
+    inputs:
+      attempt:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: _restore_main_window_focus
+    description: FinalizePipelineController._restore_main_window_focus method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: _warn_if_finalize_starts_with_pending_transcriptions
+    description: FinalizePipelineController._warn_if_finalize_starts_with_pending_transcriptions method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: _build_transcript_metadata
+    description: FinalizePipelineController._build_transcript_metadata method.
+    locked: false
+    inputs:
+      pending_snapshot:
+        type: dict[str, int | list[int]]
+        required: true
+    returns:
+      type: FinalizeTranscriptMetadata
+    exceptions: []
+    side_effects: none
+  - name: _pending_transcription_indices
+    description: FinalizePipelineController._pending_transcription_indices method.
+    locked: false
+    inputs: {}
+    returns:
+      type: list[int]
+    exceptions: []
+    side_effects: none
+  - name: _pending_transcription_snapshot
+    description: FinalizePipelineController._pending_transcription_snapshot method.
+    locked: false
+    inputs: {}
+    returns:
+      type: dict[str, int | list[int]]
+    exceptions: []
+    side_effects: none
+  - name: _collect_pending_flow_indices
+    description: FinalizePipelineController._collect_pending_flow_indices method.
+    locked: false
+    inputs: {}
+    returns:
+      type: set[int]
+    exceptions: []
+    side_effects: none
+  - name: _safe_int_indices
+    description: FinalizePipelineController._safe_int_indices method.
+    locked: false
+    inputs:
+      values:
+        type: Any
+        required: true
+    returns:
+      type: list[int]
+    exceptions: []
+    side_effects: none
+  - name: poll_finalize_worker
+    description: FinalizePipelineController.poll_finalize_worker method.
+    locked: false
+    inputs:
+      q:
+        type: queue.Queue[dict[str, Any]]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: _handle_finalize_success
+    description: FinalizePipelineController._handle_finalize_success method.
+    locked: false
+    inputs:
+      status:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: _handle_finalize_failure
+    description: FinalizePipelineController._handle_finalize_failure method.
+    locked: false
+    inputs:
+      status:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: updates in-memory state
+data_structures: []
+dependencies:
+- app_content
+- interview_app_finalize_context
+- interview_app_finalize_gateways
+- interview_app_types
+- reporting
+- ux_metrics
+- ui_feedback

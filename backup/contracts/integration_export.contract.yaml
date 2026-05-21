@@ -1,0 +1,96 @@
+module:
+  name: integration_export
+  language: python
+  path: src/integration_export.py
+  version: 2.1.0
+  description: Integration payload normalization and export serialization utilities.
+functions:
+- name: normalize_outcome_label
+  description: Normalize scoring outcome labels for downstream integrations.
+  locked: false
+  inputs:
+    outcome:
+      type: Any
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: build_integration_payload
+  description: Build normalized integration payload from interview payload and scoring. Output referral packet uses interview_notes_document_path as canonical doc path; legacy interview_notes_path/transcript_path are deprecated through 2026-06-30.
+  locked: false
+  inputs:
+    payload:
+      type: dict[str, Any]
+      required: true
+    scoring:
+      type: dict[str, Any]
+      required: true
+    include_flow_slices:
+      type: bool
+      required: false
+      default: true
+  returns:
+    type: dict[str, Any]
+  exceptions: []
+  side_effects: none
+- name: serialize_integration_payload
+  description: Serialize integration payload to JSON under integration exports directory.
+  locked: false
+  inputs:
+    base_output_dir:
+      type: Path
+      required: true
+    export_payload:
+      type: dict[str, Any]
+      required: true
+    candidate_name:
+      type: str
+      required: true
+  returns:
+    type: Path
+  exceptions:
+  - ValueError
+  - OSError
+  side_effects: Creates directories/files and writes JSON payload to disk.
+- name: _trait_note
+  description: Build trait-note slice used in integration payload.
+  locked: false
+  inputs:
+    row:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: dict[str, Any]
+  exceptions: []
+  side_effects: none
+- name: _flow_slices
+  description: Build filtered flow transcript slices with candidate transcript text.
+  locked: false
+  inputs:
+    flow_transcript:
+      type: list[dict[str, Any]]
+      required: true
+  returns:
+    type: list[dict[str, Any]]
+  exceptions: []
+  side_effects: none
+classes: []
+data_structures:
+- name: IntegrationReferralPacket
+  description: Referral/integration payload document references with one canonical interview notes document path.
+  type: TypedDict
+  attributes:
+    resume_path:
+      type: str
+    interview_notes_document_path:
+      type: str
+      description: Canonical merged interview notes + auto-transcription document path.
+    interview_notes_path:
+      type: str
+      description: "[DEPRECATED] Legacy notes-only path retained through 2026-06-30."
+    transcript_path:
+      type: str
+      description: "[DEPRECATED] Legacy transcript-only path retained through 2026-06-30."
+dependencies:
+- app_content

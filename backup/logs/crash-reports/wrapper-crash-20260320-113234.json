@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-03-20T11:32:34",
+  "source": "sys_excepthook",
+  "error_type": "ModuleNotFoundError",
+  "error_message": "No module named 'candidate_title'",
+  "origin": {
+    "function": "<module>",
+    "line": 90,
+    "file": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\src\\interview_app.pyw"
+  },
+  "python": "3.11.9 (tags/v3.11.9:de54cf5, Apr  2 2024, 10:12:12) [MSC v.1938 64 bit (AMD64)]",
+  "cwd": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\src",
+  "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\backup\\src\\runtime_wrapper.py\", line 231, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\backup\\src\\runtime_wrapper.py\", line 50, in main\n    runpy.run_path(str(target_path), run_name=\"__main__\")\n  File \"<frozen runpy>\", line 291, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\src\\interview_app.pyw\", line 90, in <module>\n    from candidate_title import DEFAULT_CANDIDATE_TITLE, TITLE_OPTIONS, normalize_candidate_title\nModuleNotFoundError: No module named 'candidate_title'"
+}

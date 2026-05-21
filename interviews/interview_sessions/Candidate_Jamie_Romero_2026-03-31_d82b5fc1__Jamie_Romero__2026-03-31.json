@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-03-31T20:35:40.365484Z",
+  "updated_at": "2026-03-31T20:48:23.415484Z",
+  "interview": {
+    "interview_id": "Candidate_Jamie_Romero_2026-03-31_d82b5fc1",
+    "candidate_name": "Jamie Romero",
+    "interview_date": "2026-03-31"
+  },
+  "questions": {
+    "0": {
+      "flow_idx": 0,
+      "item_type": "custom",
+      "item_id": "Why-ECE",
+      "notes": {
+        "question_text": "Tell me a little about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q1 Attempt 1]\num i'm currently majoring in early childhood development and i worked as a behavior technician where i would provide one-on-one support to children both at home and in school settings i have experience working with children with special needs helping with behavior communication and daily routines i have also personal connection through my autistic brother which inspired me to work with kids i really enjoy helping children learn and grow especially in like a supportive and positive environment um i worked a couple of months up to a year i think it was about to be a year i have about 10 units but i'm currently enrolled in four classes on this semester",
+      "updated_at": "2026-03-31T20:35:50.075407Z"
+    },
+    "1": {
+      "flow_idx": 1,
+      "item_type": "custom",
+      "item_id": "Why-LPL",
+      "notes": {
+        "question_text": "Why are you applying to our company, Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q2 Attempt 1]\num i really enjoy working with younger children and i have i seen it on i think it was a website that i seen it was like a video of you guys showing that you guys opened and i really enjoyed it and i like i always wanted to teach through play and creativity creativity sorry and interaction i also enjoy helping kids build basic skills like communication social skills and independence but uh it was more like uh i seen it on the website and it made me enjoy watching that video",
+      "updated_at": "2026-03-31T20:36:30.696936Z"
+    },
+    "2": {
+      "flow_idx": 2,
+      "item_type": "trait",
+      "item_id": "trait_1",
+      "notes": {
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q3 Attempt 1]\nThere was this time when I was working as a behavior technician where I would have to take away the iPad since they were really into the iPad, I would have to take it away and run programs with them. And there was a time where he really, really didn't want to. And I kind of had to redirect him with another program kind of like, oh, first we can do this and then you can get your iPad back. But he really didn't want to. And he started like throwing things, crying. So I would have to, and then I went back to him and I asked what was wrong. And he just said that he was very tired of working and tired of running programs. So we took a 10 minute break and he was very good after. He just was very like, like emotionally. Just tired of everything.",
+      "updated_at": "2026-03-31T20:37:41.273597Z"
+    },
+    "3": {
+      "flow_idx": 3,
+      "item_type": "trait",
+      "item_id": "trait_2",
+      "notes": {
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q4 Attempt 1]\nUm, there was a time where I was working in a school setting, and there was this kid who would always come up to me and pull my hair, and then there was another kid yelling at me, so I was kind of like, you know, I was more stressed. I wasn't angry or mad, I was just more stressed because there were so many things going on, but I walked out of the classroom, I talked to the teacher like, oh, I need like a 10-minute break. I walked out, and I just sat in my car and started talking to myself and writing like on a little notebook.",
+      "updated_at": "2026-03-31T20:38:31.151733Z"
+    },
+    "4": {
+      "flow_idx": 4,
+      "item_type": "trait",
+      "item_id": "trait_3",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q5 Attempt 1]\nI would want to talk to them not talk to them but kind of show them I'm sorry what was the question it was uh oh I would talk to them and if they don't want to talk and if they're just crying um like oh it's okay like we can and we could take your time and just show them that it's if they say no it's okay like we can just take our time take a break before we restart again you",
+      "updated_at": "2026-03-31T20:39:39.836477Z"
+    },
+    "5": {
+      "flow_idx": 5,
+      "item_type": "trait",
+      "item_id": "trait_4",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q6 Attempt 1]\nfeedback as in like uh like a supervisor there was i'm trying to remember the story oh there was this time where the supervisor was she would have supervisors come every week to see how we were doing with the kid and see how our program was running and she told me that the kid was very um not getting what he deserved not deserved but like his actions weren't showing that he increased and passing the the school levels and i thought i was doing very well with him i thought everything was going well until she told me that so it made me kind of rethink everything but then i kind of sat down with him and we started working on we started together it was i think that was one of the times you",
+      "updated_at": "2026-03-31T20:41:12.263421Z"
+    },
+    "6": {
+      "flow_idx": 6,
+      "item_type": "trait",
+      "item_id": "trait_5",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q7 Attempt 1]\noh when i went to my client's house and i told him that we were going to play outside and we were going to do because i like playing in our program we would like to um outside it was one of our programs that we would like to run was we would play outside play tag and see how he would react and he really really didn't want to play a tag or any of that he sat down the whole time i would tag him and i'll start running and he'll just sit down and i thought i was doing something wrong in the program but we went inside and then the mom told me that something was going on so i everything went well after because i started talking to him and we went outside again we tried again we started playing tag with me and everything went well okay that's fine",
+      "updated_at": "2026-03-31T20:43:16.576683Z"
+    },
+    "7": {
+      "flow_idx": 7,
+      "item_type": "trait",
+      "item_id": "trait_6",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-31T20:44:16.815199Z"
+    },
+    "8": {
+      "flow_idx": 8,
+      "item_type": "trait",
+      "item_id": "trait_7",
+      "notes": {
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q9 Attempt 1]\nWhen I was with my autistic brother, I really, really wanted to join a school or work in that career, working as a behavior technician. It helped me grow as a person and learn more about my brother and why he would do the things he would do or why he would act the way he was acting. And it made me learn more to take care of him and more to understand how he was feeling. So it made me grow as a person for my brother and then for the kids that I would work with. I loved learning how everyone was different and they weren't really the same. I left because the hours weren't as good as I wanted them to be. I would get two hours every other day and I kind of wanted a full-time position.",
+      "updated_at": "2026-03-31T20:45:33.950702Z"
+    },
+    "9": {
+      "flow_idx": 9,
+      "item_type": "trait",
+      "item_id": "trait_8",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q10 Attempt 1]\nI have seven nephews, all boys, so I grew up teaching my, not teaching, sorry, learning how to do, not do diapers, change diapers, sorry, change diapers, feed babies every morning, bathe them at night, and it was an everyday routine with my nephews. So, that made me learn a lot on how to do things in a way to make it easier for myself. So, with diapering, I would always like to, since it was nephews, I would like to cover the top part with the diaper that was, that I'm using as, you know, and then wipe and clean, and then I'll close the diaper up, which was way easier than getting peed on or anything like that. And then, yeah. That's it. I would put, since, you know how babies get rashes sometimes, whatever my sisters had, like the ointments they had, I would just put it, and that was it for the diapering part.",
+      "updated_at": "2026-03-31T20:47:00.520846Z"
+    },
+    "10": {
+      "flow_idx": 10,
+      "item_type": "trait",
+      "item_id": "trait_9",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q11 Attempt 1]\nI would like to when it was my nephews and they were younger or my clients as well I would show them the item and they'll say no or I'll make them choose between two items that they were pointing at previous previously and if they didn't want either of those I'll keep asking showing the art the product or the object that they wanted before",
+      "updated_at": "2026-03-31T20:47:40.747069Z"
+    },
+    "11": {
+      "flow_idx": 11,
+      "item_type": "custom",
+      "item_id": "FT-or-PT",
+      "notes": {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "Full-time",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-31T20:47:47.231421Z"
+    },
+    "12": {
+      "flow_idx": 12,
+      "item_type": "custom",
+      "item_id": "Not-Avail",
+      "notes": {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "Mondays",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q13 Attempt 1]\nI'm still in school. I can't work Mondays. I don't know if that's a problem, but I can work every other week.",
+      "updated_at": "2026-03-31T20:48:02.081590Z"
+    },
+    "13": {
+      "flow_idx": 13,
+      "item_type": "custom",
+      "item_id": "Start",
+      "notes": {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "asap",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-31T20:48:09.522331Z"
+    },
+    "14": {
+      "flow_idx": 14,
+      "item_type": "custom",
+      "item_id": "Pay",
+      "notes": {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$17",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q15 Attempt 1]\nUm, for me, that doesn't really matter, but anywhere between 17 to higher.",
+      "updated_at": "2026-03-31T20:48:23.415484Z"
+    }
+  }
+}

@@ -1,0 +1,512 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/interview-output.schema.json",
+  "title": "Interview App Output Payload",
+  "description": "Strict schema for the JSON payload produced from interview state and finalize pipeline.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "candidate",
+    "current_index",
+    "trait_inputs",
+    "custom_inputs",
+    "flow_time_marks",
+    "flow_candidate_transcripts"
+  ],
+  "properties": {
+    "candidate": {
+      "$ref": "#/$defs/candidate"
+    },
+    "current_index": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "trait_inputs": {
+      "type": "object",
+      "patternProperties": {
+        "^[A-Za-z0-9_-]+$": {
+          "$ref": "#/$defs/traitInput"
+        }
+      },
+      "additionalProperties": false
+    },
+    "custom_inputs": {
+      "type": "object",
+      "patternProperties": {
+        "^[A-Za-z0-9_-]+$": {
+          "$ref": "#/$defs/customInput"
+        }
+      },
+      "additionalProperties": false
+    },
+    "flow_time_marks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/flowTimeMark"
+      }
+    },
+    "flow_candidate_transcripts": {
+      "type": "object",
+      "patternProperties": {
+        "^[0-9]+$": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "audio_recording": {
+      "$ref": "#/$defs/audioRecording"
+    },
+    "custom_answers": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/customAnswer"
+      }
+    },
+    "flow_transcript": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/flowTranscriptEntry"
+      }
+    },
+    "referral_packet": {
+      "$ref": "#/$defs/referralPacket"
+    },
+    "communication_log": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/communicationLogEntry"
+      }
+    }
+  },
+  "$defs": {
+    "candidateQualification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "has_degree",
+        "degree_type",
+        "degree_in_ece",
+        "ece_units_completed",
+        "infant_toddler_class_completed",
+        "total_units_completed"
+      ],
+      "properties": {
+        "has_degree": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "degree_type": {
+          "type": "string",
+          "enum": [
+            "",
+            "AA",
+            "AS",
+            "BA",
+            "BS",
+            "MA",
+            "MS",
+            "MBA",
+            "PhD",
+            "EdD"
+          ]
+        },
+        "degree_in_ece": {
+          "type": "boolean"
+        },
+        "ece_units_completed": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "infant_toddler_class_completed": {
+          "type": "boolean"
+        },
+        "total_units_completed": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "interview_date",
+        "school",
+        "track",
+        "qualification"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "interview_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "school": {
+          "type": "string"
+        },
+        "track": {
+          "type": "string",
+          "minLength": 1
+        },
+        "qualification": {
+          "$ref": "#/$defs/candidateQualification"
+        }
+      }
+    },
+    "traitInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "raw_score",
+        "question_notes",
+        "trait_notes",
+        "verbatim_notes",
+        "absolute_disqualifier",
+        "skipped",
+        "no_example_after_followups"
+      ],
+      "properties": {
+        "raw_score": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "enum": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            null
+          ]
+        },
+        "question_notes": {
+          "type": "string"
+        },
+        "trait_notes": {
+          "type": "string"
+        },
+        "verbatim_notes": {
+          "type": "string"
+        },
+        "absolute_disqualifier": {
+          "type": "boolean"
+        },
+        "skipped": {
+          "type": "boolean"
+        },
+        "no_example_after_followups": {
+          "type": "boolean"
+        }
+      }
+    },
+    "customInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "question_text",
+        "answer",
+        "skipped"
+      ],
+      "properties": {
+        "question_text": {
+          "type": "string"
+        },
+        "answer": {
+          "type": "string"
+        },
+        "skipped": {
+          "type": "boolean"
+        }
+      }
+    },
+    "flowTimeMark": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "flow_index",
+        "t",
+        "end_t",
+        "type",
+        "id"
+      ],
+      "properties": {
+        "flow_index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "t": {
+          "type": "number",
+          "minimum": 0
+        },
+        "end_t": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "trait",
+            "custom"
+          ]
+        },
+        "id": {
+          "type": [
+            "string",
+            "integer"
+          ]
+        }
+      }
+    },
+    "audioRecordingItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "flow_index",
+        "base_name",
+        "wav_paths",
+        "transcript_paths",
+        "candidate_label",
+        "candidate_transcript"
+      ],
+      "properties": {
+        "flow_index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "base_name": {
+          "type": "string"
+        },
+        "wav_paths": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mic", "system"],
+          "properties": {
+            "mic": {"type": "string"},
+            "system": {"type": "string"}
+          }
+        },
+        "transcript_paths": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["jsonl", "txt"],
+          "properties": {
+            "jsonl": {"type": "string"},
+            "txt": {"type": "string"}
+          }
+        },
+        "candidate_label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "candidate_transcript": {
+          "type": "string"
+        }
+      }
+    },
+    "audioRecording": {
+      "oneOf": [
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/audioRecordingItem"
+          }
+        },
+        {
+          "type": "object",
+          "patternProperties": {
+            "^[0-9]+$": {
+              "$ref": "#/$defs/audioRecordingItem"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "customAnswer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "question_text",
+        "answer"
+      ],
+      "properties": {
+        "question_text": {
+          "type": "string"
+        },
+        "answer": {
+          "type": "string"
+        }
+      }
+    },
+    "flowTranscriptTrait": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "id",
+        "title",
+        "question",
+        "raw_score",
+        "skipped",
+        "no_example_after_followups",
+        "question_notes",
+        "trait_notes",
+        "verbatim_notes",
+        "absolute_disqualifier",
+        "candidate_transcript"
+      ],
+      "properties": {
+        "type": {
+          "const": "trait"
+        },
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "question": {
+          "type": "string"
+        },
+        "raw_score": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "enum": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            null
+          ]
+        },
+        "skipped": {
+          "type": "boolean"
+        },
+        "no_example_after_followups": {
+          "type": "boolean"
+        },
+        "question_notes": {
+          "type": "string"
+        },
+        "trait_notes": {
+          "type": "string"
+        },
+        "verbatim_notes": {
+          "type": "string"
+        },
+        "absolute_disqualifier": {
+          "type": "boolean"
+        },
+        "candidate_transcript": {
+          "type": "string"
+        }
+      }
+    },
+    "flowTranscriptCustom": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "id",
+        "title",
+        "question",
+        "answer",
+        "skipped",
+        "candidate_transcript"
+      ],
+      "properties": {
+        "type": {
+          "const": "custom"
+        },
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "const": "Custom Question"
+        },
+        "question": {
+          "type": "string"
+        },
+        "answer": {
+          "type": "string"
+        },
+        "skipped": {
+          "type": "boolean"
+        },
+        "candidate_transcript": {
+          "type": "string"
+        }
+      }
+    },
+    "flowTranscriptEntry": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/flowTranscriptTrait"
+        },
+        {
+          "$ref": "#/$defs/flowTranscriptCustom"
+        }
+      ]
+    },
+    "referralPacket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resume_path",
+        "interview_notes_path",
+        "transcript_path"
+      ],
+      "properties": {
+        "resume_path": {
+          "type": "string"
+        },
+        "interview_notes_path": {
+          "type": "string"
+        },
+        "transcript_path": {
+          "type": "string"
+        }
+      }
+    },
+    "communicationLogEntry": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "event",
+        "timestamp",
+        "status"
+      ],
+      "properties": {
+        "event": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

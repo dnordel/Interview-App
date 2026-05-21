@@ -1,0 +1,43 @@
+{
+  "trait_id": "T3_Safety",
+  "question": "Tell me about a time you had to be especially mindful of a child’s safety, body, or boundaries.",
+
+  "core_signals": [
+    { "ref": "S_OBSERVE_CUES", "label": "Observes multiple behavioral or nonverbal cues", "weight": 2, "group": "Observation" },
+    { "ref": "S_SUBTLE_CUES", "label": "Notices subtle or nuanced cues", "weight": 1, "group": "Observation" },
+    { "ref": "S_PROCESS_STRUCTURED", "label": "Describes a clear step-by-step process for handling the situation", "weight": 2, "group": "Process" },
+    { "ref": "S_ADAPT", "label": "Adjusts approach based on feedback or response", "weight": 2, "group": "Adaptability" },
+    { "ref": "S_RESPONDS_TO_CUES", "label": "Adjusts actions based on child comfort or resistance", "weight": 2, "group": "Physical Care" },
+    { "ref": "S_CALM_PRESENCE", "label": "Maintains calm tone and body language", "weight": 2, "group": "Self-Regulation" },
+    { "ref": "S_CHILD_CENTERED", "label": "Frames situation from the child’s perspective", "weight": 2, "group": "Child Orientation" },
+    { "ref": "S_REASONING_EXPLICIT", "label": "Explains the reasoning behind their actions or decisions", "weight": 2, "group": "Thinking" },
+    { "ref": "S_BALANCE_EMPATHY_BOUNDARY", "label": "Balances emotional support with clear expectations or boundaries", "weight": 2, "group": "Balance" },
+    { "ref": "S_RUSHED_HANDLING", "label": "Handles children in a rushed or rough manner", "weight": -3, "group": "Physical Care", "is_critical": true }
+  ],
+
+  "extended_signal_groups": [
+    {
+      "group_id": "G1",
+      "group_label": "Language",
+      "signals": [
+        { "ref": "S_VALIDATE", "label": "Validates the child’s feelings verbally or behaviorally", "weight": 1 },
+        { "ref": "S_MINIMIZE", "label": "Minimizes or dismisses a child’s feelings", "weight": -2 }
+      ]
+    },
+    {
+      "group_id": "G2",
+      "group_label": "Process Quality",
+      "signals": [
+        { "ref": "S_PROCESS_LOOP", "label": "Uses an observe → interpret → respond → reassess loop", "weight": 1 },
+        { "ref": "S_PROCESS_VAGUE", "label": "Describes actions without a clear or logical process", "weight": -1 }
+      ]
+    },
+    {
+      "group_id": "G3",
+      "group_label": "Consistency",
+      "signals": [
+        { "ref": "S_REPEAT_INEFFECTIVE", "label": "Repeats ineffective strategies without adjusting", "weight": -2 }
+      ]
+    }
+  ]
+}

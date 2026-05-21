@@ -1,0 +1,13 @@
+module:
+  name: interview_app_views
+  language: python
+  path: src/interview_app/views/__init__.py
+  version: 1.0.0
+  description: Public exports for interview app view composition classes.
+functions: []
+classes: []
+data_structures: []
+dependencies:
+- interview_app_views_start_screen_view
+- interview_app_views_candidate_setup_view
+- interview_app_views_signal_reference_view

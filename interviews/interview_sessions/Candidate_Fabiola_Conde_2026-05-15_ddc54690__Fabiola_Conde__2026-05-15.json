@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-05-15T22:04:57.866233Z",
+  "updated_at": "2026-05-15T22:15:31.759966Z",
+  "interview": {
+    "interview_id": "Candidate_Fabiola_Conde_2026-05-15_ddc54690",
+    "candidate_name": "Fabiola Conde",
+    "interview_date": "2026-05-15"
+  },
+  "questions": {
+    "0": {
+      "flow_idx": 0,
+      "item_type": "custom",
+      "item_id": "Why-ECE",
+      "notes": {
+        "question_text": "Tell me a little about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q1 Attempt 1]\nI worked in early childhood. I did 13 years with the little ones, and I started off at a community college. And from there, I worked my way up from an assistant to a sub teacher. And I worked there for 13 years and then I did part time there and then I worked out of after school before and after school program. But um, I love working a little I will have kids of my own. But at the time of my kids were little too when I started working there. So I liked the I mean, I'm very patient. And I also like to communicate with my parents. And I like to build a bond and trust with the kids and the parents. I do have my associate's degree. And it's an early it's an early child education. I don't know. You see, I thought that I was trying to download stuff on on. And it wouldn't let me on adjoin or in indeed, like I try to switch them to there and it wouldn't let me I don't know why. But I do have everything.",
+      "updated_at": "2026-05-15T22:05:10.661520Z"
+    },
+    "1": {
+      "flow_idx": 1,
+      "item_type": "custom",
+      "item_id": "Why-LPL",
+      "notes": {
+        "question_text": "Why are you applying to our company, Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q2 Attempt 1]\nI do have it well I've been trying different places because I don't know if I mentioned to you but I am moving over there I live in Pico Rivera right now and I'm looking for a job towards that area where I'm going to move to and that's one of the jobs that came up because I just searched Lancaster Palmdale and that was one of the jobs that came up and I was like okay child development I work with little ones so I don't think it'll be that hard to work with the little ones again like right now I'm working but with high school and it's special ed with the high schoolers",
+      "updated_at": "2026-05-15T22:05:45.987857Z"
+    },
+    "2": {
+      "flow_idx": 2,
+      "item_type": "trait",
+      "item_id": "trait_1",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q3 Attempt 1]\nWell, with the little ones, it's hard to tell what's wrong with them, especially if they're not verbal. Usually what I, well, the experience that I had is when they're throwing either a tantrum or they're upset, I get on my knees and I get them by their hand and I ask, is something wrong? Is something bothering you? Sometimes they'll nod their head or sometimes they're able to talk and say what's going on. Usually I just talk to them and comfort them and make sure if there's anything that I need to do to help them out.",
+      "updated_at": "2026-05-15T22:06:37.382118Z"
+    },
+    "3": {
+      "flow_idx": 3,
+      "item_type": "trait",
+      "item_id": "trait_2",
+      "notes": {
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q4 Attempt 1]\ni usually i don't know i normally don't feel stressed out when i'm with the kids i think my day goes by faster and and i love working with kids so it's not it's when i come home when i feel stressed out but not at work i and if i do feel stressed out or anything's bothering me",
+      "updated_at": "2026-05-15T22:07:16.757483Z"
+    },
+    "4": {
+      "flow_idx": 4,
+      "item_type": "trait",
+      "item_id": "trait_3",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q5 Attempt 1]\nIf a child doesn't want to be touched. Okay. I would talk to them and ask them if I could change them. And if they say no, then I'll talk to them again and explain to them that they need to be changed or they need to use a restroom or wash their hands, anything that it's either in the curriculum or like if we're doing any activity, I would speak to them and talk to them on eye level and make them feel secured and that they're going to be okay. And just keep them, I guess, keep them engaged to letting them know that they're going to, they're going to be okay.",
+      "updated_at": "2026-05-15T22:08:38.504157Z"
+    },
+    "5": {
+      "flow_idx": 5,
+      "item_type": "trait",
+      "item_id": "trait_4",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q6 Attempt 1]\nI would speak to my supervisor or whoever's in charge and let them know the situation would happen and then take it from there.",
+      "updated_at": "2026-05-15T22:09:09.209652Z"
+    },
+    "6": {
+      "flow_idx": 6,
+      "item_type": "trait",
+      "item_id": "trait_5",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-05-15T22:09:11.688602Z"
+    },
+    "7": {
+      "flow_idx": 7,
+      "item_type": "trait",
+      "item_id": "trait_6",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-05-15T22:09:14.358444Z"
+    },
+    "8": {
+      "flow_idx": 8,
+      "item_type": "trait",
+      "item_id": "trait_7",
+      "notes": {
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q9 Attempt 1]\ni've learned so much with them some of them it's just giving me more patience um developmental knowledge of like every kid is different not everybody's the same and they demonstrate gave me a lot of demonstration of passion love and just because they're not my kids i love them as they were my own kids and i build the trust just building a trust with the child and the parents",
+      "updated_at": "2026-05-15T22:09:58.990066Z"
+    },
+    "9": {
+      "flow_idx": 9,
+      "item_type": "trait",
+      "item_id": "trait_8",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q10 Attempt 1]\nUm, well, working together with the parents and asking, usually some parents don't like their, like, once they get wet, the parents want them to be changed right away. So having communication with the parent and, um, and about their child's day, like how they, how they like either if they want to be, have them changed. Cause sometimes, I don't know that I, when I worked with the other kids, some parents would complain cause they were being changed too much. And some parents would say like, no, can you just leave the pee there for a little bit longer? Like don't change them right when they go to pee. So just getting a feedback from the parents too.",
+      "updated_at": "2026-05-15T22:10:59.757138Z"
+    },
+    "10": {
+      "flow_idx": 10,
+      "item_type": "trait",
+      "item_id": "trait_9",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q11 Attempt 1]\num usually when they they're not verbal it's just staying calm assessing the child's needs either ask them if they're hungry um i know some kids i know some of the parents i noticed a lot of the parents are teaching their kids a little sign language when they don't speak like when they hung they're hungry they'll do like little movements of the how their hand movements like when they're hungry or if if they're in pain just ask them are you is there anything hurting just offering comfort and using positive enforcement to guide them",
+      "updated_at": "2026-05-15T22:11:57.692430Z"
+    },
+    "11": {
+      "flow_idx": 11,
+      "item_type": "custom",
+      "item_id": "FT-or-PT",
+      "notes": {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q12 Attempt 1]\nYes, correct.",
+      "updated_at": "2026-05-15T22:12:12.613935Z"
+    },
+    "12": {
+      "flow_idx": 12,
+      "item_type": "custom",
+      "item_id": "Not-Avail",
+      "notes": {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q13 Attempt 1]\nJust the weekends. I don't work the weekends. Um, that's good. That's a good thing. It's just, um, I, like, I, lately, I used to work, when I worked at an infant and toddler, it was, I used to work from 630 in the morning till 330, sometimes four, but then they started adjusting my hours because I had my daughter and I was like, I need to pick her up. Like, they stay after school programs, but sometimes they wouldn't have them open and it was kind of hard to find a babysitter. But, um, most likely I'm open Monday through Friday in the morning till whenever, whenever I'm needed.",
+      "updated_at": "2026-05-15T22:13:10.187997Z"
+    },
+    "13": {
+      "flow_idx": 13,
+      "item_type": "custom",
+      "item_id": "Start",
+      "notes": {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "june 21st",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q14 Attempt 1]\nwell i end this this well our school ends in june june 9th so our last days i want to say the 10th because we're going to have a meeting that day but after that day they told me not to give my my two-week notice until after that day so i don't work the summers there because normally we don't have our kids that go to the summer school so i should be available after june i wouldn't i want to say june like the third week of june or the yeah like the third week of",
+      "updated_at": "2026-05-15T22:13:58.442243Z"
+    },
+    "14": {
+      "flow_idx": 14,
+      "item_type": "custom",
+      "item_id": "Pay",
+      "notes": {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$24",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q15 Attempt 1]\nwell i'm looking to get at least i was thinking 25 but you said you don't you don't have that paid is there any increase later and or anything like that okay okay yes okay yes okay okay yes okay oh nice yes okay that's the same that where i worked at the same thing we didn't have enough to if we didn't have enough staff or if we had enough stuff they would ask who would want to leave or they want to use pto or anything",
+      "updated_at": "2026-05-15T22:15:31.759966Z"
+    }
+  }
+}

@@ -1,0 +1,242 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-03-09T16:09:58.948448Z",
+  "updated_at": "2026-03-09T16:21:38.897783Z",
+  "interview": {
+    "interview_id": "Candidate_Elizabeth_Garcia_2026-03-09_f1774121",
+    "candidate_name": "Elizabeth Garcia",
+    "interview_date": "2026-03-09"
+  },
+  "questions": {
+    "0": {
+      "flow_idx": 0,
+      "item_type": "custom",
+      "item_id": "Why-ECE",
+      "notes": {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "Finished AA about a year ago. Always loved kids, and liked taking classes and learning abut how different kids and thier needs are. Pursuing BA degree. Three year old. Was in a foster home years ago.",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-09T16:09:58.959677Z"
+    },
+    "1": {
+      "flow_idx": 1,
+      "item_type": "custom",
+      "item_id": "Why-LPL",
+      "notes": {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "moved to Palmdale 3 years ago, and wants to get more experience.",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-09T16:10:36.075314Z"
+    },
+    "2": {
+      "flow_idx": 2,
+      "item_type": "trait",
+      "item_id": "trait_1",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "descriptor_section_expanded": false,
+        "samples_section_expanded": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-09T16:11:39.163936Z"
+    },
+    "3": {
+      "flow_idx": 3,
+      "item_type": "trait",
+      "item_id": "trait_2",
+      "notes": {
+        "raw_score": 4,
+        "question_notes": "kids were screaming. Took a breath and asked them to sit down. Took a 5 minuite break and did breathing.",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "descriptor_section_expanded": false,
+        "samples_section_expanded": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-09T16:12:37.223722Z"
+    },
+    "4": {
+      "flow_idx": 4,
+      "item_type": "trait",
+      "item_id": "trait_3",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "descriptor_section_expanded": false,
+        "samples_section_expanded": true
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-09T16:13:45.998032Z"
+    },
+    "5": {
+      "flow_idx": 5,
+      "item_type": "trait",
+      "item_id": "trait_4",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "descriptor_section_expanded": false,
+        "samples_section_expanded": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-09T16:16:22.694359Z"
+    },
+    "6": {
+      "flow_idx": 6,
+      "item_type": "trait",
+      "item_id": "trait_5",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "descriptor_section_expanded": false,
+        "samples_section_expanded": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-09T16:17:39.803565Z"
+    },
+    "7": {
+      "flow_idx": 7,
+      "item_type": "trait",
+      "item_id": "trait_6",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "descriptor_section_expanded": false,
+        "samples_section_expanded": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-09T16:18:12.082608Z"
+    },
+    "8": {
+      "flow_idx": 8,
+      "item_type": "trait",
+      "item_id": "trait_7",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "descriptor_section_expanded": false,
+        "samples_section_expanded": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-09T16:19:28.904090Z"
+    },
+    "9": {
+      "flow_idx": 9,
+      "item_type": "trait",
+      "item_id": "trait_10",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-09T16:19:35.104622Z"
+    },
+    "10": {
+      "flow_idx": 10,
+      "item_type": "trait",
+      "item_id": "trait_11",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-09T16:19:56.254098Z"
+    },
+    "11": {
+      "flow_idx": 11,
+      "item_type": "custom",
+      "item_id": "FT-or-PT",
+      "notes": {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "",
+        "skipped": true
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-09T16:20:22.190610Z"
+    },
+    "12": {
+      "flow_idx": 12,
+      "item_type": "custom",
+      "item_id": "Not-Avail",
+      "notes": {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "after 5 pm",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-09T16:20:33.268630Z"
+    },
+    "13": {
+      "flow_idx": 13,
+      "item_type": "custom",
+      "item_id": "Pay",
+      "notes": {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "currently making $20.20 wants more.",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-09T16:20:50.692191Z"
+    },
+    "14": {
+      "flow_idx": 14,
+      "item_type": "custom",
+      "item_id": "Start",
+      "notes": {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "two-weeks",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-09T16:21:38.897783Z"
+    }
+  }
+}

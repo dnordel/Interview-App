@@ -1,0 +1,184 @@
+module:
+  name: interview_app_transcription_queue
+  language: python
+  path: src/interview_app/transcription_queue.py
+  version: 1.1.1
+  description: Contracts for transcription_queue module.
+functions: []
+classes:
+- name: TranscriptionQueueState
+  description: TranscriptionQueueState class.
+  locked: false
+  attributes: {}
+  methods:
+  - name: enqueue
+    description: TranscriptionQueueState.enqueue method.
+    locked: false
+    inputs:
+      flow_idx:
+        type: int
+        required: true
+      payload:
+        type: TranscriptionQueuePayload
+        required: true
+    returns:
+      type: TranscriptionQueueSnapshot
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: mark_started
+    description: TranscriptionQueueState.mark_started method.
+    locked: false
+    inputs:
+      flow_idx:
+        type: int
+        required: true
+    returns:
+      type: TranscriptionQueueSnapshot
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: mark_completed
+    description: TranscriptionQueueState.mark_completed method.
+    locked: false
+    inputs:
+      flow_idx:
+        type: int
+        required: true
+      terminal_status:
+        type: str
+        required: false
+        default: completed
+    returns:
+      type: TranscriptionQueueSnapshot
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: mark_failed
+    description: TranscriptionQueueState.mark_failed method.
+    locked: false
+    inputs:
+      flow_idx:
+        type: int
+        required: true
+      reason:
+        type: str
+        required: true
+      terminal_status:
+        type: str
+        required: false
+        default: failed
+    returns:
+      type: TranscriptionQueueSnapshot
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: mark_timed_out
+    description: TranscriptionQueueState.mark_timed_out method.
+    locked: false
+    inputs:
+      flow_idx:
+        type: int
+        required: true
+      reason:
+        type: str
+        required: false
+        default: transcription_timeout
+    returns:
+      type: TranscriptionQueueSnapshot
+    exceptions: []
+    side_effects: updates in-memory state and persists normalized timeout reason
+  - name: cancel
+    description: TranscriptionQueueState.cancel method.
+    locked: false
+    inputs:
+      flow_idx:
+        type: int
+        required: true
+    returns:
+      type: TranscriptionQueueSnapshot
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: next_payload
+    description: TranscriptionQueueState.next_payload method.
+    locked: false
+    inputs: {}
+    returns:
+      type: tuple[int, TranscriptionQueuePayload] | None
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: wait_for_pending
+    description: TranscriptionQueueState.wait_for_pending method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: pending_count
+    description: TranscriptionQueueState.pending_count method.
+    locked: false
+    inputs: {}
+    returns:
+      type: int
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: is_pending
+    description: TranscriptionQueueState.is_pending method.
+    locked: false
+    inputs:
+      flow_idx:
+        type: int
+        required: true
+    returns:
+      type: bool
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: clear
+    description: TranscriptionQueueState.clear method.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: is_canceled
+    description: TranscriptionQueueState.is_canceled method.
+    locked: false
+    inputs:
+      flow_idx:
+        type: int
+        required: true
+    returns:
+      type: bool
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: clear_error
+    description: TranscriptionQueueState.clear_error method.
+    locked: false
+    inputs:
+      flow_idx:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: error_reasons
+    description: TranscriptionQueueState.error_reasons method.
+    locked: false
+    inputs: {}
+    returns:
+      type: dict[int, str]
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: _snapshot_locked
+    description: TranscriptionQueueState._snapshot_locked method.
+    locked: false
+    inputs:
+      flow_idx:
+        type: int
+        required: true
+    returns:
+      type: TranscriptionQueueSnapshot
+    exceptions: []
+    side_effects: updates in-memory state
+data_structures: []
+dependencies:
+- interview_app_types

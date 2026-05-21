@@ -1,0 +1,207 @@
+{
+  "candidate": {
+    "name": "Crystal Herrera",
+    "interview_date": "2026-03-30",
+    "school": "North Long Beach",
+    "track": "infant_toddler",
+    "qualification": {
+      "has_degree": false,
+      "degree_type": "",
+      "degree_in_ece": false,
+      "ece_units_completed": 15,
+      "infant_toddler_class_completed": false,
+      "total_units_completed": 42,
+      "years_experience": 0
+    }
+  },
+  "percent_of_max": 36.19,
+  "decision": "no_hire",
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": 1,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": 1,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_8",
+        "trait_name": "Gentleness & Physical Awareness",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_9",
+        "trait_name": "Patience with Nonverbal Communication",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full or part",
+        "skipped": false
+      },
+      {
+        "question_text": "Tell me a little about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$19",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "asap",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying to our company, Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-03-30 - North Long Beach - Crystal Herrera - Interview.docx",
+    "transcript_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Candidate_Crystal_Herrera_2026-03-30_live_transcript.docx"
+  },
+  "communication_log": [],
+  "flow_transcript_slices": [
+    {
+      "type": "custom",
+      "id": "Why-ECE",
+      "question": "Tell me a little about yourself and why early childhood education matters to you.",
+      "candidate_transcript": "[Q1 Attempt 1]\nWell, I'm currently a full-time student at East Los Angeles College. I don't have much experience, but my overall experience is I was on a part-time dean for high school, and I was able to interact with kids with disabilities or other students within my classroom, but they were older, they were between sixth graders and older. I would help them tutor, help them with their work, classroom engagements, we would create activities. I would also travel around throughout the classrooms since I was part of the office as well. I helped them with records and the stuff that the office does. And yeah. That's my overall experience. Yes, I'm currently an associate's degree. I'm currently majoring in child development, yes. Overall, I started taking classes in sophomore year, because that was a requirement for me to graduate. So I have almost 42 units, but within the child development, I couldn't go to school."
+    },
+    {
+      "type": "custom",
+      "id": "Why-LPL",
+      "question": "Why are you applying to our company, Launch Pad Learning?",
+      "candidate_transcript": "[Q2 Attempt 1]\nHonestly, I'm just applying anywhere. I've been looking for opportunities within my area and other areas and nobody's replied to me or gotten back to me. They always tell me, oh, you're a good fit. So I'm trying to see if I can seek an opportunity with you guys."
+    },
+    {
+      "type": "trait",
+      "id": "trait_1",
+      "question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+      "candidate_transcript": "[Q3 Attempt 1]\nUm, well, every day I see how children suffer. They have problems with either, they throw tantrums over something small. And, well, can you repeat the question? I just forgot it again. Sorry. Emotionally? Okay. Well, it just depends on the child. Like I said, they all have different levels. Different issues. So, depending on what they need, it's what I'm going to reach to them. I'm going to try my best to find solutions to help them with whatever issue they have. Like either anger problems, attachment issues. Depending on whatever they have, I'm going to try my best."
+    },
+    {
+      "type": "trait",
+      "id": "trait_2",
+      "question": "Tell me about a time you felt overwhelmed at work with children present. What did you do to manage yourself?",
+      "candidate_transcript": "[Q4 Attempt 1]\num well i haven't had any experience within any work field but i could say during my high school and my college experience now um the ways i try to handle being stressful is i try to make plans or small activities that make that could help me relax um make how do i make everything easy for me for the day"
+    },
+    {
+      "type": "trait",
+      "id": "trait_3",
+      "question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering, helping with clothing, or guiding them physically. They are pulling away or saying no. Walk me through exactly what you would do, step by step",
+      "candidate_transcript": "[Q5 Attempt 1]\nokay it's depending on how the heart the child is pulling um i'll try my best to talk through it slowly to like let the child know oh we have to do this we gotta clean you up so you so you could be clean like try to be calm and try to make the situation more like more opening for them to trust you try to gain that trust within the child for them to feel comfortable for you to change them and it depends like i said if they're pulling even harder then that's then i might have to tell somebody else to help me with the child"
+    },
+    {
+      "type": "trait",
+      "id": "trait_4",
+      "question": "Tell me about a time you received feedback you didn’t expect or didn’t fully agree with. What happened next?",
+      "candidate_transcript": "[Q6 Attempt 1]\nUm, honestly, I always prefer feedback. I want, I want to do the best that I want to fix my errors or any mistakes I do within learning. And, um, um, not really. I haven't had any feedback from anybody."
+    },
+    {
+      "type": "trait",
+      "id": "trait_6",
+      "question": "Tell me about a time you had to work closely with another adult in a challenging situation. How did you navigate it?",
+      "candidate_transcript": "[Q8 Attempt 1]\nWell, it's the same thing as a child. Try to communicate. As a grown adult, do what you got to do. Try your best to be able to connect with the other person. And I don't know. Yeah. A challenging situation where, honestly, I don't have, I communicate really good with adults and person to person. So I have that really good communication standard for like a communicate better with adults, better than people my age, especially since I'm 20. So, yes, I feel like I won't have any issues. I don't have any issue communicating with any adult."
+    },
+    {
+      "type": "trait",
+      "id": "trait_7",
+      "question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+      "candidate_transcript": "[Q9 Attempt 1]\nSomething I learned. Can you repeat it again? Well, I had to, the way I approach things now, I had to keep in mind, it's not the same thing, how it's different. I'm already a grown adult. So I have to approach things differently, even within the job industry, or even when seeking job opportunities. I have to be really professional. I have to watch my words and be really, like I said, professional."
+    },
+    {
+      "type": "trait",
+      "id": "trait_8",
+      "question": "Tell me about how you physically care for infants or toddlers during routines like feeding, diapering, or comforting.",
+      "candidate_transcript": "[Q10 Attempt 1]\ncan you repeat it what what i we would um i regularly do um with my brothers and stuff um um what are you looking for for in this answer it's kind of confusing like care oh okay so obviously what like you gotta start having that communication have that trust first with the child um and when it's time to change or the diaper you gotta walk through it and like probably see to it talk to the to the child be caring and like just talk through it tell them change the diaper and oh just keep going through the routine every day"
+    },
+    {
+      "type": "trait",
+      "id": "trait_9",
+      "question": "How do you understand what a nonverbal child needs when they’re crying or upset? Can you walk me through how you respond in those moments?",
+      "candidate_transcript": "[Q11 Attempt 1]\nIt depends. I feel like some could reach, some mumble. It's just depending on the child, the way they are expressing themselves or reaching to something, mumbling. It just depends on how the child is expressing themselves in that moment. That's how I'm going to"
+    },
+    {
+      "type": "custom",
+      "id": "FT-or-PT",
+      "question": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+      "candidate_transcript": "[Q12 Attempt 1]\nHonestly, it doesn't matter. I'm bold. I'm a full."
+    },
+    {
+      "type": "custom",
+      "id": "Start",
+      "question": "When could you start if we decide to move forward?",
+      "candidate_transcript": "[Q14 Attempt 1]\nOkay, yeah, that's fine. I'm fully available."
+    }
+  ]
+}

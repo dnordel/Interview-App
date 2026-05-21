@@ -1,0 +1,145 @@
+app:
+  name: "LPL Interview Scoring System"
+  version: "1.0"
+  mode: "multi_trait_session"
+
+paths:
+  traits_dir: "./traits"
+  signal_dictionary: "./shared_signal_dictionary_v2.json"
+  output_dir: "./results"
+
+session:
+  allow_partial_completion: true
+  auto_save: true
+  auto_save_interval_seconds: 30
+
+ui:
+  layout:
+    show_trait_progress: true
+    show_running_score: true
+    core_first: true
+
+  core_signals:
+    display_style: "checkbox"
+    highlight: true
+    section_label: "Core Signals (Most Important)"
+
+  extended_signals:
+    display_style: "checkbox"
+    collapsible: true
+    default_collapsed: true
+    section_label: "Additional Observations"
+
+  signal_behavior:
+    allow_multiple_selection: true
+    allow_deselection: true
+
+scoring:
+
+  method: "weighted"
+
+  formula: |
+    total_score = (core_score * core_multiplier) + extended_score
+
+  core_multiplier: 1.5
+
+  critical_rules:
+    fail_on_critical: true
+    critical_threshold: 1
+
+  normalization:
+    enabled: true
+    min_score: -50
+    max_score: 50
+
+  outputs:
+    include_raw_score: true
+    include_normalized_score: true
+    include_signal_counts: true
+
+decision_engine:
+
+  thresholds:
+    strong_hire: 20
+    hire: 10
+    borderline: 0
+    no_hire: -1
+
+  override_rules:
+    auto_reject_if_critical: true
+    min_core_score_required: 5
+
+data_model:
+
+  trait_file_schema:
+    required_fields:
+      - trait_id
+      - question
+      - core_signals
+
+  signal_resolution:
+    use_dictionary: true
+    allow_override_weights: true
+    allow_custom_signals: true
+
+  signal_fields:
+    required:
+      - ref
+      - weight
+    optional:
+      - label
+      - group
+      - is_critical
+
+runtime:
+
+  scoring:
+    recalculate_on_change: true
+    debounce_ms: 150
+
+  state_management:
+    store_selected_signals: true
+    store_per_trait_scores: true
+
+  error_handling:
+    missing_ref_behavior: "warn_and_skip"
+    invalid_weight_behavior: "default_to_zero"
+
+output:
+
+  format: "json"
+
+  structure:
+    session_id: string
+    candidate_name: string
+    timestamp: datetime
+
+    traits:
+      - trait_id: string
+        core_score: number
+        extended_score: number
+        selected_signals:
+          - ref: string
+            weight: number
+
+    totals:
+      core_score: number
+      extended_score: number
+      final_score: number
+      normalized_score: number
+
+    decision:
+      recommendation: string
+      triggered_critical: boolean
+
+logging:
+
+  enabled: true
+  level: "INFO"
+  file: "./logs/app.log"
+
+extensibility:
+
+  allow_new_traits: true
+  allow_signal_updates: true
+  version_check: true

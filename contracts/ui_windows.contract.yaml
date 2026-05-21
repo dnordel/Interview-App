@@ -1,0 +1,243 @@
+module:
+  name: ui_windows
+  language: python
+  path: src/ui_windows.py
+  version: 1.1.0
+  description: Tkinter settings and question editor windows for interview workflows.
+functions: []
+classes:
+- name: SettingsWindow
+  description: Settings modal with task-oriented tabs for templates, notifications,
+    storage, and safety.
+  locked: false
+  attributes:
+    app:
+      type: InterviewApp
+    notebook:
+      type: ttk.Notebook
+    _tab_order:
+      type: list[str]
+    _tab_focus_targets:
+      type: dict[str, list[tk.Misc]]
+    _tab_summary_frames:
+      type: dict[str, ttk.Frame]
+    _field_focus_targets:
+      type: dict[str, tk.Misc]
+    _high_risk_toggle_guard:
+      type: bool
+  methods:
+  - name: __init__
+    side_effects: Initializes Tk toplevel state and binds settings-backed Tk variables.
+    inputs:
+      app:
+        type: InterviewApp
+    returns:
+      type: None
+  - name: _build
+    side_effects: Constructs the notebook tabs, action buttons, focus telemetry hooks,
+      and accessibility gate.
+    inputs: {}
+    returns:
+      type: None
+  - name: _build_tab_header
+    side_effects: Creates tab-level heading, detail text, and summary message widgets.
+    inputs:
+      parent:
+        type: ttk.Frame
+      tab_key:
+        type: str
+      title:
+        type: str
+      detail:
+        type: str
+    returns:
+      type: None
+  - name: _build_field_error
+    side_effects: Creates and registers field-level validation labels.
+    inputs:
+      parent:
+        type: ttk.Frame
+      field_key:
+        type: str
+    returns:
+      type: None
+  - name: _build_general_tab
+    side_effects: Creates general settings controls and keyboard focus targets.
+    inputs:
+      parent:
+        type: ttk.Frame
+    returns:
+      type: None
+  - name: _build_templates_tab
+    side_effects: Creates template editor controls, placeholder picker, and focus
+      targets.
+    inputs:
+      parent:
+        type: ttk.Frame
+    returns:
+      type: None
+  - name: _build_notifications_tab
+    side_effects: Creates notification controls and high-risk automation toggle wiring.
+    inputs:
+      parent:
+        type: ttk.Frame
+    returns:
+      type: None
+  - name: _build_storage_tab
+    side_effects: Creates storage path controls and field validation widgets.
+    inputs:
+      parent:
+        type: ttk.Frame
+    returns:
+      type: None
+  - name: _build_security_tab
+    side_effects: Creates Whisper tuning controls and advanced defaults reset action.
+    inputs:
+      parent:
+        type: ttk.Frame
+    returns:
+      type: None
+  - name: _on_send_on_finalize_toggled
+    side_effects: Role-gates high-risk automation by prompting for confirmation and
+      reverting denied toggles.
+    inputs:
+      _args:
+        type: tuple[object, ...]
+    returns:
+      type: None
+  - name: _confirm_high_risk_toggle_enabled
+    side_effects: Displays a confirmation dialog before enabling high-risk automation.
+    inputs:
+      title:
+        type: str
+      detail:
+        type: str
+    returns:
+      type: bool
+  - name: _run_accessibility_gate
+    side_effects: Enforces focusability metadata and logs accessibility gate failures.
+    inputs: {}
+    returns:
+      type: None
+  - name: _on_tab_changed
+    side_effects: Emits tab-view telemetry and schedules first-widget focus.
+    inputs:
+      _event:
+        type: tk.Event
+    returns:
+      type: None
+  - name: _focus_first_widget
+    side_effects: Moves keyboard focus to the first registered tab widget.
+    inputs:
+      tab_key:
+        type: str
+    returns:
+      type: None
+  - name: _browse
+    side_effects: Opens a directory picker and updates base directory variable.
+    inputs: {}
+    returns:
+      type: None
+  - name: _confirm_restore_recommended_whisper_defaults
+    side_effects: Shows reset confirmation and may trigger defaults restore.
+    inputs: {}
+    returns:
+      type: None
+  - name: _restore_recommended_whisper_defaults
+    side_effects: Updates Whisper vars, sets tab status messaging, and emits telemetry.
+    inputs: {}
+    returns:
+      type: None
+  - name: _clear_tab_messages
+    side_effects: Clears tab banners and removes summary child widgets.
+    inputs: {}
+    returns:
+      type: None
+  - name: _validation_errors
+    side_effects: none
+    inputs: {}
+    returns:
+      type: dict[str, list[dict[str, str]]]
+  - name: _apply_validation_messages
+    side_effects: Updates tab summaries and per-field guidance labels.
+    inputs:
+      errors:
+        type: dict[str, list[dict[str, str]]]
+    returns:
+      type: tuple[list[str], str | None]
+  - name: _focus_field
+    side_effects: Moves keyboard focus to a field widget when available.
+    inputs:
+      field_key:
+        type: str
+    returns:
+      type: None
+  - name: _save
+    side_effects: Writes app settings, persists them, logs UX completion, completes
+      keyboard session, and closes window.
+    inputs: {}
+    returns:
+      type: None
+  - name: _cancel
+    side_effects: Marks keyboard session abandoned and closes window.
+    inputs: {}
+    returns:
+      type: None
+  - name: _log_telemetry
+    side_effects: Emits sanitized UX metrics to the app logger.
+    inputs:
+      event_type:
+        type: str
+      fields:
+        type: dict[str, Any]
+    returns:
+      type: None
+  - name: _browse_onboarding_pdf
+    side_effects: Opens a PDF picker and updates onboarding path variable.
+    inputs: {}
+    returns:
+      type: None
+  - name: _build_settings_placeholder_picker
+    side_effects: Creates placeholder picker widgets and initializes selectable options.
+    inputs:
+      parent:
+        type: ttk.Frame
+    returns:
+      type: None
+  - name: _insert_settings_placeholder
+    side_effects: Inserts template token into focused widget or shows informational
+      guidance dialog.
+    inputs: {}
+    returns:
+      type: None
+  - name: _settings_template_values
+    side_effects: none
+    inputs: {}
+    returns:
+      type: dict[str, str]
+  - name: _settings_template_contexts
+    side_effects: none
+    inputs: {}
+    returns:
+      type: dict[str, str]
+- name: QuestionEditorWindow
+  description: Window for editing scored competencies and custom question flow.
+  locked: false
+  attributes:
+    app:
+      type: InterviewApp
+    track_var:
+      type: StringVar
+  methods:
+  - name: __init__
+    inputs:
+      app:
+        type: InterviewApp
+    returns:
+      type: None
+data_structures: []
+dependencies:
+- app_content
+- keyboard_telemetry
+- template_placeholders
+- ui_feedback

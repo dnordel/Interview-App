@@ -1,0 +1,108 @@
+
+[2026-03-05 14:40:54] Recording transition failed
+Recording for Q15 was not active. Please retry this question.
+
+Traceback (most recent call last):
+  File "C:\Users\Dnord\Downloads\Preschool-Teacher-Interview-Guide-main (12)\Preschool-Teacher-Interview-Guide-main\src\question_screens.py", line 959, in _advance
+    self.app._queue_transcription_and_transition(
+  File "C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 3079, in _queue_transcription_and_transition
+    self._start_background_question_transcription(flow_idx)
+  File "C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 2478, in _start_background_question_transcription
+    raise ReportingValidationError(
+reporting.ReportingValidationError: Recording for Q15 was not active. Please retry this question.
+
+[2026-03-05 14:40:59] Recording transition failed
+Recording for Q15 was not active. Please retry this question.
+
+Traceback (most recent call last):
+  File "C:\Users\Dnord\Downloads\Preschool-Teacher-Interview-Guide-main (12)\Preschool-Teacher-Interview-Guide-main\src\question_screens.py", line 959, in _advance
+    self.app._queue_transcription_and_transition(
+  File "C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 3079, in _queue_transcription_and_transition
+    self._start_background_question_transcription(flow_idx)
+  File "C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 2478, in _start_background_question_transcription
+    raise ReportingValidationError(
+reporting.ReportingValidationError: Recording for Q15 was not active. Please retry this question.
+
+[2026-03-05 14:41:05] Recording transition failed
+Recording for Q15 was not active. Please retry this question.
+
+Traceback (most recent call last):
+  File "C:\Users\Dnord\Downloads\Preschool-Teacher-Interview-Guide-main (12)\Preschool-Teacher-Interview-Guide-main\src\question_screens.py", line 959, in _advance
+    self.app._queue_transcription_and_transition(
+  File "C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 3079, in _queue_transcription_and_transition
+    self._start_background_question_transcription(flow_idx)
+  File "C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 2478, in _start_background_question_transcription
+    raise ReportingValidationError(
+reporting.ReportingValidationError: Recording for Q15 was not active. Please retry this question.
+
+[2026-03-09 09:20:11] Recording transition failed
+Transcription for Q12 is already running.
+
+Traceback (most recent call last):
+  File "C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\src\question_screens.py", line 959, in _advance
+    self.app._queue_transcription_and_transition(
+  File "C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 3241, in _queue_transcription_and_transition
+    self._start_background_question_transcription(flow_idx)
+  File "C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 2644, in _start_background_question_transcription
+    raise ReportingValidationError(
+reporting.ReportingValidationError: Transcription for Q12 is already running.
+
+[2026-03-09 09:20:17] Recording transition failed
+Transcription for Q12 is already running.
+
+Traceback (most recent call last):
+  File "C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\src\question_screens.py", line 959, in _advance
+    self.app._queue_transcription_and_transition(
+  File "C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 3241, in _queue_transcription_and_transition
+    self._start_background_question_transcription(flow_idx)
+  File "C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 2644, in _start_background_question_transcription
+    raise ReportingValidationError(
+reporting.ReportingValidationError: Transcription for Q12 is already running.
+
+[2026-03-11 14:08:56] Recording transition failed
+Recording for Q15 was not active. Please retry this question.
+
+Traceback (most recent call last):
+  File "C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\src\question_screens.py", line 1026, in _advance
+    self.app._queue_transcription_and_transition(
+  File "C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 2348, in _queue_transcription_and_transition
+    self._start_background_question_transcription(flow_idx)
+  File "C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 1880, in _start_background_question_transcription
+    raise ReportingValidationError(
+reporting.ReportingValidationError: Recording for Q15 was not active. Please retry this question.
+
+[2026-05-15 11:12:09] Recording transition failed
+Transcription for Q1 is already running.
+
+Traceback (most recent call last):
+  File "C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\src\question_screens.py", line 1053, in go_back
+    self.app._queue_transcription_and_transition(self.flow_idx, self.flow_idx - 1)
+  File "C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 2353, in _queue_transcription_and_transition
+    self._start_background_question_transcription(flow_idx)
+  File "C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 1896, in _start_background_question_transcription
+    raise ReportingValidationError(
+reporting.ReportingValidationError: Transcription for Q1 is already running.
+
+[2026-05-15 11:12:13] Recording transition failed
+Recording for Q1 was not active. Please retry this question.
+
+Traceback (most recent call last):
+  File "C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\src\question_screens.py", line 1040, in _advance
+    self.app._queue_transcription_and_transition(
+  File "C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 2353, in _queue_transcription_and_transition
+    self._start_background_question_transcription(flow_idx)
+  File "C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 1876, in _start_background_question_transcription
+    raise ReportingValidationError(
+reporting.ReportingValidationError: Recording for Q1 was not active. Please retry this question.
+
+[2026-05-15 11:12:18] Recording transition failed
+Recording for Q1 was not active. Please retry this question.
+
+Traceback (most recent call last):
+  File "C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\src\question_screens.py", line 1040, in _advance
+    self.app._queue_transcription_and_transition(
+  File "C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 2353, in _queue_transcription_and_transition
+    self._start_background_question_transcription(flow_idx)
+  File "C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 1876, in _start_background_question_transcription
+    raise ReportingValidationError(
+reporting.ReportingValidationError: Recording for Q1 was not active. Please retry this question.

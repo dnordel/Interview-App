@@ -1,0 +1,25 @@
+module:
+  name: path_validation
+  language: python
+  path: src/path_validation.py
+  version: 1.0.0
+  description: Shared helpers for validating user-configured filesystem paths before attachment or save workflows.
+functions:
+- name: validate_existing_file_path
+  description: Resolves a configured path only when it points to an existing file and optionally matches allowed suffixes.
+  locked: false
+  inputs:
+    path_text:
+      type: str
+      required: true
+    allowed_suffixes:
+      type: Collection[str] | None
+      required: false
+      default: null
+  returns:
+    type: tuple[str, str]
+  exceptions: []
+  side_effects: none
+classes: []
+data_structures: []
+dependencies: []

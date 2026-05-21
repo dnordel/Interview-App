@@ -1,0 +1,207 @@
+{
+  "candidate": {
+    "name": "Melissa Neal",
+    "interview_date": "2026-05-05",
+    "school": "Palmdale",
+    "track": "preschool",
+    "qualification": {
+      "has_degree": false,
+      "degree_type": "",
+      "degree_in_ece": false,
+      "ece_units_completed": 122,
+      "infant_toddler_class_completed": false,
+      "total_units_completed": 12,
+      "years_experience": 10
+    }
+  },
+  "percent_of_max": 48.96,
+  "decision": "no_hire",
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_10",
+        "trait_name": "Positive Behavior Guidance",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_11",
+        "trait_name": "Structure & Flexibility",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "monday and thursday after 2 pm",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "open",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "either",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "asap",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-05-05 - Palmdale - Melissa Neal - Interview.docx",
+    "transcript_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Candidate_Melissa_Neal_2026-05-05_live_transcript.docx"
+  },
+  "communication_log": [],
+  "flow_transcript_slices": [
+    {
+      "type": "custom",
+      "id": "Why-ECE",
+      "question": "Tell me about yourself and why early childhood education matters to you.",
+      "candidate_transcript": "[Q1 Attempt 1]\nWell, I've been dealing, you know, with kids for basically my whole life. You know, I was a teenager. I babysat. And then I became a teacher. You know, I got older. And I had a home daycare out of my house, you know, for a couple years. And what else? You know, just been around kids my whole life, basically. I work with kids on Wednesdays night now and Sunday, sometimes Sunday mornings. So I'm always around kids. So that's why I want, you know, to go back to, you know, child development stuff, you know, to be a teacher or an aide or just, you know, help out in the office, whatever's needed."
+    },
+    {
+      "type": "trait",
+      "id": "trait_1",
+      "question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+      "candidate_transcript": "[Q3 Attempt 1]\nI just went up there and asked the child, you know, what's going on, if they can talk. You know, some kids can't talk. So you just, if they don't talk, you just look and see, okay, what could happen? Or look at their body. Maybe they fell, you know, just comfort them, you know, give them hugs, tell them it's okay. And just find out what went wrong, basically. And you just deal with it that way. And then you go on with that, you know, just take steps."
+    },
+    {
+      "type": "trait",
+      "id": "trait_2",
+      "question": "Tell me about a time you felt overwhelmed at work with children present. What did you do to manage yourself?",
+      "candidate_transcript": "[Q4 Attempt 1]\nYou just, you know, take a deep breath, you know, count, you know, to like five or seven, you know, and just say, OK, you know, you have to keep going and you just go. You know, you can't. That's part of working with kids is a lot of, you know, sometimes stressful. So you just have to deal with it and just take a deep breath and go on."
+    },
+    {
+      "type": "trait",
+      "id": "trait_3",
+      "question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering, helping with clothing, or guiding them physically. They are pulling away or saying no. Walk me through exactly what you would do, step by step",
+      "candidate_transcript": "[Q5 Attempt 1]\nwell you explained to the child you know we need to get this done you know you want do you want to go outside do you want to go play with your toys you know you need to get this done before we can do that and you just you know talk to him you know talk to the child through it and um and you know hopefully they will respond to that if not you just keep you know talking to the child finding out why they don't want to get their diaper changed or put their jacket on or you know so you just find out what's going on and talk to them you know they talked about communication that why you know why are they feeling that"
+    },
+    {
+      "type": "trait",
+      "id": "trait_4",
+      "question": "Tell me about a time you received feedback you didn’t expect or didn’t fully agree with. What happened next?",
+      "candidate_transcript": "[Q6 Attempt 1]\nJust you take that, you know, maybe it's not the one, you know, what you want to hear. It's just the other co-workers or other person's opinion. And you just ask them, you know, oh, OK, you know, you tell them, OK, I understand your side, but this is my side. And maybe you can just go and see what happens. You just think everything, you know, you just think positive and you just talk to each other, you know. Like I always say, you know, communication is always the key of working with teachers."
+    },
+    {
+      "type": "trait",
+      "id": "trait_5",
+      "question": "Tell me about a time something didn’t go as planned at work and your role in it. How did you handle the responsibility piece?",
+      "candidate_transcript": "[Q7 Attempt 1]\noh, it's always like that. You know, you just, you know, go with it and you just go on and see why it didn't work out and then change, change it. Say, okay, next time I would do it this way and not the way that I think was going to work. You just look at it, you know, look at the situation and see how you can change it."
+    },
+    {
+      "type": "trait",
+      "id": "trait_6",
+      "question": "Tell me about a time you had to work closely with another adult in a challenging situation. How did you navigate it?",
+      "candidate_transcript": "[Q8 Attempt 1]\nUm, it, it happens a lot, you know, when you're working with other people and you just, like I say, you know, communication, just, you know, talk, talk to them and say, Hey, you know, why are we, you know, what's going on and, you know, how can we fix it? And why do you think that way? And why do I think that way? And just, just go with it, you know, and just see how you can work it out as a team, you know, you know, when you work at school or, you know, you're working as a team and everybody has to, you know, communicate and find a way of working."
+    },
+    {
+      "type": "trait",
+      "id": "trait_7",
+      "question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+      "candidate_transcript": "[Q9 Attempt 1]\nHave a lot of patience, you know, um, yeah, patience is the key. Um, you know, with working with kids and working with coworkers, you just have to be patient with each other and, you know, it just, and just take time and, you know, and take breaks when you need it, ask for help if you need it or pitch in when somebody needs to help, you know, when you see it, you know, a coworker struggling or maybe need a break or something, you just say, Hey, do you need just have like a five second break or a five minute break and you just pitch in when needed."
+    },
+    {
+      "type": "trait",
+      "id": "trait_10",
+      "question": "Tell me about a time a child’s behavior was challenging for you. How did you approach it?",
+      "candidate_transcript": "[Q10 Attempt 1]\nWhat was the question? Just talk to them. You know, just ask them, you know, what's going on. Or if they don't talk, you know, you see, okay, what's the situation? What happened? Did a child, you know, throw a toy at them or, you know, or did they just having a bad day and they just need somebody to talk to? A lot of times kids have bad days and they just need somebody to talk to and give hugs and pet them and then they'd be fine, you know. And you just have to, you know, get to know the child, you know. And, yeah, so just to get to know the child and talk to them and find out what's going on."
+    },
+    {
+      "type": "custom",
+      "id": "FT-or-PT",
+      "question": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+      "candidate_transcript": "[Q12 Attempt 1]\nFull-time or part-time on which hours are you you need somebody? Okay, okay"
+    },
+    {
+      "type": "custom",
+      "id": "Not-Avail",
+      "question": "Are there any hours you are absolutely not available to work?",
+      "candidate_transcript": "[Q13 Attempt 1]\nkids um like mondays and thursdays i have to get off i get you know palmdale i can get off i get to 2 30. on mondays and thursdays"
+    },
+    {
+      "type": "custom",
+      "id": "Pay",
+      "question": "What kind of pay are you looking for? Is that negotiable?",
+      "candidate_transcript": "[Q14 Attempt 1]\nrest of the week I'm you know the rest of the week it's just you know what's that would you say like the light but what time do they work I'm open with pay if you can be"
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-03-19T20:30:29.952705Z",
+  "updated_at": "2026-03-19T20:31:10.615948Z",
+  "interview": {
+    "interview_id": "Candidate_test2_2026-03-19_bd38146c",
+    "candidate_name": "test2",
+    "interview_date": "2026-03-19"
+  },
+  "questions": {
+    "0": {
+      "flow_idx": 0,
+      "item_type": "custom",
+      "item_id": "Why-ECE",
+      "notes": {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "test",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q1 Attempt 1]\nof American Airlines. You're about to see why we said Logan Parsons got off lucky. In 2020, American Airlines accused a passenger of skip-lagging.",
+      "updated_at": "2026-03-19T20:30:45.192786Z"
+    },
+    "1": {
+      "flow_idx": 1,
+      "item_type": "custom",
+      "item_id": "Why-LPL",
+      "notes": {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-19T20:30:35.708751Z"
+    },
+    "2": {
+      "flow_idx": 2,
+      "item_type": "trait",
+      "item_id": "trait_1",
+      "notes": {
+        "raw_score": 4,
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q3 Attempt 1]\nemail to another one of their passengers saying that they were being booted from A-Advantage, the company's frequent flyer program. The passenger allegedly skip-lagged on 95 flights and would be losing 50,000 loyalty points as a result. If the customer wanted to get them back, they would need to pay the airline an eye-watering $10,000. Think about this for a second, if they're willing to do that to a customer loyal enough to go",
+      "updated_at": "2026-03-19T20:31:10.615948Z"
+    },
+    "3": {
+      "flow_idx": 3,
+      "item_type": "trait",
+      "item_id": "trait_2",
+      "notes": {
+        "raw_score": 4,
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-19T20:31:08.107906Z"
+    }
+  }
+}

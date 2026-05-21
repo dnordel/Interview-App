@@ -1,0 +1,159 @@
+{
+  "candidate": {
+    "name": "Amy Estrada",
+    "interview_date": "2026-04-15",
+    "school": "North Long Beach",
+    "track": "preschool",
+    "qualification": {
+      "has_degree": false,
+      "degree_type": "",
+      "degree_in_ece": false,
+      "ece_units_completed": 12,
+      "infant_toddler_class_completed": false,
+      "total_units_completed": 20,
+      "years_experience": 6
+    }
+  },
+  "percent_of_max": 0.0,
+  "decision": "no_hire",
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_10",
+        "trait_name": "Positive Behavior Guidance",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_11",
+        "trait_name": "Structure & Flexibility",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$23",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "either",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "asap",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-04-15 - North Long Beach - Amy Estrada - Interview.docx",
+    "transcript_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Candidate_Amy_Estrada_2026-04-15_live_transcript.docx"
+  },
+  "communication_log": [],
+  "flow_transcript_slices": [
+    {
+      "type": "custom",
+      "id": "Why-ECE",
+      "question": "Tell me about yourself and why early childhood education matters to you.",
+      "candidate_transcript": "[Q1 Attempt 1]\nso um i am 22 years old i am currently still um going to school um majoring for psychology um i've started working with with children since i turned 18 um but experience with kids i've had since i would say like for for a long time i have two kids of my um of myself i have a six-year-old and i have a two-year-old um and just working with children has always been a passion to me um i guess it just makes me feel like like i can be it feels great to be part of like their growth and development as well like having being able to like help them out with with reaching milestones and also like having having to create like fun curriculum or even lesson planning with them where not only they just learn but they also like get to like have fun um i've worked um and i've had i've had experience um in preschool side for well my first time i had experience um working with kids when i turned 18 which i used to used to go to work at kinder care located in irvine and um i ended up getting pregnant so i had to so i had to um discontinue working and then um once my child was my second daughter um when she was born i waited for my postpartum and maternity leave and and i just decided to look somewhere else which is currently where i used to work at now which is beach babies and i worked there for two years i was in infant teacher for a year and a half and half of the other year i was just floating around with the different ages of classes and honestly what i could say is is my passion is just to see how not only how kiddos grow but also how um parents um how can see the like the milestones that their kids have brought and also like being closer to to parents and telling them hey like you know like we're working with them here and knowing that at home they are working um they're doing the same thing we're doing at school just makes me feel like oh like you know like together we can help kiddos out um with their development and just um seeing them grow and yeah"
+    },
+    {
+      "type": "custom",
+      "id": "Why-LPL",
+      "question": "Why are you applying for this position, specifically at Launch Pad Learning?",
+      "candidate_transcript": "[Q2 Attempt 1]\nI'm sorry, I'm applying specifically because I enjoy like how you guys are dedicated to to the kiddos, like how you guys are dedicated with not only just not only like teaching, but also like the community is bringing in and like the environment you guys bring in with them for them. I mean, and like also like the support that you guys bring in with within staff wise and also like we can also give that to families as well. So it's it sounds to me like it would be amazing to be."
+    },
+    {
+      "type": "custom",
+      "id": "Not-Avail",
+      "question": "Are there any hours you are absolutely not available to work?",
+      "candidate_transcript": "[Q13 Attempt 1]\nUh, so as of right now, I am going to school Mondays and Wednesdays. My classes are from 845 to 1015, but I can't always go, um, go in after, but I'm open from Monday to"
+    },
+    {
+      "type": "custom",
+      "id": "Pay",
+      "question": "What kind of pay are you looking for? Is that negotiable?",
+      "candidate_transcript": "[Q14 Attempt 1]\nSo previously in my other job I was getting paid $23.50 so I would say like around that that kind of pay rate would be fine with me."
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+module:
+  name: interview_app_finalize_gateways
+  language: python
+  path: src/interview_app/finalize_gateways.py
+  version: 2.0.1
+  description: Contracts for finalize_gateways module.
+functions: []
+classes:
+- name: FinalizeGateways
+  description: FinalizeGateways class.
+  locked: false
+  attributes:
+    sent_referral_keys:
+      type: set[str]
+  methods:
+  - name: export_report
+    description: FinalizeGateways.export_report method.
+    locked: false
+    inputs:
+      app:
+        type: Any
+        required: true
+      context:
+        type: FinalizeContext
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: export_integration
+    description: FinalizeGateways.export_integration method.
+    locked: false
+    inputs:
+      app:
+        type: Any
+        required: true
+      context:
+        type: FinalizeContext
+        required: true
+    returns:
+      type: Path
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: persist_finalize_history
+    description: FinalizeGateways.persist_finalize_history method.
+    locked: false
+    inputs:
+      app:
+        type: Any
+        required: true
+      context:
+        type: FinalizeContext
+        required: true
+      out_path:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: updates persistent storage
+  - name: send_referral
+    description: FinalizeGateways.send_referral method. Canonical/legacy document paths are sourced from context payload and referral_packet, not direct method parameters.
+    locked: false
+    inputs:
+      app:
+        type: Any
+        required: true
+      context:
+        type: FinalizeContext
+        required: true
+      out_path:
+        type: str
+        required: true
+      integration_path:
+        type: Path
+        required: true
+    returns:
+      type: tuple[dict[str, Any], Path | None]
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: _referral_dedupe_key
+    description: FinalizeGateways._referral_dedupe_key method.
+    locked: false
+    inputs:
+      director_packet:
+        type: dict[str, Any]
+        required: true
+      endpoint:
+        type: str
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: updates in-memory state
+data_structures:
+- name: FinalizeGateways
+  type: dataclass
+dependencies:
+- director_referral_service
+- integration_export
+- interview_app_finalize_context
+- reporting

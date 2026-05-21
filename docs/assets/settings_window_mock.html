@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Settings Window Mock</title>
+<style>
+  body { font-family: Arial, sans-serif; background:#f1f5f9; margin:0; padding:24px; }
+  .window { width: 980px; margin:0 auto; background:white; border:1px solid #cbd5e1; border-radius:10px; box-shadow:0 8px 24px rgba(15,23,42,.12); }
+  .title { padding:14px 18px; border-bottom:1px solid #e2e8f0; font-weight:700; }
+  .tabs { display:flex; gap:8px; padding:12px 16px; border-bottom:1px solid #e2e8f0; }
+  .tab { padding:8px 12px; border:1px solid #cbd5e1; border-radius:999px; background:#fff; font-size:14px; }
+  .tab.active { background:#dbeafe; border-color:#93c5fd; }
+  .content { padding:16px; }
+  .card { border:1px solid #e2e8f0; border-radius:8px; padding:12px; margin-bottom:10px; }
+  .err { color:#b91c1c; font-size:13px; margin-top:6px; }
+  .ok { color:#166534; font-size:13px; margin-top:6px; }
+  .foot { display:flex; justify-content:flex-end; gap:8px; padding:12px 16px; border-top:1px solid #e2e8f0; }
+  .btn { border:1px solid #cbd5e1; padding:8px 14px; border-radius:8px; background:#fff; }
+  .btn.primary { background:#2563eb; border-color:#2563eb; color:#fff; }
+  .badge { display:inline-block; background:#fee2e2; color:#991b1b; border:1px solid #fecaca; border-radius:999px; padding:2px 8px; font-size:12px; margin-left:6px; }
+</style>
+</head>
+<body>
+<div class="window" id="overview">
+  <div class="title">Settings</div>
+  <div class="tabs">
+    <div class="tab active">General</div><div class="tab">Templates</div><div class="tab">Notifications</div><div class="tab">Storage</div><div class="tab">Security</div>
+  </div>
+  <div class="content">
+    <div class="card"><strong>Traversal:</strong> General → Templates → Notifications → Storage → Security → Save → Cancel</div>
+    <div class="card">General settings are focused first for keyboard navigation.<div class="ok">Focus-visible state enabled for tab and first field.</div></div>
+    <div class="card">Role-based visibility: high-risk controls are restricted for non-admin roles.</div>
+  </div>
+  <div class="foot"><button class="btn primary">Save</button><button class="btn">Cancel</button></div>
+</div>
+
+<div class="window" id="validation" style="margin-top:26px;">
+  <div class="title">Settings</div>
+  <div class="tabs">
+    <div class="tab">General</div><div class="tab active">Templates<span class="badge">2 errors</span></div><div class="tab">Notifications<span class="badge">1 error</span></div><div class="tab">Storage</div><div class="tab">Security<span class="badge">1 error</span></div>
+  </div>
+  <div class="content">
+    <div class="card"><strong>Templates</strong><div class="err">Contains unsupported template placeholders.</div><div class="err">Guidance: Open Placeholders picker and replace unsupported token.</div></div>
+    <div class="card"><strong>Notifications</strong><div class="err">Director referral endpoint must start with http:// or https://.</div><div class="err">Guidance: Use &lt;https://...&gt; (or &lt;http://...&gt;).</div></div>
+    <div class="card"><strong>Security</strong><div class="err">Whisper temperature must be a number between 0.0 and 1.0.</div></div>
+  </div>
+  <div class="foot"><button class="btn primary">Save</button><button class="btn">Cancel</button></div>
+</div>
+</body>
+</html>

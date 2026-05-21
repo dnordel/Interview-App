@@ -1,0 +1,214 @@
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-05T01:46:57.212004Z", "screen_id": "custom_why-ece_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-05T01:47:12.032536Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-05T01:47:26.439768Z", "screen_id": "trait_trait_5_save_draft", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-05T01:47:48.159590Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-03-05T03:21:29.605650Z", "outcome": "completed", "track": "infant_toddler"}
+{"event_type": "interview_finalized", "timestamp": "2026-03-05T03:21:29.607165Z", "track": "infant_toddler"}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-05T03:34:55.961162Z", "screen_id": "custom_pay_save_draft", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-05T03:35:14.405229Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-05T03:35:14.635945Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-05T03:35:15.146753Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-05T03:35:15.581734Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-05T03:35:16.916849Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-05T03:35:17.141228Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-05T03:35:17.553778Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-05T03:35:17.779047Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-05T03:35:18.019747Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-05T03:35:18.267445Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-05T03:35:18.499272Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-05T03:35:18.736039Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-05T03:35:18.942790Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-05T03:35:19.167612Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-05T03:35:19.572355Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.qualification.validation_error", "timestamp": "2026-03-05T03:35:36.245508Z", "error_type": "has_degree", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-05T03:35:46.579661Z", "screen_id": "custom_why-lpl_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-05T03:35:47.021300Z", "screen_id": "trait_trait_1_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-05T03:35:47.479472Z", "screen_id": "trait_trait_2_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-05T03:35:47.869113Z", "screen_id": "trait_trait_3_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-05T03:35:48.259052Z", "screen_id": "trait_trait_4_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-05T03:35:48.672476Z", "screen_id": "trait_trait_5_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-05T03:35:49.099333Z", "screen_id": "trait_trait_6_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-05T03:35:49.534380Z", "screen_id": "trait_trait_7_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-05T03:35:49.969788Z", "screen_id": "trait_trait_8_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-05T03:35:50.419587Z", "screen_id": "trait_trait_9_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-05T03:35:50.847381Z", "screen_id": "custom_ft-or-pt_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-05T03:35:51.289436Z", "screen_id": "custom_not-avail_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-05T03:35:51.514539Z", "screen_id": "custom_start_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-05T03:35:51.716897Z", "screen_id": "custom_pay_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-03-05T03:35:51.894635Z", "outcome": "completed", "track": "infant_toddler"}
+{"event_type": "interview_finalized", "timestamp": "2026-03-05T03:35:51.897162Z", "track": "infant_toddler"}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-05T22:40:50.915431Z", "screen_id": "custom_pay_save_draft", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-05T22:40:54.329024Z", "screen_id": "custom_pay_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-05T22:40:59.436757Z", "screen_id": "custom_pay_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-05T22:41:05.203883Z", "screen_id": "custom_pay_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-06T18:37:34.032636Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-06T18:37:51.642474Z", "screen_id": "trait_trait_2_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 266, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-06T18:39:32.089416Z", "screen_id": "trait_trait_3_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 260, "abandoned": false}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-06T18:40:23.410270Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-06T18:40:23.595139Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-06T18:40:23.778331Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-06T18:47:23.853757Z", "screen_id": "custom_pay_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 8, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-03-06T18:47:24.489971Z", "outcome": "completed", "track": "infant_toddler"}
+{"event_type": "interview_finalized", "timestamp": "2026-03-06T18:47:24.496948Z", "track": "infant_toddler"}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-06T21:47:11.616518Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-06T21:47:13.131241Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.trait_screen.click", "timestamp": "2026-03-06T21:50:08.817988Z", "target": "section_toggle", "section": "descriptors", "expanded": true, "trait_id": "trait_1", "flow_index": 2}
+{"event_type": "ux.interview.trait_screen.click", "timestamp": "2026-03-06T21:50:13.341717Z", "target": "section_toggle", "section": "descriptors", "expanded": false, "trait_id": "trait_1", "flow_index": 2}
+{"event_type": "ux.interview.trait_screen.click", "timestamp": "2026-03-06T21:50:14.414009Z", "target": "section_toggle", "section": "samples", "expanded": true, "trait_id": "trait_1", "flow_index": 2}
+{"event_type": "ux.interview.trait_screen.click", "timestamp": "2026-03-06T21:50:16.897227Z", "target": "section_toggle", "section": "samples", "expanded": false, "trait_id": "trait_1", "flow_index": 2}
+{"event_type": "ux.interview.trait_screen.click", "timestamp": "2026-03-06T21:50:48.245939Z", "target": "section_toggle", "section": "samples", "expanded": true, "trait_id": "trait_1", "flow_index": 2}
+{"event_type": "ux.interview.trait_screen.click", "timestamp": "2026-03-06T21:50:56.249331Z", "target": "section_toggle", "section": "samples", "expanded": false, "trait_id": "trait_1", "flow_index": 2}
+{"event_type": "ux.interview.trait_screen.click", "timestamp": "2026-03-06T21:53:16.385397Z", "target": "section_toggle", "section": "samples", "expanded": true, "trait_id": "trait_2", "flow_index": 3}
+{"event_type": "ux.interview.trait_screen.click", "timestamp": "2026-03-06T21:53:20.355030Z", "target": "section_toggle", "section": "samples", "expanded": false, "trait_id": "trait_2", "flow_index": 3}
+{"event_type": "ux.interview.trait_screen.click", "timestamp": "2026-03-06T21:55:40.032788Z", "target": "section_toggle", "section": "samples", "expanded": true, "trait_id": "trait_3", "flow_index": 4}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-06T21:59:56.720268Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.trait_screen.click", "timestamp": "2026-03-06T22:03:22.234571Z", "target": "section_toggle", "section": "samples", "expanded": true, "trait_id": "trait_8", "flow_index": 9}
+{"event_type": "ux.interview.trait_screen.click", "timestamp": "2026-03-06T22:05:07.631378Z", "target": "section_toggle", "section": "samples", "expanded": true, "trait_id": "trait_9", "flow_index": 10}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-06T22:05:15.861647Z", "screen_id": "trait_trait_9_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 1, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-06T22:06:26.160176Z", "screen_id": "custom_pay_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 9, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-03-06T22:06:26.649111Z", "outcome": "completed", "track": "infant_toddler"}
+{"event_type": "interview_finalized", "timestamp": "2026-03-06T22:06:26.655607Z", "track": "infant_toddler"}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-09T16:09:58.952850Z", "screen_id": "custom_why-ece_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 267, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-09T16:11:39.157351Z", "screen_id": "trait_trait_1_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.interview.trait_screen.click", "timestamp": "2026-03-09T16:13:25.700134Z", "target": "section_toggle", "section": "descriptors", "expanded": true, "trait_id": "trait_3", "flow_index": 4}
+{"event_type": "ux.interview.trait_screen.click", "timestamp": "2026-03-09T16:13:27.634985Z", "target": "section_toggle", "section": "descriptors", "expanded": false, "trait_id": "trait_3", "flow_index": 4}
+{"event_type": "ux.interview.trait_screen.click", "timestamp": "2026-03-09T16:13:28.430183Z", "target": "section_toggle", "section": "samples", "expanded": true, "trait_id": "trait_3", "flow_index": 4}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-09T16:13:45.991416Z", "screen_id": "trait_trait_3_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-09T16:19:52.361597Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-09T16:21:38.892510Z", "screen_id": "custom_start_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 13, "abandoned": false}
+{"event_type": "ux.interview.qualification.validation_error", "timestamp": "2026-03-09T17:37:43.009478Z", "error_type": "has_degree", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.qualification.validation_error", "timestamp": "2026-03-09T17:37:43.212652Z", "error_type": "has_degree", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.trait_screen.click", "timestamp": "2026-03-09T17:42:55.593526Z", "target": "section_toggle", "section": "samples", "expanded": true, "trait_id": "trait_3", "flow_index": 4}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-09T17:43:20.038783Z", "screen_id": "trait_trait_3_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-09T17:47:22.198163Z", "screen_id": "trait_trait_7_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 1, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-09T17:49:32.137894Z", "screen_id": "custom_start_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 12, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-09T20:09:57.909057Z", "screen_id": "custom_why-ece_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 92, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-09T20:19:30.495860Z", "screen_id": "trait_trait_3_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 171, "abandoned": false}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-09T20:26:29.293665Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-09T20:26:29.490809Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-09T20:28:33.910752Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-09T20:33:38.010582Z", "screen_id": "custom_start_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 10, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-10T20:39:01.947747Z", "screen_id": "custom_why-lpl_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 115, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-10T20:55:37.197027Z", "screen_id": "custom_not-avail_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 14, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-10T21:00:55.918747Z", "screen_id": "custom_start_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 4, "abandoned": false}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-10T22:24:47.408153Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-10T22:39:16.369417Z", "screen_id": "custom_start_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-10T22:43:17.881958Z", "screen_id": "custom_start_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.interview.qualification.validation_error", "timestamp": "2026-03-11T01:07:56.425642Z", "error_type": "has_degree", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.qualification.validation_error", "timestamp": "2026-03-11T02:01:26.901305Z", "error_type": "has_degree", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-11T02:02:17.822306Z", "screen_id": "custom_start_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 4, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-03-11T02:02:18.006932Z", "outcome": "completed", "track": "preschool"}
+{"event_type": "interview_finalized", "timestamp": "2026-03-11T02:02:18.009949Z", "track": "preschool"}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-11T02:29:00.456711Z", "screen_id": "custom_start_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 4, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-03-11T02:29:00.648831Z", "outcome": "completed", "track": "preschool"}
+{"event_type": "interview_finalized", "timestamp": "2026-03-11T02:29:00.651912Z", "track": "preschool"}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-11T16:06:43.924669Z", "screen_id": "custom_why-ece_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 42, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-11T16:08:09.409097Z", "screen_id": "trait_trait_1_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 125, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-11T16:09:14.569063Z", "screen_id": "trait_trait_2_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 106, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-11T16:10:22.048046Z", "screen_id": "trait_trait_3_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 81, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-11T16:15:52.257055Z", "screen_id": "trait_trait_7_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 116, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-11T16:17:19.638976Z", "screen_id": "trait_trait_8_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 113, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-11T16:19:31.368733Z", "screen_id": "custom_pay_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 31, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-03-11T16:19:31.560672Z", "outcome": "completed", "track": "infant_toddler"}
+{"event_type": "interview_finalized", "timestamp": "2026-03-11T16:19:31.564599Z", "track": "infant_toddler"}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-11T17:53:19.007797Z", "screen_id": "trait_trait_6_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 142, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-03-11T17:59:57.188289Z", "outcome": "completed", "track": "infant_toddler"}
+{"event_type": "interview_finalized", "timestamp": "2026-03-11T17:59:57.192206Z", "track": "infant_toddler"}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-11T20:49:30.092848Z", "screen_id": "custom_not-avail_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 9, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-11T20:50:13.121076Z", "screen_id": "custom_start_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 13, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-03-11T20:50:13.325698Z", "outcome": "completed", "track": "preschool"}
+{"event_type": "interview_finalized", "timestamp": "2026-03-11T20:50:13.329738Z", "track": "preschool"}
+{"event_type": "ux.interview.qualification.validation_error", "timestamp": "2026-03-11T21:08:45.094987Z", "error_type": "ece_units", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-11T21:08:56.252598Z", "screen_id": "custom_pay_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.interview.qualification.validation_error", "timestamp": "2026-03-12T16:04:20.676889Z", "error_type": "total_units", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-12T16:18:37.928431Z", "screen_id": "trait_trait_10_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-12T16:19:22.976678Z", "screen_id": "custom_start_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 4, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-03-12T16:19:23.170147Z", "outcome": "completed", "track": "preschool"}
+{"event_type": "interview_finalized", "timestamp": "2026-03-12T16:19:23.173490Z", "track": "preschool"}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-12T17:55:31.461925Z", "screen_id": "trait_trait_7_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 204, "abandoned": false}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-12T17:57:02.732137Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-12T17:57:03.203386Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-12T17:58:40.101731Z", "screen_id": "custom_pay_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 45, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-03-12T17:58:40.283418Z", "outcome": "completed", "track": "infant_toddler"}
+{"event_type": "interview_finalized", "timestamp": "2026-03-12T17:58:40.287666Z", "track": "infant_toddler"}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-12T18:10:24.407278Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-03-12T18:15:50.572856Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-03-12T18:20:54.559878Z", "outcome": "completed", "track": "preschool"}
+{"event_type": "interview_finalized", "timestamp": "2026-03-12T18:20:54.563724Z", "track": "preschool"}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-03-12T22:18:36.647094Z", "outcome": "completed", "track": "preschool"}
+{"event_type": "interview_finalized", "timestamp": "2026-03-12T22:18:36.651774Z", "track": "preschool"}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-03-13T18:43:15.968491Z", "outcome": "completed", "track": "preschool"}
+{"event_type": "interview_finalized", "timestamp": "2026-03-13T18:43:15.974006Z", "track": "preschool"}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-16T21:56:11.014781Z", "screen_id": "custom_pay_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 41, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-03-16T21:56:11.703707Z", "outcome": "completed", "track": "infant_toddler"}
+{"event_type": "interview_finalized", "timestamp": "2026-03-16T21:56:11.707474Z", "track": "infant_toddler"}
+{"event_type": "ux.interview.qualification.validation_error", "timestamp": "2026-03-17T17:40:50.108299Z", "error_type": "ece_units", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-17T17:56:09.879952Z", "screen_id": "custom_start_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 10, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-03-17T17:56:10.246834Z", "outcome": "completed", "track": "preschool"}
+{"event_type": "interview_finalized", "timestamp": "2026-03-17T17:56:10.251359Z", "track": "preschool"}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-03-17T20:28:07.922455Z", "screen_id": "custom_pay_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 20, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-03-17T20:28:08.375135Z", "outcome": "completed", "track": "infant_toddler"}
+{"event_type": "interview_finalized", "timestamp": "2026-03-17T20:28:08.378787Z", "track": "infant_toddler"}
+{"event_type": "ux.onboarding.reminders.validation_error", "timestamp": "2026-03-19T19:46:05.109267Z", "error_type": "invalid_recipients", "required_fields_present": true, "issue_count": 2, "phase": "send"}
+{"event_type": "ux.onboarding.actions_panel.click", "timestamp": "2026-03-19T19:46:09.848954Z", "target": "open_email_settings"}
+{"event_type": "ux.interview.qualification.validation_error", "timestamp": "2026-05-05T17:04:22.040037Z", "error_type": "has_degree", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.qualification.validation_error", "timestamp": "2026-05-05T17:04:40.790723Z", "error_type": "years_experience", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.interview.trait_score.validation_error", "timestamp": "2026-05-05T17:15:04.119800Z", "error_type": "raw_score_missing", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-05-05T17:16:37.880077Z", "screen_id": "custom_start_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 4, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-05-05T17:16:38.232077Z", "outcome": "completed", "track": "preschool"}
+{"event_type": "interview_finalized", "timestamp": "2026-05-05T17:16:38.235722Z", "track": "preschool"}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-05-05T22:20:14.326878Z", "screen_id": "custom_start_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 4, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-05-05T22:20:14.828363Z", "outcome": "completed", "track": "preschool"}
+{"event_type": "interview_finalized", "timestamp": "2026-05-05T22:20:14.832904Z", "track": "preschool"}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-05-05T22:45:27.936754Z", "screen_id": "custom_start_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 13, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-05-05T22:45:28.288617Z", "outcome": "completed", "track": "preschool"}
+{"event_type": "interview_finalized", "timestamp": "2026-05-05T22:45:28.292885Z", "track": "preschool"}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-05-06T16:43:39.917447Z", "screen_id": "custom_start_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 4, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-05-06T16:43:40.430792Z", "outcome": "completed", "track": "preschool"}
+{"event_type": "interview_finalized", "timestamp": "2026-05-06T16:43:40.434895Z", "track": "preschool"}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-05-06T18:32:49.137027Z", "outcome": "completed", "track": "preschool"}
+{"event_type": "interview_finalized", "timestamp": "2026-05-06T18:32:49.141300Z", "track": "preschool"}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-05-06T22:30:46.591250Z", "screen_id": "custom_start_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 15, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-05-06T22:30:47.112198Z", "outcome": "completed", "track": "preschool"}
+{"event_type": "interview_finalized", "timestamp": "2026-05-06T22:30:47.117215Z", "track": "preschool"}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-05-07T20:42:23.555462Z", "screen_id": "custom_start_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 9, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-05-07T20:42:24.141437Z", "outcome": "completed", "track": "preschool"}
+{"event_type": "interview_finalized", "timestamp": "2026-05-07T20:42:24.145489Z", "track": "preschool"}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-05-08T20:44:34.959983Z", "screen_id": "custom_start_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 9, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-05-08T20:44:35.645425Z", "outcome": "completed", "track": "preschool"}
+{"event_type": "interview_finalized", "timestamp": "2026-05-08T20:44:35.650010Z", "track": "preschool"}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-05-12T16:15:16.194600Z", "screen_id": "trait_trait_4_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-05-12T16:24:59.417953Z", "screen_id": "custom_pay_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 4, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-05-12T16:25:00.024593Z", "outcome": "completed", "track": "infant_toddler"}
+{"event_type": "interview_finalized", "timestamp": "2026-05-12T16:25:00.028815Z", "track": "infant_toddler"}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-05-12T17:18:44.935194Z", "screen_id": "custom_start_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 13, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-05-12T17:18:45.556387Z", "outcome": "completed", "track": "preschool"}
+{"event_type": "interview_finalized", "timestamp": "2026-05-12T17:18:45.560471Z", "track": "preschool"}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-05-12T17:45:59.002985Z", "screen_id": "custom_start_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-05-12T17:45:59.476938Z", "outcome": "completed", "track": "preschool"}
+{"event_type": "interview_finalized", "timestamp": "2026-05-12T17:45:59.481013Z", "track": "preschool"}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-05-12T18:06:41.862483Z", "screen_id": "custom_why-lpl_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-05-12T18:10:57.425213Z", "screen_id": "custom_start_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 9, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-05-12T18:10:58.035069Z", "outcome": "completed", "track": "preschool"}
+{"event_type": "interview_finalized", "timestamp": "2026-05-12T18:10:58.039611Z", "track": "preschool"}
+{"event_type": "ux.interview.qualification.validation_error", "timestamp": "2026-05-12T21:05:21.361174Z", "error_type": "degree_type", "required_fields_present": true, "error_count": 1}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-05-12T21:25:08.112015Z", "screen_id": "custom_start_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 79, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-05-12T21:25:08.806852Z", "outcome": "completed", "track": "preschool"}
+{"event_type": "interview_finalized", "timestamp": "2026-05-12T21:25:08.811992Z", "track": "preschool"}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-05-13T17:55:20.301981Z", "screen_id": "custom_pay_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 7, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-05-13T17:55:21.180266Z", "outcome": "completed", "track": "infant_toddler"}
+{"event_type": "interview_finalized", "timestamp": "2026-05-13T17:55:21.185455Z", "track": "infant_toddler"}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-05-13T21:50:32.109356Z", "screen_id": "custom_start_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 9, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-05-13T21:50:32.649836Z", "outcome": "completed", "track": "preschool"}
+{"event_type": "interview_finalized", "timestamp": "2026-05-13T21:50:32.654360Z", "track": "preschool"}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-05-13T23:28:46.748727Z", "screen_id": "custom_ft-or-pt_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 17, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-05-13T23:30:16.928023Z", "screen_id": "custom_start_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 4, "abandoned": false}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-05-13T23:30:37.935994Z", "screen_id": "custom_pay_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-05-13T23:30:38.540307Z", "outcome": "completed", "track": "infant_toddler"}
+{"event_type": "interview_finalized", "timestamp": "2026-05-13T23:30:38.544452Z", "track": "infant_toddler"}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-05-15T18:12:18.604637Z", "screen_id": "custom_why-ece_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": true, "keyboard_step_count": 1, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-05-15T18:32:21.445406Z", "outcome": "completed", "track": "infant_toddler"}
+{"event_type": "interview_finalized", "timestamp": "2026-05-15T18:32:21.450441Z", "track": "infant_toddler"}
+{"event_type": "ux.keyboard_path_completed", "timestamp": "2026-05-15T20:16:46.649840Z", "screen_id": "custom_start_finalize_or_continue", "flow_id": "interview_question", "completed_via_keyboard": false, "keyboard_step_count": 0, "abandoned": false}
+{"event_type": "ux.interview.finalize.completion", "timestamp": "2026-05-15T20:16:47.140151Z", "outcome": "completed", "track": "preschool"}
+{"event_type": "interview_finalized", "timestamp": "2026-05-15T20:16:47.144677Z", "track": "preschool"}

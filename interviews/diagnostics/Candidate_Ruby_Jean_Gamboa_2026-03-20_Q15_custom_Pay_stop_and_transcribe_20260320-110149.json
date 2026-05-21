@@ -1,0 +1,28 @@
+{
+  "timestamp": "2026-03-20T11:01:49",
+  "stage": "stop_and_transcribe",
+  "error_type": "RuntimeError",
+  "error_message": "No transcribable audio tracks were found: mic audio file is missing: C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q15_custom_Pay_mic.wav; system audio file is empty: C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q15_custom_Pay_sys.wav",
+  "context": {
+    "language": "en",
+    "whisper_model": "large-v3",
+    "whisper_device": "cuda",
+    "whisper_compute_type": "float16",
+    "whisper_settings": {
+      "vad_filter": true,
+      "beam_size": 5,
+      "temperature": 0.0
+    },
+    "mic": {
+      "path": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q15_custom_Pay_mic.wav",
+      "exists": false,
+      "size_bytes": null
+    },
+    "sys": {
+      "path": "C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q15_custom_Pay_sys.wav",
+      "exists": true,
+      "size_bytes": 0
+    }
+  },
+  "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\src\\interview_audio_recorder.py\", line 264, in stop_and_transcribe\n    _ensure_at_least_one_audio_track({\"mic\": self.mic_wav, \"system\": self.sys_wav})\n  File \"C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\src\\interview_audio_recorder.py\", line 680, in _ensure_at_least_one_audio_track\n    raise RuntimeError(f\"No transcribable audio tracks were found: {details}\")\nRuntimeError: No transcribable audio tracks were found: mic audio file is missing: C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q15_custom_Pay_mic.wav; system audio file is empty: C:\\Users\\Dnord\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Ruby_Jean_Gamboa_2026-03-20_Q15_custom_Pay_sys.wav"
+}

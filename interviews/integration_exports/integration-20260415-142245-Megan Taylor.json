@@ -1,0 +1,213 @@
+{
+  "candidate": {
+    "name": "Megan Taylor",
+    "interview_date": "2026-04-15",
+    "school": "Palmdale",
+    "track": "preschool",
+    "qualification": {
+      "has_degree": true,
+      "degree_type": "BA",
+      "degree_in_ece": true,
+      "ece_units_completed": 60,
+      "infant_toddler_class_completed": true,
+      "total_units_completed": null,
+      "years_experience": 5
+    }
+  },
+  "percent_of_max": 97.92,
+  "decision": "hire",
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_10",
+        "trait_name": "Positive Behavior Guidance",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_11",
+        "trait_name": "Structure & Flexibility",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no, prefer earlier/mornings",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "negotiable",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full-time",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "two-weeks",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-04-15 - Palmdale - Megan Taylor - Interview.docx",
+    "transcript_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Candidate_Megan_Taylor_2026-04-15_live_transcript.docx"
+  },
+  "communication_log": [],
+  "flow_transcript_slices": [
+    {
+      "type": "custom",
+      "id": "Why-ECE",
+      "question": "Tell me about yourself and why early childhood education matters to you.",
+      "candidate_transcript": "[Q1 Attempt 1]\nOkay, so a little bit about myself. Obviously, my name is Megan. I currently work at a daycare and I've been there for a little over five years. And working at this daycare has really confirmed my passion for working with children and families. Growing up, I loved kids. I loved the babies. I've always been the grandchild that helped with all the kids. I'm still like that at the parties. Always have a kid in my hand. Through the experience of working at a daycare, I've learned how to stay calm under pressure, communicate effectively, and support children's emotional and developmental needs. One of my future goals is in the near future, maybe my mid-30s, I would like to become a social worker and then somewhere in my 40s, own my own daycare to be able to work with children."
+    },
+    {
+      "type": "custom",
+      "id": "Why-LPL",
+      "question": "Why are you applying for this position, specifically at Launch Pad Learning?",
+      "candidate_transcript": "[Q2 Attempt 1]\nSo, I am applying to your guys' company because, again, I did look over your guys' website, and I believe the qualities I have meet a lot of your guys' qualifications. I do have a bachelor's degree in child, adolescence, and family studies. I also have an associate's degree in early childhood education. I also want to be a part of a team that is supportive and that truly cares about children they work with. And from what I've researched, your program aligns with. My passion of helping children grow socially and emotionally."
+    },
+    {
+      "type": "trait",
+      "id": "trait_1",
+      "question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+      "candidate_transcript": "[Q3 Attempt 1]\nHmm. Okay. So being that I do work at a daycare, I work with my youngest right now is nine months. My oldest is five. So I experience kids, you know, having tantrums and stuff like that. So what I do first, I always try to stay calm in situations. You know, I always try to come with a calm demeanor because I know children can feel your energy. So first I get down to their level and I speak to them very calmly to understand what they're feeling. At the ages that we work with, you know, children often have big emotions that they don't know how to explain verbally. So I would try to guide them by helping them put their feelings into words. Once I feel that I've heard and understood what they're feeling and why they're upset, I try to support them and I would work, try to find a solution to help them feel better and redirect their attention if needed. And if they're still feeling overwhelmed, I would try to give them a little space. You know, I feel like sometimes they're human. There might be, they may be kids, but sometimes we give them a little bit of space, like, you know, boundaries. And then I would check back with them. And my goal is to always just make sure that they feel safe, understood, and supported."
+    },
+    {
+      "type": "trait",
+      "id": "trait_2",
+      "question": "Tell me about a time you felt overwhelmed at work with children present. What did you do to manage yourself?",
+      "candidate_transcript": "[Q4 Attempt 1]\nUm, so I think it's pretty normal for people to feel overwhelmed working with children or just anywhere, but working with children. So what I try to do when I do get overwhelmed, I try to, I let my coworker, my supervisor know, and I will step outside just to get some fresh air, take a moment, walk around the walking path. We have at my facility and I just try to take a breather two to three minutes, woosah, and go back in with a clear mind. So again, my kids."
+    },
+    {
+      "type": "trait",
+      "id": "trait_3",
+      "question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering, helping with clothing, or guiding them physically. They are pulling away or saying no. Walk me through exactly what you would do, step by step",
+      "candidate_transcript": "[Q5 Attempt 1]\nI would respect their boundaries, I would, again, stay calm, and I would slowly, but gradually, I would slowly allow them, you know, I will allow them to have their moment, but I would also communicate with them, like, you know, at my job, they call me Miss Megan, like, you know, Miss Megan is just trying to help you, I'm just trying to make sure you're comfortable, we're just going to change your diaper, you know, I don't try, I don't try to be physical with kids, I try not to grab, you know, anything like that, I try to allow them to calm down. To where it doesn't seem forceful, or making them uncomfortable, like they're being forced to do something they don't want to do, but I do try to explain what's happening, you know, you don't have to be changed, your diaper's wet, I try to communicate what's going on in a calm manner."
+    },
+    {
+      "type": "trait",
+      "id": "trait_4",
+      "question": "Tell me about a time you received feedback you didn’t expect or didn’t fully agree with. What happened next?",
+      "candidate_transcript": "[Q6 Attempt 1]\nThere was a time where one of the parents at my job, she came to us because we tried to allow our kids to put their own shoes on and things like that. You know, kids have to be independent. And one time her son's strap on his shoe wasn't strapped properly and she didn't like it. So the way that she approached not only me, but my supervisor and my coworker was a little rude. But again, I just stay calmed. I listened to what she said, let her know I understood and just told her that I'll be more aware of making sure his straps and things are properly when he's doing things by himself. You know, I did let her know sometimes we do just get a little busy. So it was just something that we overlooked. But I will be sure to look out for things like that in the future. I just stay calm, try to build up. Build that trust and let them know that I hear them out. And I'm here to take any, you know, responsibility for anything that I could have done wrong because it happens. You know, we do get busy. Those are little things we can miss. I just try to stay calm and very respectful about it."
+    },
+    {
+      "type": "trait",
+      "id": "trait_5",
+      "question": "Tell me about a time something didn’t go as planned at work and your role in it. How did you handle the responsibility piece?",
+      "candidate_transcript": "[Q7 Attempt 1]\nnobody hmm he said about a time something didn't go as planned and what was the last part and my role in it okay so at my job we kind of assist with potty training and one of my students she had an accident again this was definitely unplanned because she's normally really good with going to the potty and stuff like that so she had an accident and she was really embarrassed so because it happened in front of all of her friends so to kind of help her emotions out we kind of made it into a joke like oh everybody you know has accidents things like that and I just supported her emotionally while my co-worker distracted the other kids so my supervisor can clean it up to kind of take the distraction off of her having the accident which later she's four years old believe it or not she came to me and she told me Thank You miss Megan you made me feel real good and I was like oh my gosh that's so funny and I really really good about my accident and gave me a hug you know that's probably not exactly the context you were looking for but to me I think that's a good one because again I always try to make sure that my students feel welcome loved and I don't want anybody to feel embarrassed so it was unplanned we weren't expecting that because we don't have accidents often and my role in that was to just support my student and making sure that he felt okay understands that it happens everybody does it um probably directed her to the bathroom a little quicker because they do know where the bathroom is so if they act like oh yeah you can go so I probably could have helped her because I did in a sense see the leg shake but that's kind of common with kids but I think in her sense the leg shake was like okay I've been holding it I waited to the last minute to ask I gotta go so I think I could have helped her get to the bathroom a little"
+    },
+    {
+      "type": "trait",
+      "id": "trait_6",
+      "question": "Tell me about a time you had to work closely with another adult in a challenging situation. How did you navigate it?",
+      "candidate_transcript": "[Q8 Attempt 1]\nOkay, let me see. That's a good one. Maybe I can, can I use a situation like with a disagreement of a supervisor, maybe something along the lines of that, or, okay, so I'm someone who values professionalism and open communication, and in previous roles of working for my job, I learned the importance of listening and understanding. So, I had a disagreement with one of my managers working at Walmart, and her approach to me was a little demeaning, because, yeah, I was a little young, but I'm also an adult, so I'm big on, it's not what you say, it's how you say it, you know, so I tried to request a private conversation and share my perspective calmly to make sure I fully under, and to make sure I fully understand theirs. We did not completely agree, but I was able to follow their guidance and focus on maintaining a positive work relationship, you know, that's what, that's all it was about. I don't have to always agree with everything, but this is my, my supervisor, so I have to respect it, you know what I'm saying, and as long as I respect, respectfully do those things, I feel like there's normally no issue, I just always try to keep it respectful, we're all adults, I try to talk to people the way I like to be talked to, and things. Things like that, so, again, I requested a private conversation with her, shared my perspective, and I tried to make sure that I fully understood hers before speaking on my perspective. Like I said, we didn't come to a complete agreement, but it wasn't, it wasn't bad, we were able to still work with each other, we didn't have any ill will towards each other, you know, we talked it out, we even laughed about it after a while. You know, she apologized for her approach, because I did let her know, like, I didn't like the approach, like, I don't mind you. Giving me constructive criticism, but it doesn't have to be rude, you know, it doesn't have to be demeaning, I'm all for it, please tell me what I'm doing wrong, but please talk to me like I'm human."
+    },
+    {
+      "type": "trait",
+      "id": "trait_7",
+      "question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+      "candidate_transcript": "[Q9 Attempt 1]\nYes. Working with children, I realized I've learned how to maintain my composure in stressful and emotional situations way better. That's what you're asking me, right? What was your question again? OK, OK. Yes. So I've definitely learned how to maintain my composure in stressful and emotional situations. Being that I want to be someone who works in a school or social worker setting, students, you know, students and families often come to you during difficult times. So staying calm is a key to building trust, in my opinion. So I've had instances at my job where a child was upset or a parent was frustrated. I stayed composed, listened carefully and worked with them to just find a solution rather than reacting emotionally, which I believe helps build rapport, like, OK, she was respectful. He tried to find a solution. She talked to me. She stayed calm. So, yes, I think I've learned how to maintain myself in stressful situations a lot better working with children."
+    },
+    {
+      "type": "trait",
+      "id": "trait_10",
+      "question": "Tell me about a time a child’s behavior was challenging for you. How did you approach it?",
+      "candidate_transcript": "[Q10 Attempt 1]\nOkay, so working at a daycare, I experience children fighting over toys a lot. So in these situations, I stay calm again, always. I separate the children to de-escalate the situation to ensure both are safe. I always try to remind my children of classroom expectations, such as using kind words, keeping our hands to ourselves, and taking turns. So in a situation like where my kids are fighting over a specific toy that we may not have another one of, I try to find a solution to where we're practicing sharing. So my favorite thing to do is pull out a timer and I say, hey, little Billy, you will get five minutes with this toy. And then when the timer goes off, you're going to hear this chime. I'll play the chime for them. That means it's now going to go over to Luke. And then Luke will play for it for five minutes, and then we'll go back and forth until whoever loses interest in the toy first. So I just try to stay calm, de-escalate, and communicate with my children. I really try to communicate because I feel like when you communicate, it helps the children understand and learn how to communicate their feelings better."
+    },
+    {
+      "type": "trait",
+      "id": "trait_11",
+      "question": "Can you share a time when your plan didn’t go as expected because of children’s needs? What did you do?",
+      "candidate_transcript": "[Q11 Attempt 1]\nUm, that's a good one. Usually with my job, if something doesn't go as planned with the child, I just go to my supervisor and I ask her her opinion because she's a little more experienced. She's been doing this for 20 plus years. Always get her perspective on maybe something else that I could do or he talks a little bit more with the parents about certain things. So I ask them, like, you know, does mom recommend doing anything when Zio acts this way or anything like that? I try to consult with my supervisor to see if there's anything else that I could possibly."
+    },
+    {
+      "type": "custom",
+      "id": "Not-Avail",
+      "question": "Are there any hours you are absolutely not available to work?",
+      "candidate_transcript": "[Q13 Attempt 1]\nNo. I'm a morning person, so if I can get an earlier shift, I would take an earlier shift, but I'm willing to take anything."
+    },
+    {
+      "type": "custom",
+      "id": "Pay",
+      "question": "What kind of pay are you looking for? Is that negotiable?",
+      "candidate_transcript": "[Q14 Attempt 1]\nI'm willing to work it out. I'm negotiable."
+    }
+  ]
+}

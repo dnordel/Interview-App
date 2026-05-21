@@ -1,0 +1,219 @@
+{
+  "candidate": {
+    "name": "Amy Jerez",
+    "interview_date": "2026-03-26",
+    "school": "North Long Beach",
+    "track": "infant_toddler",
+    "qualification": {
+      "has_degree": true,
+      "degree_type": "AA",
+      "degree_in_ece": true,
+      "ece_units_completed": 24,
+      "infant_toddler_class_completed": false,
+      "total_units_completed": null,
+      "years_experience": 1
+    }
+  },
+  "percent_of_max": 80.95,
+  "decision": "hire",
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_8",
+        "trait_name": "Gentleness & Physical Awareness",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_9",
+        "trait_name": "Patience with Nonverbal Communication",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "Friday, until June 8th",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full-time",
+        "skipped": false
+      },
+      {
+        "question_text": "Tell me a little about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$25-28",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "two or three weeks",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying to our company, Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-03-26 - North Long Beach - Amy Jerez - Interview.docx",
+    "transcript_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Candidate_Amy_Jerez_2026-03-26_live_transcript.docx"
+  },
+  "communication_log": [],
+  "flow_transcript_slices": [
+    {
+      "type": "custom",
+      "id": "Why-ECE",
+      "question": "Tell me a little about yourself and why early childhood education matters to you.",
+      "candidate_transcript": "[Q1 Attempt 1]\nChildhood education sparked back when I was 16, I have a sister-in-law that's actually a Montessori teacher. So I used to shadow her a lot, almost just for fun because I wanted to see what the field was like. And then eventually when college started, it was for my hours and five years later, here I am. I'm going to get my AA in June and truthfully that desire of wanting to help young children and our future generations just never changed and I've always been a huge nurturer. Kids just call me and I love being there. I love having fun. I think we're all kids at heart. So I stayed in the field and here I am now, I've been a teacher assistant for"
+    },
+    {
+      "type": "custom",
+      "id": "Why-LPL",
+      "question": "Why are you applying to our company, Launch Pad Learning?",
+      "candidate_transcript": "[Q2 Attempt 1]\nOf course. Like I said, it first started just by Michael mentioning it, and I've researched it, and I do work now in a creative play-based curriculum center, so it helped a lot to read that you guys were creative-based, and I think it would be going against my beliefs of the entirety of how children learn and how they grow, and I think it's nothing compared to a play-based and a creative-based curriculum that just allows them to explore their own independence and grow their own skills."
+    },
+    {
+      "type": "trait",
+      "id": "trait_1",
+      "question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+      "candidate_transcript": "[Q3 Attempt 1]\nOf course. I think our initial response is always to acknowledge how they feel. I think as a child, that's truly all you want to be heard. And the littlest things may seem like a really big deal. And at the moment, it is a big deal for them. So acknowledging how they feel always. We practice a lot with being at their level. We always work at their level. And I think that helps a lot with understanding and helping them understand that I'm right here with you and I hear you. And I know it's tough. She took your toy, but we can work through that and we don't have to throw our bodies and teaching them the skills that they're just learning at, you know, our center starts at 12 months. So even then. And then the communication, it's still growing. Their language skills, their fine motor, their gross motor skills are still growing. So I think just being there with them, for one, acknowledging their feelings and then assessing the situation. Can we redirect the conflict? Can we resolve the conflict? Is it a moment where we can learn to share? Is it a moment where you learn to, you know, base a boundary that you don't want to share right now and we learn to communicate that? So I think communication. So one, always acknowledging them and then showing them that there's other ways."
+    },
+    {
+      "type": "trait",
+      "id": "trait_2",
+      "question": "Tell me about a time you felt overwhelmed at work with children present. What did you do to manage yourself?",
+      "candidate_transcript": "[Q4 Attempt 1]\nWe have a one to four ratio, but even then we have a classroom of 18 children and we are about eight to nine staff in our classroom itself. So I think teamwork plays a really big role. If I ever do feel stressed, I think it's a moment of never feeling the need to keep it all to myself because we do believe in teamwork. And hey, do you think you can assess me with this? Or my master teacher does a really great job at being very open. Like if you cannot handle a situation or you do not know how, I'm always here to talk you through it. I'm always here to show you the steps that we can take. Most of the time I do think that some children, depending on where we are with their skill sets, it's not only difficult to teach them that when you're learning it yourself sometimes, but I think it's very important to just meet them where they are. And you have to remind yourself that as well. And I don't think this field is for the faint heart. I think you have to have a really open mind on that and to know what you're stepping into because there is no language and we are learning it, you know. So I think a stressful situation calls for a lot of teamwork."
+    },
+    {
+      "type": "trait",
+      "id": "trait_3",
+      "question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering, helping with clothing, or guiding them physically. They are pulling away or saying no. Walk me through exactly what you would do, step by step",
+      "candidate_transcript": "[Q5 Attempt 1]\nI want to say, for one, redirecting is practiced a lot. I'm going to help you if you need help. But if they're pulling away, there is moments where you just have to give the child space and, okay, I can wait with you and for you until you're ready. And most of the time when you give them space and you just give them that understanding, at some point they are ready to work with you. And I think the more you push or the more you really try to, you know, assess the situation when they don't want assessing can overstimulate or maybe agitate them. So most of the time we do give space."
+    },
+    {
+      "type": "trait",
+      "id": "trait_4",
+      "question": "Tell me about a time you received feedback you didn’t expect or didn’t fully agree with. What happened next?",
+      "candidate_transcript": "[Q6 Attempt 1]\nTell me about a time you received feedback. I think open communication is important. If I don't agree with you, sorry. Okay. I think open communication, I think as they're free to tell me from where they're coming from, it's not about a rebuttal or a justification, but I think you should feel more than comfortable. And that's why it's so important to build those relationships from the parents to the co-workers to your director to be able to question or accept. And like I said, in this field, it's all about having an open mindset. So I think regardless of the feedback, it's very important to take. And we're not always right. And it's okay to be wrong. And thank you. Thank you for the feedback. And if there's ever a but or a question, I always feel more than comfortable to be able to say, thank you. Or to ask that or state that because we built those relationships to be able to feel comfortable because that's what creates our teamwork. You know, that's what makes us so comfortable to work around. And it's healthy because it reflects on everything. Not necessarily feedback. I think it was the other way around. I gave feedback to a co-worker and I think somewhere along the lines, it was misconstrued or taken wrong. And like I said, I'm always. How do I, how do I take it? I mean, like I said, we're not always right. I want to say a situation. I really, I, it could be Costco. Oh, Costco. Maybe I want to say it was less. If we stick to Costco, I want to say it was customer service. I was told that they felt like I was. Coming off as rude. And because I didn't speak to them directly, I didn't give them eye contact. So I was told, you know, always think your members and always look at them with a smile. And I remember once again, just stating like I did my best and maybe they didn't take it like, like that, but I'll work on it. So moving forward, it was taken as feedback and it was corrected because I mean, if we're never told anything and we don't do the. The correcting or, or the self changes, then, then I would continue to get those feedbacks. So I think the only time I can think about, we're not perfect. Right. But the only time I can think of with Costco would probably be my customer service. A year or two ago and just stated to always, always be kind. And sometimes I think we get carried away in the situation where it's like, okay, have a good day and take your time with each member and acknowledge each member. And if we could change it to this field, it would be acknowledge each parent or acknowledge each child and don't be so dismissive or, but that's the only feedback I can think of. Right. Yeah. But you would be surprised. You'd be surprised. They want us to, to ask about their day, but yeah, but it's okay. It's, it's things that you."
+    },
+    {
+      "type": "trait",
+      "id": "trait_5",
+      "question": "Tell me about a time something didn’t go as planned at work and your role in it. How did you handle the responsibility piece?",
+      "candidate_transcript": "[Q7 Attempt 1]\nHmm. Tell me about a time. I think time efficiency plays a really big role. And maybe sometimes or maybe that I can think of a specific time would be as of recently, our sanitation, we did unfortunately have an HMFD breakout. And like I said, similar to the conversation we just had about Costco, where sometimes you're just in a hurry where it's like to do to do and spray it down. And I think maybe there there could be there was days where the toilets weren't flushed, or I mean, sorry, the toilets weren't sprayed down correctly or wiped down correctly because of the hurry we have to finish the entire classroom from the inside to the outside. Taking my time. So time efficiency would be my biggest. Responsibility in a situation like that, like that we're dealing with right now that I can think of."
+    },
+    {
+      "type": "trait",
+      "id": "trait_6",
+      "question": "Tell me about a time you had to work closely with another adult in a challenging situation. How did you navigate it?",
+      "candidate_transcript": "[Q8 Attempt 1]\nJust recently, we had, like I mentioned, a coworker that misconstrued or misunderstood feedback that was given. And just like I mentioned right now, it was about time efficiency. And I think it was a matter of feeling the comfort of having the teamwork. So that day, I remember communicating like, you know, we need you on this side. We can't spend 45 minutes to an hour in a section that takes 15 to 20 minutes maximum from all your coworkers. And I think, excuse me, it was tried to become a back and forth situation that I most definitely just did not allow. And it was not going to happen. And you're obviously taking something that I was trying to say with good intention, because we do need you, completely wrong. So once I felt like it was being misconstrued completely, it was taken straight to my master teacher, because the last thing I want is to create that kind of tension in my workplace. So I think I handled that by passing it down. And I do very similar at Costco. Okay. So if I'm cashiering and a member gets out of hand or a member gets bothered, it's more of a matter of, I'm noticing that I've done enough to try to deescalate the situation and it's not working. So let me get you someone that can help me and can help us resolve it. Master teacher pulled, I remember it was kind of pulled aside in separate situations, brought her in and then brought me in. And then it was a matter of like, hey, like we're a team. Like if you're being told something, and it's the other way around, like if someone tells teacher Amy to do something, I think it was very important to me that she highlighted it's the way we are perceiving things. And it comes down most of the time to perception and it shouldn't have been perceived the way it was, because it wasn't with that intention. So I think eventually it did deescalate the situation. And the... The tension that was building up that just didn't have a need."
+    },
+    {
+      "type": "trait",
+      "id": "trait_7",
+      "question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+      "candidate_transcript": "[Q9 Attempt 1]\nChildren are unpredictable. Children are unpredictable, but they also are very predictable based on your own consistency. And I think it has a lot to do with structure. It has a lot to do with routine, with nature. I mean, sorry, with nurturing them and just showing them and ensuring safety with them and showing them that I am your friend and I also am here to teach you things that you don't know. And I think one thing I've learned about myself is that if I thought I loved this field to begin with, I'm more in love with it now that I'm a year in. And I have nothing but a huge motivation to just grow wherever. I go and it's such a rewarding job."
+    },
+    {
+      "type": "trait",
+      "id": "trait_8",
+      "question": "Tell me about how you physically care for infants or toddlers during routines like feeding, diapering, or comforting.",
+      "candidate_transcript": "[Q10 Attempt 1]\num depending on their skill set we in in our class we do towards the end of the year we try to focus a lot of transitioning if we we see or feel that they're ready um to transition into toileting um but i'm sorry did you want me to explain what i do with them for diapering okay our exact process would be um you always ensure either if they're on the table or on the changing table or standing like i said when we do transition into toileting approximately two years of age and and on we work from 12 months to three years in my classroom so from two years old and on if we feel like they're ready we start diapering standing up um always make sure that you're wearing gloves we remove the dirty diaper we wipe down um if it's a bm we do use uh bags so we'll bag absolutely everything and all of it um always make sure you're not touching whatever they they uh if they urinated or or they had a bm we remove our gloves and then we apply a clean diaper if it is that the child um needs any sort of um we remove the dirty diaper we wipe down if it's a bm we do use a bag so we'll bag absolutely everything if it's a bm we remove our gloves and then we apply a clean diaper if it's a bm we do use a diaper cream or diaper ointment it's only for a classified teacher or my master teacher to apply so i mean i've seen it because i love to see and learn what we have to do in certain procedures but i myself have not applied and then we go ahead and put their diapers if they're in the skill set to pull up their own pants pull down their own pants they do so and then we wash our hands for over 30 to 45 seconds and if they're on the table um about the same amount of time if they're on the table um about the same procedure is just the difference with lifting up their legs correctly and then putting on the diaper i like to have them use our little stairs because it is a skill set that eventually they will learn so i like making sure that they're in the right position to see where they're going to see where they're stepping and then the same way have them um wash their hands and then we sat and then we sanitize then we sanitize wherever they were yes we actually have a uh online logging system so absolutely everything we do from nap time to diaper changing toileting changing clothes we we log and and from our end we can see it and also parents are able to access it"
+    },
+    {
+      "type": "trait",
+      "id": "trait_9",
+      "question": "How do you understand what a nonverbal child needs when they’re crying or upset? Can you walk me through how you respond in those moments?",
+      "candidate_transcript": "[Q11 Attempt 1]\nA nonverbal child. I've experienced in one year three nonverbal children and I think your biggest, I think my biggest goal is always to make sure that they're able to access and and they have everything that all the other classmates are having and experiencing. So I feel I don't want to say that it's easy to know what they need because of course the language isn't there but if you just pay attention to all children and whatever skill set they're at they are telling you one way or another what they need, what hurts or what's uncomfortable or if they're enjoying themselves or not and recently we've been doing very good with a nonverbal child that is now using her words but at the very beginning it was a lot of offering. Is it this that you need or is it this that you need and offering it to her and showing her and most of the time if it was a no or if that's not what she wanted or if that's not what was making her uncomfortable or not satisfying her or helping the situation and that was also there was many other cues in her in her physical to show us that. That's not what she wanted and when she was happier if that was what she needed she would calm down or or she would show us and I think there's there's many."
+    },
+    {
+      "type": "custom",
+      "id": "FT-or-PT",
+      "question": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+      "candidate_transcript": "[Q12 Attempt 1]\nI am looking for full-time. I do see online that you only have full-time in Long Beach. So I just wanted to discuss with you what your difference was between part-time hours and full-time hours, because I do see that you have a part-time in Hawthorne. Oh, got it. So they're both full-time. Right. So you guys, do you guys do like DRDPs, what you would call them, or observations? We just finished ours and you need the time. You need the time because Daniel tapped me into that school time and it's very difficult to pull away. Absolutely. I understand. So what does a full-time position look like? Got it."
+    },
+    {
+      "type": "custom",
+      "id": "Not-Avail",
+      "question": "Are there any hours you are absolutely not available to work?",
+      "candidate_transcript": "[Q13 Attempt 1]\nat Hawthorne End in Long Beach and that's the only position you had you only had one okay yes yeah that 405 with all those trucks is not fun I know I was Michael also told me about Lancaster right is that where it is Palmdale yes he told me I was like oh no I didn't know thank you very grateful but super far I'm extremely extremely interested in Hawthorne only because it's where I'm based and I'm still currently in school so I think it just works out perfectly fine but I mean up to you I don't know your hiring process and how it would work or if I made it I would say for now just because of class hours for Fridays if Fridays can stay off of the table I would really appreciate that because I did accommodate myself since it's my last semester I accommodated myself to push all my classes back to back on Fridays that way I can do I work at the center Monday through Thursday full time and then I work at Costco weekends I'm praying in my future although Costco's been a great company to me to let go of it because this is the career that I want and I do want to go all in and be full time completely and just devote myself to the career that I work so hard for so for now up until June 8th exactly which will be my commencement date it would be Fridays are off the table"
+    },
+    {
+      "type": "custom",
+      "id": "Start",
+      "question": "When could you start if we decide to move forward?",
+      "candidate_transcript": "[Q14 Attempt 1]\nUm, if I could be notified and with respects to my, to my current center to give at least a two, three week notice, that would be perfect."
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+name: Contract review task unit
+description: Track one executable contract-review unit.
+title: "[Contract Task] <unit-name>"
+labels:
+  - contracts
+  - task
+body:
+  - type: input
+    id: unit_name
+    attributes:
+      label: Unit name
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Keep this to one developer and one mergeable unit.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Include exact commands and expected outcomes.
+      value: |
+        - [ ] `python tools/check_contract_review.py --section <section>` passes.
+        - [ ] Referenced docs/contracts are updated.
+        - [ ] Security gates for this scope are checked.
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies and integrity
+      description: Internal dependencies touched and how integrity was validated.

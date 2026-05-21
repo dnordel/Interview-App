@@ -1,0 +1,19 @@
+module:
+  name: interview_app_views_start_screen_view
+  language: python
+  path: src/interview_app/views/start_screen_view.py
+  version: 1.0.0
+  description: Start screen and dashboard view composition for the interview app.
+functions: []
+classes:
+- name: StartScreenView
+  description: Renders the start screen and dashboard cards.
+  locked: false
+  attributes: {}
+  methods: []
+data_structures: []
+dependencies:
+- app_content
+- dashboard_today
+- onboarding_ui_helpers
+- ux_metrics

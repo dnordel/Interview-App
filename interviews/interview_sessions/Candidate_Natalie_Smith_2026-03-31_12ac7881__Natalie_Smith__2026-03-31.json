@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-03-31T18:37:34.516399Z",
+  "updated_at": "2026-03-31T18:50:01.413931Z",
+  "interview": {
+    "interview_id": "Candidate_Natalie_Smith_2026-03-31_12ac7881",
+    "candidate_name": "Natalie Smith",
+    "interview_date": "2026-03-31"
+  },
+  "questions": {
+    "0": {
+      "flow_idx": 0,
+      "item_type": "custom",
+      "item_id": "Why-ECE",
+      "notes": {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q1 Attempt 1]\num for me early childhood education has always been a big thing because you know before having kids I do have kids um and it's always been be the person that you wanted to be or that you needed when you were younger and that was something that really stood out to me um before having kids and now it's just you know wanting to lead by example and wanting to have some sort of positive impact whether you're impacting one person in a positive way or multiple um so I just want to have a sort of positive and long-lasting impact um that's why it's so important to me um I I have I have at least a 12 um sorry I'm just trying to go back I have ECE 101 um so it's child growth and development uh recreational leadership and then I have um so I have the three units an infant and toddler as well and then um child and family and community and curriculum theory methods and materials so it's about",
+      "updated_at": "2026-03-31T18:37:48.150240Z"
+    },
+    "1": {
+      "flow_idx": 1,
+      "item_type": "custom",
+      "item_id": "Why-LPL",
+      "notes": {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q2 Attempt 1]\nUm, it really, it came to my attention just because it was so close by to where we just moved and a lot of what, um, like a lot of what you explained that you're, um, going based off of with, you know, the family and like community style dining, um, that's something I already know. Um, and then just like the age group that I'm already very comfortable with. So I feel like that's something that I've already been shining in where I used to work at. So I think that's something that I can bring to the table and it's something that, um, I feel very comfortable with.",
+      "updated_at": "2026-03-31T18:38:33.258365Z"
+    },
+    "2": {
+      "flow_idx": 2,
+      "item_type": "trait",
+      "item_id": "trait_1",
+      "notes": {
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q3 Attempt 1]\num when they're having a hard time emotionally you can very see it like you can see it in the way that they carry themselves um so I noticed right off the bat just their whole demeanor changed and just the simple like going down to their level talking like eye to eye making that like connection making them feel comfortable enough to communicate and express what exactly is going on um that was the main step there that I've taken",
+      "updated_at": "2026-03-31T18:39:24.442116Z"
+    },
+    "3": {
+      "flow_idx": 3,
+      "item_type": "trait",
+      "item_id": "trait_2",
+      "notes": {
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q4 Attempt 1]\nI mean, the last time that I felt that I really, I just took that moment to take that breather and just really thought about where I am and why I'm there and just kind of focus like this is not that moment to feel whatever I'm feeling because I am not here to feel that I'm here to be present for the kids and be there for them. So kind of just, you know.",
+      "updated_at": "2026-03-31T18:40:23.930542Z"
+    },
+    "4": {
+      "flow_idx": 4,
+      "item_type": "trait",
+      "item_id": "trait_3",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q5 Attempt 1]\njust take that extra time, even if it takes a little bit longer, to just really talk to them, communicate with them what exactly you're doing. Just be very vocal about, like, hey, this is what I'm going to do. Constantly ask, like, hey, I'm going to, for example, change your diaper. Are you okay with that? Just be constantly communicating with them.",
+      "updated_at": "2026-03-31T18:41:25.602456Z"
+    },
+    "5": {
+      "flow_idx": 5,
+      "item_type": "trait",
+      "item_id": "trait_4",
+      "notes": {
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q6 Attempt 1]\nthere was there was a situation with a child where they were constantly like we um per licensing we do have to have every child down on a mat um and we were just requiring them to be down and the parent did not feel okay with us having their child on the mat um so we just took that extra step to whenever we could um when I could message them I would just make that parent aware and be like hey this child is laying down she is down on the mat and just explain to her like the licensing rules and regulations that we had at that facility and just explain to her the whys of it and just be in constant communication and let her know what was going on and eventually it did kind of diffuse that and made her feel a little bit more comfortable and understand what was happening and all",
+      "updated_at": "2026-03-31T18:42:54.978924Z"
+    },
+    "6": {
+      "flow_idx": 6,
+      "item_type": "trait",
+      "item_id": "trait_5",
+      "notes": {
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q7 Attempt 1]\nSo for lesson plans, a lot of it was just trying to, like, figure out, like, how it fits to every, like, to every individual child, but also the class as a whole. And kind of just having too many, like, high expectations as far as, like, this is what we're going to do and this is when we're going to do it. And for me, it felt like it didn't go as planned because it didn't go into, like, it didn't fit into, like, time that I had set originally for what was going to happen. I mean, it ended up working out in the end, but it was more of a learning experience for myself as far as you can't really set those kinds of time limits.",
+      "updated_at": "2026-03-31T18:44:17.456820Z"
+    },
+    "7": {
+      "flow_idx": 7,
+      "item_type": "trait",
+      "item_id": "trait_6",
+      "notes": {
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q8 Attempt 1]\nUm, I feel, I feel like I'm repeating myself so much when I say how big communication is in this, um, that I did have an instance where there was a, another teacher, a co-teacher in the same classroom and we were just constantly butting heads because it was, I was going based on like one certain curriculum they were going based off what they learned. So it was just kind of just like sitting down and talking to each other and it's like, hey, like this is, this is what's expected of us. This is what we're expecting of each other. So how do we kind of meet that halfway in a way that's going to make sense for both of us, but it's also going to benefit the kids and, you know, what, at the end of the day, what's going to be in the child's best interest. Interest.",
+      "updated_at": "2026-03-31T18:45:30.691891Z"
+    },
+    "8": {
+      "flow_idx": 8,
+      "item_type": "trait",
+      "item_id": "trait_7",
+      "notes": {
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q9 Attempt 1]\nThe big one for me is we are both learning and we are both growing at the same time. So it doesn't matter, like, at least in my experience, it doesn't matter how many years I've done this. Each child is so different that every time it's going to be like starting over and we're just going to be going through this path at the same time. And so it's just it it made it from before I went in with this mentality of like one way of learning is a one size fits all. And now it's like. There's different ways, different approaches, and we're all just going to be learning at the same time and we're all learning and growing together.",
+      "updated_at": "2026-03-31T18:46:31.676504Z"
+    },
+    "9": {
+      "flow_idx": 9,
+      "item_type": "trait",
+      "item_id": "trait_10",
+      "notes": {
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q10 Attempt 1]\nThis one was actually pretty recent for me. We've, we had some experiences where I had to actually, at drop off, remove the child from the parent and kind of block the door because this child was a runner. And for safety reasons, obviously, we couldn't have that. It was very challenging for me because I had to figure out how to navigate, how to be in charge of running a classroom with, at the time, it was 12 to 1. So how do I run that and make sure they're okay while also making sure this child doesn't run away? So we figured out, like, different methods. Different approaches as far as, like, hey, if we drop off at this time. Again, a lot of communicating with the parents. But figuring out when the sweet spot is for drop off. And a lot of, like, trial and error came with it. But that was a big one that challenged the whole, like, it's not a one-size-fits-all type thing. And just how do we accomplish that? And how do we accommodate that? And how do we make it more comfortable for that child specifically? So that was a big learning.",
+      "updated_at": "2026-03-31T18:48:25.541827Z"
+    },
+    "10": {
+      "flow_idx": 10,
+      "item_type": "trait",
+      "item_id": "trait_11",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-31T18:48:23.437314Z"
+    },
+    "11": {
+      "flow_idx": 11,
+      "item_type": "custom",
+      "item_id": "FT-or-PT",
+      "notes": {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "part-time, but open to full-time",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q12 Attempt 1]\nUm, I'm currently looking for part-time. Um, I'm open to full-time if I can try to figure out",
+      "updated_at": "2026-03-31T18:48:51.855538Z"
+    },
+    "12": {
+      "flow_idx": 12,
+      "item_type": "custom",
+      "item_id": "Not-Avail",
+      "notes": {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "wednesday after 12 pm",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q13 Attempt 1]\nI think for sure Wednesdays no later than like 12 but other than that",
+      "updated_at": "2026-03-31T18:49:13.906306Z"
+    },
+    "13": {
+      "flow_idx": 13,
+      "item_type": "custom",
+      "item_id": "Pay",
+      "notes": {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$22-$23, negotiable",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q14 Attempt 1]\nUm, I was going a little bit based off like, uh, my previous pay and the qualifications that I had. So I was looking at about 2023 hourly. Yes. Within reason.",
+      "updated_at": "2026-03-31T18:49:45.842390Z"
+    },
+    "14": {
+      "flow_idx": 14,
+      "item_type": "custom",
+      "item_id": "Start",
+      "notes": {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "two weeks",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q15 Attempt 1]\nI can start within the next two weeks that way",
+      "updated_at": "2026-03-31T18:50:01.413931Z"
+    }
+  }
+}

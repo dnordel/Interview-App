@@ -1,0 +1,291 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-03-20T16:39:59.317783Z",
+  "updated_at": "2026-03-20T17:04:12.164606Z",
+  "interview": {
+    "interview_id": "Candidate_Ruby_Jean_Gamboa_2026-03-20_ca920a6c",
+    "candidate_name": "Ruby Jean Gamboa",
+    "interview_date": "2026-03-20"
+  },
+  "questions": {
+    "0": {
+      "flow_idx": 0,
+      "item_type": "custom",
+      "item_id": "Why-ECE",
+      "notes": {
+        "question_text": "Tell me a little about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q1 Attempt 1]",
+      "updated_at": "2026-03-20T16:40:06.037781Z"
+    },
+    "1": {
+      "flow_idx": 1,
+      "item_type": "custom",
+      "item_id": "Why-LPL",
+      "notes": {
+        "question_text": "Why are you applying to our company, Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q2 Attempt 1]",
+      "updated_at": "2026-03-20T16:41:51.173488Z"
+    },
+    "2": {
+      "flow_idx": 2,
+      "item_type": "trait",
+      "item_id": "trait_1",
+      "notes": {
+        "raw_score": 5,
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": []
+      },
+      "candidate_transcript": "[Q3 Attempt 1]",
+      "updated_at": "2026-03-20T16:43:54.751686Z"
+    },
+    "3": {
+      "flow_idx": 3,
+      "item_type": "trait",
+      "item_id": "trait_2",
+      "notes": {
+        "raw_score": 4,
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": [
+          "S_SELF_REG_AWARE",
+          "S_CALM_PRESENCE",
+          "S_CHILD_CENTERED",
+          "S_REASONING_EXPLICIT",
+          "S_ADAPT",
+          "S_RESPECTFUL_LANGUAGE",
+          "S_REFLECT"
+        ]
+      },
+      "candidate_transcript": "[Q4 Attempt 1]",
+      "updated_at": "2026-03-20T16:46:35.307265Z"
+    },
+    "4": {
+      "flow_idx": 4,
+      "item_type": "trait",
+      "item_id": "trait_3",
+      "notes": {
+        "raw_score": 5,
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": [
+          "S_OBSERVE_CUES",
+          "S_PROCESS_STRUCTURED",
+          "S_ADAPT",
+          "S_RESPONDS_TO_CUES",
+          "S_CALM_PRESENCE",
+          "S_CHILD_CENTERED",
+          "S_REASONING_EXPLICIT",
+          "S_BALANCE_EMPATHY_BOUNDARY",
+          "S_VALIDATE"
+        ]
+      },
+      "candidate_transcript": "[Q5 Attempt 1]",
+      "updated_at": "2026-03-20T16:48:26.761420Z"
+    },
+    "5": {
+      "flow_idx": 5,
+      "item_type": "trait",
+      "item_id": "trait_4",
+      "notes": {
+        "raw_score": 4,
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": [
+          "S_OPEN_FEEDBACK",
+          "S_OWNERSHIP",
+          "S_GROWTH_MINDSET",
+          "S_ADAPT",
+          "S_PROCESS_STRUCTURED",
+          "S_REASONING_EXPLICIT",
+          "S_EFFECTIVENESS_EVAL",
+          "S_REFLECT",
+          "S_RESPECTFUL_LANGUAGE"
+        ]
+      },
+      "candidate_transcript": "[Q6 Attempt 1]",
+      "updated_at": "2026-03-20T16:54:06.667460Z"
+    },
+    "6": {
+      "flow_idx": 6,
+      "item_type": "trait",
+      "item_id": "trait_5",
+      "notes": {
+        "raw_score": 4,
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": [
+          "S_OWNERSHIP",
+          "S_PROCESS_STRUCTURED",
+          "S_REASONING_EXPLICIT",
+          "S_EFFECTIVENESS_EVAL",
+          "S_REFLECT",
+          "S_ADAPT",
+          "S_GROWTH_MINDSET",
+          "S_RESPECTFUL_LANGUAGE"
+        ]
+      },
+      "candidate_transcript": "[Q7 Attempt 1]",
+      "updated_at": "2026-03-20T16:56:25.841842Z"
+    },
+    "7": {
+      "flow_idx": 7,
+      "item_type": "trait",
+      "item_id": "trait_6",
+      "notes": {
+        "raw_score": 5,
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": [
+          "S_PERSPECTIVE_TAKING",
+          "S_RESPECTFUL_LANGUAGE",
+          "S_OWNERSHIP",
+          "S_ADAPT",
+          "S_PROCESS_STRUCTURED",
+          "S_REASONING_EXPLICIT",
+          "S_BALANCE_CHILD_GROUP",
+          "S_EFFECTIVENESS_EVAL",
+          "S_VALIDATE",
+          "S_REFLECT"
+        ]
+      },
+      "candidate_transcript": "[Q8 Attempt 1]",
+      "updated_at": "2026-03-20T16:56:45.125494Z"
+    },
+    "8": {
+      "flow_idx": 8,
+      "item_type": "trait",
+      "item_id": "trait_7",
+      "notes": {
+        "raw_score": 5,
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": [
+          "S_EFFECTIVENESS_EVAL",
+          "S_GROWTH_MINDSET",
+          "S_REFLECT",
+          "S_ADAPT"
+        ]
+      },
+      "candidate_transcript": "[Q9 Attempt 1]",
+      "updated_at": "2026-03-20T16:59:03.396054Z"
+    },
+    "9": {
+      "flow_idx": 9,
+      "item_type": "trait",
+      "item_id": "trait_8",
+      "notes": {
+        "raw_score": 5,
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": [
+          "S_GENTLE_HANDLING",
+          "S_RESPONDS_TO_CUES",
+          "S_CALM_PRESENCE",
+          "S_BALANCE_EFFICIENCY_RELATIONSHIP",
+          "S_CHILD_CENTERED",
+          "S_ADAPT",
+          "S_PROCESS_STRUCTURED",
+          "S_REASONING_EXPLICIT"
+        ]
+      },
+      "candidate_transcript": "[Q10 Attempt 1]",
+      "updated_at": "2026-03-20T16:59:19.858443Z"
+    },
+    "10": {
+      "flow_idx": 10,
+      "item_type": "trait",
+      "item_id": "trait_9",
+      "notes": {
+        "raw_score": 5,
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": [
+          "S_OBSERVE_CUES",
+          "S_SUBTLE_CUES",
+          "S_PROCESS_LOOP",
+          "S_ADAPT",
+          "S_CALM_PRESENCE",
+          "S_SOOTHING",
+          "S_REASONING_EXPLICIT",
+          "S_EFFECTIVENESS_EVAL",
+          "S_PROCESS_STRUCTURED"
+        ]
+      },
+      "candidate_transcript": "[Q11 Attempt 1]",
+      "updated_at": "2026-03-20T17:01:38.112851Z"
+    },
+    "11": {
+      "flow_idx": 11,
+      "item_type": "custom",
+      "item_id": "FT-or-PT",
+      "notes": {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full-time, but not available on Tuesdays, can work until 4 on Thursday.",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q12 Attempt 1]",
+      "updated_at": "2026-03-20T17:02:38.724218Z"
+    },
+    "12": {
+      "flow_idx": 12,
+      "item_type": "custom",
+      "item_id": "Not-Avail",
+      "notes": {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "not available on Tuesdays, can work until 4 on Thursday.",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-20T17:02:40.141911Z"
+    },
+    "13": {
+      "flow_idx": 13,
+      "item_type": "custom",
+      "item_id": "Start",
+      "notes": {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "asap",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q14 Attempt 1]",
+      "updated_at": "2026-03-20T17:03:37.509362Z"
+    },
+    "14": {
+      "flow_idx": 14,
+      "item_type": "custom",
+      "item_id": "Pay",
+      "notes": {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$19-20.",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-03-20T17:04:12.164606Z"
+    }
+  }
+}

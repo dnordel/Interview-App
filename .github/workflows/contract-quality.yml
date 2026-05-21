@@ -1,0 +1,41 @@
+name: Contract Quality
+
+on:
+  pull_request:
+    paths:
+      - 'contracts/**'
+      - 'docs/contract_*.yaml'
+      - 'docs/CONTRACT_REVIEW_*.md'
+      - 'tools/check_contract_review.py'
+      - 'scripts/contract_review/**'
+      - 'tests/test_*contract*.py'
+      - '.github/workflows/contract-quality.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  contract-review-checks:
+    name: Contract drift checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install test dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run section-by-section drift checks
+        run: scripts/contract_review/run_section_checks.sh
+
+      - name: Run contract interface tests
+        run: |
+          pytest \
+            tests/test_onboarding_contract_interfaces.py \
+            tests/test_interview_app_contract_interfaces.py \
+            tests/test_interview_root_contracts.py
