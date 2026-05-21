@@ -16,3 +16,7 @@
 
 ## 2026-05-21
 - [x] Add local Hugging Face executive and per-answer interview-note summaries in DOCX export with safe "Summary unavailable" fallback behavior.
+
+## 2026-05-21 (reliability follow-up)
+- [x] Harden local interview summarizer pipeline initialization failures so DOCX export continues with explicit fallback text when model/backend loading fails.
+- [x] Confirmed `SPEC_TEMPLATE.md` is absent in this repository; no spec-template update was applied.

@@ -2,7 +2,7 @@ module:
   name: local_summary
   language: python
   path: src/local_summary.py
-  version: 1.0.0
+  version: 1.0.1
   description: Local Hugging Face summarization helpers for interview executive and per-answer summaries with safe fallbacks.
 functions: []
 classes:
@@ -24,7 +24,7 @@ classes:
       type: int
   methods: []
 - name: LocalInterviewSummarizer
-  description: Local transformer-backed summarizer with runtime-safe fallback strings.
+  description: Local transformer-backed summarizer with runtime-safe fallback strings even when pipeline initialization fails.
   locked: false
   attributes: {}
   methods:
@@ -78,7 +78,7 @@ classes:
     exceptions: []
     side_effects: none
   - name: _get_generator
-    description: Lazily initialize and cache the summarization pipeline.
+    description: Lazily initialize and cache the summarization pipeline with guarded initialization failure handling.
     locked: false
     inputs: {}
     returns:

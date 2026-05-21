@@ -10,6 +10,9 @@ except Exception:  # pragma: no cover
     pipeline = None  # type: ignore[assignment]
 
 
+SUMMARY_UNAVAILABLE_MESSAGE = "Summary unavailable (local model unavailable)"
+
+
 @dataclass(frozen=True)
 class SummarySettings:
     model_id: str = "facebook/bart-large-cnn"
@@ -27,11 +30,12 @@ class LocalInterviewSummarizer:
         self._settings = settings or SummarySettings()
         self._generator: Any = None
         self._generator_lock = Lock()
+        self._generator_init_failed = False
 
     def summarize_executive(self, transcript_text: str) -> str:
         text = self._normalize_input(transcript_text)
         if not text:
-            return "Summary unavailable"
+            return SUMMARY_UNAVAILABLE_MESSAGE
         prompt = (
             "Write an executive summary for an interview candidate. "
             "Include evaluative language covering communication quality, professionalism, "
@@ -43,7 +47,7 @@ class LocalInterviewSummarizer:
     def summarize_answer(self, answer_text: str, question_text: str = "") -> str:
         answer = self._normalize_input(answer_text)
         if not answer:
-            return "Summary unavailable"
+            return SUMMARY_UNAVAILABLE_MESSAGE
         question = str(question_text or "").strip()
         prompt = (
             "Summarize the candidate's answer with evaluative language. "
@@ -58,24 +62,34 @@ class LocalInterviewSummarizer:
         return normalized[: self._settings.max_input_chars]
 
     def _get_generator(self) -> Any:
+        if self._generator_init_failed:
+            return None
         if self._generator is not None:
             return self._generator
         with self._generator_lock:
+            if self._generator_init_failed:
+                return None
             if self._generator is not None:
                 return self._generator
             if pipeline is None:
+                self._generator_init_failed = True
                 return None
-            self._generator = pipeline("summarization", model=self._settings.model_id)
+            try:
+                self._generator = pipeline("summarization", model=self._settings.model_id)
+            except Exception:
+                self._generator_init_failed = True
+                return None
             return self._generator
 
     def _generate_summary(self, prompt: str, min_length: int, max_length: int) -> str:
         generator = self._get_generator()
         if generator is None:
-            return "Summary unavailable"
+            return SUMMARY_UNAVAILABLE_MESSAGE
         try:
             outputs = generator(prompt, min_length=min_length, max_length=max_length, do_sample=False)
-            if not outputs:
-                return "Summary unavailable"
-            return str(outputs[0].get("summary_text") or "Summary unavailable").strip() or "Summary unavailable"
         except Exception:
-            return "Summary unavailable"
+            return SUMMARY_UNAVAILABLE_MESSAGE
+        if not outputs:
+            return SUMMARY_UNAVAILABLE_MESSAGE
+        summary_text = str(outputs[0].get("summary_text") or SUMMARY_UNAVAILABLE_MESSAGE).strip()
+        return summary_text or SUMMARY_UNAVAILABLE_MESSAGE
