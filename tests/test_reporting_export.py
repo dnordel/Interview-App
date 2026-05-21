@@ -145,6 +145,31 @@ class TestDocxExporterValidation(unittest.TestCase):
         self.assertIn("Executive eval summary", doc_text)
         self.assertIn("Answer Summary: Answer eval summary", doc_text)
 
+    def test_export_uses_pending_placeholder_when_summary_generation_deferred(self):
+        payload = {
+            "candidate": {
+                "name": "Ada",
+                "interview_date": "2026-02-20",
+                "track": "general",
+            },
+            "flow_transcript": [
+                {
+                    "type": "trait",
+                    "title": "Trait Question",
+                    "question": "Tell me about conflict resolution.",
+                    "candidate_transcript": "I de-escalate tension and align expectations.",
+                }
+            ],
+            "custom_answers": [],
+        }
+        with tempfile.TemporaryDirectory() as td:
+            exporter = DocxExporter(Path(td))
+            out_path = exporter.export(self._rubric(), payload, self._scoring(), include_generated_summaries=False)
+            doc = Document(out_path)
+            doc_text = "\n".join(paragraph.text for paragraph in doc.paragraphs)
+
+        self.assertIn("Summary pending/failed", doc_text)
+
 
 
 if __name__ == "__main__":

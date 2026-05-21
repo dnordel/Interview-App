@@ -2,7 +2,7 @@ module:
   name: interview_app_finalize_pipeline
   language: python
   path: src/interview_app/finalize_pipeline.py
-  version: 2.0.0
+  version: 2.1.0
   description: Contracts for finalize_pipeline module.
 functions:
 - name: validate_before_finalize
@@ -152,6 +152,14 @@ classes:
       type: None
     exceptions: []
     side_effects: updates in-memory state
+  - name: _should_route_to_start_screen_after_snapshot
+    description: FinalizePipelineController._should_route_to_start_screen_after_snapshot method.
+    locked: false
+    inputs: {}
+    returns:
+      type: bool
+    exceptions: []
+    side_effects: none
 data_structures: []
 dependencies:
 - app_content

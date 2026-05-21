@@ -20,3 +20,8 @@
 ## 2026-05-21 (reliability follow-up)
 - [x] Harden local interview summarizer pipeline initialization failures so DOCX export continues with explicit fallback text when model/backend loading fails.
 - [x] Confirmed `SPEC_TEMPLATE.md` is absent in this repository; no spec-template update was applied.
+- [x] Updated finalize UX to return to the start screen immediately while finalize/export continues in background.
+- [x] Added deferred-summary export mode that writes `Summary pending/failed` placeholders first, then retries summary generation in a background pass.
+- [x] Added locked-file save fallback for interview notes exports by writing suffixed `(updated N)` filenames when the original DOCX is open in Word.
+- [x] Prevented start-screen navigation until finalize captures an immutable snapshot of interview state to avoid cross-session scoring/export drift.
+- [x] Bound deferred summary retry path updates to the originating finalize correlation ID to avoid stale-path writes into new interview sessions.

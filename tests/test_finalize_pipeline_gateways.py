@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import queue
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -128,6 +129,22 @@ def test_finalize_pipeline_retry_safe_does_not_resend_after_first_failure(monkey
     assert result["director_packet"]["documents"]["final_report_path"] == "/tmp/final-notes.docx"
 
 
+def test_background_summary_retry_skips_state_mutation_on_correlation_mismatch(monkeypatch: pytest.MonkeyPatch) -> None:
+    app = _build_app(flow_recordings={1: {"base_name": "session1"}})
+    app.current_finalize_correlation_id = "new-finalize"
+    app.state.referral_packet["interview_notes_path"] = "/tmp/current-session.docx"
+    gateways = FinalizeGateways()
+    context = SimpleNamespace(payload={"candidate": {}}, scoring={})
+    monkeypatch.setattr(
+        "interview_app.finalize_gateways.DocxExporter",
+        lambda *_args, **_kwargs: SimpleNamespace(export=lambda *_a, **_k: "/tmp/old-session-updated.docx"),
+    )
+
+    gateways._schedule_summary_retry(app, context, "old-finalize")
+
+    assert app.state.referral_packet["interview_notes_path"] == "/tmp/current-session.docx"
+
+
 def test_finalize_pipeline_result_payload_invariants(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         "interview_app.finalize_pipeline.ScoringEngine.evaluate",
@@ -222,6 +239,40 @@ def test_warn_if_finalize_starts_with_pending_transcriptions() -> None:
     controller._warn_if_finalize_starts_with_pending_transcriptions()
 
     assert app.warning_message == PENDING_TRANSCRIPTION_WARNING
+
+
+def test_dispatch_finalize_work_does_not_route_to_start_screen_before_snapshot() -> None:
+    app = SimpleNamespace()
+    app.validate_before_finalize = lambda: None
+    app._show_finalize_partial_transcript_warning = lambda _message: None
+    app._show_finalize_progress = lambda: None
+    app._close_finalize_progress = lambda: None
+    app._start_finalize_worker = lambda **_kwargs: None
+    app.winfo_toplevel = lambda: app
+    app.lift = lambda: None
+    app.focus_force = lambda: None
+    app.show_start_screen_called = False
+    app.show_start_screen = lambda: setattr(app, "show_start_screen_called", True)
+    controller = FinalizePipelineController(app, shared_state=SimpleNamespace(), gateways=_GatewayStub())
+
+    controller._dispatch_finalize_work()
+
+    assert app.show_start_screen_called is False
+
+
+def test_poll_finalize_worker_routes_after_snapshot_capture() -> None:
+    app = _build_app(flow_recordings={1: {"base_name": "session1"}})
+    app._finalize_snapshot_captured = True
+    app._finalize_start_screen_routed = False
+    app.show_start_screen_called = False
+    app.show_start_screen = lambda: setattr(app, "show_start_screen_called", True)
+    app._refresh_finalize_processing_state = lambda: None
+    app.after = lambda _delay, _fn: None
+    controller = FinalizePipelineController(app, shared_state=SimpleNamespace(), gateways=_GatewayStub())
+
+    controller.poll_finalize_worker(queue.Queue(maxsize=1))
+
+    assert app.show_start_screen_called is True
 
 
 def test_handle_finalize_success_warns_on_partial_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
