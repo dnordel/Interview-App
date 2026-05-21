@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import threading
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -20,9 +21,31 @@ class FinalizeGateways:
 
     def export_report(self, app: Any, context: FinalizeContext) -> str:
         exporter = DocxExporter(Path(app.settings["base_dir"]) / "Indeed Interview Notes")
-        out_path = exporter.export(app._rubric_with_question_overrides(), context.payload, context.scoring)
+        out_path = exporter.export(
+            app._rubric_with_question_overrides(),
+            context.payload,
+            context.scoring,
+            include_generated_summaries=False,
+        )
+        self._schedule_summary_retry(app, context)
         app.state.referral_packet["interview_notes_path"] = Path(out_path).as_posix().strip()
-        return out_path
+        return Path(out_path).as_posix()
+
+    def _schedule_summary_retry(self, app: Any, context: FinalizeContext) -> None:
+        def worker() -> None:
+            exporter = DocxExporter(Path(app.settings["base_dir"]) / "Indeed Interview Notes")
+            try:
+                updated_path = exporter.export(
+                    app._rubric_with_question_overrides(),
+                    context.payload,
+                    context.scoring,
+                    include_generated_summaries=True,
+                )
+                app.state.referral_packet["interview_notes_path"] = Path(updated_path).as_posix().strip()
+            except Exception:
+                return
+
+        threading.Thread(target=worker, daemon=True).start()
 
     def export_integration(self, app: Any, context: FinalizeContext) -> Path:
         integration_payload = build_integration_payload(context.payload, context.scoring, include_flow_slices=True)

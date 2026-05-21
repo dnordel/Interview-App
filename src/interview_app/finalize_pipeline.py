@@ -40,6 +40,7 @@ class FinalizePipelineController:
         self.app.current_finalize_correlation_id = uuid4().hex
         self.app._show_finalize_progress()
         self._start_finalize_worker_non_blocking(attempt=1)
+        self.app.show_start_screen()
 
     def _start_finalize_worker_non_blocking(self, attempt: int) -> None:
         self.app._start_finalize_worker(attempt=attempt)
