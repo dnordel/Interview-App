@@ -26,20 +26,37 @@ Key principles (see [LANGUAGE.md](LANGUAGE.md) for the full list):
 - **The interface is the test surface.**
 - **One adapter = hypothetical seam. Two adapters = real seam.**
 
-This skill is _informed_ by the project's domain model — `CONTEXT.md` and any `docs/adr/`. The domain language gives names to good seams; ADRs record decisions the skill should not re-litigate. See [CONTEXT-FORMAT.md](../domain-model/CONTEXT-FORMAT.md) and [ADR-FORMAT.md](../domain-model/ADR-FORMAT.md).
+This skill is _informed_ by the project's domain model — `CONTEXT.md` and any `docs/adr/`. The domain language gives names to good seams; ADRs record decisions the skill should not re-litigate. Keep context entries short: term, meaning, invariants, examples, and owning modules. Keep ADRs short: title, status, context, decision, consequences, and links to changed files/contracts.
 
 ## Process
 
-### 1. Explore
+### 1. Preflight
 
-Read existing documentation first:
+Read repository guidance and source-of-truth docs before making any architecture or implementation recommendation:
 
+- `AGENTS.md` files that apply to the files under review
+- Relevant `contracts/*.contract.yaml` module contracts
+- `contracts/system.contract.yaml`
+- `contracts/architecture.contract.yaml`
+- `README.md`
+- `ROADMAP.md`
 - `CONTEXT.md` (or `CONTEXT-MAP.md` + each `CONTEXT.md` in a multi-context repo)
 - Relevant ADRs in `docs/adr/` (and any context-scoped `docs/adr/` directories)
 
-If any of these files don't exist, proceed silently — don't flag their absence or suggest creating them upfront.
+If optional context or ADR files don't exist, proceed silently — don't flag their absence or suggest creating them upfront.
 
-Then use the Agent tool with `subagent_type=Explore` to walk the codebase. Don't follow rigid heuristics — explore organically and note where you experience friction:
+Before any implementation recommendation, explicitly check:
+
+- input validation and type/shape safety
+- file path safety and directory traversal risk
+- secret/token exposure in code, logs, docs, tests, and generated artifacts
+- unsafe shell execution or privilege escalation paths
+- privacy for candidate, interview, onboarding, scoring, storage, and reporting records
+- fail-closed behavior for validation, finalize, send, export, and reporting flows
+- log, telemetry, diagnostic, and artifact redaction needs
+- dependency, network, and external API trust boundaries
+
+If runtime policy or the user permits sub-agents, use a sub-agent such as `subagent_type=Explore` to walk the codebase. If not permitted, explore locally. Don't follow rigid heuristics — explore organically and note where you experience friction:
 
 - Where does understanding one concept require bouncing between many small modules?
 - Where are modules **shallow** — interface nearly as complex as the implementation?
@@ -62,6 +79,8 @@ Present a numbered list of deepening opportunities. For each candidate:
 
 **ADR conflicts**: if a candidate contradicts an existing ADR, only surface it when the friction is real enough to warrant revisiting the ADR. Mark it clearly (e.g. _"contradicts ADR-0007 — but worth reopening because…"_). Don't list every theoretical refactor an ADR forbids.
 
+**Contract sync**: for every proposed code change, name the module contract(s) that must change, whether `contracts/system.contract.yaml` dependency relationships change, whether `contracts/architecture.contract.yaml` service/module relationships change, and whether any locked interface prevents the proposed shape. Do not recommend code changes that leave contracts drifting.
+
 Do NOT propose interfaces yet. Ask the user: "Which of these would you like to explore?"
 
 ### 3. Grilling loop
@@ -70,7 +89,8 @@ Once the user picks a candidate, drop into a grilling conversation. Walk the des
 
 Side effects happen inline as decisions crystallize:
 
-- **Naming a deepened module after a concept not in `CONTEXT.md`?** Add the term to `CONTEXT.md` — same discipline as `/domain-model` (see [CONTEXT-FORMAT.md](../domain-model/CONTEXT-FORMAT.md)). Create the file lazily if it doesn't exist.
+- **Naming a deepened module after a concept not in `CONTEXT.md`?** Add the term to `CONTEXT.md` using the context shape above. Create the file lazily if it doesn't exist.
 - **Sharpening a fuzzy term during the conversation?** Update `CONTEXT.md` right there.
-- **User rejects the candidate with a load-bearing reason?** Offer an ADR, framed as: _"Want me to record this as an ADR so future architecture reviews don't re-suggest it?"_ Only offer when the reason would actually be needed by a future explorer to avoid re-suggesting the same thing — skip ephemeral reasons ("not worth it right now") and self-evident ones. See [ADR-FORMAT.md](../domain-model/ADR-FORMAT.md).
+- **User rejects the candidate with a load-bearing reason?** Offer an ADR, framed as: _"Want me to record this as an ADR so future architecture reviews don't re-suggest it?"_ Only offer when the reason would actually be needed by a future explorer to avoid re-suggesting the same thing — skip ephemeral reasons ("not worth it right now") and self-evident ones. Use the ADR shape above.
+- **Creating or changing `CONTEXT.md` or ADRs?** Update `ROADMAP.md` when the decision changes planned work. Update module contracts, `contracts/system.contract.yaml`, and `contracts/architecture.contract.yaml` only when architecture or module interfaces change.
 - **Want to explore alternative interfaces for the deepened module?** See [INTERFACE-DESIGN.md](INTERFACE-DESIGN.md).
