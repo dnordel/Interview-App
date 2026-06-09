@@ -201,18 +201,66 @@ def test_assert_path_accessible_accepts_regular_files_and_rejects_missing_paths(
         scoring_engine_class._assert_path_accessible(tmp_path / "missing.json", "signal_dictionary")
 
 
+
+def test_runtime_bundle_rejects_paths_outside_runtime_bundle(scoring_engine_class, tmp_path):
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    contract_dir = tmp_path / "bundle"
+    contract_dir.mkdir()
+    config = {
+        "paths": {
+            "traits_dir": "../outside",
+            "signal_dictionary": "signals.json",
+            "output_dir": "results",
+        }
+    }
+    (contract_dir / "signals.json").write_text(json.dumps({"signals": []}), encoding="utf-8")
+    (contract_dir / "results").mkdir()
+
+    with pytest.raises(ValueError, match="escapes runtime bundle"):
+        scoring_engine_class.validate_configured_paths(config, contract_dir / "contract.yaml")
+
+
+def test_startup_schema_fails_closed_for_malformed_signal_dictionary(scoring_engine_class):
+    config = _sample_config()
+    signal_dictionary = {"signals": [{"id": "S1", "default_weight": "bad"}]}
+
+    with pytest.raises(TypeError, match="signal_dictionary.signals.0.default_weight"):
+        scoring_engine_class(config, signal_dictionary)
+
 def test_load_runtime_bundle_missing_contract_file_raises_file_not_found(scoring_engine_class, tmp_path):
     with pytest.raises(FileNotFoundError):
         scoring_engine_class.load_runtime_bundle(tmp_path / "missing.yaml")
 
 
-def test_load_traits_from_dir_loads_json_files(scoring_engine_class, tmp_path):
-    (tmp_path / "T1.json").write_text(json.dumps({"trait_id": "T1"}), encoding="utf-8")
+def test_load_traits_from_dir_loads_normalized_trait_files(scoring_engine_class, tmp_path):
+    trait_payload = {
+        "trait_id": "T1",
+        "question": "Question",
+        "core_signals": [{"id": "Q1", "maps_to": ["S1"], "base_weight": 2}],
+    }
+    (tmp_path / "T1.json").write_text(json.dumps(trait_payload), encoding="utf-8")
     (tmp_path / "notes.json").write_text(json.dumps({"ignored": True}), encoding="utf-8")
 
     traits = scoring_engine_class.load_traits_from_dir(tmp_path)
 
-    assert traits == [{"trait_id": "T1"}]
+    assert traits[0]["trait_id"] == "trait_1"
+    assert traits[0]["trait_aliases"] == ["trait_1", "T1"]
+    assert traits[0]["core_signals"] == [{
+        "id": "Q1",
+        "maps_to": ["S1"],
+        "base_weight": 2,
+        "ref": "S1",
+        "weight": 2,
+        "label": "S1",
+    }]
+
+
+def test_load_traits_from_dir_fails_closed_for_malformed_trait(scoring_engine_class, tmp_path):
+    (tmp_path / "T1.json").write_text(json.dumps({"trait_id": "T1"}), encoding="utf-8")
+
+    with pytest.raises(KeyError, match="question"):
+        scoring_engine_class.load_traits_from_dir(tmp_path)
 
 
 def test_loads_all_configured_traits_and_resolves_all_signal_refs(runtime_bundle, scoring_engine_class):

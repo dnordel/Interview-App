@@ -400,6 +400,22 @@ modules:
     - interview_session_store
     - interview_state
     - reporting
+  trait_based_scoring_engine:
+    path: Trait-Based Scoring/trait_based_scoring_engine.py
+    depends_on: []
+  trait_definition_loader:
+    path: src/trait_definition_loader.py
+    depends_on: []
+  trait_signal_schema:
+    path: src/trait_signal_schema.py
+    depends_on: []
+  trait_scoring_adapter:
+    path: src/trait_scoring_adapter.py
+    depends_on:
+    - reporting
+    - trait_based_scoring_engine
+    - trait_definition_loader
+    - trait_signal_schema
 module_metadata:
   document_flow_rule:
     canonical_field_name: interview_notes_document_path

@@ -4,8 +4,8 @@ app:
   mode: "multi_trait_session"
 
 paths:
-  traits_dir: "./traits"
-  signal_dictionary: "./shared_signal_dictionary_v2.json"
+  traits_dir: "."
+  signal_dictionary: "./shared_signal_dictionary.json"
   output_dir: "./results"
 
 session:
