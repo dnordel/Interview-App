@@ -2,13 +2,13 @@ module:
   name: trait_scoring_adapter
   language: python
   path: src/trait_scoring_adapter.py
-  version: 1.7.1
+  version: 1.8.0
   description: Stable adapter boundary between app trait state and finalize/export
     scoring consumers, using the configured runtime trait-definition JSON files as
     the source of truth.
 functions:
 - name: build_trait_scoring_payload
-  description: Normalize app trait state, invoke scoring, and return the shared finalize/export
+  description: Normalize app trait state, invoke active-track scoring, and return the shared finalize/export
     scoring payload.
   locked: false
   inputs:
@@ -159,8 +159,8 @@ functions:
   side_effects: none
 - name: invoke_scoring_engine
   description: Evaluate normalized trait state with the caller-resolved trait runtime
-    bundle and contract path only, failing closed after reconciling canonical rubric
-    trait ids with legacy runtime aliases.
+    bundle and contract path only, filtering runtime trait definitions and normalized
+    state to the active rubric track before engine invocation.
   locked: false
   inputs:
     rubric:
@@ -217,6 +217,51 @@ functions:
       required: true
   returns:
     type: Path
+  exceptions: []
+  side_effects: none
+- name: _filter_normalized_state_for_scoring_output
+  description: Filter normalized trait state to trait ids present in scoring output rows.
+  locked: false
+  inputs:
+    normalized_state:
+      type: dict[str, NormalizedTraitState]
+      required: true
+    engine_output:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: dict[str, NormalizedTraitState]
+  exceptions: []
+  side_effects: none
+- name: _filter_trait_definitions_for_track
+  description: Filter runtime trait definitions to traits applicable to the resolved rubric track.
+  locked: false
+  inputs:
+    rubric:
+      type: dict[str, Any]
+      required: true
+    track_key:
+      type: Any
+      required: true
+    trait_definitions:
+      type: list[TraitDefinition]
+      required: true
+  returns:
+    type: list[TraitDefinition]
+  exceptions: []
+  side_effects: none
+- name: _filter_normalized_state_for_trait_definitions
+  description: Filter normalized trait state to trait ids present in active runtime trait definitions.
+  locked: false
+  inputs:
+    normalized_state:
+      type: dict[str, NormalizedTraitState]
+      required: true
+    trait_definitions:
+      type: list[TraitDefinition]
+      required: true
+  returns:
+    type: dict[str, NormalizedTraitState]
   exceptions: []
   side_effects: none
 - name: _raise_for_rubric_runtime_mismatch

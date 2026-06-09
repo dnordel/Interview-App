@@ -155,6 +155,46 @@ class TestTraitScoringAdapter(unittest.TestCase):
         self.assertIn("trait_definitions", scoring["engine_metadata"])
         self.assertEqual(scoring["traits"][0]["notes"]["verbatim"], "Strong classroom example.")
 
+    def test_signal_scoring_filters_runtime_traits_to_active_track(self):
+        off_track_definition = {
+            "trait_id": "trait_off_track",
+            "question": "Off-track question.",
+            "core_signals": [{"ref": "OFF", "weight": 100}],
+            "extended_signal_groups": [],
+        }
+        rubric = build_rubric()
+        rubric["traits"].append(
+            {
+                "id": "trait_off_track",
+                "name": "Off Track",
+                "priority": "non-critical",
+                "weight": 100,
+                "applicable_tracks": ["other"],
+                "primary_question": "Off-track only",
+            }
+        )
+        runtime_bundle = _trait_runtime_bundle([*TRAIT_RUNTIME_DEFINITIONS, off_track_definition])
+
+        with patch("trait_scoring_adapter._load_runtime_bundle", return_value=runtime_bundle), patch(
+            "trait_scoring_adapter._load_trait_engine_class", return_value=_FakeTraitEngine
+        ):
+            scoring = build_trait_scoring_payload(
+                rubric,
+                "general",
+                {
+                    "trait_a": {"raw_score": 4, "selected_signal_ids": ["P1"]},
+                    "trait_b": {"raw_score": 4},
+                    "trait_c": {"raw_score": 4},
+                    "trait_off_track": {"raw_score": 4, "selected_signal_ids": ["OFF"]},
+                },
+            )
+
+        row_ids = {row["trait_id"] for row in scoring["rows"]}
+        self.assertEqual(row_ids, {"trait_a", "trait_b", "trait_c"})
+        self.assertNotIn("trait_off_track", scoring["normalized_state"])
+        self.assertEqual(scoring["max_weighted_total_included_traits"], 12)
+        self.assertEqual(scoring["scored_traits_count"], 3)
+
     def test_load_module_contract_runtime_bundle_returns_runtime_error_metadata_for_missing_runtime(self):
         with TemporaryDirectory() as temp_dir:
             module_contract_path = Path(temp_dir, "engine.contract.yaml")
@@ -770,7 +810,6 @@ class ScoringEngine:
     def test_selection_normalizer_ignores_raw_score_when_checkbox_variants_exist(self):
         self.assertEqual(_normalize_selected_signal_ids({"raw_score": 5, "selected_signal_ids": ["P1"]}), ["P1"])
         self.assertEqual(_normalize_selected_signal_ids({"raw_score": 1, "selected_signals": {"N1": True}}), ["N1"])
-
 
     def test_select_signal_refs_for_state_supports_runtime_signal_schema(self):
         trait_definition = {

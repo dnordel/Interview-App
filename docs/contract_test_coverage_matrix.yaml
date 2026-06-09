@@ -7011,6 +7011,33 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._filter_normalized_state_for_scoring_output
+  kind: function
+  tests:
+  - path: tests/test_trait_scoring_adapter.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._filter_trait_definitions_for_track
+  kind: function
+  tests:
+  - path: tests/test_trait_scoring_adapter.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._filter_normalized_state_for_trait_definitions
+  kind: function
+  tests:
+  - path: tests/test_trait_scoring_adapter.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
   symbol: trait_scoring_adapter._raise_for_rubric_runtime_mismatch
   kind: function
   tests:

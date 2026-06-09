@@ -54,13 +54,26 @@ def build_trait_scoring_payload(
         runtime_bundle=runtime_bundle,
         engine_runtime_contract_path=runtime_bundle["runtime_contract_path"],
     )
+    scoring_state = _filter_normalized_state_for_scoring_output(normalized_state, engine_output)
     return map_engine_output_to_normalized_shape(
         rubric=rubric,
         track_key=track_key,
-        normalized_state=normalized_state,
+        normalized_state=scoring_state,
         engine_output=engine_output,
         runtime_bundle=runtime_bundle,
     )
+
+
+def _filter_normalized_state_for_scoring_output(
+    normalized_state: dict[str, dict[str, Any]],
+    engine_output: dict[str, Any],
+) -> dict[str, dict[str, Any]]:
+    row_trait_ids = {
+        canonical_trait_id(row.get("trait_id"))
+        for row in engine_output.get("rows", []) or []
+        if canonical_trait_id(row.get("trait_id"))
+    }
+    return {trait_id: state for trait_id, state in normalized_state.items() if trait_id in row_trait_ids}
 
 
 def load_module_contract_runtime_bundle(
@@ -194,15 +207,17 @@ def invoke_scoring_engine(
         }
     )
     _validate_trait_scoring_configuration(rubric, track_key, trait_definitions, normalized_state)
+    active_trait_definitions = _filter_trait_definitions_for_track(rubric, track_key, trait_definitions)
+    active_state = _filter_normalized_state_for_trait_definitions(normalized_state, active_trait_definitions)
 
     engine = _build_trait_engine(runtime_bundle, runtime_contract_path)
-    selections = _build_trait_selections(trait_definitions, normalized_state)
-    session_result = engine.score_session(trait_definitions, selections)
+    selections = _build_trait_selections(active_trait_definitions, active_state)
+    session_result = engine.score_session(active_trait_definitions, selections)
     return _build_compatibility_engine_output(
         rubric=rubric,
         track_key=track_key,
-        normalized_state=normalized_state,
-        trait_definitions=trait_definitions,
+        normalized_state=active_state,
+        trait_definitions=active_trait_definitions,
         session_result=session_result,
     )
 
@@ -220,6 +235,28 @@ def _validate_trait_scoring_configuration(
 
     _raise_for_missing_trait_overlap(input_trait_ids, runtime_trait_ids)
     _raise_for_rubric_runtime_mismatch(resolved_track_key, rubric_trait_ids, runtime_trait_ids)
+
+
+def _filter_trait_definitions_for_track(
+    rubric: dict[str, Any],
+    track_key: Any,
+    trait_definitions: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    resolved_track_key = ReportingScoringEngine._resolve_track_key_for_scoring(rubric, track_key)
+    active_trait_ids = _trait_ids_from_rubric(rubric, resolved_track_key)
+    return [
+        trait_definition
+        for trait_definition in trait_definitions
+        if canonical_trait_id(trait_definition.get("trait_id")) in active_trait_ids
+    ]
+
+
+def _filter_normalized_state_for_trait_definitions(
+    normalized_state: dict[str, dict[str, Any]],
+    trait_definitions: list[dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    active_trait_ids = _trait_ids_from_runtime_definitions(trait_definitions)
+    return {trait_id: state for trait_id, state in normalized_state.items() if trait_id in active_trait_ids}
 
 
 def _trait_ids_from_runtime_definitions(trait_definitions: list[dict[str, Any]]) -> set[str]:
