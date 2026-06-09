@@ -224,6 +224,25 @@ def test_warn_if_finalize_starts_with_pending_transcriptions() -> None:
     assert app.warning_message == PENDING_TRANSCRIPTION_WARNING
 
 
+def test_dispatch_finalize_work_routes_to_start_screen_immediately() -> None:
+    app = SimpleNamespace()
+    app.validate_before_finalize = lambda: None
+    app._show_finalize_partial_transcript_warning = lambda _message: None
+    app._show_finalize_progress = lambda: None
+    app._close_finalize_progress = lambda: None
+    app._start_finalize_worker = lambda **_kwargs: None
+    app.winfo_toplevel = lambda: app
+    app.lift = lambda: None
+    app.focus_force = lambda: None
+    app.show_start_screen_called = False
+    app.show_start_screen = lambda: setattr(app, "show_start_screen_called", True)
+    controller = FinalizePipelineController(app, shared_state=SimpleNamespace(), gateways=_GatewayStub())
+
+    controller._dispatch_finalize_work()
+
+    assert app.show_start_screen_called is True
+
+
 def test_handle_finalize_success_warns_on_partial_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("interview_app.finalize_pipeline.messagebox.showinfo", lambda *_args, **_kwargs: None)
     app = _build_app(flow_recordings={1: {"base_name": "session1"}})

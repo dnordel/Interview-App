@@ -2,7 +2,7 @@ module:
   name: reporting
   language: python
   path: src/reporting.py
-  version: 1.1.2
+  version: 1.2.0
   description: Scoring, draft persistence, and report document export services.
 functions: []
 classes:
@@ -208,12 +208,31 @@ classes:
       scoring:
         type: dict[str, Any]
         required: true
+      include_generated_summaries:
+        type: bool
+        required: false
+        default: true
     returns:
       type: Path
     exceptions:
     - ReportingValidationError
     - OSError
     side_effects: Writes DOCX report file to disk.
+  - name: _save_document
+    description: Save report document and fall back to suffixed filename when target file is locked.
+    locked: false
+    inputs:
+      doc:
+        type: Document
+        required: true
+      out_path:
+        type: Path
+        required: true
+    returns:
+      type: Path
+    exceptions:
+    - OSError
+    side_effects: writes a Word document to disk
 data_structures: []
 dependencies:
 - app_content
