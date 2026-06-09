@@ -2,7 +2,7 @@ module:
   name: interview_app_finalize_gateways
   language: python
   path: src/interview_app/finalize_gateways.py
-  version: 2.1.1
+  version: 2.0.1
   description: Contracts for finalize_gateways module.
 functions: []
 classes:
@@ -26,24 +26,7 @@ classes:
     returns:
       type: str
     exceptions: []
-    side_effects: updates in-memory state and starts background summary refresh
-  - name: _schedule_summary_retry
-    description: FinalizeGateways._schedule_summary_retry method.
-    locked: false
-    inputs:
-      app:
-        type: Any
-        required: true
-      context:
-        type: FinalizeContext
-        required: true
-      finalize_correlation_id:
-        type: str
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: starts background thread
+    side_effects: updates in-memory state
   - name: export_integration
     description: FinalizeGateways.export_integration method.
     locked: false
@@ -117,4 +100,3 @@ dependencies:
 - integration_export
 - interview_app_finalize_context
 - reporting
-- threading

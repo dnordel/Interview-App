@@ -272,14 +272,7 @@ class DocxExporter:
 
         return "\n\n".join(transcript_segments).strip()
 
-    def export(
-        self,
-        rubric: dict[str, Any],
-        payload: dict[str, Any],
-        scoring: dict[str, Any],
-        *,
-        include_generated_summaries: bool = True,
-    ) -> Path:
+    def export(self, rubric: dict[str, Any], payload: dict[str, Any], scoring: dict[str, Any]) -> Path:
         candidate = self._require_candidate(payload)
         cname = self._require_candidate_field(candidate, "name")
         interview_date = self._require_candidate_field(candidate, "interview_date")
@@ -354,9 +347,7 @@ class DocxExporter:
         doc.add_paragraph(f"Outcome lock rule: {scoring['locked_rule'] if scoring['locked_rule'] else 'None'}")
 
         doc.add_heading("Executive Candidate Summary", level=2)
-        executive_summary = "Summary pending/failed"
-        if include_generated_summaries:
-            executive_summary = summarizer.summarize_executive(self._extract_full_candidate_transcript(payload))
+        executive_summary = summarizer.summarize_executive(self._extract_full_candidate_transcript(payload))
         doc.add_paragraph(executive_summary)
 
         doc.add_heading("Interview Flow (Scored + Non-scored in asked order)", level=2)
@@ -374,9 +365,7 @@ class DocxExporter:
                 cand_tx = (item.get("candidate_transcript") or "").strip()
 
                 if itype == "trait":
-                    answer_summary = "Summary pending/failed"
-                    if include_generated_summaries:
-                        answer_summary = summarizer.summarize_answer(cand_tx, qtext)
+                    answer_summary = summarizer.summarize_answer(cand_tx, qtext)
                     doc.add_paragraph(f"Answer Summary: {answer_summary}")
                     if cand_tx:
                         doc.add_paragraph(f"Candidate Answer (auto-transcribed): {cand_tx}")
@@ -392,9 +381,7 @@ class DocxExporter:
                     dq = "Yes" if item.get("absolute_disqualifier") else "No"
                     doc.add_paragraph(f"Absolute Disqualifier Checked: {dq}")
                 else:
-                    answer_summary = "Summary pending/failed"
-                    if include_generated_summaries:
-                        answer_summary = summarizer.summarize_answer(cand_tx, qtext)
+                    answer_summary = summarizer.summarize_answer(cand_tx, qtext)
                     doc.add_paragraph(f"Answer Summary: {answer_summary}")
                     if cand_tx:
                         doc.add_paragraph(f"Candidate Answer (auto-transcribed): {cand_tx}")
@@ -448,21 +435,8 @@ class DocxExporter:
         school_part = sanitize_filename(school) if school else "UnknownSchool"
         filename = f"{interview_date} - {school_part} - {sanitize_filename(cname)} - Interview.docx"
         out_path = self.output_dir / filename
-        return self._save_document(doc, out_path)
-
-    def _save_document(self, doc: Document, out_path: Path) -> Path:
-        try:
-            doc.save(out_path)
-            return out_path
-        except PermissionError:
-            for suffix in range(1, 6):
-                candidate = out_path.with_name(f"{out_path.stem} (updated {suffix}){out_path.suffix}")
-                try:
-                    doc.save(candidate)
-                    return candidate
-                except PermissionError:
-                    continue
-            raise
+        doc.save(out_path)
+        return out_path
 
 
 # =========================

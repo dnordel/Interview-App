@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import threading
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -20,35 +19,10 @@ class FinalizeGateways:
     sent_referral_keys: set[str] = field(default_factory=set)
 
     def export_report(self, app: Any, context: FinalizeContext) -> str:
-        finalize_correlation_id = str(getattr(app, "current_finalize_correlation_id", "") or "")
         exporter = DocxExporter(Path(app.settings["base_dir"]) / "Indeed Interview Notes")
-        out_path = exporter.export(
-            app._rubric_with_question_overrides(),
-            context.payload,
-            context.scoring,
-            include_generated_summaries=False,
-        )
-        self._schedule_summary_retry(app, context, finalize_correlation_id)
+        out_path = exporter.export(app._rubric_with_question_overrides(), context.payload, context.scoring)
         app.state.referral_packet["interview_notes_path"] = Path(out_path).as_posix().strip()
-        return Path(out_path).as_posix()
-
-    def _schedule_summary_retry(self, app: Any, context: FinalizeContext, finalize_correlation_id: str) -> None:
-        def worker() -> None:
-            exporter = DocxExporter(Path(app.settings["base_dir"]) / "Indeed Interview Notes")
-            try:
-                updated_path = exporter.export(
-                    app._rubric_with_question_overrides(),
-                    context.payload,
-                    context.scoring,
-                    include_generated_summaries=True,
-                )
-                if str(getattr(app, "current_finalize_correlation_id", "") or "") != finalize_correlation_id:
-                    return
-                app.state.referral_packet["interview_notes_path"] = Path(updated_path).as_posix().strip()
-            except Exception:
-                return
-
-        threading.Thread(target=worker, daemon=True).start()
+        return out_path
 
     def export_integration(self, app: Any, context: FinalizeContext) -> Path:
         integration_payload = build_integration_payload(context.payload, context.scoring, include_flow_slices=True)

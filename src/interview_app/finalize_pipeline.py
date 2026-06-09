@@ -38,8 +38,6 @@ class FinalizePipelineController:
         self.app.validate_before_finalize()
         self._warn_if_finalize_starts_with_pending_transcriptions()
         self.app.current_finalize_correlation_id = uuid4().hex
-        self.app._finalize_snapshot_captured = False
-        self.app._finalize_start_screen_routed = False
         self.app._show_finalize_progress()
         self._start_finalize_worker_non_blocking(attempt=1)
 
@@ -76,7 +74,6 @@ class FinalizePipelineController:
         self.app._hydrate_state_from_session_store()
 
         context = build_finalize_context(self.app, scoring, warnings, transcript_metadata)
-        self.app._finalize_snapshot_captured = True
         out_path = self.gateways.export_report(self.app, context)
         integration_path = self.gateways.export_integration(self.app, context)
         integration_path_str = Path(integration_path).as_posix()
@@ -138,9 +135,6 @@ class FinalizePipelineController:
         try:
             status = q.get_nowait()
         except queue.Empty:
-            if self._should_route_to_start_screen_after_snapshot():
-                self.app.show_start_screen()
-                self.app._finalize_start_screen_routed = True
             self.app._refresh_finalize_processing_state()
             self.app.after(150, lambda: self.poll_finalize_worker(q))
             return
@@ -167,11 +161,7 @@ class FinalizePipelineController:
             self.app._open_path_in_default_app(transcript_path)
         self.app._delete_interview_recording_artifacts()
         self.app.current_finalize_correlation_id = ""
-
-    def _should_route_to_start_screen_after_snapshot(self) -> bool:
-        snapshot_captured = bool(getattr(self.app, "_finalize_snapshot_captured", False))
-        already_routed = bool(getattr(self.app, "_finalize_start_screen_routed", False))
-        return snapshot_captured and not already_routed
+        self.app.show_start_screen()
 
     def _handle_finalize_failure(self, status: dict[str, Any]) -> None:
         err = status.get("error")
