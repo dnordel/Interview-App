@@ -8,7 +8,8 @@ from tkinter import messagebox
 from uuid import uuid4
 
 from app_content import is_valid_date_yyyy_mm_dd
-from reporting import ReportingValidationError, ScoringEngine
+from interview_scoring import score_interview
+from reporting import ReportingValidationError
 from ui_feedback import TRANSCRIPTION_PARTIAL_WARNING_COPY
 from ux_metrics import EVENT_INTERVIEW_FINALIZED
 
@@ -60,7 +61,7 @@ class FinalizePipelineController:
             root.focus_force()
 
     def run_finalize_pipeline(self) -> FinalizePipelineResult:
-        scoring = ScoringEngine.evaluate(self.app._rubric_with_question_overrides(), self.app.state.track, self.app.state.trait_inputs)
+        scoring = score_interview(self.app._rubric_with_question_overrides(), self.app.state.track, self.app.state.trait_inputs)
         warnings: list[str] = []
         pending_snapshot = self._pending_transcription_snapshot()
 

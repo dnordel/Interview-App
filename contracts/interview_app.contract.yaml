@@ -2,7 +2,7 @@ module:
   name: interview_app
   language: python
   path: src/interview_app.pyw
-  version: 1.2.4
+  version: 1.2.5
   description: Main Tkinter interview application entrypoint and runtime orchestration.
 functions: []
 classes:
@@ -46,7 +46,8 @@ classes:
     exceptions: []
     side_effects: triggers view navigation
   - name: _session_context
-    description: Lazily returns the session context helper for instances created outside __init__.
+    description: Lazily returns the session context helper for instances created outside
+      __init__.
     locked: false
     inputs: {}
     returns:
@@ -63,7 +64,8 @@ classes:
     - SessionPayloadValidationError
     side_effects: mutates interview state maps and transcript cache
   - name: _start_background_question_transcription
-    description: Stop the active per-question recording session and enqueue background transcription before navigation.
+    description: Stop the active per-question recording session and enqueue background
+      transcription before navigation.
     locked: false
     inputs:
       flow_idx:
@@ -73,9 +75,11 @@ classes:
       type: None
     exceptions:
     - ReportingValidationError
-    side_effects: stops the active recording session, clears active recording pointers, and enqueues a transcription job
+    side_effects: stops the active recording session, clears active recording pointers,
+      and enqueues a transcription job
   - name: _background_transcribe_question
-    description: Dispatch a background question transcription request to the audio runtime controller.
+    description: Dispatch a background question transcription request to the audio
+      runtime controller.
     locked: false
     inputs:
       flow_idx:
@@ -100,7 +104,8 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: lazily initializes audio runtime controller and starts question transcription
+    side_effects: lazily initializes audio runtime controller and starts question
+      transcription
   - name: _reset_interview_recording_state
     description: Clears recording and transcription runtime state for a new interview
       recording session.
@@ -120,7 +125,8 @@ classes:
     exceptions: []
     side_effects: starts recording runtime and may display dialog warnings
   - name: _flow_transcript_question_block
-    description: Build transcript DOCX lines for a flow item using captured transcript text and optional evaluator notes.
+    description: Build transcript DOCX lines for a flow item using captured transcript
+      text and optional evaluator notes.
     locked: false
     inputs:
       item:
@@ -144,3 +150,4 @@ dependencies:
 - ui_components_history_data_grid
 - interview_app_session_context
 - transcription_diagnostics
+- interview_scoring

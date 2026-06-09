@@ -64,8 +64,8 @@ def _build_app(flow_recordings: dict[int, dict] | None = None):
 
 def test_finalize_pipeline_accumulates_warnings(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        "interview_app.finalize_pipeline.ScoringEngine.evaluate",
-        staticmethod(lambda *_args, **_kwargs: {"outcome": "Hire", "percent_of_max": 92}),
+        "interview_app.finalize_pipeline.score_interview",
+        lambda *_args, **_kwargs: {"outcome": "Hire", "percent_of_max": 92},
     )
     app = _build_app(flow_recordings={})
     controller = FinalizePipelineController(app, shared_state=SimpleNamespace(), gateways=_GatewayStub())
@@ -80,8 +80,8 @@ def test_finalize_pipeline_accumulates_warnings(monkeypatch: pytest.MonkeyPatch)
 
 def test_finalize_pipeline_retry_safe_does_not_resend_after_first_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        "interview_app.finalize_pipeline.ScoringEngine.evaluate",
-        staticmethod(lambda *_args, **_kwargs: {"outcome": "Hire", "percent_of_max": 99}),
+        "interview_app.finalize_pipeline.score_interview",
+        lambda *_args, **_kwargs: {"outcome": "Hire", "percent_of_max": 99},
     )
     send_calls = {"count": 0}
     append_calls = {"count": 0}
@@ -130,8 +130,8 @@ def test_finalize_pipeline_retry_safe_does_not_resend_after_first_failure(monkey
 
 def test_finalize_pipeline_result_payload_invariants(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        "interview_app.finalize_pipeline.ScoringEngine.evaluate",
-        staticmethod(lambda *_args, **_kwargs: {"outcome": "Hire", "percent_of_max": 88}),
+        "interview_app.finalize_pipeline.score_interview",
+        lambda *_args, **_kwargs: {"outcome": "Hire", "percent_of_max": 88},
     )
     app = _build_app(flow_recordings={1: {"base_name": "session1"}})
     gateway = _GatewayStub()
@@ -157,8 +157,8 @@ def test_finalize_pipeline_result_payload_invariants(monkeypatch: pytest.MonkeyP
 
 def test_finalize_pipeline_partial_result_has_remaining_indices(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        "interview_app.finalize_pipeline.ScoringEngine.evaluate",
-        staticmethod(lambda *_args, **_kwargs: {"outcome": "Hire", "percent_of_max": 90}),
+        "interview_app.finalize_pipeline.score_interview",
+        lambda *_args, **_kwargs: {"outcome": "Hire", "percent_of_max": 90},
     )
 
     class _PendingQueueState:
@@ -178,8 +178,8 @@ def test_finalize_pipeline_partial_result_has_remaining_indices(monkeypatch: pyt
 
 def test_finalize_result_includes_partial_transcript_fields(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        "interview_app.finalize_pipeline.ScoringEngine.evaluate",
-        staticmethod(lambda *_args, **_kwargs: {"outcome": "Hire", "percent_of_max": 91}),
+        "interview_app.finalize_pipeline.score_interview",
+        lambda *_args, **_kwargs: {"outcome": "Hire", "percent_of_max": 91},
     )
     app = _build_app(flow_recordings={1: {"base_name": "session1"}})
     app._transcription_queue_state = SimpleNamespace(_pending_flow_transcriptions={3})
@@ -195,8 +195,8 @@ def test_finalize_result_includes_partial_transcript_fields(monkeypatch: pytest.
 
 def test_finalize_pipeline_marks_partial_transcript_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        "interview_app.finalize_pipeline.ScoringEngine.evaluate",
-        staticmethod(lambda *_args, **_kwargs: {"outcome": "Hire", "percent_of_max": 88}),
+        "interview_app.finalize_pipeline.score_interview",
+        lambda *_args, **_kwargs: {"outcome": "Hire", "percent_of_max": 88},
     )
     app = _build_app(flow_recordings={1: {"base_name": "session1"}})
     app._transcription_queue_state = SimpleNamespace(_pending_flow_transcriptions={0, 2})
@@ -279,8 +279,8 @@ def test_handle_finalize_success_warns_on_partial_metadata(monkeypatch: pytest.M
 
 def test_finalize_pipeline_includes_timeout_failure_warning(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        "interview_app.finalize_pipeline.ScoringEngine.evaluate",
-        staticmethod(lambda *_args, **_kwargs: {"outcome": "Hire", "percent_of_max": 81}),
+        "interview_app.finalize_pipeline.score_interview",
+        lambda *_args, **_kwargs: {"outcome": "Hire", "percent_of_max": 81},
     )
     app = _build_app(flow_recordings={1: {"base_name": "session1"}})
     app._collect_transcription_health_warnings = lambda: ["Audio transcription failed for Q2. Details:\nQ2: transcription_timeout"]
@@ -295,8 +295,8 @@ def test_finalize_pipeline_includes_timeout_failure_warning(monkeypatch: pytest.
 
 def test_finalize_pipeline_uses_shared_state_pending_indices(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        "interview_app.finalize_pipeline.ScoringEngine.evaluate",
-        staticmethod(lambda *_args, **_kwargs: {"outcome": "Hire", "percent_of_max": 87}),
+        "interview_app.finalize_pipeline.score_interview",
+        lambda *_args, **_kwargs: {"outcome": "Hire", "percent_of_max": 87},
     )
     app = _build_app(flow_recordings={1: {"base_name": "session1"}})
     app._transcription_queue_state = SimpleNamespace(_pending_flow_transcriptions={"1", "bad"})

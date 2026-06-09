@@ -1,4 +1,4 @@
-last_updated: '2026-03-12'
+last_updated: '2026-06-09'
 sections:
 - name: interview_app
   tests:
@@ -15,7 +15,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-03-12T22:41:04.796679+00:00'
+generated_at_utc: '2026-06-09T19:20:57.914352+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -230,6 +230,15 @@ entries:
 - contract: contracts/candidate_profile.contract.yaml
   symbol: candidate_profile.CandidateQualification.from_dict
   kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/candidate_title.contract.yaml
+  symbol: candidate_title.normalize_candidate_title
+  kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
     focus:
@@ -542,6 +551,24 @@ entries:
     - behavior
     - parameter_validation
     - return_type
+- contract: contracts/director_email_draft.contract.yaml
+  symbol: director_email_draft.open_outlook_draft
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/director_email_draft.contract.yaml
+  symbol: director_email_draft.build_mailto_url
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
 - contract: contracts/email_security.contract.yaml
   symbol: email_security.sanitize_email_subject
   kind: function
@@ -678,6 +705,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/interview_app.contract.yaml
+  symbol: interview_app.InterviewApp._start_background_question_transcription
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/interview_app.contract.yaml
   symbol: interview_app.InterviewApp._background_transcribe_question
   kind: method
   tests:
@@ -713,6 +749,46 @@ entries:
     - behavior
     - parameter_validation
     - return_type
+- contract: contracts/interview_app_audio_devices.contract.yaml
+  symbol: interview_app_audio_devices._extract_dshow_audio_device_names
+  kind: function
+  tests:
+  - path: tests/test_interview_app_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_side_effects
+- contract: contracts/interview_app_audio_devices.contract.yaml
+  symbol: interview_app_audio_devices.list_windows_dshow_audio_devices
+  kind: function
+  tests:
+  - path: tests/test_interview_app_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_side_effects
+- contract: contracts/interview_app_audio_devices.contract.yaml
+  symbol: interview_app_audio_devices.resolve_preferred_windows_audio_device
+  kind: function
+  tests:
+  - path: tests/test_interview_app_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_side_effects
+- contract: contracts/interview_app_audio_devices.contract.yaml
+  symbol: interview_app_audio_devices.resolve_default_windows_system_device
+  kind: function
+  tests:
+  - path: tests/test_interview_app_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_side_effects
 - contract: contracts/interview_app_audio_runtime.contract.yaml
   symbol: interview_app_audio_runtime.AudioRuntimeController.__init__
   kind: method
@@ -855,6 +931,16 @@ entries:
     - security_side_effects
 - contract: contracts/interview_app_finalize_gateways.contract.yaml
   symbol: interview_app_finalize_gateways.FinalizeGateways.export_report
+  kind: method
+  tests:
+  - path: tests/test_interview_app_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_side_effects
+- contract: contracts/interview_app_finalize_gateways.contract.yaml
+  symbol: interview_app_finalize_gateways.FinalizeGateways._schedule_summary_retry
   kind: method
   tests:
   - path: tests/test_interview_app_contract_interfaces.py
@@ -1675,6 +1761,76 @@ entries:
     - security_side_effects
 - contract: contracts/interview_app_transcript_processor.contract.yaml
   symbol: interview_app_transcript_processor.format_seconds_for_transcript
+  kind: function
+  tests:
+  - path: tests/test_interview_app_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_side_effects
+- contract: contracts/interview_app_transcript_summary.contract.yaml
+  symbol: interview_app_transcript_summary._build_summarizer_pipeline
+  kind: function
+  tests:
+  - path: tests/test_interview_app_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_side_effects
+- contract: contracts/interview_app_transcript_summary.contract.yaml
+  symbol: interview_app_transcript_summary._build_text2text_summarizer_pipeline
+  kind: function
+  tests:
+  - path: tests/test_interview_app_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_side_effects
+- contract: contracts/interview_app_transcript_summary.contract.yaml
+  symbol: interview_app_transcript_summary._format_runtime_error
+  kind: function
+  tests:
+  - path: tests/test_interview_app_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_side_effects
+- contract: contracts/interview_app_transcript_summary.contract.yaml
+  symbol: interview_app_transcript_summary._normalize_runtime_error_text
+  kind: function
+  tests:
+  - path: tests/test_interview_app_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_side_effects
+- contract: contracts/interview_app_transcript_summary.contract.yaml
+  symbol: interview_app_transcript_summary._normalize_transcript_text
+  kind: function
+  tests:
+  - path: tests/test_interview_app_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_side_effects
+- contract: contracts/interview_app_transcript_summary.contract.yaml
+  symbol: interview_app_transcript_summary._chunk_text
+  kind: function
+  tests:
+  - path: tests/test_interview_app_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_side_effects
+- contract: contracts/interview_app_transcript_summary.contract.yaml
+  symbol: interview_app_transcript_summary.summarize_transcript
   kind: function
   tests:
   - path: tests/test_interview_app_contract_interfaces.py
@@ -2605,6 +2761,16 @@ entries:
     - behavior
     - parameter_validation
     - return_type
+- contract: contracts/interview_scoring.contract.yaml
+  symbol: interview_scoring.score_interview
+  kind: function
+  tests:
+  - path: tests/test_interview_scoring.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
 - contract: contracts/interview_state.contract.yaml
   symbol: interview_state.InterviewState.to_dict
   kind: method
@@ -2615,6 +2781,159 @@ entries:
     - parameter_validation
     - return_type
     - security_leakage_prevention
+- contract: contracts/local_summary.contract.yaml
+  symbol: local_summary.LocalInterviewSummarizer.__init__
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/local_summary.contract.yaml
+  symbol: local_summary.LocalInterviewSummarizer.summarize_executive
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/local_summary.contract.yaml
+  symbol: local_summary.LocalInterviewSummarizer.summarize_answer
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/local_summary.contract.yaml
+  symbol: local_summary.LocalInterviewSummarizer._normalize_input
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/local_summary.contract.yaml
+  symbol: local_summary.LocalInterviewSummarizer._get_generator
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/local_summary.contract.yaml
+  symbol: local_summary.LocalInterviewSummarizer._generate_summary
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/offer_letter.contract.yaml
+  symbol: offer_letter.build_offer_filename
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/offer_letter.contract.yaml
+  symbol: offer_letter.parse_clock_12h
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/offer_letter.contract.yaml
+  symbol: offer_letter.OfferInput.pto
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/offer_letter.contract.yaml
+  symbol: offer_letter.OfferInput.pto2
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/offer_letter.contract.yaml
+  symbol: offer_letter.OfferInput.offer_deadline
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/offer_letter.contract.yaml
+  symbol: offer_letter.OfferLetterService.classify_employment_type
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/offer_letter.contract.yaml
+  symbol: offer_letter.OfferLetterService.validate_template_path
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/offer_letter.contract.yaml
+  symbol: offer_letter.OfferLetterService.build_replacements
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/offer_letter.contract.yaml
+  symbol: offer_letter.OfferLetterService.render_offer
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/offer_letter.contract.yaml
+  symbol: offer_letter.OfferLetterService._replace_document_text
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/offer_letter.contract.yaml
+  symbol: offer_letter.OfferLetterService._replace_in_paragraph
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
 - contract: contracts/onboarding_action_sections.contract.yaml
   symbol: onboarding_action_sections.onboarding_action_sections
   kind: function
@@ -3695,6 +4014,46 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
+- contract: contracts/onboarding_launch.contract.yaml
+  symbol: onboarding_launch.build_launch_context
+  kind: function
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_launch.contract.yaml
+  symbol: onboarding_launch.write_launch_context_file
+  kind: function
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_launch.contract.yaml
+  symbol: onboarding_launch.read_launch_context_file
+  kind: function
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_launch.contract.yaml
+  symbol: onboarding_launch.extract_employee_seed
+  kind: function
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
 - contract: contracts/onboarding_migrations.contract.yaml
   symbol: onboarding_migrations.backfill_onboarding_metadata
   kind: function
@@ -4575,6 +4934,46 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
+- contract: contracts/onboarding_scroll_helpers.contract.yaml
+  symbol: onboarding_scroll_helpers.build_scrollable_canvas_area
+  kind: function
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_scroll_helpers.contract.yaml
+  symbol: onboarding_scroll_helpers.bind_canvas_mousewheel
+  kind: function
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_scroll_helpers.contract.yaml
+  symbol: onboarding_scroll_helpers.scroll_widget_into_view
+  kind: function
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_scrollable_modal.contract.yaml
+  symbol: onboarding_scrollable_modal.build_scrollable_modal_container
+  kind: function
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
 - contract: contracts/onboarding_send_guardrails.contract.yaml
   symbol: onboarding_send_guardrails.split_and_validate_recipients
   kind: function
@@ -4855,6 +5254,240 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
+- contract: contracts/path_validation.contract.yaml
+  symbol: path_validation.validate_existing_file_path
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_runtime_definition_service.contract.yaml
+  symbol: question_runtime_definition_service.default_runtime_definition
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_runtime_definition_service.contract.yaml
+  symbol: question_runtime_definition_service.normalize_runtime_definition
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_runtime_definition_service.contract.yaml
+  symbol: question_runtime_definition_service.normalize_runtime_signal
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_runtime_definition_service.contract.yaml
+  symbol: question_runtime_definition_service.normalize_runtime_group
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_runtime_definition_service.contract.yaml
+  symbol: question_runtime_definition_service.runtime_trait_id_for_rubric_trait
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_runtime_definition_service.contract.yaml
+  symbol: question_runtime_definition_service.build_runtime_trait_id
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_runtime_definition_service.contract.yaml
+  symbol: question_runtime_definition_service.runtime_trait_id_prefix
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_runtime_definition_service.contract.yaml
+  symbol: question_runtime_definition_service.slugify_trait_name
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_runtime_definition_service.contract.yaml
+  symbol: question_runtime_definition_service.ensure_valid_trait_id
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_runtime_definition_service.contract.yaml
+  symbol: question_runtime_definition_service.next_trait_id
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_runtime_definition_service.contract.yaml
+  symbol: question_runtime_definition_service.list_signal_refs
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_runtime_definition_service.contract.yaml
+  symbol: question_runtime_definition_service.QuestionRuntimeDefinitionService.load_definition
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_runtime_definition_service.contract.yaml
+  symbol: question_runtime_definition_service.QuestionRuntimeDefinitionService.save_definition
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_runtime_definition_service.contract.yaml
+  symbol: question_runtime_definition_service.QuestionRuntimeDefinitionService.create_definition
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_runtime_definition_service.contract.yaml
+  symbol: question_runtime_definition_service.QuestionRuntimeDefinitionService.delete_definition
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_runtime_definition_service.contract.yaml
+  symbol: question_runtime_definition_service.QuestionRuntimeDefinitionService.sync_with_trait
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_runtime_definition_service.contract.yaml
+  symbol: question_runtime_definition_service.QuestionRuntimeDefinitionService.add_core_signal
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_runtime_definition_service.contract.yaml
+  symbol: question_runtime_definition_service.QuestionRuntimeDefinitionService.update_core_signal
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_runtime_definition_service.contract.yaml
+  symbol: question_runtime_definition_service.QuestionRuntimeDefinitionService.delete_core_signal
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_runtime_definition_service.contract.yaml
+  symbol: question_runtime_definition_service.QuestionRuntimeDefinitionService.add_extended_group
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_runtime_definition_service.contract.yaml
+  symbol: question_runtime_definition_service.QuestionRuntimeDefinitionService.update_extended_group
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_runtime_definition_service.contract.yaml
+  symbol: question_runtime_definition_service.QuestionRuntimeDefinitionService.delete_extended_group
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_runtime_definition_service.contract.yaml
+  symbol: question_runtime_definition_service.QuestionRuntimeDefinitionService.add_group_signal
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_runtime_definition_service.contract.yaml
+  symbol: question_runtime_definition_service.QuestionRuntimeDefinitionService.update_group_signal
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_runtime_definition_service.contract.yaml
+  symbol: question_runtime_definition_service.QuestionRuntimeDefinitionService.delete_group_signal
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
 - contract: contracts/question_screens.contract.yaml
   symbol: question_screens.validate_and_store_qualification
   kind: function
@@ -4885,6 +5518,204 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
+- contract: contracts/question_settings_service.contract.yaml
+  symbol: question_settings_service.QuestionSettingsService.checkpoint
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_settings_service.contract.yaml
+  symbol: question_settings_service.QuestionSettingsService.undo
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_settings_service.contract.yaml
+  symbol: question_settings_service.QuestionSettingsService.restore_defaults
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_settings_service.contract.yaml
+  symbol: question_settings_service.QuestionSettingsService.save_rubric
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_settings_service.contract.yaml
+  symbol: question_settings_service.QuestionSettingsService.export_questions
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_settings_service.contract.yaml
+  symbol: question_settings_service.QuestionSettingsService.import_questions
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_settings_service.contract.yaml
+  symbol: question_settings_service.QuestionSettingsService.update_trait
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_settings_service.contract.yaml
+  symbol: question_settings_service.QuestionSettingsService.add_trait
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_settings_service.contract.yaml
+  symbol: question_settings_service.QuestionSettingsService.delete_trait
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_settings_window.contract.yaml
+  symbol: question_settings_window.QuestionSettingsWindow.refresh_trait_list
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_settings_window.contract.yaml
+  symbol: question_settings_window.QuestionSettingsWindow.load_selected_trait
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_settings_window.contract.yaml
+  symbol: question_settings_window.QuestionSettingsWindow.save_trait
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_settings_window.contract.yaml
+  symbol: question_settings_window.QuestionSettingsWindow.add_trait
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_settings_window.contract.yaml
+  symbol: question_settings_window.QuestionSettingsWindow.delete_trait
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_settings_window.contract.yaml
+  symbol: question_settings_window.QuestionSettingsWindow.refresh_signal_lists
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_settings_window.contract.yaml
+  symbol: question_settings_window.QuestionSettingsWindow.save_core_signal
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_settings_window.contract.yaml
+  symbol: question_settings_window.QuestionSettingsWindow.save_group_signal
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_settings_window.contract.yaml
+  symbol: question_settings_window.QuestionSettingsWindow.delete_core_signal
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_settings_window.contract.yaml
+  symbol: question_settings_window.QuestionSettingsWindow.delete_group_signal
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_settings_window.contract.yaml
+  symbol: question_settings_window.QuestionSettingsWindow.add_group
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_settings_window.contract.yaml
+  symbol: question_settings_window.QuestionSettingsWindow.save_group
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/question_settings_window.contract.yaml
+  symbol: question_settings_window.QuestionSettingsWindow.delete_group
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
 - contract: contracts/referral_packet.contract.yaml
   symbol: referral_packet.normalize_referral_packet
   kind: function
@@ -4914,6 +5745,96 @@ entries:
     - return_type
 - contract: contracts/referral_packet.contract.yaml
   symbol: referral_packet.is_supported_document_path
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/regenerate_contract_test_matrix.contract.yaml
+  symbol: regenerate_contract_test_matrix._is_module_contract
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/regenerate_contract_test_matrix.contract.yaml
+  symbol: regenerate_contract_test_matrix._relative_contract_path
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/regenerate_contract_test_matrix.contract.yaml
+  symbol: regenerate_contract_test_matrix._function_symbol_entries
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/regenerate_contract_test_matrix.contract.yaml
+  symbol: regenerate_contract_test_matrix._class_method_symbol_entries
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/regenerate_contract_test_matrix.contract.yaml
+  symbol: regenerate_contract_test_matrix._symbol_entries
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/regenerate_contract_test_matrix.contract.yaml
+  symbol: regenerate_contract_test_matrix._mapping_rules
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/regenerate_contract_test_matrix.contract.yaml
+  symbol: regenerate_contract_test_matrix._tests_for_symbol
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/regenerate_contract_test_matrix.contract.yaml
+  symbol: regenerate_contract_test_matrix._dedupe_entries
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/regenerate_contract_test_matrix.contract.yaml
+  symbol: regenerate_contract_test_matrix.build_matrix
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/regenerate_contract_test_matrix.contract.yaml
+  symbol: regenerate_contract_test_matrix.main
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -5061,6 +5982,16 @@ entries:
     - parameter_validation
     - return_type
     - security_controls
+- contract: contracts/reporting.contract.yaml
+  symbol: reporting.DocxExporter._save_document
+  kind: method
+  tests:
+  - path: tests/test_shared_module_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_controls
 - contract: contracts/runtime_wrapper.contract.yaml
   symbol: runtime_wrapper.parse_args
   kind: function
@@ -5101,6 +6032,213 @@ entries:
     - parameter_validation
     - return_type
     - security_leakage_prevention
+- contract: contracts/setup_and_run.contract.yaml
+  symbol: setup_and_run.Write-Log
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_and_run.contract.yaml
+  symbol: setup_and_run.Get-ConfigBaseDir
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_and_run.contract.yaml
+  symbol: setup_and_run.Get-ConfigPath
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_and_run.contract.yaml
+  symbol: setup_and_run.Load-Config
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_and_run.contract.yaml
+  symbol: setup_and_run.Save-Config
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_and_run.contract.yaml
+  symbol: setup_and_run.Ensure-ConfigShape
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_and_run.contract.yaml
+  symbol: setup_and_run.Start-PythonGuiApp
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_and_run.contract.yaml
+  symbol: setup_and_run.Run-Proc
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_and_run.contract.yaml
+  symbol: setup_and_run.Get-CachedPython311
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_and_run.contract.yaml
+  symbol: setup_and_run.Set-CachedPython311
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_and_run.contract.yaml
+  symbol: setup_and_run.Test-Python311Exe
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_and_run.contract.yaml
+  symbol: setup_and_run.Get-RegistryAppPathsPythonCandidates
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_and_run.contract.yaml
+  symbol: setup_and_run.Find-Python311
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_and_run.contract.yaml
+  symbol: setup_and_run.Ensure-Python311
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_and_run.contract.yaml
+  symbol: setup_and_run.Find-VBCableDriverEvidence
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_and_run.contract.yaml
+  symbol: setup_and_run.Set-VBCableCache
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_and_run.contract.yaml
+  symbol: setup_and_run.Ensure-VBCableStatus
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_and_run.contract.yaml
+  symbol: setup_and_run.Test-NvidiaGPU
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_and_run.contract.yaml
+  symbol: setup_and_run.Ensure-VenvAndDeps
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_and_run.contract.yaml
+  symbol: setup_and_run.Ensure-RequiredDepsInstalled
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_and_run.contract.yaml
+  symbol: setup_and_run.Find-AppFile
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_and_run.contract.yaml
+  symbol: setup_and_run.Show-VBCablePrompt
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_and_run.contract.yaml
+  symbol: setup_and_run.Set-Progress
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
 - contract: contracts/storage_utils.contract.yaml
   symbol: storage_utils.atomic_write_json
   kind: function
@@ -5251,6 +6389,1158 @@ entries:
     - parameter_validation
     - return_type
     - security_controls
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine.__init__
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._path
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._contract_base_dir
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine.resolve_configured_path
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine.validate_configured_paths
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._assert_within_base
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._assert_path_accessible
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._require_dict_static
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._require_value
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine.load_runtime_bundle
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine.load_traits_from_dir
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._load_signal_dictionary
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._canonical_trait_id
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._normalize_trait_payload
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._normalize_signal_collection
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._normalize_extended_groups
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._normalize_group_collection
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._normalize_signal
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._signal_ref
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._assert_runtime_bundle
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._assert_signal_dictionary
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._assert_signal_payload
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._assert_trait_payload
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._assert_trait_signals
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._assert_extended_signal_groups
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._build_dictionary
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._require_dict
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._require_bool
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._optional_dict
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._require_number
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._nested_value
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._assert_startup_schema
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._require_number_static
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._require_bool_static
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._nested_static_value
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine.resolve_signal
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._resolve_unknown_signal
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine.score_trait
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._selected_signals
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._selected_extended_signals
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine.score_session
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._selection_for_trait
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine.make_decision
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine.build_decision_summary
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine.debug_trait
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_definition_loader.contract.yaml
+  symbol: trait_definition_loader.load_trait_definitions_from_runtime_bundle
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_definition_loader.contract.yaml
+  symbol: trait_definition_loader.load_trait_definitions_from_contract
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_definition_loader.contract.yaml
+  symbol: trait_definition_loader.load_trait_definitions_from_dir
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_definition_loader.contract.yaml
+  symbol: trait_definition_loader.canonical_trait_id
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_definition_loader.contract.yaml
+  symbol: trait_definition_loader.trait_id_aliases
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_definition_loader.contract.yaml
+  symbol: trait_definition_loader._resolve_traits_dir_from_bundle
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_definition_loader.contract.yaml
+  symbol: trait_definition_loader._resolve_traits_dir_from_contract_payload
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_definition_loader.contract.yaml
+  symbol: trait_definition_loader._load_json
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_definition_loader.contract.yaml
+  symbol: trait_definition_loader._load_yaml
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter.build_trait_scoring_payload
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter.load_module_contract_runtime_bundle
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter.load_trait_definitions
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter.validate_runtime_bundle_metadata
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter.normalize_skipped
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter.normalize_absolute_disqualifier
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter.coerce_raw_score
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter.normalize_verbatim_notes
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter.normalize_trait_state_item
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter.normalize_app_trait_state
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter.validate_normalized_state
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter.invoke_scoring_engine
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._contract_resolution_base_dir
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._resolve_contract_path_from_base
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._resolve_contract_path
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._raise_for_rubric_runtime_mismatch
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._raise_for_missing_trait_overlap
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._trait_ids_from_rubric
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._trait_ids_from_normalized_state
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._trait_ids_from_runtime_definitions
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._validate_trait_scoring_configuration
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter.map_engine_output_to_normalized_shape
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._build_summary
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._resolve_scoring_denominator
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._resolve_percent_label
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._map_trait_row
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._is_invalid_raw_score_input
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._normalize_selected_signal_ids
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._normalize_selection_variant
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._normalize_selection_mapping
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._normalize_selection_sequence
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._normalize_selection_item
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._dedupe_signal_ids
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._normalize_bool
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._load_yaml
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._load_runtime_bundle
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._load_trait_engine_class
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._has_trait_definition_overlap
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._build_trait_engine
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._build_trait_selections
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._select_signal_refs_for_state
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._positive_signal_refs
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._negative_signal_refs
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._signal_refs_by_weight
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._iter_trait_signals
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._iter_extended_trait_signals
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._build_compatibility_engine_output
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._rubric_trait_map
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._build_rows
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._build_trait_row
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._max_weighted_total
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._max_trait_final_score
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._configured_max_weighted_total
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._resolve_percent_denominator
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._percent_of_max
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_scoring_adapter.contract.yaml
+  symbol: trait_scoring_adapter._percent_label
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_signal_schema.contract.yaml
+  symbol: trait_signal_schema.build_signal_dictionary_index
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_signal_schema.contract.yaml
+  symbol: trait_signal_schema.normalize_trait_signal
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_signal_schema.contract.yaml
+  symbol: trait_signal_schema.resolve_trait_signal_selection_id
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_signal_schema.contract.yaml
+  symbol: trait_signal_schema.resolve_trait_signal_runtime_id
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_signal_schema.contract.yaml
+  symbol: trait_signal_schema.signal_selection_aliases
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_signal_schema.contract.yaml
+  symbol: trait_signal_schema.resolve_trait_signal_label
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_signal_schema.contract.yaml
+  symbol: trait_signal_schema.resolve_trait_signal_weight
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_signal_schema.contract.yaml
+  symbol: trait_signal_schema.normalize_core_signals
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_signal_schema.contract.yaml
+  symbol: trait_signal_schema.normalize_extended_signal_groups
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_signal_schema.contract.yaml
+  symbol: trait_signal_schema.iter_trait_schema_signals
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_signal_state.contract.yaml
+  symbol: trait_signal_state.default_signal_ui_definition
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_signal_state.contract.yaml
+  symbol: trait_signal_state.load_trait_signal_ui_definition
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_signal_state.contract.yaml
+  symbol: trait_signal_state.ensure_trait_signal_ui_definition
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_signal_state.contract.yaml
+  symbol: trait_signal_state.normalize_trait_signal_selection_state
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_signal_state.contract.yaml
+  symbol: trait_signal_state.write_canonical_selected_signal_ids
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_signal_state.contract.yaml
+  symbol: trait_signal_state.count_selected_trait_checkbox_entries
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_signal_state.contract.yaml
+  symbol: trait_signal_state.resolve_trait_selection_value
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_signal_state.contract.yaml
+  symbol: trait_signal_state.trait_requires_signal_selection
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
 - contract: contracts/transcript_accumulator.contract.yaml
   symbol: transcript_accumulator.append_candidate_segment_text
   kind: function

@@ -25,5 +25,6 @@
 - [x] Added locked-file save fallback for interview notes exports by writing suffixed `(updated N)` filenames when the original DOCX is open in Word.
 
 ## 2026-06-09
+- [x] Added locked `interview_scoring.score_interview` seam for raw-score vs trait-signal scoring, with finalize callers routed through the seam and regression tests for skip/critical/disqualifier outcomes.
 - [x] Implemented trait-based scoring runtime bundle loader with bundle-contained path validation, normalized scoring config keys, fail-closed trait/signal validation, and real-engine regression coverage.
 - [x] Confirmed `SPEC_TEMPLATE.md` is absent in this repository; no spec-template update was applied.

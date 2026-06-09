@@ -7,7 +7,8 @@ layers:
 services:
   interview_runtime_service:
     description: Interview flow orchestration, state transitions, transcription, and
-      finalization that produces one merged interview-notes document (interview_notes_document_path) including transcription content.
+      finalization that produces one merged interview-notes document (interview_notes_document_path)
+      including transcription content.
     modules:
     - candidate_profile
     - director_referral_service
@@ -35,6 +36,7 @@ services:
     - interview_app_ui_shell
     - interview_app_whisper_runtime_policy
     - interview_audio_recorder
+    - interview_scoring
     - interview_session_store
     - interview_state
     - referral_packet
@@ -50,13 +52,16 @@ services:
     - interview_app_session_context
     - interview_app_session_manager
   trait_scoring_service:
-    description: Runtime trait-signal scoring, bundle-safe config loading, canonical trait definition normalization, and adapter mapping to app scoring output.
+    description: Runtime trait-signal scoring, raw-score compatibility scoring, bundle-safe
+      config loading, canonical trait definition normalization, and adapter mapping
+      behind the public interview scoring seam.
     modules:
     - trait_based_scoring_engine
     - trait_definition_loader
     - trait_signal_schema
     - trait_scoring_adapter
     - reporting
+    - interview_scoring
   onboarding_operations_service:
     description: Onboarding scheduling, reminders, dashboard actions, notifications,
       and storage.
@@ -131,6 +136,7 @@ services:
     - storage_utils
     - template_placeholders
     - transcription_diagnostics
+    - interview_scoring
 datastores:
   json_file_store:
     type: file_system_json
@@ -152,12 +158,15 @@ trust_boundaries:
   user_input: Tkinter forms, free-text notes, and runtime settings are untrusted until
     validated/sanitized.
   filesystem: All read/write paths are constrained by guardrails and explicit user
-    choices, including strict path validation for merged interview-notes artifacts before finalize/referral/integration writes and bundle-contained trait scoring runtime paths.
+    choices, including strict path validation for merged interview-notes artifacts
+    before finalize/referral/integration writes and bundle-contained trait scoring
+    runtime paths.
   network: Referral/integration submission endpoints are treated as untrusted remote
     dependencies.
 security_expectations:
   input_validation: Validation feedback surfaces must block finalize/send paths on
-    invalid required fields, fail closed on malformed trait scoring config, and require merged-document sanitization before downstream handoff.
+    invalid required fields, fail closed on malformed trait scoring config or unknown
+    scoring tracks, and require merged-document sanitization before downstream handoff.
   side_effect_controls: Finalize/send actions must be idempotent or deduplicated before
     network calls.
   authz: High-risk automation toggles require explicit operator confirmation.

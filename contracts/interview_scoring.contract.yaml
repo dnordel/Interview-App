@@ -1,0 +1,30 @@
+module:
+  name: interview_scoring
+  language: python
+  path: src/interview_scoring.py
+  version: 1.0.0
+  description: Public interview scoring seam that chooses legacy raw-score scoring or trait-signal scoring behind one locked interface.
+functions:
+- name: score_interview
+  description: Score interview trait inputs using trait-signal scoring when selected signals are present, otherwise using legacy raw-score scoring as an internal adapter.
+  locked: true
+  inputs:
+    rubric:
+      type: dict[str, Any]
+      required: true
+    track_key:
+      type: Any
+      required: true
+    trait_inputs:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: dict[str, Any]
+  exceptions:
+  - ReportingValidationError
+  side_effects: none
+classes: []
+data_structures: []
+dependencies:
+- reporting
+- trait_scoring_adapter

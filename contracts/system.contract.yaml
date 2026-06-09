@@ -67,6 +67,7 @@ modules:
     - interview_app_views
     - interview_audio_recorder
     - interview_session_store
+    - interview_scoring
     - interview_state
     - offer_letter
     - onboarding_reminder_health
@@ -146,6 +147,7 @@ modules:
     path: src/interview_app/finalize_pipeline.py
     depends_on:
     - app_content
+    - interview_scoring
     - interview_app_finalize_context
     - interview_app_finalize_gateways
     - interview_app_types
@@ -416,23 +418,33 @@ modules:
     - trait_based_scoring_engine
     - trait_definition_loader
     - trait_signal_schema
+  interview_scoring:
+    path: src/interview_scoring.py
+    depends_on:
+    - reporting
+    - trait_scoring_adapter
 module_metadata:
   document_flow_rule:
     canonical_field_name: interview_notes_document_path
     merged_interview_notes_contract: true
-    description: Finalize, referral, and integration modules must exchange one merged interview-notes artifact that already includes transcription content.
+    description: Finalize, referral, and integration modules must exchange one merged
+      interview-notes artifact that already includes transcription content.
   interview_app_finalize_context:
     constraints:
-    - Requires interview_notes_document_path as the only canonical document artifact field.
+    - Requires interview_notes_document_path as the only canonical document artifact
+      field.
   interview_app_finalize_pipeline:
     constraints:
-    - Finalize processing produces one merged interview-notes artifact referenced by interview_notes_document_path.
+    - Finalize processing produces one merged interview-notes artifact referenced
+      by interview_notes_document_path.
   interview_app_finalize_gateways:
     constraints:
-    - Referral/integration dispatches must read interview_notes_document_path from finalize context payloads.
+    - Referral/integration dispatches must read interview_notes_document_path from
+      finalize context payloads.
   director_referral_service:
     constraints:
     - Referral payload document attachment path must resolve from interview_notes_document_path.
   integration_export:
     constraints:
-    - Integration payload document references must use interview_notes_document_path as canonical path.
+    - Integration payload document references must use interview_notes_document_path
+      as canonical path.

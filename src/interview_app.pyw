@@ -92,7 +92,8 @@ from interview_state import InterviewState
 from interview_session_store import InterviewSessionStore
 from question_screens import CustomQuestionScreenUI, TraitScreenUI
 from referral_packet import is_supported_document_path, missing_required_docs
-from reporting import DocxExporter, DraftManager, ReportingValidationError, ScoringEngine
+from interview_scoring import score_interview
+from reporting import DocxExporter, DraftManager, ReportingValidationError
 from offer_letter import OfferInput, OfferLetterService, POSITION_OPTIONS, build_offer_filename
 from onboarding_storage import JsonStore
 from onboarding_reminder_health import evaluate_onboarding_reminder_health
@@ -2497,7 +2498,7 @@ class InterviewApp(tk.Tk):
         return controller.run_finalize_pipeline()
 
     def _run_finalize_pipeline_legacy(self) -> dict[str, Any]:
-        scoring = ScoringEngine.evaluate(self._rubric_with_question_overrides(), self.state.track, self.state.trait_inputs)
+        scoring = score_interview(self._rubric_with_question_overrides(), self.state.track, self.state.trait_inputs)
         warnings: list[str] = []
         recording_flow_idx = self._safe_attr("recording_flow_idx")
 
