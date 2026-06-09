@@ -25,6 +25,7 @@
 - [x] Added locked-file save fallback for interview notes exports by writing suffixed `(updated N)` filenames when the original DOCX is open in Word.
 
 ## 2026-06-09
+- [x] Restored `LaunchEmployeeSeed` onboarding model and launch prefill handling so onboarding contracts import cleanly in CI.
 - [x] Filtered trait-signal scoring to active rubric-track traits so runtime-only/off-track traits cannot enter finalize rows or denominators.
 - [x] Restored executable bit on `scripts/contract_review/run_section_checks.sh` so CI contract review can invoke it directly.
 - [x] Added locked `interview_scoring.score_interview` seam for raw-score vs trait-signal scoring, with finalize callers routed through the seam and regression tests for skip/critical/disqualifier outcomes.

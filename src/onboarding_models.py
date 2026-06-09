@@ -209,6 +209,35 @@ class Employee:
 
 
 @dataclass(slots=True)
+class LaunchEmployeeSeed:
+    name: str = ""
+    school: str = ""
+    acceptance_date: str = ""
+    start_date: str = ""
+
+    @classmethod
+    def from_dict(cls, payload: Any) -> "LaunchEmployeeSeed":
+        source = payload if isinstance(payload, dict) else {}
+        return cls(
+            name=str(source.get("name", "") or "").strip(),
+            school=str(source.get("school", "") or "").strip(),
+            acceptance_date=str(source.get("acceptance_date", "") or "").strip(),
+            start_date=str(source.get("start_date", "") or "").strip(),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "school": self.school,
+            "acceptance_date": self.acceptance_date,
+            "start_date": self.start_date,
+        }
+
+    def has_prefill(self) -> bool:
+        return any(self.to_dict().values())
+
+
+@dataclass(slots=True)
 class EmailSettings:
     sender_email: str = ""
     smtp_host: str = ""

@@ -2,7 +2,7 @@ module:
   name: onboarding_models
   language: python
   path: src/onboarding_models.py
-  version: 1.0.0
+  version: 1.1.0
   description: Contract for onboarding_models module.
 functions:
 - name: resolve_smtp_password
@@ -267,6 +267,49 @@ classes:
     inputs: {}
     returns:
       type: dict[str, Any]
+    exceptions: []
+    side_effects: none
+- name: LaunchEmployeeSeed
+  description: Prefill metadata passed from interview finalization into onboarding launch.
+  locked: false
+  attributes:
+    name:
+      type: str
+    school:
+      type: str
+    acceptance_date:
+      type: str
+    start_date:
+      type: str
+  methods:
+  - name: from_dict
+    description: Build launch prefill metadata from a mapping-like payload.
+    locked: false
+    inputs:
+      cls:
+        type: Any
+        required: true
+      payload:
+        type: Any
+        required: true
+    returns:
+      type: '''LaunchEmployeeSeed'''
+    exceptions: []
+    side_effects: none
+  - name: to_dict
+    description: Serialize launch prefill metadata for subprocess handoff.
+    locked: false
+    inputs: {}
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: none
+  - name: has_prefill
+    description: Return whether any prefill field contains non-empty data.
+    locked: false
+    inputs: {}
+    returns:
+      type: bool
     exceptions: []
     side_effects: none
 - name: EmailSettings

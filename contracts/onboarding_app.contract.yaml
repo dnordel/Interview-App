@@ -2,7 +2,7 @@ module:
   name: onboarding_app
   language: python
   path: src/onboarding_app.pyw
-  version: 1.0.0
+  version: 1.1.0
   description: Contract for onboarding_app module.
 functions:
 - name: _load_launch_context
@@ -612,9 +612,13 @@ classes:
     exceptions: []
     side_effects: none
   - name: open_add_employee_dialog
-    description: open_add_employee_dialog method.
+    description: Open add-employee dialog, optionally prefilled from launch metadata.
     locked: false
-    inputs: {}
+    inputs:
+      prefill:
+        type: LaunchEmployeeSeed | None
+        required: false
+        default: null
     returns:
       type: None
     exceptions: []

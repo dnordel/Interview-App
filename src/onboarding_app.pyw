@@ -12,7 +12,7 @@ import json
 from collections.abc import Callable
 from tkcalendar import DateEntry
 
-from onboarding_models import EmailSettings, Employee, ReminderRunSummary, TaskTemplate, make_id, parse_date
+from onboarding_models import EmailSettings, Employee, LaunchEmployeeSeed, ReminderRunSummary, TaskTemplate, make_id, parse_date
 from onboarding_reminder_runner import OnboardingReminderRunner
 from onboarding_reminder_health import evaluate_onboarding_reminder_health
 from onboarding_scheduler import (
@@ -563,6 +563,15 @@ class OnboardingTrackerApp:
         if bool(self.launch_context.get("urgent_only", False)):
             self._set_task_filter("urgent")
 
+        pending_seed = getattr(self, "_pending_launch_employee_seed", None)
+        employee_seed = LaunchEmployeeSeed.from_dict(self.launch_context.get("employee_seed"))
+        if isinstance(pending_seed, LaunchEmployeeSeed):
+            employee_seed = pending_seed
+        if employee_seed.has_prefill():
+            self._pending_launch_employee_seed = None
+            self.open_add_employee_dialog(prefill=employee_seed)
+            return
+
         employee_id = str(self.launch_context.get("employee_id") or "").strip()
         if not employee_id:
             return
@@ -884,7 +893,7 @@ class OnboardingTrackerApp:
             return ""
         return f" | {' / '.join(parts)}"
 
-    def open_add_employee_dialog(self) -> None:
+    def open_add_employee_dialog(self, prefill: LaunchEmployeeSeed | None = None) -> None:
         self.metrics_logger.log_onboarding_canonical_event(
             "ux.onboarding.add_employee_form.view",
             entry_point="actions_panel",
@@ -894,11 +903,13 @@ class OnboardingTrackerApp:
         dialog = tk.Toplevel(self.root)
         dialog.title("Add Employee")
         fields: dict[str, tk.Entry] = {}
+        prefill = prefill or LaunchEmployeeSeed()
+        today_text = date.today().strftime("%Y-%m-%d")
         specs = [
-            ("Name", ""),
-            ("School", ""),
-            ("Acceptance date (YYYY-MM-DD)", date.today().strftime("%Y-%m-%d")),
-            ("Start date (YYYY-MM-DD)", date.today().strftime("%Y-%m-%d")),
+            ("Name", prefill.name),
+            ("School", prefill.school),
+            ("Acceptance date (YYYY-MM-DD)", prefill.acceptance_date or today_text),
+            ("Start date (YYYY-MM-DD)", prefill.start_date or today_text),
         ]
         for row, (label, default) in enumerate(specs):
             ttk.Label(dialog, text=label).grid(row=row, column=0, sticky="w", padx=8, pady=4)
@@ -1933,6 +1944,9 @@ def _load_launch_context(args: argparse.Namespace) -> dict[str, object]:
         context["employee_id"] = _sanitize_employee_id(state_context.get("employee_id"))
 
     context["urgent_only"] = context["urgent_only"] or bool(state_context.get("urgent_only", False))
+    employee_seed = LaunchEmployeeSeed.from_dict(state_context.get("employee_seed"))
+    if employee_seed.has_prefill():
+        context["employee_seed"] = employee_seed.to_dict()
     return context
 
 

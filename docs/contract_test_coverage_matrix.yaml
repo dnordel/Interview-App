@@ -4295,6 +4295,36 @@ entries:
     - return_type
     - security_validation
 - contract: contracts/onboarding_models.contract.yaml
+  symbol: onboarding_models.LaunchEmployeeSeed.from_dict
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_models.contract.yaml
+  symbol: onboarding_models.LaunchEmployeeSeed.to_dict
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_models.contract.yaml
+  symbol: onboarding_models.LaunchEmployeeSeed.has_prefill
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_models.contract.yaml
   symbol: onboarding_models.EmailSettings.from_dict
   kind: method
   tests:

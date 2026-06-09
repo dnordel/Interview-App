@@ -1,4 +1,4 @@
-from onboarding_models import EmailSettings, ReminderCadence, TaskTemplate, resolve_smtp_password
+from onboarding_models import EmailSettings, LaunchEmployeeSeed, ReminderCadence, TaskTemplate, resolve_smtp_password
 
 
 def test_reminder_cadence_from_dict_invalid_interval_falls_back_to_default():
@@ -62,3 +62,29 @@ def test_resolve_smtp_password_prefers_environment_override(monkeypatch):
     monkeypatch.setenv("ONBOARDING_SMTP_PASSWORD", "env-secret")
 
     assert resolve_smtp_password("file-secret") == "env-secret"
+
+
+def test_launch_employee_seed_normalizes_payload_and_detects_prefill():
+    seed = LaunchEmployeeSeed.from_dict(
+        {
+            "name": " Taylor Teacher ",
+            "school": " North Long Beach ",
+            "acceptance_date": " 2026-03-20 ",
+            "start_date": "",
+        }
+    )
+
+    assert seed.has_prefill() is True
+    assert seed.to_dict() == {
+        "name": "Taylor Teacher",
+        "school": "North Long Beach",
+        "acceptance_date": "2026-03-20",
+        "start_date": "",
+    }
+
+
+def test_launch_employee_seed_from_invalid_payload_has_no_prefill():
+    seed = LaunchEmployeeSeed.from_dict(None)
+
+    assert seed.has_prefill() is False
+    assert seed.to_dict()["name"] == ""
