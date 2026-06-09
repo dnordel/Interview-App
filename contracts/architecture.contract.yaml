@@ -49,6 +49,14 @@ services:
     - ui_components_history_data_grid
     - interview_app_session_context
     - interview_app_session_manager
+  trait_scoring_service:
+    description: Runtime trait-signal scoring, bundle-safe config loading, canonical trait definition normalization, and adapter mapping to app scoring output.
+    modules:
+    - trait_based_scoring_engine
+    - trait_definition_loader
+    - trait_signal_schema
+    - trait_scoring_adapter
+    - reporting
   onboarding_operations_service:
     description: Onboarding scheduling, reminders, dashboard actions, notifications,
       and storage.
@@ -144,12 +152,12 @@ trust_boundaries:
   user_input: Tkinter forms, free-text notes, and runtime settings are untrusted until
     validated/sanitized.
   filesystem: All read/write paths are constrained by guardrails and explicit user
-    choices, including strict path validation for merged interview-notes artifacts before finalize/referral/integration writes.
+    choices, including strict path validation for merged interview-notes artifacts before finalize/referral/integration writes and bundle-contained trait scoring runtime paths.
   network: Referral/integration submission endpoints are treated as untrusted remote
     dependencies.
 security_expectations:
   input_validation: Validation feedback surfaces must block finalize/send paths on
-    invalid required fields and require merged-document sanitization before downstream handoff.
+    invalid required fields, fail closed on malformed trait scoring config, and require merged-document sanitization before downstream handoff.
   side_effect_controls: Finalize/send actions must be idempotent or deduplicated before
     network calls.
   authz: High-risk automation toggles require explicit operator confirmation.

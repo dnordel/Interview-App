@@ -2,20 +2,21 @@ module:
   name: trait_based_scoring_engine
   language: python
   path: Trait-Based Scoring/trait_based_scoring_engine.py
-  version: 1.3.2
-  description: Trait scoring engine with contract-relative runtime bundle loading
-    and preflight path validation.
+  version: 1.4.0
+  description: Trait scoring engine with contract-relative runtime bundle loading, bundle-contained path validation, fail-closed runtime schema validation, normalized trait/signal payloads, and decision override metadata.
 functions: []
 classes:
 - name: ScoringEngine
-  description: Loads trait scoring configuration and evaluates trait/session signal
-    selections.
+  description: Loads trait scoring configuration and evaluates trait/session signal selections.
   locked: false
-  attributes: {}
+  attributes:
+    config:
+      type: dict
+    dictionary:
+      type: dict[str, dict]
   methods:
   - name: __init__
-    description: Initialize the scoring engine with validated configuration and a
-      shared signal dictionary.
+    description: Initialize scoring engine with validated configuration and shared signal dictionary.
     locked: false
     inputs:
       config:
@@ -29,8 +30,6 @@ classes:
     exceptions:
     - TypeError
     - KeyError
-    - FileNotFoundError
-    - PermissionError
     side_effects: none
   - name: _path
     description: Join config path parts into a dotted string for diagnostics.
@@ -44,7 +43,7 @@ classes:
     exceptions: []
     side_effects: none
   - name: _contract_base_dir
-    description: Resolve the containing directory for a contract file path.
+    description: Resolve containing directory for runtime contract path.
     locked: false
     inputs:
       contract_path:
@@ -55,8 +54,7 @@ classes:
     exceptions: []
     side_effects: none
   - name: resolve_configured_path
-    description: Resolve a configured path relative to the contract file when it is
-      not absolute.
+    description: Resolve configured path relative to runtime contract when not absolute.
     locked: false
     inputs:
       contract_path:
@@ -70,8 +68,7 @@ classes:
     exceptions: []
     side_effects: none
   - name: validate_configured_paths
-    description: Preflight validate required configured paths and return resolved
-      filesystem locations.
+    description: Validate required runtime paths, keep them inside bundle directory, and return resolved filesystem locations.
     locked: false
     inputs:
       config:
@@ -87,9 +84,28 @@ classes:
     - KeyError
     - FileNotFoundError
     - PermissionError
+    - ValueError
     side_effects: Reads filesystem metadata.
+  - name: _assert_within_base
+    description: Fail closed when configured path escapes runtime bundle base directory.
+    locked: false
+    inputs:
+      path:
+        type: Path
+        required: true
+      base_dir:
+        type: Path
+        required: true
+      parts:
+        type: list[str]
+        required: true
+    returns:
+      type: None
+    exceptions:
+    - ValueError
+    side_effects: none
   - name: _assert_path_accessible
-    description: Ensure a configured file or directory exists and is readable.
+    description: Ensure configured file or directory exists and is readable.
     locked: false
     inputs:
       path:
@@ -106,7 +122,7 @@ classes:
     - ValueError
     side_effects: Reads filesystem metadata.
   - name: _require_dict_static
-    description: Validate that nested config sections are present and mappings.
+    description: Validate nested payload sections are present and mappings.
     locked: false
     inputs:
       payload:
@@ -122,7 +138,7 @@ classes:
     - KeyError
     side_effects: none
   - name: _require_value
-    description: Validate that a required key exists in a mapping.
+    description: Validate required key exists in mapping.
     locked: false
     inputs:
       payload:
@@ -140,8 +156,7 @@ classes:
     - KeyError
     side_effects: none
   - name: load_runtime_bundle
-    description: Load config, shared signal dictionary, trait definitions, and resolved
-      paths from the contract location, normalizing traits for scoring use.
+    description: Load YAML config, shared signal dictionary, normalized trait definitions, and resolved paths from runtime contract location.
     locked: false
     inputs:
       contract_path:
@@ -152,11 +167,14 @@ classes:
     exceptions:
     - FileNotFoundError
     - PermissionError
+    - TypeError
+    - KeyError
+    - ValueError
     - json.JSONDecodeError
     - yaml.YAMLError
     side_effects: Reads configuration and trait files from disk.
   - name: load_traits_from_dir
-    description: Load all trait JSON payloads from the configured traits directory without mutating their source structure.
+    description: Load and normalize all T*.json trait payloads from configured traits directory, failing closed on malformed trait files.
     locked: false
     inputs:
       traits_dir:
@@ -165,9 +183,216 @@ classes:
     returns:
       type: list[dict]
     exceptions:
+    - FileNotFoundError
+    - TypeError
+    - KeyError
     - json.JSONDecodeError
     - OSError
     side_effects: Reads trait files from disk.
+  - name: _load_signal_dictionary
+    description: Load and validate shared signal dictionary JSON.
+    locked: false
+    inputs:
+      path:
+        type: str | Path
+        required: true
+    returns:
+      type: dict
+    exceptions:
+    - TypeError
+    - KeyError
+    - json.JSONDecodeError
+    - OSError
+    side_effects: Reads signal dictionary file from disk.
+  - name: _canonical_trait_id
+    description: Normalize runtime trait ids like T1_Empathy to app ids like trait_1.
+    locked: false
+    inputs:
+      trait_id:
+        type: Any
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _normalize_trait_payload
+    description: Normalize trait id aliases, signal refs, weights, and extended groups for scoring.
+    locked: false
+    inputs:
+      payload:
+        type: dict
+        required: true
+      source_path:
+        type: str | Path
+        required: true
+    returns:
+      type: dict
+    exceptions:
+    - TypeError
+    - KeyError
+    side_effects: none
+  - name: _normalize_signal_collection
+    description: Normalize a list of trait signal definitions.
+    locked: false
+    inputs:
+      signals:
+        type: list[dict]
+        required: true
+    returns:
+      type: list[dict]
+    exceptions: []
+    side_effects: none
+  - name: _normalize_extended_groups
+    description: Normalize explicit extended_signal_groups or legacy extended_signals into grouped scoring shape.
+    locked: false
+    inputs:
+      payload:
+        type: dict
+        required: true
+    returns:
+      type: list[dict]
+    exceptions: []
+    side_effects: none
+  - name: _normalize_group_collection
+    description: Normalize extended signal group metadata and signals.
+    locked: false
+    inputs:
+      groups:
+        type: list[dict]
+        required: true
+    returns:
+      type: list[dict]
+    exceptions: []
+    side_effects: none
+  - name: _normalize_signal
+    description: Normalize a trait signal ref from ref, maps_to, or id and normalize weight from weight, base_weight, or default_weight.
+    locked: false
+    inputs:
+      signal:
+        type: dict
+        required: true
+    returns:
+      type: dict
+    exceptions: []
+    side_effects: none
+  - name: _signal_ref
+    description: Resolve scoring dictionary ref from trait signal fields.
+    locked: false
+    inputs:
+      signal:
+        type: dict
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _assert_runtime_bundle
+    description: Validate full runtime bundle config, signal dictionary, and trait list.
+    locked: false
+    inputs:
+      config:
+        type: dict
+        required: true
+      signal_dictionary:
+        type: dict
+        required: true
+      traits:
+        type: list[dict]
+        required: true
+    returns:
+      type: None
+    exceptions:
+    - TypeError
+    - KeyError
+    side_effects: none
+  - name: _assert_signal_dictionary
+    description: Validate shared signal dictionary shape.
+    locked: false
+    inputs:
+      signal_dictionary:
+        type: dict
+        required: true
+    returns:
+      type: None
+    exceptions:
+    - TypeError
+    - KeyError
+    side_effects: none
+  - name: _assert_signal_payload
+    description: Validate one shared dictionary signal payload.
+    locked: false
+    inputs:
+      signal:
+        type: dict
+        required: true
+      parts:
+        type: list[str]
+        required: true
+    returns:
+      type: None
+    exceptions:
+    - TypeError
+    - KeyError
+    side_effects: none
+  - name: _assert_trait_payload
+    description: Validate one trait definition has required fields and signal shapes.
+    locked: false
+    inputs:
+      trait:
+        type: dict
+        required: true
+      source:
+        type: str | Path
+        required: true
+    returns:
+      type: None
+    exceptions:
+    - TypeError
+    - KeyError
+    side_effects: none
+  - name: _assert_trait_signals
+    description: Validate trait signal list contains usable refs and numeric weights.
+    locked: false
+    inputs:
+      signals:
+        type: list[dict]
+        required: true
+      source:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions:
+    - TypeError
+    - KeyError
+    side_effects: none
+  - name: _assert_extended_signal_groups
+    description: Validate extended signal groups and contained signals.
+    locked: false
+    inputs:
+      groups:
+        type: list[dict]
+        required: true
+      source:
+        type: str | Path
+        required: true
+    returns:
+      type: None
+    exceptions:
+    - TypeError
+    - KeyError
+    side_effects: none
+  - name: _build_dictionary
+    description: Index shared signals by id.
+    locked: false
+    inputs:
+      signal_dictionary:
+        type: dict
+        required: true
+    returns:
+      type: dict[str, dict]
+    exceptions: []
+    side_effects: none
   - name: _require_dict
     description: Instance wrapper around static mapping validation helper.
     locked: false
@@ -185,7 +410,7 @@ classes:
     - KeyError
     side_effects: none
   - name: _require_bool
-    description: Validate a nested boolean configuration setting.
+    description: Validate nested boolean configuration setting.
     locked: false
     inputs:
       payload:
@@ -201,7 +426,7 @@ classes:
     - KeyError
     side_effects: none
   - name: _optional_dict
-    description: Return an optional nested mapping when every path segment exists.
+    description: Return optional nested mapping when every path segment exists.
     locked: false
     inputs:
       payload:
@@ -216,7 +441,7 @@ classes:
     - TypeError
     side_effects: none
   - name: _require_number
-    description: Validate a nested numeric configuration setting.
+    description: Validate nested numeric configuration setting.
     locked: false
     inputs:
       payload:
@@ -231,9 +456,24 @@ classes:
     - TypeError
     - KeyError
     side_effects: none
+  - name: _nested_value
+    description: Read nested config value with fail-closed missing path diagnostics.
+    locked: false
+    inputs:
+      payload:
+        type: dict
+        required: true
+      parts:
+        type: list[str]
+        required: true
+    returns:
+      type: Any
+    exceptions:
+    - TypeError
+    - KeyError
+    side_effects: none
   - name: _assert_startup_schema
-    description: Validate required scoring configuration structure and signal dictionary
-      schema.
+    description: Validate scoring.core_multiplier, decision_engine thresholds/override_rules, signal resolution, and signal dictionary schema.
     locked: false
     inputs:
       config:
@@ -247,12 +487,57 @@ classes:
     exceptions:
     - TypeError
     - KeyError
-    - FileNotFoundError
-    - PermissionError
-    side_effects: Reads configured path metadata.
+    side_effects: none
+  - name: _require_number_static
+    description: Static validator for nested numeric configuration setting.
+    locked: false
+    inputs:
+      payload:
+        type: dict
+        required: true
+      parts:
+        type: list[str]
+        required: true
+    returns:
+      type: int | float
+    exceptions:
+    - TypeError
+    - KeyError
+    side_effects: none
+  - name: _require_bool_static
+    description: Static validator for nested boolean configuration setting.
+    locked: false
+    inputs:
+      payload:
+        type: dict
+        required: true
+      parts:
+        type: list[str]
+        required: true
+    returns:
+      type: bool
+    exceptions:
+    - TypeError
+    - KeyError
+    side_effects: none
+  - name: _nested_static_value
+    description: Static helper to read nested config value with fail-closed missing path diagnostics.
+    locked: false
+    inputs:
+      payload:
+        type: dict
+        required: true
+      parts:
+        type: list[str]
+        required: true
+    returns:
+      type: Any
+    exceptions:
+    - TypeError
+    - KeyError
+    side_effects: none
   - name: resolve_signal
-    description: Resolve a trait signal reference against the shared dictionary and
-      trait overrides.
+    description: Resolve trait signal reference against shared dictionary and trait overrides.
     locked: false
     inputs:
       signal:
@@ -263,8 +548,20 @@ classes:
     exceptions:
     - ValueError
     side_effects: none
+  - name: _resolve_unknown_signal
+    description: Apply allow_custom_signals policy for unknown signal refs.
+    locked: false
+    inputs:
+      ref:
+        type: str
+        required: true
+    returns:
+      type: dict | None
+    exceptions:
+    - ValueError
+    side_effects: none
   - name: score_trait
-    description: Score a single trait using selected signal references.
+    description: Score one trait using selected signal references.
     locked: false
     inputs:
       trait:
@@ -275,11 +572,41 @@ classes:
         required: true
     returns:
       type: dict
-    exceptions: []
+    exceptions:
+    - ValueError
+    side_effects: none
+  - name: _selected_signals
+    description: Resolve selected signals from a signal list.
+    locked: false
+    inputs:
+      signals:
+        type: list[dict]
+        required: true
+      selected_refs:
+        type: set[str]
+        required: true
+    returns:
+      type: list[dict]
+    exceptions:
+    - ValueError
+    side_effects: none
+  - name: _selected_extended_signals
+    description: Resolve selected signals from extended signal groups.
+    locked: false
+    inputs:
+      groups:
+        type: list[dict]
+        required: true
+      selected_refs:
+        type: set[str]
+        required: true
+    returns:
+      type: list[dict]
+    exceptions:
+    - ValueError
     side_effects: none
   - name: score_session
-    description: Score all configured traits, compute non-skipped critical selection
-      state, and return session decision metadata.
+    description: Score all configured traits, compute critical selection state, and return decision metadata.
     locked: false
     inputs:
       traits:
@@ -290,11 +617,25 @@ classes:
         required: true
     returns:
       type: dict[str, Any]
+    exceptions:
+    - ValueError
+    side_effects: none
+  - name: _selection_for_trait
+    description: Resolve selected refs from canonical trait id or runtime aliases.
+    locked: false
+    inputs:
+      trait:
+        type: dict
+        required: true
+      selections:
+        type: dict[str, list[str]]
+        required: true
+    returns:
+      type: list[str]
     exceptions: []
     side_effects: none
   - name: make_decision
-    description: Resolve the threshold-based session decision label without applying
-      override metadata.
+    description: Resolve threshold-based session decision label without applying override metadata.
     locked: false
     inputs:
       final_score:
@@ -307,23 +648,8 @@ classes:
       type: str
     exceptions: []
     side_effects: none
-  - name: debug_trait
-    description: Print a detailed scoring trace for a single trait.
-    locked: false
-    inputs:
-      trait:
-        type: dict
-        required: true
-      selected_refs:
-        type: list[str]
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Writes debug output to stdout.
   - name: build_decision_summary
-    description: Apply contract override settings before thresholds and return explicit
-      decision metadata for session scoring output.
+    description: Apply decision_engine.override_rules before thresholds and return explicit decision metadata.
     locked: false
     inputs:
       final_score:
@@ -336,8 +662,25 @@ classes:
       type: dict[str, Any]
     exceptions: []
     side_effects: none
+  - name: debug_trait
+    description: Print detailed scoring trace for one trait.
+    locked: false
+    inputs:
+      trait:
+        type: dict
+        required: true
+      selected_refs:
+        type: list[str]
+        required: true
+    returns:
+      type: None
+    exceptions:
+    - ValueError
+    side_effects: Writes debug output to stdout.
 data_structures: []
 dependencies:
 - json
 - pathlib
+- re
+- typing
 - yaml

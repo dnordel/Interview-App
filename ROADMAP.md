@@ -23,3 +23,7 @@
 - [x] Updated finalize UX to return to the start screen immediately while finalize/export continues in background.
 - [x] Added deferred-summary export mode that writes `Summary pending/failed` placeholders first, then retries summary generation in a background pass.
 - [x] Added locked-file save fallback for interview notes exports by writing suffixed `(updated N)` filenames when the original DOCX is open in Word.
+
+## 2026-06-09
+- [x] Implemented trait-based scoring runtime bundle loader with bundle-contained path validation, normalized scoring config keys, fail-closed trait/signal validation, and real-engine regression coverage.
+- [x] Confirmed `SPEC_TEMPLATE.md` is absent in this repository; no spec-template update was applied.
