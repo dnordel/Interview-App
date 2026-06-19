@@ -664,4 +664,4 @@ def _require_child_path(path: Path, parent: Path) -> None:
 
 
 if __name__ == "__main__":
-    run_server(base_dir=REPO_ROOT / "interviews")
+    run_server()

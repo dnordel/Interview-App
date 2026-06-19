@@ -70,10 +70,10 @@ modules:
     path: config/question_overrides.json
     depends_on: []
   interview_history_json:
-    path: interview_history.json
+    path: user_artifacts/interview_history.json
     depends_on: []
   school_offer_settings_json:
-    path: school_offer_settings.json
+    path: user_artifacts/school_offer_settings.json
     depends_on: []
   trait_based_scoring_json:
     path: Trait-Based Scoring/*.json

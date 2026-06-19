@@ -1,0 +1,10 @@
+user_artifacts/
+interviews/
+interview_history.json
+school_offer_settings.json
+school_email_template_settings.json
+interview_app_settings.json
+logs/
+*.pyc
+__pycache__/
+.pytest_cache/

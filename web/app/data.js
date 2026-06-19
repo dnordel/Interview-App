@@ -1,8 +1,8 @@
 export const urls = {
   rubric: "../../config/rubric.json",
   overrides: "../../config/question_overrides.json",
-  history: "../../interview_history.json",
-  offerSettings: "../../school_offer_settings.json",
+  history: "../../user_artifacts/interview_history.json",
+  offerSettings: "../../user_artifacts/school_offer_settings.json",
   weightedSignals: "../../Trait-Based%20Scoring/preschool_teacher_interview_signals_weighted.json",
 };
 

@@ -2,7 +2,7 @@ module:
   name: web_app_backend
   language: python
   path: src/web_app_backend.py
-  version: 0.10.0
+  version: 0.10.1
   description: Opt-in local HTTP backend for the web migration shell. It exposes
     repository-local configuration bootstrap data, serves the web app static files,
     and saves browser draft payloads through the existing DraftManager while Tk
@@ -41,16 +41,17 @@ functions:
   side_effects: Writes config/question_overrides.json.
 - name: load_offer_settings
   description: Load normalized per-school offer settings from the existing
-    school_offer_settings.json path.
+    user_artifacts/school_offer_settings.json path.
   locked: false
   inputs: {}
   returns:
     type: dict[str, dict[str, str]]
   exceptions: []
-  side_effects: Reads school_offer_settings.json.
+  side_effects: Reads user_artifacts/school_offer_settings.json.
 - name: save_offer_settings
   description: Validate, normalize, and atomically persist per-school offer settings
-    to school_offer_settings.json through the existing SchoolOfferSettingsStore shape.
+    to user_artifacts/school_offer_settings.json through the existing SchoolOfferSettingsStore
+    shape.
   locked: false
   inputs:
     payload:
@@ -60,7 +61,7 @@ functions:
     type: dict[str, dict[str, str]]
   exceptions:
   - WebAppBackendError
-  side_effects: Writes school_offer_settings.json.
+  side_effects: Writes user_artifacts/school_offer_settings.json.
 - name: load_history_rows
   description: Load finalized interview history rows from the existing interview
     history store.
@@ -69,7 +70,7 @@ functions:
   returns:
     type: list[dict[str, Any]]
   exceptions: []
-  side_effects: Reads interview_history.json.
+  side_effects: Reads user_artifacts/interview_history.json.
 - name: update_history_offer_status
   description: Update one finalized interview history row's offer_status by row key
     or history id without echoing candidate notes or transcripts in errors.
@@ -89,7 +90,7 @@ functions:
     type: dict[str, Any]
   exceptions:
   - WebAppBackendError
-  side_effects: Writes interview_history.json when the row exists.
+  side_effects: Writes user_artifacts/interview_history.json when the row exists.
 - name: score_web_draft_preview
   description: Validate a browser draft payload and return a report-compatible scoring
     preview through ScoringEngine without writing files or logging candidate text.
@@ -125,7 +126,7 @@ functions:
   - OSError
   side_effects: Reads rubric and question overrides, writes one DOCX report under
     base_dir/Indeed Interview Notes, writes one JSON export under base_dir/integration_exports,
-    and appends one row to interview_history.json.
+    and appends one row to user_artifacts/interview_history.json.
 - name: normalize_web_draft_payload
   description: Convert browser draft payload field names into the desktop draft
     shape expected by session hydration and reporting.

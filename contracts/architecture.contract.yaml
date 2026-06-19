@@ -73,8 +73,9 @@ services:
   web_app_migration_service:
     description: Static browser migration shell for start, candidate setup, interview,
       onboarding, settings, question editor, and history surfaces. It reads local
-      JSON config/history and merged weighted trait-signal data when served from
-      the repository and keeps Tk as the main production entry point.
+      JSON config, user_artifacts history/settings, and merged weighted trait-signal
+      data when served from the repository and keeps Tk as the main production
+      entry point.
     modules:
     - web_app
     - web_app_backend
@@ -126,8 +127,9 @@ trust_boundaries:
   user_input: Tkinter forms, free-text notes, and runtime settings are untrusted until
     validated/sanitized.
   filesystem: All read/write paths are constrained by guardrails and explicit user
-    choices, including strict path validation for merged interview-notes artifacts
-    before finalize/referral/integration writes.
+    choices, with default generated artifacts grouped under the ignored user_artifacts
+    directory and strict path validation for merged interview-notes artifacts before
+    finalize/referral/integration writes.
   network: Referral/integration submission endpoints are treated as untrusted remote
     dependencies.
 security_expectations:

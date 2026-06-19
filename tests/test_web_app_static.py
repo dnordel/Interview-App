@@ -37,8 +37,8 @@ def test_web_app_loads_existing_local_configuration_sources():
     for source_path in (
         "../../config/rubric.json",
         "../../config/question_overrides.json",
-        "../../interview_history.json",
-        "../../school_offer_settings.json",
+        "../../user_artifacts/interview_history.json",
+        "../../user_artifacts/school_offer_settings.json",
         "../../Trait-Based%20Scoring/preschool_teacher_interview_signals_weighted.json",
     ):
         assert source_path in data_js

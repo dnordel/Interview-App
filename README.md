@@ -236,19 +236,29 @@ Role-sensitive visibility expectations for manual QA:
 
 - `config/rubric.json`: role tracks, traits, weights, thresholds.
 - `config/disqualifier_signals.json`: disqualifier cues for evaluation.
-- `interviews/onboarding_data.json`: onboarding records (created by onboarding app).
-- `interviews/onboarding_settings.json`: onboarding email/reminder settings (created by onboarding app).
+- `user_artifacts/interviews/onboarding_data.json`: onboarding records (created by onboarding app).
+- `user_artifacts/interviews/onboarding_settings.json`: onboarding email/reminder settings (created by onboarding app).
+- `user_artifacts/interview_history.json`: finalized interview history rows (created by interview app).
+- `user_artifacts/school_offer_settings.json`: local offer-template settings (created by interview app).
+- `user_artifacts/interview_app_settings.json`: local app settings, including output folder preference.
 
 ## Output Locations
 
-Default output base directory: `./interviews/` (auto-created).
+Default user-artifact directory: `./user_artifacts/` (auto-created and ignored by Git).
+Default output base directory: `./user_artifacts/interviews/` (auto-created).
 
 | Output Type | Example File | Default Location |
 | --- | --- | --- |
-| Interview draft (JSON) | `draft-20260206-154500-Jane_Doe.json` | `./interviews/drafts/` |
-| Final interview report (DOCX) | `2026-02-06 - Brooklyn_Center - Jane_Doe - Interview.docx` | `./interviews/Indeed Interview Notes/` |
-| Optional live transcript notes (DOCX) | `Candidate_Jane_Doe_2026-02-06_live_transcript.docx` | `./interviews/` |
-| Optional recording/transcription artifacts | tool-generated timestamped files | `./interviews/` |
+| Interview draft (JSON) | `draft-20260206-154500-Jane_Doe.json` | `./user_artifacts/interviews/drafts/` |
+| Final interview report (DOCX) | `2026-02-06 - Brooklyn_Center - Jane_Doe - Interview.docx` | `./user_artifacts/interviews/Indeed Interview Notes/` |
+| Optional live transcript notes (DOCX) | `Candidate_Jane_Doe_2026-02-06_live_transcript.docx` | `./user_artifacts/interviews/` |
+| Optional recording/transcription artifacts | tool-generated timestamped files | `./user_artifacts/interviews/` |
+
+For existing installs, move or copy prior generated files from `./interviews/`,
+`./interview_history.json`, `./school_offer_settings.json`,
+`./school_email_template_settings.json`, and `./interview_app_settings.json`
+into matching paths under `./user_artifacts/` before pulling branch updates that
+stop tracking generated artifacts.
 
 ## Security and Privacy Considerations
 

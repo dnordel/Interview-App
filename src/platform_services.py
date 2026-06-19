@@ -36,18 +36,19 @@ APP_TITLE = "Structured Preschool Interview Tool"
 APP_DIR = Path(__file__).resolve().parent
 REPO_ROOT = APP_DIR.parent
 CONFIG_DIR = REPO_ROOT / "config"
+USER_ARTIFACTS_DIR = REPO_ROOT / "user_artifacts"
 
 DEFAULT_RUBRIC_PATH = CONFIG_DIR / "rubric.json"
 DEFAULT_SIGNALS_PATH = CONFIG_DIR / "disqualifier_signals.json"
 
 # Stores GUI edits (trait order, trait question overrides, custom questions, and mixed flow)
 QUESTIONS_OVERRIDE_PATH = CONFIG_DIR / "question_overrides.json"
-INTERVIEW_HISTORY_PATH = REPO_ROOT / "interview_history.json"
-SCHOOL_OFFER_SETTINGS_PATH = REPO_ROOT / "school_offer_settings.json"
-SCHOOL_EMAIL_TEMPLATE_SETTINGS_PATH = REPO_ROOT / "school_email_template_settings.json"
-INTERVIEW_APP_SETTINGS_PATH = REPO_ROOT / "interview_app_settings.json"
+INTERVIEW_HISTORY_PATH = USER_ARTIFACTS_DIR / "interview_history.json"
+SCHOOL_OFFER_SETTINGS_PATH = USER_ARTIFACTS_DIR / "school_offer_settings.json"
+SCHOOL_EMAIL_TEMPLATE_SETTINGS_PATH = USER_ARTIFACTS_DIR / "school_email_template_settings.json"
+INTERVIEW_APP_SETTINGS_PATH = USER_ARTIFACTS_DIR / "interview_app_settings.json"
 
-DEFAULT_BASE_DIR = REPO_ROOT / "interviews"
+DEFAULT_BASE_DIR = USER_ARTIFACTS_DIR / "interviews"
 
 DEFAULT_FONT_SIZE = 10
 MIN_FONT_SIZE = 8
