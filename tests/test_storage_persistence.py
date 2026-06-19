@@ -8,10 +8,11 @@ from data_store import (
     SchoolEmailTemplateStore,
     SchoolOfferSettingsStore,
 )
-from onboarding_reminder_health import DEFAULT_EXPECTED_INTERVAL_HOURS
-from onboarding_scheduler_dialog import scheduler_expected_interval_hours, scheduler_opt_in
-from onboarding_storage import JsonStore
-from onboarding_ui_helpers import build_onboarding_overview
+from onboarding_operations import DEFAULT_EXPECTED_INTERVAL_HOURS
+from onboarding_operations import scheduler_expected_interval_hours, scheduler_opt_in
+import onboarding_operations
+from onboarding_operations import JsonStore
+from onboarding_operations import build_onboarding_overview
 from storage_utils import safe_read_json
 
 
@@ -106,6 +107,7 @@ def test_school_email_template_store_save_and_load_round_trip(tmp_path: Path):
     assert store.load() == payload
 
 def test_json_store_atomic_write_json_keeps_expected_format(tmp_path: Path):
+    assert JsonStore is onboarding_operations.JsonStore
     path = tmp_path / "onboarding_data.json"
     JsonStore._atomic_write_json(path, {"name": "Zoë", "active": True})
 

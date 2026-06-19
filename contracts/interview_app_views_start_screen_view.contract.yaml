@@ -13,7 +13,5 @@ classes:
   methods: []
 data_structures: []
 dependencies:
-- app_content
-- dashboard_today
-- onboarding_ui_helpers
-- ux_metrics
+- module: platform_services
+- module: onboarding_operations

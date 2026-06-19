@@ -1,4 +1,4 @@
-from onboarding_action_sections import onboarding_action_sections
+from onboarding_operations import onboarding_action_sections
 
 
 def test_onboarding_actions_clustered_by_intent_in_expected_order():

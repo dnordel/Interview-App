@@ -39,7 +39,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Mapping, Optional
 
-from transcription_diagnostics import probe_audio_file, write_transcription_diagnostic
+from interview_runtime import probe_audio_file, write_transcription_diagnostic
 
 
 # ----------------------------
@@ -183,7 +183,7 @@ class RecordingSession:
             return
         _assign_process_to_windows_job(self._windows_job_handle, proc)
 
-    def start(self, mic_cmd: list[str], sys_cmd: list[str]) -> None:
+    def start(self, mic_cmd: list[str] | None, sys_cmd: list[str] | None) -> None:
         """
         Start the two FFmpeg processes. This returns immediately.
         """
@@ -193,13 +193,12 @@ class RecordingSession:
         popen_kwargs = self._popen_kwargs()
         started: list[subprocess.Popen] = []
         try:
-            mic_proc = subprocess.Popen(mic_cmd, **popen_kwargs)
-            self._track_process(mic_proc)
-            started.append(mic_proc)
-
-            sys_proc = subprocess.Popen(sys_cmd, **popen_kwargs)
-            self._track_process(sys_proc)
-            started.append(sys_proc)
+            for command in (mic_cmd, sys_cmd):
+                if command is None:
+                    continue
+                proc = subprocess.Popen(command, **popen_kwargs)
+                self._track_process(proc)
+                started.append(proc)
         except Exception:
             for proc in started:
                 self._safe_terminate(proc)
@@ -437,13 +436,13 @@ def start_recording(
         whisper_compute_type = "int8" if whisper_device.lower() == "cpu" else "float16"
 
     if os_name == "windows":
-        if not win_mic_device or not win_sys_device:
+        if not win_mic_device and not win_sys_device:
             raise ValueError(
-                "Windows requires win_mic_device and win_sys_device.\n"
+                "Windows requires at least one audio device: win_mic_device or win_sys_device.\n"
                 "Get names via: ffmpeg -list_devices true -f dshow -i dummy"
             )
-        mic_cmd = _ffmpeg_windows_mic_cmd(ffmpeg, mic_wav, sample_rate, win_mic_device)
-        sys_cmd = _ffmpeg_windows_system_cmd(ffmpeg, sys_wav, sample_rate, win_sys_device)
+        mic_cmd = _ffmpeg_windows_mic_cmd(ffmpeg, mic_wav, sample_rate, win_mic_device) if win_mic_device else None
+        sys_cmd = _ffmpeg_windows_system_cmd(ffmpeg, sys_wav, sample_rate, win_sys_device) if win_sys_device else None
 
     else:
         if not linux_mic_source or not linux_sys_monitor:

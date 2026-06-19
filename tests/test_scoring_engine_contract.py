@@ -7,7 +7,7 @@ public contract to the minimal required fields used by downstream consumers.
 import numbers
 import unittest
 
-from reporting import ScoringEngine
+from scoring_reporting import ScoringEngine
 from test_scoring_engine import TestScoringEngineEvaluate
 
 REQUIRED_KEYS = {"percent_of_max", "outcome"}

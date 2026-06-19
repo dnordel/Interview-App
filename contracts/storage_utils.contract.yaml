@@ -2,8 +2,9 @@ module:
   name: storage_utils
   language: python
   path: src/storage_utils.py
-  version: 1.0.0
-  description: Shared JSON persistence helpers for atomic writes and safe reads.
+  version: 1.0.1
+  description: Compatibility wrapper for JSON persistence helpers now implemented
+    by platform_services.
 functions:
 - name: atomic_write_json
   description: Write JSON payload atomically to a filesystem path.
@@ -50,4 +51,5 @@ functions:
   side_effects: Reads from filesystem.
 classes: []
 data_structures: []
-dependencies: []
+dependencies:
+- module: platform_services

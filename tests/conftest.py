@@ -35,3 +35,11 @@ def pytest_configure() -> None:
         if exc.name == "exceptions":
             pytest.exit(_DOCX_IMPORT_HELP, returncode=2)
         raise
+
+
+@pytest.fixture()
+def src_cwd(monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Run a test from src while preserving repository import paths."""
+
+    monkeypatch.chdir(SRC)
+    return SRC

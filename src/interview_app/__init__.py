@@ -3,12 +3,25 @@ from .bootstrap import IntroFonts, build_default_settings, create_fonts, wire_co
 from .dashboard_controller import DashboardController
 from .finalize_context import FinalizeContext, build_finalize_context
 from .finalize_gateways import FinalizeGateways
-from .finalize_pipeline import FinalizePipelineController, validate_before_finalize
+from .finalize_pipeline import (
+    FinalizePipelineController,
+    LEGACY_FINALIZE_GUARDRAIL_MESSAGE,
+    raise_legacy_finalize_guardrail,
+    validate_before_finalize,
+)
 from .flow_controller import FlowController
 from .history_actions import HistoryActionsService
 from .history_controller import HistoryController
 from .session_manager import InterviewSessionManager, ResumeInstruction, SessionPayloadValidationError
-from .state import AppSharedState
+from interview_runtime import (
+    AppSharedState,
+    FinalizePipelineResult,
+    FlowItem,
+    HistoryRowKey,
+    InterviewSessionRecordingContext as InterviewSessionContext,
+    OfferTransitionResult,
+    RecordingTranscriptionPayload,
+)
 from .transcript_writer import TranscriptWriterController
 from .transcription_executor import (
     BoundedTranscriptionExecutor,
@@ -17,15 +30,6 @@ from .transcription_executor import (
     resolve_transcription_max_workers,
 )
 from .transcription_queue import TranscriptionQueueState
-from .types import (
-    FinalizePipelineResult,
-    FlowItem,
-    HistoryRowKey,
-    InterviewSessionContext,
-    OfferTransitionResult,
-    RecordingTranscriptionPayload,
-    RetranscribeResultPayload,
-)
 from .ui_router import UiRouter
 from .ui_shell import UiShellController
 from .views import CandidateSetupView, SignalReferenceView, StartScreenView
@@ -39,6 +43,7 @@ __all__ = [
     "FinalizeContext",
     "FinalizeGateways",
     "FinalizePipelineController",
+    "LEGACY_FINALIZE_GUARDRAIL_MESSAGE",
     "FlowController",
     "HistoryActionsService",
     "HistoryController",
@@ -56,6 +61,7 @@ __all__ = [
     "wire_views",
     "build_finalize_context",
     "validate_before_finalize",
+    "raise_legacy_finalize_guardrail",
     "InterviewSessionContext",
     "InterviewSessionManager",
     "ResumeInstruction",
@@ -64,7 +70,6 @@ __all__ = [
     "RecordingTranscriptionPayload",
     "HistoryRowKey",
     "OfferTransitionResult",
-    "RetranscribeResultPayload",
     "FinalizePipelineResult",
     "RuntimeConfig",
     "StartScreenView",

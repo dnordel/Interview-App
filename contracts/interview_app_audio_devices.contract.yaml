@@ -2,8 +2,9 @@ module:
   name: interview_app_audio_devices
   language: python
   path: src/interview_app/audio_devices.py
-  version: 1.0.0
-  description: Windows audio-device probing and fallback resolution for DirectShow capture.
+  version: 1.0.1
+  description: Deprecated compatibility wrapper for Windows audio-device probing and
+    fallback resolution implemented by interview_runtime.
 functions:
 - name: _extract_dshow_audio_device_names
   description: Parse quoted audio device names from ffmpeg DirectShow stderr output.
@@ -57,4 +58,5 @@ functions:
   side_effects: probes local ffmpeg audio devices when available
 classes: []
 data_structures: []
-dependencies: []
+dependencies:
+- module: interview_runtime

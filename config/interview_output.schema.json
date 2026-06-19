@@ -69,6 +69,30 @@
         "$ref": "#/$defs/flowTranscriptEntry"
       }
     },
+    "executive_summary": {
+      "type": "string"
+    },
+    "interview_highlights": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "answer_summaries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/answerSummary"
+      }
+    },
+    "summary_status": {
+      "type": "string"
+    },
+    "summary_warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "referral_packet": {
       "$ref": "#/$defs/referralPacket"
     },
@@ -351,6 +375,25 @@
           "type": "string"
         },
         "answer": {
+          "type": "string"
+        }
+      }
+    },
+    "answerSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "flow_index",
+        "summary"
+      ],
+      "properties": {
+        "flow_index": {
+          "type": [
+            "integer",
+            "string"
+          ]
+        },
+        "summary": {
           "type": "string"
         }
       }

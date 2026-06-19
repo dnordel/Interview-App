@@ -11,19 +11,15 @@ import pytest
 import yaml
 
 from app_logging import RedactionFilter
-from email_security import sanitize_email_subject, sender_email_error_reason
-from integration_export import serialize_integration_payload
+from scoring_reporting import sanitize_email_subject, sender_email_error_reason, serialize_integration_payload
 from storage_utils import atomic_write_json, safe_read_json
-from transcription_diagnostics import probe_audio_file, write_transcription_diagnostic
+from interview_runtime import probe_audio_file, write_transcription_diagnostic
 
 SHARED_CONTRACTS = [
     Path("contracts/storage_utils.contract.yaml"),
     Path("contracts/app_logging.contract.yaml"),
-    Path("contracts/reporting.contract.yaml"),
-    Path("contracts/template_placeholders.contract.yaml"),
-    Path("contracts/transcription_diagnostics.contract.yaml"),
-    Path("contracts/email_security.contract.yaml"),
-    Path("contracts/integration_export.contract.yaml"),
+    Path("contracts/scoring_reporting.contract.yaml"),
+    Path("contracts/interview_runtime.contract.yaml"),
 ]
 
 
@@ -73,6 +69,9 @@ def test_shared_contract_symbol_signature_exists(
     module = _load_module(module_path)
     target = getattr(getattr(module, class_name), symbol_name) if class_name else getattr(module, symbol_name)
     expected_inputs = list(contract_inputs.keys())
+    if isinstance(target, property):
+        assert expected_inputs == [], contract_path
+        return
     assert _param_names(inspect.signature(target), method=bool(class_name)) == expected_inputs, contract_path
 
 

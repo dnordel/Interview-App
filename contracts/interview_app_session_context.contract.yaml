@@ -2,12 +2,14 @@ module:
   name: interview_app_session_context
   language: python
   path: src/interview_app/session_context.py
-  version: 1.0.0
-  description: Centralized session identity derivation and runtime path policy helpers for interview runtime setup.
+  version: 1.1.0
+  description: Deprecated compatibility wrapper for session identity and runtime path
+    policy helpers owned by interview_runtime.
 functions: []
 classes:
 - name: InterviewSessionContext
-  description: Provides sanitized naming, session key composition, and runtime path/log helpers.
+  description: Provides sanitized naming, session key composition, and runtime path/log
+    helpers.
   locked: false
   attributes: {}
   methods:
@@ -43,7 +45,8 @@ classes:
     exceptions: []
     side_effects: none
   - name: safe_base_name
-    description: Builds a filesystem-safe interview base name from candidate and date values.
+    description: Builds a filesystem-safe interview base name from candidate and date
+      values.
     locked: false
     inputs:
       candidate_name:
@@ -98,4 +101,5 @@ classes:
     exceptions: []
     side_effects: none
 data_structures: []
-dependencies: []
+dependencies:
+- module: interview_runtime

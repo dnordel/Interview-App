@@ -1,4 +1,4 @@
-from onboarding_reminder_health import (
+from onboarding_operations import (
     DEFAULT_EXPECTED_INTERVAL_HOURS,
     evaluate_onboarding_reminder_health,
 )

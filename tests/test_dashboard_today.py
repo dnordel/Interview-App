@@ -1,11 +1,11 @@
 from datetime import date
 
-from dashboard_today import (
+from onboarding_operations import (
     build_dashboard_today_summary,
     critical_window_days_from_settings,
     summarize_interview_states,
 )
-from onboarding_models import Employee, EmployeeTask
+from onboarding_operations import Employee, EmployeeTask
 
 
 def test_interview_state_defaults_to_zero_without_tracking_fields():

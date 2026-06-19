@@ -10,14 +10,12 @@ import pytest
 import yaml
 
 import runtime_wrapper
-from interview_state import InterviewState
-from transcript_accumulator import append_candidate_segment_text
+from interview_runtime import InterviewState, append_candidate_segment_text
 
 
 CONTRACTS = [
     Path("contracts/runtime_wrapper.contract.yaml"),
-    Path("contracts/interview_state.contract.yaml"),
-    Path("contracts/transcript_accumulator.contract.yaml"),
+    Path("contracts/interview_runtime.contract.yaml"),
 ]
 
 

@@ -1,4 +1,4 @@
-from transcript_accumulator import append_candidate_segment_text
+from interview_runtime import append_candidate_segment_text
 
 
 class Seg:

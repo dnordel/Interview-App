@@ -5,10 +5,10 @@ from typing import Any
 
 from tkinter import ttk
 
-from app_content import APP_TITLE
-from dashboard_today import build_dashboard_today_summary
-from onboarding_ui_helpers import TASK_STATUS_COLORS, TASK_STATUS_LABELS
-from ux_metrics import SUMMARY_SCOPES
+from onboarding_operations import build_dashboard_today_summary
+from onboarding_operations import TASK_STATUS_COLORS, TASK_STATUS_LABELS
+from platform_services import APP_TITLE, SUMMARY_SCOPES
+from tk_theme import COLORS
 
 
 class StartScreenView:
@@ -26,54 +26,55 @@ class StartScreenView:
 
         latest_draft_path = self.controller._latest_draft_path()
 
+        header = ttk.Frame(frm)
+        header.pack(fill="x", pady=(0, 12))
+        title_block = ttk.Frame(header)
+        title_block.pack(side="left", fill="x", expand=True)
         ttk.Label(
-            frm,
+            title_block,
             text=APP_TITLE,
-            font=("TkDefaultFont", self.controller.settings["font_size"] + 6, "bold"),
-        ).pack(pady=10)
+            font=("TkDefaultFont", self.controller.settings["font_size"] + 5, "bold"),
+        ).pack(anchor="w")
         ttk.Label(
-            frm,
-            text="Run interviews in a consistent flow, capture evidence quickly, and finalize to a DOCX report.",
-            foreground="#475569",
-            wraplength=950,
+            title_block,
+            text="Interviews, onboarding signals, and offer follow-through in one operating view.",
+            foreground=COLORS["muted"],
+            wraplength=820,
             justify="left",
-        ).pack(fill="x", pady=(0, 12))
+        ).pack(anchor="w", pady=(2, 0))
 
-        core_box = ttk.LabelFrame(frm, text="START INTERVIEW WORKFLOW", padding=12)
-        core_box.pack(fill="x", pady=(0, 12))
-        ttk.Label(
-            core_box,
-            text="Begin a new session or resume draft work.",
-            foreground="#475569",
-        ).pack(anchor="w", pady=(0, 8))
-
-        core_row = ttk.Frame(core_box)
-        core_row.pack(anchor="w")
-        new_btn = ttk.Button(core_row, text="New Interview", command=self.controller.new_interview)
+        actions = ttk.Frame(header)
+        actions.pack(side="right", anchor="ne")
+        new_btn = ttk.Button(actions, text="New Interview", command=self.controller.new_interview, style="Primary.TButton")
         new_btn.pack(side="left", padx=(0, 8))
-        ttk.Button(core_row, text="Open Draft", command=self.controller.open_draft).pack(side="left", padx=(0, 8))
+        ttk.Button(actions, text="Open Draft", command=self.controller.open_draft, style="Secondary.TButton").pack(side="left", padx=(0, 8))
 
         continue_label = "Continue Last Draft" if latest_draft_path else "Continue Last Draft (Unavailable)"
         continue_btn = ttk.Button(
-            core_row,
+            actions,
             text=continue_label,
             command=self.controller.continue_last_draft,
             state="normal" if latest_draft_path else "disabled",
+            style="Secondary.TButton",
         )
         continue_btn.pack(side="left")
         if latest_draft_path:
-            ttk.Label(core_box, text=f"Latest draft: {latest_draft_path.name}", foreground="#475569").pack(anchor="w", pady=(8, 0))
+            ttk.Label(frm, text=f"Latest draft: {latest_draft_path.name}", foreground=COLORS["muted"]).pack(anchor="w", pady=(0, 8))
 
-        tools_box = ttk.LabelFrame(frm, text="TOOLS & ADMIN", padding=12)
-        tools_box.pack(fill="x", pady=(0, 12))
+        self.render_today_dashboard(frm)
+
+        workbench = ttk.Frame(frm)
+        workbench.pack(fill="x", pady=(0, 12))
+        tools_box = ttk.LabelFrame(workbench, text="Tools & Admin", padding=10)
+        tools_box.pack(side="left", fill="x", expand=True, padx=(0, 10))
         ttk.Label(
             tools_box,
-            text="Secondary setup and support actions.",
-            foreground="#475569",
+            text="Question setup, settings, onboarding, and referral support.",
+            foreground=COLORS["muted"],
         ).pack(anchor="w", pady=(0, 8))
 
         tools_row_one = ttk.Frame(tools_box)
-        tools_row_one.pack(anchor="w", pady=(0, 6))
+        tools_row_one.pack(fill="x", pady=(0, 6))
         ttk.Button(tools_row_one, text="Edit Questions", command=self.controller.open_question_editor).pack(side="left", padx=(0, 8))
         ttk.Button(tools_row_one, text="Question Settings", command=self.controller.open_question_settings).pack(side="left", padx=(0, 8))
         ttk.Button(tools_row_one, text="Settings", command=self.controller.open_settings).pack(side="left", padx=(0, 8))
@@ -85,15 +86,15 @@ class StartScreenView:
         ).pack(side="left")
 
         tools_row_two = ttk.Frame(tools_box)
-        tools_row_two.pack(anchor="w")
+        tools_row_two.pack(fill="x")
         ttk.Button(tools_row_two, text="Refer Director", command=self.controller.open_director_referral_email_draft).pack(side="left", padx=(0, 8))
         ttk.Button(tools_row_two, text="Exit", command=self.controller.destroy).pack(side="left")
 
-        self.render_today_dashboard(frm)
-
-        search_row = ttk.Frame(frm)
+        search_box = ttk.LabelFrame(frm, text="Interview History", padding=10)
+        search_box.pack(fill="both", expand=True)
+        search_row = ttk.Frame(search_box)
         search_row.pack(fill="x", pady=(0, 8))
-        ttk.Label(search_row, text="Search history:").pack(side="left")
+        ttk.Label(search_row, text="Search").pack(side="left")
         search_entry = ttk.Entry(search_row, textvariable=self.controller.history_search_var)
         search_entry.pack(side="left", fill="x", expand=True, padx=8)
         ttk.Button(search_row, text="Clear", command=lambda: self.controller._set_history_search("")).pack(side="left")
@@ -101,14 +102,14 @@ class StartScreenView:
             self.controller.history_search_var.trace_remove("write", self.controller.history_search_trace_id)
         self.controller.history_search_trace_id = self.controller.history_search_var.trace_add("write", lambda *_: self.controller._refresh_history_tree())
 
-        self.controller._build_history_table(frm)
+        self.controller._build_history_table(search_box)
         self.controller._refresh_history_tree()
 
         self.controller.set_footer_actions()
         self.controller.after_idle(new_btn.focus_set)
 
     def render_today_dashboard(self, parent: ttk.Frame) -> None:
-        box = ttk.LabelFrame(parent, text="Today at a glance")
+        box = ttk.LabelFrame(parent, text="Today at a glance", padding=10)
         box.pack(fill="x", pady=(0, 12))
 
         onboarding_state = self.controller._load_onboarding_state()
@@ -118,25 +119,27 @@ class StartScreenView:
             scheduler_settings=onboarding_state.scheduler_settings,
             today=date.today(),
         )
-        self.render_interview_dashboard_card(box, summary)
-        self.render_onboarding_dashboard_card(box, summary)
+        kpi_row = ttk.Frame(box)
+        kpi_row.pack(fill="x")
+        self.render_interview_dashboard_card(kpi_row, summary)
+        self.render_onboarding_dashboard_card(kpi_row, summary)
         self.render_monthly_metrics_card(box, onboarding_state)
         self.render_dashboard_actions(box, summary)
 
     def render_interview_dashboard_card(self, parent: ttk.LabelFrame, summary: Any) -> None:
-        card = ttk.Frame(parent)
-        card.pack(fill="x", padx=8, pady=(6, 2))
+        card = ttk.Frame(parent, style="Surface.TFrame")
+        card.pack(side="left", fill="x", expand=True, padx=(0, 8), pady=(0, 6))
         ttk.Label(card, text="Interviews", font=("TkDefaultFont", self.controller.settings["font_size"], "bold")).pack(anchor="w")
         ttk.Label(
             card,
             text=f"Pending: {summary.interviews.pending}   Follow-up: {summary.interviews.follow_up}",
-            foreground="#475569",
+            foreground=COLORS["muted"],
         ).pack(anchor="w")
 
     def render_onboarding_dashboard_card(self, parent: ttk.LabelFrame, summary: Any) -> None:
         onboarding = summary.onboarding
-        card = ttk.Frame(parent)
-        card.pack(fill="x", padx=8, pady=(2, 2))
+        card = ttk.Frame(parent, style="Surface.TFrame")
+        card.pack(side="left", fill="x", expand=True, padx=(8, 0), pady=(0, 6))
         ttk.Label(card, text="Onboarding", font=("TkDefaultFont", self.controller.settings["font_size"], "bold")).pack(anchor="w")
 
         due_today_label = TASK_STATUS_LABELS["due_today"]
@@ -145,7 +148,7 @@ class StartScreenView:
         ttk.Label(card, text=totals, foreground=TASK_STATUS_COLORS["due_soon"]).pack(anchor="w")
 
         if onboarding.next_critical is None:
-            ttk.Label(card, text="Next critical task: none", foreground="#166534").pack(anchor="w")
+            ttk.Label(card, text="Next critical task: none", foreground=COLORS["success"]).pack(anchor="w")
             return
 
         next_item = onboarding.next_critical

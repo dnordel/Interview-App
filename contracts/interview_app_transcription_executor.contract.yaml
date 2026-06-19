@@ -2,11 +2,13 @@ module:
   name: interview_app_transcription_executor
   language: python
   path: src/interview_app/transcription_executor.py
-  version: 1.1.0
-  description: Bounded parallel execution utilities for per-question transcription jobs.
+  version: 1.1.1
+  description: Deprecated compatibility wrapper for bounded transcription execution
+    utilities implemented by interview_runtime.
 functions:
 - name: recommended_max_workers
-  description: Return a hardware-aware default max worker count for transcription jobs.
+  description: Return a hardware-aware default max worker count for transcription
+    jobs.
   locked: false
   inputs:
     cpu_count:
@@ -29,7 +31,8 @@ functions:
   exceptions: []
   side_effects: none
 - name: resolve_transcription_job_timeout_seconds
-  description: Resolve per-job transcription timeout from settings with bounded fallback values.
+  description: Resolve per-job transcription timeout from settings with bounded fallback
+    values.
   locked: false
   inputs:
     settings:
@@ -52,7 +55,8 @@ classes:
       type: TranscriptionQueueSnapshot
   methods: []
 - name: BoundedTranscriptionExecutor
-  description: Executes queued transcription jobs with bounded parallelism and status callbacks.
+  description: Executes queued transcription jobs with bounded parallelism and status
+    callbacks.
   locked: false
   attributes: {}
   methods:
@@ -163,11 +167,8 @@ classes:
       type: None
     exceptions: []
     side_effects: updates in-memory future tracking
-
 data_structures:
 - name: TranscriptionJobStatusEvent
   type: dataclass
-
 dependencies:
-- interview_app_transcription_queue
-- interview_app_types
+- module: interview_runtime

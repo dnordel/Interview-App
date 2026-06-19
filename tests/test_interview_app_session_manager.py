@@ -11,9 +11,8 @@ from interview_app.session_manager import (
     ResumeInstruction,
     SessionPayloadValidationError,
 )
-from interview_session_store import InterviewSessionStore
-from interview_state import InterviewState
-from reporting import DraftManager
+from interview_runtime import InterviewSessionStore, InterviewState
+from scoring_reporting import DraftManager
 
 
 class _FrozenToday:

@@ -4,9 +4,11 @@
     "subtitle": "Initial Zoom Interview",
     "notes": [
       "ATS + VBA Ready",
-      "Single Canonical Output"
+      "Single Canonical Output",
+      "Added Behavior Support Specialist / Early Childhood Teacher track",
+      "Behavior Support Specialist track based on attached interview guide"
     ],
-    "version": "1.1"
+    "version": "1.2"
   },
   "scoring": {
     "raw_score_range": [
@@ -53,7 +55,7 @@
     },
     "preschool": {
       "label": "Preschool",
-      "max_weighted_total": 96,
+      "max_weighted_total": 95,
       "thresholds": {
         "hire_percent_min": 80,
         "borderline_percent_min": 65,
@@ -68,6 +70,44 @@
           "no Critical =1"
         ]
       }
+    },
+    "behavior_support_specialist": {
+      "label": "Behavior Support Specialist / Early Childhood Teacher",
+      "max_weighted_total": 150,
+      "thresholds": {
+        "hire_percent_min": 80,
+        "borderline_percent_min": 65,
+        "borderline_percent_max": 79,
+        "no_hire_percent_below": 65,
+        "hire_requires": [
+          "no disqualifiers",
+          "no Critical <3"
+        ],
+        "borderline_requires": [
+          "no disqualifiers",
+          "no Critical =1"
+        ]
+      },
+      "gateway_requirements": [
+        "Minimum 12 completed ECE/CD units",
+        "Able to work full-time, in person",
+        "Comfortable serving both as behavior support and classroom teacher",
+        "Able to pass FBI, DOJ, and Child Abuse Index clearance",
+        "Experience supporting children with behavioral, developmental, social-emotional, sensory, or autism-related needs",
+        "ABA, RBT, BCBA-supervised, early intervention, special education, or similar experience preferred unless designated required by hiring team",
+        "Pediatric CPR / First Aid preferred or required before start, depending on school policy"
+      ],
+      "recommended_question_set_30_minute": [
+        "Tell me about a child whose behavior was challenging. How did you understand what was happening underneath the behavior?",
+        "Tell me about a time a child’s behavior was intense, such as screaming, aggression, elopement, or refusal. What did you do to manage yourself?",
+        "Walk me through what you would do if a child was dysregulated, pulling away, crying, or trying to run from the classroom.",
+        "How do you document behavior concerns without labeling or diagnosing the child?",
+        "A parent asks you, “Do you think my child has autism?” What would you say?",
+        "How would you support a teacher who says, “This child just does not listen and is ruining the class”?",
+        "This role includes working as a classroom teacher for ratio purposes. Tell me how you would shift between behavior support and regular classroom teaching.",
+        "Tell me about a time a supervisor or specialist gave you feedback about how you worked with a child. What did you do with that feedback?"
+      ],
+      "source_note": "The attached guide lists Total Weighted Score as /34, but under this JSON's WeightedScore = RawScore * Weight formula, the 13 listed traits total 150 maximum weighted points."
     }
   },
   "absolute_disqualifiers": [
@@ -78,7 +118,17 @@
     "Cynical or contemptuous language about children or families",
     "Disregards licensing or safety standards",
     "Interviewing while supervising children or working",
-    "Burnout language with no ownership or recovery plan"
+    "Burnout language with no ownership or recovery plan",
+    "Justifies yelling, shaming, intimidation, rough handling, or physical force",
+    "Describes children as manipulative, bad, spoiled, crazy, or intentionally malicious",
+    "Treats behavior support as controlling children rather than teaching skills",
+    "Claims they can diagnose autism, ADHD, trauma, or other conditions in this role",
+    "Minimizes supervision, licensing, safety, confidentiality, or documentation",
+    "Shows contempt for families, especially families who are hesitant about evaluation or services",
+    "Cannot describe how they regulate themselves during aggressive, loud, or stressful behavior",
+    "Says they do not need coaching, feedback, or supervision",
+    "Shows resentment toward children with special needs, sensory needs, speech delays, or behavior challenges",
+    "Cannot accept also working as a classroom teacher when not providing behavior support"
   ],
   "interviewer_guidance": {
     "what_to_evaluate": [
@@ -106,7 +156,8 @@
       "priority": "Critical",
       "weight": 3,
       "applicable_tracks": [
-        "all"
+        "infant_toddler",
+        "preschool"
       ],
       "primary_question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
       "descriptors": {
@@ -131,9 +182,10 @@
       "priority": "Critical",
       "weight": 3.0,
       "applicable_tracks": [
-        "all"
+        "infant_toddler",
+        "preschool"
       ],
-      "primary_question": "Tell me about a time you felt overwhelmed at work with children present. What did you do to manage yourself?",
+      "primary_question": "Tell me about a time you felt overwhelmed or stressed at work with children present. What did you do to manage, not the kids, but yourself and your stress?",
       "descriptors": {
         "5": "Acknowledges stress. Takes responsibility for self-regulation. Names specific coping strategies. Reflective tone.",
         "4": "Describes effort to stay calm. Names some strategies. Tone is calm and intentional.",
@@ -156,9 +208,10 @@
       "priority": "Critical",
       "weight": 3,
       "applicable_tracks": [
-        "all"
+        "infant_toddler",
+        "preschool"
       ],
-      "primary_question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering, helping with clothing, or guiding them physically. They are pulling away or saying no. Walk me through exactly what you would do, step by step",
+      "primary_question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering. They are pulling away and crying. Walk me through exactly what you would do and say, step by step.",
       "descriptors": {
         "5": "Acknowledges the child’s communication and emotions, describes slowing down, narrating actions, offering choices, Uses respectful language about consent and dignity, mentions safety without using force or threats",
         "4": "Acknowledges the child’s discomfort and follows safety rules, Uses respectful language but may not fully describe consent-oriented strategies, Focuses on keeping the child safe while trying to respect their boundaries",
@@ -181,9 +234,10 @@
       "priority": "High",
       "weight": 2,
       "applicable_tracks": [
-        "all"
+        "infant_toddler",
+        "preschool"
       ],
-      "primary_question": "Tell me about a time you received feedback you didn’t expect or didn’t fully agree with. What happened next?",
+      "primary_question": "Tell me about a time you received constructive criticism or feedback you didn’t expect or didn’t fully agree with. What happened next?",
       "descriptors": {
         "5": "Reflective, accountable, open to growth. Acknowledges discomfort but describes specific adjustments or learning.",
         "4": "Accepts feedback with some adjustment. May acknowledge initial discomfort but focuses on how they made changes or learned from it.",
@@ -206,9 +260,10 @@
       "priority": "High",
       "weight": 2,
       "applicable_tracks": [
-        "all"
+        "infant_toddler",
+        "preschool"
       ],
-      "primary_question": "Tell me about a time something didn’t go as planned at work and your role in it. How did you handle the responsibility piece?",
+      "primary_question": "Tell me about a time something, such as a lesson plan, did not go as expected and your role in it.",
       "descriptors": {
         "5": "Owns mistakes. Describes follow-through and responsibility. Takes corrective action if needed.",
         "4": "Accepts responsibility and may describe some follow-through. Acknowledges their role without overemphasizing external factors.",
@@ -231,9 +286,10 @@
       "priority": "High",
       "weight": 2,
       "applicable_tracks": [
-        "all"
+        "infant_toddler",
+        "preschool"
       ],
-      "primary_question": "Tell me about a time you had to work closely with another adult in a challenging situation. How did you navigate it?",
+      "primary_question": "Tell me about a time you had a challenge with another adult. How did you navigate it?",
       "descriptors": {
         "5": "Speaks respectfully about others. Emphasizes shared responsibility. Focuses on collaboration and child-centered problem-solving.",
         "4": "Describes cooperative problem-solving. May acknowledge challenges but focuses on how they worked together to resolve it.",
@@ -256,7 +312,8 @@
       "priority": "Medium",
       "weight": 1,
       "applicable_tracks": [
-        "all"
+        "infant_toddler",
+        "preschool"
       ],
       "primary_question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
       "descriptors": {
@@ -352,26 +409,393 @@
     },
     {
       "id": "trait_11",
-      "name": "Structure & Flexibility",
+      "name": "Patience",
       "priority": "Medium",
       "weight": 1,
       "applicable_tracks": [
         "preschool"
       ],
-      "primary_question": "Can you share a time when your plan didn’t go as expected because of children’s needs? What did you do?",
+      "primary_question": "How do you understand what a nonverbal child needs when they’re crying or upset? Can you walk me through how you respond in those moments?",
       "descriptors": {
-        "5": "Flexible, child-responsive problem solving. Emphasizes adjusting to meet children’s needs while maintaining a sense of structure. Reflective about the balance between plans and responsiveness.",
-        "4": "Adjusts smoothly, acknowledges the challenge but focuses on moving forward. May mention the importance of plans but shows willingness to change them.",
-        "3": "Adjusts but with frustration. May acknowledge the challenge but focuses on getting through it.",
-        "2": "Prefers rigidity, may express frustration. Emphasizes sticking to the plan and may minimize children’s needs.",
-        "1": "Rigid expectations and resentment. May express frustration when plans are disrupted and a preference for sticking to the schedule."
+        "5": "Describes attunement and patience. Emphasizes observing patterns and responding to cues. Reflective about the challenge but focused on connection.",
+        "4": "Describes trying different approaches calmly. Acknowledges the challenge but focuses on finding a way to meet the child’s needs.",
+        "3": "Relies on trial and error without reflection. Focuses on functional guessing rather than emotional connection.",
+        "2": "Acknowledges frustration but may express it in a way that suggests it’s just part of the job. May minimize the child’s experience.",
+        "1": "Expresses frustration with crying or repetition. May describe resentment or burnout related to nonverbal communication."
       },
       "sample_answers": {
-        "5": "I adapted calmly and followed their needs. For example, if I had planned an outdoor activity but it started raining, I would quickly shift to an indoor activity that still met our learning goals. I try to stay flexible and responsive to what the kids need in the moment.",
-        "4": "I changed the plan and moved on. I might have a preferred way of doing things, but I understand that with kids, things don’t always go as planned. I try to adjust and keep things moving.",
-        "3": "I adjusted, even though it was frustrating. I know that plans can change, but I do get a bit frustrated when they do. I try to make the best of it and keep going.",
-        "2": "I prefer sticking to plans. I understand that sometimes we have to change things up, but I do get frustrated when plans are disrupted. I try to get back on track as soon as possible.",
-        "1": "It frustrates me when kids disrupt plans. I prefer to have a clear schedule and I don’t like it when things don’t go as expected. I try to stick to the plan as much as possible."
+        "5": "I observe patterns and stay patient. I know they can’t tell me what they need, so I try to understand through their cues and stay calm.",
+        "4": "I calmly try different approaches. It can be tough, but I focus on finding a way to help them feel better.",
+        "3": "I test a few things. It’s a process of elimination to figure out what they need.",
+        "2": "It can be frustrating. Sometimes it feels like no matter what I do, they just keep crying.",
+        "1": "They cry constantly. It’s exhausting. I can’t wait until they can tell me what they need."
+      },
+      "score_1_auto_no_hire": false
+    },
+    {
+      "id": "bss_trait_1",
+      "name": "Respectful View of Child Behavior",
+      "priority": "Critical",
+      "weight": 3,
+      "applicable_tracks": [
+        "behavior_support_specialist"
+      ],
+      "primary_question": "Tell me about a child whose behavior was challenging. How did you understand what was happening underneath the behavior?",
+      "follow_up_probes": [
+        "What did you think the child was communicating?",
+        "What did you observe before and after the behavior?",
+        "How did your understanding change your response?"
+      ],
+      "descriptors": {
+        "5": "Frames behavior as communication. Looks for unmet needs, lagging skills, sensory needs, communication barriers, transitions, environment, or adult responses. Speaks respectfully about the child.",
+        "4": "Generally child-centered and respectful. Identifies possible reasons for behavior, but may not fully describe patterns or antecedents.",
+        "3": "Safe and appropriate, but focuses more on managing behavior than understanding it.",
+        "2": "Mostly compliance-focused. Talks about behavior as defiance or attention-seeking without deeper analysis.",
+        "1": "Labels, blames, or shames the child. Describes the child as bad, manipulative, spoiled, or the problem."
+      },
+      "sample_answers": {
+        "5": "I worked with a child who hit during transitions. At first it looked like aggression, but when I observed more carefully, it usually happened when the class moved quickly from preferred play to clean-up. He also had limited language, so hitting seemed to be how he escaped or communicated frustration. I used visuals, transition warnings, a simple first-then board, and gave him a job during clean-up. I also coached the teachers to praise the first small step instead of waiting until he was already upset. The hitting decreased because we changed the supports around him.",
+        "3": "I had a child who hit other children. I stayed calm, reminded him that we use gentle hands, and redirected him to another activity. I tried to be consistent.",
+        "1": "Some kids just want attention or want to get their way. You have to show them that behavior is not going to work."
+      },
+      "score_1_auto_no_hire": true
+    },
+    {
+      "id": "bss_trait_2",
+      "name": "Emotional Regulation During Challenging Behavior",
+      "priority": "Critical",
+      "weight": 3,
+      "applicable_tracks": [
+        "behavior_support_specialist"
+      ],
+      "primary_question": "Tell me about a time a child’s behavior was intense, such as screaming, aggression, elopement, or refusal. What did you do to manage yourself?",
+      "follow_up_probes": [
+        "What was going on internally for you?",
+        "How did you keep your voice, body, and facial expression regulated?",
+        "What would the children have seen from you in that moment?"
+      ],
+      "descriptors": {
+        "5": "Acknowledges stress honestly and names specific self-regulation strategies. Understands adult regulation affects child regulation.",
+        "4": "Describes staying calm and using some strategies, but less reflective.",
+        "3": "Says they stayed calm, but gives limited detail about how.",
+        "2": "Normalizes frustration or sounds resentful. May say they just pushed through.",
+        "1": "Admits yelling, grabbing, threatening, humiliating, or losing control. Blames the child."
+      },
+      "sample_answers": {
+        "5": "I had a child drop to the floor screaming and kicking during a transition. I noticed my own stress rise because other children were watching. I reminded myself to slow down, lowered my voice, and gave fewer words. I moved nearby but did not crowd him. I asked another teacher to keep the group moving so the child did not become the center of attention. I focused on safety and calm first, not compliance first.",
+        "3": "I stayed calm and tried to help the child calm down. I told the other children to keep going and then worked with the child until they were ready.",
+        "1": "I was frustrated and raised my voice because he was disrupting everyone. Sometimes they need to know you are serious."
+      },
+      "score_1_auto_no_hire": true
+    },
+    {
+      "id": "bss_trait_3",
+      "name": "Child Safety, Dignity, and Boundaries",
+      "priority": "Critical",
+      "weight": 3,
+      "applicable_tracks": [
+        "behavior_support_specialist"
+      ],
+      "primary_question": "Walk me through what you would do if a child was dysregulated, pulling away, crying, or trying to run from the classroom.",
+      "follow_up_probes": [
+        "What would you do first?",
+        "What would you say to the child?",
+        "When would you ask for help?",
+        "What would you document afterward?"
+      ],
+      "descriptors": {
+        "5": "Prioritizes immediate safety while preserving dignity. Uses calm body positioning, help from staff, reduced language, environmental safety, and documentation. Avoids force except true emergency protection from harm.",
+        "4": "Safe and respectful, but may not fully explain documentation or team coordination.",
+        "3": "Keeps child safe, but answer is basic and adult-directed.",
+        "2": "Overemphasizes control, compliance, or physically stopping the child without enough attention to dignity.",
+        "1": "Describes grabbing, restraining, dragging, blocking aggressively, threatening, or forcing compliance as normal behavior management."
+      },
+      "sample_answers": {
+        "5": "If a child is trying to run, my first priority is safety. I would position myself between the child and the unsafe area without escalating physically. I would use a calm voice and very few words, like, “I will keep you safe. I’m right here.” I would signal another staff member to support the classroom so supervision is maintained. Once the child is safe and calmer, I would document what happened objectively, including what came before it, what helped, and what we need to change to prevent it next time.",
+        "3": "I would stop the child from leaving, calm them down, and tell them they need to stay with the class. Then I would let the director know.",
+        "1": "If they are running, I would grab them and make them sit until they understand they cannot do that."
+      },
+      "score_1_auto_no_hire": true
+    },
+    {
+      "id": "bss_trait_4",
+      "name": "Positive Behavior Support Skill",
+      "priority": "Critical",
+      "weight": 3,
+      "applicable_tracks": [
+        "behavior_support_specialist"
+      ],
+      "primary_question": "Tell me about a behavior support strategy you used successfully with a young child. What was the behavior, what did you try, and what changed?",
+      "follow_up_probes": [
+        "How did you decide which strategy to use?",
+        "How did you know it worked?",
+        "What did you ask the teachers to do consistently?"
+      ],
+      "descriptors": {
+        "5": "Describes an individualized, developmentally appropriate positive support strategy. Mentions antecedents, replacement skills, reinforcement, visuals, routines, sensory supports, communication supports, or progress tracking.",
+        "4": "Gives a solid positive strategy with some evidence of improvement.",
+        "3": "Uses general redirection, praise, or routine support, but not individualized or measured.",
+        "2": "Mostly consequence-based. Little evidence of teaching replacement skills.",
+        "1": "Punitive, shaming, or control-based."
+      },
+      "sample_answers": {
+        "5": "I supported a child who screamed and dropped to the floor whenever it was time to leave the sensory table. I observed that the transition was too abrupt and the child did not understand what came next. We used a visual timer, a first-then card, and a transition object. We also taught the child to say or point to “one more minute.” Teachers reinforced him when he used the card or moved with help. We tracked the transition for two weeks, and the screaming went from daily to occasional.",
+        "3": "I used redirection and praise. When the child was upset, I helped them find another activity and praised them when they listened.",
+        "1": "I took away the activity when he acted like that. He needed to learn that screaming would not get him what he wanted."
+      },
+      "score_1_auto_no_hire": true
+    },
+    {
+      "id": "bss_trait_5",
+      "name": "Objective Observation and Documentation",
+      "priority": "Critical",
+      "weight": 3,
+      "applicable_tracks": [
+        "behavior_support_specialist"
+      ],
+      "primary_question": "How do you document behavior concerns without labeling or diagnosing the child?",
+      "follow_up_probes": [
+        "What details belong in the notes?",
+        "What details should be avoided?",
+        "How would you document progress?"
+      ],
+      "descriptors": {
+        "5": "Clearly describes objective, factual documentation: antecedent, behavior, consequence, duration, frequency, setting, adult response, strengths, supports used, and progress. Avoids labels and diagnosis.",
+        "4": "Understands objective documentation, but may omit some important details.",
+        "3": "Gives generally appropriate notes, but may be vague.",
+        "2": "Uses subjective terms like aggressive, defiant, out of control, or manipulative without objective description.",
+        "1": "Says they would diagnose, label, or document opinions as facts."
+      },
+      "sample_answers": {
+        "5": "I would write what I actually saw, not my interpretation. For example, instead of “he was aggressive,” I would write, “At 9:15 during clean-up, child pushed two peers with open hands after teacher said it was time to put blocks away. Teacher gave a visual first-then prompt and child moved to the rug after two minutes.” I would include patterns, triggers, strengths, what helped, and whether the support plan is reducing the behavior.",
+        "3": "I would write down what happened and what the child did. I would try not to use labels and would tell the director if there were concerns.",
+        "1": "I would write that the child was being aggressive and probably needs to be evaluated for autism or ADHD."
+      },
+      "score_1_auto_no_hire": true
+    },
+    {
+      "id": "bss_trait_6",
+      "name": "Non-Diagnostic Professional Boundaries",
+      "priority": "Critical",
+      "weight": 3,
+      "applicable_tracks": [
+        "behavior_support_specialist"
+      ],
+      "primary_question": "A parent asks you, “Do you think my child has autism?” What would you say?",
+      "follow_up_probes": [
+        "How do you avoid diagnosing while still being helpful?",
+        "What observations would you share?",
+        "What resources might you recommend?"
+      ],
+      "descriptors": {
+        "5": "Clearly states they cannot diagnose. Shares objective observations, expresses care, recommends appropriate outside evaluation or professional consultation, and avoids alarming or labeling the family.",
+        "4": "Avoids diagnosis and recommends evaluation, but answer may be less warm or less specific.",
+        "3": "Says they cannot diagnose, but gives a limited or somewhat awkward response.",
+        "2": "Hints at diagnosis or uses diagnostic language casually.",
+        "1": "Says they would tell the parent the child likely has autism, ADHD, sensory processing disorder, or another diagnosis."
+      },
+      "sample_answers": {
+        "5": "I would say, “I can’t diagnose, and I would not want to label your child. What I can do is share what we are observing and help you think about next steps.” Then I would describe objective patterns, such as communication, transitions, sensory sensitivities, peer interaction, or regulation. I would encourage them to speak with their pediatrician or an appropriate evaluation provider, and I would reassure them that our goal is to better understand how to support their child.",
+        "3": "I would tell them I cannot diagnose and that they should talk to their doctor if they are concerned.",
+        "1": "If I saw signs, I would be honest and tell them I think it is autism so they can get help."
+      },
+      "score_1_auto_no_hire": true
+    },
+    {
+      "id": "bss_trait_7",
+      "name": "Parent Communication and Family Partnership",
+      "priority": "High",
+      "weight": 2,
+      "applicable_tracks": [
+        "behavior_support_specialist"
+      ],
+      "primary_question": "Tell me about a time you had to talk with a parent about a difficult concern involving their child.",
+      "follow_up_probes": [
+        "How did you prepare?",
+        "What words did you use?",
+        "How did the parent respond?",
+        "What follow-up happened?"
+      ],
+      "descriptors": {
+        "5": "Warm, respectful, objective, collaborative, and culturally sensitive. Balances honesty with compassion. Includes follow-up.",
+        "4": "Respectful and appropriate, but less detailed.",
+        "3": "Communicates concern, but mostly from the school’s perspective.",
+        "2": "Defensive, blunt, or parent-blaming.",
+        "1": "Contemptuous toward parents or dismissive of family perspective."
+      },
+      "sample_answers": {
+        "5": "I start by assuming the family loves their child and may be scared or overwhelmed. I would begin with strengths, then share objective observations. I might say, “We are seeing that transitions are very hard for him, and we want to work with you so he feels successful here.” I would ask what they see at home and what helps. I would avoid labels and create a shared plan with a follow-up date.",
+        "3": "I would tell the parent what we are seeing and explain that we want to help. I would ask them to work with us.",
+        "1": "Some parents are in denial. I would just tell them the truth because they need to hear it."
+      },
+      "score_1_auto_no_hire": false
+    },
+    {
+      "id": "bss_trait_8",
+      "name": "Teacher Collaboration and Coaching",
+      "priority": "High",
+      "weight": 2,
+      "applicable_tracks": [
+        "behavior_support_specialist"
+      ],
+      "primary_question": "How would you support a teacher who says, “This child just does not listen and is ruining the class”?",
+      "follow_up_probes": [
+        "What would you say to the teacher?",
+        "How would you avoid shaming the teacher?",
+        "What would you observe in the classroom?",
+        "How would you help the teacher change practice?"
+      ],
+      "descriptors": {
+        "5": "Supports the teacher emotionally while redirecting them away from blame. Observes the classroom, identifies adult and environmental changes, models strategies, and follows up.",
+        "4": "Gives supportive suggestions and encourages positive strategies.",
+        "3": "Gives advice, but may not include observation, modeling, or follow-up.",
+        "2": "Mostly agrees with the teacher or focuses on removing the child.",
+        "1": "Blames the child, shames the teacher, or escalates the situation."
+      },
+      "sample_answers": {
+        "5": "I would first validate that the teacher is overwhelmed without agreeing that the child is the problem. I might say, “I hear that this is feeling really hard. Let’s look at what the child is communicating and what we can adjust.” I would observe transitions, directions, peer interactions, and teacher responses. Then I would give the teacher one or two practical strategies, model them, and check back. I would want the teacher to feel supported, but also help them shift from blame to problem-solving.",
+        "3": "I would tell the teacher to stay calm and use positive reinforcement. I would remind them that the child needs patience.",
+        "1": "I would probably agree that some children are too disruptive and need to be removed from the class."
+      },
+      "score_1_auto_no_hire": false
+    },
+    {
+      "id": "bss_trait_9",
+      "name": "Classroom Teacher Competence",
+      "priority": "High",
+      "weight": 2,
+      "applicable_tracks": [
+        "behavior_support_specialist"
+      ],
+      "primary_question": "This role includes working as a classroom teacher for ratio purposes. Tell me how you would shift between behavior support and regular classroom teaching.",
+      "follow_up_probes": [
+        "How would you support the whole class, not just one child?",
+        "What would you do during circle time, outdoor play, meals, or transitions?",
+        "How would you avoid seeming like you are only there for problem children?"
+      ],
+      "descriptors": {
+        "5": "Understands the dual role clearly. Can support individual children while also maintaining classroom supervision, routines, play-based learning, and team responsibilities.",
+        "4": "Comfortable with both roles, with minor gaps in detail.",
+        "3": "Willing to do both, but has limited explanation of how.",
+        "2": "Prefers only behavior work or only teaching. Seems uncomfortable with ratio or classroom duties.",
+        "1": "Rejects part of the role or does not understand supervision responsibilities."
+      },
+      "sample_answers": {
+        "5": "I see the role as integrated. If I am in the classroom, I am part of the teaching team, not just someone who appears when a child is struggling. I can lead activities, supervise, support routines, and build relationships with all children. That also helps behavior support because the child does not feel singled out. If a child needs more focused support, I would coordinate with the teacher and director so supervision and ratio are still protected.",
+        "3": "I am comfortable doing both. I can help with behavior and also help in the classroom when needed.",
+        "1": "I really prefer behavior support. I would not want to be used as a regular teacher unless absolutely necessary."
+      },
+      "score_1_auto_no_hire": false
+    },
+    {
+      "id": "bss_trait_10",
+      "name": "Developmentally Appropriate Practice",
+      "priority": "High",
+      "weight": 2,
+      "applicable_tracks": [
+        "behavior_support_specialist"
+      ],
+      "primary_question": "What does behavior support look like in a play-based preschool classroom?",
+      "follow_up_probes": [
+        "How is this different from behavior support with older children?",
+        "How do you teach skills through play?",
+        "What strategies fit preschool development?"
+      ],
+      "descriptors": {
+        "5": "Connects behavior support to play, relationships, routines, visuals, modeling, co-regulation, social-emotional teaching, and developmentally appropriate expectations.",
+        "4": "Understands preschool development and uses positive strategies.",
+        "3": "Generally appropriate but somewhat generic.",
+        "2": "Too academic, rigid, or compliance-based.",
+        "1": "Uses punitive, adult-centered, or developmentally inappropriate methods."
+      },
+      "sample_answers": {
+        "5": "In preschool, behavior support should be built into relationships, routines, and play. Children are still learning communication, waiting, flexibility, and emotional regulation. I would use visuals, songs, social stories, modeling, choices, short directions, sensory breaks, and practice during play. I would not expect preschoolers to regulate like older children. The goal is to teach skills, not punish them for not having the skills yet.",
+        "3": "It means using positive reinforcement, redirection, and clear rules. Preschoolers need structure and patience.",
+        "1": "They need firm consequences early so they learn before kindergarten."
+      },
+      "score_1_auto_no_hire": false
+    },
+    {
+      "id": "bss_trait_11",
+      "name": "Coachability and Team Fit",
+      "priority": "High",
+      "weight": 2,
+      "applicable_tracks": [
+        "behavior_support_specialist"
+      ],
+      "primary_question": "Tell me about a time a supervisor or specialist gave you feedback about how you worked with a child. What did you do with that feedback?",
+      "follow_up_probes": [
+        "Did you agree with the feedback at first?",
+        "What did you change?",
+        "What did you learn?"
+      ],
+      "descriptors": {
+        "5": "Reflective, accountable, and growth-oriented. Gives a specific example of changing behavior after feedback.",
+        "4": "Accepts feedback and applies it.",
+        "3": "Accepts feedback generally, but example is thin.",
+        "2": "Defensive or minimizes the feedback.",
+        "1": "Rejects feedback or suggests they do not need supervision."
+      },
+      "sample_answers": {
+        "5": "A supervisor once told me I was using too many words when a child was escalated. At first I thought I was being supportive, but I realized I was overwhelming him. I practiced using shorter phrases, more visuals, and waiting longer. It worked better, and it reminded me that good intentions are not enough. I need to watch the child’s response and accept coaching.",
+        "3": "I have received feedback and I try to use it. I am open to learning.",
+        "1": "I usually know what I am doing. Sometimes supervisors give feedback when they do not really understand the child."
+      },
+      "score_1_auto_no_hire": true
+    },
+    {
+      "id": "bss_trait_12",
+      "name": "Cultural and Linguistic Humility",
+      "priority": "Medium",
+      "weight": 1,
+      "applicable_tracks": [
+        "behavior_support_specialist"
+      ],
+      "primary_question": "How do you communicate concerns when a family may see behavior, discipline, disability, or outside services differently than you do?",
+      "follow_up_probes": [
+        "How do you avoid judging the family?",
+        "What if they are hesitant about evaluation?",
+        "What if there is a language barrier?"
+      ],
+      "descriptors": {
+        "5": "Respectful, curious, culturally humble, and avoids assumptions. Uses family input and language access.",
+        "4": "Respectful and sensitive, but less specific.",
+        "3": "Generally appropriate but basic.",
+        "2": "Some judgment or assumption about families.",
+        "1": "Dismissive, culturally insensitive, or blaming."
+      },
+      "sample_answers": {
+        "5": "I would not assume resistance means the family does not care. Families may have different experiences with schools, doctors, disability labels, or services. I would ask questions, listen, and use an interpreter or bilingual staff member if needed. I would share observations respectfully and focus on support, not labels. I would want the family to feel we are partners, not judging them.",
+        "3": "I would try to be respectful and explain that we just want to help the child.",
+        "1": "Some families just do not want to accept reality. You have to be direct with them."
+      },
+      "score_1_auto_no_hire": false
+    },
+    {
+      "id": "bss_trait_13",
+      "name": "Reliability and Follow-Through",
+      "priority": "Medium",
+      "weight": 1,
+      "applicable_tracks": [
+        "behavior_support_specialist"
+      ],
+      "primary_question": "Tell me about a time a child needed a consistent plan. How did you make sure the plan was followed?",
+      "follow_up_probes": [
+        "How did you communicate the plan to others?",
+        "How did you check whether it was working?",
+        "What did you do if staff were inconsistent?"
+      ],
+      "descriptors": {
+        "5": "Creates clear plan, communicates it, models it, documents it, follows up, and adjusts based on results.",
+        "4": "Follows through reliably and communicates well.",
+        "3": "Understands consistency but gives limited detail.",
+        "2": "Inconsistent or relies on others to remember.",
+        "1": "Does not see follow-through as important."
+      },
+      "sample_answers": {
+        "5": "I kept the plan simple so teachers could actually use it. We wrote down the target behavior, what usually happened before it, what adults should do, and what replacement skill we were teaching. I reviewed it with the team, modeled it, and checked in daily at first. When one part was not working, we adjusted it. I think consistency matters because children with regulation needs can become more confused when every adult responds differently.",
+        "3": "I would make sure everyone knows the plan and remind teachers to follow it.",
+        "1": "I would tell the teachers what to do, but it is really up to them to follow through."
       },
       "score_1_auto_no_hire": false
     }
@@ -383,7 +807,9 @@
     "Percent of Max",
     "Disqualifier Present Yes/No",
     "Final Outcome Hire/Borderline/No Hire",
-    "Hiring Manager Notes / Quotes"
+    "Hiring Manager Notes / Quotes",
+    "Gateway Requirements Status",
+    "Automatic No-Hire Flags / Quotes"
   ],
-  "canonical_text": "# STRUCTURED BEHAVIORAL INTERVIEW SYSTEM\n\nInitial Zoom Interview\nATS + VBA Ready\nSingle Canonical Output\n\nSECTION 1. GLOBAL SCORING & DECISION LOGIC\n1.1 Raw Scoring\n- Each trait scored 1–5\n- One score per trait\n- Based on primary question only\n\n1.2 Weighting\n- Critical = x3\n- High = x2\n- Medium = x1\n\n1.3 Weighted Score Formula\nWeightedScore = RawScore * Weight\n\n1.4 Max Scores\n- Infant/Toddler: 102 weighted\n- Preschool: 96 weighted\n\n1.5 Automatic Overrides\nImmediate NO HIRE if:\n- Any Critical trait = 1\n- Any Absolute Disqualifier observed\nInterview continues but outcome is locked.\n\n1.6 Final Recommendation Thresholds\nHire: ≥80%, no disqualifiers, no Critical <3\nBorderline: 65–79%, no disqualifiers, no Critical =1\nNo Hire: <65% OR any disqualifier OR any Critical =1\n\nSECTION 2. ABSOLUTE DISQUALIFIERS (GLOBAL)\n- Justifies yelling, shaming, intimidation, or force\n- Minimizes children’s rights or safety\n- Cannot regulate emotions\n- Resists supervision or feedback\n- Cynical or contemptuous language about children or families\n- Disregards licensing or safety standards\n- Interviewing while supervising children or working\n- Burnout language with no ownership or recovery plan\nLog verbatim quote. Mark Automatic No Hire.\n\nSECTION 3. INTERVIEWER GUIDANCE\nWhat to Evaluate\n- Emotional safety\n- Values alignment\n- Self-regulation\n- Coachability\n- Risk profile\nScoring Principle\nReflective ownership > polish\nChild-centered language > control language\nProbe When\n- Answers are vague or rehearsed\n- Responsibility is externalized\n- Emotion is skipped\nProbe: \"What was going on for you internally in that moment?\"\n\nSECTION 4. UNIVERSAL TRAITS (ALL TEACHERS)\n\nTRAIT 1. Empathy & Respect for Children\nCritical | x3\nQuestion: \"Tell me about a time a child was having a hard emotional moment. What did you notice, and how did you respond?\"\nScoring descriptors:\n5: Deeply empathetic, child-centered, reflective\n4: Warm and respectful, some emotional insight\n3: Appropriate but behavior-focused\n2: Adult-centric, compliance-focused\n1: Dismissive, minimizing, or controlling\nSample answers:\n5 \"They were overwhelmed, not misbehaving. I got to their level, named the feeling, and stayed close until they felt safe.\"\n4 \"I stayed calm and helped them settle before moving on.\"\n3 \"I followed our steps to calm them and rejoin the group.\"\n2 \"I redirected them and reminded them of expectations.\"\n1 \"They were throwing a fit for attention.\"\nScore 1 = automatic no hire.\n\nTRAIT 2. Emotional Regulation Under Stress\nCritical | x3\nQuestion: \"Tell me about a time you felt overwhelmed with children present. How did you manage yourself?\"\nDescriptors:\n5 Self-aware, intentional regulation, reflective\n4 Calm effort with basic strategies\n3 Endured stress without reflection\n2 Normalizes frustration\n1 Admits loss of control\nSample answers:\n5 \"I paused, regulated my tone, and focused on staying grounded.\"\n4 \"I reminded myself to stay calm and worked through it.\"\n3 \"It was stressful, but I got through it.\"\n2 \"That’s just part of working with kids.\"\n1 \"I lost my patience. Anyone would.\"\nScore 1 = automatic no hire.\n\nTRAIT 3. Respect for Children’s Rights & Safety\nCritical | x3\nQuestion: \"Tell me about a time you had to be mindful of a child’s safety or boundaries.\"\nDescriptors:\n5 Explicit safety, dignity, consent orientation\n4 Strong compliance and respect\n3 Rule-following only\n2 Compliance with resentment\n1 Minimizes protections\nSample answers:\n5 \"I slow myself down and prioritize consent and safety.\"\n4 \"I’m careful to follow safety rules.\"\n3 \"I follow the guidelines.\"\n2 \"Some rules feel excessive, but we follow them.\"\n1 \"Kids are resilient. We’re too strict now.\"\nScore 1 = automatic no hire.\n\nTRAIT 4. Coachability\nHigh | x2\nQuestion: \"Tell me about a time you received unexpected feedback.\"\nDescriptors:\n5 Reflective, growth-oriented\n4 Accepts feedback with adjustment\n3 Neutral acceptance\n2 Defensive acceptance\n1 Rejects feedback\nSample answers:\n5 \"It was uncomfortable, but it helped me grow.\"\n4 \"I listened and made changes.\"\n3 \"I took the feedback.\"\n2 \"I didn’t fully agree.\"\n1 \"They were wrong.\"\nScore 1 = automatic no hire.\n\nTRAIT 5. Reliability & Accountability\nHigh | x2\nQuestion: \"Tell me about a time something didn’t go as planned and your role.\"\nDescriptors:\n5 Owns mistakes, corrective action\n4 Accepts responsibility\n3 Outcome-focused\n2 Externalizes blame\n1 Avoids accountability\nSample answers:\n5 \"I owned it and fixed it.\"\n4 \"I took responsibility.\"\n3 \"It got resolved.\"\n2 \"It was mostly a system issue.\"\n1 \"That wasn’t on me.\"\n\nTRAIT 6. Team Orientation\nHigh | x2\nQuestion: \"Tell me about a challenge you worked through with another adult.\"\nDescriptors:\n5 Collaborative, child-focused\n4 Cooperative problem-solving\n3 Neutral coexistence\n2 Prefers independence\n1 Hostile or isolating\nSample answers:\n5 \"We worked together for the kids.\"\n4 \"We talked it through.\"\n3 \"We got through it.\"\n2 \"I usually handle my own work.\"\n1 \"I work better alone.\"\n\nTRAIT 7. Curiosity & Learning\nMedium | x1\nQuestion: \"Tell me something you’ve learned that changed your approach.\"\nDescriptors:\n5 Ongoing curiosity and insight\n4 Growth-oriented\n3 Passive learning\n2 Rigid confidence\n1 Fixed beliefs\nSample answers:\n5 \"My presence matters more than I realized.\"\n4 \"I’ve learned new strategies.\"\n3 \"I learned by doing.\"\n2 \"I already know what works.\"\n1 \"Kids should behave a certain way.\"\n\nSECTION 5. INFANT / TODDLER TRACK\n\nTRAIT 8. Gentleness & Physical Awareness\nCritical | x3\nQuestion: \"How do you physically care for infants or toddlers during routines?\"\nDescriptors:\n5 Gentle, paced, cue-responsive\n4 Careful and respectful\n3 Task-focused\n2 Efficiency-driven\n1 Casual or rough\nSample answers:\n5 \"I move slowly, narrate, and watch cues.\"\n4 \"I’m very gentle and careful.\"\n3 \"I follow the steps.\"\n2 \"I get through it efficiently.\"\n1 \"You have to be quick. They cry.\"\nScore 1 = automatic no hire.\n\nTRAIT 9. Patience with Nonverbal Communication\nHigh | x2\nQuestion: \"How do you understand what a nonverbal child needs?\"\nDescriptors:\n5 Patient, attuned, reflective\n4 Calm trial-and-error\n3 Functional guessing\n2 Frustration acknowledged\n1 Resentment or burnout\nSample answers:\n5 \"I observe patterns and stay patient.\"\n4 \"I calmly try different approaches.\"\n3 \"I test a few things.\"\n2 \"It can be frustrating.\"\n1 \"They cry constantly. It’s exhausting.\"\n\nSECTION 6. PRESCHOOL TRACK\n\nTRAIT 10. Positive Behavior Guidance\nHigh | x2\nQuestion: \"Tell me about a challenging behavior and how you handled it.\"\nDescriptors:\n5 Skill-building, relational\n4 Calm guidance\n3 Rule-based\n2 Consequence-focused\n1 Punitive or controlling\nSample answers:\n5 \"I saw it as a skill they were learning.\"\n4 \"I guided them back to expectations.\"\n3 \"I reminded them of rules.\"\n2 \"There were consequences.\"\n1 \"They were defiant.\"\nScore 1 = automatic no hire.\n\nTRAIT 11. Structure & Flexibility\nMedium | x1\nQuestion: \"Tell me about a time your plan changed due to children’s needs.\"\nDescriptors:\n5 Flexible and calm\n4 Adjusts smoothly\n3 Adjusts with frustration\n2 Prefers rigidity\n1 Rigid and resentful\nSample answers:\n5 \"I adapted calmly and followed their needs.\"\n4 \"I changed the plan and moved on.\"\n3 \"I adjusted, even though it was frustrating.\"\n2 \"I prefer sticking to plans.\"\n1 \"It frustrates me when kids disrupt plans.\"\n\nSECTION 7. FINAL RECORD (report fields)\n- Track\n- Raw Scores\n- Weighted Total\n- Percent of Max\n- Disqualifier Present Yes/No\n- Final Outcome Hire/Borderline/No Hire\n- Hiring Manager Notes / Quotes"
+  "canonical_text": "# STRUCTURED BEHAVIORAL INTERVIEW SYSTEM\n\nInitial Zoom Interview\nATS + VBA Ready\nSingle Canonical Output\n\nSECTION 1. GLOBAL SCORING & DECISION LOGIC\n1.1 Raw Scoring\n- Each trait scored 1–5\n- One score per trait\n- Based on primary question only\n\n1.2 Weighting\n- Critical = x3\n- High = x2\n- Medium = x1\n\n1.3 Weighted Score Formula\nWeightedScore = RawScore * Weight\n\n1.4 Max Scores\n- Infant/Toddler: 102 weighted\n- Preschool: 96 weighted\n\n1.5 Automatic Overrides\nImmediate NO HIRE if:\n- Any Critical trait = 1\n- Any Absolute Disqualifier observed\nInterview continues but outcome is locked.\n\n1.6 Final Recommendation Thresholds\nHire: ≥80%, no disqualifiers, no Critical <3\nBorderline: 65–79%, no disqualifiers, no Critical =1\nNo Hire: <65% OR any disqualifier OR any Critical =1\n\nSECTION 2. ABSOLUTE DISQUALIFIERS (GLOBAL)\n- Justifies yelling, shaming, intimidation, or force\n- Minimizes children’s rights or safety\n- Cannot regulate emotions\n- Resists supervision or feedback\n- Cynical or contemptuous language about children or families\n- Disregards licensing or safety standards\n- Interviewing while supervising children or working\n- Burnout language with no ownership or recovery plan\nLog verbatim quote. Mark Automatic No Hire.\n\nSECTION 3. INTERVIEWER GUIDANCE\nWhat to Evaluate\n- Emotional safety\n- Values alignment\n- Self-regulation\n- Coachability\n- Risk profile\nScoring Principle\nReflective ownership > polish\nChild-centered language > control language\nProbe When\n- Answers are vague or rehearsed\n- Responsibility is externalized\n- Emotion is skipped\nProbe: \"What was going on for you internally in that moment?\"\n\nSECTION 4. UNIVERSAL TRAITS (ALL TEACHERS)\n\nTRAIT 1. Empathy & Respect for Children\nCritical | x3\nQuestion: \"Tell me about a time a child was having a hard emotional moment. What did you notice, and how did you respond?\"\nScoring descriptors:\n5: Deeply empathetic, child-centered, reflective\n4: Warm and respectful, some emotional insight\n3: Appropriate but behavior-focused\n2: Adult-centric, compliance-focused\n1: Dismissive, minimizing, or controlling\nSample answers:\n5 \"They were overwhelmed, not misbehaving. I got to their level, named the feeling, and stayed close until they felt safe.\"\n4 \"I stayed calm and helped them settle before moving on.\"\n3 \"I followed our steps to calm them and rejoin the group.\"\n2 \"I redirected them and reminded them of expectations.\"\n1 \"They were throwing a fit for attention.\"\nScore 1 = automatic no hire.\n\nTRAIT 2. Emotional Regulation Under Stress\nCritical | x3\nQuestion: \"Tell me about a time you felt overwhelmed with children present. How did you manage yourself?\"\nDescriptors:\n5 Self-aware, intentional regulation, reflective\n4 Calm effort with basic strategies\n3 Endured stress without reflection\n2 Normalizes frustration\n1 Admits loss of control\nSample answers:\n5 \"I paused, regulated my tone, and focused on staying grounded.\"\n4 \"I reminded myself to stay calm and worked through it.\"\n3 \"It was stressful, but I got through it.\"\n2 \"That’s just part of working with kids.\"\n1 \"I lost my patience. Anyone would.\"\nScore 1 = automatic no hire.\n\nTRAIT 3. Respect for Children’s Rights & Safety\nCritical | x3\nQuestion: \"Tell me about a time you had to be mindful of a child’s safety or boundaries.\"\nDescriptors:\n5 Explicit safety, dignity, consent orientation\n4 Strong compliance and respect\n3 Rule-following only\n2 Compliance with resentment\n1 Minimizes protections\nSample answers:\n5 \"I slow myself down and prioritize consent and safety.\"\n4 \"I’m careful to follow safety rules.\"\n3 \"I follow the guidelines.\"\n2 \"Some rules feel excessive, but we follow them.\"\n1 \"Kids are resilient. We’re too strict now.\"\nScore 1 = automatic no hire.\n\nTRAIT 4. Coachability\nHigh | x2\nQuestion: \"Tell me about a time you received unexpected feedback.\"\nDescriptors:\n5 Reflective, growth-oriented\n4 Accepts feedback with adjustment\n3 Neutral acceptance\n2 Defensive acceptance\n1 Rejects feedback\nSample answers:\n5 \"It was uncomfortable, but it helped me grow.\"\n4 \"I listened and made changes.\"\n3 \"I took the feedback.\"\n2 \"I didn’t fully agree.\"\n1 \"They were wrong.\"\nScore 1 = automatic no hire.\n\nTRAIT 5. Reliability & Accountability\nHigh | x2\nQuestion: \"Tell me about a time something didn’t go as planned and your role.\"\nDescriptors:\n5 Owns mistakes, corrective action\n4 Accepts responsibility\n3 Outcome-focused\n2 Externalizes blame\n1 Avoids accountability\nSample answers:\n5 \"I owned it and fixed it.\"\n4 \"I took responsibility.\"\n3 \"It got resolved.\"\n2 \"It was mostly a system issue.\"\n1 \"That wasn’t on me.\"\n\nTRAIT 6. Team Orientation\nHigh | x2\nQuestion: \"Tell me about a challenge you worked through with another adult.\"\nDescriptors:\n5 Collaborative, child-focused\n4 Cooperative problem-solving\n3 Neutral coexistence\n2 Prefers independence\n1 Hostile or isolating\nSample answers:\n5 \"We worked together for the kids.\"\n4 \"We talked it through.\"\n3 \"We got through it.\"\n2 \"I usually handle my own work.\"\n1 \"I work better alone.\"\n\nTRAIT 7. Curiosity & Learning\nMedium | x1\nQuestion: \"Tell me something you’ve learned that changed your approach.\"\nDescriptors:\n5 Ongoing curiosity and insight\n4 Growth-oriented\n3 Passive learning\n2 Rigid confidence\n1 Fixed beliefs\nSample answers:\n5 \"My presence matters more than I realized.\"\n4 \"I’ve learned new strategies.\"\n3 \"I learned by doing.\"\n2 \"I already know what works.\"\n1 \"Kids should behave a certain way.\"\n\nSECTION 5. INFANT / TODDLER TRACK\n\nTRAIT 8. Gentleness & Physical Awareness\nCritical | x3\nQuestion: \"How do you physically care for infants or toddlers during routines?\"\nDescriptors:\n5 Gentle, paced, cue-responsive\n4 Careful and respectful\n3 Task-focused\n2 Efficiency-driven\n1 Casual or rough\nSample answers:\n5 \"I move slowly, narrate, and watch cues.\"\n4 \"I’m very gentle and careful.\"\n3 \"I follow the steps.\"\n2 \"I get through it efficiently.\"\n1 \"You have to be quick. They cry.\"\nScore 1 = automatic no hire.\n\nTRAIT 9. Patience with Nonverbal Communication\nHigh | x2\nQuestion: \"How do you understand what a nonverbal child needs?\"\nDescriptors:\n5 Patient, attuned, reflective\n4 Calm trial-and-error\n3 Functional guessing\n2 Frustration acknowledged\n1 Resentment or burnout\nSample answers:\n5 \"I observe patterns and stay patient.\"\n4 \"I calmly try different approaches.\"\n3 \"I test a few things.\"\n2 \"It can be frustrating.\"\n1 \"They cry constantly. It’s exhausting.\"\n\nSECTION 6. PRESCHOOL TRACK\n\nTRAIT 10. Positive Behavior Guidance\nHigh | x2\nQuestion: \"Tell me about a challenging behavior and how you handled it.\"\nDescriptors:\n5 Skill-building, relational\n4 Calm guidance\n3 Rule-based\n2 Consequence-focused\n1 Punitive or controlling\nSample answers:\n5 \"I saw it as a skill they were learning.\"\n4 \"I guided them back to expectations.\"\n3 \"I reminded them of rules.\"\n2 \"There were consequences.\"\n1 \"They were defiant.\"\nScore 1 = automatic no hire.\n\nTRAIT 11. Structure & Flexibility\nMedium | x1\nQuestion: \"Tell me about a time your plan changed due to children’s needs.\"\nDescriptors:\n5 Flexible and calm\n4 Adjusts smoothly\n3 Adjusts with frustration\n2 Prefers rigidity\n1 Rigid and resentful\nSample answers:\n5 \"I adapted calmly and followed their needs.\"\n4 \"I changed the plan and moved on.\"\n3 \"I adjusted, even though it was frustrating.\"\n2 \"I prefer sticking to plans.\"\n1 \"It frustrates me when kids disrupt plans.\"\n\nSECTION 7. FINAL RECORD (report fields)\n- Track\n- Raw Scores\n- Weighted Total\n- Percent of Max\n- Disqualifier Present Yes/No\n- Final Outcome Hire/Borderline/No Hire\n- Hiring Manager Notes / Quotes\n\nSECTION 8. BEHAVIOR SUPPORT SPECIALIST / EARLY CHILDHOOD TEACHER TRACK\n\nTrack ID: behavior_support_specialist\nMaximum Weighted Total: 150\nNote: Under the JSON scoring formula, WeightedScore = RawScore * Weight, the 13 Behavior Support Specialist traits total 150 maximum weighted points.\n\nGateway Requirements\n- Minimum 12 completed ECE/CD units\n- Able to work full-time, in person\n- Comfortable serving both as behavior support and classroom teacher\n- Able to pass FBI, DOJ, and Child Abuse Index clearance\n- Experience supporting children with behavioral, developmental, social-emotional, sensory, or autism-related needs\n- ABA, RBT, BCBA-supervised, early intervention, special education, or similar experience preferred unless designated required by hiring team\n- Pediatric CPR / First Aid preferred or required before start, depending on school policy\n\nBehavior Support Specialist Traits\n1. Respectful View of Child Behavior | Critical | x3\nQuestion: \"Tell me about a child whose behavior was challenging. How did you understand what was happening underneath the behavior?\"\n\n2. Emotional Regulation During Challenging Behavior | Critical | x3\nQuestion: \"Tell me about a time a child’s behavior was intense, such as screaming, aggression, elopement, or refusal. What did you do to manage yourself?\"\n\n3. Child Safety, Dignity, and Boundaries | Critical | x3\nQuestion: \"Walk me through what you would do if a child was dysregulated, pulling away, crying, or trying to run from the classroom.\"\n\n4. Positive Behavior Support Skill | Critical | x3\nQuestion: \"Tell me about a behavior support strategy you used successfully with a young child. What was the behavior, what did you try, and what changed?\"\n\n5. Objective Observation and Documentation | Critical | x3\nQuestion: \"How do you document behavior concerns without labeling or diagnosing the child?\"\n\n6. Non-Diagnostic Professional Boundaries | Critical | x3\nQuestion: \"A parent asks you, “Do you think my child has autism?” What would you say?\"\n\n7. Parent Communication and Family Partnership | High | x2\nQuestion: \"Tell me about a time you had to talk with a parent about a difficult concern involving their child.\"\n\n8. Teacher Collaboration and Coaching | High | x2\nQuestion: \"How would you support a teacher who says, “This child just does not listen and is ruining the class”?\"\n\n9. Classroom Teacher Competence | High | x2\nQuestion: \"This role includes working as a classroom teacher for ratio purposes. Tell me how you would shift between behavior support and regular classroom teaching.\"\n\n10. Developmentally Appropriate Practice | High | x2\nQuestion: \"What does behavior support look like in a play-based preschool classroom?\"\n\n11. Coachability and Team Fit | High | x2\nQuestion: \"Tell me about a time a supervisor or specialist gave you feedback about how you worked with a child. What did you do with that feedback?\"\n\n12. Cultural and Linguistic Humility | Medium | x1\nQuestion: \"How do you communicate concerns when a family may see behavior, discipline, disability, or outside services differently than you do?\"\n\n13. Reliability and Follow-Through | Medium | x1\nQuestion: \"Tell me about a time a child needed a consistent plan. How did you make sure the plan was followed?\"\n\nRecommended 30-Minute Question Set\n- Ask traits 1, 2, 3, 5, 6, 8, 9, and 11.\n- Probe vague answers with: \"What was going on for you internally in that moment, and what did you do next?\"\n"
 }

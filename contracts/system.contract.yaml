@@ -1,88 +1,109 @@
 modules:
-  app_content:
-    path: src/app_content.py
+  interview_runtime:
+    path: src/interview_runtime.py
+    depends_on:
+    - platform_services
+    - scoring_reporting
+    - transformers
+    - ui_composition
+    - interview_audio_recorder
+    - interview_app_audio_runtime
+    - interview_app_finalize_pipeline
+    - interview_app_history_actions
+    - interview_app_session_manager
+  deepseek_finalize_worker:
+    path: src/deepseek_finalize_worker.py
+    depends_on:
+    - data_store
+    - interview_runtime
+    - scoring_reporting
+  onboarding_operations:
+    path: src/onboarding_operations.py
+    depends_on:
+    - platform_services
+    - scoring_reporting
+  platform_services:
+    path: src/platform_services.py
+    depends_on:
+    - docx_compat
+    - path_validation
+    - storage_utils
+  scoring_reporting:
+    path: src/scoring_reporting.py
+    depends_on:
+    - platform_services
+    - trait_scoring_adapter
+  ui_composition:
+    path: src/ui_composition.py
+    depends_on:
+    - platform_services
+    - scoring_reporting
+    - ui_windows
+    - interview_app_ui_router
+    - interview_app_ui_shell
+    - interview_app_view_protocols
+    - interview_app_views
+    - tk_theme
+  web_scored_question:
+    path: web/scored-question/
+    depends_on:
+    - config_rubric_json
+    - trait_based_scoring_json
+  web_app:
+    path: web/app/
+    depends_on:
+    - config_rubric_json
+    - question_overrides_json
+    - interview_history_json
+    - school_offer_settings_json
+    - trait_based_scoring_json
+    - web_app_backend
+  web_app_backend:
+    path: src/web_app_backend.py
+    depends_on:
+    - platform_services
+    - scoring_reporting
+  config_rubric_json:
+    path: config/rubric.json
+    depends_on: []
+  question_overrides_json:
+    path: config/question_overrides.json
+    depends_on: []
+  interview_history_json:
+    path: interview_history.json
+    depends_on: []
+  school_offer_settings_json:
+    path: school_offer_settings.json
+    depends_on: []
+  trait_based_scoring_json:
+    path: Trait-Based Scoring/*.json
     depends_on: []
   app_logging:
     path: src/app_logging.py
-    depends_on: []
-  artifact_cleanup:
-    path: src/artifact_cleanup.py
-    depends_on: []
-  candidate_profile:
-    path: src/candidate_profile.py
-    depends_on: []
+    depends_on:
+    - platform_services
   check_contract_review:
     path: tools/check_contract_review.py
     depends_on: []
-  config_adapters:
-    path: src/config_adapters.py
-    depends_on: []
-  dashboard_today:
-    path: src/dashboard_today.py
-    depends_on:
-    - onboarding_models
-    - onboarding_ui_helpers
   data_store:
     path: src/data_store.py
     depends_on:
-    - config_adapters
-    - storage_utils
-  director_email_draft:
-    path: src/director_email_draft.py
-    depends_on:
-    - email_security
-  director_referral_service:
-    path: src/director_referral_service.py
-    depends_on:
-    - app_content
+    - platform_services
   docx_compat:
     path: src/docx_compat.py
-    depends_on: []
-  email_security:
-    path: src/email_security.py
     depends_on: []
   initial_teacher_interview_guide:
     path: src/Initial Teacher Interview Guide.pyw
     depends_on: []
-  integration_export:
-    path: src/integration_export.py
-    depends_on:
-    - app_content
   interview_app:
     path: src/interview_app.pyw
     depends_on:
-    - app_content
-    - app_logging
-    - artifact_cleanup
-    - candidate_profile
-    - dashboard_today
-    - data_store
-    - director_email_draft
-    - director_referral_service
-    - docx_compat
-    - integration_export
-    - interview_app_views
-    - interview_audio_recorder
-    - interview_session_store
-    - interview_state
-    - offer_letter
-    - onboarding_reminder_health
-    - onboarding_storage
-    - onboarding_ui_helpers
-    - question_screens
-    - question_settings_window
-    - referral_packet
-    - reporting
-    - template_placeholders
-    - transcript_accumulator
-    - interview_app_transcript_processor
-    - ui_feedback
-    - ui_windows
-    - ux_metrics
-    - ui_components_history_data_grid
-    - interview_app_session_context
-    - interview_app_session_manager
-    - transcription_diagnostics
+    - platform_services
+    - scoring_reporting
+    - interview_runtime
+    - onboarding_operations
+    - ui_composition
+    - tk_theme
   interview_app___init__:
     path: src/interview_app/__init__.py
     depends_on:
@@ -95,113 +116,112 @@ modules:
     - interview_app_flow_controller
     - interview_app_history_actions
     - interview_app_history_controller
-    - interview_app_state
+    - interview_runtime
     - interview_app_transcript_writer
     - interview_app_transcription_executor
     - interview_app_transcription_queue
-    - interview_app_types
     - interview_app_ui_router
     - interview_app_ui_shell
     - interview_app_views
     - interview_app_whisper_runtime_policy
     - interview_app_session_manager
+  interview_app_audio_devices:
+    path: src/interview_app/audio_devices.py
+    depends_on:
+    - interview_runtime
   interview_app_audio_runtime:
     path: src/interview_app/audio_runtime.py
     depends_on:
-    - interview_app_types
-    - interview_app_whisper_runtime_policy
+    - interview_runtime
   interview_app_bootstrap:
     path: src/interview_app/bootstrap.py
     depends_on:
-    - app_content
-    - director_referral_service
     - interview_app_audio_runtime
     - interview_app_dashboard_controller
     - interview_app_finalize_pipeline
     - interview_app_flow_controller
     - interview_app_history_controller
-    - interview_app_state
+    - interview_runtime
     - interview_app_transcript_writer
-    - interview_app_ui_router
-    - interview_app_ui_shell
     - interview_app_views
+    - platform_services
+    - scoring_reporting
+    - ui_composition
   interview_app_dashboard_controller:
     path: src/interview_app/dashboard_controller.py
-    depends_on: []
+    depends_on:
+    - interview_runtime
   interview_app_finalize_context:
     path: src/interview_app/finalize_context.py
     depends_on:
-    - interview_app_types
+    - interview_runtime
   interview_app_finalize_gateways:
     path: src/interview_app/finalize_gateways.py
     depends_on:
-    - director_referral_service
-    - integration_export
-    - interview_app_finalize_context
-    - reporting
+    - interview_runtime
+    - scoring_reporting
   interview_app_finalize_pipeline:
     path: src/interview_app/finalize_pipeline.py
     depends_on:
-    - app_content
-    - interview_app_finalize_context
-    - interview_app_finalize_gateways
-    - interview_app_types
-    - reporting
-    - ui_feedback
-    - ux_metrics
+    - interview_runtime
+    - scoring_reporting
   interview_app_flow_controller:
     path: src/interview_app/flow_controller.py
-    depends_on: []
+    depends_on:
+    - interview_runtime
   interview_app_history_actions:
     path: src/interview_app/history_actions.py
     depends_on:
-    - app_content
-    - interview_app_retranscribe_progress
-    - interview_app_types
-    - interview_audio_recorder
-    - interview_app_whisper_runtime_policy
+    - interview_runtime
   interview_app_history_controller:
     path: src/interview_app/history_controller.py
     depends_on:
-    - ui_components_history_data_grid
-  interview_app_retranscribe_progress:
-    path: src/interview_app/retranscribe_progress.py
-    depends_on: []
+    - interview_runtime
   interview_app_session_context:
     path: src/interview_app/session_context.py
-    depends_on: []
+    depends_on:
+    - interview_runtime
   interview_app_state:
     path: src/interview_app/state.py
     depends_on:
-    - interview_app_types
+    - interview_runtime
   interview_app_transcript_processor:
     path: src/interview_app/transcript_processor.py
-    depends_on: []
+    depends_on:
+    - interview_runtime
+  interview_app_transcript_summary:
+    path: src/interview_app/transcript_summary.py
+    depends_on:
+    - interview_runtime
+    - transformers
   interview_app_transcript_writer:
     path: src/interview_app/transcript_writer.py
-    depends_on: []
+    depends_on:
+    - interview_runtime
   interview_app_transcription_executor:
     path: src/interview_app/transcription_executor.py
     depends_on:
-    - interview_app_transcription_queue
-    - interview_app_types
+    - interview_runtime
   interview_app_transcription_queue:
     path: src/interview_app/transcription_queue.py
     depends_on:
-    - interview_app_types
+    - interview_runtime
   interview_app_types:
     path: src/interview_app/types.py
-    depends_on: []
+    depends_on:
+    - interview_runtime
   interview_app_ui_router:
     path: src/interview_app/ui_router.py
     depends_on:
-    - interview_app_view_protocols
+    - ui_composition
   interview_app_ui_shell:
     path: src/interview_app/ui_shell.py
-    depends_on: []
+    depends_on:
+    - ui_composition
   interview_app_view_protocols:
     path: src/interview_app/view_protocols.py
-    depends_on: []
+    depends_on:
+    - ui_composition
   interview_app_views:
     path: src/interview_app/views/__init__.py
     depends_on:
@@ -217,202 +237,76 @@ modules:
   interview_app_views_start_screen_view:
     path: src/interview_app/views/start_screen_view.py
     depends_on:
-    - app_content
-    - dashboard_today
-    - onboarding_ui_helpers
-    - ux_metrics
+    - onboarding_operations
+    - platform_services
   interview_app_whisper_runtime_policy:
     path: src/interview_app/whisper_runtime_policy.py
-    depends_on: []
+    depends_on:
+    - interview_runtime
   interview_audio_recorder:
     path: src/interview_audio_recorder.py
     depends_on:
-    - transcription_diagnostics
-  interview_session_store:
-    path: src/interview_session_store.py
-    depends_on: []
-  interview_state:
-    path: src/interview_state.py
-    depends_on:
-    - candidate_profile
-  keyboard_telemetry:
-    path: src/keyboard_telemetry.py
-    depends_on: []
-  offer_letter:
-    path: src/offer_letter.py
-    depends_on:
-    - app_content
-    - docx_compat
-  onboarding_action_sections:
-    path: src/onboarding_action_sections.py
-    depends_on: []
+    - interview_runtime
   onboarding_app:
     path: src/onboarding_app.pyw
     depends_on:
-    - dashboard_today
-    - email_security
-    - keyboard_telemetry
-    - onboarding_action_sections
-    - onboarding_dashboard_actions
-    - onboarding_models
-    - onboarding_reminder_health
-    - onboarding_reminder_runner
-    - onboarding_scheduler
-    - onboarding_scheduler_dialog
-    - onboarding_scheduler_status
-    - onboarding_send_guardrails
-    - onboarding_storage
-    - onboarding_task_filters
-    - onboarding_template_reference
-    - onboarding_ui_helpers
-    - template_placeholders
-    - ui_feedback
-    - ux_metrics
-  onboarding_dashboard_actions:
-    path: src/onboarding_dashboard_actions.py
-    depends_on:
-    - dashboard_today
-    - onboarding_models
-    - onboarding_task_filters
-  onboarding_migrations:
-    path: src/onboarding_migrations.py
-    depends_on: []
-  onboarding_models:
-    path: src/onboarding_models.py
-    depends_on: []
-  onboarding_notifier:
-    path: src/onboarding_notifier.py
-    depends_on:
-    - email_security
-    - onboarding_models
-    - onboarding_scheduler
-    - template_placeholders
-  onboarding_reminder_health:
-    path: src/onboarding_reminder_health.py
-    depends_on:
-    - onboarding_models
-  onboarding_reminder_runner:
-    path: src/onboarding_reminder_runner.py
-    depends_on:
-    - onboarding_models
-    - onboarding_notifier
-    - onboarding_scheduler
-    - ux_metrics
-  onboarding_scheduler:
-    path: src/onboarding_scheduler.py
-    depends_on:
-    - onboarding_models
-    - onboarding_template_reference
-  onboarding_scheduler_dialog:
-    path: src/onboarding_scheduler_dialog.py
-    depends_on: []
-  onboarding_scheduler_status:
-    path: src/onboarding_scheduler_status.py
-    depends_on:
-    - onboarding_models
-  onboarding_send_guardrails:
-    path: src/onboarding_send_guardrails.py
-    depends_on:
-    - email_security
-  onboarding_storage:
-    path: src/onboarding_storage.py
-    depends_on:
-    - onboarding_migrations
-    - onboarding_models
-    - storage_utils
-  onboarding_task_filters:
-    path: src/onboarding_task_filters.py
-    depends_on:
-    - onboarding_models
-    - onboarding_ui_helpers
-  onboarding_template_reference:
-    path: src/onboarding_template_reference.py
-    depends_on:
-    - onboarding_models
-  onboarding_ui_helpers:
-    path: src/onboarding_ui_helpers.py
-    depends_on:
-    - onboarding_models
-  question_screens:
-    path: src/question_screens.py
-    depends_on:
-    - app_content
-    - candidate_profile
-    - keyboard_telemetry
-    - reporting
-    - ui_feedback
-  question_settings_service:
-    path: src/question_settings_service.py
-    depends_on:
-    - storage_utils
-  question_settings_window:
-    path: src/question_settings_window.py
-    depends_on:
-    - app_content
-    - question_settings_service
-  referral_packet:
-    path: src/referral_packet.py
-    depends_on: []
-  reporting:
-    path: src/reporting.py
-    depends_on:
-    - app_content
-    - docx_compat
+    - onboarding_operations
+    - platform_services
+    - scoring_reporting
+    - ui_composition
+    - tk_theme
   runtime_wrapper:
     path: src/runtime_wrapper.py
-    depends_on: []
+    depends_on:
+    - platform_services
   storage_utils:
     path: src/storage_utils.py
-    depends_on: []
-  template_placeholders:
-    path: src/template_placeholders.py
-    depends_on: []
-  transcript_accumulator:
-    path: src/transcript_accumulator.py
-    depends_on: []
-  transcription_diagnostics:
-    path: src/transcription_diagnostics.py
-    depends_on: []
-  ui_components_history_data_grid:
-    path: src/ui_components/history_data_grid.py
-    depends_on: []
-  ui_feedback:
-    path: src/ui_feedback.py
     depends_on: []
   ui_windows:
     path: src/ui_windows.py
     depends_on:
-    - app_content
-    - keyboard_telemetry
-    - template_placeholders
-    - ui_feedback
-  ux_metrics:
-    path: src/ux_metrics.py
+    - platform_services
+    - scoring_reporting
+    - ui_composition
+    - tk_theme
+  tk_theme:
+    path: src/tk_theme.py
     depends_on: []
   interview_app_session_manager:
     path: src/interview_app/session_manager.py
     depends_on:
-    - candidate_profile
-    - interview_session_store
-    - interview_state
-    - reporting
+    - interview_runtime
 module_metadata:
+  interview_question_flow:
+    constraints:
+    - Interview question order and question identity are driven by config/rubric.json
+      plus config/question_overrides.json.
+    - Scored and custom question screens share one persistent footer contract.
+    - Recording/transcription is owned by interview runtime and is question-type agnostic.
   document_flow_rule:
     canonical_field_name: interview_notes_document_path
     merged_interview_notes_contract: true
-    description: Finalize, referral, and integration modules must exchange one merged interview-notes artifact that already includes transcription content.
+    description: Finalize, referral, and integration modules must exchange one merged
+      interview-notes artifact that already includes transcription content.
   interview_app_finalize_context:
     constraints:
-    - Requires interview_notes_document_path as the only canonical document artifact field.
+    - Requires interview_notes_document_path as the only canonical document artifact
+      field.
   interview_app_finalize_pipeline:
     constraints:
-    - Finalize processing produces one merged interview-notes artifact referenced by interview_notes_document_path.
+    - Finalize processing produces one merged interview-notes artifact referenced
+      by interview_notes_document_path.
   interview_app_finalize_gateways:
     constraints:
-    - Referral/integration dispatches must read interview_notes_document_path from finalize context payloads.
-  director_referral_service:
+    - Referral/integration dispatches must read interview_notes_document_path from
+      finalize context payloads.
+  scoring_reporting:
     constraints:
     - Referral payload document attachment path must resolve from interview_notes_document_path.
-  integration_export:
+    - Integration payload document references must use interview_notes_document_path
+      as canonical path.
+  trait_based_scoring_json:
     constraints:
-    - Integration payload document references must use interview_notes_document_path as canonical path.
+    - Runtime weighted signal source includes preschool teacher signals and Behavior
+      Support Specialist role signals while preserving existing preschool signal
+      identifiers.

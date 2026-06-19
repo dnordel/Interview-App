@@ -2,7 +2,7 @@ module:
   name: ui_windows
   language: python
   path: src/ui_windows.py
-  version: 1.1.0
+  version: 1.1.4
   description: Tkinter settings and question editor windows for interview workflows.
 functions: []
 classes:
@@ -221,7 +221,8 @@ classes:
     returns:
       type: dict[str, str]
 - name: QuestionEditorWindow
-  description: Window for editing scored competencies and custom question flow.
+  description: Window for editing scored competency question overrides, custom questions,
+    and mixed interview flow.
   locked: false
   attributes:
     app:
@@ -235,9 +236,57 @@ classes:
         type: InterviewApp
     returns:
       type: None
+  - name: add_or_update_custom
+    description: Add or update the selected track custom question draft, auto-generating
+      an id when blank and adding it to draft flow if absent.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Mutates in-memory custom-question and flow drafts, refreshes Tk
+      widgets, may show validation dialog.
+  - name: delete_custom
+    description: Delete the selected custom question draft and remove it from draft
+      interview flow.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: May show confirmation dialog, mutates in-memory custom-question
+      and flow drafts, refreshes Tk widgets.
+  - name: save_override
+    description: Save the selected scored competency primary-question override into
+      draft state.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Mutates in-memory trait override draft, may show validation dialog.
+  - name: clear_override
+    description: Clear the selected scored competency primary-question override from
+      draft state.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Mutates in-memory trait override draft, may show validation dialog.
+  - name: apply_changes
+    description: Persist custom question CRUD, trait question overrides, and mixed
+      flow drafts through QuestionOverridesStore.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Writes question_overrides.json through app.qstore and updates dirty
+      state.
 data_structures: []
 dependencies:
-- app_content
-- keyboard_telemetry
-- template_placeholders
-- ui_feedback
+- module: platform_services
+- module: scoring_reporting
+- module: ui_composition
+- module: tk_theme

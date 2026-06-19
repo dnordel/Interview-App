@@ -19,7 +19,7 @@
   - `automatic_overrides` (string[])
   - `conflict_resolution` (string[])
 - `tracks` (object)
-  - key is track id, e.g. `infant_toddler` or `preschool`
+  - key is track id, e.g. `infant_toddler`, `preschool`, or `behavior_support_specialist`
   - value includes:
     - `label` (string)
     - `max_weighted_total` (number)
@@ -30,6 +30,7 @@
       - `no_hire_percent_below` (number)
       - `hire_requires` (string[])
       - `borderline_requires` (string[])
+    - `gateway_requirements` (string[], optional): informational role requirements for specialized tracks.
 - `absolute_disqualifiers` (string[])
 - `interviewer_guidance` (object)
   - `what_to_evaluate` (string[])

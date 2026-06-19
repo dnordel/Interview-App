@@ -2,11 +2,13 @@ module:
   name: interview_app_finalize_context
   language: python
   path: src/interview_app/finalize_context.py
-  version: 2.0.0
-  description: Contracts for finalize_context module.
+  version: 2.0.3
+  description: Deprecated compatibility wrapper for finalize payload context implemented
+    by interview_runtime.
 functions:
 - name: build_finalize_context
-  description: build_finalize_context function.
+  description: Build finalize payload, flow transcript, transcript metadata, canonical
+    interview notes path placeholder, and empty legacy transcript path.
   locked: false
   inputs:
     app:
@@ -21,13 +23,19 @@ functions:
     transcript_metadata:
       type: FinalizeTranscriptMetadata
       required: true
+    run_deepseek:
+      type: bool
+      required: false
+      default: true
   returns:
     type: FinalizeContext
   exceptions: []
-  side_effects: none
+  side_effects: Applies candidate transcript text to flow payloads and clears the
+    legacy referral transcript path for new finalize output.
 classes:
 - name: FinalizeContext
-  description: FinalizeContext class.
+  description: FinalizeContext carrying finalize payload, canonical interview notes
+    document path, and empty legacy transcript compatibility field.
   locked: false
   attributes:
     payload:
@@ -42,7 +50,8 @@ classes:
       type: str
     transcript_path:
       type: str
-      description: "[DEPRECATED] Legacy transcript-only path retained through 2026-06-30. Use interview_notes_document_path."
+      description: '[DEPRECATED] Empty legacy transcript-only path for new finalize
+        output. Use interview_notes_document_path.'
     transcript_metadata:
       type: FinalizeTranscriptMetadata
     transcript_complete:
@@ -54,4 +63,4 @@ data_structures:
 - name: FinalizeContext
   type: dataclass
 dependencies:
-- interview_app_types
+- module: interview_runtime

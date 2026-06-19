@@ -2,8 +2,9 @@ module:
   name: interview_app_transcription_queue
   language: python
   path: src/interview_app/transcription_queue.py
-  version: 1.1.1
-  description: Contracts for transcription_queue module.
+  version: 1.1.2
+  description: Deprecated compatibility wrapper for transcription queue state implemented
+    by interview_runtime.
 functions: []
 classes:
 - name: TranscriptionQueueState
@@ -181,4 +182,4 @@ classes:
     side_effects: updates in-memory state
 data_structures: []
 dependencies:
-- interview_app_types
+- module: interview_runtime

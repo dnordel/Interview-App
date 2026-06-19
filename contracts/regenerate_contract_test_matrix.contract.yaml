@@ -3,143 +3,148 @@ module:
   language: python
   path: tools/regenerate_contract_test_matrix.py
   version: 1.0.1
-  description: Builds and writes the contract-to-test coverage matrix used for drift review workflows.
+  description: Builds and writes the contract-to-test coverage matrix used for drift
+    review workflows.
 functions:
-  - name: _is_module_contract
-    description: Determine whether a parsed YAML payload is a module contract payload.
-    locked: false
-    inputs:
-      payload:
-        type: dict[str, Any]
-        required: true
-    returns:
-      type: bool
-    exceptions: []
-    side_effects: none
-  - name: _relative_contract_path
-    description: Convert an absolute contract path into a repository-relative path string.
-    locked: false
-    inputs:
-      contract_path:
-        type: Path
-        required: true
-    returns:
-      type: str
-    exceptions:
-      - ValueError
-    side_effects: none
-  - name: _function_symbol_entries
-    description: Build matrix entries for module-level contract function definitions, skipping unnamed entries.
-    locked: false
-    inputs:
-      contract_name:
-        type: str
-        required: true
-      module_name:
-        type: str
-        required: true
-      functions:
-        type: list[dict[str, Any]]
-        required: true
-    returns:
-      type: list[dict[str, str]]
-    exceptions: []
-    side_effects: none
-  - name: _class_method_symbol_entries
-    description: Build matrix entries for contract class methods, skipping unnamed classes and methods.
-    locked: false
-    inputs:
-      contract_name:
-        type: str
-        required: true
-      module_name:
-        type: str
-        required: true
-      classes:
-        type: list[dict[str, Any]]
-        required: true
-    returns:
-      type: list[dict[str, str]]
-    exceptions: []
-    side_effects: none
-  - name: _symbol_entries
-    description: Collect sorted matrix entries for every function and class method in a module contract.
-    locked: false
-    inputs:
-      contract_path:
-        type: Path
-        required: true
-      payload:
-        type: dict[str, Any]
-        required: true
-    returns:
-      type: list[dict[str, str]]
-    exceptions: []
-    side_effects: none
-  - name: _mapping_rules
-    description: Return the ordered contract-to-test mapping rules used by the matrix generator.
-    locked: false
-    inputs: {}
-    returns:
-      type: list[Rule]
-    exceptions: []
-    side_effects: none
-  - name: _tests_for_symbol
-    description: Resolve the contract test mapping entry for a generated symbol.
-    locked: false
-    inputs:
-      symbol:
-        type: str
-        required: true
-      contract:
-        type: str
-        required: true
-    returns:
-      type: list[dict[str, Any]]
-    exceptions: []
-    side_effects: none
-  - name: _dedupe_entries
-    description: Ensure generated matrix entries remain 1:1 with contract symbols.
-    locked: false
-    inputs:
-      entries:
-        type: list[dict[str, Any]]
-        required: true
-    returns:
-      type: list[dict[str, Any]]
-    exceptions:
-      - ValueError
-    side_effects: none
-  - name: build_matrix
-    description: Build the complete contract coverage matrix from repository contracts.
-    locked: false
-    inputs: {}
-    returns:
+- name: _is_module_contract
+  description: Determine whether a parsed YAML payload is a module contract payload.
+  locked: false
+  inputs:
+    payload:
       type: dict[str, Any]
-    exceptions:
-      - ValueError
-    side_effects: reads contract YAML files from disk
-  - name: main
-    description: Generate and write the coverage matrix YAML artifact.
-    locked: false
-    inputs: {}
-    returns:
-      type: int
-    exceptions:
-      - OSError
-      - ValueError
-    side_effects: writes docs/contract_test_coverage_matrix.yaml
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+- name: _relative_contract_path
+  description: Convert an absolute contract path into a repository-relative path string.
+  locked: false
+  inputs:
+    contract_path:
+      type: Path
+      required: true
+  returns:
+    type: str
+  exceptions:
+  - ValueError
+  side_effects: none
+- name: _function_symbol_entries
+  description: Build matrix entries for module-level contract function definitions,
+    skipping unnamed entries.
+  locked: false
+  inputs:
+    contract_name:
+      type: str
+      required: true
+    module_name:
+      type: str
+      required: true
+    functions:
+      type: list[dict[str, Any]]
+      required: true
+  returns:
+    type: list[dict[str, str]]
+  exceptions: []
+  side_effects: none
+- name: _class_method_symbol_entries
+  description: Build matrix entries for contract class methods, skipping unnamed classes
+    and methods.
+  locked: false
+  inputs:
+    contract_name:
+      type: str
+      required: true
+    module_name:
+      type: str
+      required: true
+    classes:
+      type: list[dict[str, Any]]
+      required: true
+  returns:
+    type: list[dict[str, str]]
+  exceptions: []
+  side_effects: none
+- name: _symbol_entries
+  description: Collect sorted matrix entries for every function and class method in
+    a module contract.
+  locked: false
+  inputs:
+    contract_path:
+      type: Path
+      required: true
+    payload:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: list[dict[str, str]]
+  exceptions: []
+  side_effects: none
+- name: _mapping_rules
+  description: Return the ordered contract-to-test mapping rules used by the matrix
+    generator.
+  locked: false
+  inputs: {}
+  returns:
+    type: list[Rule]
+  exceptions: []
+  side_effects: none
+- name: _tests_for_symbol
+  description: Resolve the contract test mapping entry for a generated symbol.
+  locked: false
+  inputs:
+    symbol:
+      type: str
+      required: true
+    contract:
+      type: str
+      required: true
+  returns:
+    type: list[dict[str, Any]]
+  exceptions: []
+  side_effects: none
+- name: _dedupe_entries
+  description: Ensure generated matrix entries remain 1:1 with contract symbols.
+  locked: false
+  inputs:
+    entries:
+      type: list[dict[str, Any]]
+      required: true
+  returns:
+    type: list[dict[str, Any]]
+  exceptions:
+  - ValueError
+  side_effects: none
+- name: build_matrix
+  description: Build the complete contract coverage matrix from repository contracts.
+  locked: false
+  inputs: {}
+  returns:
+    type: dict[str, Any]
+  exceptions:
+  - ValueError
+  side_effects: reads contract YAML files from disk
+- name: main
+  description: Generate and write the coverage matrix YAML artifact.
+  locked: false
+  inputs: {}
+  returns:
+    type: int
+  exceptions:
+  - OSError
+  - ValueError
+  side_effects: writes docs/contract_test_coverage_matrix.yaml
 classes:
-  - name: Rule
-    description: Immutable mapping rule between contract predicates and assigned tests.
-    locked: false
-    attributes:
-      predicate:
-        type: Any
-      tests:
-        type: list[dict[str, Any]]
-    methods: []
+- name: Rule
+  description: Immutable mapping rule between contract predicates and assigned tests.
+  locked: false
+  attributes:
+    predicate:
+      type: Any
+    tests:
+      type: list[dict[str, Any]]
+  methods: []
 data_structures: []
 dependencies:
-  - contracts/*.contract.yaml
-  - docs/contract_test_coverage_matrix.yaml
+- module: contracts/*.contract.yaml
+- module: docs/contract_test_coverage_matrix.yaml

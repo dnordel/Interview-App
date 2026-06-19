@@ -22,30 +22,63 @@ def _is_module_contract(payload: dict[str, Any]) -> bool:
     return isinstance(payload, dict) and "module" in payload
 
 
-def _symbol_entries(contract_path: Path, payload: dict[str, Any]) -> list[dict[str, str]]:
-    module_name = payload["module"]["name"]
-    entries: list[dict[str, str]] = []
+def _relative_contract_path(contract_path: Path) -> str:
+    resolved_path = contract_path.resolve()
+    return str(resolved_path.relative_to(ROOT)).replace("\\", "/")
 
-    for fn in payload.get("functions", []):
+
+def _function_symbol_entries(
+    contract_name: str,
+    module_name: str,
+    functions: list[dict[str, Any]],
+) -> list[dict[str, str]]:
+    entries: list[dict[str, str]] = []
+    for fn in functions:
+        name = fn.get("name")
+        if not name:
+            continue
         entries.append(
             {
-                "contract": str(contract_path.relative_to(ROOT)),
-                "symbol": f"{module_name}.{fn['name']}",
+                "contract": contract_name,
+                "symbol": f"{module_name}.{name}",
                 "kind": "function",
             }
         )
+    return entries
 
-    for cls in payload.get("classes", []):
+
+def _class_method_symbol_entries(
+    contract_name: str,
+    module_name: str,
+    classes: list[dict[str, Any]],
+) -> list[dict[str, str]]:
+    entries: list[dict[str, str]] = []
+    for cls in classes:
+        class_name = cls.get("name")
+        if not class_name:
+            continue
         for method in cls.get("methods", []):
+            method_name = method.get("name")
+            if not method_name:
+                continue
             entries.append(
                 {
-                    "contract": str(contract_path.relative_to(ROOT)),
-                    "symbol": f"{module_name}.{cls['name']}.{method['name']}",
+                    "contract": contract_name,
+                    "symbol": f"{module_name}.{class_name}.{method_name}",
                     "kind": "method",
                 }
             )
-
     return entries
+
+
+def _symbol_entries(contract_path: Path, payload: dict[str, Any]) -> list[dict[str, str]]:
+    module_name = payload["module"]["name"]
+    contract_name = _relative_contract_path(contract_path)
+    entries = [
+        *_function_symbol_entries(contract_name, module_name, payload.get("functions", [])),
+        *_class_method_symbol_entries(contract_name, module_name, payload.get("classes", [])),
+    ]
+    return sorted(entries, key=lambda entry: entry["symbol"])
 
 
 def _mapping_rules() -> list[Rule]:
@@ -72,8 +105,7 @@ def _mapping_rules() -> list[Rule]:
             predicate=lambda symbol, contract: contract
             in {
                 "contracts/runtime_wrapper.contract.yaml",
-                "contracts/interview_state.contract.yaml",
-                "contracts/transcript_accumulator.contract.yaml",
+                "contracts/interview_runtime.contract.yaml",
             },
             tests=[
                 {
@@ -87,11 +119,8 @@ def _mapping_rules() -> list[Rule]:
             in {
                 "contracts/storage_utils.contract.yaml",
                 "contracts/app_logging.contract.yaml",
-                "contracts/reporting.contract.yaml",
-                "contracts/template_placeholders.contract.yaml",
-                "contracts/transcription_diagnostics.contract.yaml",
-                "contracts/email_security.contract.yaml",
-                "contracts/integration_export.contract.yaml",
+                "contracts/scoring_reporting.contract.yaml",
+                "contracts/scoring_reporting.contract.yaml",
             },
             tests=[
                 {
@@ -103,8 +132,7 @@ def _mapping_rules() -> list[Rule]:
         Rule(
             predicate=lambda symbol, contract: contract
             in {
-                "contracts/question_screens.contract.yaml",
-                "contracts/ui_feedback.contract.yaml",
+                "contracts/ui_composition.contract.yaml",
                 "contracts/ui_windows.contract.yaml",
             },
             tests=[
@@ -129,6 +157,18 @@ def _tests_for_symbol(symbol: str, contract: str) -> list[dict[str, Any]]:
     ]
 
 
+def _dedupe_entries(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    seen: set[str] = set()
+    deduped: list[dict[str, Any]] = []
+    for entry in entries:
+        symbol = entry["symbol"]
+        if symbol in seen:
+            raise ValueError(f"Duplicate contract symbol: {symbol}")
+        seen.add(symbol)
+        deduped.append(entry)
+    return deduped
+
+
 def build_matrix() -> dict[str, Any]:
     entries: list[dict[str, Any]] = []
 
@@ -140,6 +180,8 @@ def build_matrix() -> dict[str, Any]:
         for symbol_entry in _symbol_entries(contract_path, payload):
             tests = _tests_for_symbol(symbol_entry["symbol"], symbol_entry["contract"])
             entries.append({**symbol_entry, "tests": tests})
+
+    entries = _dedupe_entries(sorted(entries, key=lambda entry: entry["symbol"]))
 
     return {
         "last_updated": date.today().isoformat(),
@@ -175,10 +217,11 @@ def build_matrix() -> dict[str, Any]:
     }
 
 
-def main() -> None:
+def main() -> int:
     matrix = build_matrix()
     MATRIX_PATH.write_text(yaml.safe_dump(matrix, sort_keys=False), encoding="utf-8")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

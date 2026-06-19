@@ -2,14 +2,17 @@ from pathlib import Path
 
 import yaml
 
-from trait_signal_state import (
+from scoring_reporting import (
     count_selected_trait_checkbox_entries,
     default_signal_ui_definition,
     ensure_trait_signal_ui_definition,
     load_trait_signal_ui_definition,
+    normalize_model_signal_suggestions,
     normalize_trait_signal_selection_state,
     resolve_trait_selection_value,
+    trait_signal_override_state,
     trait_requires_signal_selection,
+    write_canonical_model_signal_suggestions,
     write_canonical_selected_signal_ids,
 )
 
@@ -38,10 +41,10 @@ def test_load_trait_signal_ui_definition_returns_non_empty_signal_ids_for_known_
     assert definition["extended_collapsible"] is True
     assert definition["extended_default_collapsed"] is True
     assert definition["valid_signal_ids"]
-    assert "Q10_FRAMES_FROM_CHILD_PERSPECTIVE" in definition["valid_signal_ids"]
+    assert "Q10_BEHAVIOR_SKILL_BUILDING" in definition["valid_signal_ids"]
     assert definition["core_signals"]
     assert all("signal_id" in signal for signal in definition["core_signals"])
-    assert any(group["group_label"] == "Language Used" for group in definition["extended_groups"])
+    assert any(group["group_label"] == "positive" for group in definition["extended_groups"])
 
 
 def test_normalize_trait_signal_selection_state_filters_compatibility_variants_to_valid_ids():
@@ -69,7 +72,32 @@ def test_write_canonical_selected_signal_ids_replaces_legacy_selection_fields():
     assert "signal_selections" not in state
 
 
-def test_count_selected_trait_checkbox_entries_counts_nested_compatibility_payloads():
+def test_model_signal_suggestions_are_separate_from_manual_selections() -> None:
+    suggestions = normalize_model_signal_suggestions(
+        [
+            {"signal_id": "S_ONE", "confidence": 1.5, "rationale": "Observed."},
+            {"signal_id": "INVALID", "confidence": 0.9, "rationale": "Ignored."},
+            {"signal_id": "S_TWO", "confidence": "bad", "rationale": "Weak."},
+        ],
+        ["S_ONE", "S_TWO"],
+    )
+    state = {"selected_signal_ids": ["S_TWO"]}
+
+    write_canonical_model_signal_suggestions(state, suggestions)
+
+    assert state["selected_signal_ids"] == ["S_TWO"]
+    assert state["model_signal_suggestions"] == [
+        {"signal_id": "S_ONE", "confidence": 1.0, "rationale": "Observed.", "evidence_quote": ""},
+        {"signal_id": "S_TWO", "confidence": 0.0, "rationale": "Weak.", "evidence_quote": ""},
+    ]
+    assert trait_signal_override_state(state) == {
+        "accepted_signal_ids": ["S_TWO"],
+        "rejected_signal_ids": ["S_ONE"],
+        "manual_only_signal_ids": [],
+    }
+
+
+def test_count_selected_trait_checkbox_entries_counts_nested_legacy_payloads():
     count = count_selected_trait_checkbox_entries(
         {
             "signal_selections": {
@@ -116,7 +144,7 @@ def test_load_trait_signal_ui_definition_supports_rubric_trait_id_aliases():
     definition = load_trait_signal_ui_definition("trait_10")
 
     assert definition["trait_id"] == "trait_10"
-    assert "Q10_FRAMES_FROM_CHILD_PERSPECTIVE" in definition["valid_signal_ids"]
+    assert "Q10_BEHAVIOR_SKILL_BUILDING" in definition["valid_signal_ids"]
 
 
 def test_default_signal_ui_definition_matches_explicit_runtime_contract_sections() -> None:
@@ -135,7 +163,7 @@ def test_load_trait_signal_ui_definition_uses_repo_root_paths_from_src_cwd(src_c
     assert src_cwd.name == "src"
     assert definition["trait_id"] == "trait_10"
     assert definition["valid_signal_ids"]
-    assert "Q10_FRAMES_FROM_CHILD_PERSPECTIVE" in definition["valid_signal_ids"]
+    assert "Q10_BEHAVIOR_SKILL_BUILDING" in definition["valid_signal_ids"]
 
 
 def test_load_trait_signal_ui_definition_supports_trait_1_runtime_alias_resolution():
@@ -143,11 +171,11 @@ def test_load_trait_signal_ui_definition_supports_trait_1_runtime_alias_resoluti
 
     assert definition["trait_id"] == "trait_1"
     assert definition["valid_signal_ids"]
-    assert "Q1_RESPECTFUL_LANGUAGE" in definition["valid_signal_ids"]
+    assert "Q1_BEHAVIOR_AS_COMMUNICATION" in definition["valid_signal_ids"]
 
 
 def test_ensure_trait_signal_ui_definition_rejects_missing_runtime_trait_definition() -> None:
-    from reporting import ReportingValidationError
+    from scoring_reporting import ReportingValidationError
 
     try:
         ensure_trait_signal_ui_definition("trait_999")

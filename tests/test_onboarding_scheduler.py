@@ -1,7 +1,8 @@
 from datetime import date
 
-from onboarding_models import Employee, EmployeeTask, ReminderCadence, TaskTemplate
-from onboarding_scheduler import calculate_due_date, collect_due_reminders, seed_employee_tasks, task_should_remind
+from onboarding_operations import Employee, EmployeeTask, ReminderCadence, TaskTemplate
+import onboarding_operations
+from onboarding_operations import calculate_due_date, collect_due_reminders, seed_employee_tasks, task_should_remind
 
 
 def test_due_reminder_daily_interval():
@@ -133,3 +134,19 @@ def test_calculate_due_date_specific_date_reference_uses_selected_date_anchor():
     )
 
     assert calculate_due_date(employee, template, date(2026, 2, 20)) == date(2026, 5, 22)
+
+
+def test_task_completion_and_reminder_sent_mutate_task_state():
+    task = EmployeeTask(id="task-1", template_id="template-1", title="Permit")
+
+    onboarding_operations.apply_task_completion(task, True, date(2026, 2, 20))
+    onboarding_operations.mark_reminder_sent(task, date(2026, 2, 21))
+
+    assert task.completed is True
+    assert task.completed_at == "2026-02-20"
+    assert task.last_reminder_sent == "2026-02-21"
+
+    onboarding_operations.apply_task_completion(task, False, date(2026, 2, 22))
+
+    assert task.completed is False
+    assert task.completed_at is None

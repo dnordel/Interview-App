@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from artifact_cleanup import cleanup_stale_artifacts, delete_recording_artifacts
+from platform_services import cleanup_stale_artifacts, delete_recording_artifacts
 
 
 def test_delete_recording_artifacts_removes_known_files(tmp_path: Path):

@@ -1,0 +1,213 @@
+{
+  "candidate": {
+    "name": "Makayla Rodriguez",
+    "interview_date": "2026-06-09",
+    "school": "Palmdale",
+    "track": "infant_toddler",
+    "qualification": {
+      "has_degree": false,
+      "degree_type": "",
+      "degree_in_ece": false,
+      "ece_units_completed": 15,
+      "infant_toddler_class_completed": true,
+      "total_units_completed": 40,
+      "years_experience": 0
+    }
+  },
+  "percent_of_max": 48.57,
+  "decision": "no_hire",
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_8",
+        "trait_name": "Gentleness & Physical Awareness",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_9",
+        "trait_name": "Patience with Nonverbal Communication",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time?",
+        "answer": "full-time or part-time",
+        "skipped": false
+      },
+      {
+        "question_text": "Tell me a little about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$17+",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "asap",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying to our company, Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-06-09 - Palmdale - Makayla Rodriguez - Interview.docx",
+    "transcript_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Candidate_Makayla_Rodriguez_2026-06-09_live_transcript.docx"
+  },
+  "communication_log": [],
+  "flow_transcript_slices": [
+    {
+      "type": "custom",
+      "id": "Why-ECE",
+      "question": "Tell me a little about yourself and why early childhood education matters to you.",
+      "candidate_transcript": "[Q1 Attempt 1]\nA little bit about myself is that I've always been, I always knew I wanted to be an educator in any kind of way. Um, I was very fascinated with, um, how like teaching works and how you could like shape young minds and how like close teachers and students are. Um, I really want to be a educator. It was, that was, that was a question, second question, right? Um, because yeah, it matters to me because, um, a lot of students don't really have, like I know from experience that a lot of students don't really have a good role model in their lives. And so it's always been like in my head to be that role model and to do whatever I think is best for the student. Um, yeah, AA, uh, no, yes, 15, uh, no, excluding it. That's the basic, just education. It's not the CFE ones, right? Oh, um, I don't know. I think it's, uh, uh."
+    },
+    {
+      "type": "custom",
+      "id": "Why-LPL",
+      "question": "Why are you applying to our company, Launch Pad Learning?",
+      "candidate_transcript": "[Q2 Attempt 1]\num well I saw that it was uh just like a just like a bus away and it would be good like um just to have um I saw you guys actually before on uh TikTok I saw the company and I really liked how they did everything with like building the community and stuff um especially with the Easter one I um I thought that was really cool and I was like oh my god I would love to be a part of the school and to just be a part of that community because every time I see it on TikTok I just always see like a community with like students and family and staff and stuff it's great"
+    },
+    {
+      "type": "trait",
+      "id": "trait_1",
+      "question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+      "candidate_transcript": "[Q3 Attempt 1]\nYeah. I grew up around younger siblings, so they were in-laws, so they weren't, they're not here, so, because they separated, but through the time that they were around, I noticed that one of the kids got very, very angry a lot, and he had a difficult time managing his anger, and I just, it felt like everyone was just constantly telling him to, like, calm down and expecting him to just get over it, and, like, even though he needs to regulate himself, so I took it to heart. And I would always make sure that he knew I was there, that I would calm him down, and we could just talk it out, because that's what they need, to regulate themselves. They don't need someone screaming and yelling at them to tell them to stop. They just need..."
+    },
+    {
+      "type": "trait",
+      "id": "trait_2",
+      "question": "Tell me about a time you felt overwhelmed or stressed at work with children present. What did you do to manage, not the kids, but yourself and your stress?",
+      "candidate_transcript": "[Q4 Attempt 1]\nOkay. When it took me a while to learn how to manage my stress. And that's why I don't expect kids to learn right away. But with me, whenever I get stressed, I would know to put myself in out of the situation that's stressing me out. And to just get away, turn some music on with my headphones and just do whatever I need to be doing so that I don't act out on to people, my anger."
+    },
+    {
+      "type": "trait",
+      "id": "trait_3",
+      "question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering, helping with clothing, or guiding them physically. They are pulling away or crying. Walk me through exactly what you would do and say, step by step",
+      "candidate_transcript": "[Q5 Attempt 1]\nIt's like a baby, right? Okay. Well, if it's a toddler, two or three, I would probably just, well, I have them down, and they don't want to be touched right now. So I would just stand by them to make sure that they know that I'm present, not just walk away. I know that I'm here when they're ready, and we could just keep calm until, because the diaper doesn't have to get on right away. I mean, it will eventually get on. So we'll wait until the toddler calms down, and then once they are calm, I will put the diaper on and make sure that they know that there's no harm or anything. Nothing to fear with the diaper. Everything will be fine."
+    },
+    {
+      "type": "trait",
+      "id": "trait_4",
+      "question": "Tell me about a time you received constructive criticism or feedback you didn’t expect or didn’t fully agree with. What happened next?",
+      "candidate_transcript": "[Q6 Attempt 1]\nWhen I receive constructive criticism, I usually just, even if it's something that I didn't expect, I know that coming from them, they've probably thought it for a really long time, and they're just now saying it. So I would do my very best to make sure that I take it and I apply it. If it's something that I don't agree with, I would have a talk with them and I would make sure they understand my side, but know that I'll try to do my best to go with what they think is better because I don't want their criticism to just fly out the window because I don't think it applies to me."
+    },
+    {
+      "type": "trait",
+      "id": "trait_5",
+      "question": "Tell me about a time something, such as a lesson plan, did not go as expected and your role in it.",
+      "candidate_transcript": "[Q7 Attempt 1]\nI don't really have a connection to that. I don't have experience with education, like, yet."
+    },
+    {
+      "type": "trait",
+      "id": "trait_6",
+      "question": "Tell me about a time you had a challenge with another adult. How did you navigate it?",
+      "candidate_transcript": "[Q8 Attempt 1]\nUsually when I have problems with adults, it's about them not understanding where I'm coming from. So I try my best to, well, I have a lot of arguments and problems with my mom because she just doesn't understand where I'm coming from. So an example would be like, oh, she would want me to do the dishes right now. But I have five finals to do and I don't really have time to do that. So I would be like, I have these assignments to do. I will do it later and it will get done today. So it will get done. But also. It comes down to I need to prioritize my work. And I will get it done later. She usually understands because she understands that education comes first. So it's just hard sometimes because they always overlap and it's always, oh, I have to do an assignment. And she kind of thinks that it's getting in the way of like chores around the house, but knows that I have to get it done. So we usually do. We set like a time I could be like, oh, I'll get this done around five. And if I don't do it. By then, then you could like yell at me and take it out on me."
+    },
+    {
+      "type": "trait",
+      "id": "trait_7",
+      "question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+      "candidate_transcript": "[Q9 Attempt 1]\nI learned, um, in one of my education classes, um, that there's different kinds of parents. I think there's, um, what are they called? They call it, um, it's different teaching, um, parenting styles and you could be permissive. Um, I, I forgot the other ones, but I was really interested in that because, um, some kids adjust, no, don't adjust, but certain kids do well in, um, permissive, uh, parents and some kids don't do well with parents. And you might have two kids and one does well with permissive parents and one, um, does well, well with the other kinds. And it's just really, like fascinating how like really different kids brains work and how they do better with different things. And they're not all the same kind of kid."
+    },
+    {
+      "type": "trait",
+      "id": "trait_8",
+      "question": "Tell me about how you physically care for infants or toddlers during routines like feeding, diapering, or comforting.",
+      "candidate_transcript": "[Q10 Attempt 1]\nI would make sure that we have contact. Because I know that the skin-to-skin is important. So I would make sure that that would calm them. And I would just make sure they're comfortable all the time. I don't want them to feel uncomfortable around a basic routine as diapering. So if they're not comfortable, we'll find a way around it. And just also making sure they know that it has to get done. And we can be angry in the moment as long as we are."
+    },
+    {
+      "type": "trait",
+      "id": "trait_9",
+      "question": "How do you understand what a nonverbal child needs when they’re crying or upset? Can you walk me through how you respond in those moments?",
+      "candidate_transcript": "[Q11 Attempt 1]\nI have some experience with that. I have very, I don't know what the doctors use. It's like the quote unquote better autism or something, but I grew up having autism and I still have it now. And so I would go nonverbal sometimes. And so I have, I totally am able to relate to the kid when it comes down to that. And I understand they don't, they can't talk during those times. And it's very hard for communication. And we could try writing down on a piece of paper, making sure that they know that we, that communicating while being nonverbal is hard, but also it helps the other person not just stand there. Looking all lost and confused. And it makes the other person know that, oh, I don't want to be talking right now. And it's really hard to communicate. And I just don't want to do it. So I'll make sure that they have some kind of communication. What was the question again? Sorry. I know. I would make sure they have the room to. We would go into a more isolated room and make sure, or just like away from the noise that is bothering them and maybe put on some headphones or if they don't want headphones and they just want to like yell, then they're free to do that too. It doesn't bother me, but making sure that it doesn't bother other people. I'll let them have their time and making sure that they know I'm there. And if that means sitting down, crisscross applesauce on the floor, by them, offering touch, because I know that you just need to be regulated with certain touch, like a hug."
+    },
+    {
+      "type": "custom",
+      "id": "FT-or-PT",
+      "question": "Are you looking for full-time or part-time?",
+      "candidate_transcript": "[Q12 Attempt 1]\neverything works, I don't, I don't really"
+    },
+    {
+      "type": "custom",
+      "id": "Start",
+      "question": "When could you start if we decide to move forward?",
+      "candidate_transcript": "[Q14 Attempt 1]\nabout um what time what like what the hours would be kind of thing because I saw on the website that it was 5 30 a.m to 7 p.m okay thank you um"
+    }
+  ]
+}

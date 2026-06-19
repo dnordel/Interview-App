@@ -2,8 +2,9 @@ module:
   name: interview_app_flow_controller
   language: python
   path: src/interview_app/flow_controller.py
-  version: 1.0.1
-  description: Contracts for flow_controller module.
+  version: 1.0.2
+  description: Deprecated compatibility wrapper for interview flow navigation implemented
+    by interview_runtime.
 functions: []
 classes:
 - name: FlowController
@@ -50,4 +51,5 @@ classes:
     exceptions: []
     side_effects: none
 data_structures: []
-dependencies: []
+dependencies:
+- module: interview_runtime

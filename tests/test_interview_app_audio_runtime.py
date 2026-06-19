@@ -32,4 +32,4 @@ def test_start_recording_session_uses_resolved_windows_system_device(monkeypatch
     )
 
     assert captured["win_sys_device"] == "VB-Audio Virtual Cable (CABLE Input)"
-    assert captured["win_mic_device"] is None
+    assert captured["win_mic_device"] == "Microphone (Realtek USB Audio)"

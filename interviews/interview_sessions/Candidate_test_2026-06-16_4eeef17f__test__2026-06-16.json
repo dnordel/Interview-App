@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-06-16T19:29:32.134707Z",
+  "updated_at": "2026-06-16T19:29:42.119368Z",
+  "interview": {
+    "interview_id": "Candidate_test_2026-06-16_4eeef17f",
+    "candidate_name": "test",
+    "interview_date": "2026-06-16"
+  },
+  "questions": {
+    "0": {
+      "flow_idx": 0,
+      "item_type": "custom",
+      "item_id": "Why-ECE",
+      "notes": {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q1 Attempt 1]",
+      "updated_at": "2026-06-16T19:29:42.119368Z"
+    },
+    "1": {
+      "flow_idx": 1,
+      "item_type": "custom",
+      "item_id": "Why-LPL",
+      "notes": {
+        "question_text": "Why are you applying to our company, Launch Pad Learning?",
+        "answer": "test",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-06-16T19:29:37.344091Z"
+    }
+  }
+}

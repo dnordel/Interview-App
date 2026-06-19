@@ -4,8 +4,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
-from integration_export import build_integration_payload
-from reporting import ReportingValidationError
+from scoring_reporting import ReportingValidationError, build_integration_payload
 from trait_scoring_adapter import (
     DEFAULT_ENGINE_MODULE_CONTRACT,
     DEFAULT_ENGINE_RUNTIME_CONTRACT,
@@ -125,8 +124,8 @@ def _trait_runtime_bundle(traits=None):
 
 class TestTraitScoringAdapter(unittest.TestCase):
     def _patched_trait_runtime(self):
-        return patch("trait_scoring_adapter._load_runtime_bundle", return_value=_trait_runtime_bundle()), patch(
-            "trait_scoring_adapter._load_trait_engine_class", return_value=_FakeTraitEngine
+        return patch("scoring_reporting._load_runtime_bundle", return_value=_trait_runtime_bundle()), patch(
+            "scoring_reporting._load_trait_engine_class", return_value=_FakeTraitEngine
         )
 
     def test_build_trait_scoring_payload_returns_normalized_scoring_shape(self):
@@ -276,13 +275,22 @@ class TestTraitScoringAdapter(unittest.TestCase):
         self.assertEqual(normalize_trait_state_item({"raw_score": "4"})["raw_score"], 4)
 
     def test_normalize_trait_state_item_canonicalizes_selection_variants(self):
-        canonical_state = normalize_trait_state_item({"selected_signal_ids": ["P1", "P2", "P1"]})
+        canonical_state = normalize_trait_state_item(
+            {
+                "selected_signal_ids": ["P1", "P2", "P1"],
+                "model_signal_suggestions": [{"signal_id": "P1", "confidence": 0.5, "rationale": "Matched."}],
+            }
+        )
         mapping_state = normalize_trait_state_item({"selected_signals": {"P1": True, "P2": False, "P3": True}})
         grouped_state = normalize_trait_state_item(
             {"signal_selections": {"core": ["P1"], "extended": [{"signal_id": "P2", "selected": True}]}}
         )
 
         self.assertEqual(canonical_state["selected_signal_ids"], ["P1", "P2"])
+        self.assertEqual(
+            canonical_state["model_signal_override"],
+            {"accepted_signal_ids": ["P1"], "rejected_signal_ids": [], "manual_only_signal_ids": ["P2"]},
+        )
         self.assertEqual(mapping_state["selected_signal_ids"], ["P1", "P3"])
         self.assertEqual(grouped_state["selected_signal_ids"], ["P1", "P2"])
 
@@ -316,7 +324,7 @@ class TestTraitScoringAdapter(unittest.TestCase):
             }
         )
 
-        with patch("trait_scoring_adapter._load_trait_engine_class", return_value=_FakeTraitEngine):
+        with patch("scoring_reporting._load_trait_engine_class", return_value=_FakeTraitEngine):
             engine_output = invoke_scoring_engine(
                 build_rubric(),
                 "general",
@@ -325,7 +333,7 @@ class TestTraitScoringAdapter(unittest.TestCase):
                 engine_runtime_contract_path="Trait-Based Scoring/trait_based_scoring_contract.yaml",
             )
 
-        self.assertEqual(engine_output["weighted_total"], 4)
+        self.assertEqual(engine_output["weighted_total"], 160)
         self.assertEqual(len(engine_output["rows"]), 3)
 
     def test_normalize_app_trait_state_maps_legacy_runtime_trait_ids_to_canonical_ids(self):
@@ -340,7 +348,7 @@ class TestTraitScoringAdapter(unittest.TestCase):
     def test_invoke_scoring_engine_rejects_missing_trait_overlap(self):
         normalized_state = normalize_app_trait_state({"unknown_trait": {"raw_score": 4}})
 
-        with patch("trait_scoring_adapter._load_trait_engine_class", return_value=_FakeTraitEngine):
+        with patch("scoring_reporting._load_trait_engine_class", return_value=_FakeTraitEngine):
             with self.assertRaises(ReportingValidationError) as exc_info:
                 invoke_scoring_engine(
                     build_rubric(),
@@ -355,7 +363,7 @@ class TestTraitScoringAdapter(unittest.TestCase):
     def test_invoke_scoring_engine_rejects_rubric_runtime_config_mismatch(self):
         normalized_state = normalize_app_trait_state({"trait_a": {"raw_score": 4}})
 
-        with patch("trait_scoring_adapter._load_trait_engine_class", return_value=_FakeTraitEngine):
+        with patch("scoring_reporting._load_trait_engine_class", return_value=_FakeTraitEngine):
             with self.assertRaises(ReportingValidationError) as exc_info:
                 invoke_scoring_engine(
                     build_rubric(),
@@ -368,7 +376,7 @@ class TestTraitScoringAdapter(unittest.TestCase):
         self.assertIn("includes traits missing from the runtime bundle", str(exc_info.exception))
 
     def test_map_engine_output_to_normalized_shape_returns_shared_payload(self):
-        with patch("trait_scoring_adapter._load_trait_engine_class", return_value=_FakeTraitEngine):
+        with patch("scoring_reporting._load_trait_engine_class", return_value=_FakeTraitEngine):
             normalized_state = normalize_app_trait_state(
                 {
                     "trait_a": {"raw_score": 4, "verbatim_notes": "quoted"},
@@ -407,7 +415,7 @@ class TestTraitScoringAdapter(unittest.TestCase):
         normalized_state = normalize_app_trait_state({"trait_a": {"raw_score": 4, "selected_signal_ids": ["P1"]}})
         explicit_contract_path = Path("custom-runtime/trait_scoring_contract.yaml")
 
-        with patch("trait_scoring_adapter._load_trait_engine_class", return_value=_FakeTraitEngine) as load_engine_class:
+        with patch("scoring_reporting._load_trait_engine_class", return_value=_FakeTraitEngine) as load_engine_class:
             engine_output = invoke_scoring_engine(
                 build_rubric(),
                 "general",
@@ -416,7 +424,7 @@ class TestTraitScoringAdapter(unittest.TestCase):
                 engine_runtime_contract_path=explicit_contract_path,
             )
 
-        self.assertEqual(engine_output["weighted_total"], 1)
+        self.assertEqual(engine_output["weighted_total"], 124)
         self.assertEqual(load_engine_class.call_args.args[0], explicit_contract_path.expanduser().resolve())
 
     def test_build_trait_scoring_payload_honors_non_default_contract_paths_end_to_end(self):
@@ -441,17 +449,31 @@ class TestTraitScoringAdapter(unittest.TestCase):
   signal_dictionary: ./shared_signal_dictionary.json
   output_dir: .
 scoring:
-  core_multiplier: 1.5
+  signal_score_to_raw_score:
+    - min: 7
+      max:
+      raw_score: 5
+    - min: 4
+      max: 6
+      raw_score: 4
+    - min: 1
+      max: 3
+      raw_score: 3
+    - min: -3
+      max: 0
+      raw_score: 2
+    - min:
+      max: -4
+      raw_score: 1
 data_model:
   signal_resolution:
     allow_custom_signals: true
 decision_engine:
   thresholds:
-    strong_hire: 20
-    hire: 10
+    hire: 80
     borderline: 0
   override_rules:
-    auto_reject_if_critical: true
+    auto_reject_if_auto_no_hire_signal: true
 """,
                 encoding="utf-8",
             )
@@ -521,22 +543,22 @@ class ScoringEngine:
                 engine_runtime_contract_path=runtime_contract_path,
             )
 
-        self.assertEqual(scoring["weighted_total"], 1)
+        self.assertEqual(scoring["weighted_total"], 124)
         self.assertEqual(scoring["engine_metadata"]["module_contract"]["module"]["name"], "temp_engine")
         self.assertEqual(scoring["engine_metadata"]["runtime_contract_path"], str(runtime_contract_path.resolve()))
         self.assertEqual(scoring["engine_metadata"]["resolved_paths"]["signal_dictionary"], str(signal_dictionary_path.resolve()))
         self.assertEqual(scoring["engine_metadata"]["trait_definitions"][0]["trait_id"], "trait_a")
 
     def test_build_trait_scoring_payload_rejects_invalid_scores(self):
-        with patch("trait_scoring_adapter._load_runtime_bundle", return_value=_trait_runtime_bundle()), patch(
-            "trait_scoring_adapter._load_trait_engine_class", return_value=_FakeTraitEngine
+        with patch("scoring_reporting._load_runtime_bundle", return_value=_trait_runtime_bundle()), patch(
+            "scoring_reporting._load_trait_engine_class", return_value=_FakeTraitEngine
         ):
             with self.assertRaises(ReportingValidationError):
                 build_trait_scoring_payload(build_rubric(), "general", {"trait_a": {"raw_score": 7}})
 
     def test_normalized_scoring_shape_feeds_integration_export(self):
-        with patch("trait_scoring_adapter._load_runtime_bundle", return_value=_trait_runtime_bundle()), patch(
-            "trait_scoring_adapter._load_trait_engine_class", return_value=_FakeTraitEngine
+        with patch("scoring_reporting._load_runtime_bundle", return_value=_trait_runtime_bundle()), patch(
+            "scoring_reporting._load_trait_engine_class", return_value=_FakeTraitEngine
         ):
             scoring = build_trait_scoring_payload(
                 build_rubric(),
@@ -567,8 +589,8 @@ class ScoringEngine:
         self.assertEqual(export_payload["interview_notes"]["traits"][0]["verbatim_notes"], "quoted")
 
     def test_normalized_state_scoring_matches_integer_and_string_inputs(self):
-        with patch("trait_scoring_adapter._load_runtime_bundle", return_value=_trait_runtime_bundle()), patch(
-            "trait_scoring_adapter._load_trait_engine_class", return_value=_FakeTraitEngine
+        with patch("scoring_reporting._load_runtime_bundle", return_value=_trait_runtime_bundle()), patch(
+            "scoring_reporting._load_trait_engine_class", return_value=_FakeTraitEngine
         ):
             integer_scoring = build_trait_scoring_payload(
                 build_rubric(),
@@ -593,8 +615,8 @@ class ScoringEngine:
         self.assertEqual(integer_scoring["outcome"], string_scoring["outcome"])
 
     def test_build_trait_scoring_payload_exposes_skip_aware_denominator_fields(self):
-        with patch("trait_scoring_adapter._load_runtime_bundle", return_value=_trait_runtime_bundle()), patch(
-            "trait_scoring_adapter._load_trait_engine_class", return_value=_FakeTraitEngine
+        with patch("scoring_reporting._load_runtime_bundle", return_value=_trait_runtime_bundle()), patch(
+            "scoring_reporting._load_trait_engine_class", return_value=_FakeTraitEngine
         ):
             scoring = build_trait_scoring_payload(
                 build_rubric(),
@@ -616,8 +638,8 @@ class ScoringEngine:
         self.assertEqual(scoring["percent_label"], scoring["percent_of_max_label"])
 
     def test_build_trait_scoring_payload_labels_all_skipped_percent_as_na(self):
-        with patch("trait_scoring_adapter._load_runtime_bundle", return_value=_trait_runtime_bundle()), patch(
-            "trait_scoring_adapter._load_trait_engine_class", return_value=_FakeTraitEngine
+        with patch("scoring_reporting._load_runtime_bundle", return_value=_trait_runtime_bundle()), patch(
+            "scoring_reporting._load_trait_engine_class", return_value=_FakeTraitEngine
         ):
             scoring = build_trait_scoring_payload(
                 build_rubric(),
@@ -698,7 +720,7 @@ class ScoringEngine:
             "config": {"decision_engine": {"thresholds": {}, "override_rules": {}}},
             "signal_dictionary": {"signals": []},
         }
-        with patch("trait_scoring_adapter._load_trait_engine_class", return_value=lambda cfg, sig: {"cfg": cfg, "sig": sig}):
+        with patch("scoring_reporting._load_trait_engine_class", return_value=lambda cfg, sig: {"cfg": cfg, "sig": sig}):
             built = _build_trait_engine(runtime_bundle, Path("contract.yaml"))
         self.assertEqual(built["cfg"], runtime_bundle["config"])
 
@@ -716,7 +738,15 @@ class ScoringEngine:
                 }
             ],
         }
-        normalized_state = {"trait_a": {"raw_score": 4, "skipped": False, "verbatim_notes": "note"}}
+        normalized_state = {
+            "trait_a": {
+                "raw_score": 4,
+                "skipped": False,
+                "verbatim_notes": "note",
+                "selected_signal_ids": ["P1"],
+                "model_signal_suggestions": [{"signal_id": "P2", "confidence": 0.8, "rationale": "Observed."}],
+            }
+        }
         session_result = {
             "traits": [{"trait_id": "trait_a", "final_score": 7, "selected_core": [1], "selected_extended": [1, 2]}],
             "totals": {"final": 7},
@@ -731,18 +761,22 @@ class ScoringEngine:
             track_key="general",
             normalized_state=normalized_state,
             trait_definitions=[TRAIT_DEFINITION],
+            runtime_bundle=_trait_runtime_bundle(),
             session_result=session_result,
         )
 
         self.assertEqual(_rubric_trait_map(rubric, "general")["trait_a"]["name"], "Trait A")
-        self.assertEqual(compatibility["weighted_total"], 7)
-        self.assertEqual(_max_trait_final_score(TRAIT_DEFINITION), 5.5)
-        self.assertEqual(_max_weighted_total([TRAIT_DEFINITION], normalized_state), 6)
+        self.assertEqual(compatibility["weighted_total"], 12)
+        self.assertEqual(compatibility["rows"][0]["raw_score"], 4)
+        self.assertEqual(compatibility["rows"][0]["system_checkbox_score"], 12)
+        self.assertEqual(compatibility["rows"][0]["deepseek_calculated_score"], 9)
+        self.assertEqual(_max_trait_final_score(TRAIT_DEFINITION), 4.0)
+        self.assertEqual(_max_weighted_total([TRAIT_DEFINITION], normalized_state), 4)
         self.assertEqual(_configured_max_weighted_total(rubric, "general", [TRAIT_DEFINITION]), 30)
 
-    def test_checkbox_selections_drive_scoring_independent_of_raw_score(self):
-        with patch("trait_scoring_adapter._load_runtime_bundle", return_value=_trait_runtime_bundle()), patch(
-            "trait_scoring_adapter._load_trait_engine_class", return_value=_FakeTraitEngine
+    def test_legacy_signal_selections_do_not_override_human_raw_score(self):
+        with patch("scoring_reporting._load_runtime_bundle", return_value=_trait_runtime_bundle()), patch(
+            "scoring_reporting._load_trait_engine_class", return_value=_FakeTraitEngine
         ):
             positive_scoring = build_trait_scoring_payload(
                 build_rubric(),
@@ -763,11 +797,11 @@ class ScoringEngine:
                 },
             )
 
-        self.assertEqual(positive_scoring["weighted_total"], 4)
-        self.assertEqual(reduced_scoring["weighted_total"], 3)
-        self.assertGreater(positive_scoring["weighted_total"], reduced_scoring["weighted_total"])
+        self.assertEqual(positive_scoring["weighted_total"], 60)
+        self.assertEqual(reduced_scoring["weighted_total"], 184)
+        self.assertLess(positive_scoring["weighted_total"], reduced_scoring["weighted_total"])
 
-    def test_selection_normalizer_ignores_raw_score_when_checkbox_variants_exist(self):
+    def test_selection_normalizer_ignores_raw_score_when_legacy_signal_variants_exist(self):
         self.assertEqual(_normalize_selected_signal_ids({"raw_score": 5, "selected_signal_ids": ["P1"]}), ["P1"])
         self.assertEqual(_normalize_selected_signal_ids({"raw_score": 1, "selected_signals": {"N1": True}}), ["N1"])
 
@@ -853,8 +887,10 @@ class ScoringEngine:
             ],
         }
 
-        self.assertEqual(_max_trait_final_score(trait_definition), 5.0)
+        self.assertEqual(_max_trait_final_score(trait_definition), 4.0)
 
 
 if __name__ == "__main__":
     unittest.main()
+
+

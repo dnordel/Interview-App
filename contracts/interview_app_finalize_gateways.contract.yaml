@@ -2,9 +2,28 @@ module:
   name: interview_app_finalize_gateways
   language: python
   path: src/interview_app/finalize_gateways.py
-  version: 2.0.1
-  description: Contracts for finalize_gateways module.
-functions: []
+  version: 2.0.3
+  description: Deprecated compatibility wrapper for finalize output gateways implemented
+    by interview_runtime.
+functions:
+- name: _app_module_symbol
+  description: Resolve a finalize adapter symbol from the app module when present,
+    falling back to the flattened scoring/reporting implementation.
+  locked: false
+  inputs:
+    app:
+      type: Any
+      required: true
+    symbol_name:
+      type: str
+      required: true
+    fallback:
+      type: Any
+      required: true
+  returns:
+    type: Any
+  exceptions: []
+  side_effects: none
 classes:
 - name: FinalizeGateways
   description: FinalizeGateways class.
@@ -59,7 +78,9 @@ classes:
     exceptions: []
     side_effects: updates persistent storage
   - name: send_referral
-    description: FinalizeGateways.send_referral method. Canonical/legacy document paths are sourced from context payload and referral_packet, not direct method parameters.
+    description: FinalizeGateways.send_referral method. Canonical/legacy document
+      paths are sourced from context payload and referral_packet, not direct method
+      parameters.
     locked: false
     inputs:
       app:
@@ -96,7 +117,5 @@ data_structures:
 - name: FinalizeGateways
   type: dataclass
 dependencies:
-- director_referral_service
-- integration_export
-- interview_app_finalize_context
-- reporting
+- module: interview_runtime
+- module: scoring_reporting

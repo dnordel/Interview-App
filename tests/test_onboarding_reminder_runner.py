@@ -1,7 +1,8 @@
 from datetime import date
 
-from onboarding_models import EmailSettings, Employee, EmployeeTask, ReminderCadence, TaskTemplate
-from onboarding_reminder_runner import OnboardingReminderRunner
+from onboarding_operations import EmailSettings, Employee, EmployeeTask, ReminderCadence, TaskTemplate
+import onboarding_operations
+from onboarding_operations import OnboardingReminderRunner
 
 
 def _build_employee() -> Employee:
@@ -58,6 +59,7 @@ def _settings() -> EmailSettings:
 
 
 def test_preview_does_not_send_or_mutate_state():
+    assert OnboardingReminderRunner is onboarding_operations.OnboardingReminderRunner
     employee = _build_employee()
     reminder_calls: list[object] = []
     escalation_calls: list[object] = []

@@ -1,0 +1,89 @@
+module:
+  name: tk_theme
+  language: python
+  path: src/tk_theme.py
+  version: 1.0.0
+  description: Shared Tkinter professional-operations theme tokens and widget styling helpers.
+functions:
+- name: font_tuple
+  description: Build a TkDefaultFont tuple with optional size delta and weight.
+  locked: false
+  inputs:
+    size:
+      type: int
+      required: true
+    delta:
+      type: int
+      required: false
+      default: 0
+    weight:
+      type: str
+      required: false
+      default: normal
+  returns:
+    type: tuple[str, int] | tuple[str, int, str]
+  exceptions: []
+  side_effects: none
+- name: apply_professional_ops_theme
+  description: Apply shared ttk/Tk styling to a root or toplevel window and return the configured ttk style.
+  locked: false
+  inputs:
+    root:
+      type: tk.Misc
+      required: true
+    font_size:
+      type: int
+      required: false
+      default: 10
+  returns:
+    type: ttk.Style
+  exceptions: []
+  side_effects: Updates ttk style configuration and root background.
+- name: configure_text_widget
+  description: Apply shared professional text-entry styling to a Tk Text widget.
+  locked: false
+  inputs:
+    widget:
+      type: tk.Text
+      required: true
+    font_size:
+      type: int
+      required: false
+      default: 10
+    danger:
+      type: bool
+      required: false
+      default: false
+  returns:
+    type: None
+  exceptions: []
+  side_effects: Updates widget visual configuration.
+- name: configure_plain_button
+  description: Apply shared styling to raw tk.Button widgets used outside ttk.
+  locked: false
+  inputs:
+    button:
+      type: tk.Button
+      required: true
+    role:
+      type: str
+      required: false
+      default: secondary
+    font_size:
+      type: int
+      required: false
+      default: 10
+    kwargs:
+      type: Any
+      required: false
+  returns:
+    type: None
+  exceptions: []
+  side_effects: Updates widget visual configuration.
+classes: []
+data_structures:
+- name: COLORS
+  description: Shared professional-ops color token map.
+- name: SPACING
+  description: Shared spacing token map.
+dependencies: []

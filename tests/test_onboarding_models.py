@@ -1,7 +1,9 @@
-from onboarding_models import EmailSettings, ReminderCadence, TaskTemplate, resolve_smtp_password
+import onboarding_operations
+from onboarding_operations import EmailSettings, ReminderCadence, TaskTemplate, resolve_smtp_password
 
 
 def test_reminder_cadence_from_dict_invalid_interval_falls_back_to_default():
+    assert EmailSettings is onboarding_operations.EmailSettings
     cadence = ReminderCadence.from_dict({"mode": "daily", "interval_days": "not-a-number"})
 
     assert cadence.mode == "daily"

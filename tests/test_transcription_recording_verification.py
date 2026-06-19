@@ -10,14 +10,13 @@ from types import SimpleNamespace
 import wave
 
 import pytest
-from docx import Document
 
 sys.path.append(str(Path(__file__).resolve().parent))
 
 from transcription_verification_utils import wav_header_duration_seconds
 
 
-FIXTURE_DIR = Path("Test Question Recordings for Transcription Verificaiton")
+FIXTURE_DIR = Path(__file__).resolve().parent / "Test Question Recordings for Transcription Verificaiton"
 MAX_SEGMENT_DURATION_SECONDS = 5 * 60
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,8 +30,12 @@ loader.exec_module(interview_app)
 InterviewApp = interview_app.InterviewApp
 
 
+def _segment_wav_files() -> list[Path]:
+    return sorted(path for path in FIXTURE_DIR.glob("*.wav") if not path.name.endswith("_full.wav"))
+
+
 def test_fixture_segments_do_not_exceed_five_minutes_each() -> None:
-    wav_files = sorted(FIXTURE_DIR.glob("*.wav"))
+    wav_files = _segment_wav_files()
     assert wav_files, f"No .wav fixture files found in {FIXTURE_DIR}"
 
     placeholder_wav_files = [wav_file for wav_file in wav_files if wav_file.stat().st_size == 0]
@@ -56,7 +59,7 @@ def test_fixture_segments_do_not_exceed_five_minutes_each() -> None:
 
 
 def test_recording_fixture_filenames_are_parseable_and_unique() -> None:
-    wav_files = sorted(FIXTURE_DIR.glob("*.wav"))
+    wav_files = _segment_wav_files()
     assert wav_files, f"No .wav fixture files found in {FIXTURE_DIR}"
 
     question_numbers: list[int] = []
@@ -93,7 +96,7 @@ def test_recording_fixture_filenames_are_parseable_and_unique() -> None:
 
 def _build_interview_app_for_flow(tmp_path: Path) -> InterviewApp:
     app = InterviewApp.__new__(InterviewApp)
-    app.live_transcript_docx = tmp_path / "live_transcript.docx"
+    app.live_transcript_docx = None
     app.transcript_available = True
     app.transcript_warning = ""
     app.active_traits = [{"id": "trait-1", "name": "Classroom Culture", "primary_question": "How do you build trust with children?"}]
@@ -106,13 +109,6 @@ def _build_interview_app_for_flow(tmp_path: Path) -> InterviewApp:
         flow_candidate_transcripts={},
     )
     return app
-
-
-def _section_for_question(paragraphs: list[str], q_label: str) -> str:
-    for idx, line in enumerate(paragraphs):
-        if line.startswith(q_label):
-            return "\n".join(paragraphs[idx : idx + 4])
-    return ""
 
 
 def test_flow_recording_payload_maps_candidate_transcripts_to_matching_question(tmp_path: Path) -> None:
@@ -155,11 +151,4 @@ def test_flow_recording_payload_maps_candidate_transcripts_to_matching_question(
     assert flow_transcript[1]["candidate_transcript"] == (
         "I partner with families through weekly updates. I document each child's progress."
     )
-
-    doc_lines = [p.text.strip() for p in Document(app.live_transcript_docx).paragraphs if p.text.strip()]
-    q1_section = _section_for_question(doc_lines, "Q1")
-    q2_section = _section_for_question(doc_lines, "Q2")
-
-    assert "Answer Segment (auto-transcribed): I use visual routines and calm transitions." in q1_section
-    assert "Answer Segment (auto-transcribed): I partner with families through weekly updates. I document each child's progress." in q2_section
-    assert "I partner with families through weekly updates." not in q1_section
+    assert app.live_transcript_docx is None

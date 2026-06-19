@@ -7,38 +7,32 @@ import yaml
 from tools import regenerate_contract_test_matrix as matrix_tool
 
 
-REPORTING_MISSING_SYMBOLS = {
-    "reporting.DocxExporter._education_summary_lines",
-    "reporting.DocxExporter._score_value_label",
-    "reporting.DocxExporter._trait_observation_buckets",
-    "reporting.DocxExporter._add_interview_info_section",
-    "reporting.DocxExporter._add_education_section",
-    "reporting.DocxExporter._add_interviewer_score_section",
-    "reporting.DocxExporter._add_system_score_section",
-    "reporting.DocxExporter._add_trait_summary_section",
-    "reporting.DocxExporter._add_non_scored_answers_section",
-    "reporting.DocxExporter._add_candidate_summaries_section",
-    "reporting.DocxExporter._add_full_transcripts_section",
+REPORTING_EXPORTER_SYMBOLS = {
+    "scoring_reporting.DocxExporter.__init__",
+    "scoring_reporting.DocxExporter._require_candidate",
+    "scoring_reporting.DocxExporter._require_candidate_field",
+    "scoring_reporting.DocxExporter._extract_full_candidate_transcript",
+    "scoring_reporting.DocxExporter.export",
 }
 
 
-def test_symbol_entries_include_reporting_docx_exporter_methods() -> None:
-    contract_path = Path("contracts/reporting.contract.yaml")
+def test_symbol_entries_include_contract_scoring_reporting_docx_exporter_methods() -> None:
+    contract_path = Path("contracts/scoring_reporting.contract.yaml")
     payload = yaml.safe_load(contract_path.read_text(encoding="utf-8"))
 
     entries = matrix_tool._symbol_entries(contract_path, payload)
     symbols = {entry["symbol"] for entry in entries}
 
-    assert REPORTING_MISSING_SYMBOLS.issubset(symbols)
+    assert REPORTING_EXPORTER_SYMBOLS.issubset(symbols)
 
 
-def test_build_matrix_is_sorted_and_covers_reporting_docx_exporter_methods() -> None:
+def test_build_matrix_is_sorted_and_covers_contract_scoring_reporting_docx_exporter_methods() -> None:
     matrix = matrix_tool.build_matrix()
     entries = matrix["entries"]
     symbols = [entry["symbol"] for entry in entries]
 
     assert symbols == sorted(symbols)
-    assert REPORTING_MISSING_SYMBOLS.issubset(set(symbols))
+    assert REPORTING_EXPORTER_SYMBOLS.issubset(set(symbols))
 
 
 def test_dedupe_entries_rejects_duplicate_symbols() -> None:
@@ -66,4 +60,4 @@ def test_main_writes_matrix_file(tmp_path: Path, monkeypatch) -> None:
     assert exit_code == 0
     written = yaml.safe_load(matrix_path.read_text(encoding="utf-8"))
     written_symbols = {entry["symbol"] for entry in written["entries"]}
-    assert REPORTING_MISSING_SYMBOLS.issubset(written_symbols)
+    assert REPORTING_EXPORTER_SYMBOLS.issubset(written_symbols)

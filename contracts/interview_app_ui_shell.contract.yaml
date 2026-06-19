@@ -2,8 +2,8 @@ module:
   name: interview_app_ui_shell
   language: python
   path: src/interview_app/ui_shell.py
-  version: 1.1.0
-  description: Contracts for ui_shell module.
+  version: 1.1.1
+  description: Compatibility wrapper for UI shell controller implemented by ui_composition.
 functions: []
 classes:
 - name: UiShellController
@@ -44,4 +44,5 @@ classes:
     exceptions: []
     side_effects: updates in-memory state
 data_structures: []
-dependencies: []
+dependencies:
+- module: ui_composition

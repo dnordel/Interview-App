@@ -2,8 +2,9 @@ module:
   name: interview_app_transcript_processor
   language: python
   path: src/interview_app/transcript_processor.py
-  version: 1.0.0
-  description: Pure transcript processing utilities for JSONL extraction, flow window mapping, and merged transcript output.
+  version: 1.0.1
+  description: Deprecated compatibility wrapper for transcript JSONL extraction, flow
+    window mapping, and merged transcript output implemented by interview_runtime.
 functions:
 - name: normalize_label
   description: Normalize speaker labels for case-insensitive comparisons.
@@ -17,7 +18,8 @@ functions:
   exceptions: []
   side_effects: none
 - name: extract_candidate_text_from_jsonl
-  description: Read candidate-only text from a transcript JSONL file and return merged text.
+  description: Read candidate-only text from a transcript JSONL file and return merged
+    text.
   locked: false
   inputs:
     jsonl_path:
@@ -31,7 +33,8 @@ functions:
   exceptions: []
   side_effects: reads filesystem
 - name: load_candidate_segments
-  description: Load candidate segments from JSONL with start time and text, skipping malformed records.
+  description: Load candidate segments from JSONL with start time and text, skipping
+    malformed records.
   locked: false
   inputs:
     jsonl_path:
@@ -107,4 +110,5 @@ functions:
   side_effects: none
 classes: []
 data_structures: []
-dependencies: []
+dependencies:
+- module: interview_runtime

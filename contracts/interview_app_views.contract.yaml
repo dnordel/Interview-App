@@ -8,6 +8,6 @@ functions: []
 classes: []
 data_structures: []
 dependencies:
-- interview_app_views_start_screen_view
-- interview_app_views_candidate_setup_view
-- interview_app_views_signal_reference_view
+- module: interview_app_views_start_screen_view
+- module: interview_app_views_candidate_setup_view
+- module: interview_app_views_signal_reference_view

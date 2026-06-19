@@ -2,11 +2,13 @@ module:
   name: interview_app_transcript_summary
   language: python
   path: src/interview_app/transcript_summary.py
-  version: 1.1.0
-  description: Transcript summarization helpers with robust runtime fallback behavior for reporting.
+  version: 1.1.1
+  description: Deprecated compatibility wrapper for transcript summarization seam
+    helpers implemented by interview_runtime.
 functions:
 - name: _build_summarizer_pipeline
-  description: Build and cache a transformers summarization pipeline with automatic fallback to text2text-generation when summarization task aliases are unavailable.
+  description: Build and cache a transformers summarization pipeline with automatic
+    fallback to text2text-generation when summarization task aliases are unavailable.
   locked: false
   inputs: {}
   returns:
@@ -14,7 +16,8 @@ functions:
   exceptions: []
   side_effects: Imports transformers runtime when available.
 - name: _build_text2text_summarizer_pipeline
-  description: Build a text2text-generation pipeline wrapper that prefixes prompts with summarize instructions compatible with T5-style models.
+  description: Build a text2text-generation pipeline wrapper that prefixes prompts
+    with summarize instructions compatible with T5-style models.
   locked: false
   inputs:
     pipeline_factory:
@@ -25,7 +28,8 @@ functions:
   exceptions: []
   side_effects: Initializes a transformers text2text-generation pipeline.
 - name: _format_runtime_error
-  description: Combine primary and fallback runtime errors into one sanitized diagnostic string.
+  description: Combine primary and fallback runtime errors into one sanitized diagnostic
+    string.
   locked: false
   inputs:
     primary_error:
@@ -40,7 +44,8 @@ functions:
   exceptions: []
   side_effects: none
 - name: _normalize_runtime_error_text
-  description: Replace noisy unknown-task diagnostics with a stable message suitable for interview export artifacts.
+  description: Replace noisy unknown-task diagnostics with a stable message suitable
+    for interview export artifacts.
   locked: false
   inputs:
     message:
@@ -62,7 +67,8 @@ functions:
   exceptions: []
   side_effects: none
 - name: _chunk_text
-  description: Split long transcript text into overlap-aware character windows safe for summarization models.
+  description: Split long transcript text into overlap-aware character windows safe
+    for summarization models.
   locked: false
   inputs:
     text:
@@ -81,7 +87,8 @@ functions:
   exceptions: []
   side_effects: none
 - name: summarize_transcript
-  description: Summarize transcript text via transformers pipelines with graceful placeholder fallback when runtime/model execution fails.
+  description: Summarize transcript text via transformers pipelines with graceful
+    placeholder fallback when runtime/model execution fails.
   locked: false
   inputs:
     transcript_text:
@@ -102,4 +109,5 @@ functions:
 classes: []
 data_structures: []
 dependencies:
-- transformers
+- module: interview_runtime
+- module: transformers

@@ -1,0 +1,16 @@
+module:
+  name: docx_compat
+  language: python
+  path: src/docx_compat.py
+  version: 1.0.0
+  description: Compatibility wrapper for Word document operations now implemented
+    by platform_services.
+functions: []
+classes: []
+data_structures:
+- name: BACKEND
+  description: Active Word document backend, either python-docx or fallback.
+- name: Document
+  description: Word document factory/class forwarded from platform_services.
+dependencies:
+- module: platform_services

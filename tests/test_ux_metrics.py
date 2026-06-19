@@ -1,7 +1,7 @@
 from datetime import date
 
-from onboarding_models import Employee, EmployeeTask
-from ux_metrics import (
+from onboarding_operations import Employee, EmployeeTask
+from platform_services import (
     EVENT_TASK_OVERDUE,
     SCOPE_CREATED_MONTH,
     SCOPE_EVENT_MONTH,

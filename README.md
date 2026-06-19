@@ -90,12 +90,27 @@ This project is intended for:
 
 If optional audio dependencies are unavailable, the interview app remains fully usable for manual note-taking and scoring.
 
+### Local DeepSeek summaries
+
+- Windows setup automatically installs Ollama when missing.
+- Setup pulls the smallest local DeepSeek model used by the app: `deepseek-r1:1.5b`.
+- DeepSeek summaries use Ollama at `http://127.0.0.1:11434/v1`; no DeepSeek API key is required.
+- To use a larger local Ollama model for better summary/signal quality, set `DEEPSEEK_SUMMARY_MODEL`
+  before launch; setup will pull/use that local model instead of overwriting it with the fallback.
+- First setup on a new machine needs Internet access for Ollama and model download. After that, inference runs locally.
+
 ## Installation
 
 From the repository root:
 
 ```bash
 pip install -r requirements.txt
+```
+
+For the full Windows bootstrap, including local DeepSeek setup:
+
+```powershell
+.\setup_and_run.ps1
 ```
 
 For developer/test environments, use `python-docx` and **do not** install the unrelated `docx` package (it can shadow imports and break report generation).
@@ -114,7 +129,7 @@ pip install -r requirements-dev.txt
 
 - Double-click `Start Preschool Teacher Interview Guide.bat` in the repository root.
 - This starts the same setup/launch flow without needing to open PowerShell manually.
-- For debugger logging/console mode, run `scripts/windows/InterviewTool_SetupAndRun_Debug.ps1`.
+- For debugger logging/console mode, run `.\setup_and_run.ps1 -DebugMode`.
 
 **Direct Python launch (advanced):**
 
@@ -345,14 +360,11 @@ Documentation contribution standards are defined in [`docs/CONTRIBUTING_DOCS.md`
 
 ## Compatibility Notes
 
-Legacy launch names remain available for one release cycle:
+Legacy launch name remains available for one release cycle:
 
 - `src/Initial Teacher Interview Guide.pyw` -> forwards to `src/interview_app.pyw`
-- `scripts/windows/Start Interview.bat` -> forwards to `scripts/windows/run_interview.bat`
-- `scripts/windows/InterviewTool_SetupAndRun.ps1` -> forwards to `setup_and_run.ps1`
-- `scripts/windows/InterviewTool_SetupAndRun_Debug.ps1` -> forwards to `setup_and_run.ps1 -DebugMode`
 
-These legacy names are scheduled for removal in the following release cycle.
+This legacy name is scheduled for removal in the following release cycle.
 
 ## Developer Validation Checklist
 

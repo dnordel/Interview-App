@@ -2,11 +2,13 @@ module:
   name: path_validation
   language: python
   path: src/path_validation.py
-  version: 1.0.0
-  description: Shared helpers for validating user-configured filesystem paths before attachment or save workflows.
+  version: 1.0.1
+  description: Compatibility wrapper for user-configured filesystem path validation
+    now implemented by platform_services.
 functions:
 - name: validate_existing_file_path
-  description: Resolves a configured path only when it points to an existing file and optionally matches allowed suffixes.
+  description: Resolves a configured path only when it points to an existing file
+    and optionally matches allowed suffixes.
   locked: false
   inputs:
     path_text:
@@ -22,4 +24,5 @@ functions:
   side_effects: none
 classes: []
 data_structures: []
-dependencies: []
+dependencies:
+- module: platform_services

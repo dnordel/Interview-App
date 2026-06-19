@@ -11,7 +11,7 @@ from unittest.mock import patch
 from pathlib import Path
 from types import SimpleNamespace
 
-from interview_session_store import InterviewSessionStore
+from interview_runtime import InterviewSessionStore
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -172,8 +172,7 @@ class TestLiveTranscriptRecordingFlow(unittest.TestCase):
             app.state.flow_candidate_transcripts[0] = "I supported children through transitions by modeling routines."
             app._queue_transcription_and_transition(0, next_index=0, discard_recording=True)
 
-            self.assertIsNotNone(app.live_transcript_docx)
-            self.assertFalse(app.live_transcript_docx.exists())
+            self.assertIsNone(app.live_transcript_docx)
 
             store = InterviewSessionStore(base_dir)
             payload = store.load(app.interview_session_id, app.state.candidate_name, app.state.interview_date)
@@ -182,7 +181,23 @@ class TestLiveTranscriptRecordingFlow(unittest.TestCase):
             self.assertIn("transition routine", question.get("notes", {}).get("question_notes", ""))
             self.assertIn("modeling routines", question.get("candidate_transcript", ""))
 
-    def test_finalize_pipeline_creates_docx_transcript_once(self):
+    def test_transition_does_not_stop_continuous_recording_or_enqueue_transcription(self):
+        with tempfile.TemporaryDirectory() as td:
+            base_dir = Path(td)
+            app = self._build_app(base_dir)
+            session = _RecordingSessionStub(base_dir / "segments.jsonl")
+            app.recording_session = session
+            app.recording_flow_idx = 0
+            app.recording_base_name = "Candidate_Jane_Doe_2026-02-06"
+            app._start_background_question_transcription = lambda _idx: (_ for _ in ()).throw(AssertionError("queued"))
+            app.show_flow_screen = lambda _idx: None
+
+            app._queue_transcription_and_transition(0, next_index=0)
+
+            self.assertIs(app.recording_session, session)
+            self.assertFalse(session.stop_called)
+
+    def test_finalize_pipeline_uses_interview_notes_as_only_docx_artifact(self):
         with tempfile.TemporaryDirectory() as td:
             base_dir = Path(td)
             app = self._build_app(base_dir)
@@ -209,16 +224,17 @@ class TestLiveTranscriptRecordingFlow(unittest.TestCase):
             ), patch.object(
                 interview_app,
                 "build_director_packet",
-                new=lambda **_kwargs: {"documents": {"transcript_path": str(app.live_transcript_docx)}},
+                new=lambda **_kwargs: {"documents": {"final_report_path": str(base_dir / "notes.docx")}},
             ), patch.object(app, "_wait_for_pending_transcriptions", new=lambda: None), patch.object(
                 app,
                 "_collect_transcription_health_warnings",
                 new=lambda: [],
             ):
-                self.assertFalse(app.live_transcript_docx.exists())
+                self.assertIsNone(app.live_transcript_docx)
                 result = app._run_finalize_pipeline()
 
-            self.assertTrue(Path(result["transcript_path"]).exists())
+            self.assertEqual(result["transcript_path"], "")
+            self.assertEqual(app.state.referral_packet["transcript_path"], "")
 
     def test_flow_transcript_trait_block_does_not_replace_transcript_with_notes(self):
         with tempfile.TemporaryDirectory() as td:
@@ -271,15 +287,16 @@ class TestLiveTranscriptRecordingFlow(unittest.TestCase):
             base_dir = Path(td)
             jsonl_path = base_dir / "segments.jsonl"
             entries = [
-                {"speaker": "INTERVIEWER", "text": "Question text"},
-                {"speaker": "CANDIDATE", "text": "First answer sentence."},
-                {"speaker": "CANDIDATE", "text": "Second answer sentence."},
+                {"speaker": "INTERVIEWER", "start": 0.0, "text": "Question text"},
+                {"speaker": "CANDIDATE", "start": 1.0, "text": "First answer sentence."},
+                {"speaker": "CANDIDATE", "start": 4.0, "text": "Second answer sentence."},
             ]
             with jsonl_path.open("w", encoding="utf-8") as fh:
                 for item in entries:
                     fh.write(json.dumps(item) + "\n")
 
             app = self._build_app(base_dir)
+            app.state.flow_time_marks = [{"flow_index": 0, "t": 0.0, "end_t": 10.0}]
             app.recording_session = _RecordingSessionStub(jsonl_path)
             app.recording_flow_idx = 0
             app.recording_base_name = "Candidate_Jane_Doe_2026-02-06"
@@ -288,6 +305,63 @@ class TestLiveTranscriptRecordingFlow(unittest.TestCase):
             self.assertIsNotNone(rec)
             self.assertIn("First answer sentence. Second answer sentence.", rec["candidate_transcript"])
             self.assertEqual(rec["transcript_jsonl"], str(jsonl_path))
+            self.assertIn("[Q1 Attempt 1]", app.state.flow_candidate_transcripts[0])
+            self.assertIn("First answer sentence. Second answer sentence.", app.state.flow_candidate_transcripts[0])
+
+    def test_stop_interview_recording_maps_timestamped_segments_to_questions(self):
+        with tempfile.TemporaryDirectory() as td:
+            base_dir = Path(td)
+            jsonl_path = base_dir / "segments.jsonl"
+            entries = [
+                {"speaker": "CANDIDATE", "start": 1.0, "text": "First question answer."},
+                {"speaker": "CANDIDATE", "start": 6.0, "text": "Second question answer."},
+            ]
+            with jsonl_path.open("w", encoding="utf-8") as fh:
+                for item in entries:
+                    fh.write(json.dumps(item) + "\n")
+
+            app = self._build_app(base_dir)
+            app.active_flow = [
+                {"type": "trait", "id": "trait-1"},
+                {"type": "custom", "id": "custom-1"},
+            ]
+            app.custom_questions = [{"id": "custom-1", "text": "Why LPL?"}]
+            app.state.custom_inputs = {"custom-1": {"question_text": "Why LPL?", "answer": "", "skipped": False}}
+            app.state.flow_time_marks = [
+                {"flow_index": 0, "t": 0.0, "end_t": 5.0},
+                {"flow_index": 1, "t": 5.0, "end_t": 10.0},
+            ]
+            app.recording_session = _RecordingSessionStub(jsonl_path)
+            app.recording_flow_idx = 1
+            app.recording_base_name = "Candidate_Jane_Doe_2026-02-06"
+
+            app._stop_interview_recording(show_warning=False)
+
+            self.assertIn("First question answer.", app.state.flow_candidate_transcripts[0])
+            self.assertIn("Second question answer.", app.state.flow_candidate_transcripts[1])
+            self.assertEqual(app.state.flow_recordings[0]["transcript_jsonl"], str(jsonl_path))
+            self.assertEqual(app.state.flow_recordings[1]["transcript_jsonl"], str(jsonl_path))
+
+    def test_stop_interview_recording_does_not_restore_skipped_question_transcript(self):
+        with tempfile.TemporaryDirectory() as td:
+            base_dir = Path(td)
+            jsonl_path = base_dir / "segments.jsonl"
+            with jsonl_path.open("w", encoding="utf-8") as fh:
+                fh.write(json.dumps({"speaker": "CANDIDATE", "start": 1.0, "text": "Skipped answer."}) + "\n")
+
+            app = self._build_app(base_dir)
+            app.state.trait_inputs["trait-1"]["skipped"] = True
+            app.state.flow_candidate_transcripts[0] = "old"
+            app.state.flow_recordings[0] = {"candidate_transcript": "old"}
+            app.state.flow_time_marks = [{"flow_index": 0, "t": 0.0, "end_t": 5.0}]
+            app.recording_session = _RecordingSessionStub(jsonl_path)
+            app.recording_flow_idx = 0
+            app.recording_base_name = "Candidate_Jane_Doe_2026-02-06"
+
+            app._stop_interview_recording(show_warning=False)
+
+            self.assertNotIn(0, app.state.flow_candidate_transcripts)
+            self.assertNotIn(0, app.state.flow_recordings)
 
     def test_stop_interview_recording_ignores_missing_runtime_attrs(self):
         with tempfile.TemporaryDirectory() as td:
@@ -362,7 +436,7 @@ class TestLiveTranscriptRecordingFlow(unittest.TestCase):
 
             self.assertEqual(flow_tx[0]["candidate_transcript"], "Transcript via rec kw.")
 
-    def test_discard_question_recording_skips_transcription_and_clears_state(self):
+    def test_discard_question_recording_keeps_continuous_session_and_clears_question_state(self):
         with tempfile.TemporaryDirectory() as td:
             base_dir = Path(td)
             mic_path = base_dir / "mic.wav"
@@ -382,9 +456,9 @@ class TestLiveTranscriptRecordingFlow(unittest.TestCase):
             app.show_flow_screen = lambda _idx: None
             app._queue_transcription_and_transition(0, next_index=0, discard_recording=True)
 
-            self.assertTrue(app.recording_session is None)
-            self.assertFalse(mic_path.exists())
-            self.assertFalse(sys_path.exists())
+            self.assertIsNotNone(app.recording_session)
+            self.assertTrue(mic_path.exists())
+            self.assertTrue(sys_path.exists())
             self.assertNotIn(0, app.state.flow_recordings)
             self.assertNotIn(0, app.state.flow_candidate_transcripts)
 
@@ -398,6 +472,32 @@ class TestLiveTranscriptRecordingFlow(unittest.TestCase):
             app.show_flow_screen(0)
 
             self.assertEqual(routed_indexes, [0])
+
+    def test_exit_current_interview_confirms_saves_partial_and_returns_home(self):
+        with tempfile.TemporaryDirectory() as td:
+            base_dir = Path(td)
+            app = self._build_app(base_dir)
+            calls = []
+            app._close_flow_timestamp = lambda idx: calls.append(("close", idx))
+            app._stop_interview_recording = lambda show_warning=True: calls.append(("stop", show_warning))
+            app._persist_interview_session_snapshot = lambda idx: calls.append(("snapshot", idx))
+            app.show_start_screen = lambda: calls.append(("home", None))
+            app.destroy = lambda: calls.append(("destroy", None))
+
+            with patch.object(interview_app.messagebox, "askyesno", return_value=True):
+                app.exit_current_interview(0, persist_current=lambda: calls.append(("persist", None)))
+
+            self.assertIn(("persist", None), calls)
+            self.assertIn(("close", 0), calls)
+            self.assertIn(("stop", True), calls)
+            self.assertIn(("snapshot", 0), calls)
+            self.assertIn(("home", None), calls)
+            self.assertNotIn(("destroy", None), calls)
+            drafts = list((base_dir / "drafts").glob("draft-*.json"))
+            self.assertEqual(len(drafts), 1)
+            payload = json.loads(drafts[0].read_text(encoding="utf-8"))
+            self.assertEqual(payload["interview_status"], "incomplete")
+            self.assertEqual(payload["exit_reason"], "operator_exit")
 
     def test_sanitize_transcription_error_reason_keeps_diagnostic_filename(self):
         with tempfile.TemporaryDirectory() as td:

@@ -1,6 +1,6 @@
 import unittest
 
-from referral_packet import (
+from scoring_reporting import (
     is_supported_document_path,
     missing_required_docs,
     normalize_referral_packet,

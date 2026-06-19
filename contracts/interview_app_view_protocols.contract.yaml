@@ -2,8 +2,9 @@ module:
   name: interview_app_view_protocols
   language: python
   path: src/interview_app/view_protocols.py
-  version: 1.0.0
-  description: Typed protocol interfaces for UI router navigation, rendering, and flow state access.
+  version: 1.0.1
+  description: Compatibility wrapper for UI router protocol interfaces implemented
+    by ui_composition.
 functions: []
 classes:
 - name: RouterState
@@ -125,4 +126,5 @@ classes:
     returns:
       type: None
 data_structures: []
-dependencies: []
+dependencies:
+- module: ui_composition

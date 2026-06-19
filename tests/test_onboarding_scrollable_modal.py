@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-import onboarding_scrollable_modal
+import onboarding_operations
 
 
 class _FakeWidget:
@@ -66,15 +66,15 @@ def test_build_scrollable_modal_container_constructs_scrollable_shell(monkeypatc
     scrollable_area = _FakeScrollableArea()
     capture = {}
 
-    monkeypatch.setattr(onboarding_scrollable_modal.tk, "Toplevel", _FakeDialog)
-    monkeypatch.setattr(onboarding_scrollable_modal.ttk, "Frame", _FakeWidget)
+    monkeypatch.setattr(onboarding_operations.tk, "Toplevel", _FakeDialog)
+    monkeypatch.setattr(onboarding_operations.ttk, "Frame", _FakeWidget)
     monkeypatch.setattr(
-        onboarding_scrollable_modal,
+        onboarding_operations,
         "build_scrollable_canvas_area",
         lambda *args, **kwargs: scrollable_area,
     )
     monkeypatch.setattr(
-        onboarding_scrollable_modal,
+        onboarding_operations,
         "bind_canvas_mousewheel",
         lambda canvas, *, activate_widgets: capture.update({
             "canvas": canvas,
@@ -82,7 +82,7 @@ def test_build_scrollable_modal_container_constructs_scrollable_shell(monkeypatc
         }),
     )
 
-    container = onboarding_scrollable_modal.build_scrollable_modal_container(object(), title="Email / Reminder Settings")
+    container = onboarding_operations.build_scrollable_modal_container(object(), title="Email / Reminder Settings")
 
     assert container.dialog.window_title == "Email / Reminder Settings"
     assert container.canvas is scrollable_area.canvas

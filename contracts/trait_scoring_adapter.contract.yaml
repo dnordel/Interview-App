@@ -2,10 +2,10 @@ module:
   name: trait_scoring_adapter
   language: python
   path: src/trait_scoring_adapter.py
-  version: 1.7.1
-  description: Stable adapter boundary between app trait state and finalize/export
-    scoring consumers, using the configured runtime trait-definition JSON files as
-    the source of truth.
+  version: 1.7.2
+  description: Deprecated compatibility wrapper for trait-state normalization, runtime
+    scoring invocation, and finalize/export scoring payload mapping implemented by
+    scoring_reporting.
 functions:
 - name: build_trait_scoring_payload
   description: Normalize app trait state, invoke scoring, and return the shared finalize/export
@@ -629,7 +629,8 @@ functions:
   exceptions: []
   side_effects: none
 - name: _iter_extended_trait_signals
-  description: Flatten extended trait signals across grouped and runtime extended schemas.
+  description: Flatten extended trait signals across grouped and runtime extended
+    schemas.
   locked: false
   inputs:
     trait_definition:
@@ -832,7 +833,5 @@ data_structures:
     runtime_error:
       type: str | None
 dependencies:
-- reporting
-- trait_based_scoring_engine
-- trait_definition_loader
-- trait_signal_schema
+- module: scoring_reporting
+- module: trait_based_scoring_engine

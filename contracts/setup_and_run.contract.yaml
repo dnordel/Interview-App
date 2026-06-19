@@ -2,289 +2,436 @@ module:
   name: setup_and_run
   language: powershell
   path: setup_and_run.ps1
-  version: 1.0.5
-  description: Windows launcher bootstrap that checks prerequisites, installs Python 3.11 when needed, provisions a per-user virtual environment, and starts the interview app through the runtime wrapper.
+  version: 1.3.0
+  description: Windows launcher bootstrap that checks prerequisites, installs Python
+    3.11 when needed, provisions a per-user virtual environment that can reuse system
+    site packages, installs local DeepSeek through Ollama, and starts the interview
+    app through the runtime wrapper.
 functions:
-  - name: Write-Log
-    description: Append launcher diagnostics to the setup log file.
-    locked: false
-    inputs:
-      msg:
-        type: string
-        required: true
-    returns:
-      type: void
-    exceptions: []
-    side_effects: writes launcher log entries
-  - name: Get-ConfigBaseDir
-    description: Ensure the per-user configuration directory exists under LOCALAPPDATA and return it.
-    locked: false
-    inputs: {}
-    returns:
+- name: Write-Log
+  description: Append launcher diagnostics to the setup log file.
+  locked: false
+  inputs:
+    msg:
       type: string
-    exceptions: []
-    side_effects: may create the per-user configuration directory
-  - name: Get-ConfigPath
-    description: Build the path to the persisted setup configuration JSON file.
-    locked: false
-    inputs: {}
-    returns:
+      required: true
+  returns:
+    type: void
+  exceptions: []
+  side_effects: writes launcher log entries
+- name: Get-ConfigBaseDir
+  description: Ensure the per-user configuration directory exists under LOCALAPPDATA
+    and return it.
+  locked: false
+  inputs: {}
+  returns:
+    type: string
+  exceptions: []
+  side_effects: may create the per-user configuration directory
+- name: Get-ConfigPath
+  description: Build the path to the persisted setup configuration JSON file.
+  locked: false
+  inputs: {}
+  returns:
+    type: string
+  exceptions: []
+  side_effects: none
+- name: Load-Config
+  description: Load the persisted setup configuration and fall back to default values
+    when parsing fails or the file is missing.
+  locked: false
+  inputs: {}
+  returns:
+    type: pscustomobject
+  exceptions: []
+  side_effects: reads the persisted setup configuration and writes diagnostics when
+    parsing fails
+- name: Save-Config
+  description: Persist the current setup configuration to disk as JSON.
+  locked: false
+  inputs:
+    cfg:
+      type: pscustomobject
+      required: true
+  returns:
+    type: void
+  exceptions: []
+  side_effects: writes the persisted setup configuration and launcher log entries
+- name: Ensure-ConfigShape
+  description: Normalize the configuration object so required nested properties exist
+    before later setup steps run, including one-time audio routing instruction state.
+  locked: false
+  inputs:
+    cfg:
+      type: pscustomobject
+      required: true
+  returns:
+    type: pscustomobject
+  exceptions: []
+  side_effects: may mutate the provided configuration object in memory
+- name: Start-PythonGuiApp
+  description: Launch the interview application through python or pythonw with optional
+    redirected logging.
+  locked: false
+  inputs:
+    PythonExe:
       type: string
-    exceptions: []
-    side_effects: none
-  - name: Load-Config
-    description: Load the persisted setup configuration and fall back to default values when parsing fails or the file is missing.
-    locked: false
-    inputs: {}
-    returns:
+      required: true
+    ScriptPath:
+      type: string
+      required: true
+    WorkingDir:
+      type: string
+      required: true
+    ScriptArgs:
+      type: string[]
+      required: false
+      default: []
+    LogFile:
+      type: string | null
+      required: false
+      default: null
+    ShowConsole:
+      type: switch
+      required: false
+      default: false
+  returns:
+    type: System.Diagnostics.Process
+  exceptions:
+  - Exception
+  side_effects: starts a child Python process and may write redirected runtime logs
+- name: Run-Proc
+  description: Execute a child process, capture stdout and stderr, and append both
+    streams to the setup log.
+  locked: false
+  inputs:
+    File:
+      type: string
+      required: true
+    Args:
+      type: string[]
+      required: false
+      default: []
+    WorkingDir:
+      type: string
+      required: false
+      default: $AppDir
+  returns:
+    type: int
+  exceptions: []
+  side_effects: starts a child process and writes captured output to the setup log
+- name: Get-CachedPython311
+  description: Return the cached Python 3.11 executable path from configuration when
+    present.
+  locked: false
+  inputs:
+    cfg:
       type: pscustomobject
-    exceptions: []
-    side_effects: reads the persisted setup configuration and writes diagnostics when parsing fails
-  - name: Save-Config
-    description: Persist the current setup configuration to disk as JSON.
-    locked: false
-    inputs:
-      cfg:
-        type: pscustomobject
-        required: true
-    returns:
-      type: void
-    exceptions: []
-    side_effects: writes the persisted setup configuration and launcher log entries
-  - name: Ensure-ConfigShape
-    description: Normalize the configuration object so required nested properties exist before later setup steps run.
-    locked: false
-    inputs:
-      cfg:
-        type: pscustomobject
-        required: true
-    returns:
+      required: true
+  returns:
+    type: string | null
+  exceptions: []
+  side_effects: none
+- name: Set-CachedPython311
+  description: Update the cached Python 3.11 executable path in configuration and
+    persist it.
+  locked: false
+  inputs:
+    cfg:
       type: pscustomobject
-    exceptions: []
-    side_effects: may mutate the provided configuration object in memory
-  - name: Start-PythonGuiApp
-    description: Launch the interview application through python or pythonw with optional redirected logging.
-    locked: false
-    inputs:
-      PythonExe:
-        type: string
-        required: true
-      ScriptPath:
-        type: string
-        required: true
-      WorkingDir:
-        type: string
-        required: true
-      ScriptArgs:
-        type: string[]
-        required: false
-        default: []
-      LogFile:
-        type: string | null
-        required: false
-        default: null
-      ShowConsole:
-        type: switch
-        required: false
-        default: false
-    returns:
-      type: System.Diagnostics.Process
-    exceptions:
-      - Exception
-    side_effects: starts a child Python process and may write redirected runtime logs
-  - name: Run-Proc
-    description: Execute a child process, capture stdout and stderr, and append both streams to the setup log.
-    locked: false
-    inputs:
-      File:
-        type: string
-        required: true
-      Args:
-        type: string[]
-        required: false
-        default: []
-      WorkingDir:
-        type: string
-        required: false
-        default: $AppDir
-    returns:
+      required: true
+    path:
+      type: string
+      required: true
+  returns:
+    type: void
+  exceptions: []
+  side_effects: mutates configuration and writes the persisted setup configuration
+- name: Test-Python311Exe
+  description: Verify that a candidate interpreter exists and reports Python 3.11.
+  locked: false
+  inputs:
+    pythonExe:
+      type: string
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: executes the candidate Python interpreter
+- name: Get-RegistryAppPathsPythonCandidates
+  description: Collect Python executable candidates from Windows App Paths registry
+    keys.
+  locked: false
+  inputs: {}
+  returns:
+    type: string[]
+  exceptions: []
+  side_effects: reads Windows registry keys
+- name: Find-Python311
+  description: Search cache, launchers, registry entries, common install directories,
+    and PATH for a usable Python 3.11 interpreter.
+  locked: false
+  inputs:
+    Cfg:
+      type: pscustomobject
+      required: true
+  returns:
+    type: string | null
+  exceptions: []
+  side_effects: executes local interpreter probes and writes launcher log entries
+- name: Ensure-Python311
+  description: Reuse an existing Python 3.11 interpreter or perform a per-user install
+    from python.org when none is available.
+  locked: false
+  inputs:
+    Cfg:
+      type: pscustomobject
+      required: true
+  returns:
+    type: string
+  exceptions:
+  - Exception
+  side_effects: may download and install Python 3.11, update cached configuration,
+    and write launcher log entries
+- name: Find-VBCableDriverEvidence
+  description: Detect VB-CABLE installation evidence by checking known driver file
+    locations.
+  locked: false
+  inputs: {}
+  returns:
+    type: string[]
+  exceptions: []
+  side_effects: reads known driver paths from the local filesystem
+- name: Set-VBCableCache
+  description: Persist the latest VB-CABLE detection result and supporting evidence
+    in configuration.
+  locked: false
+  inputs:
+    cfg:
+      type: pscustomobject
+      required: true
+    detected:
+      type: Nullable[bool]
+      required: true
+    evidence:
+      type: string[]
+      required: true
+  returns:
+    type: void
+  exceptions: []
+  side_effects: mutates configuration and writes the persisted setup configuration
+- name: Ensure-VBCableStatus
+  description: Re-evaluate VB-CABLE detection, cache the result, and mark user confirmation
+    when the driver is present.
+  locked: false
+  inputs:
+    Cfg:
+      type: pscustomobject
+      required: true
+  returns:
+    type: pscustomobject
+  exceptions: []
+  side_effects: updates VB-CABLE cache values and writes launcher log entries
+- name: Test-NvidiaGPU
+  description: Detect whether the current Windows machine exposes an NVIDIA GPU for
+    optional audio acceleration dependencies.
+  locked: false
+  inputs: {}
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: queries local executables and WMI and writes launcher log entries
+- name: Get-OllamaExe
+  description: Resolve ollama.exe from PATH or common per-user/all-users install
+    locations.
+  locked: false
+  inputs: {}
+  returns:
+    type: string | null
+  exceptions: []
+  side_effects: reads local executable paths
+- name: Test-OllamaApi
+  description: Check whether the local Ollama HTTP API is responding.
+  locked: false
+  inputs: {}
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: sends a local HTTP request to 127.0.0.1
+- name: Start-OllamaService
+  description: Start the local Ollama service when its HTTP API is not already responding.
+  locked: false
+  inputs:
+    OllamaExe:
+      type: string
+      required: true
+  returns:
+    type: void
+  exceptions:
+  - Exception
+  side_effects: may start an ollama serve process and polls the local HTTP API
+- name: Ensure-Ollama
+  description: Reuse an installed Ollama runtime or install it with winget, then ensure
+    the local API is running.
+  locked: false
+  inputs: {}
+  returns:
+    type: string
+  exceptions:
+  - Exception
+  side_effects: may invoke winget, install Ollama, start the local service, and write
+    launcher log entries
+- name: Test-OllamaModelInstalled
+  description: Check whether a named Ollama model is already available locally,
+    accepting either the API name or model field.
+  locked: false
+  inputs:
+    Model:
+      type: string
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: sends a local HTTP request to the Ollama model registry endpoint and
+    writes diagnostics on failure or missing models
+- name: Ensure-DeepSeekModel
+  description: Pull the configured DeepSeek model into Ollama when it is not already
+    installed locally, defaulting to the smallest fallback model while honoring a
+    pre-set DEEPSEEK_SUMMARY_MODEL override for larger local models, then retry
+    local registry checks to allow Ollama to refresh after pull completion.
+  locked: false
+  inputs:
+    OllamaExe:
+      type: string
+      required: true
+    Model:
+      type: string
+      required: true
+  returns:
+    type: void
+  exceptions:
+  - Exception
+  side_effects: may download the Ollama model and writes launcher log entries
+- name: Enable-LocalDeepSeekForLaunchedApp
+  description: Configure process environment variables so the launched app uses local
+    Ollama DeepSeek instead of the hosted DeepSeek API, preserving any pre-set
+    DEEPSEEK_SUMMARY_MODEL override selected before launch.
+  locked: false
+  inputs: {}
+  returns:
+    type: void
+  exceptions: []
+  side_effects: mutates process environment variables and writes launcher log entries
+- name: Ensure-LocalDeepSeek
+  description: Ensure Ollama is installed and running, ensure the selected local
+    DeepSeek model is present, and configure local-only DeepSeek environment defaults
+    for the launched app.
+  locked: false
+  inputs: {}
+  returns:
+    type: void
+  exceptions:
+  - Exception
+  side_effects: may install Ollama, pull a local model, start the local service, and
+    mutate process environment variables
+- name: Test-VenvUsesSystemSitePackages
+  description: Check whether an existing virtual environment is configured to see
+    system site packages so already installed dependencies can be reused.
+  locked: false
+  inputs:
+    VenvDir:
+      type: string
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: reads the virtual environment pyvenv.cfg file and may write launcher
+    log entries when that file cannot be read
+- name: Ensure-VenvAndDeps
+  description: Create or repair the per-user virtual environment with system site
+    packages enabled, install requirements only when not already satisfied, and add
+    optional GPU dependencies when supported.
+  locked: false
+  inputs:
+    PyExe:
+      type: string
+      required: true
+  returns:
+    type: string
+  exceptions:
+  - Exception
+  side_effects: creates or recreates the per-user virtual environment, may install
+    pip packages for unsatisfied requirements, and writes launcher log entries
+- name: Ensure-RequiredDepsInstalled
+  description: Validate required Python modules inside the virtual environment and
+    install missing packages individually.
+  locked: false
+  inputs:
+    VenvPy:
+      type: string
+      required: true
+  returns:
+    type: void
+  exceptions:
+  - Exception
+  side_effects: executes package checks, may install required packages, and writes
+    launcher log entries
+- name: Find-AppFile
+  description: Resolve the interview application entrypoint by using cached configuration,
+    repository defaults, or a user file picker.
+  locked: false
+  inputs:
+    Cfg:
+      type: pscustomobject
+      required: true
+  returns:
+    type: string
+  exceptions:
+  - Exception
+  side_effects: may update cached app configuration and open a file picker dialog
+- name: Show-VBCablePrompt
+  description: Prompt the user about VB-CABLE installation only when automatic detection
+    does not confirm the driver.
+  locked: false
+  inputs:
+    Cfg:
+      type: pscustomobject
+      required: true
+  returns:
+    type: pscustomobject
+  exceptions: []
+  side_effects: may display a Windows Forms dialog, mutate configuration, and persist
+    prompt preferences
+- name: Show-AudioRoutingInstructions
+  description: Show one-time first-run Windows sound routing instructions after VB-CABLE
+    is detected or confirmed installed.
+  locked: false
+  inputs:
+    Cfg:
+      type: pscustomobject
+      required: true
+  returns:
+    type: pscustomobject
+  exceptions: []
+  side_effects: may display a Windows Forms message box, mutate configuration, persist
+    the one-time instruction flag, and write launcher log entries
+- name: Set-Progress
+  description: Update the installer progress UI, append visible setup details, and
+    mirror the status text into the launcher log.
+  locked: false
+  inputs:
+    pct:
       type: int
-    exceptions: []
-    side_effects: starts a child process and writes captured output to the setup log
-  - name: Get-CachedPython311
-    description: Return the cached Python 3.11 executable path from configuration when present.
-    locked: false
-    inputs:
-      cfg:
-        type: pscustomobject
-        required: true
-    returns:
-      type: string | null
-    exceptions: []
-    side_effects: none
-  - name: Set-CachedPython311
-    description: Update the cached Python 3.11 executable path in configuration and persist it.
-    locked: false
-    inputs:
-      cfg:
-        type: pscustomobject
-        required: true
-      path:
-        type: string
-        required: true
-    returns:
-      type: void
-    exceptions: []
-    side_effects: mutates configuration and writes the persisted setup configuration
-  - name: Test-Python311Exe
-    description: Verify that a candidate interpreter exists and reports Python 3.11.
-    locked: false
-    inputs:
-      pythonExe:
-        type: string
-        required: true
-    returns:
-      type: bool
-    exceptions: []
-    side_effects: executes the candidate Python interpreter
-  - name: Get-RegistryAppPathsPythonCandidates
-    description: Collect Python executable candidates from Windows App Paths registry keys.
-    locked: false
-    inputs: {}
-    returns:
-      type: string[]
-    exceptions: []
-    side_effects: reads Windows registry keys
-  - name: Find-Python311
-    description: Search cache, launchers, registry entries, common install directories, and PATH for a usable Python 3.11 interpreter.
-    locked: false
-    inputs:
-      Cfg:
-        type: pscustomobject
-        required: true
-    returns:
-      type: string | null
-    exceptions: []
-    side_effects: executes local interpreter probes and writes launcher log entries
-  - name: Ensure-Python311
-    description: Reuse an existing Python 3.11 interpreter or perform a per-user install from python.org when none is available.
-    locked: false
-    inputs:
-      Cfg:
-        type: pscustomobject
-        required: true
-    returns:
+      required: true
+    text:
       type: string
-    exceptions:
-      - Exception
-    side_effects: may download and install Python 3.11, update cached configuration, and write launcher log entries
-  - name: Find-VBCableDriverEvidence
-    description: Detect VB-CABLE installation evidence by checking known driver file locations.
-    locked: false
-    inputs: {}
-    returns:
-      type: string[]
-    exceptions: []
-    side_effects: reads known driver paths from the local filesystem
-  - name: Set-VBCableCache
-    description: Persist the latest VB-CABLE detection result and supporting evidence in configuration.
-    locked: false
-    inputs:
-      cfg:
-        type: pscustomobject
-        required: true
-      detected:
-        type: Nullable[bool]
-        required: true
-      evidence:
-        type: string[]
-        required: true
-    returns:
-      type: void
-    exceptions: []
-    side_effects: mutates configuration and writes the persisted setup configuration
-  - name: Ensure-VBCableStatus
-    description: Re-evaluate VB-CABLE detection, cache the result, and mark user confirmation when the driver is present.
-    locked: false
-    inputs:
-      Cfg:
-        type: pscustomobject
-        required: true
-    returns:
-      type: pscustomobject
-    exceptions: []
-    side_effects: updates VB-CABLE cache values and writes launcher log entries
-  - name: Test-NvidiaGPU
-    description: Detect whether the current Windows machine exposes an NVIDIA GPU for optional audio acceleration dependencies.
-    locked: false
-    inputs: {}
-    returns:
-      type: bool
-    exceptions: []
-    side_effects: queries local executables and WMI and writes launcher log entries
-  - name: Ensure-VenvAndDeps
-    description: Create or repair the per-user virtual environment, install requirements, and add optional GPU dependencies when supported.
-    locked: false
-    inputs:
-      PyExe:
-        type: string
-        required: true
-    returns:
-      type: string
-    exceptions:
-      - Exception
-    side_effects: creates or recreates the per-user virtual environment, installs pip packages, and writes launcher log entries
-  - name: Ensure-RequiredDepsInstalled
-    description: Validate required Python modules inside the virtual environment and install missing packages individually.
-    locked: false
-    inputs:
-      VenvPy:
-        type: string
-        required: true
-    returns:
-      type: void
-    exceptions:
-      - Exception
-    side_effects: executes package checks, may install required packages, and writes launcher log entries
-  - name: Find-AppFile
-    description: Resolve the interview application entrypoint by using cached configuration, repository defaults, or a user file picker.
-    locked: false
-    inputs:
-      Cfg:
-        type: pscustomobject
-        required: true
-    returns:
-      type: string
-    exceptions:
-      - Exception
-    side_effects: may update cached app configuration and open a file picker dialog
-  - name: Show-VBCablePrompt
-    description: Prompt the user about VB-CABLE installation only when automatic detection does not confirm the driver.
-    locked: false
-    inputs:
-      Cfg:
-        type: pscustomobject
-        required: true
-    returns:
-      type: pscustomobject
-    exceptions: []
-    side_effects: may display a Windows Forms dialog, mutate configuration, and persist prompt preferences
-  - name: Set-Progress
-    description: Update the installer progress UI and mirror the status text into the launcher log.
-    locked: false
-    inputs:
-      pct:
-        type: int
-        required: true
-      text:
-        type: string
-        required: true
-    returns:
-      type: void
-    exceptions: []
-    side_effects: updates Windows Forms controls and writes launcher log entries
+      required: true
+  returns:
+    type: void
+  exceptions: []
+  side_effects: updates Windows Forms controls and writes launcher log entries
 classes: []
 data_structures: []
 dependencies:
-  - runtime_wrapper
-  - interview_app
+- module: runtime_wrapper
+- module: interview_app

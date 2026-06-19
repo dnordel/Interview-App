@@ -1,0 +1,223 @@
+{
+  "candidate": {
+    "name": "Dalia Gaspar",
+    "interview_date": "2026-06-19",
+    "school": "Palmdale",
+    "track": "infant_toddler",
+    "qualification": {
+      "has_degree": false,
+      "degree_type": "",
+      "degree_in_ece": false,
+      "ece_units_completed": 15,
+      "infant_toddler_class_completed": false,
+      "total_units_completed": 24,
+      "years_experience": 12
+    }
+  },
+  "percent_of_max": 85.71,
+  "decision": "hire",
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_8",
+        "trait_name": "Gentleness & Physical Awareness",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_9",
+        "trait_name": "Patience with Nonverbal Communication",
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "before 8",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time?",
+        "answer": "full-time",
+        "skipped": false
+      },
+      {
+        "question_text": "Tell me a little about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "currently making $21.50. Negotiable.",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "two-weeks",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying to our company, Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Dropbox (Old)/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-06-19 - Palmdale - Dalia Gaspar - Interview.docx",
+    "transcript_path": ""
+  },
+  "communication_log": [],
+  "flow_transcript_slices": [
+    {
+      "type": "custom",
+      "id": "Why-ECE",
+      "question": "Tell me a little about yourself and why early childhood education matters to you.",
+      "candidate_transcript": "[Q1 Attempt 1]\nOkay, so I am a mommy of three. I started working as a babysitter when I was very young, when I was just a teenager. Obviously, I liked it, and I went into learning more about child development. I really enjoy seeing kids grow and seeing them learn something new, and just being a part of that makes me happy. I went into it right after high school, so I've had many years of experience in working with children. I started off as a TA. After babysitting, I got some units, and then I started off as a TA in a small school, and then, obviously, I just started growing. I became a teacher, a lead teacher, and I had my own classroom with 24 children. But my first job as a workaholic... Working with children was as a TA right out of college when I finished the unit."
+    },
+    {
+      "type": "custom",
+      "id": "Why-LPL",
+      "question": "Why are you applying to our company, Launch Pad Learning?",
+      "candidate_transcript": "[Q2 Attempt 1]\nSo I just moved out there to Lancaster and I am trying to get a job closer to home. And I felt like your school fits all my skills. When I did read the job description and everything, I was like, oh, I think this one fits the skills that I have. And I went ahead and applied. I also like everything that you said. You know, when I read everything, I also like everything that you guys offer, everything that your school is about. And just the community that you guys bring together or that it seems, you know, I don't know the school yet, but it seems like you guys bring up."
+    },
+    {
+      "type": "trait",
+      "id": "trait_1",
+      "question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+      "candidate_transcript": "[Q3 Attempt 1]\nYeah, so I worked with children for many years, but there's particular times where I would have children that have autism and they're nonverbal. So we really have to know how to understand them and read them. So there was a time where one of my kids, you know, one of my students, sorry, I don't know why I say my kids all the time. They're kind of my kids for a bunch of hours a day. Yeah, one of them, he was having a rough day, you know, just crying, screaming, throwing himself. We couldn't calm him down. I kind of like stopped and looked and kind of like saw what he needed, you know, like just by looking at him and getting to see, OK, why is he crying? What's bothering him? What is going on? And just by visually seeing him and understanding him, I kind of got a little bit more of an idea. Oh, OK, I know what he wants. I know what he needs. And we were able to solve the issue even with a nonverbal child. You know, it's harder, but just looking and seeing and asking questions, obviously with them, it's hard to ask questions because they can answer you. But just visually seeing them gives you a lot of little points and seeing like, OK."
+    },
+    {
+      "type": "trait",
+      "id": "trait_2",
+      "question": "Tell me about a time you felt overwhelmed or stressed at work with children present. What did you do to manage, not the kids, but yourself and your stress?",
+      "candidate_transcript": "[Q4 Attempt 1]\nYou know what, that happens a lot with children, you know, when it's a really busy day, or it's a really hot day, for example. You know, you tend to get overwhelmed or stressed. I'm usually what I do if we do have co teachers or a TA, I let them know, hey, you know, can I get a five minutes to go to the restroom and you know, like wash up or something, you know, I'm never frustrated with the kids, I just kind of like, ask for that five minutes to someone or if I cannot get them, you know, I kind of like pull myself out of the classroom. Where I still could see every every child, you know, take a little mental three, two minutes, you know, just to breathe and relax and then get it back together. You know, sometimes we just need those two, three minutes to just take a breather and be like, okay, I'm fine. And I'm good to go."
+    },
+    {
+      "type": "trait",
+      "id": "trait_3",
+      "question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering. They are pulling away and crying. Walk me through exactly what you would do and say, step by step.",
+      "candidate_transcript": "[Q5 Attempt 1]\nSo, um, I did work with a infant and toddler two-year-old class that they were potty training and in diapers. Um, usually when the child didn't want to, um, get changed, I would give them a minute. I will tell them, you know what, we're doing diaper change. You are, um, you know, you have your dirty diapers, so we need to change you, but I'm going to give you a minute. I'm going to change your friend, you know, I'll tell them, go wash your hands or go do something, or I'll give them, you know, any little toy that I could take to the toilet. Cause obviously there's only certain things that we can take to the toilet where we need to clean. Um, and I will explain to them, but your turn will come. Okay. Like, so make sure we're ready, make sure that it's okay. And just take the time to, to see that it's going to be okay. You know, like, look, I'm changing your friend. Everything's fine. And usually I just explain the process and while I'm changing another, another student, I'm explaining to them, like, look, it's okay. Nothing's going to happen. We're just going to put you a clean diaper and just making sure that they know that they're safe and that it's okay to, to change them. And then obviously when we're finished."
+    },
+    {
+      "type": "trait",
+      "id": "trait_4",
+      "question": "Tell me about a time you received constructive criticism or feedback you didn’t expect or didn’t fully agree with. What happened next?",
+      "candidate_transcript": "[Q6 Attempt 1]\nI always take any type of criticism from my superiors or any other teacher or assistant teacher as an opportunity to grow. And even though I don't agree with it or wouldn't agree with it, I will still take it into consideration just because if I'm being told something, it's because they're seeing something I'm not, you know. So I always, always take it as an opportunity to grow and better myself. So even like I said, even if I don't agree with it or I particularly don't think that's the right thing, I always just say, you know what, I'm going to think about it. I'm going to take it and we're going to see if this works or if I can move forward with that criticism, you know, that I was given. Yes. Yes, I do, actually. And it was my current employee. I currently work in a medical support. So, you know, there was things that were being done, I guess, that they asked me to do differently and, you know, things that were there like, OK, you're doing a good job, but this is how we wanted you to do it moving forward because they just work better for the company. And even though I was like, OK, this works better for me, but we're going to work together and we're going to make it better where it's better for the company and it still works for me. And, you know, yeah, and it worked out for all of us because like. I said, I take every criticism as an opportunity to grow rather than something like, oh, I'm being judged, you know, or I'm I don't like to do that. I kind of just like to be like, OK, they're telling me for a reason and."
+    },
+    {
+      "type": "trait",
+      "id": "trait_5",
+      "question": "Tell me about a time something, such as a lesson plan, did not go as expected and your role in it.",
+      "candidate_transcript": "[Q7 Attempt 1]\nOh, with lesson planning, there's always something that comes out unexpectedly. You know what? When lesson plans don't go as, you know, as the way that we planned it, we just kind of have to work with what we have and what the day brings. That does happen a lot with children and that industry, because maybe that day was super busy with other things and we couldn't get to that lesson that we needed to get done. So I either try to implement a little bit of it the next day or throughout the whole week, or I just tend to like, OK, let's see what we could do to move forward without having to implement it. But usually I always find a way to fit it in, in the week that we're learning the same things."
+    },
+    {
+      "type": "trait",
+      "id": "trait_6",
+      "question": "Tell me about a time you had a challenge with another adult. How did you navigate it?",
+      "candidate_transcript": "[Q8 Attempt 1]\nI, I don't really, I haven't really ever gotten into like a, a challenging time with another person. I'm going to be very honest. I really don't. I tend to be more of the quieter side or like keep it to myself side. Um, the worst things that had happened was someone told me like, Oh, um, you know, in the childcare industry, like someone, another teacher would be like, Oh, can you please make sure to cover this area or to, to take this bike over there? You know, because one of your students left it over here and I kind of just, okay, that's fine. You know, we'll work on it to put those things away, but really an altercation or something I had, I don't think I've ever, I've ever gotten. And that's something that any previous bosses of my life have done. Um, and so, um, and so, um, and so, um, and so, um, and so, um, and so, um, will tell you, like, I don't really do like altercations with any other or like myths kind of things like that. Um, like where a parent gets upset kind of thing, like something that was done that they didn't like, you know, um, that does, that has happened with a parent, um, before where they don't agree to certain things. You know, I always try to talk to them and listen to them, particularly tell them, okay, you know, um, we're going to work with you cause we're a team. We, um, we're here to make sure that your child's being taken care of learning and growing, and we're going to do this together. And, um, I just take everything they have to say. And then I give them my feedback as well. And if it grows bigger, well, yes, we would have to get someone else involved, but I've never had a, uh, a time where we have gotten where it had to go bigger, where we ended up me and a parent couldn't solve an issue on ourselves or something, you know, something as simple as like, Oh, I want my child to be changed after nap time, you know, um, I don't want them to be picked up and they have the same clothes or something like that. You know, something simple like that. That's something that we could always work with the parent, but never really a bad altercation with a parent or something worse than that. I'm just that like, they wanted me to change their, their kid after, um, nap time because they will bring them in PJs and, you know, no, not necessarily."
+    },
+    {
+      "type": "trait",
+      "id": "trait_7",
+      "question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+      "candidate_transcript": "[Q9 Attempt 1]\nYes, I learned from children that they change every single day. They are always in a different mood, whether it's happy every day or happy one day, sad one day, mad another day. And I have learned to grow with them. Like I have learned things that I didn't know about me that all the patients I have. And, you know, even if I don't have it that day, I feel like I've learned to or I gained that as an experience of how to control myself to deal with that child on that day or with those children on those days. Because even before, maybe when I wasn't working with kids, I'd be like, oh, that frustrates me or something. But working with children really helped me grow in that sense."
+    },
+    {
+      "type": "trait",
+      "id": "trait_8",
+      "question": "Tell me about how you physically care for infants or toddlers during routines like feeding, diapering, or comforting.",
+      "candidate_transcript": "[Q10 Attempt 1]\nWell, feeding, I worked in a daycare with toddlers and infants and feeding each different child was different because we had like three, four babies at the same time. Usually what we would do in the feeding with the babies is we would put them, there was a little, it wasn't like fascinating. It was more like, I'm not sure what they're called. It's not a jumper either because it can move, but we will put in there, we will get their bottle ready. We would cover them, we will suit them. And then I will put two children on the side of me and then two in the front. And I will use my hands and my feet to like help them, you know, like to sleep or, you know, with lullabies and making sure that I could reach every baby in case their bottle fell or anything that they had like fell or clean their little mouth or just anything that they needed for me to be close to. And then with, with diapering, also the same thing, I would keep them all where I could see them and just one at a time, untie them and making sure they were all back together, you know, making sure they were, they were back in safe and they're in their little seat or wherever they were. And then grabbing the other baby and changing them, getting them all cleaned up and ready. And then with infant and toddler, with toddlers, just helping them in general, because they need a lot of help in feeding and cleaning up. Um, and every opening little juices or helping them. I'm not sure if you guys provide lunch there or you guys, um, parents bring their own food, but with, okay. Yeah. And the places that I work, we, we didn't provide it. Parents had to bring their own snacks and food for the kids. So we had to make sure everything was warmed up and open for them. And we were able to like, if it was something hot, make sure it was, um, temperature to their, to, you know, for safe and everything. But yeah, um, always kind of moving, moving with the flow with the children because everybody's different and everybody eats differently and they sleep differently. So you kind of get to know them as you go."
+    },
+    {
+      "type": "trait",
+      "id": "trait_9",
+      "question": "How do you understand what a nonverbal child needs when they’re crying or upset? Can you walk me through how you respond in those moments?",
+      "candidate_transcript": "[Q11 Attempt 1]"
+    },
+    {
+      "type": "custom",
+      "id": "FT-or-PT",
+      "question": "Are you looking for full-time or part-time?",
+      "candidate_transcript": "[Q12 Attempt 1]\nI am looking for a full-time or at least more than six hours or"
+    },
+    {
+      "type": "custom",
+      "id": "Not-Avail",
+      "question": "Are there any hours you are absolutely not available to work?",
+      "candidate_transcript": "[Q13 Attempt 1]\nhoping to be able to drop all my kids to school so anytime like 8 30 or 8 a.m over"
+    },
+    {
+      "type": "custom",
+      "id": "Start",
+      "question": "When could you start if we decide to move forward?",
+      "candidate_transcript": "[Q14 Attempt 1]\nI am currently in the position that I am now so I just need to give them the notice if you guys do move forward and let them know you know like hey I'm I took another they already know that I'm looking because I didn't move out there so I do just need to let them know you know maybe like a week a week and a half that way they're they're informed and I don't just leave you know"
+    }
+  ],
+  "summary_status": "processing",
+  "summary_warnings": [
+    "Local DeepSeek summary is still processing."
+  ]
+}

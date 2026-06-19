@@ -1,3 +1,0 @@
-generated_from: docs/contract_baseline_checklist.yaml
-violations: []
-summary: No locked:true interfaces found in current module contracts.

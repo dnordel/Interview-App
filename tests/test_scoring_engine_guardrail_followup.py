@@ -1,4 +1,4 @@
-import reporting
+import scoring_reporting as reporting
 
 
 def test_scoring_engine_evaluate_is_restored_after_mutation() -> None:

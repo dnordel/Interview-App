@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from question_runtime_definition_service import (
+from ui_composition import (
     QuestionRuntimeDefinitionService,
     default_runtime_definition,
     list_signal_refs,
@@ -61,7 +61,7 @@ def test_runtime_definition_service_crud_round_trip(tmp_path: Path) -> None:
     assert not stored_path.exists()
 
 
-def test_runtime_definition_service_rejects_duplicate_refs_and_negative_weights() -> None:
+def test_runtime_definition_service_rejects_duplicate_refs_and_nonnumeric_weights() -> None:
     definition = default_runtime_definition('trait_3')
     definition['core_signals'] = [{'ref': 'SAME', 'label': 'A', 'weight': 1, 'group': 'Core', 'is_critical': False}]
     definition['extended_signal_groups'] = [
@@ -72,8 +72,10 @@ def test_runtime_definition_service_rejects_duplicate_refs_and_negative_weights(
         normalize_runtime_definition(definition)
 
     service = QuestionRuntimeDefinitionService(Path('.'))
-    with pytest.raises(ValueError, match='non-negative number'):
-        service.add_core_signal(default_runtime_definition('trait_3'), {'ref': 'S_BAD', 'label': 'bad', 'weight': -1})
+    negative = service.add_core_signal(default_runtime_definition('trait_3'), {'ref': 'S_NEG', 'label': 'negative', 'weight': -1})
+    assert negative['core_signals'][0]['weight'] == -1.0
+    with pytest.raises(ValueError, match='must be a number'):
+        service.add_core_signal(default_runtime_definition('trait_3'), {'ref': 'S_BAD', 'label': 'bad', 'weight': 'not-a-number'})
 
 
 def test_next_trait_id_uses_next_numeric_rubric_slot() -> None:

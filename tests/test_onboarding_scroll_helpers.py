@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-import onboarding_scroll_helpers
+import onboarding_operations
 
 
 class _FakeWidget:
@@ -105,11 +105,11 @@ class _FakeFocusWidget(_FakeWidget):
 
 
 def test_build_scrollable_canvas_area_wires_canvas_and_scrollbar(monkeypatch):
-    monkeypatch.setattr(onboarding_scroll_helpers.tk, "Canvas", _FakeCanvas)
-    monkeypatch.setattr(onboarding_scroll_helpers.ttk, "Frame", _FakeWidget)
-    monkeypatch.setattr(onboarding_scroll_helpers.ttk, "Scrollbar", _FakeScrollbar)
+    monkeypatch.setattr(onboarding_operations.tk, "Canvas", _FakeCanvas)
+    monkeypatch.setattr(onboarding_operations.ttk, "Frame", _FakeWidget)
+    monkeypatch.setattr(onboarding_operations.ttk, "Scrollbar", _FakeScrollbar)
 
-    area = onboarding_scroll_helpers.build_scrollable_canvas_area(
+    area = onboarding_operations.build_scrollable_canvas_area(
         object(),
         interior_padding=6,
         canvas_kwargs={"takefocus": 0},
@@ -127,7 +127,7 @@ def test_bind_canvas_mousewheel_supports_focus_and_cross_platform_events():
     canvas.top_level = _FakeWidget()
     interior = _FakeWidget()
 
-    onboarding_scroll_helpers.bind_canvas_mousewheel(canvas, activate_widgets=(canvas, interior))
+    onboarding_operations.bind_canvas_mousewheel(canvas, activate_widgets=(canvas, interior))
 
     canvas.bindings["<FocusIn>"](SimpleNamespace())
     assert set(canvas.bound_all) == {"<MouseWheel>", "<Button-4>", "<Button-5>"}
@@ -149,7 +149,7 @@ def test_scroll_widget_into_view_moves_for_hidden_widget():
     canvas = _FakeCanvas()
     widget = _FakeFocusWidget(root_y=320, height=80)
 
-    onboarding_scroll_helpers.scroll_widget_into_view(canvas, widget, padding=12)
+    onboarding_operations.scroll_widget_into_view(canvas, widget, padding=12)
 
     assert canvas.updated is True
     assert canvas.moveto_calls[-1] > 0

@@ -1,4 +1,4 @@
-from trait_signal_schema import (
+from scoring_reporting import (
     build_signal_dictionary_index,
     iter_trait_schema_signals,
     normalize_core_signals,

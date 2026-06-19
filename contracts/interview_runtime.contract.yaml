@@ -1,0 +1,1818 @@
+module:
+  name: interview_runtime
+  language: python
+  path: src/interview_runtime.py
+  version: 0.15.0
+  description: Flattened public interface for interview state, session management,
+    audio/transcription runtime, transcript summary seam, controllers, history, and
+    finalize pipeline; only active legacy adapters remain in the compatibility module
+    inventory.
+functions:
+- name: _safe_token
+  description: Return a filesystem-safe token for interview session filenames, using
+    a fallback when the input is empty after sanitization.
+  locked: false
+  inputs:
+    value:
+      type: str
+      required: true
+    fallback:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: available_modules
+  description: Return remaining legacy interview modules still exposed through this
+    flattened facade.
+  locked: false
+  inputs: {}
+  returns:
+    type: tuple[str, ...]
+  exceptions: []
+  side_effects: none
+- name: load_compat_module
+  description: Import a remaining legacy module that belongs to the interview runtime
+    facade.
+  locked: false
+  inputs:
+    module_name:
+      type: str
+      required: true
+  returns:
+    type: ModuleType
+  exceptions:
+  - AttributeError
+  side_effects: Imports the requested module.
+- name: module_ownership
+  description: Return the ownership map from each remaining legacy interview runtime
+    module to the flattened interview_runtime module.
+  locked: false
+  inputs: {}
+  returns:
+    type: dict[str, str]
+  exceptions: []
+  side_effects: none
+- name: wrapper_policy
+  description: Return the compatibility wrapper policy for remaining legacy interview
+    runtime modules during flattening cleanup.
+  locked: false
+  inputs: {}
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: public_symbols
+  description: Return public symbols exposed by one remaining legacy interview runtime
+    module or by all remaining interview runtime modules.
+  locked: false
+  inputs:
+    module_name:
+      type: str | None
+      required: false
+      default: None
+  returns:
+    type: tuple[str, ...]
+  exceptions:
+  - AttributeError
+  side_effects: Imports remaining interview runtime compatibility modules.
+- name: resolve_compat_symbol
+  description: Resolve a public symbol from the remaining legacy modules owned by
+    this facade.
+  locked: false
+  inputs:
+    symbol_name:
+      type: str
+      required: true
+  returns:
+    type: Any
+  exceptions:
+  - AttributeError
+  side_effects: Imports legacy modules until the symbol is found.
+- name: __dir__
+  description: Return module attributes plus flattened public compatibility symbols
+    for editor and agent discovery.
+  locked: false
+  inputs: {}
+  returns:
+    type: list[str]
+  exceptions: []
+  side_effects: Imports remaining interview runtime compatibility modules.
+- name: append_candidate_segment_text
+  description: Append candidate-only text segments while preserving existing transcript
+    content.
+  locked: false
+  inputs:
+    existing_text:
+      type: str
+      required: true
+    segments:
+      type: list[Any]
+      required: true
+    candidate_label:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: sanitize_transcription_error_reason
+  description: Produce a clipped redacted error reason and preserve diagnostic filename
+    hints.
+  locked: false
+  inputs:
+    raw_reason:
+      type: str
+      required: true
+    max_length:
+      type: int
+      required: false
+      default: 300
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: build_transcription_log_hint
+  description: Build a redacted log-path hint for transcription troubleshooting copy.
+  locked: false
+  inputs:
+    log_path:
+      type: Path | str | None
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: format_transcription_health_summary
+  description: Build joined question labels, redacted details, and a shared log hint.
+  locked: false
+  inputs:
+    transcription_errors:
+      type: Mapping[int, str]
+      required: true
+    question_labeler:
+      type: Callable[[int], str]
+      required: true
+    log_path:
+      type: Path | str | None
+      required: true
+  returns:
+    type: tuple[str, str, str]
+  exceptions: []
+  side_effects: none
+- name: write_transcription_diagnostic
+  description: Write exception diagnostics as JSON under a diagnostics directory.
+  locked: false
+  inputs:
+    output_dir:
+      type: Path
+      required: true
+    base_name:
+      type: str
+      required: true
+    stage:
+      type: str
+      required: true
+    error:
+      type: Exception
+      required: true
+    context:
+      type: Mapping[str, Any]
+      required: true
+  returns:
+    type: Path
+  exceptions:
+  - OSError
+  side_effects: Creates directories/files and writes diagnostic JSON to disk.
+- name: probe_audio_file
+  description: Probe audio file existence and metadata for diagnostics context.
+  locked: false
+  inputs:
+    path:
+      type: Path
+      required: true
+  returns:
+    type: dict[str, Any]
+  exceptions: []
+  side_effects: Reads filesystem metadata.
+- name: build_flow_time_windows
+  description: Build flow index start/end windows from recorded flow time marks.
+  locked: false
+  inputs:
+    flow_time_marks:
+      type: list[dict[str, Any]]
+      required: true
+  returns:
+    type: list[tuple[int, float, float]]
+  exceptions: []
+  side_effects: none
+- name: map_segments_to_flow_indices
+  description: Map candidate segments into flow indices by windowed start-time membership.
+  locked: false
+  inputs:
+    segments:
+      type: list[dict[str, Any]]
+      required: true
+    windows:
+      type: list[tuple[int, float, float]]
+      required: true
+  returns:
+    type: dict[int, str]
+  exceptions: []
+  side_effects: none
+- name: write_merged_timestamped_transcript
+  description: Write a timestamped interleaved transcript text file from segment records.
+  locked: false
+  inputs:
+    transcript_path:
+      type: Path
+      required: true
+    segments:
+      type: list[dict[str, Any]]
+      required: true
+  returns:
+    type: Path
+  exceptions: []
+  side_effects: writes filesystem
+- name: summarize_transcript
+  description: Transcript summary seam that accepts an injected summarizer adapter
+    and gracefully falls back when local model runtime is unavailable.
+  locked: false
+  inputs:
+    transcript_text:
+      type: Any
+      required: true
+    summarizer:
+      type: Optional[Callable[..., Any]]
+      required: false
+      default: None
+    max_chars:
+      type: int
+      required: false
+      default: 2600
+  returns:
+    type: str
+  exceptions: []
+  side_effects: May initialize cached transformers pipeline.
+- name: build_deepseek_summary_config
+  description: Build local DeepSeek interview summary config from environment values,
+    defaulting to Ollama at 127.0.0.1 and the smallest local DeepSeek model while
+    rejecting non-local base URLs.
+  locked: false
+  inputs:
+    env:
+      type: Mapping[str, str] | None
+      required: false
+      default: null
+  returns:
+    type: DeepSeekSummaryConfig
+  exceptions: []
+  side_effects: Reads process environment when env is null.
+- name: generate_deepseek_interview_summaries
+  description: Generate degraded, failed, or DeepSeek-backed finalize summaries
+    using separate prompts for individual answer evidence summaries and the executive
+    summary section; prompts are evidence-first, preschool-domain aware, reject
+    generic/invented claims, and accept plain, fenced, commented, or R1-think-wrapped
+    JSON object responses from local Ollama while validating required schema fields
+    fail-closed.
+  locked: false
+  inputs:
+    flow_transcript:
+      type: list[dict[str, Any]]
+      required: true
+    candidate:
+      type: dict[str, Any]
+      required: true
+    config:
+      type: DeepSeekSummaryConfig | None
+      required: false
+      default: null
+    chat_completion:
+      type: Optional[Callable[[DeepSeekSummaryConfig, list[dict[str, str]]], dict[str, Any]]]
+      required: false
+      default: null
+  returns:
+    type: dict[str, Any]
+    description: Contains answer_summaries, executive_summary, interview_highlights,
+      summary_status, and summary_warnings.
+  exceptions: []
+  side_effects: May send transcript text to local Ollama when enabled and no injected
+    chat_completion is provided.
+- name: generate_deepseek_trait_signal_suggestions
+  description: Generate degraded, failed, or DeepSeek-backed model trait observation
+    suggestions and advisory 1-5 raw trait scores keyed by trait id without changing
+    human raw scores or compatibility selected_signal_ids; prompts receive rubric.json
+    scoring descriptors plus matching Trait-Based Scoring JSON signal definitions,
+    state that signals are DeepSeek-only advisory scoring evidence, and accept plain,
+    fenced, commented, or R1-think-wrapped JSON object responses while validating
+    schema fields fail-closed.
+  locked: false
+  inputs:
+    flow_transcript:
+      type: list[dict[str, Any]]
+      required: true
+    trait_state:
+      type: dict[str, dict[str, Any]]
+      required: true
+    rubric:
+      type: dict[str, Any] | None
+      required: false
+      default: null
+    config:
+      type: DeepSeekSummaryConfig | None
+      required: false
+      default: null
+    chat_completion:
+      type: Optional[Callable[[DeepSeekSummaryConfig, list[dict[str, str]]], dict[str, Any]]]
+      required: false
+      default: null
+  returns:
+    type: dict[str, Any]
+    description: Contains model_signal_suggestions_by_trait, model_suggestion_status,
+      model_suggestion_warnings, model_trait_scores_by_trait, model_scoring_status,
+      and model_scoring_warnings.
+  exceptions: []
+  side_effects: May send transcript text to local Ollama when enabled and no injected
+    chat_completion is provided.
+- name: recommended_max_workers
+  description: Return a hardware-aware default max worker count for transcription
+    jobs.
+  locked: false
+  inputs:
+    cpu_count:
+      type: int | None
+      required: false
+      default: null
+  returns:
+    type: int
+  exceptions: []
+  side_effects: none
+- name: resolve_transcription_max_workers
+  description: Resolve configured transcription worker count with safe fallback bounds.
+  locked: false
+  inputs:
+    settings:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: int
+  exceptions: []
+  side_effects: none
+- name: resolve_transcription_job_timeout_seconds
+  description: Resolve per-job transcription timeout from settings with bounded fallback
+    values.
+  locked: false
+  inputs:
+    settings:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: float
+  exceptions: []
+  side_effects: none
+- name: resolve_runtime
+  description: Resolve configured Whisper runtime model, device, and compute type
+    with defaults.
+  locked: false
+  inputs:
+    settings:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: RuntimeConfig
+  exceptions: []
+  side_effects: none
+- name: fallback_from_exception
+  description: Return a CPU fallback runtime for device-related Whisper runtime errors.
+  locked: false
+  inputs:
+    exc:
+      type: Exception
+      required: true
+    preferred:
+      type: RuntimeConfig
+      required: true
+    settings:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: RuntimeConfig | None
+  exceptions: []
+  side_effects: none
+- name: persist_runtime_choice
+  description: Persist resolved Whisper runtime settings and selection mode.
+  locked: false
+  inputs:
+    settings:
+      type: dict[str, Any]
+      required: true
+    runtime_config:
+      type: RuntimeConfig
+      required: true
+    mode:
+      type: str
+      required: true
+  returns:
+    type: None
+  exceptions: []
+  side_effects: Mutates runtime settings.
+- name: list_windows_dshow_audio_devices
+  description: Probe ffmpeg DirectShow devices and return detected audio device names.
+  locked: false
+  inputs:
+    ffmpeg_exe:
+      type: str | None
+      required: false
+      default: null
+  returns:
+    type: list[str]
+  exceptions: []
+  side_effects: Executes ffmpeg subprocess for device enumeration.
+- name: resolve_preferred_windows_audio_device
+  description: Resolve the best available Windows audio device using preferred name
+    and alias candidates.
+  locked: false
+  inputs:
+    preferred_name:
+      type: str
+      required: true
+    aliases:
+      type: Sequence[str] | None
+      required: false
+      default: null
+    available_devices:
+      type: Sequence[str] | None
+      required: false
+      default: null
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: resolve_default_windows_system_device
+  description: Resolve VB-CABLE system capture device using probing and known aliases.
+  locked: false
+  inputs: {}
+  returns:
+    type: str
+  exceptions: []
+  side_effects: Probes local ffmpeg audio devices when available.
+- name: build_finalize_context
+  description: Build finalize payload, timestamp-split flow transcript, transcript
+    metadata, DeepSeek answer-summary/executive-summary fields or processing placeholders,
+    model trait suggestions, advisory model trait scores, and legacy empty transcript
+    path from app state.
+  locked: false
+  inputs:
+    app:
+      type: Any
+      required: true
+    scoring:
+      type: dict[str, Any]
+      required: true
+    warnings:
+      type: list[str]
+      required: true
+    transcript_metadata:
+      type: dict[str, Any]
+      required: true
+    run_deepseek:
+      type: bool
+      required: false
+      default: true
+  returns:
+    type: FinalizeContext
+  exceptions: []
+  side_effects: Applies candidate transcript text to flow payloads, may invoke local
+    DeepSeek when requested and enabled, and clears the legacy referral transcript
+    path for new finalize output.
+- name: enqueue_deepseek_finalize_job
+  description: Persist a detached DeepSeek finalize job and launch the worker process
+    so interview notes can be refreshed after the GUI finalize flow returns or exits;
+    launched workers serialize execution through the DeepSeek finalize lock in the
+    job directory.
+  locked: false
+  inputs:
+    app:
+      type: Any
+      required: true
+    context:
+      type: FinalizeContext
+      required: true
+    out_path:
+      type: str
+      required: true
+    history_id:
+      type: str
+      required: true
+  returns:
+    type: Path
+  exceptions:
+  - OSError
+  side_effects: Writes a local job JSON file and starts a detached Python worker when
+    a persistent history path is available; the worker later creates/removes the
+    per-directory DeepSeek finalize lock before local Ollama, DOCX, and history work.
+- name: raise_legacy_finalize_guardrail
+  description: Fail closed when the disabled legacy finalize path is invoked.
+  locked: false
+  inputs: {}
+  returns:
+    type: None
+  exceptions:
+  - ReportingValidationError
+  side_effects: none
+- name: validate_before_finalize
+  description: Validate candidate, qualification, track, and required trait scoring
+    state before finalization.
+  locked: false
+  inputs:
+    app:
+      type: Any
+      required: true
+  returns:
+    type: None
+  exceptions:
+  - ValueError
+  side_effects: none
+classes:
+- name: InterviewState
+  description: Dataclass storing candidate fields, per-flow response state, and referral
+    metadata.
+  locked: false
+  attributes:
+    candidate_name:
+      type: str
+    interview_date:
+      type: str
+    school:
+      type: str
+    track:
+      type: str
+    qualification:
+      type: CandidateQualification
+    current_index:
+      type: int
+    trait_inputs:
+      type: dict[str, dict[str, Any]]
+    custom_inputs:
+      type: dict[str, dict[str, Any]]
+    flow_time_marks:
+      type: list[dict[str, Any]]
+    flow_candidate_transcripts:
+      type: dict[int, str]
+    flow_recordings:
+      type: dict[int, dict[str, Any]]
+    referral_packet:
+      type: dict[str, str]
+    communication_log:
+      type: list[dict[str, Any]]
+  methods:
+  - name: to_dict
+    description: Serialize interview state to persistence-friendly dictionary structure.
+    locked: false
+    inputs: {}
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: none
+- name: InterviewSessionContext
+  description: Provides sanitized naming, session key composition, and runtime path/log
+    helpers.
+  locked: false
+  attributes: {}
+  methods:
+  - name: __init__
+    description: Initializes runtime context providers and path anchors.
+    locked: false
+    inputs:
+      app_root:
+        type: Path
+        required: true
+      default_base_dir:
+        type: Path
+        required: true
+      today_provider:
+        type: Callable[[], date] | None
+        required: false
+      now_provider:
+        type: Callable[[], datetime] | None
+        required: false
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: safe_interview_date
+    description: Returns an explicit interview date or a current-date fallback.
+    locked: false
+    inputs:
+      raw_date:
+        type: str
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: safe_base_name
+    description: Builds a filesystem-safe interview base name from candidate and date
+      values.
+    locked: false
+    inputs:
+      candidate_name:
+        type: str
+        required: true
+      interview_date:
+        type: str
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: active_session_key
+    description: Composes deterministic session key tuple values for session storage.
+    locked: false
+    inputs:
+      interview_session_id:
+        type: str
+        required: true
+      candidate_name:
+        type: str
+        required: true
+      interview_date:
+        type: str
+        required: true
+    returns:
+      type: tuple[str, str, str]
+    exceptions: []
+    side_effects: none
+  - name: validate_runtime_base_dir
+    description: Resolves and validates base directory policy with optional write-probe.
+    locked: false
+    inputs:
+      raw_base_dir:
+        type: str
+        required: true
+      write_probe:
+        type: bool
+        required: false
+        default: true
+    returns:
+      type: Path
+    exceptions:
+    - OSError
+    side_effects: creates base directory and performs write probe when enabled
+  - name: runtime_init_log_path
+    description: Returns deterministic runtime initialization log path under app logs.
+    locked: false
+    inputs: {}
+    returns:
+      type: Path
+    exceptions: []
+    side_effects: none
+- name: InterviewSessionRecordingContext
+  description: Dataclass carrying active recording/session identity values used by
+    shared interview app state.
+  locked: false
+  attributes:
+    interview_session_id:
+      type: str
+    recording_base_name:
+      type: str
+    recording_flow_idx:
+      type: int | None
+    recording_started_monotonic:
+      type: float | None
+    recording_candidate_label:
+      type: str
+    live_transcript_docx:
+      type: Path | None
+  methods: []
+- name: AppSharedState
+  description: Shared controller state for active recording session, transcription
+    queue status, and history rows.
+  locked: false
+  attributes:
+    session:
+      type: InterviewSessionRecordingContext
+    transcription:
+      type: TranscriptionRuntimeState
+    history_rows:
+      type: list[dict[str, Any]]
+  methods: []
+- name: FlowItem
+  description: Flow item TypedDict for normalized interview flow entries.
+  locked: false
+  attributes:
+    id:
+      type: str
+    flow_index:
+      type: int
+    question_type:
+      type: str
+    trait_id:
+      type: str
+    trait_name:
+      type: str
+    prompt:
+      type: str
+    raw:
+      type: dict[str, Any]
+  methods: []
+- name: RecordingTranscriptionPayload
+  description: TypedDict for completed per-question recording/transcription output
+    paths and text.
+  locked: false
+  attributes:
+    flow_index:
+      type: int
+    base_name:
+      type: str
+    output_dir:
+      type: str
+    mic_wav:
+      type: str
+    sys_wav:
+      type: str
+    transcript_txt:
+      type: str
+    transcript_jsonl:
+      type: str
+    candidate_label:
+      type: str
+    candidate_transcript:
+      type: str
+  methods: []
+- name: TranscriptionQueuePayload
+  description: TypedDict for queued per-flow transcription work.
+  locked: false
+  attributes:
+    flow_idx:
+      type: int
+    session:
+      type: Any
+    base_dir:
+      type: Path
+    base_name:
+      type: str
+    candidate_label:
+      type: str
+    job_timeout_seconds:
+      type: float
+    job_uuid:
+      type: str
+    retry_count:
+      type: int
+    interview_session_id:
+      type: str
+    finalize_correlation_id:
+      type: str
+  methods: []
+- name: TranscriptionQueueSnapshot
+  description: TypedDict snapshot of transcription queue state for one flow.
+  locked: false
+  attributes:
+    flow_index:
+      type: int
+    is_pending:
+      type: bool
+    is_canceled:
+      type: bool
+    queued_count:
+      type: int
+    pending_count:
+      type: int
+    error_reason:
+      type: str | None
+  methods: []
+- name: OfferTransitionResult
+  description: TypedDict result for offer-status transitions.
+  locked: false
+  attributes:
+    next_status:
+      type: str
+    done_message:
+      type: str
+  methods: []
+- name: FinalizePipelineResult
+  description: TypedDict for finalize worker outputs and downstream artifact paths.
+  locked: false
+  attributes:
+    scoring:
+      type: dict[str, Any]
+    out_path:
+      type: str
+    integration_path:
+      type: str
+    transcript_path:
+      type: str
+      description: '[DEPRECATED] Legacy transcript-only DOCX path retained as an
+        empty compatibility field for new finalize results. Use interview_notes_document_path.'
+    director_packet:
+      type: dict[str, Any]
+    warnings:
+      type: list[str]
+    communication_log_path:
+      type: str | None
+    transcript_complete:
+      type: bool
+    transcript_completeness_status:
+      type: str
+    remaining_question_indices:
+      type: list[int]
+  methods: []
+- name: FinalizeTranscriptMetadata
+  description: TypedDict for finalize transcript completeness metadata.
+  locked: false
+  attributes:
+    transcript_complete:
+      type: bool
+    transcript_completeness_status:
+      type: str
+    remaining_question_indices:
+      type: list[int]
+  methods: []
+- name: TranscriptionRuntimeState
+  description: Dataclass tracking pending, canceled, queued, and failed per-flow transcription
+    work.
+  locked: false
+  attributes:
+    pending_flow_transcriptions:
+      type: set[int]
+    canceled_flow_transcriptions:
+      type: set[int]
+    queued_flow_transcriptions:
+      type: list[dict[str, Any]]
+    question_transcription_errors:
+      type: dict[int, str]
+  methods: []
+- name: InterviewSessionStore
+  description: File-backed interview session snapshot store with schema migration
+    and path-safe session keys.
+  locked: false
+  attributes: {}
+  methods:
+  - name: __init__
+    description: Configure the store root under an interview_sessions folder and create
+      it when needed.
+    locked: false
+    inputs:
+      base_dir:
+        type: Path
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Creates the interview session directory when missing.
+  - name: session_path
+    description: Return the JSON path for an interview session identity.
+    locked: false
+    inputs:
+      interview_id:
+        type: str
+        required: true
+      candidate_name:
+        type: str
+        required: true
+      interview_date:
+        type: str
+        required: true
+    returns:
+      type: Path
+    exceptions: []
+    side_effects: none
+  - name: load
+    description: Load an interview session payload, returning a default payload when
+      missing or unreadable.
+    locked: false
+    inputs:
+      interview_id:
+        type: str
+        required: true
+      candidate_name:
+        type: str
+        required: true
+      interview_date:
+        type: str
+        required: true
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: Reads a JSON session file when present.
+  - name: save_question_snapshot
+    description: Persist a normalized per-question snapshot and return the session
+      file path.
+    locked: false
+    inputs:
+      interview_id:
+        type: str
+        required: true
+      candidate_name:
+        type: str
+        required: true
+      interview_date:
+        type: str
+        required: true
+      flow_idx:
+        type: int
+        required: true
+      item_type:
+        type: str
+        required: true
+      item_id:
+        type: str
+        required: true
+      notes:
+        type: dict[str, Any] | None
+        required: true
+      candidate_transcript:
+        type: str
+        required: true
+    returns:
+      type: Path
+    exceptions: []
+    side_effects: Writes the interview session JSON file.
+- name: SessionPayloadValidationError
+  description: Raised when persisted payload structures are invalid for hydration.
+  locked: false
+  attributes: {}
+  methods: []
+- name: ResumeInstruction
+  description: Instruction object describing where the UI should resume.
+  locked: false
+  attributes:
+    target:
+      type: str
+    flow_index:
+      type: int | None
+  methods: []
+- name: InterviewSessionManager
+  description: Service for loading persisted sessions, hydrating InterviewState, and
+    building resume targets.
+  locked: false
+  attributes: {}
+  methods:
+  - name: __init__
+    description: Configure draft/session data providers and date provider.
+    locked: false
+    inputs:
+      draft_manager:
+        type: DraftManager
+        required: true
+      session_store:
+        type: InterviewSessionStore | None
+        required: false
+      today_provider:
+        type: Callable[[], date]
+        required: false
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: load_draft_payload
+    description: Load and normalize persisted draft JSON payload.
+    locked: false
+    inputs:
+      draft_path:
+        type: Path
+        required: true
+    returns:
+      type: dict[str, Any]
+    exceptions:
+    - SessionPayloadValidationError
+    side_effects: Reads draft file from disk.
+  - name: load_session_payload
+    description: Load and normalize persisted interview session payload.
+    locked: false
+    inputs:
+      interview_id:
+        type: str
+        required: true
+      candidate_name:
+        type: str
+        required: true
+      interview_date:
+        type: str
+        required: true
+    returns:
+      type: dict[str, Any]
+    exceptions:
+    - SessionPayloadValidationError
+    side_effects: Reads session file from disk.
+  - name: normalize_payload
+    description: Validate and normalize draft payload schema.
+    locked: false
+    inputs:
+      payload:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: dict[str, Any]
+    exceptions:
+    - SessionPayloadValidationError
+    side_effects: none
+  - name: normalize_session_payload
+    description: Validate and normalize interview session payload schema.
+    locked: false
+    inputs:
+      payload:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: dict[str, Any]
+    exceptions:
+    - SessionPayloadValidationError
+    side_effects: none
+  - name: hydrate_state
+    description: Hydrate InterviewState from normalized draft payload values.
+    locked: false
+    inputs:
+      payload:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: InterviewState
+    exceptions:
+    - SessionPayloadValidationError
+    side_effects: none
+  - name: hydrate_state_from_session_payload
+    description: Apply normalized question/session snapshot data into a state object.
+    locked: false
+    inputs:
+      state:
+        type: InterviewState
+        required: true
+      payload:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: None
+    exceptions:
+    - SessionPayloadValidationError
+    side_effects: Mutates InterviewState in place.
+  - name: build_resume_instruction
+    description: Return target screen and flow index for post-load resume routing.
+    locked: false
+    inputs:
+      state:
+        type: InterviewState
+        required: true
+      flow_length:
+        type: int
+        required: true
+    returns:
+      type: ResumeInstruction
+    exceptions: []
+    side_effects: none
+- name: TranscriptionQueueState
+  description: Thread-safe queue state for per-question transcription jobs, cancellation,
+    timeout, and error tracking.
+  locked: false
+  attributes: {}
+  methods:
+  - name: enqueue
+    description: Queue a transcription payload unless the flow is already pending.
+    locked: false
+    inputs:
+      flow_idx:
+        type: int
+        required: true
+      payload:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: Updates queue state and logs queue metadata.
+  - name: mark_started
+    description: Mark a queued flow as running and capture elapsed-time baseline.
+    locked: false
+    inputs:
+      flow_idx:
+        type: int
+        required: true
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: Updates in-memory queue state.
+  - name: mark_completed
+    description: Mark a flow as completed and clear pending/canceled tracking.
+    locked: false
+    inputs:
+      flow_idx:
+        type: int
+        required: true
+      terminal_status:
+        type: str
+        required: false
+        default: completed
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: Updates in-memory queue state.
+  - name: mark_failed
+    description: Mark a flow as failed and preserve a normalized error reason unless
+      canceled.
+    locked: false
+    inputs:
+      flow_idx:
+        type: int
+        required: true
+      reason:
+        type: str
+        required: true
+      terminal_status:
+        type: str
+        required: false
+        default: failed
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: Updates in-memory queue state.
+  - name: mark_timed_out
+    description: Mark a flow as timed out and preserve a normalized timeout reason
+      unless canceled.
+    locked: false
+    inputs:
+      flow_idx:
+        type: int
+        required: true
+      reason:
+        type: str
+        required: false
+        default: transcription_timeout
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: Updates in-memory queue state.
+  - name: cancel
+    description: Cancel queued/pending work for a flow and clear stored errors.
+    locked: false
+    inputs:
+      flow_idx:
+        type: int
+        required: true
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: Updates in-memory queue state.
+  - name: next_payload
+    description: Pop the next non-canceled queued payload.
+    locked: false
+    inputs: {}
+    returns:
+      type: tuple[int, dict[str, Any]] | None
+    exceptions: []
+    side_effects: Updates in-memory queue state.
+  - name: wait_for_pending
+    description: Block until no flow transcriptions are pending.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Waits on queue condition.
+  - name: pending_count
+    description: Return count of pending transcription flows.
+    locked: false
+    inputs: {}
+    returns:
+      type: int
+    exceptions: []
+    side_effects: none
+  - name: is_pending
+    description: Return whether a flow has pending transcription work.
+    locked: false
+    inputs:
+      flow_idx:
+        type: int
+        required: true
+    returns:
+      type: bool
+    exceptions: []
+    side_effects: none
+  - name: clear
+    description: Clear all queue, cancellation, error, and job tracking state.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates in-memory queue state.
+  - name: is_canceled
+    description: Return whether a flow has been canceled.
+    locked: false
+    inputs:
+      flow_idx:
+        type: int
+        required: true
+    returns:
+      type: bool
+    exceptions: []
+    side_effects: none
+  - name: clear_error
+    description: Clear stored transcription error for a flow.
+    locked: false
+    inputs:
+      flow_idx:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates in-memory queue state.
+  - name: error_reasons
+    description: Return a copy of stored transcription error reasons.
+    locked: false
+    inputs: {}
+    returns:
+      type: dict[int, str]
+    exceptions: []
+    side_effects: none
+- name: TranscriptionJobStatusEvent
+  description: Immutable status event emitted for queue/UI progress updates.
+  locked: false
+  attributes:
+    flow_idx:
+      type: int
+    status:
+      type: str
+    snapshot:
+      type: dict[str, Any]
+  methods: []
+- name: BoundedTranscriptionExecutor
+  description: Executes queued transcription jobs with bounded parallelism and status
+    callbacks.
+  locked: false
+  attributes: {}
+  methods:
+  - name: __init__
+    description: Configure queue state, worker function, bounded worker count, and
+      optional status callback.
+    locked: false
+    inputs:
+      queue_state:
+        type: TranscriptionQueueState
+        required: true
+      worker_fn:
+        type: Callable[..., None]
+        required: true
+      max_workers:
+        type: int
+        required: true
+      on_status_change:
+        type: Callable[[TranscriptionJobStatusEvent], None] | None
+        required: false
+        default: null
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Initializes internal thread pool state.
+  - name: submit
+    description: Queue and dispatch a transcription job.
+    locked: false
+    inputs:
+      flow_idx:
+        type: int
+        required: true
+      payload:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates queue state and submits async work.
+  - name: shutdown
+    description: Shut down the underlying executor.
+    locked: false
+    inputs:
+      wait:
+        type: bool
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Terminates background workers.
+- name: TranscriptWriterController
+  description: Controller adapter for transcript text synchronization. Standalone
+    transcript DOCX writing is disabled; transcript text is merged into interview
+    notes during final report export.
+  locked: false
+  attributes: {}
+  methods:
+  - name: __init__
+    description: Configure app and shared runtime state references.
+    locked: false
+    inputs:
+      app:
+        type: Any
+        required: true
+      shared_state:
+        type: Any
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: append_live_segment
+    description: Synchronize transcript content for one flow index through the app
+      adapter without writing a standalone transcript document.
+    locked: false
+    inputs:
+      flow_idx:
+        type: int
+        required: true
+      segment_text:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates in-memory/session transcript state.
+  - name: rewrite_from_flow
+    description: Synchronize flow transcript state without writing a standalone transcript
+      document.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+- name: RuntimeConfig
+  description: Immutable Whisper runtime model/device/compute-type selection.
+  locked: false
+  attributes:
+    model:
+      type: str
+    device:
+      type: str
+    compute_type:
+      type: str
+  methods: []
+- name: AudioRuntimeController
+  description: Controller adapter for pending transcription waits, per-question background
+    transcription, and Whisper runtime fallback.
+  locked: false
+  attributes: {}
+  methods:
+  - name: __init__
+    description: Configure app and shared runtime state references.
+    locked: false
+    inputs:
+      app:
+        type: Any
+        required: true
+      shared_state:
+        type: Any
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: wait_for_pending_transcriptions
+    description: Block until pending queue items complete.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Blocks on transcription queue state.
+  - name: background_transcribe_question
+    description: Stop/transcribe a question recording, persist transcript state, and
+      handle cancellation/timeouts.
+    locked: false
+    inputs:
+      flow_idx:
+        type: int
+        required: true
+      session:
+        type: Any
+        required: true
+      base_dir:
+        type: Path
+        required: true
+      base_name:
+        type: str
+        required: true
+      candidate_label:
+        type: str
+        required: true
+      job_timeout_seconds:
+        type: float
+        required: false
+        default: 180.0
+    returns:
+      type: None
+    exceptions:
+    - TimeoutError
+    side_effects: Writes transcript state, emits timeout logs, deletes canceled artifacts,
+      and persists snapshot data.
+  - name: start_recording_session
+    description: Start audio recording with the resolved OS, configured/default Windows
+      microphone device, resolved Windows system device, Whisper runtime config, and
+      current Whisper settings.
+    locked: false
+    inputs:
+      start_recording:
+        type: Any
+        required: true
+      base_dir:
+        type: Path
+        required: true
+      base_name:
+        type: str
+        required: true
+      runtime_config:
+        type: RuntimeConfig
+        required: true
+    returns:
+      type: Any
+    exceptions: []
+    side_effects: Starts audio recording subprocesses; may use DEFAULT_WINDOWS_MIC_DEVICE
+      when app settings omit windows_microphone_device.
+  - name: start_recording_with_runtime_fallback
+    description: Start recording with preferred Whisper runtime and CPU fallback for
+      device runtime errors.
+    locked: false
+    inputs:
+      start_recording:
+        type: Any
+        required: true
+      base_dir:
+        type: Path
+        required: true
+      base_name:
+        type: str
+        required: true
+    returns:
+      type: Any
+    exceptions:
+    - Exception
+    side_effects: Persists runtime choice and emits fallback warning.
+- name: FlowController
+  description: Controller adapter for interview question navigation and active-flow
+    discovery.
+  locked: false
+  attributes: {}
+  methods:
+  - name: __init__
+    description: Configure app and shared runtime state references.
+    locked: false
+    inputs:
+      app:
+        type: Any
+        required: true
+      shared_state:
+        type: Any
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: go_next
+    description: Navigate to the next interview question.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Triggers UI navigation.
+  - name: go_back
+    description: Navigate to the previous interview question.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Triggers UI navigation.
+  - name: active_flow
+    description: Return a copy of the active interview flow.
+    locked: false
+    inputs: {}
+    returns:
+      type: list[dict[str, Any]]
+    exceptions: []
+    side_effects: none
+- name: DashboardController
+  description: Controller adapter for dashboard snapshot refreshes.
+  locked: false
+  attributes: {}
+  methods:
+  - name: __init__
+    description: Configure app and shared runtime state references.
+    locked: false
+    inputs:
+      app:
+        type: Any
+        required: true
+      shared_state:
+        type: Any
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: refresh_dashboard
+    description: Refresh dashboard snapshot data through the app adapter.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates in-memory dashboard state.
+- name: HistoryController
+  description: Coordinates history data loading, selected row state, and action callback
+    routing.
+  locked: false
+  attributes: {}
+  methods:
+  - name: __init__
+    description: Configure app, shared state, and an optional history grid factory.
+    locked: false
+    inputs:
+      app:
+        type: Any
+        required: true
+      shared_state:
+        type: Any
+        required: true
+      grid_factory:
+        type: Callable[..., Any] | None
+        required: false
+        default: null
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: build_history_table
+    description: Create the history table section and mount the history grid widget.
+    locked: false
+    inputs:
+      parent:
+        type: Any
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates in-memory UI state.
+  - name: refresh_history_tree
+    description: Refresh row data and filtering for the history grid.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates in-memory row state.
+  - name: selected_history_row
+    description: Return the currently selected history row from the grid.
+    locked: false
+    inputs: {}
+    returns:
+      type: dict[str, Any] | None
+    exceptions: []
+    side_effects: none
+- name: FinalizeContext
+  description: Dataclass carrying finalize payload, scoring, transcript metadata,
+    canonical interview notes path, and legacy transcript compatibility field through
+    finalize gateways.
+  locked: false
+  attributes:
+    payload:
+      type: dict[str, Any]
+    scoring:
+      type: dict[str, Any]
+    flow_transcript:
+      type: list[dict[str, Any]]
+    recording_metadata:
+      type: list[dict[str, Any]]
+    transcript_path:
+      type: str
+      description: Empty legacy transcript-only document path for new finalize output;
+        use interview_notes_document_path.
+    transcript_metadata:
+      type: dict[str, Any]
+    transcript_complete:
+      type: bool
+    remaining_question_indices:
+      type: list[int]
+    interview_notes_document_path:
+      type: str
+  methods: []
+- name: DeepSeekSummaryConfig
+  description: Dataclass carrying local DeepSeek summary settings for Ollama's OpenAI-compatible
+    endpoint. API key defaults to the non-secret Ollama placeholder and must never
+    contain hosted API secrets in local setup.
+  locked: false
+  attributes:
+    enabled:
+      type: bool
+    api_key:
+      type: str
+    base_url:
+      type: str
+    model:
+      type: str
+    timeout_seconds:
+      type: float
+  methods: []
+- name: FinalizeGateways
+  description: Finalize output gateway adapter for report export, integration export,
+    referral send, and history persistence.
+  locked: false
+  attributes:
+    sent_referral_keys:
+      type: set[str]
+  methods:
+  - name: export_report
+    description: Export merged interview notes and store the canonical interview notes
+      path.
+    locked: false
+    inputs:
+      app:
+        type: Any
+        required: true
+      context:
+        type: FinalizeContext
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: Writes report document and updates referral packet state.
+  - name: export_integration
+    description: Build and serialize integration payload including flow slices.
+    locked: false
+    inputs:
+      app:
+        type: Any
+        required: true
+      context:
+        type: FinalizeContext
+        required: true
+    returns:
+      type: Path
+    exceptions: []
+    side_effects: Writes integration export file.
+  - name: persist_finalize_history
+    description: Append finalized interview history entry with generated notes path
+      flow recording metadata, and DeepSeek processing status; returns row id used
+      by detached worker updates.
+    locked: false
+    inputs:
+      app:
+        type: Any
+        required: true
+      context:
+        type: FinalizeContext
+        required: true
+      out_path:
+        type: str
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: Updates persistent history storage.
+  - name: send_referral
+    description: Build and optionally send director referral packet with dedupe protection.
+    locked: false
+    inputs:
+      app:
+        type: Any
+        required: true
+      context:
+        type: FinalizeContext
+        required: true
+      out_path:
+        type: str
+        required: true
+      integration_path:
+        type: Path
+        required: true
+    returns:
+      type: tuple[dict[str, Any], Path | None]
+    exceptions: []
+    side_effects: May send referral and append communication log.
+- name: FinalizePipelineController
+  description: Orchestrates interview finalization, scoring, transcript completeness
+    metadata, export/referral gateways, and operator feedback.
+  locked: false
+  attributes: {}
+  methods:
+  - name: __init__
+    description: Configure app, shared runtime state, and optional finalize gateways.
+    locked: false
+    inputs:
+      app:
+        type: Any
+        required: true
+      shared_state:
+        type: Any
+        required: true
+      gateways:
+        type: FinalizeGateways | None
+        required: false
+        default: null
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: finalize_interview
+    description: Validate and dispatch finalize work, surfacing validation/runtime
+      failures to the operator.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates UI state and may show operator dialogs.
+  - name: run_finalize_pipeline
+    description: Run synchronous finalize scoring, stop/split the continuous interview
+      recording when active, merge transcript text, export processing-placeholder
+      report/integration artifacts, build/send referral, persist history, and enqueue
+      detached DeepSeek work.
+    locked: false
+    inputs: {}
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: May stop the active recording session, writes documents/exports,
+      mutates app state, and may append communication/history logs.
+  - name: poll_finalize_worker
+    description: Poll async finalize worker queue and route success or failure handling.
+    locked: false
+    inputs:
+      q:
+        type: queue.Queue[dict[str, Any]]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates UI finalize state.
+data_structures:
+- name: CURRENT_SCHEMA_VERSION
+  description: Current persisted interview session snapshot schema version.
+- name: InterviewState
+  type: dataclass
+- name: InterviewSessionContext
+  type: class
+- name: InterviewSessionRecordingContext
+  type: dataclass
+- name: AppSharedState
+  type: dataclass
+- name: TranscriptionRuntimeState
+  type: dataclass
+- name: FlowItem
+  type: TypedDict
+- name: RecordingTranscriptionPayload
+  type: TypedDict
+- name: TranscriptionQueuePayload
+  type: TypedDict
+- name: TranscriptionQueueSnapshot
+  type: TypedDict
+- name: HistoryRowKey
+  description: String key alias for history row identifiers.
+- name: OfferTransitionResult
+  type: TypedDict
+- name: FinalizePipelineResult
+  type: TypedDict
+- name: FinalizeTranscriptMetadata
+  type: TypedDict
+- name: TranscriptionJobStatusEvent
+  type: dataclass
+- name: RuntimeConfig
+  type: dataclass
+- name: FinalizeContext
+  type: dataclass
+- name: FinalizeGateways
+  type: dataclass
+- name: LEGACY_FINALIZE_GUARDRAIL_MESSAGE
+  description: Operator-facing validation message used when legacy finalize scoring
+    is blocked.
+- name: PENDING_TRANSCRIPTION_WARNING
+  description: Warning copy shown when finalization starts with incomplete transcription
+    work.
+- name: TRANSCRIPTION_TIMEOUT_REASON
+  description: Stable reason code for transcription timeout failures.
+- name: DEFAULT_WINDOWS_MIC_DEVICE
+  description: Default Windows DirectShow microphone device used when app settings
+    omit windows_microphone_device.
+- name: _WINDOWS_AUDIO_DEVICE_ALIASES
+  description: Known VB-CABLE DirectShow device aliases used during Windows system-audio
+    capture.
+- name: DIAGNOSTIC_LOG_MARKER
+  description: Marker used to preserve diagnostic filenames while redacting paths.
+- name: _COMPAT_MODULES
+  description: Ordered tuple of remaining legacy module import paths exposed by interview_runtime.
+- name: _WRAPPER_POLICY
+  description: Human-readable wrapper policy for remaining interview runtime compatibility
+    modules.
+dependencies:
+- module: platform_services
+- module: ui_composition
+- module: scoring_reporting
+- module: interview_audio_recorder
+- module: interview_app_audio_devices
+- module: interview_app_audio_runtime
+- module: interview_app_bootstrap
+- module: interview_app_finalize_pipeline
+- module: interview_app_history_actions
+- module: interview_app_session_manager
+- module: interview_app_transcription_queue
+- module: interview_app_transcript_summary

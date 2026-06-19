@@ -11,7 +11,7 @@ from interview_app.finalize_pipeline import (
     LEGACY_FINALIZE_GUARDRAIL_MESSAGE,
     raise_legacy_finalize_guardrail,
 )
-from reporting import ReportingValidationError
+from scoring_reporting import ReportingValidationError
 
 
 def _load_interview_app_module():

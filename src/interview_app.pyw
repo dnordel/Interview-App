@@ -35,16 +35,16 @@ from collections import deque
 import traceback
 import time
 import webbrowser
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from uuid import uuid4
 from pathlib import Path
-from types import TracebackType
+from types import SimpleNamespace, TracebackType
 from typing import Any, Optional
 
 import tkinter as tk
 from tkinter import font as tkfont
 from tkinter import END, StringVar, filedialog, messagebox, simpledialog, ttk
-from docx_compat import Document
+from platform_services import Document
 from tkcalendar import DateEntry
 
 # =========================
@@ -52,7 +52,7 @@ from tkcalendar import DateEntry
 # =========================
 
 
-from app_content import (
+from platform_services import (
     APP_TITLE,
     DEFAULT_BASE_DIR,
     DEFAULT_RUBRIC_PATH,
@@ -69,10 +69,9 @@ from app_content import (
     compose_intro_script,
     is_valid_date_yyyy_mm_dd,
     now_stamp,
-    sanitize_filename,
 )
-from candidate_profile import CandidateQualification
-from data_store import (
+from scoring_reporting import CandidateQualification
+from platform_services import (
     DisqualifierSignalLibrary,
     InterviewHistoryStore,
     QuestionOverridesStore,
@@ -81,48 +80,46 @@ from data_store import (
     SchoolOfferSettingsStore,
     InterviewAppSettingsStore,
 )
-from director_referral_service import (
+from scoring_reporting import (
     append_communication_log,
     build_director_packet,
     send_director_packet,
 )
-from director_email_draft import DirectorEmailDraftError, build_mailto_url, open_outlook_draft
-from integration_export import build_integration_payload, serialize_integration_payload
-from interview_state import InterviewState
-from interview_session_store import InterviewSessionStore
-from question_screens import CustomQuestionScreenUI, TraitScreenUI
-from referral_packet import is_supported_document_path, missing_required_docs
-from reporting import DocxExporter, DraftManager, ReportingValidationError, ScoringEngine
-from offer_letter import OfferInput, OfferLetterService, POSITION_OPTIONS, build_offer_filename
-from onboarding_storage import JsonStore
-from onboarding_reminder_health import evaluate_onboarding_reminder_health
-from onboarding_ui_helpers import TASK_STATUS_COLORS, TASK_STATUS_LABELS
-from dashboard_today import build_dashboard_today_summary
-from template_placeholders import missing_placeholder_keys, render_template
-from transcript_accumulator import append_candidate_segment_text
-from interview_app.session_context import InterviewSessionContext
-from interview_app.session_manager import InterviewSessionManager, SessionPayloadValidationError
-from interview_app.transcript_processor import (
+from scoring_reporting import DirectorEmailDraftError, build_mailto_url, open_outlook_draft
+from scoring_reporting import build_integration_payload, serialize_integration_payload
+from interview_runtime import InterviewState
+from interview_runtime import InterviewSessionStore
+from ui_composition import CustomQuestionScreenUI, TraitScreenUI
+from scoring_reporting import is_supported_document_path, missing_required_docs
+from scoring_reporting import DocxExporter, DraftManager, ReportingValidationError, ScoringEngine
+from scoring_reporting import OfferInput, OfferLetterService, POSITION_OPTIONS, build_offer_filename
+from onboarding_operations import JsonStore
+from onboarding_operations import evaluate_onboarding_reminder_health
+from onboarding_operations import TASK_STATUS_COLORS, TASK_STATUS_LABELS
+from onboarding_operations import build_dashboard_today_summary
+from scoring_reporting import missing_placeholder_keys, render_template
+from interview_runtime import append_candidate_segment_text
+from interview_runtime import InterviewSessionContext
+from interview_runtime import InterviewSessionManager, SessionPayloadValidationError
+from interview_runtime import (
     build_flow_time_windows,
     extract_candidate_text_from_jsonl,
     format_seconds_for_transcript,
     load_candidate_segments,
-    load_jsonl_segments_for_merge,
     map_segments_to_flow_indices,
-    write_merged_timestamped_transcript,
 )
-from ui_windows import QuestionEditorWindow, SettingsWindow
-from question_settings_window import QuestionSettingsWindow
-from artifact_cleanup import cleanup_stale_artifacts, delete_recording_artifacts
-from ux_metrics import EVENT_INTERVIEW_FINALIZED, SCOPE_CREATED_MONTH, SCOPE_EVENT_MONTH, SUMMARY_SCOPES, UxMetricsLogger, build_monthly_summary
-from app_logging import get_configured_log_path, initialize_app_logging, write_crash_report
-from ui_feedback import (
+from ui_composition import QuestionEditorWindow, SettingsWindow
+from ui_composition import QuestionSettingsWindow
+from platform_services import cleanup_stale_artifacts, delete_recording_artifacts
+from platform_services import EVENT_INTERVIEW_FINALIZED, SCOPE_CREATED_MONTH, SCOPE_EVENT_MONTH, SUMMARY_SCOPES, UxMetricsLogger, build_monthly_summary
+from platform_services import get_configured_log_path, initialize_app_logging, write_crash_report
+from ui_composition import (
     MainGuiWarningPresenter,
     TRANSCRIPTION_PARTIAL_WARNING_COPY,
     create_main_gui_warning_presenter,
     present_transcription_partial_warning,
 )
-from transcription_diagnostics import (
+from interview_runtime import (
     build_transcription_log_hint,
     format_runtime_init_error_message,
     format_transcription_health_summary,
@@ -140,6 +137,7 @@ try:
         HistoryActionsService,
         HistoryController,
         IntroFonts,
+        LEGACY_FINALIZE_GUARDRAIL_MESSAGE,
         TranscriptWriterController,
         TranscriptionQueueState,
         BoundedTranscriptionExecutor,
@@ -150,6 +148,7 @@ try:
         UiShellController,
         build_default_settings,
         create_fonts,
+        raise_legacy_finalize_guardrail,
         validate_before_finalize as validate_before_finalize_controller,
         wire_controllers,
         wire_views,
@@ -171,6 +170,7 @@ except Exception:
     HistoryActionsService = _MOD.HistoryActionsService
     HistoryController = _MOD.HistoryController
     IntroFonts = _MOD.IntroFonts
+    LEGACY_FINALIZE_GUARDRAIL_MESSAGE = _MOD.LEGACY_FINALIZE_GUARDRAIL_MESSAGE
     TranscriptWriterController = _MOD.TranscriptWriterController
     TranscriptionQueueState = _MOD.TranscriptionQueueState
     BoundedTranscriptionExecutor = _MOD.BoundedTranscriptionExecutor
@@ -181,11 +181,13 @@ except Exception:
     UiShellController = _MOD.UiShellController
     build_default_settings = _MOD.build_default_settings
     create_fonts = _MOD.create_fonts
+    raise_legacy_finalize_guardrail = _MOD.raise_legacy_finalize_guardrail
     validate_before_finalize_controller = _MOD.validate_before_finalize
     wire_controllers = _MOD.wire_controllers
     wire_views = _MOD.wire_views
 
-from ui_components.history_data_grid import HistoryDataGrid
+from ui_composition import HistoryDataGrid
+from tk_theme import COLORS, apply_professional_ops_theme
 
 
 logger = logging.getLogger(__name__)
@@ -407,7 +409,7 @@ class InterviewApp(tk.Tk):
         self.main_holder = ttk.Frame(self)
         self.main_holder.pack(fill="both", expand=True)
 
-        self.canvas = tk.Canvas(self.main_holder, highlightthickness=0, bg="#f3f5f8")
+        self.canvas = tk.Canvas(self.main_holder, highlightthickness=0, bg=COLORS["app_bg"])
         self.v_scroll = ttk.Scrollbar(self.main_holder, orient="vertical", command=self.canvas.yview)
         self.canvas.configure(yscrollcommand=self.v_scroll.set)
 
@@ -433,31 +435,7 @@ class InterviewApp(tk.Tk):
         wire_views(self)
 
     def _configure_theme(self) -> None:
-        self.configure(background="#f3f5f8")
-        style = ttk.Style(self)
-        try:
-            style.theme_use("clam")
-        except tk.TclError:
-            pass
-
-        style.configure("TFrame", background="#f3f5f8")
-        style.configure("TLabel", background="#f3f5f8")
-
-        style.configure("TLabelframe", background="#ffffff", borderwidth=1, relief="solid")
-        style.configure(
-            "TLabelframe.Label",
-            background="#ffffff",
-            foreground="#1f2937",
-            font=("TkDefaultFont", self.settings["font_size"] + 1, "bold"),
-        )
-
-        style.configure("TButton", padding=(10, 6))
-        style.map("TButton",
-                  focuscolor=[("focus", "#2563eb")],
-                  bordercolor=[("focus", "#2563eb")])
-        style.configure("TRadiobutton", background="#f3f5f8")
-        style.configure("TCheckbutton", background="#f3f5f8")
-        style.configure("TCombobox", padding=4)
+        apply_professional_ops_theme(self, font_size=int(self.settings["font_size"]))
 
     def show_keyboard_shortcuts_help(self) -> None:
         messagebox.showinfo(
@@ -533,17 +511,23 @@ class InterviewApp(tk.Tk):
         left.pack(side="left")
         for label, command in (left_actions or []):
             self._footer_actions_by_label[label] = command
-            ttk.Button(left, text=label, command=command).pack(side="left", padx=4)
+            style = "Danger.TButton" if label.lower() == "exit" else "Secondary.TButton"
+            ttk.Button(left, text=label, command=command, style=style).pack(side="left", padx=(0, 6))
 
         right = ttk.Frame(self.footer)
         right.pack(side="right")
-        for label, command in (right_actions or []):
+        right_items = list(right_actions or [])
+        for index, (label, command) in enumerate(right_items):
             self._footer_actions_by_label[label] = command
-            ttk.Button(right, text=label, command=command).pack(side="right", padx=4)
+            is_primary = index == len(right_items) - 1 or label in {"Continue", "Finalize", "Start Interview", "Generate Offer"}
+            style = "Primary.TButton" if is_primary else "Secondary.TButton"
+            if label.lower() == "exit":
+                style = "Danger.TButton"
+            ttk.Button(right, text=label, command=command, style=style).pack(side="left", padx=(6, 0))
 
         footer_warning = self._safe_attr("transcript_warning", "").strip()
         if footer_warning:
-            ttk.Label(self.footer, text=footer_warning, foreground="#b45309").pack(side="left", padx=(12, 0))
+            ttk.Label(self.footer, text=footer_warning, foreground=COLORS["warning"]).pack(side="left", padx=(12, 0))
 
     # -------------------------
     # Trait order + question override helpers
@@ -689,73 +673,10 @@ class InterviewApp(tk.Tk):
                 return
 
     def _ensure_live_transcript_doc(self) -> None:
-        if not self._safe_attr("transcript_available", True):
-            return
-        if self.live_transcript_docx is None:
-            return
-        if self.live_transcript_docx.exists():
-            return
-        try:
-            doc = Document()
-            doc.add_heading("Interview Transcript (Live)", level=1)
-            doc.add_paragraph(f"Candidate Name: {self.state.candidate_name}")
-            doc.add_paragraph(f"Interview Date: {self.state.interview_date}")
-            doc.add_paragraph(f"School/Location: {self.state.school}")
-            doc.add_paragraph("")
-            doc.save(self.live_transcript_docx)
-        except Exception as exc:
-            self._mark_transcript_unavailable(exc)
+        return
 
     def _append_live_transcript_segment(self, flow_idx: int) -> None:
-        # Appends the just-completed answer segment to a running DOCX.
-        if not self._safe_attr("transcript_available", True):
-            return
-        if self.live_transcript_docx is None:
-            return
-        item = self._get_flow_item(flow_idx)
-        if not item:
-            return
-
-        self._ensure_live_transcript_doc()
-        if not self._safe_attr("transcript_available", True):
-            return
-        doc = Document(self.live_transcript_docx)
-
-        candidate_tx = self._resolve_flow_candidate_transcript(flow_idx)
-
-        if item["type"] == "trait":
-            tid = str(item.get("id"))
-            trait = self._trait_by_id(tid)
-            tstate = self.state.trait_inputs.get(tid, {}) or {}
-            qtext = self.get_primary_question_text(trait) if trait else ""
-            evaluator_notes = (tstate.get("verbatim_notes") or tstate.get("question_notes") or "").strip()
-            doc.add_paragraph(f"Q{flow_idx + 1} (Scored): {trait['name'] if trait else tid}")
-            if qtext:
-                doc.add_paragraph(f"Question: {qtext}")
-            if candidate_tx:
-                doc.add_paragraph(f"Answer Segment (auto-transcribed): {candidate_tx}")
-            else:
-                doc.add_paragraph("Answer Segment (auto-transcribed): (No candidate transcript captured)")
-            if evaluator_notes:
-                doc.add_paragraph(f"Evaluator Notes: {evaluator_notes}")
-            doc.add_paragraph("")
-        else:
-            cid = str(item.get("id"))
-            cq = self._custom_by_id(cid)
-            qtext = str(cq.get("text", "")).strip() if cq else ""
-            doc.add_paragraph(f"Q{flow_idx + 1} (Custom)")
-            if qtext:
-                doc.add_paragraph(f"Question: {qtext}")
-            if candidate_tx:
-                doc.add_paragraph(f"Answer Segment (auto-transcribed): {candidate_tx}")
-            else:
-                doc.add_paragraph("Answer Segment (auto-transcribed): (No candidate transcript captured)")
-            doc.add_paragraph("")
-
-        try:
-            doc.save(self.live_transcript_docx)
-        except Exception as exc:
-            self._mark_transcript_unavailable(exc)
+        self._resolve_flow_candidate_transcript(flow_idx)
 
     def _resolve_flow_candidate_transcript(self, flow_idx: int) -> str:
         idx = int(flow_idx)
@@ -772,35 +693,7 @@ class InterviewApp(tk.Tk):
         return backfilled
 
     def _rewrite_live_transcript_docx_from_flow(self, flow_transcript: list[dict[str, Any]]) -> None:
-        # Rebuilds the live transcript DOCX in active-flow order.
-        if not self._safe_attr("transcript_available", True):
-            return
-        if self.live_transcript_docx is None:
-            return
-
-        self._ensure_live_transcript_doc()
-        if not self._safe_attr("transcript_available", True):
-            return
-        existing_doc = Document(self.live_transcript_docx) if self.live_transcript_docx.exists() else None
-        heading, candidate_name, interview_date, school = self._live_transcript_doc_metadata(existing_doc)
-
-        doc = Document()
-        doc.add_heading(heading, level=1)
-        doc.add_paragraph(f"Candidate Name: {candidate_name}")
-        doc.add_paragraph(f"Interview Date: {interview_date}")
-        doc.add_paragraph(f"School/Location: {school}")
-        doc.add_paragraph("")
-
-        for idx, item in enumerate(flow_transcript):
-            block = self._flow_transcript_question_block(item, idx)
-            for line in block:
-                doc.add_paragraph(line)
-            doc.add_paragraph("")
-
-        try:
-            doc.save(self.live_transcript_docx)
-        except Exception as exc:
-            self._mark_transcript_unavailable(exc)
+        return
 
     def _mark_transcript_unavailable(self, exc: Exception) -> None:
         if not self._safe_attr("transcript_available", True):
@@ -1120,27 +1013,6 @@ class InterviewApp(tk.Tk):
 
     def _handle_retranscribe_for_row(self, row: dict[str, Any]) -> None:
         self._history_actions_service().handle_retranscribe_for_row(row)
-
-    def _retranscribe_history_recordings(self, row: dict[str, Any], recordings: list[dict[str, Any]]) -> str:
-        return self._history_actions_service().retranscribe_history_recordings(row, recordings)
-
-    @staticmethod
-    def _latest_recording_attempt(rec: dict[str, Any]) -> dict[str, Any]:
-        attempts = rec.get("attempts")
-        if isinstance(attempts, list) and attempts:
-            return dict(attempts[-1] or {})
-        return dict(rec)
-
-    @staticmethod
-    def _load_jsonl_segments_for_merge(jsonl_path: Path) -> list[dict[str, Any]]:
-        return load_jsonl_segments_for_merge(jsonl_path)
-
-    def _write_merged_history_transcript(self, row: dict[str, Any], segments: list[dict[str, Any]]) -> Path:
-        base_dir = Path(self.settings.get("base_dir", str(DEFAULT_BASE_DIR)))
-        candidate_name = sanitize_filename(str(row.get("candidate_name", "candidate")))
-        interview_date = sanitize_filename(str(row.get("interview_date", date.today().isoformat())))
-        transcript_path = base_dir / f"Candidate_{candidate_name}_{interview_date}_retranscribed_transcript.txt"
-        return write_merged_timestamped_transcript(transcript_path, segments)
 
     @staticmethod
     def _format_seconds_for_transcript(seconds: Any) -> str:
@@ -1937,10 +1809,10 @@ class InterviewApp(tk.Tk):
 
 
     def _start_interview_recording(self) -> None:
-        # Initializes interview-level transcript output; question recordings start per screen.
         base_dir = self._validate_interview_runtime_paths()
         self._reset_interview_recording_state()
         self._initialize_transcript_output_target(base_dir)
+        self._start_continuous_interview_recording(base_dir)
 
     def _reset_interview_recording_state(self) -> None:
         self.state.flow_time_marks = []
@@ -1967,8 +1839,37 @@ class InterviewApp(tk.Tk):
             presenter.dismiss()
 
     def _initialize_transcript_output_target(self, base_dir: Path) -> None:
-        base_name = self._safe_attr("recording_base_name", "") or self._safe_base_name()
-        self.live_transcript_docx = base_dir / f"{base_name}_live_transcript.docx"
+        self.live_transcript_docx = None
+
+    def _start_continuous_interview_recording(self, base_dir: Path) -> None:
+        try:
+            from interview_audio_recorder import start_recording
+        except ImportError as exc:
+            messagebox.showwarning(
+                "Recording unavailable",
+                "Audio recording/transcription is unavailable because optional dependencies "
+                f"could not be loaded.\n\n{exc}",
+            )
+            self.transcript_available = False
+            self.transcript_warning = (
+                "Live transcript is unavailable for this interview. Continue in fallback mode and capture notes manually."
+            )
+            return
+
+        try:
+            self._current_question_whisper_source = "default" if self._session_use_default_whisper_settings else "user"
+            self.recording_session = self._start_recording_with_runtime_fallback(
+                start_recording,
+                base_dir,
+                self.recording_base_name,
+            )
+            self.recording_candidate_label = "CANDIDATE"
+            self.recording_flow_idx = 0
+        except Exception as exc:
+            self.recording_session = None
+            self.recording_base_name = ""
+            self.recording_flow_idx = None
+            raise ReportingValidationError(f"Could not start interview recording.\n\n{exc}") from exc
 
     def _initialize_interview_runtime(self) -> bool:
         try:
@@ -2122,12 +2023,9 @@ class InterviewApp(tk.Tk):
 
     def _start_question_recording(self, flow_idx: int) -> None:
         recording_session = self._safe_attr("recording_session")
-        recording_flow_idx = self._safe_attr("recording_flow_idx")
-        if recording_session is not None and recording_flow_idx == flow_idx:
-            return
-
         if recording_session is not None:
-            self._stop_question_recording(recording_flow_idx if recording_flow_idx is not None else flow_idx)
+            self.recording_flow_idx = flow_idx
+            return
 
         item = self._get_flow_item(flow_idx)
         if not item:
@@ -2137,9 +2035,6 @@ class InterviewApp(tk.Tk):
         base_dir.mkdir(parents=True, exist_ok=True)
         if self.recording_started_monotonic is None:
             self.recording_started_monotonic = time.monotonic()
-        if self._safe_attr("live_transcript_docx") is None:
-            interview_base = self._safe_base_name()
-            self.live_transcript_docx = base_dir / f"{interview_base}_live_transcript.docx"
 
         try:
             from interview_audio_recorder import start_recording
@@ -2278,10 +2173,81 @@ class InterviewApp(tk.Tk):
 
 
     def _stop_interview_recording(self, *, show_warning: bool = True) -> dict[str, Any] | None:
-        recording_flow_idx = self._safe_attr("recording_flow_idx")
-        if recording_flow_idx is None:
+        recording_session = self._safe_attr("recording_session")
+        if recording_session is None:
             return None
-        return self._stop_question_recording(recording_flow_idx, show_warning=show_warning)
+
+        with self._transcription_cv:
+            while self._transcription_in_progress:
+                self._transcription_cv.wait()
+            self._transcription_in_progress = True
+
+        try:
+            base_dir = Path(self.settings.get("base_dir", str(DEFAULT_BASE_DIR)))
+            base_dir.mkdir(parents=True, exist_ok=True)
+            recording_base_name = str(self._safe_attr("recording_base_name", "")) or self._safe_base_name()
+            result = recording_session.stop_and_transcribe(
+                output_dir=base_dir,
+                base_name=recording_base_name,
+                language=self._current_whisper_language(),
+            )
+            candidate_label = self.recording_candidate_label or "CANDIDATE"
+            full_payload = {
+                "flow_index": -1,
+                "base_name": recording_base_name,
+                "output_dir": str(base_dir),
+                "mic_wav": str(result.mic_wav),
+                "sys_wav": str(result.sys_wav),
+                "transcript_txt": str(result.transcript_txt),
+                "transcript_jsonl": str(result.transcript_jsonl),
+                "candidate_label": candidate_label,
+                "candidate_transcript": self._extract_candidate_transcript_from_jsonl(result.transcript_jsonl, candidate_label),
+            }
+            self._apply_continuous_recording_result(full_payload)
+            return full_payload
+        except Exception as exc:
+            if show_warning:
+                messagebox.showwarning(
+                    "Recording",
+                    f"Interview recording stop/transcription failed.\n\n{exc}",
+                )
+            return None
+        finally:
+            self.recording_session = None
+            self.recording_base_name = ""
+            self.recording_flow_idx = None
+            with self._transcription_cv:
+                self._transcription_in_progress = False
+                self._transcription_cv.notify_all()
+
+    def _apply_continuous_recording_result(self, recording_result: dict[str, Any]) -> None:
+        jsonl_path = Path(str(recording_result.get("transcript_jsonl") or "")).expanduser()
+        candidate_label = str(recording_result.get("candidate_label") or "CANDIDATE")
+        by_flow_index = self._map_jsonl_candidate_segments_to_flow(jsonl_path, candidate_label)
+        for flow_idx, candidate_transcript in by_flow_index.items():
+            if self._is_flow_marked_skipped(flow_idx):
+                self.state.flow_candidate_transcripts.pop(flow_idx, None)
+                self.state.flow_recordings.pop(flow_idx, None)
+                self._persist_interview_session_snapshot(flow_idx)
+                continue
+            payload = dict(recording_result)
+            payload["flow_index"] = flow_idx
+            payload["candidate_transcript"] = candidate_transcript
+            entry = self._append_recording_attempt(flow_idx, payload)
+            self.state.flow_candidate_transcripts[flow_idx] = str(entry.get("candidate_transcript") or "").strip()
+            self._persist_interview_session_snapshot(flow_idx)
+
+    def _is_flow_marked_skipped(self, flow_idx: int) -> bool:
+        item = self._get_flow_item(flow_idx)
+        if not item:
+            return False
+        if item.get("type") == "trait":
+            state = self.state.trait_inputs.get(str(item.get("id")), {}) or {}
+            return bool(state.get("skipped", False))
+        if item.get("type") == "custom":
+            state = self.state.custom_inputs.get(str(item.get("id")), {}) or {}
+            return bool(state.get("skipped", False))
+        return False
 
     def _extract_candidate_transcript(self, rec: dict[str, Any] | None) -> str:
         if not rec:
@@ -2348,9 +2314,8 @@ class InterviewApp(tk.Tk):
         self._close_flow_timestamp(flow_idx)
         self._persist_interview_session_snapshot(flow_idx)
         if discard_recording:
-            self._discard_question_recording(flow_idx)
-        else:
-            self._start_background_question_transcription(flow_idx)
+            self.state.flow_recordings.pop(flow_idx, None)
+            self.state.flow_candidate_transcripts.pop(flow_idx, None)
         if next_index is not None:
             self.show_flow_screen(next_index)
             return
@@ -2361,7 +2326,7 @@ class InterviewApp(tk.Tk):
 
     def _finalize_current_question_audio_and_doc(self, flow_idx: int) -> None:
         self._close_flow_timestamp(flow_idx)
-        self._stop_transcribe_and_attach_flow_question(flow_idx)
+        self._stop_interview_recording(show_warning=False)
 
     def _capture_incremental_candidate_transcript(self, flow_idx: int) -> None:
         session = self._safe_attr("recording_session")
@@ -2394,12 +2359,59 @@ class InterviewApp(tk.Tk):
             self.state.flow_candidate_transcripts[flow_idx] = merged
 
 
+    def exit_current_interview(self, flow_idx: int, *, persist_current: Any = None) -> None:
+        confirmed = messagebox.askyesno(
+            "Exit interview",
+            "Stop and save this interview as incomplete, then return to the main screen?",
+        )
+        if not confirmed:
+            return
+
+        self._save_partial_interview_and_return(flow_idx, persist_current=persist_current)
+
+    def _save_partial_interview_and_return(self, flow_idx: int, *, persist_current: Any = None) -> None:
+        try:
+            if callable(persist_current):
+                persist_current()
+        except Exception:
+            logger.exception("partial_interview_current_question_persist_failed", extra={"flow_idx": flow_idx})
+
+        try:
+            self._close_flow_timestamp(flow_idx)
+        except Exception:
+            logger.exception("partial_interview_timestamp_close_failed", extra={"flow_idx": flow_idx})
+
+        self._stop_interview_recording(show_warning=True)
+
+        try:
+            self._persist_interview_session_snapshot(flow_idx)
+        except Exception:
+            logger.exception("partial_interview_session_snapshot_failed", extra={"flow_idx": flow_idx})
+
+        try:
+            payload = self.state.to_dict()
+            payload["interview_status"] = "incomplete"
+            payload["exit_reason"] = "operator_exit"
+            payload["exited_at"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            payload["exit_flow_index"] = int(flow_idx)
+            DraftManager(Path(self.settings["base_dir"])).save_draft(payload)
+        except Exception:
+            logger.exception("partial_interview_draft_save_failed", extra={"flow_idx": flow_idx})
+
+        self.recording_session = None
+        self.recording_base_name = ""
+        self.recording_flow_idx = None
+        self.show_start_screen()
+
+
     def _on_close(self) -> None:
         try:
             recording_flow_idx = self._safe_attr("recording_flow_idx")
             if recording_flow_idx is not None and self.recording_session is not None:
                 self._close_flow_timestamp(recording_flow_idx)
-                self._start_background_question_transcription(recording_flow_idx)
+                self.withdraw()
+                threading.Thread(target=self._shutdown_after_background_work, daemon=False).start()
+                return
 
             pending_count = self._pending_transcription_count()
             if self._finalize_worker_running or pending_count > 0:
@@ -2412,6 +2424,8 @@ class InterviewApp(tk.Tk):
             self.destroy()
 
     def _shutdown_after_background_work(self) -> None:
+        if self.recording_session is not None:
+            self._stop_interview_recording(show_warning=False)
         self._wait_for_pending_transcriptions()
         self._delete_interview_recording_artifacts()
 
@@ -2493,10 +2507,13 @@ class InterviewApp(tk.Tk):
     def _run_finalize_pipeline(self) -> dict[str, Any]:
         controller = self.__dict__.get("finalize_pipeline_controller")
         if controller is None:
-            return self._run_finalize_pipeline_legacy()
+            shared_state = self.__dict__.get("shared_state") or SimpleNamespace()
+            controller = FinalizePipelineController(self, shared_state)
+            self.finalize_pipeline_controller = controller
         return controller.run_finalize_pipeline()
 
     def _run_finalize_pipeline_legacy(self) -> dict[str, Any]:
+        raise_legacy_finalize_guardrail()
         scoring = ScoringEngine.evaluate(self._rubric_with_question_overrides(), self.state.track, self.state.trait_inputs)
         warnings: list[str] = []
         recording_flow_idx = self._safe_attr("recording_flow_idx")
@@ -2517,7 +2534,7 @@ class InterviewApp(tk.Tk):
         self._apply_candidate_transcripts_to_flow(flow_tx)
         self._rewrite_live_transcript_docx_from_flow(flow_tx)
         payload["flow_transcript"] = flow_tx
-        self.state.referral_packet["transcript_path"] = str(self._safe_attr("live_transcript_docx") or "").strip()
+        self.state.referral_packet["transcript_path"] = ""
 
         exporter = DocxExporter(Path(self.settings["base_dir"]) / "Indeed Interview Notes")
         out_path = exporter.export(self._rubric_with_question_overrides(), payload, scoring)
@@ -2537,7 +2554,7 @@ class InterviewApp(tk.Tk):
             report_path=out_path,
             integration_path=integration_path,
             referral_packet=self.state.referral_packet,
-            generated_transcript_path=self._safe_attr("live_transcript_docx"),
+            generated_transcript_path=None,
         )
         send_enabled = bool(self.settings.get("send_director_referral_on_finalize", False))
         endpoint = str(self.settings.get("director_referral_endpoint", "")).strip()
@@ -2577,7 +2594,7 @@ class InterviewApp(tk.Tk):
             "school": payload.get("candidate", {}).get("school", ""),
             "track": payload.get("candidate", {}).get("track", ""),
             "saved_report_path": str(out_path),
-            "transcript_path": str(self._safe_attr("live_transcript_docx") or self.state.referral_packet.get("transcript_path", "")).strip(),
+            "transcript_path": "",
             "interview_notes_path": generated_notes_path,
             "saved_at": saved_at,
             "offer_status": "not_generated",
@@ -2591,7 +2608,7 @@ class InterviewApp(tk.Tk):
             "scoring": scoring,
             "out_path": out_path,
             "integration_path": integration_path,
-            "transcript_path": self._safe_attr("live_transcript_docx"),
+            "transcript_path": "",
             "director_packet": director_packet,
             "comm_log_enabled": send_enabled,
             "communication_log_path": comm_log_path,
@@ -2770,6 +2787,7 @@ class InterviewApp(tk.Tk):
             return
 
         win = tk.Toplevel(self)
+        apply_professional_ops_theme(win, font_size=int(self.settings["font_size"]))
         win.title("Finalizing Interview")
         win.geometry("480x140")
         win.resizable(False, False)
@@ -2882,8 +2900,6 @@ class InterviewApp(tk.Tk):
         jsonl_path: Path,
         candidate_label: str,
     ) -> dict[int, str]:
-        if not self._is_legacy_time_mapping_mode():
-            return {}
         windows = self._build_flow_windows()
         if not windows:
             return {}
@@ -2891,8 +2907,6 @@ class InterviewApp(tk.Tk):
         return map_segments_to_flow_indices(segments, windows)
 
     def _build_flow_windows(self) -> list[tuple[int, float, float]]:
-        if not self._is_legacy_time_mapping_mode():
-            return []
         return build_flow_time_windows(self.state.flow_time_marks or [])
 
     def _load_candidate_segments_from_jsonl(self, jsonl_path: Path, candidate_label: str) -> list[dict[str, Any]]:
@@ -2972,6 +2986,7 @@ class OfferGeneratorWindow(tk.Toplevel):
         self.history_row = history_row
         self.title("Generate Offer")
         self.geometry("760x700")
+        apply_professional_ops_theme(self, font_size=int(self.app.settings.get("font_size", 10)))
 
         full_name = str(history_row.get("candidate_name", "")).strip().split()
         first_name = full_name[0] if full_name else ""

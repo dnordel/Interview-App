@@ -1,5 +1,5 @@
-from onboarding_models import ReminderRecipientOutcome, ReminderRunSummary
-from onboarding_scheduler_status import build_scheduler_status, normalize_run_source
+from onboarding_operations import ReminderRecipientOutcome, ReminderRunSummary
+from onboarding_operations import build_scheduler_status, normalize_run_source
 
 
 def test_build_scheduler_status_for_successful_send():

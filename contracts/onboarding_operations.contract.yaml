@@ -1,0 +1,2303 @@
+module:
+  name: onboarding_operations
+  language: python
+  path: src/onboarding_operations.py
+  version: 0.17.0
+  description: Flattened public interface for onboarding models, storage, scheduling,
+    reminders, notifications, dashboard actions, and onboarding UI composition helpers.
+functions:
+- name: resolve_smtp_password
+  description: Resolve SMTP password from environment override keys or stored password.
+  locked: false
+  inputs:
+    stored_password:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: Reads environment variables without logging secrets.
+- name: today_local
+  description: Return the current local date.
+  locked: false
+  inputs: {}
+  returns:
+    type: date
+  exceptions: []
+  side_effects: Reads system date.
+- name: parse_date
+  description: Parse a YYYY-MM-DD date string.
+  locked: false
+  inputs:
+    value:
+      type: str
+      required: true
+  returns:
+    type: date
+  exceptions:
+  - ValueError
+  side_effects: none
+- name: to_date_str
+  description: Format a date as YYYY-MM-DD or return None.
+  locked: false
+  inputs:
+    value:
+      type: date | None
+      required: true
+  returns:
+    type: str | None
+  exceptions: []
+  side_effects: none
+- name: parse_iso8601_datetime
+  description: Parse ISO-8601 datetime strings including Z suffixes.
+  locked: false
+  inputs:
+    value:
+      type: Any
+      required: true
+  returns:
+    type: datetime | None
+  exceptions: []
+  side_effects: none
+- name: format_iso8601_datetime
+  description: Format a datetime as ISO-8601 or return None.
+  locked: false
+  inputs:
+    value:
+      type: datetime | None
+      required: true
+  returns:
+    type: str | None
+  exceptions: []
+  side_effects: none
+- name: coerce_iso8601_timestamp
+  description: Coerce a value to an ISO-8601 timestamp string when valid.
+  locked: false
+  inputs:
+    value:
+      type: Any
+      required: true
+  returns:
+    type: str | None
+  exceptions: []
+  side_effects: none
+- name: make_id
+  description: Build a short unique id with the supplied prefix.
+  locked: false
+  inputs:
+    prefix:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: Generates a UUID-derived value.
+- name: _safe_int
+  description: Coerce an integer with optional minimum clamp.
+  locked: false
+  inputs:
+    value:
+      type: Any
+      required: true
+    default:
+      type: int
+      required: true
+    minimum:
+      type: int | None
+      required: false
+      default: null
+  returns:
+    type: int
+  exceptions: []
+  side_effects: none
+- name: onboarding_action_sections
+  description: Returns intent-grouped onboarding action sections ordered for daily
+    operator workflows.
+  locked: false
+  inputs: {}
+  returns:
+    type: tuple[ActionSectionSpec, ...]
+  exceptions: []
+  side_effects: none
+- name: build_scheduler_status
+  description: Build persisted scheduler status metadata from a reminder run summary.
+  locked: false
+  inputs:
+    summary:
+      type: ReminderRunSummary
+      required: true
+    scheduler_enabled:
+      type: bool
+      required: true
+    run_source:
+      type: str
+      required: false
+      default: manual
+  returns:
+    type: dict[str, Any]
+  exceptions: []
+  side_effects: none
+- name: normalize_run_source
+  description: Normalize reminder run source metadata to scheduler or manual.
+  locked: false
+  inputs:
+    value:
+      type: str | None
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _derive_result
+  description: Derive the scheduler result code from reminder run summary counts and
+    outcomes.
+  locked: false
+  inputs:
+    summary:
+      type: ReminderRunSummary
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _derive_last_error
+  description: Return the first non-empty reminder outcome error from a run summary.
+  locked: false
+  inputs:
+    summary:
+      type: ReminderRunSummary
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: build_specific_date_reference
+  description: Build a fixed-date onboarding task reference string.
+  locked: false
+  inputs:
+    value:
+      type: date
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: parse_specific_date_reference
+  description: Parse a fixed-date onboarding task reference string.
+  locked: false
+  inputs:
+    reference:
+      type: str
+      required: true
+  returns:
+    type: date | None
+  exceptions: []
+  side_effects: none
+- name: task_status_badge_text
+  description: Build display text for a task status badge.
+  locked: false
+  inputs:
+    status:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: task_status
+  description: Classify an onboarding task status for a given day.
+  locked: false
+  inputs:
+    task:
+      type: EmployeeTask
+      required: true
+    today:
+      type: date
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: sorted_tasks_for_display
+  description: Sort onboarding tasks by operational urgency and title.
+  locked: false
+  inputs:
+    tasks:
+      type: list[EmployeeTask]
+      required: true
+    today:
+      type: date
+      required: true
+  returns:
+    type: list[EmployeeTask]
+  exceptions: []
+  side_effects: none
+- name: _task_sort_key
+  description: Build task sorting key for onboarding display.
+  locked: false
+  inputs:
+    task:
+      type: EmployeeTask
+      required: true
+    today:
+      type: date
+      required: true
+  returns:
+    type: tuple[int, date, str]
+  exceptions: []
+  side_effects: none
+- name: build_onboarding_overview
+  description: Summarize actionable onboarding task counts by employee and total.
+  locked: false
+  inputs:
+    employees:
+      type: list[Employee]
+      required: true
+    today:
+      type: date
+      required: true
+  returns:
+    type: OnboardingOverview
+  exceptions: []
+  side_effects: none
+- name: _summarize_employee_tasks
+  description: Summarize actionable onboarding task counts for one employee.
+  locked: false
+  inputs:
+    employee:
+      type: Employee
+      required: true
+    today:
+      type: date
+      required: true
+  returns:
+    type: EmployeeTaskSummary
+  exceptions: []
+  side_effects: none
+- name: _is_empty_summary
+  description: Return whether an employee task summary has no actionable counts.
+  locked: false
+  inputs:
+    summary:
+      type: EmployeeTaskSummary
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+- name: filtered_tasks
+  description: Filter onboarding tasks by status-oriented filter key.
+  locked: false
+  inputs:
+    tasks:
+      type: list[EmployeeTask]
+      required: true
+    today:
+      type: date
+      required: true
+    filter_key:
+      type: str
+      required: true
+  returns:
+    type: list[EmployeeTask]
+  exceptions: []
+  side_effects: none
+- name: urgent_filter_result_count
+  description: Count tasks matching the urgent filter.
+  locked: false
+  inputs:
+    tasks:
+      type: list[EmployeeTask]
+      required: true
+    today:
+      type: date
+      required: true
+  returns:
+    type: int
+  exceptions: []
+  side_effects: none
+- name: task_display_sort_key
+  description: Build task sorting key for filtered task lists.
+  locked: false
+  inputs:
+    task:
+      type: EmployeeTask
+      required: true
+    today:
+      type: date
+      required: true
+  returns:
+    type: tuple[int, date, str]
+  exceptions: []
+  side_effects: none
+- name: format_due_date_short
+  description: Format an ISO due date for compact dashboard display.
+  locked: false
+  inputs:
+    due_date:
+      type: str | None
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: filter_for_dashboard_kpi
+  description: Resolve a dashboard KPI key to its backing task filter.
+  locked: false
+  inputs:
+    kpi_key:
+      type: str
+      required: true
+  returns:
+    type: str | None
+  exceptions: []
+  side_effects: none
+- name: _status_priority
+  description: Convert status text into sort priority.
+  locked: false
+  inputs:
+    status:
+      type: str
+      required: true
+  returns:
+    type: int
+  exceptions: []
+  side_effects: none
+- name: build_dashboard_today_summary
+  description: Build interview and onboarding counts for the today dashboard.
+  locked: false
+  inputs:
+    history_rows:
+      type: list[dict[str, Any]]
+      required: true
+    employees:
+      type: list[Employee]
+      required: true
+    scheduler_settings:
+      type: Mapping[str, Any] | None
+      required: true
+    today:
+      type: date | None
+      required: false
+      default: null
+  returns:
+    type: DashboardTodaySummary
+  exceptions: []
+  side_effects: none
+- name: summarize_interview_states
+  description: Count pending and follow-up interview history rows.
+  locked: false
+  inputs:
+    history_rows:
+      type: list[dict[str, Any]]
+      required: true
+  returns:
+    type: InterviewDashboardCounts
+  exceptions: []
+  side_effects: none
+- name: summarize_onboarding_states
+  description: Count actionable onboarding tasks and the next critical task.
+  locked: false
+  inputs:
+    employees:
+      type: list[Employee]
+      required: true
+    today:
+      type: date
+      required: true
+    critical_window_days:
+      type: int
+      required: true
+  returns:
+    type: OnboardingDashboardCounts
+  exceptions: []
+  side_effects: none
+- name: critical_window_days_from_settings
+  description: Resolve critical-task dashboard window days from scheduler settings.
+  locked: false
+  inputs:
+    settings:
+      type: Mapping[str, Any] | None
+      required: true
+  returns:
+    type: int
+  exceptions: []
+  side_effects: none
+- name: _is_critical_by_window
+  description: Return whether a task due date is inside the critical dashboard window.
+  locked: false
+  inputs:
+    due_date_text:
+      type: str | None
+      required: true
+    today:
+      type: date
+      required: true
+    window_days:
+      type: int
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+- name: _parse_due_date
+  description: Parse an ISO due date or return None for missing/invalid input.
+  locked: false
+  inputs:
+    due_date_text:
+      type: str | None
+      required: true
+  returns:
+    type: date | None
+  exceptions: []
+  side_effects: none
+- name: _is_earlier_task
+  description: Compare dashboard critical-task candidates by due date and title.
+  locked: false
+  inputs:
+    current:
+      type: tuple[date, NextCriticalTask] | None
+      required: true
+    due:
+      type: date
+      required: true
+    title:
+      type: str
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+- name: build_dashboard_kpi_chips
+  description: Build dashboard KPI chip metadata and counts for onboarding task filters.
+  locked: false
+  inputs:
+    summary:
+      type: DashboardTodaySummary
+      required: true
+    employees:
+      type: list[Employee]
+      required: true
+    today:
+      type: date
+      required: true
+  returns:
+    type: list[DashboardKpiChip]
+  exceptions: []
+  side_effects: none
+- name: build_recommended_action
+  description: Build the primary dashboard recommendation from onboarding task urgency.
+  locked: false
+  inputs:
+    summary:
+      type: DashboardTodaySummary
+      required: true
+    employees:
+      type: list[Employee]
+      required: true
+    today:
+      type: date
+      required: true
+  returns:
+    type: DashboardRecommendation
+  exceptions: []
+  side_effects: none
+- name: first_matching_navigation
+  description: Return the first deterministic employee/task navigation target matching
+    a filter.
+  locked: false
+  inputs:
+    employees:
+      type: list[Employee]
+      required: true
+    today:
+      type: date
+      required: true
+    filter_key:
+      type: str
+      required: true
+  returns:
+    type: dict[str, str] | None
+  exceptions: []
+  side_effects: none
+- name: kpi_navigation_target
+  description: Resolve a dashboard KPI to the first matching employee/task navigation
+    target.
+  locked: false
+  inputs:
+    employees:
+      type: list[Employee]
+      required: true
+    today:
+      type: date
+      required: true
+    kpi_key:
+      type: str
+      required: true
+  returns:
+    type: dict[str, str] | None
+  exceptions: []
+  side_effects: none
+- name: _count_tasks_for_filter
+  description: Count tasks across employees that match a filter.
+  locked: false
+  inputs:
+    employees:
+      type: list[Employee]
+      required: true
+    today:
+      type: date
+      required: true
+    filter_key:
+      type: str
+      required: true
+  returns:
+    type: int
+  exceptions: []
+  side_effects: none
+- name: build_scrollable_canvas_area
+  description: Creates a frame containing a canvas, a vertical scrollbar, and an interior
+    frame hosted in a canvas window.
+  locked: false
+  inputs:
+    parent:
+      type: tk.Misc
+      required: true
+    interior_padding:
+      type: int | tuple[int, int, int, int]
+      required: false
+      default: 0
+    canvas_kwargs:
+      type: dict[str, object] | None
+      required: false
+      default: null
+  returns:
+    type: ScrollableCanvasArea
+  exceptions: []
+  side_effects: Creates Tkinter widgets for a reusable scrollable canvas area.
+- name: bind_canvas_mousewheel
+  description: Binds cross-platform mouse-wheel handlers while the pointer or focus
+    remains within the scrollable canvas area.
+  locked: false
+  inputs:
+    canvas:
+      type: tk.Canvas
+      required: true
+    activate_widgets:
+      type: Sequence[tk.Misc]
+      required: true
+    release_widgets:
+      type: Sequence[tk.Misc]
+      required: false
+      default: []
+  returns:
+    type: None
+  exceptions: []
+  side_effects: Registers and removes global Tkinter wheel bindings tied to the supplied
+    canvas.
+- name: scroll_widget_into_view
+  description: Adjusts a canvas scroll position so a child widget becomes visible
+    within the viewport.
+  locked: false
+  inputs:
+    canvas:
+      type: tk.Canvas
+      required: true
+    widget:
+      type: tk.Misc
+      required: true
+    padding:
+      type: int
+      required: false
+      default: 12
+  returns:
+    type: None
+  exceptions: []
+  side_effects: Updates the canvas y-view when the target widget is off-screen.
+- name: build_scrollable_modal_container
+  description: Creates a modal shell with a scrollable canvas-backed body and a pinned
+    button bar.
+  locked: false
+  inputs:
+    parent:
+      type: tk.Misc
+      required: true
+    title:
+      type: str
+      required: true
+    body_padding:
+      type: int | tuple[int, int, int, int]
+      required: false
+      default: 10
+    button_padding:
+      type: tuple[int, int, int, int]
+      required: false
+      default:
+      - 10
+      - 0
+      - 10
+      - 10
+  returns:
+    type: ScrollableModalContainer
+  exceptions: []
+  side_effects: Creates Tkinter widgets and mouse-wheel bindings for a dialog.
+- name: build_launch_context
+  description: Build a normalized onboarding launch payload with optional candidate
+    seed metadata.
+  locked: false
+  inputs:
+    employee_id:
+      type: str | None
+      required: false
+      default: null
+    urgent_only:
+      type: bool
+      required: false
+      default: false
+    employee_seed:
+      type: LaunchEmployeeSeed | None
+      required: false
+      default: null
+  returns:
+    type: dict[str, object]
+  exceptions: []
+  side_effects: none
+- name: write_launch_context_file
+  description: Persist onboarding launch metadata to a temporary json file for subprocess
+    use.
+  locked: false
+  inputs:
+    payload:
+      type: dict[str, object]
+      required: true
+  returns:
+    type: Path | None
+  exceptions: []
+  side_effects: writes a temporary json file
+- name: read_launch_context_file
+  description: Safely read an onboarding launch context json file when present.
+  locked: false
+  inputs:
+    path_value:
+      type: str | None
+      required: true
+  returns:
+    type: dict[str, object]
+  exceptions: []
+  side_effects: reads a json file from disk when available
+- name: extract_employee_seed
+  description: Recover a LaunchEmployeeSeed from a launch payload when prefill content
+    exists.
+  locked: false
+  inputs:
+    payload:
+      type: dict[str, object] | None
+      required: true
+  returns:
+    type: LaunchEmployeeSeed | None
+  exceptions: []
+  side_effects: none
+- name: scheduler_opt_in
+  description: Resolve whether the onboarding reminder scheduler is enabled from current
+    or legacy settings.
+  locked: false
+  inputs:
+    settings:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+- name: scheduler_expected_interval_hours
+  description: Resolve the expected reminder scheduler interval in hours from current
+    or legacy settings.
+  locked: false
+  inputs:
+    settings:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: int
+  exceptions: []
+  side_effects: none
+- name: scheduler_status_text
+  description: Format scheduler status metadata for operator display.
+  locked: false
+  inputs:
+    status:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: scheduler_script_path
+  description: Resolve the onboarding app script path used by scheduler setup instructions.
+  locked: false
+  inputs:
+    script_path:
+      type: str | Path | None
+      required: false
+      default: null
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: scheduler_command_example
+  description: Build a Windows schtasks command example for the reminder scheduler.
+  locked: false
+  inputs:
+    script_path:
+      type: str | Path | None
+      required: false
+      default: null
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _positive_int
+  description: Coerce a positive integer or return a fallback.
+  locked: false
+  inputs:
+    value:
+      type: Any
+      required: true
+    fallback:
+      type: int
+      required: true
+  returns:
+    type: int
+  exceptions: []
+  side_effects: none
+- name: split_and_validate_recipients
+  description: Split a comma-delimited recipient string into valid and invalid email
+    address lists.
+  locked: false
+  inputs:
+    raw:
+      type: str
+      required: true
+  returns:
+    type: tuple[list[str], list[str]]
+  exceptions: []
+  side_effects: none
+- name: recipient_warning_text
+  description: Build fail-closed operator warning text for missing or malformed reminder
+    recipients.
+  locked: false
+  inputs:
+    raw:
+      type: str
+      required: true
+    channel_label:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: validate_sender_email
+  description: Validate a sender email address using shared email safety rules.
+  locked: false
+  inputs:
+    value:
+      type: str
+      required: true
+  returns:
+    type: tuple[bool, str | None]
+  exceptions: []
+  side_effects: none
+- name: reminder_send_estimate
+  description: Estimate reminder, escalation, and in-app message counts for a reminder
+    run result.
+  locked: false
+  inputs:
+    result:
+      type: Any
+      required: true
+  returns:
+    type: dict[str, int]
+  exceptions: []
+  side_effects: none
+- name: unknown_placeholder_actionable_message
+  description: Build operator guidance for unknown reminder template placeholders.
+  locked: false
+  inputs:
+    unknown:
+      type: dict[str, set[str]]
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: evaluate_onboarding_reminder_health
+  description: Evaluate whether onboarding reminder automation is healthy, overdue,
+    or missing a valid run timestamp.
+  locked: false
+  inputs:
+    last_reminder_run_at:
+      type: Any
+      required: true
+    scheduler_or_settings_payload:
+      type: dict[str, Any] | None
+      required: true
+    now:
+      type: datetime | str | None
+      required: false
+      default: null
+  returns:
+    type: ReminderHealthStatus
+  exceptions: []
+  side_effects: none
+- name: _expected_interval_hours
+  description: Resolve expected scheduler interval hours from scheduler settings payloads.
+  locked: false
+  inputs:
+    payload:
+      type: dict[str, Any] | None
+      required: true
+  returns:
+    type: int
+  exceptions: []
+  side_effects: none
+- name: _extract_scheduler_settings
+  description: Extract scheduler settings from either direct or nested payloads.
+  locked: false
+  inputs:
+    payload:
+      type: dict[str, Any] | None
+      required: true
+  returns:
+    type: dict[str, Any]
+  exceptions: []
+  side_effects: none
+- name: _coerce_positive_int
+  description: Coerce a positive integer or return a default.
+  locked: false
+  inputs:
+    value:
+      type: Any
+      required: true
+    default:
+      type: int
+      required: true
+  returns:
+    type: int
+  exceptions: []
+  side_effects: none
+- name: _coerce_now
+  description: Coerce a supplied current time or return the current UTC time as a
+    normalized datetime.
+  locked: false
+  inputs:
+    now:
+      type: datetime | str | None
+      required: true
+  returns:
+    type: datetime
+  exceptions: []
+  side_effects: reads current time when now is omitted or invalid
+- name: _coerce_datetime
+  description: Coerce datetime-like values into normalized datetime objects.
+  locked: false
+  inputs:
+    value:
+      type: Any
+      required: true
+  returns:
+    type: datetime | None
+  exceptions: []
+  side_effects: none
+- name: _normalize_datetime
+  description: Normalize timezone-aware datetimes to naive UTC datetimes for comparisons.
+  locked: false
+  inputs:
+    value:
+      type: datetime
+      required: true
+  returns:
+    type: datetime
+  exceptions: []
+  side_effects: none
+- name: _format_lateness
+  description: Format late scheduler hours into hours or days.
+  locked: false
+  inputs:
+    late_hours:
+      type: int
+      required: true
+  returns:
+    type: tuple[int, str]
+  exceptions: []
+  side_effects: none
+- name: seed_employee_tasks
+  description: Seed employee onboarding tasks from task templates.
+  locked: false
+  inputs:
+    employee:
+      type: Employee
+      required: true
+    templates:
+      type: list[TaskTemplate]
+      required: true
+  returns:
+    type: None
+  exceptions: []
+  side_effects: Mutates employee.tasks by appending EmployeeTask records.
+- name: calculate_due_date
+  description: Calculate the due date for an employee task template using start, acceptance,
+    monthly, or fixed-date anchors.
+  locked: false
+  inputs:
+    employee:
+      type: Employee
+      required: true
+    template:
+      type: TaskTemplate
+      required: true
+    now_date:
+      type: date
+      required: true
+  returns:
+    type: date | None
+  exceptions: []
+  side_effects: none
+- name: _monthly_anchor_date
+  description: Calculate the monthly anchor date for an employee based on the current
+    month and employee start date.
+  locked: false
+  inputs:
+    employee:
+      type: Employee
+      required: true
+    now_date:
+      type: date
+      required: true
+  returns:
+    type: date
+  exceptions: []
+  side_effects: none
+- name: task_should_remind
+  description: Determine whether a task should receive a reminder for the current
+    date and cadence.
+  locked: false
+  inputs:
+    task:
+      type: EmployeeTask
+      required: true
+    template:
+      type: TaskTemplate
+      required: true
+    now_date:
+      type: date
+      required: true
+    blocked:
+      type: bool
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+- name: dependency_blocked
+  description: Determine whether an incomplete dependency relationship blocks a task
+    reminder.
+  locked: false
+  inputs:
+    task:
+      type: EmployeeTask
+      required: true
+    employee:
+      type: Employee
+      required: true
+    template:
+      type: TaskTemplate
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+- name: collect_due_reminders
+  description: Collect reminder items due for employees on a given date.
+  locked: false
+  inputs:
+    employees:
+      type: list[Employee]
+      required: true
+    templates:
+      type: list[TaskTemplate]
+      required: true
+    now_date:
+      type: date
+      required: true
+  returns:
+    type: list[ReminderItem]
+  exceptions: []
+  side_effects: none
+- name: apply_task_completion
+  description: Apply task completion state and completion date.
+  locked: false
+  inputs:
+    task:
+      type: EmployeeTask
+      required: true
+    completed:
+      type: bool
+      required: true
+    now_date:
+      type: date
+      required: true
+  returns:
+    type: None
+  exceptions: []
+  side_effects: Mutates task.completed and task.completed_at.
+- name: mark_reminder_sent
+  description: Record the date a reminder was sent for a task.
+  locked: false
+  inputs:
+    task:
+      type: EmployeeTask
+      required: true
+    now_date:
+      type: date
+      required: true
+  returns:
+    type: None
+  exceptions: []
+  side_effects: Mutates task.last_reminder_sent.
+- name: backfill_onboarding_metadata
+  description: Backfill canonical onboarding template/task metadata and task created_at
+    fields in raw persisted state data.
+  locked: false
+  inputs:
+    state_data:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: tuple[dict[str, Any], bool, OnboardingMigrationSummary]
+  exceptions: []
+  side_effects: Mutates nested template and employee task dictionaries in state_data.
+- name: _backfill_templates
+  description: Backfill canonical metadata on raw template dictionaries.
+  locked: false
+  inputs:
+    templates:
+      type: list[Any]
+      required: true
+  returns:
+    type: tuple[bool, int]
+  exceptions: []
+  side_effects: Mutates template dictionaries.
+- name: _backfill_tasks
+  description: Backfill canonical metadata on raw employee task dictionaries.
+  locked: false
+  inputs:
+    employees:
+      type: list[Any]
+      required: true
+  returns:
+    type: tuple[bool, int]
+  exceptions: []
+  side_effects: Mutates nested task dictionaries.
+- name: _backfill_task_created_at
+  description: Backfill created_at values on raw employee task dictionaries from due_date,
+    completed_at, or None.
+  locked: false
+  inputs:
+    employees:
+      type: list[Any]
+      required: true
+  returns:
+    type: tuple[bool, int]
+  exceptions: []
+  side_effects: Mutates nested task dictionaries.
+- name: _apply_missing_metadata
+  description: Apply missing canonical metadata values to a template or task dictionary.
+  locked: false
+  inputs:
+    item:
+      type: dict[str, Any]
+      required: true
+    metadata:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: Mutates item when metadata is missing.
+- name: _is_missing_bool
+  description: Return whether a boolean-like metadata value is absent or blank.
+  locked: false
+  inputs:
+    value:
+      type: Any
+      required: true
+    has_key:
+      type: bool
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+- name: _is_missing_text
+  description: Return whether a text metadata value is absent or blank.
+  locked: false
+  inputs:
+    value:
+      type: Any
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+- name: parse_recipients
+  description: Parse a comma-delimited reminder recipient list into trimmed addresses.
+  locked: false
+  inputs:
+    raw:
+      type: str
+      required: true
+  returns:
+    type: list[str]
+  exceptions: []
+  side_effects: none
+- name: _split_name_parts
+  description: Split a display name into first and last name placeholders.
+  locked: false
+  inputs:
+    name:
+      type: str
+      required: true
+  returns:
+    type: tuple[str, str]
+  exceptions: []
+  side_effects: none
+- name: _build_template_values
+  description: Build onboarding reminder placeholder values from due reminder items.
+  locked: false
+  inputs:
+    reminders:
+      type: list[ReminderItem]
+      required: true
+    school:
+      type: str
+      required: false
+      default: ''
+    runtime_values:
+      type: dict[str, str] | None
+      required: false
+      default: null
+  returns:
+    type: dict[str, str]
+  exceptions: []
+  side_effects: none
+- name: _send_email_message
+  description: Build and send one SMTP email message for onboarding reminders.
+  locked: false
+  inputs:
+    settings:
+      type: EmailSettings
+      required: true
+    recipients:
+      type: list[str]
+      required: true
+    subject:
+      type: str
+      required: true
+    body:
+      type: str
+      required: true
+  returns:
+    type: None
+  exceptions:
+  - smtplib.SMTPException
+  - OSError
+  side_effects: Opens an SMTP connection and sends an email message without logging
+    credentials.
+- name: _validate_missing_values
+  description: Raise when reminder templates reference placeholders without runtime
+    values.
+  locked: false
+  inputs:
+    context:
+      type: str
+      required: true
+    templates:
+      type: list[str]
+      required: true
+    values:
+      type: dict[str, str]
+      required: true
+  returns:
+    type: None
+  exceptions:
+  - ValueError
+  side_effects: none
+- name: reminder_run_telemetry_counts
+  description: Summarize reminder send outcomes into canonical UX telemetry counts.
+  locked: false
+  inputs:
+    outcomes:
+      type: list[object]
+      required: true
+    dry_run:
+      type: bool
+      required: true
+  returns:
+    type: dict[str, int]
+  exceptions: []
+  side_effects: none
+- name: send_reminder_email
+  description: Render and send onboarding reminder email content.
+  locked: false
+  inputs:
+    settings:
+      type: EmailSettings
+      required: true
+    reminders:
+      type: list[ReminderItem]
+      required: true
+    monthly_lines:
+      type: list[str] | None
+      required: false
+      default: null
+    school:
+      type: str
+      required: false
+      default: ''
+    runtime_values:
+      type: dict[str, str] | None
+      required: false
+      default: null
+  returns:
+    type: str
+  exceptions:
+  - ValueError
+  - smtplib.SMTPException
+  - OSError
+  side_effects: Sends an SMTP email when recipients and SMTP settings are configured.
+- name: send_escalation_email
+  description: Render and send onboarding escalation email content.
+  locked: false
+  inputs:
+    settings:
+      type: EmailSettings
+      required: true
+    body_lines:
+      type: list[str]
+      required: true
+    reminders:
+      type: list[ReminderItem] | None
+      required: false
+      default: null
+    school:
+      type: str
+      required: false
+      default: ''
+    runtime_values:
+      type: dict[str, str] | None
+      required: false
+      default: null
+  returns:
+    type: str
+  exceptions:
+  - ValueError
+  - smtplib.SMTPException
+  - OSError
+  side_effects: Sends an SMTP email when recipients and SMTP settings are configured.
+- name: available_modules
+  description: Return legacy onboarding modules currently exposed through this flattened
+    facade.
+  locked: false
+  inputs: {}
+  returns:
+    type: tuple[str, ...]
+  exceptions: []
+  side_effects: none
+- name: load_compat_module
+  description: Import a legacy module that belongs to the onboarding operations facade.
+  locked: false
+  inputs:
+    module_name:
+      type: str
+      required: true
+  returns:
+    type: ModuleType
+  exceptions:
+  - AttributeError
+  side_effects: Imports the requested module.
+- name: module_ownership
+  description: Return the ownership map from each legacy onboarding module to the
+    flattened onboarding_operations module.
+  locked: false
+  inputs: {}
+  returns:
+    type: dict[str, str]
+  exceptions: []
+  side_effects: none
+- name: wrapper_policy
+  description: Return the compatibility wrapper policy for legacy onboarding modules
+    during flattening.
+  locked: false
+  inputs: {}
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: public_symbols
+  description: Return public symbols exposed by one legacy onboarding module or by
+    all onboarding modules.
+  locked: false
+  inputs:
+    module_name:
+      type: str | None
+      required: false
+      default: None
+  returns:
+    type: tuple[str, ...]
+  exceptions:
+  - AttributeError
+  side_effects: Imports onboarding compatibility modules.
+- name: resolve_compat_symbol
+  description: Resolve a public symbol from the legacy modules owned by this facade.
+  locked: false
+  inputs:
+    symbol_name:
+      type: str
+      required: true
+  returns:
+    type: Any
+  exceptions:
+  - AttributeError
+  side_effects: Imports legacy modules until the symbol is found.
+- name: __dir__
+  description: Return module attributes plus flattened public compatibility symbols
+    for editor and agent discovery.
+  locked: false
+  inputs: {}
+  returns:
+    type: list[str]
+  exceptions: []
+  side_effects: Imports onboarding compatibility modules.
+classes:
+- name: ReminderCadence
+  description: Reminder cadence mode and interval metadata.
+  locked: false
+  attributes:
+    mode:
+      type: str
+    interval_days:
+      type: int
+  methods:
+  - name: from_dict
+    description: Build a cadence from untrusted persisted data.
+    locked: false
+    inputs:
+      cls:
+        type: Any
+        required: true
+      payload:
+        type: dict[str, Any] | None
+        required: true
+    returns:
+      type: ReminderCadence
+    exceptions: []
+    side_effects: none
+  - name: to_dict
+    description: Serialize cadence metadata.
+    locked: false
+    inputs: {}
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: none
+- name: TaskTemplate
+  description: Onboarding task template used to seed employee tasks and reminder rules.
+  locked: false
+  attributes:
+    id:
+      type: str
+    title:
+      type: str
+    reference:
+      type: str
+    offset_days:
+      type: int
+    cadence:
+      type: ReminderCadence
+    depends_on_incomplete:
+      type: list[str]
+    critical:
+      type: bool
+    deadline_label:
+      type: str | None
+  methods:
+  - name: from_dict
+    description: Build a task template from persisted data.
+    locked: false
+    inputs:
+      cls:
+        type: Any
+        required: true
+      payload:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: TaskTemplate
+    exceptions:
+    - KeyError
+    - ValueError
+    side_effects: none
+  - name: to_dict
+    description: Serialize a task template.
+    locked: false
+    inputs: {}
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: none
+- name: EmployeeTask
+  description: Employee-specific onboarding task state.
+  locked: false
+  attributes:
+    id:
+      type: str
+    template_id:
+      type: str
+    title:
+      type: str
+    created_at:
+      type: str | None
+    due_date:
+      type: str | None
+    completed:
+      type: bool
+    completed_at:
+      type: str | None
+    last_reminder_sent:
+      type: str | None
+    critical:
+      type: bool
+    deadline_label:
+      type: str | None
+  methods:
+  - name: from_dict
+    description: Build an employee task from persisted data.
+    locked: false
+    inputs:
+      cls:
+        type: Any
+        required: true
+      payload:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: EmployeeTask
+    exceptions:
+    - KeyError
+    side_effects: none
+  - name: to_dict
+    description: Serialize an employee task.
+    locked: false
+    inputs: {}
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: none
+- name: Employee
+  description: Employee onboarding record with seeded task state.
+  locked: false
+  attributes:
+    id:
+      type: str
+    name:
+      type: str
+    acceptance_date:
+      type: str
+    start_date:
+      type: str
+    school:
+      type: str
+    tasks:
+      type: list[EmployeeTask]
+  methods:
+  - name: from_dict
+    description: Build an employee record from persisted data.
+    locked: false
+    inputs:
+      cls:
+        type: Any
+        required: true
+      payload:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: Employee
+    exceptions:
+    - KeyError
+    side_effects: none
+  - name: to_dict
+    description: Serialize an employee record.
+    locked: false
+    inputs: {}
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: none
+- name: LaunchEmployeeSeed
+  description: Candidate/employee prefill payload passed from interview finalization
+    into onboarding launch context.
+  locked: false
+  attributes:
+    name:
+      type: str
+    school:
+      type: str
+    acceptance_date:
+      type: str
+    start_date:
+      type: str
+  methods:
+  - name: from_dict
+    description: Build a launch seed from an untrusted payload.
+    locked: false
+    inputs:
+      cls:
+        type: Any
+        required: true
+      payload:
+        type: Any
+        required: true
+    returns:
+      type: LaunchEmployeeSeed
+    exceptions: []
+    side_effects: none
+  - name: has_prefill
+    description: Return true when at least one prefill field is present.
+    locked: false
+    inputs: {}
+    returns:
+      type: bool
+    exceptions: []
+    side_effects: none
+  - name: to_dict
+    description: Serialize the launch seed for subprocess handoff.
+    locked: false
+    inputs: {}
+    returns:
+      type: dict[str, str]
+    exceptions: []
+    side_effects: none
+- name: EmailSettings
+  description: SMTP and reminder email settings for onboarding communications.
+  locked: false
+  attributes:
+    sender_email:
+      type: str
+    smtp_host:
+      type: str
+    smtp_port:
+      type: int
+    smtp_username:
+      type: str
+    smtp_password:
+      type: str
+    use_tls:
+      type: bool
+    imap_or_pop_host:
+      type: str
+    imap_or_pop_port:
+      type: int
+    director_and_owners:
+      type: str
+    reminder_recipients:
+      type: str
+    reminder_subject_template:
+      type: str
+    reminder_body_template:
+      type: str
+    escalation_subject_template:
+      type: str
+    escalation_body_template:
+      type: str
+  methods:
+  - name: from_dict
+    description: Build email settings from persisted data.
+    locked: false
+    inputs:
+      cls:
+        type: Any
+        required: true
+      payload:
+        type: dict[str, Any] | None
+        required: true
+    returns:
+      type: EmailSettings
+    exceptions: []
+    side_effects: none
+  - name: to_dict
+    description: Serialize email settings.
+    locked: false
+    inputs: {}
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: none
+- name: ActionItemSpec
+  description: Immutable action button metadata including command routing and helper
+    copy.
+  locked: false
+  attributes:
+    label:
+      type: str
+    command_name:
+      type: str
+    emphasis:
+      type: ActionEmphasis
+    metrics_key:
+      type: str | None
+    helper_text:
+      type: str
+    shortcut_hint:
+      type: str
+  methods: []
+- name: ActionSectionSpec
+  description: Immutable grouping metadata for related onboarding actions.
+  locked: false
+  attributes:
+    title:
+      type: str
+    helper_text:
+      type: str
+    actions:
+      type: tuple[ActionItemSpec, ...]
+  methods: []
+- name: EmployeeTaskSummary
+  description: Per-employee actionable onboarding task counts.
+  locked: false
+  attributes:
+    employee_id:
+      type: str
+    employee_name:
+      type: str
+    overdue:
+      type: int
+    critical_overdue:
+      type: int
+    due_today:
+      type: int
+    due_soon:
+      type: int
+  methods: []
+- name: OnboardingOverview
+  description: Aggregate actionable onboarding task counts for dashboard display.
+  locked: false
+  attributes:
+    total_overdue:
+      type: int
+    total_critical_overdue:
+      type: int
+    total_due_today:
+      type: int
+    total_due_soon:
+      type: int
+    employee_summaries:
+      type: list[EmployeeTaskSummary]
+  methods: []
+- name: TaskFilterOption
+  description: Immutable task filter display metadata.
+  locked: false
+  attributes:
+    key:
+      type: str
+    label:
+      type: str
+    hotkey:
+      type: str
+  methods: []
+- name: InterviewDashboardCounts
+  description: Today-dashboard interview counts.
+  locked: false
+  attributes:
+    pending:
+      type: int
+    follow_up:
+      type: int
+  methods: []
+- name: NextCriticalTask
+  description: Next actionable onboarding task within the critical dashboard window.
+  locked: false
+  attributes:
+    employee_id:
+      type: str
+    employee_name:
+      type: str
+    task_id:
+      type: str
+    title:
+      type: str
+    due_date:
+      type: str
+    status:
+      type: str
+  methods: []
+- name: OnboardingDashboardCounts
+  description: Today-dashboard onboarding counts.
+  locked: false
+  attributes:
+    overdue:
+      type: int
+    due_today:
+      type: int
+    critical:
+      type: int
+    critical_window_days:
+      type: int
+    next_critical:
+      type: NextCriticalTask | None
+  methods: []
+- name: DashboardTodaySummary
+  description: Combined today-dashboard summary for interview and onboarding.
+  locked: false
+  attributes:
+    interviews:
+      type: InterviewDashboardCounts
+    onboarding:
+      type: OnboardingDashboardCounts
+  methods: []
+- name: DashboardKpiChip
+  description: Dashboard KPI chip metadata for task-filter navigation.
+  locked: false
+  attributes:
+    key:
+      type: str
+    label:
+      type: str
+    count:
+      type: int
+    filter_key:
+      type: str
+  methods: []
+- name: DashboardRecommendation
+  description: Dashboard recommendation metadata for the primary next action.
+  locked: false
+  attributes:
+    message:
+      type: str
+    button_label:
+      type: str
+    action_key:
+      type: str
+    employee_id:
+      type: str | None
+    employee_name:
+      type: str | None
+    filter_key:
+      type: str | None
+  methods: []
+- name: ReminderHealthStatus
+  description: Reminder scheduler health status for operator display.
+  locked: false
+  attributes:
+    severity:
+      type: str
+    message:
+      type: str
+    hours_or_days_late:
+      type: int | None
+  methods: []
+- name: ReminderItem
+  description: Due reminder item produced by onboarding scheduler rules.
+  locked: false
+  attributes:
+    employee_id:
+      type: str
+    employee_name:
+      type: str
+    task_id:
+      type: str
+    title:
+      type: str
+    due_date:
+      type: str | None
+  methods: []
+- name: OnboardingMigrationSummary
+  description: Counts of onboarding metadata fields backfilled during migration.
+  locked: false
+  attributes:
+    templates_backfilled:
+      type: int
+    tasks_backfilled:
+      type: int
+    task_created_at_backfilled:
+      type: int
+  methods: []
+- name: ReminderTaskOutcome
+  description: Normalized reminder task payload in reminder run history.
+  locked: false
+  attributes:
+    employee_id:
+      type: str
+    employee_name:
+      type: str
+    task_id:
+      type: str
+    title:
+      type: str
+    due_date:
+      type: str | None
+  methods:
+  - name: from_dict
+    description: Build a reminder task outcome from untrusted data.
+    locked: false
+    inputs:
+      cls:
+        type: Any
+        required: true
+      payload:
+        type: dict[str, Any] | None
+        required: true
+    returns:
+      type: ReminderTaskOutcome
+    exceptions: []
+    side_effects: none
+  - name: to_dict
+    description: Serialize a reminder task outcome.
+    locked: false
+    inputs: {}
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: none
+- name: ReminderRecipientOutcome
+  description: Normalized recipient outcome payload in reminder run history.
+  locked: false
+  attributes:
+    phase:
+      type: str
+    attempted:
+      type: bool
+    success:
+      type: bool
+    recipients:
+      type: list[str]
+    item_count:
+      type: int
+    message:
+      type: str
+    error:
+      type: str
+  methods:
+  - name: from_dict
+    description: Build a recipient outcome from untrusted data.
+    locked: false
+    inputs:
+      cls:
+        type: Any
+        required: true
+      payload:
+        type: dict[str, Any] | None
+        required: true
+    returns:
+      type: ReminderRecipientOutcome
+    exceptions: []
+    side_effects: none
+  - name: to_dict
+    description: Serialize a recipient outcome.
+    locked: false
+    inputs: {}
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: none
+- name: ReminderRunSummary
+  description: Normalized persisted reminder run history summary.
+  locked: false
+  attributes:
+    run_id:
+      type: str
+    ran_at:
+      type: str | None
+    dry_run:
+      type: bool
+    recipients:
+      type: dict[str, list[str]]
+    tasks:
+      type: list[ReminderTaskOutcome]
+    counts:
+      type: dict[str, int]
+    outcomes:
+      type: list[ReminderRecipientOutcome]
+    task_breakdown:
+      type: dict[str, list[ReminderTaskOutcome]]
+    escalation_candidates:
+      type: list[ReminderTaskOutcome]
+    channel_results:
+      type: dict[str, dict[str, int]]
+    error_summaries:
+      type: list[str]
+  methods:
+  - name: from_dict
+    description: Build a reminder run summary from untrusted data.
+    locked: false
+    inputs:
+      cls:
+        type: Any
+        required: true
+      payload:
+        type: dict[str, Any] | None
+        required: true
+    returns:
+      type: ReminderRunSummary
+    exceptions: []
+    side_effects: none
+  - name: to_dict
+    description: Serialize a reminder run summary.
+    locked: false
+    inputs: {}
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: none
+- name: SendOutcome
+  description: Outcome for one reminder delivery phase.
+  locked: false
+  attributes:
+    phase:
+      type: str
+    attempted:
+      type: bool
+    success:
+      type: bool
+    recipients:
+      type: list[str]
+    item_count:
+      type: int
+    message:
+      type: str
+    error:
+      type: str
+  methods: []
+- name: ReminderRunResult
+  description: Result payload for one onboarding reminder run.
+  locked: false
+  attributes:
+    run_id:
+      type: str
+    ran_at:
+      type: str
+    dry_run:
+      type: bool
+    recipients:
+      type: dict[str, list[str]]
+    tasks:
+      type: list[dict[str, str | None]]
+    counts:
+      type: dict[str, int]
+    outcomes:
+      type: list[SendOutcome]
+    task_breakdown:
+      type: dict[str, list[dict[str, str | None]]]
+    escalation_candidates:
+      type: list[dict[str, str | None]]
+    channel_results:
+      type: dict[str, dict[str, int]]
+    error_summaries:
+      type: list[str]
+  methods:
+  - name: to_dict
+    description: Convert the reminder run result and outcomes to a serializable dictionary.
+    locked: false
+    inputs: {}
+    returns:
+      type: dict[str, object]
+    exceptions: []
+    side_effects: none
+- name: ReminderRunContext
+  description: Internal context assembled for one onboarding reminder run.
+  locked: false
+  attributes:
+    run_id:
+      type: str
+    now_date:
+      type: date
+    reminders:
+      type: list[ReminderItem]
+    monthly_lines:
+      type: list[str]
+    escalation_lines:
+      type: list[str]
+    recipients:
+      type: dict[str, list[str]]
+    school:
+      type: str
+    runtime_values:
+      type: dict[str, str]
+  methods: []
+- name: OnboardingReminderRunner
+  description: Runs onboarding reminder preview and live send workflows using injectable
+    delivery adapters.
+  locked: false
+  attributes: {}
+  methods:
+  - name: __init__
+    description: Initialize the reminder runner with employees, templates, email settings,
+      delivery adapters, runtime values, and optional metrics logger.
+    locked: false
+    inputs:
+      employees:
+        type: list[Employee]
+        required: true
+      templates:
+        type: Any
+        required: true
+      email_settings:
+        type: EmailSettings
+        required: true
+      reminder_sender:
+        type: Any
+        required: false
+        default: send_reminder_email
+      escalation_sender:
+        type: Any
+        required: false
+        default: send_escalation_email
+      runtime_values:
+        type: dict[str, str] | None
+        required: false
+        default: null
+      metrics_logger:
+        type: UxMetricsLogger | None
+        required: false
+        default: null
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: preview
+    description: Run the reminder workflow in dry-run mode without sending or mutating
+      task reminder state.
+    locked: false
+    inputs:
+      now_date:
+        type: date | None
+        required: false
+        default: null
+      include_escalation:
+        type: bool
+        required: false
+        default: true
+    returns:
+      type: ReminderRunResult
+    exceptions: []
+    side_effects: Emits metrics when configured.
+  - name: run
+    description: Run the reminder workflow, optionally as a dry run, and mark reminders
+      sent only after a successful reminder phase.
+    locked: false
+    inputs:
+      now_date:
+        type: date | None
+        required: false
+        default: null
+      dry_run:
+        type: bool
+        required: false
+        default: false
+      include_escalation:
+        type: bool
+        required: false
+        default: true
+    returns:
+      type: ReminderRunResult
+    exceptions: []
+    side_effects: Sends reminder/escalation email via adapters, mutates last_reminder_sent
+      after successful live reminder sends, and emits metrics when configured.
+- name: AppState
+  description: In-memory onboarding application state loaded from JSON storage.
+  locked: false
+  attributes:
+    employees:
+      type: list[Employee]
+    templates:
+      type: list[TaskTemplate]
+    email_settings:
+      type: EmailSettings
+    monthly_last_sent:
+      type: str | None
+    last_reminder_run_at:
+      type: str | None
+    reminder_run_history:
+      type: list[dict[str, Any]]
+    scheduler_settings:
+      type: dict[str, Any]
+    scheduler_status:
+      type: dict[str, Any]
+  methods: []
+- name: JsonStore
+  description: JSON-backed onboarding state and settings store.
+  locked: false
+  attributes: {}
+  methods:
+  - name: __init__
+    description: Initialize storage paths under the provided root directory.
+    locked: false
+    inputs:
+      root_dir:
+        type: str | Path
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Creates the root directory when missing.
+  - name: load
+    description: Load onboarding state and settings JSON, apply metadata migrations,
+      and coerce persisted values into AppState.
+    locked: false
+    inputs: {}
+    returns:
+      type: AppState
+    exceptions: []
+    side_effects: Reads JSON files and writes migrated state JSON when migrations
+      apply.
+  - name: save
+    description: Persist onboarding state and email settings JSON.
+    locked: false
+    inputs:
+      state:
+        type: AppState
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Atomically writes state and settings JSON files.
+  - name: _load_json
+    description: Safely read a JSON dictionary from disk.
+    locked: false
+    inputs:
+      path:
+        type: Path
+        required: true
+    returns:
+      type: dict
+    exceptions: []
+    side_effects: Reads a JSON file when present.
+  - name: _atomic_write_json
+    description: Atomically write a JSON dictionary to disk.
+    locked: false
+    inputs:
+      path:
+        type: Path
+        required: true
+      payload:
+        type: dict
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Writes a temporary file and replaces the target JSON file.
+  - name: _optional_str
+    description: Return a value only when it is a string.
+    locked: false
+    inputs:
+      value:
+        type: Any
+        required: true
+    returns:
+      type: str | None
+    exceptions: []
+    side_effects: none
+  - name: _parse_dict_block
+    description: Return a defensive copy of a dictionary payload or an empty dictionary.
+    locked: false
+    inputs:
+      value:
+        type: Any
+        required: true
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: none
+  - name: _parse_reminder_history
+    description: Normalize reminder run history entries through ReminderRunSummary.
+    locked: false
+    inputs:
+      value:
+        type: Any
+        required: true
+    returns:
+      type: list[dict[str, Any]]
+    exceptions: []
+    side_effects: none
+- name: ScrollableCanvasArea
+  description: Container object that exposes the reusable widgets for a scrollable
+    canvas region.
+  locked: false
+  attributes:
+    shell:
+      type: ttk.Frame
+    canvas:
+      type: tk.Canvas
+    interior:
+      type: ttk.Frame
+    scrollbar:
+      type: ttk.Scrollbar
+    window_id:
+      type: int
+  methods: []
+- name: ScrollableModalContainer
+  description: Container object holding the dialog, scrollable body, and pinned button
+    bar widgets.
+  locked: false
+  attributes:
+    dialog:
+      type: tk.Toplevel
+    canvas:
+      type: tk.Canvas
+    interior:
+      type: ttk.Frame
+    button_bar:
+      type: ttk.Frame
+    scrollbar:
+      type: ttk.Scrollbar
+  methods: []
+data_structures:
+- name: DATE_FMT
+  description: Date format used for onboarding date-only strings.
+- name: SMTP_PASSWORD_ENV_KEYS
+  description: Environment variable keys checked before persisted SMTP password values.
+- name: ActionEmphasis
+  description: Supported visual emphasis values for onboarding action buttons.
+- name: SCHEDULER_RESULT_VALUES
+  description: Supported scheduler result status values.
+- name: SPECIFIC_DATE_REFERENCE_PREFIX
+  description: Prefix used to identify fixed-date onboarding task references.
+- name: TASK_STATUS_ORDER
+  description: Sort order for task statuses.
+- name: TASK_STATUS_COLORS
+  description: Display colors for task statuses.
+- name: TASK_STATUS_LABELS
+  description: Display labels for task statuses.
+- name: TASK_STATUS_ICONS
+  description: Display icons for task statuses.
+- name: TASK_STATUS_BADGE_STYLE
+  description: Badge style metadata for task statuses.
+- name: TASK_FILTER_OPTIONS
+  description: Supported onboarding task filter metadata.
+- name: KPI_FILTER_ENTRYPOINTS
+  description: Dashboard KPI to task filter mapping.
+- name: CANONICAL_TEMPLATE_METADATA
+  description: Canonical metadata applied during onboarding state migrations.
+- name: DEFAULT_TEMPLATES
+  description: Default onboarding task templates seeded when state has no templates.
+- name: DEFAULT_CRITICAL_WINDOW_DAYS
+  description: Default onboarding critical window for today dashboard counts.
+- name: DEFAULT_EXPECTED_INTERVAL_HOURS
+  description: Default expected interval between scheduler-triggered reminder runs.
+- name: _EMAIL_PATTERN
+  description: Recipient email validation pattern for reminder send guardrails.
+- name: _COMPAT_MODULES
+  description: Ordered tuple of legacy module import paths exposed by onboarding_operations.
+- name: _WRAPPER_POLICY
+  description: Human-readable wrapper policy for onboarding compatibility modules.
+dependencies: []

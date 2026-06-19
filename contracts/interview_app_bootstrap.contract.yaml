@@ -2,11 +2,13 @@ module:
   name: interview_app_bootstrap
   language: python
   path: src/interview_app/bootstrap.py
-  version: 1.1.0
+  version: 1.2.0
   description: Contracts for bootstrap module.
 functions:
 - name: build_default_settings
-  description: build_default_settings function.
+  description: Build default Tk app settings, including local Ollama DeepSeek summary
+    defaults for finalize-time executive summary, interview highlights, and answer
+    summaries.
   locked: false
   inputs: {}
   returns:
@@ -63,15 +65,14 @@ data_structures:
 - name: IntroFonts
   type: dataclass
 dependencies:
-- app_content
-- director_referral_service
-- interview_app_audio_runtime
-- interview_app_dashboard_controller
-- interview_app_finalize_pipeline
-- interview_app_flow_controller
-- interview_app_history_controller
-- interview_app_state
-- interview_app_transcript_writer
-- interview_app_ui_router
-- interview_app_ui_shell
-- interview_app_views
+- module: platform_services
+- module: interview_app_audio_runtime
+- module: interview_app_dashboard_controller
+- module: interview_app_finalize_pipeline
+- module: interview_app_flow_controller
+- module: interview_app_history_controller
+- module: interview_runtime
+- module: interview_app_transcript_writer
+- module: ui_composition
+- module: interview_app_views
+- module: scoring_reporting

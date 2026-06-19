@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from config_adapters import (
+from platform_services import (
     ConfigValidationError,
     inventory_config_assets,
     load_json_dict,

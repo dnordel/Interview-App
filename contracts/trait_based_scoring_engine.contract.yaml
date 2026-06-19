@@ -2,9 +2,9 @@ module:
   name: trait_based_scoring_engine
   language: python
   path: Trait-Based Scoring/trait_based_scoring_engine.py
-  version: 1.3.2
-  description: Trait scoring engine with contract-relative runtime bundle loading
-    and preflight path validation.
+  version: 1.5.0
+  description: Trait scoring engine with contract-relative runtime bundle loading,
+    weighted DeepSeek-only advisory signal scoring, and preflight path validation.
 functions: []
 classes:
 - name: ScoringEngine
@@ -70,7 +70,8 @@ classes:
     exceptions: []
     side_effects: none
   - name: validate_configured_paths
-    description: Preflight validate required configured paths and return resolved
+    description: Preflight validate required configured paths, accepting either legacy
+      signal_dictionary or weighted_signals as the signal source, and return resolved
       filesystem locations.
     locked: false
     inputs:
@@ -140,8 +141,9 @@ classes:
     - KeyError
     side_effects: none
   - name: load_runtime_bundle
-    description: Load config, shared signal dictionary, trait definitions, and resolved
-      paths from the contract location, normalizing traits for scoring use.
+    description: Load config, signal dictionary, trait definitions, and resolved paths
+      from the contract location, deriving dictionary and rubric-aligned traits from
+      weighted_signals when configured.
     locked: false
     inputs:
       contract_path:
@@ -154,9 +156,10 @@ classes:
     - PermissionError
     - json.JSONDecodeError
     - yaml.YAMLError
-    side_effects: Reads configuration and trait files from disk.
+    side_effects: Reads configuration and scoring JSON files from disk.
   - name: load_traits_from_dir
-    description: Load all trait JSON payloads from the configured traits directory without mutating their source structure.
+    description: Load all trait JSON payloads from the configured traits directory
+      without mutating their source structure.
     locked: false
     inputs:
       traits_dir:
@@ -168,6 +171,126 @@ classes:
     - json.JSONDecodeError
     - OSError
     side_effects: Reads trait files from disk.
+  - name: load_weighted_signals
+    description: Load and validate the single weighted scoring JSON source.
+    locked: false
+    inputs:
+      weighted_signals_path:
+        type: str | Path
+        required: true
+    returns:
+      type: dict[str, Any]
+    exceptions:
+    - TypeError
+    - json.JSONDecodeError
+    - OSError
+    side_effects: Reads weighted scoring JSON from disk.
+  - name: traits_from_weighted_signals
+    description: Convert weighted scoring source traits into normalized runtime trait
+      definitions, using rubric-aligned trait ids and excluding duplicate source variants.
+    locked: false
+    inputs:
+      weighted_payload:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: list[dict[str, Any]]
+    exceptions: []
+    side_effects: none
+  - name: signal_dictionary_from_traits
+    description: Build an in-memory signal dictionary from normalized weighted trait
+      signals.
+    locked: false
+    inputs:
+      traits:
+        type: list[dict[str, Any]]
+        required: true
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: none
+  - name: _normalize_weighted_trait_payload
+    description: Normalize one weighted-source trait and map preschool trait 11 recommended
+      version onto rubric trait_11.
+    locked: false
+    inputs:
+      trait:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: none
+  - name: _normalize_weighted_signal
+    description: Normalize one weighted-source signal to carry id/ref, numeric weight,
+      and critical flag.
+    locked: false
+    inputs:
+      signal:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: none
+  - name: _signal_weight
+    description: Resolve a numeric signal weight from weight, base_weight, or default_weight.
+    locked: false
+    inputs:
+      signal:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: int | float
+    exceptions: []
+    side_effects: none
+  - name: _signal_is_critical
+    description: Resolve whether a signal is critical, including AUTO_NO_HIRE weighted
+      source markers.
+    locked: false
+    inputs:
+      signal:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: bool
+    exceptions: []
+    side_effects: none
+  - name: _signal_is_auto_no_hire
+    description: Resolve whether a weighted signal is an automatic no-hire signal
+      from explicit flags, automatic_no_hire category, or AUTO_NO_HIRE base weight.
+    locked: false
+    inputs:
+      signal:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: bool
+    exceptions: []
+    side_effects: none
+  - name: _iter_trait_signal_payloads
+    description: Flatten core, flat extended, and grouped extended signal payloads.
+    locked: false
+    inputs:
+      trait:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: list[dict[str, Any]]
+    exceptions: []
+    side_effects: none
+  - name: _build_trait_signal_index
+    description: Build lookup metadata for weighted-source signals stored on runtime
+      config.
+    locked: false
+    inputs:
+      config:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: dict[str, dict[str, Any]]
+    exceptions: []
+    side_effects: none
   - name: _require_dict
     description: Instance wrapper around static mapping validation helper.
     locked: false
@@ -252,7 +375,7 @@ classes:
     side_effects: Reads configured path metadata.
   - name: resolve_signal
     description: Resolve a trait signal reference against the shared dictionary and
-      trait overrides.
+      trait overrides, preserving automatic no-hire metadata for advisory scoring.
     locked: false
     inputs:
       signal:
@@ -263,8 +386,21 @@ classes:
     exceptions:
     - ValueError
     side_effects: none
+  - name: convert_signal_score_to_raw_score
+    description: Convert a net DeepSeek signal score into the configured suggested
+      1-5 raw trait score.
+    locked: false
+    inputs:
+      net_signal_score:
+        type: int | float
+        required: true
+    returns:
+      type: int
+    exceptions: []
+    side_effects: none
   - name: score_trait
-    description: Score a single trait using selected signal references.
+    description: Score a single trait by summing observed model signal weights, deriving
+      suggested_raw_score, and returning automatic no-hire metadata.
     locked: false
     inputs:
       trait:
@@ -278,8 +414,8 @@ classes:
     exceptions: []
     side_effects: none
   - name: score_session
-    description: Score all configured traits, compute non-skipped critical selection
-      state, and return session decision metadata.
+    description: Score all configured traits as DeepSeek advisory signal evidence,
+      including net totals, suggested raw scores, and automatic no-hire metadata.
     locked: false
     inputs:
       traits:
@@ -293,8 +429,8 @@ classes:
     exceptions: []
     side_effects: none
   - name: make_decision
-    description: Resolve the threshold-based session decision label without applying
-      override metadata.
+    description: Resolve threshold-based advisory decision labels after automatic
+      no-hire override handling.
     locked: false
     inputs:
       final_score:
@@ -322,8 +458,8 @@ classes:
     exceptions: []
     side_effects: Writes debug output to stdout.
   - name: build_decision_summary
-    description: Apply contract override settings before thresholds and return explicit
-      decision metadata for session scoring output.
+    description: Apply automatic no-hire override settings before thresholds and return
+      explicit decision metadata for session scoring output.
     locked: false
     inputs:
       final_score:
@@ -338,6 +474,6 @@ classes:
     side_effects: none
 data_structures: []
 dependencies:
-- json
-- pathlib
-- yaml
+- module: json
+- module: pathlib
+- module: yaml

@@ -1,9 +1,9 @@
 from datetime import date
 
-from dashboard_today import build_dashboard_today_summary
-from onboarding_dashboard_actions import build_dashboard_kpi_chips, build_recommended_action, kpi_navigation_target
-from onboarding_models import Employee, EmployeeTask
-from onboarding_task_filters import filter_for_dashboard_kpi, filtered_tasks
+from onboarding_operations import build_dashboard_today_summary
+from onboarding_operations import build_dashboard_kpi_chips, build_recommended_action, kpi_navigation_target
+from onboarding_operations import Employee, EmployeeTask
+from onboarding_operations import filter_for_dashboard_kpi, filtered_tasks
 
 
 def _employees_for_dashboard() -> list[Employee]:

@@ -1,0 +1,207 @@
+{
+  "candidate": {
+    "name": "nina polee",
+    "interview_date": "2026-06-10",
+    "school": "Palmdale",
+    "track": "infant_toddler",
+    "qualification": {
+      "has_degree": true,
+      "degree_type": "BA",
+      "degree_in_ece": true,
+      "ece_units_completed": null,
+      "infant_toddler_class_completed": true,
+      "total_units_completed": null,
+      "years_experience": 24
+    }
+  },
+  "percent_of_max": 34.74,
+  "decision": "no_hire",
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": 1,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_8",
+        "trait_name": "Gentleness & Physical Awareness",
+        "raw_score": 1,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_9",
+        "trait_name": "Patience with Nonverbal Communication",
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time?",
+        "answer": "full or part time",
+        "skipped": false
+      },
+      {
+        "question_text": "Tell me a little about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$24",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "a week",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying to our company, Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-06-10 - Palmdale - nina polee - Interview.docx",
+    "transcript_path": "C:/Users/Dnord/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Candidate_nina_polee_2026-06-10_live_transcript.docx"
+  },
+  "communication_log": [],
+  "flow_transcript_slices": [
+    {
+      "type": "custom",
+      "id": "Why-ECE",
+      "question": "Tell me a little about yourself and why early childhood education matters to you.",
+      "candidate_transcript": "[Q1 Attempt 1]\nWell, I went to CSUN. My major was child development. I knew at a young age that I wanted to work with kids. So when I got into college, that was my goal. So when I graduated, I immediately went looking for preschool or daycares to work at because I love kids. I did eventually get a teaching credential and I've worked as a teacher for two years, but preschool has always been my dream."
+    },
+    {
+      "type": "custom",
+      "id": "Why-LPL",
+      "question": "Why are you applying to our company, Launch Pad Learning?",
+      "candidate_transcript": "[Q2 Attempt 1]\nUm, I am, I am looking, um, the district that I worked for, I think because I was trying to clear my credential, um, a lot of us who were on emergency credential were let go. And so I'm basically trying to find, I'm basically trying to find work. And so your company was one of the ones that caught my eye because it worked with the little ones."
+    },
+    {
+      "type": "trait",
+      "id": "trait_1",
+      "question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+      "candidate_transcript": "[Q3 Attempt 1]\nWell, a lot of times they will withdraw. And when they do that, I would start by, you know, getting down to their level and asking them if they were okay or offering them a hug. And if they didn't want it, then I would give them some time to be by themselves. And then I would come back to them and offer the hug or if they wanted to talk if they were a little older."
+    },
+    {
+      "type": "trait",
+      "id": "trait_2",
+      "question": "Tell me about a time you felt overwhelmed or stressed at work with children present. What did you do to manage, not the kids, but yourself and your stress?",
+      "candidate_transcript": "[Q4 Attempt 1]\nUm, what I've done will take my teaching job. What I've done is if I'm feeling that I'm getting stressed, I will give them an activity that they can do on their own so that I can kind of, you know, sit back in a corner to kind of catch my breath or I will message another team member to come give me a little break."
+    },
+    {
+      "type": "trait",
+      "id": "trait_3",
+      "question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering, helping with clothing, or guiding them physically. They are pulling away or crying. Walk me through exactly what you would do and say, step by step",
+      "candidate_transcript": "[Q5 Attempt 1]\nWell, first of all, it could be me that they don't want touching them. So if there's another staff member available, I will ask them if they can try. If not, I will talk the child into it and just let them know, you know, they don't want to be dirty all day. So it has to be done and just do my best to, you know, to, you know, show them how gentle I can be. And again, I would start."
+    },
+    {
+      "type": "trait",
+      "id": "trait_4",
+      "question": "Tell me about a time you received constructive criticism or feedback you didn’t expect or didn’t fully agree with. What happened next?",
+      "candidate_transcript": "[Q6 Attempt 1]\nUm, I, I think the person and I tried to see it through their eyes. And, um, and then I, I tried to make changes to see, you know, if indeed, it would be better to do it the way that they may have suggested. And then if I didn't feel comfortable with it, you know, I would, I would go back and I would let them know that I tried it their way and I didn't feel comfortable with it."
+    },
+    {
+      "type": "trait",
+      "id": "trait_5",
+      "question": "Tell me about a time something, such as a lesson plan, did not go as expected and your role in it.",
+      "candidate_transcript": "[Q7 Attempt 1]\nUm, that happened a couple of times during teaching. Um, I, I, after the lesson, I looked, I looked at the impact, what happened, and then I thought of ways that I can change it to help it, to help it be better."
+    },
+    {
+      "type": "trait",
+      "id": "trait_6",
+      "question": "Tell me about a time you had a challenge with another adult. How did you navigate it?",
+      "candidate_transcript": "[Q8 Attempt 1]\nUm, I allowed the adult, the other adult to air out what they felt. And then I apologized to them for making them feel that way. And I asked them what, what I could do to, um, to change it. Um, you know what? I don't remember. Yeah, I don't remember. I mean, I did have, um, there, I know there was, um, there was a conflict with the parent and I apologized to her if she felt that I did something. And then I told her if, you know, if she wanted to have a meeting to let me know. And I would, I would, um, I would plan the meeting. And then, you know, I just, you know, I let her know, um, on my part, you know, what happened. And, um, that way she understood what was going on. Um, and then I guess she understood because she didn't need them."
+    },
+    {
+      "type": "trait",
+      "id": "trait_7",
+      "question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+      "candidate_transcript": "[Q9 Attempt 1]\nUm, I've learned that when they are bored, that's when they can get into the most trouble. So I've had to learn throughout my career to always have something planned in the background, just in case something doesn't work out."
+    },
+    {
+      "type": "trait",
+      "id": "trait_8",
+      "question": "Tell me about how you physically care for infants or toddlers during routines like feeding, diapering, or comforting.",
+      "candidate_transcript": "[Q10 Attempt 1]\nUm, it's been a while, I admit, but when it's time for it, I will, um, I will try to not necessarily make it a game, but sometimes, you know, they get scared. So, you know, I, I'm gentle. I use a, you know, I use my soft voice and just let them know what time it is. And then while I'm diapering, I try to, you know, I try to, I try to play with them, talk to them so that, you know, it's not just, you know, a boring time for them."
+    },
+    {
+      "type": "custom",
+      "id": "FT-or-PT",
+      "question": "Are you looking for full-time or part-time?",
+      "candidate_transcript": "[Q12 Attempt 1]\nAnything I can get at this point full time."
+    },
+    {
+      "type": "custom",
+      "id": "Start",
+      "question": "When could you start if we decide to move forward?",
+      "candidate_transcript": "[Q14 Attempt 1]\nUm, as soon as possible. I mean, I, I do have to take my daughter to Arizona because we're moving her up there for college soon. And so we need to go see her, um, her new apartment. So, um, so I would, let's see, cause I wouldn't feel right asking for time off as soon as I start working. So, um, I would say maybe after next Wednesday, cause we're thinking Tuesday, we're thinking Tuesday or Wednesday to go, um, to Arizona."
+    }
+  ]
+}

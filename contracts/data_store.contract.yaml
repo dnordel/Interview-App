@@ -2,12 +2,14 @@ module:
   name: data_store
   language: python
   path: src/data_store.py
-  version: 1.0.0
-  description: JSON-backed stores and loaders for interview runtime and onboarding settings.
+  version: 1.0.1
+  description: JSON-backed stores and loaders for interview runtime and onboarding
+    settings.
 functions: []
 classes:
 - name: RubricLoader
-  description: Loads and validates rubric configuration and exposes track-filtered traits.
+  description: Loads and validates rubric configuration and exposes track-filtered
+    traits.
   locked: false
   attributes:
     rubric_path:
@@ -127,6 +129,8 @@ classes:
     returns:
       type: list[dict[str, Any]]
   - name: upsert_custom_question
+    description: Add or replace one custom question for a track; custom question id
+      must be non-empty.
     inputs:
       track_key:
         type: str
@@ -136,7 +140,11 @@ classes:
         required: true
     returns:
       type: None
+    exceptions:
+    - ValueError
+    side_effects: Writes question_overrides.json.
   - name: delete_custom_question
+    description: Delete one custom question for a track; missing ids are tolerated.
     inputs:
       track_key:
         type: str
@@ -146,6 +154,8 @@ classes:
         required: true
     returns:
       type: None
+    exceptions: []
+    side_effects: Writes question_overrides.json.
   - name: get_question_flow_raw
     inputs:
       track_key:
@@ -225,6 +235,23 @@ classes:
         required: true
     returns:
       type: bool
+  - name: update_offer_state
+    description: Update one history row's offer status and optional offer letter
+      path using the row key/history id.
+    inputs:
+      row_key:
+        type: str
+        required: true
+      offer_status:
+        type: str
+        required: true
+      offer_letter_path:
+        type: str
+        required: false
+        default: ""
+    returns:
+      type: bool
+    side_effects: Writes interview history JSON when the row is found.
 - name: SchoolOfferSettingsStore
   description: Stores per-school offer template settings.
   locked: false
@@ -259,5 +286,4 @@ classes:
       type: None
 data_structures: []
 dependencies:
-- config_adapters
-- storage_utils
+- module: platform_services

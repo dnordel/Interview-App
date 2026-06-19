@@ -1,95 +1,98 @@
 ﻿===============================================
-Started: 05/20/2026 10:04:23
-APP_DIR=C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide
+Started: 06/19/2026 11:36:53
+APP_DIR=C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide
 User=Dnord
-Computer=DAVID-LAPTOP
-PSVersion=5.1.26100.8457
-DebugMode=False
+Computer=DESKTOP-FNB67TP
+PSVersion=5.1.26100.8655
+DebugMode=True
 ===============================================
 Saved config: C:\Users\Dnord\AppData\Local\LPL_InterviewTool\setup_config.json
-Checking VB-CABLE status...
+Checking VB-CABLE driver status...
 VB-CABLE driver check: Detected=False; Evidence=
 Saved config: C:\Users\Dnord\AppData\Local\LPL_InterviewTool\setup_config.json
 VB-CABLE prompt suppressed by config. UserSaysInstalled=True
-Checking Python 3.11...
-Python 3.11 found from cache: C:\Program Files\Python311\python.exe
-Python 3.11 found: C:\Program Files\Python311\python.exe
+Checking FFmpeg availability...
+FFmpeg found on PATH: C:\Program Files\FFMPEG\bin\ffmpeg.exe
+Checking Python 3.11 install...
+Python 3.11 found from cache: C:\Users\Dnord\AppData\Local\Programs\Python\Python311\python.exe
+Python 3.11 found: C:\Users\Dnord\AppData\Local\Programs\Python\Python311\python.exe
 Saved config: C:\Users\Dnord\AppData\Local\LPL_InterviewTool\setup_config.json
-Setting up venv and installing packages...
+Checking Python venv and app packages...
 Upgrading pip/setuptools/wheel...
 RUN: C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Scripts\python.exe -m pip install --upgrade pip setuptools wheel
-Requirement already satisfied: pip in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (26.1.1)
+Requirement already satisfied: pip in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (26.1.2)
 Requirement already satisfied: setuptools in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (82.0.1)
 Requirement already satisfied: wheel in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (0.47.0)
-Requirement already satisfied: packaging>=24.0 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from wheel) (26.0)
+Requirement already satisfied: packaging>=24.0 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from wheel) (26.2)
 
-Installing base dependencies from C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt...
-RUN: C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Scripts\python.exe -m pip install -r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt
-Requirement already satisfied: python-docx==1.2.0 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from -r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 1)) (1.2.0)
-Requirement already satisfied: soundfile==0.13.1 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from -r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 2)) (0.13.1)
-Requirement already satisfied: faster-whisper==1.2.1 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from -r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (1.2.1)
-Requirement already satisfied: tkcalendar==1.6.1 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from -r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 4)) (1.6.1)
-Requirement already satisfied: lxml>=3.1.0 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from python-docx==1.2.0->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 1)) (6.0.2)
-Requirement already satisfied: typing_extensions>=4.9.0 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from python-docx==1.2.0->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 1)) (4.15.0)
-Requirement already satisfied: cffi>=1.0 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from soundfile==0.13.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 2)) (2.0.0)
-Requirement already satisfied: numpy in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from soundfile==0.13.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 2)) (2.4.2)
-Requirement already satisfied: ctranslate2<5,>=4.0 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (4.7.1)
-Requirement already satisfied: huggingface-hub>=0.21 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (1.5.0)
-Requirement already satisfied: tokenizers<1,>=0.13 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (0.22.2)
-Requirement already satisfied: onnxruntime<2,>=1.14 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (1.24.2)
-Requirement already satisfied: av>=11 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (16.1.0)
-Requirement already satisfied: tqdm in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (4.67.3)
-Requirement already satisfied: babel in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from tkcalendar==1.6.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 4)) (2.18.0)
-Requirement already satisfied: setuptools in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from ctranslate2<5,>=4.0->faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (82.0.1)
-Requirement already satisfied: pyyaml<7,>=5.3 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from ctranslate2<5,>=4.0->faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (6.0.3)
-Requirement already satisfied: flatbuffers in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from onnxruntime<2,>=1.14->faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (25.12.19)
-Requirement already satisfied: packaging in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from onnxruntime<2,>=1.14->faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (26.0)
-Requirement already satisfied: protobuf in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from onnxruntime<2,>=1.14->faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (7.34.0)
-Requirement already satisfied: sympy in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from onnxruntime<2,>=1.14->faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (1.14.0)
-Requirement already satisfied: filelock>=3.10.0 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from huggingface-hub>=0.21->faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (3.25.0)
-Requirement already satisfied: fsspec>=2023.5.0 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from huggingface-hub>=0.21->faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (2026.2.0)
-Requirement already satisfied: hf-xet<2.0.0,>=1.2.0 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from huggingface-hub>=0.21->faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (1.3.2)
-Requirement already satisfied: httpx<1,>=0.23.0 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from huggingface-hub>=0.21->faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (0.28.1)
-Requirement already satisfied: typer in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from huggingface-hub>=0.21->faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (0.24.1)
-Requirement already satisfied: anyio in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from httpx<1,>=0.23.0->huggingface-hub>=0.21->faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (4.12.1)
-Requirement already satisfied: certifi in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from httpx<1,>=0.23.0->huggingface-hub>=0.21->faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (2026.2.25)
-Requirement already satisfied: httpcore==1.* in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from httpx<1,>=0.23.0->huggingface-hub>=0.21->faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (1.0.9)
-Requirement already satisfied: idna in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from httpx<1,>=0.23.0->huggingface-hub>=0.21->faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (3.11)
-Requirement already satisfied: h11>=0.16 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from httpcore==1.*->httpx<1,>=0.23.0->huggingface-hub>=0.21->faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (0.16.0)
-Requirement already satisfied: pycparser in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from cffi>=1.0->soundfile==0.13.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 2)) (3.0)
-Requirement already satisfied: colorama in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from tqdm->faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (0.4.6)
-Requirement already satisfied: mpmath<1.4,>=1.1.0 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from sympy->onnxruntime<2,>=1.14->faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (1.3.0)
-Requirement already satisfied: click>=8.2.1 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from typer->huggingface-hub>=0.21->faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (8.3.1)
-Requirement already satisfied: shellingham>=1.3.0 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from typer->huggingface-hub>=0.21->faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (1.5.4)
-Requirement already satisfied: rich>=12.3.0 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from typer->huggingface-hub>=0.21->faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (14.3.3)
-Requirement already satisfied: annotated-doc>=0.0.2 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from typer->huggingface-hub>=0.21->faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (0.0.4)
-Requirement already satisfied: markdown-it-py>=2.2.0 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from rich>=12.3.0->typer->huggingface-hub>=0.21->faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (4.0.0)
-Requirement already satisfied: pygments<3.0.0,>=2.13.0 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from rich>=12.3.0->typer->huggingface-hub>=0.21->faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (2.19.2)
-Requirement already satisfied: mdurl~=0.1 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from markdown-it-py>=2.2.0->rich>=12.3.0->typer->huggingface-hub>=0.21->faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (0.1.2)
+Installing base dependencies from C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt...
+RUN: C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Scripts\python.exe -m pip install -r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt
+Requirement already satisfied: python-docx==1.2.0 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from -r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 1)) (1.2.0)
+Requirement already satisfied: soundfile==0.13.1 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from -r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 2)) (0.13.1)
+Requirement already satisfied: faster-whisper==1.2.1 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from -r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (1.2.1)
+Requirement already satisfied: tkcalendar==1.6.1 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from -r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 4)) (1.6.1)
+Requirement already satisfied: transformers==4.52.4 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from -r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 5)) (4.52.4)
+Requirement already satisfied: ctranslate2>=4.5.0 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from -r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 11)) (4.8.0)
+Requirement already satisfied: nvidia-cublas-cu12 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from -r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 12)) (12.9.2.10)
+Requirement already satisfied: nvidia-cudnn-cu12 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from -r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 13)) (9.23.2.1)
+Requirement already satisfied: lxml>=3.1.0 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from python-docx==1.2.0->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 1)) (6.1.1)
+Requirement already satisfied: typing_extensions>=4.9.0 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from python-docx==1.2.0->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 1)) (4.15.0)
+Requirement already satisfied: cffi>=1.0 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from soundfile==0.13.1->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 2)) (2.0.0)
+Requirement already satisfied: numpy in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from soundfile==0.13.1->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 2)) (2.4.6)
+Requirement already satisfied: huggingface-hub>=0.21 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (0.36.2)
+Requirement already satisfied: tokenizers<1,>=0.13 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (0.21.4)
+Requirement already satisfied: onnxruntime<2,>=1.14 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (1.27.0)
+Requirement already satisfied: av>=11 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (17.1.0)
+Requirement already satisfied: tqdm in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (4.68.2)
+Requirement already satisfied: babel in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from tkcalendar==1.6.1->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 4)) (2.18.0)
+Requirement already satisfied: filelock in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from transformers==4.52.4->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 5)) (3.29.4)
+Requirement already satisfied: packaging>=20.0 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from transformers==4.52.4->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 5)) (26.2)
+Requirement already satisfied: pyyaml>=5.1 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from transformers==4.52.4->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 5)) (6.0.3)
+Requirement already satisfied: regex!=2019.12.17 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from transformers==4.52.4->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 5)) (2026.5.9)
+Requirement already satisfied: requests in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from transformers==4.52.4->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 5)) (2.34.2)
+Requirement already satisfied: safetensors>=0.4.3 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from transformers==4.52.4->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 5)) (0.8.0)
+Requirement already satisfied: setuptools in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from ctranslate2>=4.5.0->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 11)) (82.0.1)
+Requirement already satisfied: fsspec>=2023.5.0 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from huggingface-hub>=0.21->faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (2026.6.0)
+Requirement already satisfied: flatbuffers in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from onnxruntime<2,>=1.14->faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (25.12.19)
+Requirement already satisfied: protobuf>=4.25.8 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from onnxruntime<2,>=1.14->faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (7.35.1)
+Requirement already satisfied: nvidia-cuda-nvrtc-cu12 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from nvidia-cublas-cu12->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 12)) (12.9.86)
+Requirement already satisfied: pycparser in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from cffi>=1.0->soundfile==0.13.1->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 2)) (3.0)
+Requirement already satisfied: colorama in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from tqdm->faster-whisper==1.2.1->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 3)) (0.4.6)
+Requirement already satisfied: charset_normalizer<4,>=2 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from requests->transformers==4.52.4->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 5)) (3.4.7)
+Requirement already satisfied: idna<4,>=2.5 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from requests->transformers==4.52.4->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 5)) (3.18)
+Requirement already satisfied: urllib3<3,>=1.26 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from requests->transformers==4.52.4->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 5)) (2.7.0)
+Requirement already satisfied: certifi>=2023.5.7 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from requests->transformers==4.52.4->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements.txt (line 5)) (2026.5.20)
 
 NVIDIA GPU detected via nvidia-smi.
 NVIDIA GPU detected. Attempting GPU dependency install...
-RUN: C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Scripts\python.exe -m pip install -r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements-gpu.txt
-Requirement already satisfied: ctranslate2>=4.5.0 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from -r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements-gpu.txt (line 2)) (4.7.1)
-Requirement already satisfied: nvidia-cublas-cu12 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from -r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements-gpu.txt (line 3)) (12.9.1.4)
-Requirement already satisfied: nvidia-cudnn-cu12 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from -r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements-gpu.txt (line 4)) (9.20.0.48)
-Requirement already satisfied: setuptools in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from ctranslate2>=4.5.0->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements-gpu.txt (line 2)) (82.0.1)
-Requirement already satisfied: numpy in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from ctranslate2>=4.5.0->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements-gpu.txt (line 2)) (2.4.2)
-Requirement already satisfied: pyyaml<7,>=5.3 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from ctranslate2>=4.5.0->-r C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements-gpu.txt (line 2)) (6.0.3)
+RUN: C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Scripts\python.exe -m pip install -r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements-gpu.txt
+Requirement already satisfied: ctranslate2>=4.5.0 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from -r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements-gpu.txt (line 2)) (4.8.0)
+Requirement already satisfied: nvidia-cublas-cu12 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from -r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements-gpu.txt (line 3)) (12.9.2.10)
+Requirement already satisfied: nvidia-cudnn-cu12 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from -r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements-gpu.txt (line 4)) (9.23.2.1)
+Requirement already satisfied: setuptools in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from ctranslate2>=4.5.0->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements-gpu.txt (line 2)) (82.0.1)
+Requirement already satisfied: numpy in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from ctranslate2>=4.5.0->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements-gpu.txt (line 2)) (2.4.6)
+Requirement already satisfied: pyyaml<7,>=5.3 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from ctranslate2>=4.5.0->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements-gpu.txt (line 2)) (6.0.3)
+Requirement already satisfied: nvidia-cuda-nvrtc-cu12 in C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages (from nvidia-cublas-cu12->-r C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\requirements-gpu.txt (line 3)) (12.9.86)
 
 GPU dependencies installed successfully.
 RUN: C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Scripts\python.exe -c import importlib.util as u, sys; sys.exit(0 if u.find_spec(r'docx') else 1)
 Dependency already installed: python-docx
 RUN: C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Scripts\python.exe -c import importlib.util as u, sys; sys.exit(0 if u.find_spec(r'tkcalendar') else 1)
 Dependency already installed: tkcalendar
+Checking local DeepSeek through Ollama (deepseek-r1:1.5b)...
+Ollama found: C:\Users\Dnord\AppData\Local\Programs\Ollama\ollama.exe
+Ollama local API already responding.
+Local DeepSeek model already installed: deepseek-r1:1.5b
+Local DeepSeek env configured for launched app: deepseek-r1:1.5b at http://127.0.0.1:11434/v1
 Added CUDA path: C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages\nvidia\cublas\bin
 Added CUDA path: C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Lib\site-packages\nvidia\cudnn\bin
 Handling VB-CABLE...
 VB-CABLE marked as installed (user confirmed).
+Audio routing instructions already shown; skipping.
 Locating app...
-Using cached app path: C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw
+Using cached app path: C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw
 Launching interview tool...
 Python launcher: C:\Users\Dnord\AppData\Local\LPL_InterviewTool\py311\.venv\Scripts\pythonw.exe
-Script: C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\src\runtime_wrapper.py
-WorkingDir: C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\src
+Script: C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\runtime_wrapper.py
+WorkingDir: C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src
 Launching complete. Closing installer...

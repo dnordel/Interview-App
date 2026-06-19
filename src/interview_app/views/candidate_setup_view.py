@@ -5,6 +5,7 @@ from typing import Any
 
 import tkinter as tk
 from tkinter import StringVar, messagebox, ttk
+from tk_theme import COLORS, configure_text_widget
 
 
 class CandidateSetupView:
@@ -22,9 +23,14 @@ class CandidateSetupView:
 
         ttk.Label(
             frm,
-            text="Step 1: Candidate setup",
+            text="Candidate setup",
             font=("TkDefaultFont", self.controller.settings["font_size"] + 4, "bold"),
-        ).pack(anchor="w", pady=8)
+        ).pack(anchor="w", pady=(0, 4))
+        ttk.Label(
+            frm,
+            text="Confirm candidate basics, role track, and intro script before recording starts.",
+            foreground=COLORS["muted"],
+        ).pack(anchor="w", pady=(0, 12))
 
         name_var = StringVar(value=self.controller.state.candidate_name)
         school_var = StringVar(value=self.controller.state.school)
@@ -34,36 +40,43 @@ class CandidateSetupView:
         school_error_var = StringVar(value="")
         track_error_var = StringVar(value="")
 
-        basics = ttk.LabelFrame(frm, text="Step A: Candidate basics")
+        body = ttk.Frame(frm)
+        body.pack(fill="both", expand=True)
+        form_column = ttk.Frame(body)
+        form_column.pack(side="left", fill="both", expand=True, padx=(0, 10))
+        preview_column = ttk.Frame(body)
+        preview_column.pack(side="left", fill="both", expand=True, padx=(10, 0))
+
+        basics = ttk.LabelFrame(form_column, text="Candidate basics", padding=10)
         basics.pack(fill="x", pady=(2, 10))
 
-        ttk.Label(basics, text="Candidate Name (Required)").pack(anchor="w", padx=10, pady=(10, 0))
+        ttk.Label(basics, text="Candidate name (required)").pack(anchor="w")
         name_entry = ttk.Entry(basics, textvariable=name_var)
-        name_entry.pack(fill="x", padx=10, pady=4)
-        ttk.Label(basics, textvariable=name_error_var, foreground="#b91c1c").pack(anchor="w", padx=10)
+        name_entry.pack(fill="x", pady=4)
+        ttk.Label(basics, textvariable=name_error_var, foreground=COLORS["danger"]).pack(anchor="w")
 
-        ttk.Label(basics, text="School (Required)").pack(anchor="w", padx=10, pady=(6, 0))
+        ttk.Label(basics, text="School (required)").pack(anchor="w", pady=(8, 0))
         school_row = ttk.Frame(basics)
         school_row.pack(fill="x", pady=4)
 
         school_combo = ttk.Combobox(school_row, textvariable=school_var, values=self.controller.school_options)
-        school_combo.pack(side="left", fill="x", expand=True, padx=(10, 0))
+        school_combo.pack(side="left", fill="x", expand=True)
         school_combo.bind("<Button-1>", lambda _e: self.controller._open_combo_dropdown(school_combo))
 
         ttk.Button(
             school_row,
             text="Add School (Optional)",
             command=lambda: self.controller._add_school(school_var, school_combo),
-        ).pack(side="left", padx=6)
+        ).pack(side="left", padx=(8, 0))
 
         ttk.Label(
             basics,
             text="Choose a configured school or type to add a custom one.",
-            foreground="#475569",
-        ).pack(anchor="w", padx=10)
-        ttk.Label(basics, textvariable=school_error_var, foreground="#b91c1c").pack(anchor="w", padx=10)
+            foreground=COLORS["muted"],
+        ).pack(anchor="w")
+        ttk.Label(basics, textvariable=school_error_var, foreground=COLORS["danger"]).pack(anchor="w")
 
-        track_hdr = ttk.Frame(frm)
+        track_hdr = ttk.Frame(form_column)
         track_hdr.pack(fill="x", pady=(10, 0))
         ttk.Label(track_hdr, text="Role track (required)").pack(side="left")
         ttk.Button(
@@ -77,26 +90,23 @@ class CandidateSetupView:
             ),
         ).pack(side="left", padx=(8, 0))
 
-        track_box = ttk.LabelFrame(frm, text="Choose track")
+        track_box = ttk.LabelFrame(form_column, text="Choose track", padding=10)
         track_box.pack(fill="x", pady=(4, 0))
         tracks = [(k, self.controller.rubric["tracks"][k]["label"]) for k in self.controller.rubric["tracks"].keys()]
         for k, label in tracks:
-            ttk.Radiobutton(track_box, text=label, variable=track_var, value=k).pack(anchor="w", padx=10, pady=2)
-        ttk.Label(frm, textvariable=track_error_var, foreground="#b91c1c").pack(anchor="w")
+            ttk.Radiobutton(track_box, text=label, variable=track_var, value=k).pack(anchor="w", pady=2)
+        ttk.Label(form_column, textvariable=track_error_var, foreground=COLORS["danger"]).pack(anchor="w")
 
-        intro_box = ttk.LabelFrame(frm, text="Step B: Intro script preview")
-        intro_box.pack(fill="both", expand=False, pady=(12, 12))
+        intro_box = ttk.LabelFrame(preview_column, text="Intro script preview", padding=10)
+        intro_box.pack(fill="both", expand=True)
 
         intro_text = tk.Text(
             intro_box,
             height=16,
             wrap="word",
-            relief="flat",
-            bg="#f8fafc",
-            padx=12,
-            pady=10,
             font=("TkDefaultFont", self.controller.settings["font_size"]),
         )
+        configure_text_widget(intro_text, font_size=self.controller.settings["font_size"])
         intro_y = ttk.Scrollbar(intro_box, orient="vertical", command=intro_text.yview)
         intro_text.configure(yscrollcommand=intro_y.set)
 

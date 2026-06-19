@@ -2,7 +2,7 @@ module:
   name: onboarding_app
   language: python
   path: src/onboarding_app.pyw
-  version: 1.0.0
+  version: 1.0.1
   description: Contract for onboarding_app module.
 functions:
 - name: _load_launch_context
@@ -470,6 +470,18 @@ classes:
       type: None
     exceptions: []
     side_effects: none
+  - name: _bind_task_widget_visibility
+    description: Bind task widget focus visibility behavior to scroll focused tasks
+      into view.
+    locked: false
+    inputs:
+      widget:
+        type: tk.Misc
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: binds focus event handler
   - name: change_storage_folder
     description: change_storage_folder method.
     locked: false
@@ -1198,22 +1210,10 @@ classes:
     side_effects: none
 data_structures: []
 dependencies:
-- dashboard_today
-- email_security
-- keyboard_telemetry
-- onboarding_action_sections
-- onboarding_dashboard_actions
-- onboarding_models
-- onboarding_reminder_health
-- onboarding_reminder_runner
-- onboarding_scheduler
-- onboarding_scheduler_dialog
-- onboarding_scheduler_status
-- onboarding_send_guardrails
-- onboarding_storage
-- onboarding_task_filters
-- onboarding_template_reference
-- onboarding_ui_helpers
-- template_placeholders
-- ui_feedback
-- ux_metrics
+- module: email_security
+- module: keyboard_telemetry
+- module: template_placeholders
+- module: ui_feedback
+- module: ux_metrics
+- module: onboarding_operations
+- module: tk_theme

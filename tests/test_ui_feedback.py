@@ -1,6 +1,6 @@
 import tkinter as tk
 
-from ui_feedback import (
+from ui_composition import (
     MainGuiWarningPresenter,
     TRANSCRIPTION_PARTIAL_WARNING_COPY,
     VALIDATION_SEVERITY_WARNING,

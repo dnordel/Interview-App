@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-05-29T17:18:39.420100Z",
+  "updated_at": "2026-05-29T17:30:19.787476Z",
+  "interview": {
+    "interview_id": "Candidate_Nancy_Ramirez_2026-05-29_72a6ec0e",
+    "candidate_name": "Nancy Ramirez",
+    "interview_date": "2026-05-29"
+  },
+  "questions": {
+    "0": {
+      "flow_idx": 0,
+      "item_type": "custom",
+      "item_id": "Why-ECE",
+      "notes": {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q1 Attempt 1]\nI love working with children I feel like building a strong foundation for them getting to know their personalities I mean I've been working with children since off and on since 2009 I did go to El Camino College to get my child development units and I just love working with children because you are able to give them that impact and I just love working with children I grew up I'm the youngest of five my mom would always babysit children so I grew up you know with a lot of kids a lot of nieces and nephews when I was 11 years old my first niece was born so I just",
+      "updated_at": "2026-05-29T17:19:02.416985Z"
+    },
+    "1": {
+      "flow_idx": 1,
+      "item_type": "custom",
+      "item_id": "Why-LPL",
+      "notes": {
+        "question_text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q2 Attempt 1]\nI'm interested and intrigued as well I just would like to have a new opportunity working at your school I feel like I'll be a good candidate also my friend recommended me to your school and looking at your website I just felt maybe that I would be a good candidate to work there you're welcome it was proud of name",
+      "updated_at": "2026-05-29T17:19:23.653117Z"
+    },
+    "2": {
+      "flow_idx": 2,
+      "item_type": "trait",
+      "item_id": "trait_1",
+      "notes": {
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q3 Attempt 1]\nhired her um miss no not sandra sorry i just lost uh miss angie i'm sorry angie yes i went blank there for a minute sorry um well there's been different occasions um i would you know bend down to their level give them a hug trying to let them know that everything is going to be okay just making them feel more comfortable but also um letting them feel what they're feeling as well um or express how they're feeling so i feel just being there for them and just letting them know that everything's okay um i feel like i'll make them feel more comfortable",
+      "updated_at": "2026-05-29T17:20:26.102435Z"
+    },
+    "3": {
+      "flow_idx": 3,
+      "item_type": "trait",
+      "item_id": "trait_2",
+      "notes": {
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q4 Attempt 1]\nthat's a tough question because i try i mean i know that it can be overwhelming working with children but for me i don't think i've ever experienced that because i love working with them so whatever i'm going through emotionally or stress i try to leave it outside of work and not taking taking it out on them so just remaining calm but i wouldn't um say that i'll take it out on them i just take deep breaths and just tell myself everything's gonna be okay or just you know just things like that that make me feel better",
+      "updated_at": "2026-05-29T17:21:27.194625Z"
+    },
+    "4": {
+      "flow_idx": 4,
+      "item_type": "trait",
+      "item_id": "trait_3",
+      "notes": {
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q5 Attempt 1]\nWhat would I do? Well, firstly, I feel like I'll give them space, depending what the child's going through. And especially if they don't want to get touched, I will not touch them for the moment. But I will also let them know that everything will be okay. I just need to change you. Just make them feel comfortable overall. And then just giving them space, I feel, will be a thing to do. Just to let their emotions out, see how they're feeling, and then I'll be able to.",
+      "updated_at": "2026-05-29T17:22:27.325455Z"
+    },
+    "5": {
+      "flow_idx": 5,
+      "item_type": "trait",
+      "item_id": "trait_4",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q6 Attempt 1]\nAs far as from an employer or my boss, or I feel I haven't, to be honest, I've never gotten any negative feedback, but I feel if I did, depending on the situation or what is said, I feel like I will try my best to make things better. If in some certain area, you know, I didn't do something right or they were upset about something, I will make sure I make the parents happy or just express, you know, it's just depending on the situation. But overall, I've never gotten negative feedback, but I would do my best to make it positive.",
+      "updated_at": "2026-05-29T17:23:40.775436Z"
+    },
+    "6": {
+      "flow_idx": 6,
+      "item_type": "trait",
+      "item_id": "trait_5",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q7 Attempt 1]\num a lesson plan I would work on coming up with something better or just working on it overall to me you know I mean there was times where I had to go back and read what I wrote and maybe change a few things so it's just more like rereading what you put so hopefully that would work out if not I wouldn't mind changing it if it didn't go as expected",
+      "updated_at": "2026-05-29T17:24:34.181664Z"
+    },
+    "7": {
+      "flow_idx": 7,
+      "item_type": "trait",
+      "item_id": "trait_6",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q8 Attempt 1]\nUm, how would I navigate that? Um, um, I tend to have good relationships with my coworkers. I've never had an issue, but if that would come to that, I think I would just not, uh, let's say a coworker's angry at me or yelling at me, or I'll just remain calm. Um, and just, I would say, let's talk about it or maybe, you know, go to the boss and talk about what's going on. Just, just having better communication skills. As far as that, I'm really glad I've never had that situation, but if I was, I feel like I'll let them express how they're feeling and see what we can do to, um, ease the situation.",
+      "updated_at": "2026-05-29T17:25:43.893878Z"
+    },
+    "8": {
+      "flow_idx": 8,
+      "item_type": "trait",
+      "item_id": "trait_7",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q9 Attempt 1]\nEvery job I've been in has been different, but I feel like since I started, I've grown as a person, as a teacher, only because I was able to work with different ages. Working at a Montessori school as well, or even private schools, just overall has made me a better person. Things that I've learned throughout the years, things that I could change. And it's just amazing that I'm able to have an impact on the children. I feel like that's very important.",
+      "updated_at": "2026-05-29T17:26:34.706324Z"
+    },
+    "9": {
+      "flow_idx": 9,
+      "item_type": "trait",
+      "item_id": "trait_10",
+      "notes": {
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "[Q10 Attempt 1]\nUm, let's see if I had a, when I was working out of school, um, last year, there was a child that wouldn't want the parent to leave, right? They always have a tough time. Um, so they would cry. I would actually just carry them, um, make them feel safe. I would distract them by showing them at the window, like, I see a bird, I see a butterfly, or just anything that just would get them out of those emotions of them being sad, of not letting go of the parents. So, so like a distraction or just, you know, giving them, giving them a hug or even carrying them, I feel, um, helped them not to feel that way anymore. So mostly distracting them from that they, the parent had to go to work, they felt more safe and just giving them space to express themselves overall. Thank you.",
+      "updated_at": "2026-05-29T17:27:48.982580Z"
+    },
+    "10": {
+      "flow_idx": 10,
+      "item_type": "trait",
+      "item_id": "trait_11",
+      "notes": {
+        "raw_score": null,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": true,
+        "no_example_after_followups": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-05-29T17:27:46.927559Z"
+    },
+    "11": {
+      "flow_idx": 11,
+      "item_type": "custom",
+      "item_id": "FT-or-PT",
+      "notes": {
+        "question_text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "answer": "full-time",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q12 Attempt 1]\nYes, full time. What would be the schedule? I was just wondering.",
+      "updated_at": "2026-05-29T17:28:04.725429Z"
+    },
+    "12": {
+      "flow_idx": 12,
+      "item_type": "custom",
+      "item_id": "Not-Avail",
+      "notes": {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q13 Attempt 1]\nNo, I was just wondering if there was just part-time or full-time. I wasn't sure about that.",
+      "updated_at": "2026-05-29T17:28:19.043591Z"
+    },
+    "13": {
+      "flow_idx": 13,
+      "item_type": "custom",
+      "item_id": "Pay",
+      "notes": {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$24",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q14 Attempt 1]\nI am asking for 24, but I think that's what it said, right? 19 through 24, I believe on Indeed.",
+      "updated_at": "2026-05-29T17:28:45.390000Z"
+    },
+    "14": {
+      "flow_idx": 14,
+      "item_type": "custom",
+      "item_id": "Start",
+      "notes": {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "asap",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q15 Attempt 1]\njust yeah if that's okay um I can start Monday no I had gave my two-week notice to my job so so it'd be a little I left on the two weeks ago oh sorry I just felt um I'm comfortable there it's very far I was working in Harbor City um there was just a lot of things going on there that wasn't sanitary that there was like roaches there weren't I was working for a Montessori school they weren't washing the placemats for the kids um they were favorites um I just didn't like how the employer was treating me overall so I just decided to leave and give my two-week notice and so this is why I was you know looking for another job yeah thank you yeah that was my first time and also because it's so far because I do live in Inglewood and I had to drive to Harbor City so it was a very far drive um the pay it is the pay wasn't great but I felt mostly I wasn't feeling comfortable",
+      "updated_at": "2026-05-29T17:30:19.787476Z"
+    }
+  }
+}

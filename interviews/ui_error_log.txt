@@ -106,3 +106,103 @@ Traceback (most recent call last):
   File "C:\Users\Dnord\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 1876, in _start_background_question_transcription
     raise ReportingValidationError(
 reporting.ReportingValidationError: Recording for Q1 was not active. Please retry this question.
+
+[2026-06-15 15:10:24] Recording transition failed
+Transcription for Q1 is already running.
+
+Traceback (most recent call last):
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\ui_composition.py", line 1076, in _advance
+    self.app._queue_transcription_and_transition(
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 2333, in _queue_transcription_and_transition
+    self._start_background_question_transcription(flow_idx)
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 1876, in _start_background_question_transcription
+    raise ReportingValidationError(
+scoring_reporting.ReportingValidationError: Transcription for Q1 is already running.
+
+[2026-06-16 08:46:26] Recording transition failed
+Recording for Q15 was not active. Please retry this question.
+
+Traceback (most recent call last):
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\ui_composition.py", line 1076, in _advance
+    self.app._queue_transcription_and_transition(
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 2333, in _queue_transcription_and_transition
+    self._start_background_question_transcription(flow_idx)
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 1856, in _start_background_question_transcription
+    raise ReportingValidationError(
+scoring_reporting.ReportingValidationError: Recording for Q15 was not active. Please retry this question.
+
+[2026-06-16 08:46:33] Recording transition failed
+Recording for Q15 was not active. Please retry this question.
+
+Traceback (most recent call last):
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\ui_composition.py", line 1089, in go_back
+    self.app._queue_transcription_and_transition(self.flow_idx, self.flow_idx - 1)
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 2333, in _queue_transcription_and_transition
+    self._start_background_question_transcription(flow_idx)
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 1856, in _start_background_question_transcription
+    raise ReportingValidationError(
+scoring_reporting.ReportingValidationError: Recording for Q15 was not active. Please retry this question.
+
+[2026-06-19 11:33:11] Recording transition failed
+'4'
+
+Traceback (most recent call last):
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\ui_composition.py", line 1162, in _advance
+    self.app._queue_transcription_and_transition(
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 2228, in _queue_transcription_and_transition
+    self.show_flow_screen(flow_idx + 1)
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 756, in show_flow_screen
+    self.ui_router.show_flow_screen(flow_index)
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\ui_composition.py", line 3122, in show_flow_screen
+    self._route_trait(flow_index, str(item.get("id", "")))
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\ui_composition.py", line 3132, in _route_trait
+    self.route_to(self.ROUTE_QUESTION_TRAIT, flow_idx=flow_index, trait=trait)
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\ui_composition.py", line 3092, in route_to
+    self.navigator.show_trait_screen_by_trait_id(kwargs["flow_idx"], kwargs["trait"])
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\ui_composition.py", line 2999, in show_trait_screen_by_trait_id
+    self._app.show_trait_screen_by_trait_id(flow_idx, trait)
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 2314, in show_trait_screen_by_trait_id
+    ui.render()
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\ui_composition.py", line 294, in render
+    self._render_secondary_context(secondary_frame)
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\ui_composition.py", line 325, in _render_secondary_context
+    self._render_ladders(parent)
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\ui_composition.py", line 353, in _render_ladders
+    self._samples_body = self._render_disclosure_section(
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\ui_composition.py", line 416, in _render_disclosure_section
+    ttk.Label(section_body, text=f"{n}: {line_values[str(n)]}", wraplength=1030).pack(anchor="w")
+                                         ~~~~~~~~~~~^^^^^^^^
+KeyError: '4'
+
+[2026-06-19 11:36:26] Recording transition failed
+'4'
+
+Traceback (most recent call last):
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\ui_composition.py", line 1160, in _advance
+    self.app._queue_transcription_and_transition(
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 2228, in _queue_transcription_and_transition
+    self.show_flow_screen(flow_idx + 1)
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 756, in show_flow_screen
+    self.ui_router.show_flow_screen(flow_index)
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\ui_composition.py", line 3120, in show_flow_screen
+    self._route_trait(flow_index, str(item.get("id", "")))
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\ui_composition.py", line 3130, in _route_trait
+    self.route_to(self.ROUTE_QUESTION_TRAIT, flow_idx=flow_index, trait=trait)
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\ui_composition.py", line 3090, in route_to
+    self.navigator.show_trait_screen_by_trait_id(kwargs["flow_idx"], kwargs["trait"])
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\ui_composition.py", line 2997, in show_trait_screen_by_trait_id
+    self._app.show_trait_screen_by_trait_id(flow_idx, trait)
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\interview_app.pyw", line 2314, in show_trait_screen_by_trait_id
+    ui.render()
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\ui_composition.py", line 294, in render
+    self._render_secondary_context(secondary_frame)
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\ui_composition.py", line 325, in _render_secondary_context
+    self._render_ladders(parent)
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\ui_composition.py", line 353, in _render_ladders
+    self._samples_body = self._render_disclosure_section(
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Dnord\Dropbox (Old)\Dropbox\David LPL work\Initial Teacher Interview Guide\src\ui_composition.py", line 416, in _render_disclosure_section
+    ttk.Label(section_body, text=f"{n}: {line_values[str(n)]}", wraplength=1030).pack(anchor="w")
+                                         ~~~~~~~~~~~^^^^^^^^
+KeyError: '4'

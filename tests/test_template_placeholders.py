@@ -1,12 +1,14 @@
-from template_placeholders import (
+from scoring_reporting import (
     find_unknown_placeholders,
     missing_placeholder_keys,
     render_template,
     validate_template_map,
 )
+import scoring_reporting
 
 
 def test_find_unknown_placeholders_by_context() -> None:
+    assert render_template is scoring_reporting.render_template
     unknown = find_unknown_placeholders("Hi {candidate_name} {bogus}", "director")
     assert unknown == {"bogus"}
 

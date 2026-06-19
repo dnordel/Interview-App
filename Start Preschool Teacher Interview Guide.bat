@@ -2,7 +2,7 @@
 setlocal
 
 set "ROOT_DIR=%~dp0"
-set "RUNNER=%ROOT_DIR%scripts\windows\run_interview.bat"
+set "RUNNER=%ROOT_DIR%setup_and_run.ps1"
 
 if not exist "%RUNNER%" (
   echo Could not find launcher script:
@@ -11,5 +11,5 @@ if not exist "%RUNNER%" (
   exit /b 1
 )
 
-call "%RUNNER%"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "%RUNNER%"
 exit /b %errorlevel%

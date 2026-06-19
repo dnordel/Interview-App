@@ -1,4 +1,4 @@
-from candidate_title import DEFAULT_CANDIDATE_TITLE, TITLE_OPTIONS, normalize_candidate_title
+from scoring_reporting import DEFAULT_CANDIDATE_TITLE, TITLE_OPTIONS, normalize_candidate_title
 
 
 def test_normalize_candidate_title_accepts_allowed_values() -> None:

@@ -2,8 +2,9 @@ module:
   name: interview_app_session_manager
   language: python
   path: src/interview_app/session_manager.py
-  version: 1.0.0
-  description: Session payload validation, normalization, and resume navigation instructions.
+  version: 1.0.2
+  description: Deprecated compatibility wrapper for session payload validation, hydration,
+    and resume instructions implemented by interview_runtime.
 functions: []
 classes:
 - name: SessionPayloadValidationError
@@ -21,7 +22,8 @@ classes:
       type: int | None
   methods: []
 - name: InterviewSessionManager
-  description: Service for loading persisted sessions, hydrating InterviewState, and building resume targets.
+  description: Service for loading persisted sessions, hydrating InterviewState, and
+    building resume targets.
   locked: false
   attributes: {}
   methods:
@@ -139,7 +141,4 @@ classes:
     side_effects: none
 data_structures: []
 dependencies:
-- candidate_profile
-- interview_session_store
-- interview_state
-- reporting
+- module: interview_runtime

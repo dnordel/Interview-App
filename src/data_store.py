@@ -5,14 +5,14 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
-from config_adapters import (
+from platform_services import (
     ConfigValidationError,
+    atomic_write_json,
     load_json_dict,
     normalize_question_overrides_config,
     validate_disqualifier_config,
     validate_rubric_config,
 )
-from storage_utils import atomic_write_json
 
 class RubricLoader:
     """Loads rubric.json and validates required structure."""

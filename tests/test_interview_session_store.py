@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from interview_session_store import CURRENT_SCHEMA_VERSION, InterviewSessionStore
+from interview_runtime import CURRENT_SCHEMA_VERSION, InterviewSessionStore
 
 
 class TestInterviewSessionStore(unittest.TestCase):

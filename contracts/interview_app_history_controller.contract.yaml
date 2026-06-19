@@ -2,17 +2,20 @@ module:
   name: interview_app_history_controller
   language: python
   path: src/interview_app/history_controller.py
-  version: 1.1.0
-  description: Controller coordinating interview history data and HistoryDataGrid callbacks.
+  version: 1.1.2
+  description: Deprecated compatibility wrapper for interview history table controller
+    implemented by interview_runtime.
 functions: []
 classes:
 - name: HistoryController
-  description: Coordinates history data loading, selected row state, and action callback routing.
+  description: Coordinates history data loading, selected row state, and action callback
+    routing.
   locked: false
   attributes: {}
   methods:
   - name: build_history_table
-    description: Creates the history table section and mounts the HistoryDataGrid widget.
+    description: Creates the history table section and mounts the HistoryDataGrid
+      widget.
     locked: false
     inputs:
       parent:
@@ -75,7 +78,7 @@ classes:
     exceptions: []
     side_effects: invokes application service callbacks
   - name: _on_retranscribe_action
-    description: Forwards retranscribe action callback for a selected row.
+    description: Compatibility no-op for retired retranscribe action callback.
     locked: false
     inputs:
       row:
@@ -84,7 +87,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: invokes application service callbacks
+    side_effects: none
   - name: _on_open_transcript_link
     description: Opens transcript path for a selected row when available.
     locked: false
@@ -123,4 +126,4 @@ classes:
     side_effects: opens filesystem path in default app
 data_structures: []
 dependencies:
-- ui_components_history_data_grid
+- module: interview_runtime

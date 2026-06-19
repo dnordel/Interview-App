@@ -2,8 +2,9 @@ module:
   name: app_logging
   language: python
   path: src/app_logging.py
-  version: 1.0.0
-  description: Structured JSON logging with redaction and crash-report support.
+  version: 1.1.0
+  description: Deprecated compatibility wrapper for structured JSON logging owned
+    by platform_services.
 functions:
 - name: initialize_app_logging
   description: Configure root logging handlers and uncaught exception hooks.
@@ -209,4 +210,5 @@ data_structures:
   type: Pattern[str]
 - name: _PHONE_PATTERN
   type: Pattern[str]
-dependencies: []
+dependencies:
+- module: platform_services

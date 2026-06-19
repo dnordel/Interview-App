@@ -22,7 +22,11 @@ Use this checklist when any PR changes interfaces, contracts, or contract govern
 - [ ] Locked interfaces: `python tools/check_contract_review.py --section locked`
 - [ ] Contract schema: `python tools/check_contract_review.py --section schema`
 - [ ] Coverage matrix freshness: `python tools/check_contract_review.py --section coverage-matrix`
-- [ ] Section batch run: `scripts/contract_review/run_section_checks.sh`
+- [ ] Section batch run:
+  - `python tools/check_contract_review.py --section baseline`
+  - `python tools/check_contract_review.py --section locked`
+  - `python tools/check_contract_review.py --section schema`
+  - `python tools/check_contract_review.py --section coverage-matrix`
 - [ ] Contract interface tests:
   - `pytest tests/test_onboarding_contract_interfaces.py`
   - `pytest tests/test_interview_app_contract_interfaces.py`

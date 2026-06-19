@@ -1,0 +1,33 @@
+module:
+  name: web_scored_question
+  language: html_css_javascript
+  path: web/scored-question/
+  version: 0.1.0
+  description: Dependency-free browser prototype for the scored competency question
+    workflow, optimized for live interviewing and local rubric loading.
+functions: []
+classes: []
+data_structures:
+- name: scored_question_web_draft_payload
+  description: Downloaded JSON payload for in-memory scored competency responses,
+    matching existing trait state field names under trait_inputs without writing
+    candidate data to repository files.
+  fields:
+    exported_at: string
+    current_trait_id: string
+    trait_inputs: dict[string, scored_question_response]
+- name: scored_question_response
+  description: One browser-captured scored competency response using existing app
+    trait input field names.
+  fields:
+    trait_id: string
+    raw_score: integer | null
+    absolute_disqualifier: boolean
+    no_example_after_followups: boolean
+    selected_signal_ids: list[string]
+    question_notes: string
+    trait_notes: string
+    verbatim_notes: string
+dependencies:
+- module: config_rubric_json
+- module: trait_based_scoring_json

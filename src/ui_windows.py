@@ -6,15 +6,15 @@ from pathlib import Path
 import tkinter as tk
 from tkinter import END, BooleanVar, IntVar, StringVar, filedialog, messagebox, ttk
 
-from app_content import DEFAULT_BASE_DIR, MAX_FONT_SIZE, MIN_FONT_SIZE, now_stamp
-from template_placeholders import (
+from platform_services import DEFAULT_BASE_DIR, MAX_FONT_SIZE, MIN_FONT_SIZE, now_stamp
+from scoring_reporting import (
     insert_token_into_focused_widget,
     placeholder_picker_options,
     token_from_picker_label,
     validate_template_map,
 )
-from ui_feedback import format_guidance
-from keyboard_telemetry import KeyboardPathSession
+from ui_composition import KeyboardPathSession, format_guidance
+from tk_theme import COLORS, apply_professional_ops_theme, configure_text_widget
 
 
 QUESTION_AUDIO_MODE_LEGACY_INCREMENTAL = "legacy_incremental"
@@ -34,6 +34,7 @@ class SettingsWindow(tk.Toplevel):
 
         self.title("Settings")
         self.geometry("820x560")
+        apply_professional_ops_theme(self, font_size=int(self.app.settings.get("font_size", 10)))
 
         self.path_var = StringVar(value=self.app.settings["base_dir"])
         self.size_var = IntVar(value=self.app.settings["font_size"])
@@ -186,6 +187,7 @@ class SettingsWindow(tk.Toplevel):
         self._build_field_error(director_row, "director_subject")
         ttk.Label(director_row, text="Body template:").pack(anchor="w", pady=(8, 0))
         director_body_entry = tk.Text(director_row, height=4, wrap="word")
+        configure_text_widget(director_body_entry, font_size=int(self.app.settings.get("font_size", 10)))
         director_body_entry.pack(fill="x", pady=(4, 0))
         director_body_entry.insert("1.0", self.director_email_body_var.get())
         self.director_email_body_widget = director_body_entry
@@ -205,6 +207,7 @@ class SettingsWindow(tk.Toplevel):
         self._build_field_error(offer_row, "offer_approval_subject")
         ttk.Label(offer_row, text="Offer approval body template:").pack(anchor="w", pady=(8, 0))
         offer_approval_body_entry = tk.Text(offer_row, height=4, wrap="word")
+        configure_text_widget(offer_approval_body_entry, font_size=int(self.app.settings.get("font_size", 10)))
         offer_approval_body_entry.pack(fill="x", pady=(4, 0))
         offer_approval_body_entry.insert("1.0", self.offer_approval_body_var.get())
         self.offer_approval_body_widget = offer_approval_body_entry
@@ -220,6 +223,7 @@ class SettingsWindow(tk.Toplevel):
         ttk.Checkbutton(offer_row, text="Attach generated offer file in acceptance draft", variable=self.offer_acceptance_attach_var).pack(anchor="w", pady=(8, 0))
         ttk.Label(offer_row, text="Offer acceptance body template:").pack(anchor="w", pady=(8, 0))
         offer_acceptance_body_entry = tk.Text(offer_row, height=4, wrap="word")
+        configure_text_widget(offer_acceptance_body_entry, font_size=int(self.app.settings.get("font_size", 10)))
         offer_acceptance_body_entry.pack(fill="x", pady=(4, 0))
         offer_acceptance_body_entry.insert("1.0", self.offer_acceptance_body_var.get())
         self.offer_acceptance_body_widget = offer_acceptance_body_entry
@@ -234,6 +238,7 @@ class SettingsWindow(tk.Toplevel):
         self._build_field_error(offer_row, "welcome_subject")
         ttk.Label(offer_row, text="Welcome email body template:").pack(anchor="w", pady=(8, 0))
         welcome_body_entry = tk.Text(offer_row, height=4, wrap="word")
+        configure_text_widget(welcome_body_entry, font_size=int(self.app.settings.get("font_size", 10)))
         welcome_body_entry.pack(fill="x", pady=(4, 0))
         welcome_body_entry.insert("1.0", self.welcome_body_var.get())
         self.welcome_body_widget = welcome_body_entry
@@ -420,8 +425,8 @@ class SettingsWindow(tk.Toplevel):
     def _bind_focus_visibility(widget: tk.Misc) -> None:
         if "highlightthickness" not in widget.keys():
             return
-        widget.bind("<FocusIn>", lambda _e, w=widget: w.configure(highlightthickness=2, highlightbackground="#2563eb", highlightcolor="#2563eb"), add="+")
-        widget.bind("<FocusOut>", lambda _e, w=widget: w.configure(highlightthickness=1, highlightbackground="#94a3b8", highlightcolor="#94a3b8"), add="+")
+        widget.bind("<FocusIn>", lambda _e, w=widget: w.configure(highlightthickness=2, highlightbackground=COLORS["focus"], highlightcolor=COLORS["focus"]), add="+")
+        widget.bind("<FocusOut>", lambda _e, w=widget: w.configure(highlightthickness=1, highlightbackground=COLORS["border"], highlightcolor=COLORS["border"]), add="+")
 
     def _on_tab_changed(self, _event: tk.Event) -> None:
         index = self.notebook.index(self.notebook.select())
@@ -701,6 +706,7 @@ class QuestionEditorWindow(tk.Toplevel):
 
         self.title("Edit Questions")
         self.geometry("1050x700")
+        apply_professional_ops_theme(self, font_size=int(self.app.settings.get("font_size", 10)))
 
         default_track = self.app.state.track or next(iter(self.app.rubric["tracks"].keys()))
         self.track_var = StringVar(value=default_track)
@@ -799,7 +805,18 @@ class QuestionEditorWindow(tk.Toplevel):
         flow_box = ttk.LabelFrame(parent, text="Interview flow (mixed scored competencies + non-scored questions)")
         flow_box.pack(fill="both", expand=True)
 
-        self.flow_list = tk.Listbox(flow_box, height=20)
+        self.flow_list = tk.Listbox(
+            flow_box,
+            height=20,
+            bg=COLORS["surface"],
+            fg=COLORS["text"],
+            selectbackground=COLORS["primary"],
+            selectforeground="#ffffff",
+            relief="solid",
+            bd=1,
+            highlightthickness=1,
+            highlightbackground=COLORS["border"],
+        )
         self.flow_list.pack(side="left", fill="both", expand=True, padx=(8, 0), pady=8)
 
         flow_scroll = ttk.Scrollbar(flow_box, orient="vertical", command=self.flow_list.yview)
@@ -819,6 +836,7 @@ class QuestionEditorWindow(tk.Toplevel):
         override_box.pack(fill="both", expand=True, pady=(10, 0))
 
         self.override_text = tk.Text(override_box, height=8, wrap="word")
+        configure_text_widget(self.override_text, font_size=int(self.app.settings.get("font_size", 10)))
         self.override_text.pack(fill="both", expand=True, padx=8, pady=(8, 4))
 
         obtns = ttk.Frame(override_box)
@@ -841,7 +859,18 @@ class QuestionEditorWindow(tk.Toplevel):
         custom_box = ttk.LabelFrame(parent, text="Custom Questions (non-scored) - add/edit/delete")
         custom_box.pack(fill="both", expand=True)
 
-        self.custom_list = tk.Listbox(custom_box, height=20)
+        self.custom_list = tk.Listbox(
+            custom_box,
+            height=20,
+            bg=COLORS["surface"],
+            fg=COLORS["text"],
+            selectbackground=COLORS["primary"],
+            selectforeground="#ffffff",
+            relief="solid",
+            bd=1,
+            highlightthickness=1,
+            highlightbackground=COLORS["border"],
+        )
         self.custom_list.pack(side="left", fill="both", expand=True, padx=(8, 0), pady=8)
 
         custom_scroll = ttk.Scrollbar(custom_box, orient="vertical", command=self.custom_list.yview)
@@ -853,6 +882,7 @@ class QuestionEditorWindow(tk.Toplevel):
 
         self.cq_id_var = StringVar(value="")
         self.cq_text = tk.Text(custom_edit, height=8, wrap="word")
+        configure_text_widget(self.cq_text, font_size=int(self.app.settings.get("font_size", 10)))
         self.cq_text.pack(fill="both", expand=True, padx=8, pady=(8, 4))
 
         idrow = ttk.Frame(custom_edit)

@@ -1,0 +1,194 @@
+module:
+  name: deepseek_finalize_worker
+  language: python
+  path: src/deepseek_finalize_worker.py
+  version: 1.2.0
+  description: Detached local DeepSeek finalize worker that refreshes interview notes
+    documents and history status after the GUI finalize flow returns, keeping DeepSeek
+    signal scoring advisory and human raw scores final. Workers serialize processing
+    through a per-deepseek_jobs lock file so local Ollama handles one finalize job
+    at a time.
+functions:
+- name: _utc_timestamp
+  description: Return current UTC timestamp in persisted Z-suffixed ISO format.
+  locked: false
+  inputs: {}
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _load_job
+  description: Load and validate one persisted DeepSeek finalize job JSON object.
+  locked: false
+  inputs:
+    job_path:
+      type: Path
+      required: true
+  returns:
+    type: dict[str, Any]
+  exceptions:
+  - ValueError
+  - OSError
+  side_effects: Reads a local job JSON file.
+- name: _history_store
+  description: Build an interview history store for a job when a history path is
+    present.
+  locked: false
+  inputs:
+    job:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: InterviewHistoryStore | None
+  exceptions: []
+  side_effects: none
+- name: _update_history
+  description: Update the matching interview history row when history identifiers
+    are available.
+  locked: false
+  inputs:
+    job:
+      type: dict[str, Any]
+      required: true
+    updates:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: None
+  exceptions: []
+  side_effects: Writes interview history JSON when a row matches.
+- name: _lock_path_for_job
+  description: Resolve the DeepSeek finalize lock path beside the persisted job file.
+  locked: false
+  inputs:
+    job_path:
+      type: Path
+      required: true
+  returns:
+    type: Path
+  exceptions: []
+  side_effects: none
+- name: _process_is_alive
+  description: Return whether a lock-owner process id appears alive on the local OS.
+  locked: false
+  inputs:
+    pid:
+      type: int
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: Probes local process table without logging sensitive data.
+- name: _load_lock_metadata
+  description: Load non-sensitive lock metadata, returning an empty dict for unreadable
+    or invalid lock files.
+  locked: false
+  inputs:
+    lock_path:
+      type: Path
+      required: true
+  returns:
+    type: dict[str, Any]
+  exceptions: []
+  side_effects: Reads a local lock file.
+- name: _lock_is_stale
+  description: Return whether a DeepSeek lock may be recovered because its owner is
+    gone or it exceeded the stale timeout.
+  locked: false
+  inputs:
+    lock_path:
+      type: Path
+      required: true
+    now:
+      type: float | None
+      required: false
+      default: null
+    stale_seconds:
+      type: float
+      required: false
+      default: _LOCK_STALE_SECONDS
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: Reads lock metadata and probes local process state.
+- name: _write_lock_file
+  description: Atomically create the DeepSeek worker lock file with non-sensitive
+    owner metadata.
+  locked: false
+  inputs:
+    lock_path:
+      type: Path
+      required: true
+    job_path:
+      type: Path
+      required: true
+  returns:
+    type: dict[str, Any]
+  exceptions:
+  - FileExistsError
+  - OSError
+  side_effects: Writes a lock file containing pid, timestamps, and job stem only.
+- name: _deepseek_worker_lock
+  description: Context manager that serializes DeepSeek finalize jobs per job directory,
+    waits for active owners, recovers stale locks, and releases only its own lock.
+  locked: false
+  inputs:
+    job_path:
+      type: Path
+      required: true
+  returns:
+    type: contextmanager
+  exceptions:
+  - OSError
+  side_effects: Creates, reads, waits on, and removes a local lock file.
+- name: _run_job_unlocked
+  description: Execute one already-lock-protected DeepSeek finalize job.
+  locked: false
+  inputs:
+    job:
+      type: dict[str, Any]
+      required: true
+    job_path:
+      type: Path
+      required: true
+  returns:
+    type: None
+  exceptions:
+  - OSError
+  side_effects: May call local Ollama, writes DOCX output, and updates interview history
+    JSON.
+- name: run_job
+  description: Load one persisted DeepSeek finalize job, acquire the per-job-directory
+    DeepSeek lock, generate summary and trait advisory signal/scoring output through
+    local Ollama, recompute final scoring from human raw scores plus DeepSeek advisory
+    metadata, rewrite the interview notes DOCX, and mark the matching history row
+    complete.
+  locked: false
+  inputs:
+    job_path:
+      type: Path
+      required: true
+  returns:
+    type: None
+  exceptions:
+  - ValueError
+  - OSError
+  side_effects: Reads job JSON, creates/removes the DeepSeek lock, may call local
+    Ollama, writes DOCX output, and updates interview history JSON.
+- name: main
+  description: CLI entrypoint for running one detached DeepSeek finalize job.
+  locked: false
+  inputs:
+    argv:
+      type: list[str]
+      required: true
+  returns:
+    type: int
+  exceptions: []
+  side_effects: Runs a job and updates history status on failure.
+classes: []
+data_structures: []
+dependencies:
+- module: data_store
+- module: interview_runtime
+- module: scoring_reporting

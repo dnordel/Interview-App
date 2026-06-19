@@ -2,17 +2,20 @@ module:
   name: interview_app_history_actions
   language: python
   path: src/interview_app/history_actions.py
-  version: 1.4.0
-  description: Contracts for history_actions module.
+  version: 1.5.1
+  description: Contracts for history_actions module; history retranscription is retired
+    and unavailable from interview history.
 functions: []
 classes:
 - name: HistoryActionsService
-  description: HistoryActionsService class.
+  description: Coordinates offer workflow actions from history rows and reports retired
+    retranscription as unavailable.
   locked: false
   attributes: {}
   methods:
   - name: offer_transition
-    description: HistoryActionsService.offer_transition method.
+    description: Return the next offer workflow status and completion message for
+      a current status.
     locked: false
     inputs:
       status:
@@ -21,9 +24,10 @@ classes:
     returns:
       type: OfferTransitionResult | None
     exceptions: []
-    side_effects: updates in-memory state
+    side_effects: none
   - name: update_history_offer_status
-    description: HistoryActionsService.update_history_offer_status method.
+    description: Persist a row's offer status and refresh the history table when the
+      update succeeds.
     locked: false
     inputs:
       row:
@@ -39,9 +43,10 @@ classes:
     returns:
       type: bool
     exceptions: []
-    side_effects: updates in-memory state
+    side_effects: updates persisted history offer state and refreshes history UI
   - name: handle_offer_action_for_row
-    description: HistoryActionsService.handle_offer_action_for_row method.
+    description: Route an offer action from a history row through generator, onboarding,
+      or status-transition behavior.
     locked: false
     inputs:
       row:
@@ -50,9 +55,11 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: updates in-memory state
+    side_effects: may open offer/onboarding UI, draft email, update history state,
+      and show an informational dialog
   - name: handle_retranscribe_for_row
-    description: HistoryActionsService.handle_retranscribe_for_row method.
+    description: Compatibility handler for retired history retranscription action;
+      shows an informational dialog and does not modify history.
     locked: false
     inputs:
       row:
@@ -61,246 +68,9 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: updates in-memory state
-  - name: _run_retranscribe_sync
-    description: HistoryActionsService._run_retranscribe_sync method.
-    locked: false
-    inputs:
-      row:
-        type: dict[str, Any]
-        required: true
-      row_key:
-        type: HistoryRowKey
-        required: true
-      recordings:
-        type: list[dict[str, Any]]
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: updates in-memory state
-  - name: _run_retranscribe_async
-    description: HistoryActionsService._run_retranscribe_async method.
-    locked: false
-    inputs:
-      row:
-        type: dict[str, Any]
-        required: true
-      row_key:
-        type: HistoryRowKey
-        required: true
-      recordings:
-        type: list[dict[str, Any]]
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: updates in-memory state
-  - name: _poll_retranscribe_events
-    description: HistoryActionsService._poll_retranscribe_events method.
-    locked: false
-    inputs:
-      progress_dialog:
-        type: RetranscriptionProgressDialog
-        required: true
-      result_queue:
-        type: SimpleQueue[tuple[str, Any]]
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: updates in-memory state
-  - name: _run_retranscribe_flow
-    description: HistoryActionsService._run_retranscribe_flow method.
-    locked: false
-    inputs:
-      row:
-        type: dict[str, Any]
-        required: true
-      row_key:
-        type: HistoryRowKey
-        required: true
-      recordings:
-        type: list[dict[str, Any]]
-        required: true
-      progress_callback:
-        type: Callable[[int, int, str], None] | None
-        required: false
-        default: None
-    returns:
-      type: RetranscribeResultPayload
-    exceptions: []
-    side_effects: updates in-memory state
-  - name: _recordings_for_retranscribe
-    description: HistoryActionsService._recordings_for_retranscribe method.
-    locked: false
-    inputs:
-      row:
-        type: dict[str, Any]
-        required: true
-    returns:
-      type: list[dict[str, Any]]
-    exceptions: []
-    side_effects: updates in-memory state
-  - name: _recover_recordings_from_audio_files
-    description: HistoryActionsService._recover_recordings_from_audio_files method.
-    locked: false
-    inputs:
-      row:
-        type: dict[str, Any]
-        required: true
-    returns:
-      type: list[dict[str, Any]]
-    exceptions: []
-    side_effects: updates in-memory state
-  - name: _history_row_from_store
-    description: HistoryActionsService._history_row_from_store method.
-    locked: false
-    inputs:
-      row:
-        type: dict[str, Any]
-        required: true
-    returns:
-      type: dict[str, Any] | None
-    exceptions: []
-    side_effects: reads persisted history rows via history store
-  - name: _coerce_saved_recordings
-    description: HistoryActionsService._coerce_saved_recordings method.
-    locked: false
-    inputs:
-      value:
-        type: Any
-        required: true
-    returns:
-      type: list[dict[str, Any]]
-    exceptions: []
-    side_effects: none
-  - name: _parse_flow_index
-    description: HistoryActionsService._parse_flow_index method.
-    locked: false
-    inputs:
-      value:
-        type: Any
-        required: true
-      fallback:
-        type: Any
-        required: true
-    returns:
-      type: int
-    exceptions: []
-    side_effects: none
-  - name: _normalize_recording_entry
-    description: HistoryActionsService._normalize_recording_entry method.
-    locked: false
-    inputs:
-      flow_index:
-        type: int
-        required: true
-      raw:
-        type: dict[str, Any]
-        required: true
-    returns:
-      type: dict[str, Any]
-    exceptions: []
-    side_effects: none
-  - name: retranscribe_history_recordings
-    description: HistoryActionsService.retranscribe_history_recordings method.
-    locked: false
-    inputs:
-      row:
-        type: dict[str, Any]
-        required: true
-      recordings:
-        type: list[dict[str, Any]]
-        required: true
-      progress_callback:
-        type: Callable[[int, int, str], None] | None
-        required: false
-        default: None
-    returns:
-      type: str
-    exceptions: []
-    side_effects: updates in-memory state
-  - name: _transcribe_recording_with_runtime_fallback
-    description: HistoryActionsService._transcribe_recording_with_runtime_fallback
-      method.
-    locked: false
-    inputs:
-      transcribe_existing_recordings:
-        type: Any
-        required: true
-      output_dir:
-        type: Path
-        required: true
-      base_name:
-        type: str
-        required: true
-      attempt:
-        type: dict[str, Any]
-        required: true
-      candidate_label:
-        type: str
-        required: true
-      preferred_runtime:
-        type: Any
-        required: true
-    returns:
-      type: Any
-    exceptions: []
-    side_effects: updates in-memory state
-  - name: _resolve_transcribe_existing_recordings
-    description: HistoryActionsService._resolve_transcribe_existing_recordings method.
-    locked: false
-    inputs: {}
-    returns:
-      type: Any
-    exceptions: []
-    side_effects: none
-  - name: _transcribe_single_recording
-    description: HistoryActionsService._transcribe_single_recording method.
-    locked: false
-    inputs:
-      transcribe_existing_recordings:
-        type: Any
-        required: true
-      output_dir:
-        type: Path
-        required: true
-      base_name:
-        type: str
-        required: true
-      attempt:
-        type: dict[str, Any]
-        required: true
-      candidate_label:
-        type: str
-        required: true
-      runtime:
-        type: Any
-        required: true
-    returns:
-      type: Any
-    exceptions: []
-    side_effects: none
-  - name: _base_name_for_retry
-    description: HistoryActionsService._base_name_for_retry method.
-    locked: false
-    inputs:
-      row:
-        type: dict[str, Any]
-        required: true
-      rec:
-        type: dict[str, Any]
-        required: true
-      flow_idx:
-        type: int
-        required: true
-    returns:
-      type: str
-    exceptions: []
-    side_effects: updates in-memory state
+    side_effects: shows tkinter informational dialog
   - name: _row_key
-    description: HistoryActionsService._row_key method.
+    description: Build a stable history row key using the configured history store.
     locked: false
     inputs:
       row:
@@ -309,58 +79,7 @@ classes:
     returns:
       type: HistoryRowKey
     exceptions: []
-    side_effects: updates in-memory state
-  - name: _audio_search_dirs
-    description: HistoryActionsService._audio_search_dirs method.
-    locked: false
-    inputs:
-      base_dir:
-        type: Path
-        required: true
-    returns:
-      type: list[Path]
-    exceptions: []
-    side_effects: none
-  - name: _collect_recordings_from_directory
-    description: HistoryActionsService._collect_recordings_from_directory method.
-    locked: false
-    inputs:
-      directory:
-        type: Path
-        required: true
-      grouped:
-        type: dict[tuple[str, int, str], dict[str, str]]
-        required: true
-      candidate_name:
-        type: str
-        required: true
-      interview_date:
-        type: str
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: updates in-memory state
-  - name: _parse_recoverable_wav
-    description: HistoryActionsService._parse_recoverable_wav method.
-    locked: false
-    inputs:
-      wav_path:
-        type: Path
-        required: true
-      candidate_name:
-        type: str
-        required: true
-      interview_date:
-        type: str
-        required: true
-    returns:
-      type: tuple[str, int, str, str] | None
-    exceptions: []
     side_effects: none
 data_structures: []
 dependencies:
-- app_content
-- interview_app_retranscribe_progress
-- interview_app_types
-- interview_app_whisper_runtime_policy
+- module: interview_runtime

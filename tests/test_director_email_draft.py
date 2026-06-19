@@ -1,6 +1,6 @@
 import unittest
 
-from director_email_draft import build_mailto_url
+from scoring_reporting import build_mailto_url
 
 
 class TestDirectorEmailDraft(unittest.TestCase):

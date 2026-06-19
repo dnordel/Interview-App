@@ -18,6 +18,11 @@ $ErrorActionPreference = "Stop"
 
 $AppDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $AppDir
+$LocalDeepSeekModel = "deepseek-r1:1.5b"
+if ($env:DEEPSEEK_SUMMARY_MODEL -and $env:DEEPSEEK_SUMMARY_MODEL.Trim()) {
+  $LocalDeepSeekModel = $env:DEEPSEEK_SUMMARY_MODEL.Trim()
+}
+$OllamaBaseUrl = "http://127.0.0.1:11434"
 
 # -------------------------
 # Logging
@@ -31,7 +36,7 @@ $Log = Join-Path $LogDir "install_run_log.txt"
 "User=$env:USERNAME" | Out-File -FilePath $Log -Append -Encoding UTF8
 "Computer=$env:COMPUTERNAME" | Out-File -FilePath $Log -Append -Encoding UTF8
 "PSVersion=$($PSVersionTable.PSVersion)" | Out-File -FilePath $Log -Append -Encoding UTF8
-"DebugMode=$DebugMode" | Out-File -FilePath $Log -Append -Encoding UTF8
+"DebugMode=$true" | Out-File -FilePath $Log -Append -Encoding UTF8
 "===============================================" | Out-File -FilePath $Log -Append -Encoding UTF8
 
 function Write-Log([string]$msg) {
@@ -78,6 +83,7 @@ function Load-Config {
     VBCable = [pscustomobject]@{
       DontAskAgain = $false
       UserSaysInstalled = $false
+      AudioRoutingInstructionsShown = $false
     }
     Tools = [pscustomobject]@{
       Python311Exe = $null
@@ -105,10 +111,18 @@ function Ensure-ConfigShape($cfg) {
     $cfg | Add-Member -NotePropertyName VBCable -NotePropertyValue ([pscustomobject]@{
       DontAskAgain = $false
       UserSaysInstalled = $false
+      AudioRoutingInstructionsShown = $false
     }) -Force
   } else {
-    if ($null -eq $cfg.VBCable.DontAskAgain) { $cfg.VBCable.DontAskAgain = $false }
-    if ($null -eq $cfg.VBCable.UserSaysInstalled) { $cfg.VBCable.UserSaysInstalled = $false }
+    if ($cfg.VBCable.PSObject.Properties.Name -notcontains "DontAskAgain") {
+      $cfg.VBCable | Add-Member -NotePropertyName DontAskAgain -NotePropertyValue $false -Force
+    }
+    if ($cfg.VBCable.PSObject.Properties.Name -notcontains "UserSaysInstalled") {
+      $cfg.VBCable | Add-Member -NotePropertyName UserSaysInstalled -NotePropertyValue $false -Force
+    }
+    if ($cfg.VBCable.PSObject.Properties.Name -notcontains "AudioRoutingInstructionsShown") {
+      $cfg.VBCable | Add-Member -NotePropertyName AudioRoutingInstructionsShown -NotePropertyValue $false -Force
+    }
   }
 
   if (-not $cfg.Tools) {
@@ -118,7 +132,9 @@ function Ensure-ConfigShape($cfg) {
     }) -Force
   }
 
-  if ($null -eq $cfg.Tools.Python311Exe) { $cfg.Tools.Python311Exe = $null }
+  if ($cfg.Tools.PSObject.Properties.Name -notcontains "Python311Exe") {
+    $cfg.Tools | Add-Member -NotePropertyName Python311Exe -NotePropertyValue $null -Force
+  }
 
   if (-not $cfg.Tools.VBCable) {
     $cfg.Tools | Add-Member -NotePropertyName VBCable -NotePropertyValue ([pscustomobject]@{
@@ -128,12 +144,23 @@ function Ensure-ConfigShape($cfg) {
     }) -Force
   }
 
-  if ($null -eq $cfg.Tools.VBCable.Evidence) { $cfg.Tools.VBCable.Evidence = @() }
+  if ($cfg.Tools.VBCable.PSObject.Properties.Name -notcontains "Detected") {
+    $cfg.Tools.VBCable | Add-Member -NotePropertyName Detected -NotePropertyValue $null -Force
+  }
+  if ($cfg.Tools.VBCable.PSObject.Properties.Name -notcontains "Evidence") {
+    $cfg.Tools.VBCable | Add-Member -NotePropertyName Evidence -NotePropertyValue @() -Force
+  }
+  if ($cfg.Tools.VBCable.PSObject.Properties.Name -notcontains "LastCheckedUtc") {
+    $cfg.Tools.VBCable | Add-Member -NotePropertyName LastCheckedUtc -NotePropertyValue $null -Force
+  }
 
   if (-not $cfg.App) {
     $cfg | Add-Member -NotePropertyName App -NotePropertyValue ([pscustomobject]@{
       InterviewAppPath = $null
     }) -Force
+  }
+  elseif ($cfg.App.PSObject.Properties.Name -notcontains "InterviewAppPath") {
+    $cfg.App | Add-Member -NotePropertyName InterviewAppPath -NotePropertyValue $null -Force
   }
 
   return $cfg
@@ -288,6 +315,203 @@ function Run-Proc {
   if ($stderr) { $stderr | Out-File -FilePath $Log -Append -Encoding UTF8 }
 
   return $p.ExitCode
+}
+
+# -------------------------
+# FFmpeg system install
+# -------------------------
+function Test-IsAdministrator {
+  $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+  $principal = New-Object Security.Principal.WindowsPrincipal($identity)
+  return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
+function Restart-ScriptAsAdminIfNeeded {
+  if (Test-IsAdministrator) {
+    return
+  }
+
+  Write-Log "Admin rights required to install FFmpeg to system PATH. Relaunching elevated..."
+
+  $scriptPath = $PSCommandPath
+  if (-not $scriptPath) {
+    $scriptPath = $MyInvocation.MyCommand.Path
+  }
+
+  $argsList = @(
+    "-NoProfile",
+    "-ExecutionPolicy", "Bypass",
+    "-File", "`"$scriptPath`""
+  )
+
+  if ($DebugMode) {
+    $argsList += "-DebugMode"
+  }
+
+  Start-Process `
+    -FilePath "powershell.exe" `
+    -ArgumentList ($argsList -join " ") `
+    -Verb RunAs
+
+  exit
+}
+
+function Test-FFmpegAvailable {
+  try {
+    $cmd = Get-Command "ffmpeg.exe" -ErrorAction Stop
+    if ($cmd -and (Test-Path $cmd.Source)) {
+      Write-Log "FFmpeg found on PATH: $($cmd.Source)"
+      return $true
+    }
+  } catch {}
+
+  return $false
+}
+
+function Add-SystemPathIfMissing {
+  param(
+    [Parameter(Mandatory=$true)][string]$PathToAdd
+  )
+
+  $machinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")
+  $parts = @()
+
+  if ($machinePath) {
+    $parts = $machinePath -split ";" | Where-Object { $_ -and $_.Trim() }
+  }
+
+  $alreadyThere = $false
+  foreach ($p in $parts) {
+    if ($p.TrimEnd("\") -ieq $PathToAdd.TrimEnd("\")) {
+      $alreadyThere = $true
+      break
+    }
+  }
+
+  if (-not $alreadyThere) {
+    $newPath = ($parts + $PathToAdd) -join ";"
+    [Environment]::SetEnvironmentVariable("Path", $newPath, "Machine")
+    Write-Log "Added FFmpeg to system PATH: $PathToAdd"
+  }
+  else {
+    Write-Log "FFmpeg bin already present in system PATH: $PathToAdd"
+  }
+
+  # Make FFmpeg available to this running setup script immediately.
+  if (($env:PATH -split ";") -notcontains $PathToAdd) {
+    $env:PATH = "$PathToAdd;$env:PATH"
+  }
+
+  # Notify Windows that environment variables changed.
+  try {
+    $signature = @"
+using System;
+using System.Runtime.InteropServices;
+
+public class NativeMethods {
+  [DllImport("user32.dll", SetLastError=true, CharSet=CharSet.Auto)]
+  public static extern IntPtr SendMessageTimeout(
+    IntPtr hWnd,
+    UInt32 Msg,
+    UIntPtr wParam,
+    string lParam,
+    UInt32 fuFlags,
+    UInt32 uTimeout,
+    out UIntPtr lpdwResult
+  );
+}
+"@
+
+    Add-Type $signature -ErrorAction SilentlyContinue
+
+    $HWND_BROADCAST = [IntPtr]0xffff
+    $WM_SETTINGCHANGE = 0x001A
+    $SMTO_ABORTIFHUNG = 0x0002
+    $result = [UIntPtr]::Zero
+
+    [void][NativeMethods]::SendMessageTimeout(
+      $HWND_BROADCAST,
+      $WM_SETTINGCHANGE,
+      [UIntPtr]::Zero,
+      "Environment",
+      $SMTO_ABORTIFHUNG,
+      5000,
+      [ref]$result
+    )
+  } catch {
+    Write-Log "Could not broadcast PATH update. Error: $($_.Exception.Message)"
+  }
+}
+
+function Ensure-FFmpeg {
+  if (Test-FFmpegAvailable) {
+    return
+  }
+
+  Restart-ScriptAsAdminIfNeeded
+
+  $ffmpegUrl = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
+  $installRoot = "C:\ProgramData\ffmpeg"
+  $binDir = Join-Path $installRoot "bin"
+
+  if ((Test-Path (Join-Path $binDir "ffmpeg.exe")) -and
+      (Test-Path (Join-Path $binDir "ffprobe.exe"))) {
+    Add-SystemPathIfMissing -PathToAdd $binDir
+    if (-not (Test-FFmpegAvailable)) {
+      throw "FFmpeg appears installed, but ffmpeg.exe still could not be found on PATH."
+    }
+    return
+  }
+
+  $tempZip = Join-Path $env:TEMP "ffmpeg-release-essentials.zip"
+  $tempExtract = Join-Path $env:TEMP ("ffmpeg_extract_" + [guid]::NewGuid().ToString())
+
+  try {
+    Write-Log "Downloading FFmpeg from: $ffmpegUrl"
+    Invoke-WebRequest -Uri $ffmpegUrl -OutFile $tempZip -UseBasicParsing
+
+    if (Test-Path $tempExtract) {
+      Remove-Item -Recurse -Force $tempExtract
+    }
+
+    New-Item -ItemType Directory -Path $tempExtract | Out-Null
+
+    Write-Log "Extracting FFmpeg..."
+    Expand-Archive -Path $tempZip -DestinationPath $tempExtract -Force
+
+    $extractedBin = Get-ChildItem -Path $tempExtract -Recurse -Directory |
+      Where-Object { $_.Name -ieq "bin" -and (Test-Path (Join-Path $_.FullName "ffmpeg.exe")) } |
+      Select-Object -First 1
+
+    if (-not $extractedBin) {
+      throw "Could not find ffmpeg.exe in the downloaded FFmpeg archive."
+    }
+
+    if (Test-Path $installRoot) {
+      Remove-Item -Recurse -Force $installRoot
+    }
+
+    New-Item -ItemType Directory -Path $installRoot | Out-Null
+
+    Write-Log "Installing FFmpeg to: $installRoot"
+    Copy-Item -Path (Join-Path $extractedBin.Parent.FullName "*") -Destination $installRoot -Recurse -Force
+
+    if (-not (Test-Path (Join-Path $binDir "ffmpeg.exe"))) {
+      throw "FFmpeg install failed. ffmpeg.exe was not found at $binDir"
+    }
+
+    Add-SystemPathIfMissing -PathToAdd $binDir
+
+    if (-not (Test-FFmpegAvailable)) {
+      throw "FFmpeg was installed, but ffmpeg.exe could not be found on PATH."
+    }
+
+    Write-Log "FFmpeg installed successfully."
+  }
+  finally {
+    Remove-Item $tempZip -Force -ErrorAction SilentlyContinue
+    Remove-Item $tempExtract -Recurse -Force -ErrorAction SilentlyContinue
+  }
 }
 
 # -------------------------
@@ -521,6 +745,193 @@ function Test-NvidiaGPU {
   Write-Log "No NVIDIA GPU detected."
   return $false
 }
+
+# -------------------------
+# Local DeepSeek via Ollama
+# -------------------------
+function Get-OllamaExe {
+  try {
+    $cmd = Get-Command "ollama.exe" -ErrorAction SilentlyContinue
+    if ($cmd -and (Test-Path $cmd.Source)) {
+      return $cmd.Source
+    }
+  } catch {}
+
+  $candidates = @(
+    (Join-Path $env:LOCALAPPDATA "Programs\Ollama\ollama.exe"),
+    (Join-Path $env:LOCALAPPDATA "Ollama\ollama.exe"),
+    "C:\Program Files\Ollama\ollama.exe"
+  )
+
+  foreach ($path in $candidates) {
+    if (Test-Path $path) {
+      return $path
+    }
+  }
+
+  try {
+    $wingetMatches = Get-ChildItem -Path (Join-Path $env:LOCALAPPDATA "Microsoft\WinGet\Packages") `
+      -Recurse `
+      -Filter "ollama.exe" `
+      -ErrorAction SilentlyContinue |
+      Select-Object -First 1
+    if ($wingetMatches -and (Test-Path $wingetMatches.FullName)) {
+      return $wingetMatches.FullName
+    }
+  } catch {}
+
+  return $null
+}
+
+function Test-OllamaApi {
+  try {
+    Invoke-RestMethod -Uri "$OllamaBaseUrl/api/tags" -Method Get -TimeoutSec 5 | Out-Null
+    return $true
+  } catch {
+    return $false
+  }
+}
+
+function Start-OllamaService {
+  param([Parameter(Mandatory=$true)][string]$OllamaExe)
+
+  if (Test-OllamaApi) {
+    Write-Log "Ollama local API already responding."
+    return
+  }
+
+  Write-Log "Starting Ollama local service."
+  Start-Process `
+    -FilePath $OllamaExe `
+    -ArgumentList "serve" `
+    -WindowStyle Hidden `
+    -ErrorAction SilentlyContinue | Out-Null
+
+  for ($i = 0; $i -lt 20; $i++) {
+    Start-Sleep -Seconds 1
+    if (Test-OllamaApi) {
+      Write-Log "Ollama local API is ready."
+      return
+    }
+  }
+
+  throw "Ollama installed but local API did not start at $OllamaBaseUrl."
+}
+
+function Ensure-Ollama {
+  $ollama = Get-OllamaExe
+  if ($ollama) {
+    Write-Log "Ollama found: $ollama"
+    Start-OllamaService -OllamaExe $ollama
+    return $ollama
+  }
+
+  $winget = Get-Command "winget.exe" -ErrorAction SilentlyContinue
+  if (-not $winget) {
+    throw "Ollama is required for local DeepSeek, but winget.exe was not found."
+  }
+
+  Write-Log "Installing Ollama with winget."
+  $ec = Run-Proc -File $winget.Source -Args @(
+    "install",
+    "--id", "Ollama.Ollama",
+    "--exact",
+    "--accept-package-agreements",
+    "--accept-source-agreements"
+  )
+  if ($ec -ne 0) {
+    throw "Ollama install failed (exit code $ec)."
+  }
+
+  $ollama = Get-OllamaExe
+  if (-not $ollama) {
+    throw "Ollama installed, but ollama.exe could not be found."
+  }
+
+  Start-OllamaService -OllamaExe $ollama
+  return $ollama
+}
+
+function Test-OllamaModelInstalled {
+  param([Parameter(Mandatory=$true)][string]$Model)
+
+  try {
+    $tags = Invoke-RestMethod -Uri "$OllamaBaseUrl/api/tags" -Method Get -TimeoutSec 10
+    foreach ($localModel in @($tags.models)) {
+      if ([string]$localModel.name -ieq $Model -or [string]$localModel.model -ieq $Model) {
+        return $true
+      }
+    }
+    $localModels = @($tags.models | ForEach-Object { [string]$_.name }) -join ", "
+    Write-Log "Ollama model not found yet. Wanted=$Model; LocalModels=$localModels"
+  } catch {
+    Write-Log "Ollama model check failed: $($_.Exception.Message)"
+  }
+
+  return $false
+}
+
+function Ensure-DeepSeekModel {
+  param(
+    [Parameter(Mandatory=$true)][string]$OllamaExe,
+    [Parameter(Mandatory=$true)][string]$Model
+  )
+
+  if (Test-OllamaModelInstalled -Model $Model) {
+    Write-Log "Local DeepSeek model already installed: $Model"
+    return
+  }
+
+  Write-Log "Pulling local DeepSeek model: $Model"
+  $ec = Run-Proc -File $OllamaExe -Args @("pull", $Model)
+  if ($ec -ne 0) {
+    throw "Ollama model pull failed for $Model (exit code $ec)."
+  }
+
+  for ($i = 0; $i -lt 10; $i++) {
+    if (Test-OllamaModelInstalled -Model $Model) {
+      Write-Log "Local DeepSeek model verified: $Model"
+      return
+    }
+    Start-Sleep -Seconds 1
+  }
+
+  throw "Ollama model pull completed, but $Model was not listed locally. Run 'ollama list' to verify local models."
+}
+
+function Enable-LocalDeepSeekForLaunchedApp {
+  $env:DEEPSEEK_SUMMARY_ENABLED = "1"
+  $env:DEEPSEEK_API_BASE_URL = "$OllamaBaseUrl/v1"
+  $env:DEEPSEEK_SUMMARY_MODEL = $LocalDeepSeekModel
+  $env:DEEPSEEK_API_KEY = "ollama"
+  Write-Log "Local DeepSeek env configured for launched app: $LocalDeepSeekModel at $OllamaBaseUrl/v1"
+}
+
+function Ensure-LocalDeepSeek {
+  $ollama = Ensure-Ollama
+  Ensure-DeepSeekModel -OllamaExe $ollama -Model $LocalDeepSeekModel
+  Enable-LocalDeepSeekForLaunchedApp
+}
+
+function Test-VenvUsesSystemSitePackages([string]$VenvDir) {
+  if (-not $VenvDir) {
+    return $false
+  }
+
+  $cfgPath = Join-Path $VenvDir "pyvenv.cfg"
+  if (-not (Test-Path $cfgPath)) {
+    return $false
+  }
+
+  try {
+    $cfgText = Get-Content $cfgPath -Raw -Encoding UTF8
+    return ($cfgText -match "(?im)^\s*include-system-site-packages\s*=\s*true\s*$")
+  } catch {
+    Write-Log "Could not read venv config: $cfgPath. Error: $($_.Exception.Message)"
+    return $false
+  }
+}
+
 function Ensure-VenvAndDeps([string]$PyExe) {
   $VenvBase = Join-Path (Get-ConfigBaseDir) "py311"
   $VenvDir  = Join-Path $VenvBase ".venv"
@@ -534,14 +945,19 @@ function Ensure-VenvAndDeps([string]$PyExe) {
       $out = & $VenvPy -c "import sys, pip; print('pip ok')" 2>$null
       if ($LASTEXITCODE -ne 0 -or $out -notmatch "pip ok") { $needRecreate = $true }
     } catch { $needRecreate = $true }
+
+    if (-not $needRecreate -and -not (Test-VenvUsesSystemSitePackages -VenvDir $VenvDir)) {
+      Write-Log "Existing venv is isolated; recreating to reuse system site packages."
+      $needRecreate = $true
+    }
   } else {
     $needRecreate = $true
   }
 
   if ($needRecreate) {
-    Write-Log "Creating/recreating venv at $VenvDir"
+    Write-Log "Creating/recreating venv at $VenvDir with system site packages enabled"
     if (Test-Path $VenvDir) { Remove-Item -Recurse -Force $VenvDir }
-    $ec = Run-Proc -File $PyExe -Args @("-m","venv",$VenvDir)
+    $ec = Run-Proc -File $PyExe -Args @("-m","venv","--system-site-packages",$VenvDir)
     if ($ec -ne 0) { throw "venv creation failed (exit code $ec)" }
   }
 
@@ -729,7 +1145,11 @@ function Show-VBCablePrompt {
   [void]$dlg.ShowDialog()
 
   if (-not $Cfg.VBCable) {
-    $Cfg | Add-Member -NotePropertyName VBCable -NotePropertyValue ([pscustomobject]@{ DontAskAgain=$false; UserSaysInstalled=$false }) -Force
+    $Cfg | Add-Member -NotePropertyName VBCable -NotePropertyValue ([pscustomobject]@{
+      DontAskAgain = $false
+      UserSaysInstalled = $false
+      AudioRoutingInstructionsShown = $false
+    }) -Force
   }
 
   if ($result.Clicked -eq "Yes") {
@@ -752,16 +1172,70 @@ function Show-VBCablePrompt {
   return $Cfg
 }
 
+function Show-AudioRoutingInstructions {
+  param([Parameter(Mandatory=$true)]$Cfg)
+
+  if (-not $Cfg.VBCable) {
+    return $Cfg
+  }
+
+  if ($Cfg.VBCable.PSObject.Properties.Name -notcontains "AudioRoutingInstructionsShown") {
+    $Cfg.VBCable | Add-Member -NotePropertyName AudioRoutingInstructionsShown -NotePropertyValue $false -Force
+  }
+
+  if ($Cfg.VBCable.AudioRoutingInstructionsShown -eq $true) {
+    Write-Log "Audio routing instructions already shown; skipping."
+    return $Cfg
+  }
+
+  $isReadyForRouting = $false
+  if ($Cfg.Tools -and $Cfg.Tools.VBCable -and $Cfg.Tools.VBCable.Detected -eq $true) {
+    $isReadyForRouting = $true
+  }
+  if ($Cfg.VBCable.UserSaysInstalled -eq $true) {
+    $isReadyForRouting = $true
+  }
+
+  if (-not $isReadyForRouting) {
+    Write-Log "Audio routing instructions skipped because VB-CABLE is not installed yet."
+    return $Cfg
+  }
+
+  $message = @"
+Before recording interviews with system audio:
+
+1. Open Windows sound settings.
+2. Open VB-CABLE Input device properties.
+3. Enable listening to this device.
+4. Set the listen output device, preferably a headset.
+5. Select VB-CABLE as Windows sound output before recording.
+
+If VB-CABLE was just installed, reboot first if Windows does not show the device.
+"@
+
+  [System.Windows.Forms.MessageBox]::Show(
+    $message,
+    "First-run audio routing setup",
+    [System.Windows.Forms.MessageBoxButtons]::OK,
+    [System.Windows.Forms.MessageBoxIcon]::Information
+  ) | Out-Null
+
+  $Cfg.VBCable.AudioRoutingInstructionsShown = $true
+  Save-Config $Cfg
+  Write-Log "Audio routing instructions shown."
+  return $Cfg
+}
+
 # ---------- Main installer UI ----------
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "Interview Tool Setup"
-$form.Size = New-Object System.Drawing.Size(520, 160)
+$form.Size = New-Object System.Drawing.Size(620, 270)
 $form.StartPosition = "CenterScreen"
 $form.TopMost = $true
 
 $label = New-Object System.Windows.Forms.Label
 $label.AutoSize = $false
-$label.Size = New-Object System.Drawing.Size(490, 40)
+$label.Size = New-Object System.Drawing.Size(585, 40)
 $label.Location = New-Object System.Drawing.Point(15, 10)
 $label.Text = "Starting..."
 $form.Controls.Add($label)
@@ -770,21 +1244,35 @@ $bar = New-Object System.Windows.Forms.ProgressBar
 $bar.Minimum = 0
 $bar.Maximum = 100
 $bar.Value = 0
-$bar.Size = New-Object System.Drawing.Size(490, 24)
+$bar.Size = New-Object System.Drawing.Size(585, 24)
 $bar.Location = New-Object System.Drawing.Point(15, 60)
 $form.Controls.Add($bar)
+
+$details = New-Object System.Windows.Forms.TextBox
+$details.Multiline = $true
+$details.ReadOnly = $true
+$details.ScrollBars = "Vertical"
+$details.Size = New-Object System.Drawing.Size(585, 95)
+$details.Location = New-Object System.Drawing.Point(15, 95)
+$details.Text = "Setup details will appear here.`r`n"
+$form.Controls.Add($details)
 
 $btn = New-Object System.Windows.Forms.Button
 $btn.Text = "Close"
 $btn.Enabled = $false
 $btn.Size = New-Object System.Drawing.Size(90, 28)
-$btn.Location = New-Object System.Drawing.Point(415, 95)
+$btn.Location = New-Object System.Drawing.Point(510, 200)
 $btn.Add_Click({ $form.Close() })
 $form.Controls.Add($btn)
 
 function Set-Progress([int]$pct, [string]$text) {
   $bar.Value = [Math]::Max($bar.Minimum, [Math]::Min($bar.Maximum, $pct))
   $label.Text = $text
+  if ($details) {
+    $details.AppendText(("[{0}] {1}`r`n" -f (Get-Date -Format "HH:mm:ss"), $text))
+    $details.SelectionStart = $details.TextLength
+    $details.ScrollToCaret()
+  }
   $form.Refresh()
   Write-Log $text
 }
@@ -795,17 +1283,23 @@ $form.Add_Shown({
     $cfg = Ensure-ConfigShape $cfg
     Save-Config $cfg
 
-    Set-Progress 5 "Checking VB-CABLE status..."
+    Set-Progress 5 "Checking VB-CABLE driver status..."
     $cfg = Ensure-VBCableStatus -Cfg $cfg
 
     # If VB-CABLE detected, prompt is skipped inside Show-VBCablePrompt
     $cfg = Show-VBCablePrompt -Cfg $cfg
 
-    Set-Progress 15 "Checking Python 3.11..."
+    Set-Progress 15 "Checking FFmpeg availability..."
+    Ensure-FFmpeg
+
+    Set-Progress 30 "Checking Python 3.11 install..."
     $py = Ensure-Python311 -Cfg $cfg
 
-    Set-Progress 45 "Setting up venv and installing packages..."
+    Set-Progress 45 "Checking Python venv and app packages..."
     $venvPy = Ensure-VenvAndDeps $py
+
+    Set-Progress 65 "Checking local DeepSeek through Ollama ($LocalDeepSeekModel)..."
+    Ensure-LocalDeepSeek
 
     # -------------------------
     # Expose CUDA runtime DLLs for faster-whisper
@@ -843,6 +1337,7 @@ $form.Add_Shown({
         Start-Process "https://vb-audio.com/Cable/"
       }
     }
+    $cfg = Show-AudioRoutingInstructions -Cfg $cfg
 
     Set-Progress 85 "Locating app..."
     $app = Find-AppFile -Cfg $cfg
@@ -905,6 +1400,7 @@ $form.Add_Shown({
 })
 
 [void]$form.ShowDialog()
+return
 
 # ============================================
 # LPL SETUP AND RUN SCRIPT (FULL INTEGRATION)
@@ -935,7 +1431,7 @@ function Write-Log {
     param([string]$Message)
 
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $line = "[$timestamp] $Message"
+    $line = ("[{0}] {1}" -f $timestamp, $Message)
 
     Write-Host $line
     Add-Content -Path $LogFile -Value $line

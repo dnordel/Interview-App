@@ -1,0 +1,211 @@
+{
+  "candidate": {
+    "name": "Zulay Mendez",
+    "interview_date": "2026-06-18",
+    "school": "Palmdale",
+    "track": "infant_toddler",
+    "qualification": {
+      "has_degree": false,
+      "degree_type": "",
+      "degree_in_ece": false,
+      "ece_units_completed": 15,
+      "infant_toddler_class_completed": false,
+      "total_units_completed": 20,
+      "years_experience": 13
+    }
+  },
+  "percent_of_max": 68.57,
+  "decision": "borderline",
+  "interview_notes": {
+    "traits": [
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_8",
+        "trait_name": "Gentleness & Physical Awareness",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      },
+      {
+        "trait_id": "trait_9",
+        "trait_name": "Patience with Nonverbal Communication",
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": ""
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time?",
+        "answer": "full-time",
+        "skipped": false
+      },
+      {
+        "question_text": "Tell me a little about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$22.80 curently",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "two-weeks",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying to our company, Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      }
+    ]
+  },
+  "referral_packet": {
+    "resume_path": "",
+    "interview_notes_path": "C:/Users/Dnord/Dropbox (Old)/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-06-18 - Palmdale - Zulay Mendez - Interview.docx",
+    "transcript_path": ""
+  },
+  "communication_log": [],
+  "flow_transcript_slices": [
+    {
+      "type": "custom",
+      "id": "Why-ECE",
+      "question": "Tell me a little about yourself and why early childhood education matters to you.",
+      "candidate_transcript": "[Q1 Attempt 1]\nhi my name is sulai um i am a mother of five and then i in those five i have two autistic children um why does it matter i've done also behavioral therapy that's how i started off i think in behavioral therapy then i went to the school setting because i like more of the school setting with more of the children i don't know i just love like i don't know i love teaching i know i love like just like walking in and then like they all run to you or the the older kids that have been in your class like they they know you i've been here for a couple of years so it's been like it's been good i have nothing bad to say it's just far i live in palmdale and it's in whirling hills so it's a kind of a drive yeah and i'm like no you could go ahead i know i took the of it and i just needed right here they were gonna put me as co-teacher i think i need like six more credits to get the 24 or 26. i'm not sure how many credits we need but yes i have the paperwork in storage because i was moving so i have it like all in storage so i can send you a printout i'll just have to pass by tomorrow and get"
+    },
+    {
+      "type": "custom",
+      "id": "Why-LPL",
+      "question": "Why are you applying to our company, Launch Pad Learning?",
+      "candidate_transcript": "[Q2 Attempt 1]\nUm, I saw that well the schedule and then like you guys are offering full-time and there's not a lot of child cares over there on that side and also, it's it's closer and Yeah, and then the age group"
+    },
+    {
+      "type": "trait",
+      "id": "trait_1",
+      "question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+      "candidate_transcript": "[Q3 Attempt 1]\noh i'm good with that with the kiddos um well like right now we just started um summer camp because we're like a private school so we don't get like like days off we have one day off and then we come back for summer school so we have three children that just started school so they've never been away from mommies and daddies so that was tough and then it was all three of them at the same time but i'm like okay i have to like since we like behavioral therapy you have to build the report first right so i just like started noticing like okay what she likes what does he like what does she like so i ended up like just getting a box and like sitting down with them and then like they're kind of meltdown just just me playing like okay i took out cars they don't like cars i took out dinosaurs and and the book that you know went with the dinosaurs and i started pushing buttons and i'm like what kind of dinosaur is this oh can you find it and so they joined along with the game and they were all playing right there calmly so i'm like okay that's good but yeah um it's just basically i think when they're like breaking down like that it's not too much of like feeding into like the crying like yes i hear you you know i understand you're sad you know mommy's come and then try to get them to do something that they like or like distract them with something else and usually it's something sensory that they love just get them to do something that they like or like distract them with something else getting messy kids love getting messy"
+    },
+    {
+      "type": "trait",
+      "id": "trait_2",
+      "question": "Tell me about a time you felt overwhelmed or stressed at work with children present. What did you do to manage, not the kids, but yourself and your stress?",
+      "candidate_transcript": "[Q4 Attempt 1]\nI think once you start feeling like that, it's mostly because when you've kind of lost control of the class just because you got tied up doing something that probably took a little more time than it should. And I'm like, so I like to like prepare the things before, like either on my break or my lunch or the day before, like get everything ready. So it's out. But like we had the teacher called off and we had a sub and I'm like, oh, no, I'm not getting the help that I need. I just need like five minutes. But the kids were running around everywhere and I was like, oh, no, OK, this ain't going to work. Let's just do something else. So it's just like trying to get back control of the kids and then just bring out something that, you know, kind of like a shocker, a stopper. So what I like to do is like, like I told you, they like seeing a mess. They like getting messy. So it's either shaving cream or us making like the slime where I just pour the glue on the table and they're like, you made a mess. And then they get to like Tuesday. So I like just like that. Or we have puppets, too. So I take out and I do a puppet show with them and I do all the voices. They love that, too. Anything that they like, I don't know, just getting them out and kind of like not do their own thing as a group with bills or something. Yeah, like I don't know me. I just take a breather and I'm like, OK, I'm like I'm getting like this because I see how the kids are. But like it's because I'm like this. They feel it, too. So it's just it's just I really don't like that when I know I know that I'm getting like that. I just like ask for like a little break to go to the bathroom, refreshing and then come back. But. I'm with the like, I don't even take my 15 over here, so I'm like I'm with the kids and when I see them happy, like it makes me happy. So I'm like, OK. Yeah, I don't know."
+    },
+    {
+      "type": "trait",
+      "id": "trait_3",
+      "question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering. They are pulling away and crying. Walk me through exactly what you would do and say, step by step.",
+      "candidate_transcript": "[Q5 Attempt 1]\nUm, I've had that before so I Know like oh no, you're gonna get a rash. We need to change your diaper though Usually I have up like okay here. Can you can you hold the wipes? Can you hand them to me? Um, have them help too and At the same time distract them because we have like drawings in in the in the bathroom So I'm like, oh, can you count the butterflies? Oh, I see a I see a A beak can you find it and then I see a blue bee or just start talking about anything else Like oh, you know what happened yesterday? I like to tell them like little stories and they get so into it They start responding with their little stories like even like if it's like what they eat or what do they have for lunch? Or like oh, you know, I brought a cookie, but I don't know where I left it Maybe we could go look for it or like stuff like that. I don't know just like distract them from it and then I know a lot of kids When they don't know you they really don't want you"
+    },
+    {
+      "type": "trait",
+      "id": "trait_4",
+      "question": "Tell me about a time you received constructive criticism or feedback you didn’t expect or didn’t fully agree with. What happened next?",
+      "candidate_transcript": "[Q6 Attempt 1]\nI'm going to do it really, really fast, okay? Start counting with me. Like, instructional criticism? Like, something bad? Oh, constructive. I always take, I ask. I'm like, am I doing this right? Can I do it better? I even ask myself, you know, like, could this kind of, like, because sometimes I have an idea, and it's like, oh, like today, I put, I saw the bubble machine, and I'm like, hmm, I wonder if I put food coloring, would they turn green? I'm like, oh, that turned into a bad idea, because I dropped it all over myself. But, like, I like, like, hearing, like, oh, you know, try to do it this way. Well, we have, like, a lot of constructive, like, criticism. Like, even in our lesson planning, like, why don't you try it like this? Why don't you describe it like that? Or maybe we should do this. I'm like, I'm good with that. You know, sometimes you don't fully, like, or have an idea, and not, like. Say, like, someone's opinion is sometimes, you know, helps out more. So, I'm always open to, like, criticism and, like, stuff like that. And I'm like, I don't know. I'm an easy, easygoing person. So, it's not, I don't, I don't, like, take it out of, yes. It was about, but then she took it back. It's because we had open house. And my teacher, well, my, the main teacher that runs the class, she was out. So, in the afternoons, I would try to do, like, as much as I could for the open house because she was out and she had a bad knee. And I don't know when she was coming. So, I was there sometimes. And I'm like, the kids would kind of get restless. And I'm, like, trying to do, like, so many things at the same time. So, I had the kids, like, doing something while I was doing something. But then they would come and do it with me. And then, like, I would, like, just have a mess in the class. Like, oh, you should, like, try to do it on, like, like, nap time and stuff like that. I'm like. I never thought about that. I'm like, okay, I'll do it on nap time. And that, that way they'll be napping. But it's, like, just, like, stuff like that. Because I know if I'm busy doing something, the kids are not really, I'm not giving that full attention to them. So, they'll end up, like, like, acting out just to get my attention. Or, like, look, Ms. Sula, look at what I'm doing. I'm like, ah. So, yeah. So, I'm like, yeah. So, I just have them help me now. I'm like, okay, you put this, you put that. And then I do it, like, a class. A class activity."
+    },
+    {
+      "type": "trait",
+      "id": "trait_5",
+      "question": "Tell me about a time something, such as a lesson plan, did not go as expected and your role in it.",
+      "candidate_transcript": "[Q7 Attempt 1]\num yeah that happens a bit sometimes you put something in the lesson plans and the kids are like not into it like no matter how you introduce it or whatever like okay that that was a fail but you change it up and let them just go with it um my idea of making playdoh it turns off bad it ends up being like the whole um oh okay so i was trying to make playdoh and and my measurements always come out bad so we just ended up doing pizza i'm like look it looked like pizza though here and we just cut up like paper and put it in and i gave them like the buttons and that but you like you just adapt to it i think and like as long as the kids are having fun and they're like getting something off of it and learning something from it i'm like that miss who like those mistakes too but yeah they it's like even with the book that you start reading it and then you're like okay they're not into this okay i'll make up the words or and or we'll do another book or time for a break let's dance let's you know"
+    },
+    {
+      "type": "trait",
+      "id": "trait_6",
+      "question": "Tell me about a time you had a challenge with another adult. How did you navigate it?",
+      "candidate_transcript": "[Q8 Attempt 1]\nChallenge with an adult. I don't know. I'm not a very confrontal person even when I don't know Just with the parent mmm like something One time but after I explained myself she kind of saw it my way it was just oh cuz they thought there was this child that he he like I went from where she was standing. She said that I turned his face, but I kind of just like put my hand up So he couldn't turn his head and I could get like his eyes on me And she's like, oh, well, I'm like, oh it looked different and I'm like no look and I'm like this is how I did it And she's like, okay, I'm like all this because he doesn't he's he's like all over the place So he has to have like his eyes on you So I just like put my both hands like that and like he like was watching me Like not Touching him, but like around his I don't know. How do you say like? Just like it was like when you look on the side. Yeah, I just put my hands like that and I'm like For there is a but I pull like I don't like are you like eyes on me? And then he looked at me and then he saw he he proceeded to do what I was telling him But if not, he's everywhere and so I'm like eyes on me and I'm like, okay you got it Okay, we're doing this. I'm like go bring a diaper and then go to the bathroom But yeah, and I'm like she's like, oh It's probably on my I wouldn't like I would never like actually like hold if I'm the one that's saying, you know When right here, I'm like I tell them like no when you like touch them like you can't pull your arm You have to have it open like you're not restraining this child. You just you know like guiding him so I think my my whole background on like behavioral therapy kind of helps on that too because I took like a course like on how to handle them and like Not to hurt them and stuff like that. So when I see it happening, I'm like, oh really good That's what hurts me. I get kind of defensive on that like no you hold them like this. Hold them like this"
+    },
+    {
+      "type": "trait",
+      "id": "trait_7",
+      "question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+      "candidate_transcript": "[Q9 Attempt 1]\nit's more of a i think before i was like oh i just want to go like it's like behavioral therapy it pays really good but then it's not like the same setting so you kind of have to compromise am i happy am i enjoying my work or am i just there like you know doing my day and like in the school setting i love like i love being around with the kids like showing them seeing them laugh seeing them play seeing them helping them potty train and like oh you did it you know it's like it it's kind of like teaching them how to cut and then now they know how to cut or they start like drawing and now they're drawing the little eyes and the little mouth and you're like what and the rainbow actually looks like a rainbow so it's i don't know so it's like i've learned like it's not that much of how much you're making it's how much you're enjoying your job like i love coming to work i love being with the kids you know it's that when they have to like go to the next class but then you're like oh i accomplished look they came in they didn't know how to do this this and this and they're going and knowing that you know so it's kind of like i lose my train of thought but it's like but it's like i don't know it's just i don't know it's all about being happy i guess just i don't know enjoying where you work enjoying you know i try to get along with everybody i say hello to everybody i say hello to everybody i try to get along with everybody i say hello to everybody i try to get along with everybody i say hello even though they don't say hello i'll be hello say it a little louder"
+    },
+    {
+      "type": "trait",
+      "id": "trait_8",
+      "question": "Tell me about how you physically care for infants or toddlers during routines like feeding, diapering, or comforting.",
+      "candidate_transcript": "[Q10 Attempt 1]\nfeeling like Today, I was like, oh today's good. It's not hot. Um, let's take let's go outside and I got a little picnic thing I sat down we started talking. I read a book before went outside They saw it's in Spanish in English It's like thing one, but it's about a dinosaur that wants to eat the bird But the birds trying to make them eat something else instead of him. So he ends up giving them like a chocolate cookie So they all had cookies today for some weird reason. I'm like, oh look you guys have the chocolate The the cookie and then they're like like the bird like the bird so we started talking about the book and I'm like, okay And then I had him like eat like what are you eating? And what are you eating? Can you share like can you tell me can you share something about what you're eating and they're like, oh I have grapes Oh, I have strawberries. I love strawberries. Oh, who else likes strawberries just sitting down with them because sometimes they don't want to eat They're just like There but like you motivate them a little bit to eat. I'm like, okay three more bites two more bites Choose what you want to eat And you'll be and you'll be okay. Something has to go on your tummy Yeah, or some of the other kids like they need Alex extra little help. I have a picky eater I don't think it's too much of him being too picky It's just the way his bite is that he doesn't he can't bite the food so we I noticed like if I cut it up the certain way he'll eat it and If he just sees a big piece, he'll just refuse it. He'll be like no. No, I don't want it I don't want it and I'm like, I don't think it's that he doesn't want it Is that he doesn't even want to try to put it in his mouth because he can't do it So I found a way like just cut it a specific way like smaller than no"
+    },
+    {
+      "type": "trait",
+      "id": "trait_9",
+      "question": "How do you understand what a nonverbal child needs when they’re crying or upset? Can you walk me through how you respond in those moments?",
+      "candidate_transcript": "[Q11 Attempt 1]\ni know that when we're inside i put play mozart and then the common is it like goes from everybody being already to them like thinking they're like in a little restaurant and eating yes we have one right now i think it's a language barrier though because he knows a little bit of words and he'll repeat what i say sometimes um but i just i usually go up to him and tell him like show me take me i want and i go kian wants kian needs are you thirsty and then um like i try to show him like i know like the more and all done so i tell him more all done and then he'll say more and like when i'm swinging it on him and he wants more i tell him like push push like one word at least you know so he says that he goes push push so i push him and keep on pushing him on the other side and then he goes push push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push and then he goes push."
+    },
+    {
+      "type": "custom",
+      "id": "Start",
+      "question": "When could you start if we decide to move forward?",
+      "candidate_transcript": "[Q14 Attempt 1]\nI'll just have to give my job like the two weeks notice and then"
+    }
+  ],
+  "summary_status": "failed",
+  "summary_warnings": [
+    "DeepSeek summary failed: HTTPError"
+  ]
+}

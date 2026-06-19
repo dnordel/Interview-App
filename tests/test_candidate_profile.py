@@ -1,6 +1,6 @@
 import unittest
 
-from candidate_profile import CandidateQualification, validate_candidate_qualification
+from scoring_reporting import CandidateQualification, validate_candidate_qualification
 
 
 class TestCandidateProfileValidation(unittest.TestCase):

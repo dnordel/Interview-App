@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from interview_audio_recorder import RecordingSession
-from transcription_diagnostics import (
+from interview_runtime import (
     clip_diagnostic_text,
     extract_diagnostic_filename,
     format_transcription_health_summary,

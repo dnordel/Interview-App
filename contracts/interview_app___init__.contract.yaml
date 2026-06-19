@@ -8,22 +8,22 @@ functions: []
 classes: []
 data_structures: []
 dependencies:
-- interview_app_audio_runtime
-- interview_app_bootstrap
-- interview_app_dashboard_controller
-- interview_app_finalize_context
-- interview_app_finalize_gateways
-- interview_app_finalize_pipeline
-- interview_app_flow_controller
-- interview_app_history_actions
-- interview_app_history_controller
-- interview_app_state
-- interview_app_transcript_writer
-- interview_app_transcription_executor
-- interview_app_transcription_queue
-- interview_app_types
-- interview_app_ui_router
-- interview_app_ui_shell
-- interview_app_whisper_runtime_policy
-- interview_app_views
-- interview_app_session_manager
+- module: interview_app_audio_runtime
+- module: interview_app_bootstrap
+- module: interview_app_dashboard_controller
+- module: interview_app_finalize_context
+- module: interview_app_finalize_gateways
+- module: interview_app_finalize_pipeline
+- module: interview_app_flow_controller
+- module: interview_app_history_actions
+- module: interview_app_history_controller
+- module: interview_app_state
+- module: interview_app_transcript_writer
+- module: interview_app_transcription_executor
+- module: interview_app_transcription_queue
+- module: interview_app_types
+- module: interview_app_ui_router
+- module: interview_app_ui_shell
+- module: interview_app_whisper_runtime_policy
+- module: interview_app_views
+- module: interview_app_session_manager

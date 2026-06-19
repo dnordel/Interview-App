@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from offer_letter import OfferLetterService, OfferTemplateError
+from scoring_reporting import OfferLetterService, OfferTemplateError
 
 
 @pytest.mark.parametrize("suffix", [".docx", ".docm", ".DOCM"])

@@ -2,7 +2,7 @@ module:
   name: interview_app
   language: python
   path: src/interview_app.pyw
-  version: 1.2.4
+  version: 1.2.8
   description: Main Tkinter interview application entrypoint and runtime orchestration.
 functions: []
 classes:
@@ -46,7 +46,8 @@ classes:
     exceptions: []
     side_effects: triggers view navigation
   - name: _session_context
-    description: Lazily returns the session context helper for instances created outside __init__.
+    description: Lazily returns the session context helper for instances created outside
+      __init__.
     locked: false
     inputs: {}
     returns:
@@ -63,7 +64,9 @@ classes:
     - SessionPayloadValidationError
     side_effects: mutates interview state maps and transcript cache
   - name: _start_background_question_transcription
-    description: Stop the active per-question recording session and enqueue background transcription before navigation.
+    description: Legacy helper that stops an explicitly supplied per-question recording
+      session and enqueues background transcription; normal Next navigation now uses
+      continuous interview recording instead.
     locked: false
     inputs:
       flow_idx:
@@ -73,9 +76,11 @@ classes:
       type: None
     exceptions:
     - ReportingValidationError
-    side_effects: stops the active recording session, clears active recording pointers, and enqueues a transcription job
+    side_effects: stops the active recording session, clears active recording pointers,
+      and enqueues a transcription job when called by legacy paths
   - name: _background_transcribe_question
-    description: Dispatch a background question transcription request to the audio runtime controller.
+    description: Dispatch a background question transcription request to the audio
+      runtime controller.
     locked: false
     inputs:
       flow_idx:
@@ -100,7 +105,8 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: lazily initializes audio runtime controller and starts question transcription
+    side_effects: lazily initializes audio runtime controller and starts question
+      transcription
   - name: _reset_interview_recording_state
     description: Clears recording and transcription runtime state for a new interview
       recording session.
@@ -118,9 +124,113 @@ classes:
     returns:
       type: bool
     exceptions: []
-    side_effects: starts recording runtime and may display dialog warnings
+    side_effects: starts continuous interview recording runtime and may display dialog warnings
+  - name: _start_continuous_interview_recording
+    description: Start one audio recording session for the whole interview; question
+      boundaries are captured separately through flow timestamps.
+    locked: false
+    inputs:
+      base_dir:
+        type: Path
+        required: true
+    returns:
+      type: None
+    exceptions:
+    - ReportingValidationError
+    side_effects: imports optional audio recorder, starts recording subprocesses, sets
+      active recording pointers, and may show a warning when recording dependencies
+      are unavailable
+  - name: _stop_interview_recording
+    description: Stop and transcribe the continuous interview recording once, then
+      split candidate transcript text into question records using flow timestamp
+      windows.
+    locked: false
+    inputs:
+      show_warning:
+        type: bool
+        required: false
+        default: true
+    returns:
+      type: dict[str, Any] | None
+    exceptions: []
+    side_effects: writes transcript artifacts under the configured base directory,
+      mutates flow recording/transcript state, persists per-question snapshots, and
+      clears active recording pointers
+  - name: _apply_continuous_recording_result
+    description: Map one full-interview transcription result onto per-flow transcript
+      state while leaving skipped questions empty.
+    locked: false
+    inputs:
+      recording_result:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: mutates flow_recordings and flow_candidate_transcripts and persists
+      affected question snapshots
+  - name: _queue_transcription_and_transition
+    description: Persist current question state, close its timestamp boundary, and
+      route immediately without stopping or transcribing audio.
+    locked: false
+    inputs:
+      flow_idx:
+        type: int
+        required: true
+      next_index:
+        type: int | None
+        required: false
+        default: null
+      is_last:
+        type: bool
+        required: false
+        default: false
+      discard_recording:
+        type: bool
+        required: false
+        default: false
+    returns:
+      type: None
+    exceptions: []
+    side_effects: mutates timestamp/session state and may route to another screen or
+      start finalization
+  - name: exit_current_interview
+    description: Confirm early interview exit, then save the current interview as incomplete
+      and return to the main screen without strict finalization validation.
+    locked: false
+    inputs:
+      flow_idx:
+        type: int
+        required: true
+      persist_current:
+        type: Any
+        required: false
+        default: None
+    returns:
+      type: None
+    exceptions: []
+    side_effects: may show a confirmation dialog, stop/transcribe active recording,
+      persist the current question/session, save an incomplete draft payload, clear
+      active recording pointers, and route to the start screen
+  - name: _save_partial_interview_and_return
+    description: Best-effort implementation for confirmed early interview exit.
+    locked: false
+    inputs:
+      flow_idx:
+        type: int
+        required: true
+      persist_current:
+        type: Any
+        required: false
+        default: None
+    returns:
+      type: None
+    exceptions: []
+    side_effects: stops/transcribes active recording when present, writes incomplete
+      draft/session state, and returns to the start screen
   - name: _flow_transcript_question_block
-    description: Build transcript DOCX lines for a flow item using captured transcript text and optional evaluator notes.
+    description: Build interview-notes transcript lines for a flow item using captured
+      transcript text and optional evaluator notes.
     locked: false
     inputs:
       item:
@@ -135,12 +245,14 @@ classes:
     side_effects: none
 data_structures: []
 dependencies:
-- interview_app_transcription_executor
-- interview_app_transcription_queue
-- interview_app_transcript_processor
-- interview_app_session_manager
-- app_logging
-- interview_app_views
-- ui_components_history_data_grid
-- interview_app_session_context
-- transcription_diagnostics
+- module: interview_app_transcription_executor
+- module: interview_app_transcription_queue
+- module: interview_app_transcript_processor
+- module: interview_app_session_manager
+- module: app_logging
+- module: interview_app_views
+- module: ui_components_history_data_grid
+- module: interview_app_session_context
+- module: transcription_diagnostics
+- module: onboarding_operations
+- module: tk_theme

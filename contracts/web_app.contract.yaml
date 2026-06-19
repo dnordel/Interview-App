@@ -1,0 +1,237 @@
+module:
+  name: web_app
+  language: html_css_javascript
+  path: web/app/
+  version: 0.11.0
+  description: Dependency-free browser migration shell for the full interview tool
+    workflow, covering start, candidate setup, interview, onboarding, settings,
+    question editor, and history screens while Tk remains the production entry
+    point.
+functions:
+- name: createInitialState
+  module: web/app/data.js
+  signature: "createInitialState(today?: string) -> web_app_state"
+  description: Creates browser-only in-memory state for the migration shell.
+- name: loadApplicationData
+  module: web/app/data.js
+  signature: "loadApplicationData() -> Promise[web_app_application_data]"
+  description: Reads local rubric, question overrides, interview history, and offer
+    settings from known repository-relative JSON paths with safe fallback data.
+- name: loadSignalDefinition
+  module: web/app/data.js
+  signature: "loadSignalDefinition(item: web_app_flow_item) -> Promise[dict | null]"
+  description: Reads a trait signal JSON file for the current scored question.
+- name: applyApplicationData
+  module: web/app/data.js
+  signature: "applyApplicationData(state: web_app_state, data: web_app_application_data) -> void"
+  description: Applies loaded local data to browser state and initializes selected
+    track and trait values.
+- name: tracksFromRubric
+  module: web/app/data.js
+  signature: "tracksFromRubric(rubric: dict) -> list[web_app_track_option]"
+  description: Maps rubric track metadata to selector options.
+- name: traitsForTrack
+  module: web/app/data.js
+  signature: "traitsForTrack(rubric: dict, track: string) -> list[dict]"
+  description: Filters rubric traits by track applicability.
+- name: customQuestionsForTrack
+  module: web/app/data.js
+  signature: "customQuestionsForTrack(overrides: dict, track: string) -> list[dict]"
+  description: Returns custom questions sorted by configured order.
+- name: flowForTrack
+  module: web/app/data.js
+  signature: "flowForTrack(rubric: dict, overrides: dict, track: string) -> list[web_app_flow_item]"
+  description: Returns configured interview flow or constructs custom-plus-trait fallback flow.
+- name: traitById
+  module: web/app/data.js
+  signature: "traitById(rubric: dict, traitId: string) -> dict | undefined"
+  description: Finds a rubric trait by id.
+- name: customById
+  module: web/app/data.js
+  signature: "customById(overrides: dict, track: string, customId: string) -> dict | undefined"
+  description: Finds a custom question by track and id.
+- name: primaryQuestion
+  module: web/app/data.js
+  signature: "primaryQuestion(overrides: dict, trait: dict) -> string"
+  description: Resolves trait primary question with question override support.
+- name: createTraitResponse
+  module: web/app/data.js
+  signature: "createTraitResponse() -> web_app_trait_response"
+  description: Creates a browser-held scored competency response using existing trait field names.
+- name: createCustomResponse
+  module: web/app/data.js
+  signature: "createCustomResponse() -> web_app_custom_response"
+  description: Creates a browser-held custom question response.
+- name: buildWebDraftPayload
+  module: web/app/data.js
+  signature: "buildWebDraftPayload(state: web_app_state, exportedAt?: string) -> web_app_draft_payload"
+  description: Builds explicit-export draft payload without writing candidate data
+    to browser storage or repository files.
+- name: saveWebDraftToBackend
+  module: web/app/data.js
+  signature: "saveWebDraftToBackend(payload: web_app_draft_payload) -> Promise[dict]"
+  description: Attempts to save a browser draft through the same-origin local backend,
+    returning a failure object when the static-only file server is in use.
+- name: uploadWebRecordingToBackend
+  module: web/app/data.js
+  signature: "uploadWebRecordingToBackend(payload: dict) -> Promise[dict]"
+  description: Attempts to persist one explicit browser audio recording through the
+    local backend, returning an unavailable result when the static-only file server
+    is in use.
+- name: loadDraftsFromBackend
+  module: web/app/data.js
+  signature: "loadDraftsFromBackend() -> Promise[dict]"
+  description: Attempts to load newest-first draft metadata from the same-origin local
+    backend, returning an unavailable result when the static-only file server is in use.
+- name: loadWebDraftFromBackend
+  module: web/app/data.js
+  signature: "loadWebDraftFromBackend(draftName: string) -> Promise[dict]"
+  description: Attempts to load one saved draft by backend-provided file name.
+- name: applyDraftPayload
+  module: web/app/data.js
+  signature: "applyDraftPayload(state: web_app_state, payload: dict) -> void"
+  description: Hydrates browser state from desktop draft payload shape while preserving
+    existing trait and custom input field names.
+- name: saveQuestionOverridesToBackend
+  module: web/app/data.js
+  signature: "saveQuestionOverridesToBackend(payload: dict) -> Promise[dict]"
+  description: Attempts to persist question override configuration through the local
+    backend, returning a failure object when the static-only file server is in use.
+- name: saveOfferSettingsToBackend
+  module: web/app/data.js
+  signature: "saveOfferSettingsToBackend(payload: dict) -> Promise[dict]"
+  description: Attempts to persist per-school offer settings through the local backend,
+    returning a failure object when the static-only file server is in use.
+- name: updateHistoryOfferStatusToBackend
+  module: web/app/data.js
+  signature: "updateHistoryOfferStatusToBackend(rowKey: string, offerStatus: string) -> Promise[dict]"
+  description: Attempts to update one interview history row's offer status through
+    the local backend, returning a failure object when the static-only file server is in use.
+- name: scoreWebDraftPreview
+  module: web/app/data.js
+  signature: "scoreWebDraftPreview(payload: web_app_draft_payload) -> Promise[dict]"
+  description: Attempts to score a browser draft through the local backend without
+    writing report files, returning an unavailable result when the static-only file
+    server is in use.
+- name: finalizeWebDraftToBackend
+  module: web/app/data.js
+  signature: "finalizeWebDraftToBackend(payload: web_app_draft_payload) -> Promise[dict]"
+  description: Attempts to finalize a browser draft through the local backend by
+    generating a DOCX interview report, JSON integration export, director referral
+    packet preview, and history row, returning an unavailable result when the
+    static-only file server is in use.
+classes: []
+data_structures:
+- name: web_app_state
+  description: Browser-only mutable state backing all web migration shell screens.
+  fields:
+    route: string
+    rubric: dict
+    overrides: dict
+    history: list[dict]
+    offerSettings: dict
+    signalDefinition: dict | null
+    flowIndex: integer
+    candidate: web_app_candidate_profile
+    traitInputs: dict[string, web_app_trait_response]
+    customInputs: dict[string, web_app_custom_response]
+    flowRecordings: list[web_app_audio_recording_metadata]
+    questionEditor: dict
+    scorePreview: web_app_score_preview | null
+    finalizeResult: web_app_finalize_result | null
+    message: string
+    messageType: string
+- name: web_app_application_data
+  description: Local JSON data bundle loaded for browser migration shell rendering.
+  fields:
+    rubric: dict
+    overrides: dict
+    history: list[dict]
+    offerSettings: dict
+- name: web_app_flow_item
+  description: One configured interview flow item.
+  fields:
+    type: string
+    id: string
+- name: web_app_track_option
+  description: Track selector option mapped from rubric track metadata.
+  fields:
+    key: string
+    label: string
+- name: web_app_draft_payload
+  description: Downloaded JSON payload for browser-captured migration-shell state.
+    Candidate and interview text remain in browser memory until explicit export.
+  fields:
+    exported_at: string
+    candidate: web_app_candidate_profile
+    current_route: string
+    current_flow_index: integer
+    trait_inputs: dict[string, web_app_trait_response]
+    custom_inputs: dict[string, web_app_custom_response]
+    flow_recordings: list[web_app_audio_recording_metadata]
+- name: web_app_candidate_profile
+  description: Browser-held candidate setup values using existing desktop domain
+    field names where available.
+  fields:
+    candidate_name: string
+    interview_date: string
+    school: string
+    track: string
+- name: web_app_trait_response
+  description: Browser-held scored competency response using existing trait state
+    field names.
+  fields:
+    raw_score: integer | null
+    absolute_disqualifier: boolean
+    no_example_after_followups: boolean
+    selected_signal_ids: list[string]
+    question_notes: string
+    trait_notes: string
+    verbatim_notes: string
+- name: web_app_custom_response
+  description: Browser-held response for non-scored custom interview questions.
+  fields:
+    answer: string
+    skipped: boolean
+- name: web_app_audio_recording_metadata
+  description: Browser recording metadata persisted after explicit per-question audio
+    save; transcript fields remain blank until transcription is migrated.
+  fields:
+    flow_index: integer
+    question_id: string
+    mime_type: string
+    audio_path: string
+    byte_count: integer
+    candidate_transcript: string
+- name: web_app_score_preview
+  description: Report-compatible scoring preview shown before finalizing a web
+    migration draft.
+  fields:
+    rows: list[dict]
+    weighted_total: number
+    configured_max_weighted_total: number
+    max_weighted_total: number
+    percent_of_max: number
+    percent_of_max_label: string
+    skipped_traits_count: integer
+    scored_traits_count: integer
+    critical_eq_1: integer
+    critical_lt_3: integer
+    disqualifier_present: boolean
+    locked_rule: string
+    outcome: string
+- name: web_app_finalize_result
+  description: Backend finalization result for a web migration draft.
+  fields:
+    report_path: string
+    integration_path: string
+    director_packet: dict
+    history_entry: dict
+    scorePreview: web_app_score_preview
+dependencies:
+- module: config_rubric_json
+- module: question_overrides_json
+- module: interview_history_json
+- module: school_offer_settings_json
+- module: trait_based_scoring_json
+- module: web_app_backend

@@ -6,18 +6,17 @@ from dataclasses import dataclass
 from typing import Any
 from tkinter import font as tkfont
 
-from app_content import DEFAULT_BASE_DIR, DEFAULT_FONT_SIZE, INTRO_BODY_FONT_SPEC, INTRO_HEADING_FONT_SPEC
-from director_referral_service import default_referral_endpoint
+from platform_services import DEFAULT_BASE_DIR, DEFAULT_FONT_SIZE, INTRO_BODY_FONT_SPEC, INTRO_HEADING_FONT_SPEC
+from scoring_reporting import default_referral_endpoint
 
 from .audio_runtime import AudioRuntimeController
 from .dashboard_controller import DashboardController
 from .finalize_pipeline import FinalizePipelineController
 from .flow_controller import FlowController
 from .history_controller import HistoryController
-from .state import AppSharedState
+from interview_runtime import AppSharedState
 from .transcript_writer import TranscriptWriterController
-from .ui_router import AppRouterPorts, UiRouter
-from .ui_shell import UiShellController
+from ui_composition import AppRouterPorts, UiRouter, UiShellController
 from .views import CandidateSetupView, SignalReferenceView, StartScreenView
 
 
@@ -44,6 +43,11 @@ def build_default_settings() -> dict[str, Any]:
         "whisper_relaunch_notice": "",
         "transcription_max_workers": 0,
         "transcription_job_timeout_seconds": 180,
+        "deepseek_summary_enabled": True,
+        "deepseek_api_key": "ollama",
+        "deepseek_api_base_url": "http://127.0.0.1:11434/v1",
+        "deepseek_summary_model": "deepseek-r1:1.5b",
+        "deepseek_summary_timeout_seconds": 20,
         "director_referral_endpoint": default_referral_endpoint(),
         "send_director_referral_on_finalize": False,
         "director_email_to": str(os.environ.get("DIRECTOR_EMAIL_TO", "")).strip(),

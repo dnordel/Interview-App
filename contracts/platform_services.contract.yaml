@@ -1,0 +1,1086 @@
+module:
+  name: platform_services
+  language: python
+  path: src/platform_services.py
+  version: 0.10.0
+  description: Flattened public interface for shared content, logging, config, persistence,
+    path, runtime, document, cleanup, and UX metrics helpers; only active legacy adapters
+    remain in the compatibility module inventory.
+functions:
+- name: compose_intro_script
+  description: Build the candidate intro script for the selected school.
+  locked: false
+  inputs:
+    school:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: text_suggests_no_example
+  description: Return whether free text resembles a missing behavioral-example answer.
+  locked: false
+  inputs:
+    text:
+      type: str
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+- name: sanitize_filename
+  description: Replace path-unsafe filename characters and collapse whitespace.
+  locked: false
+  inputs:
+    name:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: is_valid_date_yyyy_mm_dd
+  description: Return whether text parses as a YYYY-MM-DD date.
+  locked: false
+  inputs:
+    value:
+      type: str
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+- name: now_stamp
+  description: Return current local timestamp for generated IDs and filenames.
+  locked: false
+  inputs: {}
+  returns:
+    type: str
+  exceptions: []
+  side_effects: Reads system clock.
+- name: initialize_app_logging
+  description: Configure root logging handlers and uncaught exception hooks.
+  locked: false
+  inputs:
+    app_root:
+      type: Path | None
+      required: false
+      default: null
+  returns:
+    type: Path
+  exceptions:
+  - OSError
+  side_effects: Creates log directories/files and mutates global logging configuration.
+- name: get_configured_log_path
+  description: Return current configured application log file path.
+  locked: false
+  inputs: {}
+  returns:
+    type: Path | None
+  exceptions: []
+  side_effects: none
+- name: write_crash_report
+  description: Persist a crash report to disk for unhandled exceptions.
+  locked: false
+  inputs:
+    source:
+      type: str
+      required: true
+    exc_type:
+      type: type[BaseException]
+      required: true
+    exc_value:
+      type: BaseException
+      required: true
+    exc_traceback:
+      type: TracebackType | None
+      required: true
+    app_root:
+      type: Path | None
+      required: false
+      default: null
+  returns:
+    type: Path | None
+  exceptions: []
+  side_effects: Creates crash report files under logs.
+- name: _build_crash_payload
+  description: Build serializable crash metadata payload.
+  locked: false
+  inputs:
+    source:
+      type: str
+      required: true
+    exc_type:
+      type: type[BaseException]
+      required: true
+    exc_value:
+      type: BaseException
+      required: true
+    exc_traceback:
+      type: TracebackType | None
+      required: true
+  returns:
+    type: dict[str, Any]
+  exceptions: []
+  side_effects: none
+- name: _traceback_origin
+  description: Extract origin metadata from traceback object.
+  locked: false
+  inputs:
+    exc_traceback:
+      type: TracebackType | None
+      required: true
+  returns:
+    type: dict[str, Any]
+  exceptions: []
+  side_effects: none
+- name: install_uncaught_exception_hooks
+  description: Install process and thread unhandled exception hooks.
+  locked: false
+  inputs: {}
+  returns:
+    type: None
+  exceptions: []
+  side_effects: Mutates sys.excepthook and threading.excepthook.
+- name: _attach_handler_once
+  description: Attach logging handler if equivalent handler is not already present.
+  locked: false
+  inputs:
+    root_logger:
+      type: logging.Logger
+      required: true
+    handler:
+      type: logging.Handler
+      required: true
+  returns:
+    type: None
+  exceptions: []
+  side_effects: Mutates root logger handler collection.
+- name: _resolve_log_level
+  description: Resolve effective logging level from environment.
+  locked: false
+  inputs: {}
+  returns:
+    type: int
+  exceptions: []
+  side_effects: Reads process environment variables.
+- name: _redact_field
+  description: Redact sensitive field values by key.
+  locked: false
+  inputs:
+    key:
+      type: str
+      required: true
+    value:
+      type: Any
+      required: true
+  returns:
+    type: Any
+  exceptions: []
+  side_effects: none
+- name: _redact_value
+  description: Redact sensitive values recursively.
+  locked: false
+  inputs:
+    value:
+      type: Any
+      required: true
+  returns:
+    type: Any
+  exceptions: []
+  side_effects: none
+- name: _redact_text
+  description: Redact emails and phone numbers from free-text strings.
+  locked: false
+  inputs:
+    text:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _serialize
+  description: Convert arbitrary values into JSON-serializable structures.
+  locked: false
+  inputs:
+    value:
+      type: Any
+      required: true
+  returns:
+    type: Any
+  exceptions: []
+  side_effects: none
+- name: _is_within
+  description: Return whether a path resolves within a base directory.
+  locked: false
+  inputs:
+    base_dir:
+      type: Path
+      required: true
+    path:
+      type: Path
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+- name: _safe_to_delete
+  description: Return whether a file is inside the cleanup base directory and matches
+    the artifact deletion allowlist.
+  locked: false
+  inputs:
+    base_dir:
+      type: Path
+      required: true
+    path:
+      type: Path
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: Reads filesystem metadata.
+- name: extract_artifact_paths
+  description: Extract candidate recording and transcript artifact paths from flow
+    recording metadata.
+  locked: false
+  inputs:
+    flow_recordings:
+      type: dict[int, dict[str, Any]] | dict[str, Any]
+      required: true
+  returns:
+    type: list[Path]
+  exceptions: []
+  side_effects: none
+- name: delete_recording_artifacts
+  description: Delete recording artifacts that resolve inside the base directory and
+    match the cleanup allowlist.
+  locked: false
+  inputs:
+    base_dir:
+      type: Path
+      required: true
+    flow_recordings:
+      type: dict[int, dict[str, Any]] | dict[str, Any]
+      required: true
+  returns:
+    type: list[Path]
+  exceptions: []
+  side_effects: Deletes selected files from disk.
+- name: cleanup_stale_artifacts
+  description: Delete stale candidate recording/transcript artifacts under a base
+    directory.
+  locked: false
+  inputs:
+    base_dir:
+      type: Path
+      required: true
+  returns:
+    type: list[Path]
+  exceptions: []
+  side_effects: Deletes selected files from disk.
+- name: build_monthly_summary
+  description: Build onboarding monthly metrics for a selected scope.
+  locked: false
+  inputs:
+    month:
+      type: date
+      required: true
+    scope:
+      type: str
+      required: true
+    employees:
+      type: list[Any]
+      required: true
+    events:
+      type: list[dict[str, Any]]
+      required: true
+    grace_hours:
+      type: int
+      required: false
+      default: 24
+  returns:
+    type: MonthlyMetricsSummary
+  exceptions: []
+  side_effects: none
+- name: parse_args
+  description: Parse runtime wrapper CLI arguments.
+  locked: false
+  inputs:
+    argv:
+      type: list[str] | None
+      required: false
+      default: null
+  returns:
+    type: argparse.Namespace
+  exceptions:
+  - SystemExit
+  side_effects: none
+- name: main
+  description: Execute a target script with runtime logging and crash-report guards.
+  locked: false
+  inputs:
+    argv:
+      type: list[str] | None
+      required: false
+      default: null
+  returns:
+    type: int
+  exceptions:
+  - FileNotFoundError
+  - BaseException
+  side_effects: Writes logs and crash-report artifacts, installs exception hooks,
+    and may execute target script.
+- name: _resolve_app_root
+  description: Resolve app root for runtime wrapper logs from CLI input and target
+    path.
+  locked: false
+  inputs:
+    target_path:
+      type: Path
+      required: true
+    arg_root:
+      type: str
+      required: true
+  returns:
+    type: Path
+  exceptions: []
+  side_effects: none
+- name: _configure_runtime_logging
+  description: Configure runtime wrapper logging files.
+  locked: false
+  inputs:
+    app_root:
+      type: Path
+      required: true
+  returns:
+    type: dict[str, Path]
+  exceptions:
+  - OSError
+  side_effects: Creates log directory and configures root logging.
+- name: _enable_faulthandler
+  description: Enable faulthandler output to a runtime fault log.
+  locked: false
+  inputs:
+    fault_log_path:
+      type: Path
+      required: true
+  returns:
+    type: None
+  exceptions:
+  - OSError
+  side_effects: Opens fault log file and enables faulthandler.
+- name: _install_global_exception_hooks
+  description: Install sys and thread exception hooks for runtime wrapper crash reporting.
+  locked: false
+  inputs:
+    app_root:
+      type: Path
+      required: true
+    runtime_log_path:
+      type: Path
+      required: true
+  returns:
+    type: None
+  exceptions: []
+  side_effects: Mutates sys.excepthook and threading.excepthook.
+- name: _install_tk_callback_hook
+  description: Install Tk callback exception hook when tkinter is available.
+  locked: false
+  inputs:
+    app_root:
+      type: Path
+      required: true
+    runtime_log_path:
+      type: Path
+      required: true
+  returns:
+    type: None
+  exceptions: []
+  side_effects: May mutate tk.Tk.report_callback_exception.
+- name: _install_trace_logging
+  description: Install call tracing to a runtime trace file for app-root code.
+  locked: false
+  inputs:
+    app_root:
+      type: Path
+      required: true
+    trace_path:
+      type: Path
+      required: true
+  returns:
+    type: None
+  exceptions:
+  - OSError
+  side_effects: Opens trace log and mutates sys/thread trace hooks.
+- name: _is_under_root
+  description: Return whether a file path resolves under the app root.
+  locked: false
+  inputs:
+    file_path:
+      type: Path
+      required: true
+    app_root:
+      type: Path
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+- name: _env_debug_enabled
+  description: Return whether runtime debug tracing is enabled by environment.
+  locked: false
+  inputs: {}
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: Reads process environment.
+- name: write_wrapper_crash_report
+  description: Persist structured crash details for uncaught wrapper-level failures.
+  locked: false
+  inputs:
+    app_root:
+      type: Path
+      required: true
+    source:
+      type: str
+      required: true
+    exc_type:
+      type: type[BaseException]
+      required: true
+    exc_value:
+      type: BaseException
+      required: true
+    exc_traceback:
+      type: TracebackType | None
+      required: true
+  returns:
+    type: Path | None
+  exceptions: []
+  side_effects: Writes crash-report JSON files.
+- name: traceback_origin
+  description: Resolve final traceback frame metadata for runtime wrapper crash diagnostics.
+  locked: false
+  inputs:
+    exc_traceback:
+      type: TracebackType | None
+      required: true
+  returns:
+    type: dict[str, Any]
+  exceptions: []
+  side_effects: none
+- name: inventory_config_assets
+  description: Return config asset inventory metadata including owner and consuming
+    modules.
+  locked: false
+  inputs:
+    config_dir:
+      type: Path
+      required: true
+  returns:
+    type: list[dict[str, Any]]
+  exceptions: []
+  side_effects: none
+- name: load_json_dict
+  description: Load JSON as object with size limits and safe parse errors.
+  locked: false
+  inputs:
+    path:
+      type: Path
+      required: true
+    required:
+      type: bool
+      required: true
+    context:
+      type: str
+      required: true
+    default:
+      type: dict[str, Any] | None
+      required: false
+      default: null
+    max_bytes:
+      type: int
+      required: false
+      default: 2000000
+  returns:
+    type: dict[str, Any]
+  exceptions:
+  - FileNotFoundError
+  - ConfigValidationError
+  side_effects: Reads filesystem.
+- name: validate_rubric_config
+  description: Enforce required rubric keys, field types, and trait ranges.
+  locked: false
+  inputs:
+    payload:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: None
+  exceptions:
+  - ConfigValidationError
+  side_effects: none
+- name: validate_disqualifier_config
+  description: Enforce disqualifier question object shape and trait_id presence.
+  locked: false
+  inputs:
+    payload:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: None
+  exceptions:
+  - ConfigValidationError
+  side_effects: none
+- name: normalize_question_overrides_config
+  description: Normalize question override payload to known keys and typed values.
+  locked: false
+  inputs:
+    payload:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: dict[str, Any]
+  exceptions:
+  - ConfigValidationError
+  side_effects: none
+- name: atomic_write_json
+  description: Write JSON payload atomically to a filesystem path.
+  locked: false
+  inputs:
+    path:
+      type: Path
+      required: true
+    payload:
+      type: Any
+      required: true
+    indent:
+      type: int
+      required: false
+      default: 2
+    ensure_ascii:
+      type: bool
+      required: false
+      default: false
+  returns:
+    type: None
+  exceptions:
+  - OSError
+  - TypeError
+  - ValueError
+  side_effects: Creates parent directories and writes/replaces files on disk.
+- name: safe_read_json
+  description: Read JSON payload with fallback behavior for missing/invalid content.
+  locked: false
+  inputs:
+    path:
+      type: Path
+      required: true
+    default:
+      type: Any
+      required: true
+    expected_type:
+      type: type[Any] | None
+      required: false
+      default: null
+  returns:
+    type: Any
+  exceptions: []
+  side_effects: Reads from filesystem.
+- name: validate_existing_file_path
+  description: Resolves a configured path only when it points to an existing file
+    and optionally matches allowed suffixes.
+  locked: false
+  inputs:
+    path_text:
+      type: str
+      required: true
+    allowed_suffixes:
+      type: Collection[str] | None
+      required: false
+      default: null
+  returns:
+    type: tuple[str, str]
+  exceptions: []
+  side_effects: none
+- name: available_modules
+  description: Return remaining legacy platform modules still exposed through this
+    flattened facade.
+  locked: false
+  inputs: {}
+  returns:
+    type: tuple[str, ...]
+  exceptions: []
+  side_effects: none
+- name: load_compat_module
+  description: Import a remaining legacy module that belongs to the platform services
+    facade.
+  locked: false
+  inputs:
+    module_name:
+      type: str
+      required: true
+  returns:
+    type: ModuleType
+  exceptions:
+  - AttributeError
+  side_effects: Imports the requested module.
+- name: module_ownership
+  description: Return the ownership map from each remaining legacy platform module
+    to the flattened platform_services module.
+  locked: false
+  inputs: {}
+  returns:
+    type: dict[str, str]
+  exceptions: []
+  side_effects: none
+- name: wrapper_policy
+  description: Return the compatibility wrapper policy for remaining legacy platform
+    modules during flattening cleanup.
+  locked: false
+  inputs: {}
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: public_symbols
+  description: Return public symbols exposed by one remaining legacy platform module
+    or by all remaining platform modules.
+  locked: false
+  inputs:
+    module_name:
+      type: str | None
+      required: false
+      default: None
+  returns:
+    type: tuple[str, ...]
+  exceptions:
+  - AttributeError
+  side_effects: Imports remaining platform compatibility modules.
+- name: resolve_compat_symbol
+  description: Resolve a public symbol from the remaining legacy modules owned by
+    this facade.
+  locked: false
+  inputs:
+    symbol_name:
+      type: str
+      required: true
+  returns:
+    type: Any
+  exceptions:
+  - AttributeError
+  side_effects: Imports legacy modules until the symbol is found.
+- name: __dir__
+  description: Return module attributes plus flattened public compatibility symbols
+    for editor and agent discovery.
+  locked: false
+  inputs: {}
+  returns:
+    type: list[str]
+  exceptions: []
+  side_effects: Imports platform compatibility modules.
+classes:
+- name: ConfigValidationError
+  description: Raised when untrusted config payload validation fails.
+  locked: false
+  attributes: {}
+  methods: []
+- name: MonthlyMetricsSummary
+  description: Summary DTO for monthly onboarding UX metrics.
+  locked: false
+  attributes:
+    month_key:
+      type: str
+    scope:
+      type: str
+    on_time_completion_pct:
+      type: float
+    overdue_count:
+      type: int
+    previous_overdue_count:
+      type: int
+    overdue_change_pct:
+      type: float | None
+    median_days_by_task_type:
+      type: dict[str, float]
+  methods: []
+- name: UxMetricsLogger
+  description: File-backed UX and onboarding metrics logger with privacy-preserving
+    payload sanitization.
+  locked: false
+  attributes: {}
+  methods:
+  - name: __init__
+    description: Initialize metrics log path under a root directory.
+    locked: false
+    inputs:
+      root_dir:
+        type: str | Path
+        required: true
+      filename:
+        type: str
+        required: false
+        default: ux_metrics.jsonl
+    returns:
+      type: None
+    exceptions:
+    - OSError
+    side_effects: Creates metrics root directory and reads existing metric events.
+  - name: log_event
+    description: Append one sanitized metrics event.
+    locked: false
+    inputs:
+      event_type:
+        type: str
+        required: true
+      '**fields':
+        type: Any
+        required: false
+    returns:
+      type: None
+    exceptions:
+    - OSError
+    side_effects: Appends JSONL metric event to disk.
+  - name: log_ux_view
+    description: Log a UX view event.
+    locked: false
+    inputs:
+      app:
+        type: str
+        required: true
+      surface:
+        type: str
+        required: true
+      target:
+        type: str
+        required: false
+        default: ''
+      '**fields':
+        type: Any
+        required: false
+    returns:
+      type: None
+    exceptions:
+    - OSError
+    side_effects: Appends JSONL metric event to disk when required fields are valid.
+  - name: log_ux_click
+    description: Log a UX click event.
+    locked: false
+    inputs:
+      app:
+        type: str
+        required: true
+      surface:
+        type: str
+        required: true
+      target:
+        type: str
+        required: true
+      '**fields':
+        type: Any
+        required: false
+    returns:
+      type: None
+    exceptions:
+    - OSError
+    side_effects: Appends JSONL metric event to disk when required fields are valid.
+  - name: log_ux_validation_error
+    description: Log a UX validation error event.
+    locked: false
+    inputs:
+      app:
+        type: str
+        required: true
+      surface:
+        type: str
+        required: true
+      error_type:
+        type: str
+        required: true
+      field_name:
+        type: str
+        required: false
+        default: ''
+      required_fields_present:
+        type: bool
+        required: false
+        default: true
+      '**fields':
+        type: Any
+        required: false
+    returns:
+      type: None
+    exceptions:
+    - OSError
+    side_effects: Appends JSONL metric event to disk when required fields are valid.
+  - name: log_ux_completion
+    description: Log a UX completion event.
+    locked: false
+    inputs:
+      app:
+        type: str
+        required: true
+      surface:
+        type: str
+        required: true
+      outcome:
+        type: str
+        required: true
+      '**fields':
+        type: Any
+        required: false
+    returns:
+      type: None
+    exceptions:
+    - OSError
+    side_effects: Appends JSONL metric event to disk when required fields are valid.
+  - name: log_onboarding_canonical_event
+    description: Log an onboarding canonical UX event using the event registry.
+    locked: false
+    inputs:
+      event_type:
+        type: str
+        required: true
+      '**fields':
+        type: Any
+        required: false
+    returns:
+      type: None
+    exceptions:
+    - OSError
+    side_effects: Appends JSONL metric event to disk when event type is registered.
+  - name: _log_ux_event
+    description: Validate, sanitize, and append a generic UX event.
+    locked: false
+    inputs:
+      kind:
+        type: str
+        required: true
+      '**fields':
+        type: Any
+        required: false
+    returns:
+      type: None
+    exceptions:
+    - OSError
+    side_effects: Appends JSONL metric event to disk when required fields are valid.
+  - name: log_keyboard_path_completed
+    description: Log keyboard completion telemetry.
+    locked: false
+    inputs:
+      screen_id:
+        type: str
+        required: true
+      flow_id:
+        type: str
+        required: true
+      completed_via_keyboard:
+        type: bool
+        required: true
+      keyboard_step_count:
+        type: int
+        required: true
+      abandoned:
+        type: bool
+        required: true
+    returns:
+      type: None
+    exceptions:
+    - OSError
+    side_effects: Appends JSONL metric event to disk when identifiers are valid.
+  - name: log_overdue_once
+    description: Log at most one overdue event per task and due date for the logger
+      instance.
+    locked: false
+    inputs:
+      task_id:
+        type: str
+        required: true
+      due_date:
+        type: str | None
+        required: true
+      '**fields':
+        type: Any
+        required: false
+    returns:
+      type: bool
+    exceptions:
+    - OSError
+    side_effects: Appends JSONL metric event to disk when not previously logged.
+  - name: read_events
+    description: Read valid JSONL metric events.
+    locked: false
+    inputs: {}
+    returns:
+      type: list[dict[str, Any]]
+    exceptions:
+    - OSError
+    side_effects: Reads metrics JSONL file from disk.
+  - name: export_events_csv
+    description: Export current metrics events to CSV.
+    locked: false
+    inputs:
+      export_dir:
+        type: str | Path
+        required: true
+    returns:
+      type: Path
+    exceptions:
+    - OSError
+    side_effects: Creates export directory and writes CSV file.
+  - name: _load_overdue_event_keys
+    description: Load already logged overdue event keys.
+    locked: false
+    inputs: {}
+    returns:
+      type: set[str]
+    exceptions:
+    - OSError
+    side_effects: Reads metrics JSONL file from disk.
+- name: RedactionFilter
+  description: Logging filter that redacts sensitive extras, messages, and args.
+  locked: false
+  attributes: {}
+  methods:
+  - name: filter
+    description: Redact fields on a log record before formatting.
+    locked: false
+    inputs:
+      record:
+        type: logging.LogRecord
+        required: true
+    returns:
+      type: bool
+    exceptions: []
+    side_effects: Mutates the provided log record object.
+- name: JsonLogFormatter
+  description: JSON formatter for structured log output.
+  locked: false
+  attributes: {}
+  methods:
+  - name: format
+    description: Format a log record into a JSON string.
+    locked: false
+    inputs:
+      record:
+        type: logging.LogRecord
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _collect_extras
+    description: Collect non-standard log record attributes.
+    locked: false
+    inputs:
+      record:
+        type: logging.LogRecord
+        required: true
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: none
+data_structures:
+- name: APP_TITLE
+  type: str
+- name: APP_DIR
+  type: Path
+- name: REPO_ROOT
+  type: Path
+- name: CONFIG_DIR
+  type: Path
+- name: DEFAULT_RUBRIC_PATH
+  type: Path
+- name: DEFAULT_SIGNALS_PATH
+  type: Path
+- name: QUESTIONS_OVERRIDE_PATH
+  type: Path
+- name: INTERVIEW_HISTORY_PATH
+  type: Path
+- name: SCHOOL_OFFER_SETTINGS_PATH
+  type: Path
+- name: SCHOOL_EMAIL_TEMPLATE_SETTINGS_PATH
+  type: Path
+- name: INTERVIEW_APP_SETTINGS_PATH
+  type: Path
+- name: DEFAULT_BASE_DIR
+  type: Path
+- name: DEFAULT_FONT_SIZE
+  type: int
+- name: MIN_FONT_SIZE
+  type: int
+- name: MAX_FONT_SIZE
+  type: int
+- name: INTRO_BODY_FONT_SPEC
+  type: tuple[str, int, str]
+- name: INTRO_HEADING_FONT_SPEC
+  type: tuple[str, int, str]
+- name: DEFAULT_SCHOOL_OPTIONS
+  type: list[str]
+- name: INTRO_SCRIPT_TEMPLATE
+  type: str
+- name: SCHOOL_HOURS_LINE
+  type: dict[str, str]
+- name: SCHOOL_INFO
+  type: dict[str, str]
+- name: NO_EXAMPLE_PHRASES
+  type: tuple[str, ...]
+- name: NEVER_HAPPENED_GLOBAL_SCRIPT
+  type: str
+- name: NEVER_HAPPENED_BY_TRAIT
+  type: dict[str, dict[str, Any]]
+- name: MAX_CONFIG_BYTES
+  type: int
+- name: CONFIG_ASSET_REGISTRY
+  description: Static map of config filenames to owners, consumers, and schema summaries.
+  type: dict[str, dict[str, Any]]
+- name: LOG_FORMAT
+  type: str
+- name: _TRACE_EVENTS
+  type: set[str]
+- name: EVENT_TASK_CREATED
+  type: str
+- name: EVENT_TASK_COMPLETED
+  type: str
+- name: EVENT_TASK_OVERDUE
+  type: str
+- name: EVENT_REMINDER_SENT
+  type: str
+- name: EVENT_INTERVIEW_FINALIZED
+  type: str
+- name: UX_EVENT_KINDS
+  type: tuple[str, ...]
+- name: UX_REQUIRED_FIELDS_BY_KIND
+  type: dict[str, tuple[str, ...]]
+- name: ONBOARDING_EVENT_REGISTRY
+  type: dict[str, dict[str, type[Any]]]
+- name: LEGACY_TO_CANONICAL_UX_EVENTS
+  type: dict[str, str]
+- name: SCOPE_EVENT_MONTH
+  type: str
+- name: SCOPE_CREATED_MONTH
+  type: str
+- name: SUMMARY_SCOPES
+  type: tuple[str, ...]
+- name: SAFE_EXTENSIONS
+  type: set[str]
+- name: SAFE_NAME_TOKENS
+  type: tuple[str, ...]
+- name: _SENSITIVE_KEYS
+  type: set[str]
+- name: _EMAIL_PATTERN
+  type: Pattern[str]
+- name: _PHONE_PATTERN
+  type: Pattern[str]
+- name: _COMPAT_MODULES
+  description: Ordered tuple of remaining legacy module import paths exposed by platform_services.
+- name: _WRAPPER_POLICY
+  description: Human-readable wrapper policy for remaining platform compatibility
+    modules.
+- name: BACKEND
+  description: Active Word document backend, either python-docx or fallback.
+dependencies:
+- module: data_store
+- module: path_validation
+- module: storage_utils

@@ -2,8 +2,8 @@ module:
   name: interview_app_ui_router
   language: python
   path: src/interview_app/ui_router.py
-  version: 1.1.0
-  description: Contracts for ui_router module.
+  version: 1.1.1
+  description: Compatibility wrapper for UI router implemented by ui_composition.
 functions: []
 classes:
 - name: AppRouterPorts
@@ -332,4 +332,4 @@ classes:
     side_effects: rebuilds flow and routes fallback screen
 data_structures: []
 dependencies:
-- interview_app_view_protocols
+- module: ui_composition

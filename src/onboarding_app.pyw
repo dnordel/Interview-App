@@ -12,14 +12,14 @@ import json
 from collections.abc import Callable
 from tkcalendar import DateEntry
 
-from onboarding_models import EmailSettings, Employee, ReminderRunSummary, TaskTemplate, make_id, parse_date
-from onboarding_reminder_runner import OnboardingReminderRunner
-from onboarding_reminder_health import evaluate_onboarding_reminder_health
-from onboarding_scheduler import (
+from onboarding_operations import EmailSettings, Employee, ReminderRunSummary, TaskTemplate, make_id, parse_date
+from onboarding_operations import OnboardingReminderRunner
+from onboarding_operations import evaluate_onboarding_reminder_health
+from onboarding_operations import (
     apply_task_completion,
     seed_employee_tasks,
 )
-from onboarding_scheduler_dialog import (
+from onboarding_operations import (
     DEFAULT_EXPECTED_INTERVAL_HOURS,
     scheduler_command_example,
     scheduler_expected_interval_hours,
@@ -27,44 +27,46 @@ from onboarding_scheduler_dialog import (
     scheduler_script_path,
     scheduler_status_text,
 )
-from onboarding_storage import AppState, JsonStore
-from onboarding_scheduler_status import build_scheduler_status, normalize_run_source
-from onboarding_task_filters import TASK_FILTER_OPTIONS, filtered_tasks, format_due_date_short, urgent_filter_result_count
-from onboarding_dashboard_actions import build_dashboard_kpi_chips, build_recommended_action, kpi_navigation_target
-from onboarding_template_reference import build_specific_date_reference
-from ux_metrics import EVENT_REMINDER_SENT, EVENT_TASK_COMPLETED, EVENT_TASK_CREATED, UxMetricsLogger
-from onboarding_ui_helpers import (
+from onboarding_operations import AppState, JsonStore
+from onboarding_operations import build_scheduler_status, normalize_run_source
+from onboarding_operations import TASK_FILTER_OPTIONS, filtered_tasks, format_due_date_short, urgent_filter_result_count
+from onboarding_operations import build_dashboard_kpi_chips, build_recommended_action, kpi_navigation_target
+from onboarding_operations import build_specific_date_reference
+from platform_services import EVENT_REMINDER_SENT, EVENT_TASK_COMPLETED, EVENT_TASK_CREATED, UxMetricsLogger
+from onboarding_operations import (
     TASK_STATUS_BADGE_STYLE,
     TASK_STATUS_COLORS,
     build_onboarding_overview,
+    scroll_widget_into_view,
     task_status,
     task_status_badge_text,
 )
-from dashboard_today import build_dashboard_today_summary, critical_window_days_from_settings
-from template_placeholders import (
+from onboarding_operations import build_dashboard_today_summary, critical_window_days_from_settings
+from scoring_reporting import (
     insert_token_into_focused_widget,
     placeholder_picker_options,
     token_from_picker_label,
     validate_template_map,
     missing_placeholder_keys,
 )
-from onboarding_send_guardrails import (
+from onboarding_operations import (
     recipient_warning_text,
     reminder_send_estimate,
     split_and_validate_recipients,
     unknown_placeholder_actionable_message,
     validate_sender_email,
 )
-from onboarding_action_sections import onboarding_action_sections
-from email_security import sender_email_domain_type
-from ui_feedback import (
+from onboarding_operations import onboarding_action_sections
+from scoring_reporting import sender_email_domain_type
+from ui_composition import (
     VALIDATION_SEVERITY_BLOCKING,
     VALIDATION_SEVERITY_ERROR,
     create_inline_validation_message_grid,
     should_display_modal,
     show_inline_field_error,
 )
-from keyboard_telemetry import KeyboardPathSession
+from ui_composition import KeyboardPathSession
+from tk_theme import COLORS, apply_professional_ops_theme, configure_plain_button
 
 
 class OnboardingTrackerApp:
@@ -103,6 +105,7 @@ class OnboardingTrackerApp:
         self._apply_launch_context()
 
     def _build_layout(self) -> None:
+        apply_professional_ops_theme(self.root)
         self.shell = TwoPaneShell(self.root)
 
         # ---------------- LEFT PANEL ----------------
@@ -119,7 +122,17 @@ class OnboardingTrackerApp:
         self.search_entry = ttk.Entry(self.shell.left, textvariable=self.search_var)
         self.search_entry.pack(fill="x", pady=(4, 6))
 
-        self.employee_list = tk.Listbox(self.shell.left)
+        self.employee_list = tk.Listbox(
+            self.shell.left,
+            bg=COLORS["surface"],
+            fg=COLORS["text"],
+            selectbackground=COLORS["primary"],
+            selectforeground="#ffffff",
+            relief="solid",
+            bd=1,
+            highlightthickness=1,
+            highlightbackground=COLORS["border"],
+        )
         self.employee_list.pack(fill="both", expand=True)
         self.employee_list.bind("<<ListboxSelect>>", self._on_select_employee)
         self._install_focus_visible_behavior(self.employee_list)
@@ -139,7 +152,7 @@ class OnboardingTrackerApp:
         ttk.Label(self.shell.right, text="Tasks for selected employee")\
             .grid(row=0, column=0, sticky="w")
 
-        self.task_canvas = tk.Canvas(self.shell.right)
+        self.task_canvas = tk.Canvas(self.shell.right, bg=COLORS["app_bg"], highlightthickness=0)
         self.task_canvas.grid(row=1, column=0, sticky="nsew")
 
         self.shell.right.rowconfigure(1, weight=1)
@@ -287,10 +300,9 @@ class OnboardingTrackerApp:
                 command=lambda selected=key: self._on_dashboard_kpi_click(selected),
                 padx=8,
                 pady=4,
-                relief="ridge",
-                bd=1,
                 takefocus=True,
             )
+            configure_plain_button(button, font_size=10)
             button.pack(side="left", padx=(0, 6))
             button.bind("<Return>", lambda _event, widget=button, metric_key=key: self._invoke_button_from_keyboard(widget, "today_dashboard", metric_key))
             button.bind("<space>", lambda _event, widget=button, metric_key=key: self._invoke_button_from_keyboard(widget, "today_dashboard", metric_key))
@@ -301,15 +313,15 @@ class OnboardingTrackerApp:
         self.today_dashboard_status_label = ttk.Label(self.today_dashboard_box, text="", justify="left", wraplength=280, foreground="#334155")
         self.today_dashboard_status_label.pack(anchor="w", pady=(0, 4))
 
-        self.today_recommended_banner = tk.Frame(self.today_dashboard_box, bg="#EFF6FF", highlightthickness=1, highlightbackground="#1D4ED8")
+        self.today_recommended_banner = tk.Frame(self.today_dashboard_box, bg=COLORS["surface_alt"], highlightthickness=1, highlightbackground=COLORS["primary"])
         self.today_recommended_banner.pack(fill="x", pady=(2, 6))
         self.today_recommended_banner_label = tk.Label(
             self.today_recommended_banner,
             text="",
             justify="left",
             anchor="w",
-            bg="#EFF6FF",
-            fg="#1E3A8A",
+            bg=COLORS["surface_alt"],
+            fg=COLORS["primary_dark"],
             wraplength=220,
             padx=8,
             pady=6,
@@ -321,10 +333,9 @@ class OnboardingTrackerApp:
             command=self._on_recommended_action_click,
             padx=8,
             pady=4,
-            relief="ridge",
-            bd=1,
             takefocus=True,
         )
+        configure_plain_button(self.today_recommended_banner_button, role="primary", font_size=10)
         self.today_recommended_banner_button.pack(side="right", padx=6, pady=6)
         self.today_recommended_banner_button.bind("<Return>", lambda _event: self._invoke_button_from_keyboard(self.today_recommended_banner_button, "today_dashboard", "recommended_action"))
         self.today_recommended_banner_button.bind("<space>", lambda _event: self._invoke_button_from_keyboard(self.today_recommended_banner_button, "today_dashboard", "recommended_action"))
@@ -651,6 +662,13 @@ class OnboardingTrackerApp:
     def _on_canvas_resize(self, event: tk.Event) -> None:
         self.task_canvas.itemconfigure(self.task_window, width=event.width)
 
+    def _bind_task_widget_visibility(self, widget: tk.Misc) -> None:
+        widget.bind(
+            "<FocusIn>",
+            lambda event: scroll_widget_into_view(self.task_canvas, event.widget),
+            add="+",
+        )
+
     def change_storage_folder(self) -> None:
         selected = filedialog.askdirectory(title="Choose Dropbox folder for onboarding files")
         if not selected:
@@ -805,7 +823,7 @@ class OnboardingTrackerApp:
 
     @staticmethod
     def _install_focus_visible_behavior(widget: tk.Widget) -> None:
-        widget.configure(highlightthickness=0, highlightbackground="#0EA5E9", highlightcolor="#0EA5E9", bd=0)
+        widget.configure(highlightthickness=0, highlightbackground=COLORS["focus"], highlightcolor=COLORS["focus"])
         widget.bind("<FocusIn>", lambda _event: widget.configure(highlightthickness=2), add="+")
         widget.bind("<FocusOut>", lambda _event: widget.configure(highlightthickness=0), add="+")
 
@@ -1898,7 +1916,7 @@ class WindowState:
 
 class TwoPaneShell(ttk.Frame):
     def __init__(self, master):
-        super().__init__(master, padding=10)
+        super().__init__(master, padding=14)
         self.grid(row=0, column=0, sticky="nsew")
 
         master.columnconfigure(0, weight=1)
@@ -1909,7 +1927,7 @@ class TwoPaneShell(ttk.Frame):
 
         # LEFT
         self.left = ttk.Frame(self)
-        self.left.grid(row=0, column=0, sticky="nsw", padx=(0, 10))
+        self.left.grid(row=0, column=0, sticky="nsw", padx=(0, 14))
 
         # RIGHT
         self.right = ttk.Frame(self)

@@ -2,8 +2,8 @@ module:
   name: interview_app_state
   language: python
   path: src/interview_app/state.py
-  version: 1.0.0
-  description: Contracts for state module.
+  version: 1.1.0
+  description: Deprecated compatibility wrapper for shared app state owned by interview_runtime.
 functions: []
 classes:
 - name: AppSharedState
@@ -21,4 +21,4 @@ data_structures:
 - name: AppSharedState
   type: dataclass
 dependencies:
-- interview_app_types
+- module: interview_runtime

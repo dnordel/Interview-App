@@ -5,7 +5,7 @@
     "infant_toddler": [
       {
         "id": "FT-or-PT",
-        "text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "text": "Are you looking for full-time or part-time?",
         "order": 6
       },
       {
@@ -42,7 +42,7 @@
       },
       {
         "id": "Why-LPL",
-        "text": "Why are you applying for this position, specifically at Launch Pad Learning?",
+        "text": "Why are you applying to our company, Launch Pad Learning?",
         "order": 2
       },
       {
@@ -57,7 +57,39 @@
       },
       {
         "id": "FT-or-PT",
-        "text": "Are you looking for full-time or part-time? Do you have any preference, in terms of shift or schedule?",
+        "text": "Are you looking for full-time or part-time?",
+        "order": 5
+      },
+      {
+        "id": "Start",
+        "text": "When could you start if we decide to move forward?",
+        "order": 6
+      }
+    ],
+    "behavior_support_specialist": [
+      {
+        "id": "Why-ECE",
+        "text": "Tell me about yourself and why early childhood education matters to you.",
+        "order": 1
+      },
+      {
+        "id": "Why-LPL",
+        "text": "Why are you applying to our company, Launch Pad Learning?",
+        "order": 2
+      },
+      {
+        "id": "Not-Avail",
+        "text": "Are there any hours you are absolutely not available to work?",
+        "order": 3
+      },
+      {
+        "id": "Pay",
+        "text": "What kind of pay are you looking for? Is that negotiable?",
+        "order": 4
+      },
+      {
+        "id": "FT-or-PT",
+        "text": "Are you looking for full-time or part-time?",
         "order": 5
       },
       {
@@ -174,6 +206,84 @@
       {
         "type": "trait",
         "id": "trait_11"
+      },
+      {
+        "type": "custom",
+        "id": "FT-or-PT"
+      },
+      {
+        "type": "custom",
+        "id": "Not-Avail"
+      },
+      {
+        "type": "custom",
+        "id": "Pay"
+      },
+      {
+        "type": "custom",
+        "id": "Start"
+      }
+    ],
+    "behavior_support_specialist": [
+      {
+        "type": "custom",
+        "id": "Why-ECE"
+      },
+      {
+        "type": "custom",
+        "id": "Why-LPL"
+      },
+      {
+        "type": "trait",
+        "id": "bss_trait_1"
+      },
+      {
+        "type": "trait",
+        "id": "bss_trait_2"
+      },
+      {
+        "type": "trait",
+        "id": "bss_trait_3"
+      },
+      {
+        "type": "trait",
+        "id": "bss_trait_4"
+      },
+      {
+        "type": "trait",
+        "id": "bss_trait_5"
+      },
+      {
+        "type": "trait",
+        "id": "bss_trait_6"
+      },
+      {
+        "type": "trait",
+        "id": "bss_trait_7"
+      },
+      {
+        "type": "trait",
+        "id": "bss_trait_8"
+      },
+      {
+        "type": "trait",
+        "id": "bss_trait_9"
+      },
+      {
+        "type": "trait",
+        "id": "bss_trait_10"
+      },
+      {
+        "type": "trait",
+        "id": "bss_trait_11"
+      },
+      {
+        "type": "trait",
+        "id": "bss_trait_12"
+      },
+      {
+        "type": "trait",
+        "id": "bss_trait_13"
       },
       {
         "type": "custom",

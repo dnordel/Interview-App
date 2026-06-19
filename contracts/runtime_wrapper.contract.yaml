@@ -2,11 +2,12 @@ module:
   name: runtime_wrapper
   language: python
   path: src/runtime_wrapper.py
-  version: 1.0.0
-  description: Runtime launcher wrapper that configures logging, exception hooks, and crash reporting for interview UI entrypoints.
+  version: 1.1.0
+  description: Deprecated executable compatibility wrapper for runtime launcher helpers
+    now owned by platform_services.
 functions:
 - name: parse_args
-  description: Parse wrapper CLI arguments.
+  description: Forward to platform_services.parse_args.
   locked: false
   inputs:
     argv:
@@ -19,7 +20,7 @@ functions:
   - SystemExit
   side_effects: none
 - name: main
-  description: Execute a target script with runtime logging and crash-report guards.
+  description: Forward to platform_services.main.
   locked: false
   inputs:
     argv:
@@ -32,8 +33,111 @@ functions:
   - FileNotFoundError
   - BaseException
   side_effects: writes logs and crash-report artifacts
+- name: _resolve_app_root
+  description: Forward to platform_services._resolve_app_root.
+  locked: false
+  inputs:
+    target_path:
+      type: Path
+      required: true
+    arg_root:
+      type: str
+      required: true
+  returns:
+    type: Path
+  exceptions: []
+  side_effects: none
+- name: _configure_runtime_logging
+  description: Forward to platform_services._configure_runtime_logging.
+  locked: false
+  inputs:
+    app_root:
+      type: Path
+      required: true
+  returns:
+    type: dict[str, Path]
+  exceptions:
+  - OSError
+  side_effects: Creates log directory and configures root logging.
+- name: _enable_faulthandler
+  description: Forward to platform_services._enable_faulthandler.
+  locked: false
+  inputs:
+    fault_log_path:
+      type: Path
+      required: true
+  returns:
+    type: None
+  exceptions:
+  - OSError
+  side_effects: Opens fault log file and enables faulthandler.
+- name: _install_global_exception_hooks
+  description: Forward to platform_services._install_global_exception_hooks.
+  locked: false
+  inputs:
+    app_root:
+      type: Path
+      required: true
+    runtime_log_path:
+      type: Path
+      required: true
+  returns:
+    type: None
+  exceptions: []
+  side_effects: Mutates sys.excepthook and threading.excepthook.
+- name: _install_tk_callback_hook
+  description: Forward to platform_services._install_tk_callback_hook.
+  locked: false
+  inputs:
+    app_root:
+      type: Path
+      required: true
+    runtime_log_path:
+      type: Path
+      required: true
+  returns:
+    type: None
+  exceptions: []
+  side_effects: May mutate tk.Tk.report_callback_exception.
+- name: _install_trace_logging
+  description: Forward to platform_services._install_trace_logging.
+  locked: false
+  inputs:
+    app_root:
+      type: Path
+      required: true
+    trace_path:
+      type: Path
+      required: true
+  returns:
+    type: None
+  exceptions:
+  - OSError
+  side_effects: Opens trace log and mutates sys/thread trace hooks.
+- name: _is_under_root
+  description: Forward to platform_services._is_under_root.
+  locked: false
+  inputs:
+    file_path:
+      type: Path
+      required: true
+    app_root:
+      type: Path
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+- name: _env_debug_enabled
+  description: Forward to platform_services._env_debug_enabled.
+  locked: false
+  inputs: {}
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: Reads process environment.
 - name: write_wrapper_crash_report
-  description: Persist structured crash details for uncaught wrapper-level failures.
+  description: Forward to platform_services.write_wrapper_crash_report.
   locked: false
   inputs:
     app_root:
@@ -56,7 +160,7 @@ functions:
   exceptions: []
   side_effects: writes crash-report JSON files
 - name: traceback_origin
-  description: Resolve final traceback frame metadata for crash diagnostics.
+  description: Forward to platform_services.traceback_origin.
   locked: false
   inputs:
     exc_traceback:
@@ -67,5 +171,8 @@ functions:
   exceptions: []
   side_effects: none
 classes: []
-data_structures: []
-dependencies: []
+data_structures:
+- name: LOG_FORMAT
+  type: str
+dependencies:
+- module: platform_services

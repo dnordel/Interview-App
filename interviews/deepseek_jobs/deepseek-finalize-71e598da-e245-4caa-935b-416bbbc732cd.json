@@ -1,0 +1,1778 @@
+{
+  "history_id": "71e598da-e245-4caa-935b-416bbbc732cd",
+  "history_path": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interview_history.json",
+  "base_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+  "report_path": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Indeed Interview Notes\\2026-06-19 - Palmdale - Latoya Nugent - Interview.docx",
+  "rubric": {
+    "metadata": {
+      "title": "STRUCTURED BEHAVIORAL INTERVIEW SYSTEM",
+      "subtitle": "Initial Zoom Interview",
+      "notes": [
+        "ATS + VBA Ready",
+        "Single Canonical Output"
+      ],
+      "version": "1.1"
+    },
+    "scoring": {
+      "raw_score_range": [
+        1,
+        5
+      ],
+      "one_score_per_trait": true,
+      "primary_question_only": true,
+      "weights": {
+        "Critical": 3,
+        "High": 2,
+        "Medium": 1
+      },
+      "weighted_formula": "WeightedScore = RawScore * Weight",
+      "automatic_overrides": [
+        "Immediate NO HIRE if any Critical trait raw score = 1",
+        "Immediate NO HIRE if any Absolute Disqualifier observed",
+        "Interview continues but outcome is locked"
+      ],
+      "conflict_resolution": [
+        "Any disqualifier => No Hire",
+        "Any Critical raw score = 1 => No Hire",
+        "Any Critical raw score <3 blocks Hire"
+      ]
+    },
+    "tracks": {
+      "infant_toddler": {
+        "label": "Infant/Toddler",
+        "max_weighted_total": 105,
+        "thresholds": {
+          "hire_percent_min": 80,
+          "borderline_percent_min": 65,
+          "borderline_percent_max": 79,
+          "no_hire_percent_below": 65,
+          "hire_requires": [
+            "no disqualifiers",
+            "no Critical <3"
+          ],
+          "borderline_requires": [
+            "no disqualifiers",
+            "no Critical =1"
+          ]
+        }
+      },
+      "preschool": {
+        "label": "Preschool",
+        "max_weighted_total": 95,
+        "thresholds": {
+          "hire_percent_min": 80,
+          "borderline_percent_min": 65,
+          "borderline_percent_max": 79,
+          "no_hire_percent_below": 65,
+          "hire_requires": [
+            "no disqualifiers",
+            "no Critical <3"
+          ],
+          "borderline_requires": [
+            "no disqualifiers",
+            "no Critical =1"
+          ]
+        }
+      }
+    },
+    "absolute_disqualifiers": [
+      "Justifies yelling, shaming, intimidation, or force",
+      "Minimizes children’s rights or safety",
+      "Cannot regulate emotions",
+      "Resists supervision or feedback",
+      "Cynical or contemptuous language about children or families",
+      "Disregards licensing or safety standards",
+      "Interviewing while supervising children or working",
+      "Burnout language with no ownership or recovery plan"
+    ],
+    "interviewer_guidance": {
+      "what_to_evaluate": [
+        "Emotional safety",
+        "Values alignment",
+        "Self-regulation",
+        "Coachability",
+        "Risk profile"
+      ],
+      "scoring_principles": [
+        "Reflective ownership > polish",
+        "Child-centered language > control language"
+      ],
+      "probe_when": [
+        "Answers are vague or rehearsed",
+        "Responsibility is externalized",
+        "Emotion is skipped"
+      ],
+      "probe_prompt": "What was going on for you internally in that moment?"
+    },
+    "traits": [
+      {
+        "id": "trait_1",
+        "name": "Empathy & Respect for Children",
+        "priority": "Critical",
+        "weight": 3,
+        "applicable_tracks": [
+          "all"
+        ],
+        "primary_question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+        "descriptors": {
+          "5": "Speaks with warmth and respect. Describes curiosity about the child’s feelings. Frames behavior as communication. Acknowledges the child’s emotional experience and autonomy.",
+          "4": "Speaks with warmth and respect. Describes some emotional insight. Focuses on helping the child calm down and rejoin the group.",
+          "3": "Responds appropriately but focuses more on managing behavior than understanding emotion. Neutral tone.",
+          "2": "Focuses on adult needs or expectations. Emphasizes compliance. Tone may be flat or frustrated.",
+          "1": "Minimizes feelings. Uses dismissive or controlling language. Labels the child negatively or frames the child as the problem."
+        },
+        "sample_answers": {
+          "5": "The child was clearly overwhelmed and scared, not trying to be difficult. I got down to their level, named what I thought they were feeling, and stayed close until they felt safe enough to rejoin. I reminded myself their behavior was communication.",
+          "4": "They were very upset and crying. I tried to stay calm and help them calm down before moving on. I wanted to make sure they felt supported while also helping them get back to the group.",
+          "3": "They were having a meltdown. I followed our usual steps to help them settle and get back on track. It was a tough moment, but I managed it.",
+          "2": "They were acting out and needed redirection. I explained the rules again and had them sit until they were calm. It was frustrating, but I needed to make sure they understood what was expected.",
+          "1": "They were throwing a fit for attention. Sometimes you just have to be firm so they know it’s not okay. They needed to learn that behavior isn’t acceptable."
+        },
+        "score_1_auto_no_hire": true
+      },
+      {
+        "id": "trait_2",
+        "name": "Emotional Regulation Under Stress",
+        "priority": "Critical",
+        "weight": 3.0,
+        "applicable_tracks": [
+          "all"
+        ],
+        "primary_question": "Tell me about a time you felt overwhelmed or stressed at work with children present. What did you do to manage, not the kids, but yourself and your stress?",
+        "descriptors": {
+          "5": "Acknowledges stress. Takes responsibility for self-regulation. Names specific coping strategies. Reflective tone.",
+          "4": "Describes effort to stay calm. Names some strategies. Tone is calm and intentional.",
+          "3": "Recognizes stress but coping strategies are vague or external. Tone may be more resigned or neutral.",
+          "2": "Normalizes frustration as just part of the job. Minimizes emotional experience.",
+          "1": "Admits to snapping, yelling, or losing control. Blames children or chaos."
+        },
+        "sample_answers": {
+          "5": "I noticed my stress rising and took a breath before responding. I focused on keeping my voice steady and asked for support later. I know my regulation affects the children.",
+          "4": "It was stressful, but I reminded myself to stay calm and worked through it. I might have taken a moment to step back mentally, but I stayed present with the kids and got through it.",
+          "3": "It was overwhelming, but I got through it and things settled eventually. I might have felt pretty stressed, but I managed to keep it together enough to get through the day.",
+          "2": "I was frustrated, but that’s part of the job. Kids can be a lot. I just had to push through and get things done.",
+          "1": "I lost my patience. Anyone would. The kids were out of control and it was too much."
+        },
+        "score_1_auto_no_hire": true
+      },
+      {
+        "id": "trait_3",
+        "name": "Respect for Children’s Rights & Safety",
+        "priority": "Critical",
+        "weight": 3,
+        "applicable_tracks": [
+          "all"
+        ],
+        "primary_question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering. They are pulling away and crying. Walk me through exactly what you would do and say, step by step.",
+        "descriptors": {
+          "5": "Acknowledges the child’s communication and emotions, describes slowing down, narrating actions, offering choices, Uses respectful language about consent and dignity, mentions safety without using force or threats",
+          "4": "Acknowledges the child’s discomfort and follows safety rules, Uses respectful language but may not fully describe consent-oriented strategies, Focuses on keeping the child safe while trying to respect their boundaries",
+          "3": "Keeps the child safe but focuses on task completion, Uses redirection but minimal acknowledgment of feelings, Acceptable but adult-centered framing",
+          "2": "Complies with rules but expresses frustration or resentment, Minimizes the child’s communication, May acknowledge safety but emphasizes control or compliance",
+          "1": "Describes restraining, forcing, or overpowering, Uses language like “they have to,” “they’ll learn,” “I just do it”, Minimizes the child’s discomfort or autonomy."
+        },
+        "sample_answers": {
+          "5": "I slow myself down and prioritize consent and safety. I might say, “I see you don’t want to be touched right now. I’m going to wait here and give you some space. When you’re ready, I can help you.” I watch their cues and try to respect their boundaries while keeping them safe.",
+          "4": "I’m careful to follow safety rules. I might say, “I know you don’t like this, but I need to help you get your diaper changed to keep you clean and healthy. I’ll try to be as gentle as possible.” I try to respect their feelings while making sure they’re safe.",
+          "3": "I follow the guidelines. I might say, “I need to help you with this. It’s important for your health.” I focus on getting the task done while keeping them safe.",
+          "2": "Some rules feel excessive, but we follow them. I might say, “I know you don’t want to do this, but it’s part of the routine. Let’s get it done.” I try to get through the task while acknowledging it’s not fun.",
+          "1": "Kids are resilient. We’re too strict now. I just do it. I might say, “You have to let me help you. It’s not a choice.” I focus on control and minimizing their discomfort."
+        },
+        "score_1_auto_no_hire": true
+      },
+      {
+        "id": "trait_4",
+        "name": "Coachability",
+        "priority": "High",
+        "weight": 2,
+        "applicable_tracks": [
+          "all"
+        ],
+        "primary_question": "Tell me about a time you received constructive criticism or feedback you didn’t expect or didn’t fully agree with. What happened next?",
+        "descriptors": {
+          "5": "Reflective, accountable, open to growth. Acknowledges discomfort but describes specific adjustments or learning.",
+          "4": "Accepts feedback with some adjustment. May acknowledge initial discomfort but focuses on how they made changes or learned from it.",
+          "3": "Accepts feedback but with some defensiveness. No clear indication of reflection or growth.",
+          "2": "Defensive acceptance. May acknowledge the feedback but emphasizes disagreement or external factors.",
+          "1": "Dismisses feedback or blames others. Rejects feedback outright."
+        },
+        "sample_answers": {
+          "5": "At first it was uncomfortable, but it helped me grow. I adjusted my approach and appreciated the perspective later.",
+          "4": "I listened and made changes, even if I didn’t fully agree at first. I tried to understand where the feedback was coming from and how I could use it to improve.",
+          "3": "I took the feedback. I wasn’t thrilled about it, but I accepted it and tried to apply it.",
+          "2": "I didn’t fully agree. I thought the feedback was a bit off, but I tried to take it into account while still doing things my way.",
+          "1": "They were wrong. I didn’t agree with the feedback at all and I don’t think it was fair."
+        },
+        "score_1_auto_no_hire": true
+      },
+      {
+        "id": "trait_5",
+        "name": "Reliability & Accountability",
+        "priority": "High",
+        "weight": 2,
+        "applicable_tracks": [
+          "all"
+        ],
+        "primary_question": "Tell me about a time something, such as a lesson plan, did not go as expected and your role in it.",
+        "descriptors": {
+          "5": "Owns mistakes. Describes follow-through and responsibility. Takes corrective action if needed.",
+          "4": "Accepts responsibility and may describe some follow-through. Acknowledges their role without overemphasizing external factors.",
+          "3": "Some ownership but mixed with external blame. Focuses on resolution but not personal role.",
+          "2": "Externalizes blame to others or circumstances. Minimizes personal responsibility.",
+          "1": "Avoids accountability or minimizes reliability. Blames others or denies any role in the outcome."
+        },
+        "sample_answers": {
+          "5": "I owned my part, communicated quickly, and corrected it. I acknowledged that I made a mistake and took steps to fix it and make sure it didn’t happen again. I also reflected on what I could learn from it to improve in the future.",
+          "4": "I took responsibility and made sure it didn’t happen again. I acknowledged that I had a role in what happened and I worked to make it right. I also tried to learn from it so I could do better in the future.",
+          "3": "It was handled once we figured it out. I had some involvement, but there were also other factors. We worked together to resolve it.",
+          "2": "It was mostly a system issue. There were a lot of things that contributed to it, and while I had some involvement, it wasn’t entirely on me.",
+          "1": "That wasn’t on me. I had nothing to do with it and I don’t think I could have done anything differently."
+        },
+        "score_1_auto_no_hire": false
+      },
+      {
+        "id": "trait_6",
+        "name": "Team Orientation",
+        "priority": "High",
+        "weight": 2,
+        "applicable_tracks": [
+          "all"
+        ],
+        "primary_question": "Tell me about a time you had a challenge with another adult. How did you navigate it?",
+        "descriptors": {
+          "5": "Speaks respectfully about others. Emphasizes shared responsibility. Focuses on collaboration and child-centered problem-solving.",
+          "4": "Describes cooperative problem-solving. May acknowledge challenges but focuses on how they worked together to resolve it.",
+          "3": "Neutral teamwork description. Focuses on coexistence or getting through it without conflict, but no clear emphasis on collaboration or shared responsibility.",
+          "2": "Prefers independence. May describe working alongside others but emphasizes doing their own part or handling things themselves.",
+          "1": "Repeated conflict, blame, or isolation preference. May describe hostile interactions or a clear preference for working alone."
+        },
+        "sample_answers": {
+          "5": "We communicated openly and focused on what was best for the children. We had different perspectives, but we were able to listen to each other and find a solution that worked for everyone.",
+          "4": "We talked it through and found a solution. It was a bit challenging at times, but we were able to work together and figure out how to handle the situation.",
+          "3": "We got through it. We had some disagreements, but we managed to work alongside each other and get through the situation.",
+          "2": "I usually handle my own work. I don’t mind working with others, but I prefer to focus on my own responsibilities and not get too involved in others’ work.",
+          "1": "I work better alone. I find that working with others can be frustrating and I prefer to just do my own thing."
+        },
+        "score_1_auto_no_hire": false
+      },
+      {
+        "id": "trait_7",
+        "name": "Curiosity & Learning",
+        "priority": "Medium",
+        "weight": 1,
+        "applicable_tracks": [
+          "all"
+        ],
+        "primary_question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+        "descriptors": {
+          "5": "Demonstrates growth mindset and reflection. Describes specific insights and how they changed their approach. Shows ongoing curiosity.",
+          "4": "Describes learning and growth. May share specific strategies or insights they’ve gained. Shows openness to learning.",
+          "3": "General or surface-level learning. May describe learning by doing but without deep reflection or insight.",
+          "2": "Confidence in own approach with minimal learning. May acknowledge some learning but emphasizes that they already knew what works.",
+          "1": "Rigid beliefs or disinterest in growth. May express fixed ideas about children or teaching without acknowledging learning or change."
+        },
+        "sample_answers": {
+          "5": "My presence matters more than I realized. I used to think that as long as I was doing the activities and managing behavior, I was doing a good job. But I’ve learned that how I am with the kids emotionally is just as important, if not more so, than what I do with them.",
+          "4": "I’ve learned new strategies. I used to think that if I just kept kids busy and followed the curriculum, that was enough. But I’ve learned that I need to be more attuned to their emotional needs and that has changed how I interact with them.",
+          "3": "I learned by doing. I’ve picked up a lot of things through experience. I’m always learning on the job. I might not have specific insights, but I know I’ve grown a lot through my work with kids.",
+          "2": "I already know what works. I’ve been doing this for a while and I have a good sense of what works with kids. I’m not sure there’s anything new I’ve learned that has changed my approach.",
+          "1": "Kids should behave a certain way. I have a clear idea of how kids should act and I don’t really see the need to change my approach. I’ve learned what works and I stick to it."
+        },
+        "score_1_auto_no_hire": false
+      },
+      {
+        "id": "trait_8",
+        "name": "Gentleness & Physical Awareness",
+        "priority": "Critical",
+        "weight": 3,
+        "applicable_tracks": [
+          "infant_toddler"
+        ],
+        "primary_question": "Tell me about how you physically care for infants or toddlers during routines like feeding, diapering, or comforting.",
+        "descriptors": {
+          "5": "Uses gentle, respectful language. Names activity to child. Emphasizes safety and responsiveness. Describes pacing and watching for cues.",
+          "4": "Describes careful and respectful handling. May mention safety and being gentle but with less emphasis on child cues or autonomy.",
+          "3": "Describes routines without emotional awareness. Focuses on task completion.",
+          "2": "Efficiency-driven. May acknowledge safety but emphasizes getting through tasks.",
+          "1": "Casual or rough language. Impatience. May describe rushing or using force to complete tasks."
+        },
+        "sample_answers": {
+          "5": "I move slowly, narrate, and watch cues. For example, when I’m diapering, I might say, “I’m going to change your diaper now. I see you’re feeling uncomfortable. I’m going to be as gentle as possible.” I pay attention to their reactions and try to make it a calm and safe experience.",
+          "4": "I’m very gentle and careful. I make sure to follow safety guidelines and try to be respectful of the child’s feelings, even if they can’t express them clearly.",
+          "3": "I follow the steps. I make sure to get the task done and keep them safe, but I don’t always think about how they might be feeling during the routine.",
+          "2": "I get through it efficiently. I know the routines and I focus on getting them done. I try to be safe, but I also want to make sure we get through the day.",
+          "1": "You have to be quick. They cry. I do what I need to do to get it done. Sometimes that means rushing or being a bit rough, but it’s just part of the job."
+        },
+        "score_1_auto_no_hire": true
+      },
+      {
+        "id": "trait_9",
+        "name": "Patience with Nonverbal Communication",
+        "priority": "High",
+        "weight": 2,
+        "applicable_tracks": [
+          "infant_toddler"
+        ],
+        "primary_question": "How do you understand what a nonverbal child needs when they’re crying or upset? Can you walk me through how you respond in those moments?",
+        "descriptors": {
+          "5": "Describes attunement and patience. Emphasizes observing patterns and responding to cues. Reflective about the challenge but focused on connection.",
+          "4": "Describes trying different approaches calmly. Acknowledges the challenge but focuses on finding a way to meet the child’s needs.",
+          "3": "Relies on trial and error without reflection. Focuses on functional guessing rather than emotional connection.",
+          "2": "Acknowledges frustration but may express it in a way that suggests it’s just part of the job. May minimize the child’s experience.",
+          "1": "Expresses frustration with crying or repetition. May describe resentment or burnout related to nonverbal communication."
+        },
+        "sample_answers": {
+          "5": "I observe patterns and stay patient. I know they can’t tell me what they need, so I try to understand through their cues and stay calm.",
+          "4": "I calmly try different approaches. It can be tough, but I focus on finding a way to help them feel better.",
+          "3": "I test a few things. It’s a process of elimination to figure out what they need.",
+          "2": "It can be frustrating. Sometimes it feels like no matter what I do, they just keep crying.",
+          "1": "They cry constantly. It’s exhausting. I can’t wait until they can tell me what they need."
+        },
+        "score_1_auto_no_hire": false
+      },
+      {
+        "id": "trait_10",
+        "name": "Positive Behavior Guidance",
+        "priority": "High",
+        "weight": 2,
+        "applicable_tracks": [
+          "preschool"
+        ],
+        "primary_question": "Tell me about a time a child’s behavior was challenging for you. How did you approach it?",
+        "descriptors": {
+          "5": "Behavior framed as skill-building. Avoids punishment language. Emphasizes guiding and teaching. Reflective about the child’s experience.",
+          "4": "Calm guidance, may mention rules or expectations but with a focus on helping the child learn. Acknowledges the child’s feelings or perspective.",
+          "3": "Uses structure but limited reflection. May rely on rules or consequences without deeper insight.",
+          "2": "Consequence-focused, may express frustration. Emphasizes control or compliance.",
+          "1": "Emphasis on control or punishment. May describe the child as defiant or difficult without acknowledging their perspective."
+        },
+        "sample_answers": {
+          "5": "I saw it as a skill they were learning. I tried to understand what they were struggling with and guided them through it. For example, if a child was having trouble sharing, I would acknowledge their feelings and help them practice taking turns rather than just telling them to share.",
+          "4": "I guided them back to expectations. I might say, “I know it’s hard to wait your turn, but we need to share the toys. Let’s try to take turns.” I try to stay calm and help them understand what’s expected.",
+          "3": "I reminded them of rules. I might say, “We don’t hit. If you hit, you have to take a break.” I focus on enforcing the rules to manage behavior.",
+          "2": "There were consequences. I might say, “If you don’t stop, you’ll have to sit out.” I get frustrated when they don’t listen and I want to make sure they understand the consequences.",
+          "1": "They were defiant. I don’t like when kids act that way. I have to be firm and make sure they know who’s in charge."
+        },
+        "score_1_auto_no_hire": true
+      },
+      {
+        "id": "trait_11",
+        "name": "Patience",
+        "priority": "Medium",
+        "weight": 1,
+        "applicable_tracks": [
+          "preschool"
+        ],
+        "primary_question": "How do you understand what a nonverbal child needs when they’re crying or upset? Can you walk me through how you respond in those moments?",
+        "descriptors": {
+          "5": "Describes attunement and patience. Emphasizes observing patterns and responding to cues. Reflective about the challenge but focused on connection.",
+          "4": "Describes trying different approaches calmly. Acknowledges the challenge but focuses on finding a way to meet the child’s needs.",
+          "3": "Relies on trial and error without reflection. Focuses on functional guessing rather than emotional connection.",
+          "2": "Acknowledges frustration but may express it in a way that suggests it’s just part of the job. May minimize the child’s experience.",
+          "1": "Expresses frustration with crying or repetition. May describe resentment or burnout related to nonverbal communication."
+        },
+        "sample_answers": {
+          "5": "I observe patterns and stay patient. I know they can’t tell me what they need, so I try to understand through their cues and stay calm.",
+          "4": "I calmly try different approaches. It can be tough, but I focus on finding a way to help them feel better.",
+          "3": "I test a few things. It’s a process of elimination to figure out what they need.",
+          "2": "It can be frustrating. Sometimes it feels like no matter what I do, they just keep crying.",
+          "1": "They cry constantly. It’s exhausting. I can’t wait until they can tell me what they need."
+        },
+        "score_1_auto_no_hire": false
+      }
+    ],
+    "final_record_fields": [
+      "Track",
+      "Raw Scores",
+      "Weighted Total",
+      "Percent of Max",
+      "Disqualifier Present Yes/No",
+      "Final Outcome Hire/Borderline/No Hire",
+      "Hiring Manager Notes / Quotes"
+    ],
+    "canonical_text": "# STRUCTURED BEHAVIORAL INTERVIEW SYSTEM\n\nInitial Zoom Interview\nATS + VBA Ready\nSingle Canonical Output\n\nSECTION 1. GLOBAL SCORING & DECISION LOGIC\n1.1 Raw Scoring\n- Each trait scored 1–5\n- One score per trait\n- Based on primary question only\n\n1.2 Weighting\n- Critical = x3\n- High = x2\n- Medium = x1\n\n1.3 Weighted Score Formula\nWeightedScore = RawScore * Weight\n\n1.4 Max Scores\n- Infant/Toddler: 102 weighted\n- Preschool: 96 weighted\n\n1.5 Automatic Overrides\nImmediate NO HIRE if:\n- Any Critical trait = 1\n- Any Absolute Disqualifier observed\nInterview continues but outcome is locked.\n\n1.6 Final Recommendation Thresholds\nHire: ≥80%, no disqualifiers, no Critical <3\nBorderline: 65–79%, no disqualifiers, no Critical =1\nNo Hire: <65% OR any disqualifier OR any Critical =1\n\nSECTION 2. ABSOLUTE DISQUALIFIERS (GLOBAL)\n- Justifies yelling, shaming, intimidation, or force\n- Minimizes children’s rights or safety\n- Cannot regulate emotions\n- Resists supervision or feedback\n- Cynical or contemptuous language about children or families\n- Disregards licensing or safety standards\n- Interviewing while supervising children or working\n- Burnout language with no ownership or recovery plan\nLog verbatim quote. Mark Automatic No Hire.\n\nSECTION 3. INTERVIEWER GUIDANCE\nWhat to Evaluate\n- Emotional safety\n- Values alignment\n- Self-regulation\n- Coachability\n- Risk profile\nScoring Principle\nReflective ownership > polish\nChild-centered language > control language\nProbe When\n- Answers are vague or rehearsed\n- Responsibility is externalized\n- Emotion is skipped\nProbe: \"What was going on for you internally in that moment?\"\n\nSECTION 4. UNIVERSAL TRAITS (ALL TEACHERS)\n\nTRAIT 1. Empathy & Respect for Children\nCritical | x3\nQuestion: \"Tell me about a time a child was having a hard emotional moment. What did you notice, and how did you respond?\"\nScoring descriptors:\n5: Deeply empathetic, child-centered, reflective\n4: Warm and respectful, some emotional insight\n3: Appropriate but behavior-focused\n2: Adult-centric, compliance-focused\n1: Dismissive, minimizing, or controlling\nSample answers:\n5 \"They were overwhelmed, not misbehaving. I got to their level, named the feeling, and stayed close until they felt safe.\"\n4 \"I stayed calm and helped them settle before moving on.\"\n3 \"I followed our steps to calm them and rejoin the group.\"\n2 \"I redirected them and reminded them of expectations.\"\n1 \"They were throwing a fit for attention.\"\nScore 1 = automatic no hire.\n\nTRAIT 2. Emotional Regulation Under Stress\nCritical | x3\nQuestion: \"Tell me about a time you felt overwhelmed with children present. How did you manage yourself?\"\nDescriptors:\n5 Self-aware, intentional regulation, reflective\n4 Calm effort with basic strategies\n3 Endured stress without reflection\n2 Normalizes frustration\n1 Admits loss of control\nSample answers:\n5 \"I paused, regulated my tone, and focused on staying grounded.\"\n4 \"I reminded myself to stay calm and worked through it.\"\n3 \"It was stressful, but I got through it.\"\n2 \"That’s just part of working with kids.\"\n1 \"I lost my patience. Anyone would.\"\nScore 1 = automatic no hire.\n\nTRAIT 3. Respect for Children’s Rights & Safety\nCritical | x3\nQuestion: \"Tell me about a time you had to be mindful of a child’s safety or boundaries.\"\nDescriptors:\n5 Explicit safety, dignity, consent orientation\n4 Strong compliance and respect\n3 Rule-following only\n2 Compliance with resentment\n1 Minimizes protections\nSample answers:\n5 \"I slow myself down and prioritize consent and safety.\"\n4 \"I’m careful to follow safety rules.\"\n3 \"I follow the guidelines.\"\n2 \"Some rules feel excessive, but we follow them.\"\n1 \"Kids are resilient. We’re too strict now.\"\nScore 1 = automatic no hire.\n\nTRAIT 4. Coachability\nHigh | x2\nQuestion: \"Tell me about a time you received unexpected feedback.\"\nDescriptors:\n5 Reflective, growth-oriented\n4 Accepts feedback with adjustment\n3 Neutral acceptance\n2 Defensive acceptance\n1 Rejects feedback\nSample answers:\n5 \"It was uncomfortable, but it helped me grow.\"\n4 \"I listened and made changes.\"\n3 \"I took the feedback.\"\n2 \"I didn’t fully agree.\"\n1 \"They were wrong.\"\nScore 1 = automatic no hire.\n\nTRAIT 5. Reliability & Accountability\nHigh | x2\nQuestion: \"Tell me about a time something didn’t go as planned and your role.\"\nDescriptors:\n5 Owns mistakes, corrective action\n4 Accepts responsibility\n3 Outcome-focused\n2 Externalizes blame\n1 Avoids accountability\nSample answers:\n5 \"I owned it and fixed it.\"\n4 \"I took responsibility.\"\n3 \"It got resolved.\"\n2 \"It was mostly a system issue.\"\n1 \"That wasn’t on me.\"\n\nTRAIT 6. Team Orientation\nHigh | x2\nQuestion: \"Tell me about a challenge you worked through with another adult.\"\nDescriptors:\n5 Collaborative, child-focused\n4 Cooperative problem-solving\n3 Neutral coexistence\n2 Prefers independence\n1 Hostile or isolating\nSample answers:\n5 \"We worked together for the kids.\"\n4 \"We talked it through.\"\n3 \"We got through it.\"\n2 \"I usually handle my own work.\"\n1 \"I work better alone.\"\n\nTRAIT 7. Curiosity & Learning\nMedium | x1\nQuestion: \"Tell me something you’ve learned that changed your approach.\"\nDescriptors:\n5 Ongoing curiosity and insight\n4 Growth-oriented\n3 Passive learning\n2 Rigid confidence\n1 Fixed beliefs\nSample answers:\n5 \"My presence matters more than I realized.\"\n4 \"I’ve learned new strategies.\"\n3 \"I learned by doing.\"\n2 \"I already know what works.\"\n1 \"Kids should behave a certain way.\"\n\nSECTION 5. INFANT / TODDLER TRACK\n\nTRAIT 8. Gentleness & Physical Awareness\nCritical | x3\nQuestion: \"How do you physically care for infants or toddlers during routines?\"\nDescriptors:\n5 Gentle, paced, cue-responsive\n4 Careful and respectful\n3 Task-focused\n2 Efficiency-driven\n1 Casual or rough\nSample answers:\n5 \"I move slowly, narrate, and watch cues.\"\n4 \"I’m very gentle and careful.\"\n3 \"I follow the steps.\"\n2 \"I get through it efficiently.\"\n1 \"You have to be quick. They cry.\"\nScore 1 = automatic no hire.\n\nTRAIT 9. Patience with Nonverbal Communication\nHigh | x2\nQuestion: \"How do you understand what a nonverbal child needs?\"\nDescriptors:\n5 Patient, attuned, reflective\n4 Calm trial-and-error\n3 Functional guessing\n2 Frustration acknowledged\n1 Resentment or burnout\nSample answers:\n5 \"I observe patterns and stay patient.\"\n4 \"I calmly try different approaches.\"\n3 \"I test a few things.\"\n2 \"It can be frustrating.\"\n1 \"They cry constantly. It’s exhausting.\"\n\nSECTION 6. PRESCHOOL TRACK\n\nTRAIT 10. Positive Behavior Guidance\nHigh | x2\nQuestion: \"Tell me about a challenging behavior and how you handled it.\"\nDescriptors:\n5 Skill-building, relational\n4 Calm guidance\n3 Rule-based\n2 Consequence-focused\n1 Punitive or controlling\nSample answers:\n5 \"I saw it as a skill they were learning.\"\n4 \"I guided them back to expectations.\"\n3 \"I reminded them of rules.\"\n2 \"There were consequences.\"\n1 \"They were defiant.\"\nScore 1 = automatic no hire.\n\nTRAIT 11. Structure & Flexibility\nMedium | x1\nQuestion: \"Tell me about a time your plan changed due to children’s needs.\"\nDescriptors:\n5 Flexible and calm\n4 Adjusts smoothly\n3 Adjusts with frustration\n2 Prefers rigidity\n1 Rigid and resentful\nSample answers:\n5 \"I adapted calmly and followed their needs.\"\n4 \"I changed the plan and moved on.\"\n3 \"I adjusted, even though it was frustrating.\"\n2 \"I prefer sticking to plans.\"\n1 \"It frustrates me when kids disrupt plans.\"\n\nSECTION 7. FINAL RECORD (report fields)\n- Track\n- Raw Scores\n- Weighted Total\n- Percent of Max\n- Disqualifier Present Yes/No\n- Final Outcome Hire/Borderline/No Hire\n- Hiring Manager Notes / Quotes",
+    "trait_question_overrides": {}
+  },
+  "payload": {
+    "candidate": {
+      "name": "Latoya Nugent",
+      "interview_date": "2026-06-19",
+      "school": "Palmdale",
+      "track": "infant_toddler",
+      "qualification": {
+        "has_degree": true,
+        "degree_type": "BA",
+        "degree_in_ece": true,
+        "ece_units_completed": null,
+        "infant_toddler_class_completed": true,
+        "total_units_completed": null,
+        "years_experience": 10
+      }
+    },
+    "current_index": 15,
+    "trait_inputs": {
+      "trait_1": {
+        "raw_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": []
+      },
+      "trait_2": {
+        "raw_score": 5,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": []
+      },
+      "trait_3": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": []
+      },
+      "trait_4": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": []
+      },
+      "trait_5": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": []
+      },
+      "trait_6": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": []
+      },
+      "trait_7": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": []
+      },
+      "trait_8": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": []
+      },
+      "trait_9": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": []
+      }
+    },
+    "custom_inputs": {
+      "Not-Avail": {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no",
+        "skipped": false
+      },
+      "FT-or-PT": {
+        "question_text": "Are you looking for full-time or part-time?",
+        "answer": "full-time or part-time",
+        "skipped": false
+      },
+      "Why-ECE": {
+        "question_text": "Tell me a little about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      "Pay": {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$18",
+        "skipped": false
+      },
+      "Start": {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "asap",
+        "skipped": false
+      },
+      "Why-LPL": {
+        "question_text": "Why are you applying to our company, Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      }
+    },
+    "flow_time_marks": [],
+    "flow_candidate_transcripts": {
+      "0": "[Q1 Attempt 1]\nAm I supposed to, because I can't, I'm not able to see you, am I not supposed to see you? Okay, I was like, I hear a voice, but I don't see you. It's okay. Exactly. So I was born and raised in California, then moved to Maryland, then moved to Texas, then Maryland, then came back here. Tell my dad that, but I've been teaching. I went to school for teaching. I initially wanted to be a preschool, like a kindergarten teacher, but I was like, you know what, I'd rather be where, it didn't matter to me, I wanted to work in any capacity, whether it was in, whether it was like public school, after school, preschool, anything. So I've been teaching, worked with preschoolers, ages like infants to like maybe like school age for 15, 16 years. I've done preschool, I've done after school, I've done recess duty at school. I've done just about everything you can think of. My last job when I was in Maryland, I was a pre-K teacher, then moved to like the preschool, like three-year-old classroom. And I just love working with kids. I was always called like the child whisperer, because I was like, because I was a school teacher at my church, they were like, you know, even in church, they were like, get the child to my head, she'll get him to accommodate, she'll get him to, you know, just stay chill or whatever. But I just love working with children. I feel like it's just, it's just fun for me, because I get to see them. I learn, I love to do arts and crafts, it's like one of my favorite things to do, like arts and crafts and do like cooking things with them. So I just love working with children, it's fun.",
+      "1": "[Q2 Attempt 1]\nbecause it seems like very like like homey in a way if that makes sense and i just felt like it was something i could like benefit from something different than something different than i've worked at before no i'm not no because i just moved here maybe two months ago",
+      "2": "[Q3 Attempt 1]\nCan you repeat the question one more time? I'm sorry. Let's see. We were doing one of our one-on-one learning lessons. We were talking about the letter, I think it was letter A that day, and they found all the letter A pictures or they had to count how many of a certain thing there was. He was like, I just can't do it because he was getting frustrated. He wasn't the most on the space. You can clearly see he was upset, happy, but I could see he was getting frustrated. I was like, so-and-so, what's wrong? He was like, I can't do it, Mr. I can't do it. I was like, yes, you can. I'm going to take a deep breath. I'm going to help you do it. I'll show him how to do one. He was able to do it on his own. Because I don't want him to get frustrated and get so out of, what's the word I want to use? I don't want him to feel like he had support in doing that thing he needed to do. Once I showed him how to do it, he did it perfectly. The next. The next time. I could see it coming. With him, I could tell he's got to get like, I don't want to say unruly, he's got to get like, have like a tantrum per se. When I first saw him, I went over and said, Jace, look at me. I had him stop looking at me. I'm going to take two deep breaths together. We did that and I was like, okay, Mr. Calm, tell me what's wrong. He was able to tell me what was wrong, so I was able to walk him through it and calm him down, so he was able to finish it. He was able to finish the activity and not mess out on what other children were doing. Because the other kids had moved on and he was still trying to figure out what that activity was. That would help me, help him to calm him down and say, hey, we got this, it'll be okay.",
+      "3": "[Q4 Attempt 1]\nokay i have a perfect seven because i was doing it's the perfect example because i was doing when i first started my job when i was in new orleans i did pre-k one day i was like i need to move to preschool because we need a preschool teacher we need a head lead teacher you're qualified i was like okay cool but they have it on a friday a monday i throw it into three o'clock and i was like i don't know any of the kids i had been in there just like to observe it sounds like throwing like a hey this is three-year classroom this is what the here's your children i was like because i didn't know any of the kids i didn't know like the routines and the parents i didn't know really know anything about them and i hadn't observed them in their in their natural in their area so i was that's why i was on the ground because i was like i don't know what to do even though i mean all those years i have been as a teacher i was like i felt uncomfortable because i didn't know i was stressed i was the one so i had my boss so i said i kind of stepped outside for a minute just to collect my collect my thoughts because i was thrown into there was no like no warning no like at least a week to like you know absorb them so i was like that's how i managed my stress because i was like i felt like i was gonna throw it in there without no like i wasn't prepared basically because i was it was like a friday monday i was like hey this is your classroom now go for it i was like okay cool i said that's when i saw this is taking the rest i said yo i took out stuff i saw i said i took it back i was like you know you can do this you're doing this for 60 someone years you got this i had to give myself a pep talk so that's what i do again and that was totally fine for the rest of the time in there",
+      "4": "[Q5 Attempt 1]\nthat's a good question um i would say of course i would ask them you know try to calm down ask them what's wrong and if they could tell me explain to me what's wrong i'd try to fix that issue first and then i would call another teacher saying this song so sandy's having a hard time doctor would you mind stepping in and switching places with me and see if that helps the child to feel more comfortable because i don't want to like make it feel more uncomfortable you know so i'd have another teacher step in and say hey can you switch with me i knew this for me and then just maybe cut to the parent and i don't know that just that this happened that day and so you could figure out what what happened what the issue was or something happened at home or whatever with her with that child i don't know i don't want to like force the child to it's a hard question because i don't want to have the child sitting in like you know their mess i try to like make it like a fun game in a way just to you know because i don't want to leave the child in their wet diaper or their sole diaper because that's just uncalled for so i'm trying my best to like make it a fun game somehow to get them to warm up to me or calm down so that's why i could change their diaper that's the yeah that's what i",
+      "5": "[Q6 Attempt 1]\nAnd then just, let's see, okay, we were outside, I was outside with my pre-K club, we were getting ready to come and go and line up to go inside, so the other class would come outside. This one little child was like, teacher, teacher, I need water, I need water. I was like, it's going to be two minutes, we're going to go inside and get water, because I'll have the only water bottle drink. I was like, teacher, teacher, I'm thirsty, thirsty, we're going to go inside in two seconds, you know, two minutes to get some to drink. And then he walked away, he went out and asked another teacher, I said, teacher, I'm thirsty, can I get some water? So she took him inside and got him some water, and I was like, I was kind of upset, because I was like, I just told this child, we're going to go inside in two seconds and get water, and he didn't like that, so he went and asked another teacher, and the teacher said, oh, yeah, sure. So I was kind of frustrated with that, because I was like, this child kind of, you know, so then my boss called me later, and she was like, yeah, we were outside, I saw that you had an attitude with this child. And I was like, yeah, I'm going to go inside and get some water. So I was kind of frustrated with that, because I was like, this child kind of, you know, so then my boss called me later, and she was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, things are fine.",
+      "6": "[Q7 Attempt 1]\nThere's so many stories. Let's see. It was, I think the thing was, like, I think it was, I think the thing was, like, community workers or something. And that day we happened to be talking about, like, a firetruck.",
+      "7": "[Q8 Attempt 1]",
+      "8": "[Q9 Attempt 1]",
+      "9": "[Q10 Attempt 1]",
+      "10": "[Q11 Attempt 1]",
+      "11": "[Q12 Attempt 1]",
+      "12": "",
+      "13": "",
+      "14": ""
+    },
+    "flow_recordings": {
+      "0": {
+        "attempts": [
+          {
+            "flow_index": 0,
+            "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q1_custom_Why_ECE",
+            "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+            "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q1_custom_Why_ECE_mic.wav",
+            "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q1_custom_Why_ECE_sys.wav",
+            "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q1_custom_Why_ECE_transcript.txt",
+            "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q1_custom_Why_ECE_transcript.jsonl",
+            "candidate_label": "CANDIDATE",
+            "candidate_transcript": "Am I supposed to, because I can't, I'm not able to see you, am I not supposed to see you? Okay, I was like, I hear a voice, but I don't see you. It's okay. Exactly. So I was born and raised in California, then moved to Maryland, then moved to Texas, then Maryland, then came back here. Tell my dad that, but I've been teaching. I went to school for teaching. I initially wanted to be a preschool, like a kindergarten teacher, but I was like, you know what, I'd rather be where, it didn't matter to me, I wanted to work in any capacity, whether it was in, whether it was like public school, after school, preschool, anything. So I've been teaching, worked with preschoolers, ages like infants to like maybe like school age for 15, 16 years. I've done preschool, I've done after school, I've done recess duty at school. I've done just about everything you can think of. My last job when I was in Maryland, I was a pre-K teacher, then moved to like the preschool, like three-year-old classroom. And I just love working with kids. I was always called like the child whisperer, because I was like, because I was a school teacher at my church, they were like, you know, even in church, they were like, get the child to my head, she'll get him to accommodate, she'll get him to, you know, just stay chill or whatever. But I just love working with children. I feel like it's just, it's just fun for me, because I get to see them. I learn, I love to do arts and crafts, it's like one of my favorite things to do, like arts and crafts and do like cooking things with them. So I just love working with children, it's fun."
+          }
+        ],
+        "candidate_transcript": "[Q1 Attempt 1]\nAm I supposed to, because I can't, I'm not able to see you, am I not supposed to see you? Okay, I was like, I hear a voice, but I don't see you. It's okay. Exactly. So I was born and raised in California, then moved to Maryland, then moved to Texas, then Maryland, then came back here. Tell my dad that, but I've been teaching. I went to school for teaching. I initially wanted to be a preschool, like a kindergarten teacher, but I was like, you know what, I'd rather be where, it didn't matter to me, I wanted to work in any capacity, whether it was in, whether it was like public school, after school, preschool, anything. So I've been teaching, worked with preschoolers, ages like infants to like maybe like school age for 15, 16 years. I've done preschool, I've done after school, I've done recess duty at school. I've done just about everything you can think of. My last job when I was in Maryland, I was a pre-K teacher, then moved to like the preschool, like three-year-old classroom. And I just love working with kids. I was always called like the child whisperer, because I was like, because I was a school teacher at my church, they were like, you know, even in church, they were like, get the child to my head, she'll get him to accommodate, she'll get him to, you know, just stay chill or whatever. But I just love working with children. I feel like it's just, it's just fun for me, because I get to see them. I learn, I love to do arts and crafts, it's like one of my favorite things to do, like arts and crafts and do like cooking things with them. So I just love working with children, it's fun.",
+        "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q1_custom_Why_ECE",
+        "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+        "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q1_custom_Why_ECE_mic.wav",
+        "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q1_custom_Why_ECE_sys.wav",
+        "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q1_custom_Why_ECE_transcript.txt",
+        "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q1_custom_Why_ECE_transcript.jsonl",
+        "candidate_label": "CANDIDATE"
+      },
+      "1": {
+        "attempts": [
+          {
+            "flow_index": 1,
+            "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q2_custom_Why_LPL",
+            "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+            "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q2_custom_Why_LPL_mic.wav",
+            "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q2_custom_Why_LPL_sys.wav",
+            "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q2_custom_Why_LPL_transcript.txt",
+            "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q2_custom_Why_LPL_transcript.jsonl",
+            "candidate_label": "CANDIDATE",
+            "candidate_transcript": "because it seems like very like like homey in a way if that makes sense and i just felt like it was something i could like benefit from something different than something different than i've worked at before no i'm not no because i just moved here maybe two months ago"
+          }
+        ],
+        "candidate_transcript": "[Q2 Attempt 1]\nbecause it seems like very like like homey in a way if that makes sense and i just felt like it was something i could like benefit from something different than something different than i've worked at before no i'm not no because i just moved here maybe two months ago",
+        "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q2_custom_Why_LPL",
+        "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+        "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q2_custom_Why_LPL_mic.wav",
+        "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q2_custom_Why_LPL_sys.wav",
+        "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q2_custom_Why_LPL_transcript.txt",
+        "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q2_custom_Why_LPL_transcript.jsonl",
+        "candidate_label": "CANDIDATE"
+      },
+      "2": {
+        "attempts": [
+          {
+            "flow_index": 2,
+            "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q3_trait_trait_1",
+            "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+            "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q3_trait_trait_1_mic.wav",
+            "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q3_trait_trait_1_sys.wav",
+            "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q3_trait_trait_1_transcript.txt",
+            "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q3_trait_trait_1_transcript.jsonl",
+            "candidate_label": "CANDIDATE",
+            "candidate_transcript": "Can you repeat the question one more time? I'm sorry. Let's see. We were doing one of our one-on-one learning lessons. We were talking about the letter, I think it was letter A that day, and they found all the letter A pictures or they had to count how many of a certain thing there was. He was like, I just can't do it because he was getting frustrated. He wasn't the most on the space. You can clearly see he was upset, happy, but I could see he was getting frustrated. I was like, so-and-so, what's wrong? He was like, I can't do it, Mr. I can't do it. I was like, yes, you can. I'm going to take a deep breath. I'm going to help you do it. I'll show him how to do one. He was able to do it on his own. Because I don't want him to get frustrated and get so out of, what's the word I want to use? I don't want him to feel like he had support in doing that thing he needed to do. Once I showed him how to do it, he did it perfectly. The next. The next time. I could see it coming. With him, I could tell he's got to get like, I don't want to say unruly, he's got to get like, have like a tantrum per se. When I first saw him, I went over and said, Jace, look at me. I had him stop looking at me. I'm going to take two deep breaths together. We did that and I was like, okay, Mr. Calm, tell me what's wrong. He was able to tell me what was wrong, so I was able to walk him through it and calm him down, so he was able to finish it. He was able to finish the activity and not mess out on what other children were doing. Because the other kids had moved on and he was still trying to figure out what that activity was. That would help me, help him to calm him down and say, hey, we got this, it'll be okay."
+          }
+        ],
+        "candidate_transcript": "[Q3 Attempt 1]\nCan you repeat the question one more time? I'm sorry. Let's see. We were doing one of our one-on-one learning lessons. We were talking about the letter, I think it was letter A that day, and they found all the letter A pictures or they had to count how many of a certain thing there was. He was like, I just can't do it because he was getting frustrated. He wasn't the most on the space. You can clearly see he was upset, happy, but I could see he was getting frustrated. I was like, so-and-so, what's wrong? He was like, I can't do it, Mr. I can't do it. I was like, yes, you can. I'm going to take a deep breath. I'm going to help you do it. I'll show him how to do one. He was able to do it on his own. Because I don't want him to get frustrated and get so out of, what's the word I want to use? I don't want him to feel like he had support in doing that thing he needed to do. Once I showed him how to do it, he did it perfectly. The next. The next time. I could see it coming. With him, I could tell he's got to get like, I don't want to say unruly, he's got to get like, have like a tantrum per se. When I first saw him, I went over and said, Jace, look at me. I had him stop looking at me. I'm going to take two deep breaths together. We did that and I was like, okay, Mr. Calm, tell me what's wrong. He was able to tell me what was wrong, so I was able to walk him through it and calm him down, so he was able to finish it. He was able to finish the activity and not mess out on what other children were doing. Because the other kids had moved on and he was still trying to figure out what that activity was. That would help me, help him to calm him down and say, hey, we got this, it'll be okay.",
+        "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q3_trait_trait_1",
+        "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+        "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q3_trait_trait_1_mic.wav",
+        "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q3_trait_trait_1_sys.wav",
+        "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q3_trait_trait_1_transcript.txt",
+        "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q3_trait_trait_1_transcript.jsonl",
+        "candidate_label": "CANDIDATE"
+      },
+      "3": {
+        "attempts": [
+          {
+            "flow_index": 3,
+            "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q4_trait_trait_2",
+            "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+            "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q4_trait_trait_2_mic.wav",
+            "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q4_trait_trait_2_sys.wav",
+            "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q4_trait_trait_2_transcript.txt",
+            "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q4_trait_trait_2_transcript.jsonl",
+            "candidate_label": "CANDIDATE",
+            "candidate_transcript": "okay i have a perfect seven because i was doing it's the perfect example because i was doing when i first started my job when i was in new orleans i did pre-k one day i was like i need to move to preschool because we need a preschool teacher we need a head lead teacher you're qualified i was like okay cool but they have it on a friday a monday i throw it into three o'clock and i was like i don't know any of the kids i had been in there just like to observe it sounds like throwing like a hey this is three-year classroom this is what the here's your children i was like because i didn't know any of the kids i didn't know like the routines and the parents i didn't know really know anything about them and i hadn't observed them in their in their natural in their area so i was that's why i was on the ground because i was like i don't know what to do even though i mean all those years i have been as a teacher i was like i felt uncomfortable because i didn't know i was stressed i was the one so i had my boss so i said i kind of stepped outside for a minute just to collect my collect my thoughts because i was thrown into there was no like no warning no like at least a week to like you know absorb them so i was like that's how i managed my stress because i was like i felt like i was gonna throw it in there without no like i wasn't prepared basically because i was it was like a friday monday i was like hey this is your classroom now go for it i was like okay cool i said that's when i saw this is taking the rest i said yo i took out stuff i saw i said i took it back i was like you know you can do this you're doing this for 60 someone years you got this i had to give myself a pep talk so that's what i do again and that was totally fine for the rest of the time in there"
+          }
+        ],
+        "candidate_transcript": "[Q4 Attempt 1]\nokay i have a perfect seven because i was doing it's the perfect example because i was doing when i first started my job when i was in new orleans i did pre-k one day i was like i need to move to preschool because we need a preschool teacher we need a head lead teacher you're qualified i was like okay cool but they have it on a friday a monday i throw it into three o'clock and i was like i don't know any of the kids i had been in there just like to observe it sounds like throwing like a hey this is three-year classroom this is what the here's your children i was like because i didn't know any of the kids i didn't know like the routines and the parents i didn't know really know anything about them and i hadn't observed them in their in their natural in their area so i was that's why i was on the ground because i was like i don't know what to do even though i mean all those years i have been as a teacher i was like i felt uncomfortable because i didn't know i was stressed i was the one so i had my boss so i said i kind of stepped outside for a minute just to collect my collect my thoughts because i was thrown into there was no like no warning no like at least a week to like you know absorb them so i was like that's how i managed my stress because i was like i felt like i was gonna throw it in there without no like i wasn't prepared basically because i was it was like a friday monday i was like hey this is your classroom now go for it i was like okay cool i said that's when i saw this is taking the rest i said yo i took out stuff i saw i said i took it back i was like you know you can do this you're doing this for 60 someone years you got this i had to give myself a pep talk so that's what i do again and that was totally fine for the rest of the time in there",
+        "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q4_trait_trait_2",
+        "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+        "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q4_trait_trait_2_mic.wav",
+        "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q4_trait_trait_2_sys.wav",
+        "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q4_trait_trait_2_transcript.txt",
+        "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q4_trait_trait_2_transcript.jsonl",
+        "candidate_label": "CANDIDATE"
+      },
+      "4": {
+        "attempts": [
+          {
+            "flow_index": 4,
+            "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q5_trait_trait_3",
+            "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+            "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q5_trait_trait_3_mic.wav",
+            "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q5_trait_trait_3_sys.wav",
+            "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q5_trait_trait_3_transcript.txt",
+            "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q5_trait_trait_3_transcript.jsonl",
+            "candidate_label": "CANDIDATE",
+            "candidate_transcript": "that's a good question um i would say of course i would ask them you know try to calm down ask them what's wrong and if they could tell me explain to me what's wrong i'd try to fix that issue first and then i would call another teacher saying this song so sandy's having a hard time doctor would you mind stepping in and switching places with me and see if that helps the child to feel more comfortable because i don't want to like make it feel more uncomfortable you know so i'd have another teacher step in and say hey can you switch with me i knew this for me and then just maybe cut to the parent and i don't know that just that this happened that day and so you could figure out what what happened what the issue was or something happened at home or whatever with her with that child i don't know i don't want to like force the child to it's a hard question because i don't want to have the child sitting in like you know their mess i try to like make it like a fun game in a way just to you know because i don't want to leave the child in their wet diaper or their sole diaper because that's just uncalled for so i'm trying my best to like make it a fun game somehow to get them to warm up to me or calm down so that's why i could change their diaper that's the yeah that's what i"
+          }
+        ],
+        "candidate_transcript": "[Q5 Attempt 1]\nthat's a good question um i would say of course i would ask them you know try to calm down ask them what's wrong and if they could tell me explain to me what's wrong i'd try to fix that issue first and then i would call another teacher saying this song so sandy's having a hard time doctor would you mind stepping in and switching places with me and see if that helps the child to feel more comfortable because i don't want to like make it feel more uncomfortable you know so i'd have another teacher step in and say hey can you switch with me i knew this for me and then just maybe cut to the parent and i don't know that just that this happened that day and so you could figure out what what happened what the issue was or something happened at home or whatever with her with that child i don't know i don't want to like force the child to it's a hard question because i don't want to have the child sitting in like you know their mess i try to like make it like a fun game in a way just to you know because i don't want to leave the child in their wet diaper or their sole diaper because that's just uncalled for so i'm trying my best to like make it a fun game somehow to get them to warm up to me or calm down so that's why i could change their diaper that's the yeah that's what i",
+        "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q5_trait_trait_3",
+        "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+        "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q5_trait_trait_3_mic.wav",
+        "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q5_trait_trait_3_sys.wav",
+        "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q5_trait_trait_3_transcript.txt",
+        "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q5_trait_trait_3_transcript.jsonl",
+        "candidate_label": "CANDIDATE"
+      },
+      "5": {
+        "attempts": [
+          {
+            "flow_index": 5,
+            "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q6_trait_trait_4",
+            "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+            "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q6_trait_trait_4_mic.wav",
+            "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q6_trait_trait_4_sys.wav",
+            "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q6_trait_trait_4_transcript.txt",
+            "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q6_trait_trait_4_transcript.jsonl",
+            "candidate_label": "CANDIDATE",
+            "candidate_transcript": "And then just, let's see, okay, we were outside, I was outside with my pre-K club, we were getting ready to come and go and line up to go inside, so the other class would come outside. This one little child was like, teacher, teacher, I need water, I need water. I was like, it's going to be two minutes, we're going to go inside and get water, because I'll have the only water bottle drink. I was like, teacher, teacher, I'm thirsty, thirsty, we're going to go inside in two seconds, you know, two minutes to get some to drink. And then he walked away, he went out and asked another teacher, I said, teacher, I'm thirsty, can I get some water? So she took him inside and got him some water, and I was like, I was kind of upset, because I was like, I just told this child, we're going to go inside in two seconds and get water, and he didn't like that, so he went and asked another teacher, and the teacher said, oh, yeah, sure. So I was kind of frustrated with that, because I was like, this child kind of, you know, so then my boss called me later, and she was like, yeah, we were outside, I saw that you had an attitude with this child. And I was like, yeah, I'm going to go inside and get some water. So I was kind of frustrated with that, because I was like, this child kind of, you know, so then my boss called me later, and she was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, things are fine."
+          }
+        ],
+        "candidate_transcript": "[Q6 Attempt 1]\nAnd then just, let's see, okay, we were outside, I was outside with my pre-K club, we were getting ready to come and go and line up to go inside, so the other class would come outside. This one little child was like, teacher, teacher, I need water, I need water. I was like, it's going to be two minutes, we're going to go inside and get water, because I'll have the only water bottle drink. I was like, teacher, teacher, I'm thirsty, thirsty, we're going to go inside in two seconds, you know, two minutes to get some to drink. And then he walked away, he went out and asked another teacher, I said, teacher, I'm thirsty, can I get some water? So she took him inside and got him some water, and I was like, I was kind of upset, because I was like, I just told this child, we're going to go inside in two seconds and get water, and he didn't like that, so he went and asked another teacher, and the teacher said, oh, yeah, sure. So I was kind of frustrated with that, because I was like, this child kind of, you know, so then my boss called me later, and she was like, yeah, we were outside, I saw that you had an attitude with this child. And I was like, yeah, I'm going to go inside and get some water. So I was kind of frustrated with that, because I was like, this child kind of, you know, so then my boss called me later, and she was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, things are fine.",
+        "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q6_trait_trait_4",
+        "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+        "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q6_trait_trait_4_mic.wav",
+        "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q6_trait_trait_4_sys.wav",
+        "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q6_trait_trait_4_transcript.txt",
+        "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q6_trait_trait_4_transcript.jsonl",
+        "candidate_label": "CANDIDATE"
+      },
+      "6": {
+        "attempts": [
+          {
+            "flow_index": 6,
+            "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q7_trait_trait_5",
+            "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+            "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q7_trait_trait_5_mic.wav",
+            "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q7_trait_trait_5_sys.wav",
+            "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q7_trait_trait_5_transcript.txt",
+            "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q7_trait_trait_5_transcript.jsonl",
+            "candidate_label": "CANDIDATE",
+            "candidate_transcript": "There's so many stories. Let's see. It was, I think the thing was, like, I think it was, I think the thing was, like, community workers or something. And that day we happened to be talking about, like, a firetruck."
+          }
+        ],
+        "candidate_transcript": "[Q7 Attempt 1]\nThere's so many stories. Let's see. It was, I think the thing was, like, I think it was, I think the thing was, like, community workers or something. And that day we happened to be talking about, like, a firetruck.",
+        "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q7_trait_trait_5",
+        "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+        "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q7_trait_trait_5_mic.wav",
+        "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q7_trait_trait_5_sys.wav",
+        "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q7_trait_trait_5_transcript.txt",
+        "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q7_trait_trait_5_transcript.jsonl",
+        "candidate_label": "CANDIDATE"
+      },
+      "7": {
+        "attempts": [
+          {
+            "flow_index": 7,
+            "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q8_trait_trait_6",
+            "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+            "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q8_trait_trait_6_mic.wav",
+            "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q8_trait_trait_6_sys.wav",
+            "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q8_trait_trait_6_transcript.txt",
+            "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q8_trait_trait_6_transcript.jsonl",
+            "candidate_label": "CANDIDATE",
+            "candidate_transcript": ""
+          }
+        ],
+        "candidate_transcript": "[Q8 Attempt 1]",
+        "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q8_trait_trait_6",
+        "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+        "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q8_trait_trait_6_mic.wav",
+        "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q8_trait_trait_6_sys.wav",
+        "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q8_trait_trait_6_transcript.txt",
+        "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q8_trait_trait_6_transcript.jsonl",
+        "candidate_label": "CANDIDATE"
+      },
+      "8": {
+        "attempts": [
+          {
+            "flow_index": 8,
+            "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q9_trait_trait_7",
+            "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+            "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q9_trait_trait_7_mic.wav",
+            "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q9_trait_trait_7_sys.wav",
+            "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q9_trait_trait_7_transcript.txt",
+            "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q9_trait_trait_7_transcript.jsonl",
+            "candidate_label": "CANDIDATE",
+            "candidate_transcript": ""
+          }
+        ],
+        "candidate_transcript": "[Q9 Attempt 1]",
+        "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q9_trait_trait_7",
+        "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+        "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q9_trait_trait_7_mic.wav",
+        "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q9_trait_trait_7_sys.wav",
+        "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q9_trait_trait_7_transcript.txt",
+        "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q9_trait_trait_7_transcript.jsonl",
+        "candidate_label": "CANDIDATE"
+      },
+      "9": {
+        "attempts": [
+          {
+            "flow_index": 9,
+            "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q10_trait_trait_8",
+            "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+            "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q10_trait_trait_8_mic.wav",
+            "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q10_trait_trait_8_sys.wav",
+            "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q10_trait_trait_8_transcript.txt",
+            "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q10_trait_trait_8_transcript.jsonl",
+            "candidate_label": "CANDIDATE",
+            "candidate_transcript": ""
+          }
+        ],
+        "candidate_transcript": "[Q10 Attempt 1]",
+        "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q10_trait_trait_8",
+        "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+        "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q10_trait_trait_8_mic.wav",
+        "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q10_trait_trait_8_sys.wav",
+        "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q10_trait_trait_8_transcript.txt",
+        "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q10_trait_trait_8_transcript.jsonl",
+        "candidate_label": "CANDIDATE"
+      },
+      "10": {
+        "attempts": [
+          {
+            "flow_index": 10,
+            "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q11_trait_trait_9",
+            "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+            "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q11_trait_trait_9_mic.wav",
+            "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q11_trait_trait_9_sys.wav",
+            "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q11_trait_trait_9_transcript.txt",
+            "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q11_trait_trait_9_transcript.jsonl",
+            "candidate_label": "CANDIDATE",
+            "candidate_transcript": ""
+          }
+        ],
+        "candidate_transcript": "[Q11 Attempt 1]",
+        "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q11_trait_trait_9",
+        "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+        "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q11_trait_trait_9_mic.wav",
+        "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q11_trait_trait_9_sys.wav",
+        "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q11_trait_trait_9_transcript.txt",
+        "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q11_trait_trait_9_transcript.jsonl",
+        "candidate_label": "CANDIDATE"
+      },
+      "11": {
+        "attempts": [
+          {
+            "flow_index": 11,
+            "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q12_custom_FT_or_PT",
+            "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+            "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q12_custom_FT_or_PT_mic.wav",
+            "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q12_custom_FT_or_PT_sys.wav",
+            "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q12_custom_FT_or_PT_transcript.txt",
+            "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q12_custom_FT_or_PT_transcript.jsonl",
+            "candidate_label": "CANDIDATE",
+            "candidate_transcript": ""
+          }
+        ],
+        "candidate_transcript": "[Q12 Attempt 1]",
+        "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q12_custom_FT_or_PT",
+        "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+        "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q12_custom_FT_or_PT_mic.wav",
+        "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q12_custom_FT_or_PT_sys.wav",
+        "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q12_custom_FT_or_PT_transcript.txt",
+        "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q12_custom_FT_or_PT_transcript.jsonl",
+        "candidate_label": "CANDIDATE"
+      }
+    },
+    "referral_packet": {
+      "interview_notes_path": "C:/Users/Dnord/Dropbox (Old)/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-06-19 - Palmdale - Latoya Nugent - Interview.docx",
+      "transcript_path": ""
+    },
+    "communication_log": [],
+    "audio_recording": [
+      {
+        "flow_index": 0,
+        "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q1_custom_Why_ECE",
+        "wav_paths": {
+          "mic": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q1_custom_Why_ECE_mic.wav",
+          "system": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q1_custom_Why_ECE_sys.wav"
+        },
+        "transcript_paths": {
+          "jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q1_custom_Why_ECE_transcript.jsonl",
+          "txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q1_custom_Why_ECE_transcript.txt"
+        },
+        "candidate_label": "CANDIDATE",
+        "candidate_transcript": "[Q1 Attempt 1]\nAm I supposed to, because I can't, I'm not able to see you, am I not supposed to see you? Okay, I was like, I hear a voice, but I don't see you. It's okay. Exactly. So I was born and raised in California, then moved to Maryland, then moved to Texas, then Maryland, then came back here. Tell my dad that, but I've been teaching. I went to school for teaching. I initially wanted to be a preschool, like a kindergarten teacher, but I was like, you know what, I'd rather be where, it didn't matter to me, I wanted to work in any capacity, whether it was in, whether it was like public school, after school, preschool, anything. So I've been teaching, worked with preschoolers, ages like infants to like maybe like school age for 15, 16 years. I've done preschool, I've done after school, I've done recess duty at school. I've done just about everything you can think of. My last job when I was in Maryland, I was a pre-K teacher, then moved to like the preschool, like three-year-old classroom. And I just love working with kids. I was always called like the child whisperer, because I was like, because I was a school teacher at my church, they were like, you know, even in church, they were like, get the child to my head, she'll get him to accommodate, she'll get him to, you know, just stay chill or whatever. But I just love working with children. I feel like it's just, it's just fun for me, because I get to see them. I learn, I love to do arts and crafts, it's like one of my favorite things to do, like arts and crafts and do like cooking things with them. So I just love working with children, it's fun.",
+        "attempt_count": 1,
+        "attempts": [
+          {
+            "flow_index": 0,
+            "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q1_custom_Why_ECE",
+            "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+            "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q1_custom_Why_ECE_mic.wav",
+            "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q1_custom_Why_ECE_sys.wav",
+            "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q1_custom_Why_ECE_transcript.txt",
+            "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q1_custom_Why_ECE_transcript.jsonl",
+            "candidate_label": "CANDIDATE",
+            "candidate_transcript": "Am I supposed to, because I can't, I'm not able to see you, am I not supposed to see you? Okay, I was like, I hear a voice, but I don't see you. It's okay. Exactly. So I was born and raised in California, then moved to Maryland, then moved to Texas, then Maryland, then came back here. Tell my dad that, but I've been teaching. I went to school for teaching. I initially wanted to be a preschool, like a kindergarten teacher, but I was like, you know what, I'd rather be where, it didn't matter to me, I wanted to work in any capacity, whether it was in, whether it was like public school, after school, preschool, anything. So I've been teaching, worked with preschoolers, ages like infants to like maybe like school age for 15, 16 years. I've done preschool, I've done after school, I've done recess duty at school. I've done just about everything you can think of. My last job when I was in Maryland, I was a pre-K teacher, then moved to like the preschool, like three-year-old classroom. And I just love working with kids. I was always called like the child whisperer, because I was like, because I was a school teacher at my church, they were like, you know, even in church, they were like, get the child to my head, she'll get him to accommodate, she'll get him to, you know, just stay chill or whatever. But I just love working with children. I feel like it's just, it's just fun for me, because I get to see them. I learn, I love to do arts and crafts, it's like one of my favorite things to do, like arts and crafts and do like cooking things with them. So I just love working with children, it's fun."
+          }
+        ]
+      },
+      {
+        "flow_index": 1,
+        "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q2_custom_Why_LPL",
+        "wav_paths": {
+          "mic": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q2_custom_Why_LPL_mic.wav",
+          "system": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q2_custom_Why_LPL_sys.wav"
+        },
+        "transcript_paths": {
+          "jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q2_custom_Why_LPL_transcript.jsonl",
+          "txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q2_custom_Why_LPL_transcript.txt"
+        },
+        "candidate_label": "CANDIDATE",
+        "candidate_transcript": "[Q2 Attempt 1]\nbecause it seems like very like like homey in a way if that makes sense and i just felt like it was something i could like benefit from something different than something different than i've worked at before no i'm not no because i just moved here maybe two months ago",
+        "attempt_count": 1,
+        "attempts": [
+          {
+            "flow_index": 1,
+            "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q2_custom_Why_LPL",
+            "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+            "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q2_custom_Why_LPL_mic.wav",
+            "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q2_custom_Why_LPL_sys.wav",
+            "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q2_custom_Why_LPL_transcript.txt",
+            "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q2_custom_Why_LPL_transcript.jsonl",
+            "candidate_label": "CANDIDATE",
+            "candidate_transcript": "because it seems like very like like homey in a way if that makes sense and i just felt like it was something i could like benefit from something different than something different than i've worked at before no i'm not no because i just moved here maybe two months ago"
+          }
+        ]
+      },
+      {
+        "flow_index": 2,
+        "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q3_trait_trait_1",
+        "wav_paths": {
+          "mic": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q3_trait_trait_1_mic.wav",
+          "system": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q3_trait_trait_1_sys.wav"
+        },
+        "transcript_paths": {
+          "jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q3_trait_trait_1_transcript.jsonl",
+          "txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q3_trait_trait_1_transcript.txt"
+        },
+        "candidate_label": "CANDIDATE",
+        "candidate_transcript": "[Q3 Attempt 1]\nCan you repeat the question one more time? I'm sorry. Let's see. We were doing one of our one-on-one learning lessons. We were talking about the letter, I think it was letter A that day, and they found all the letter A pictures or they had to count how many of a certain thing there was. He was like, I just can't do it because he was getting frustrated. He wasn't the most on the space. You can clearly see he was upset, happy, but I could see he was getting frustrated. I was like, so-and-so, what's wrong? He was like, I can't do it, Mr. I can't do it. I was like, yes, you can. I'm going to take a deep breath. I'm going to help you do it. I'll show him how to do one. He was able to do it on his own. Because I don't want him to get frustrated and get so out of, what's the word I want to use? I don't want him to feel like he had support in doing that thing he needed to do. Once I showed him how to do it, he did it perfectly. The next. The next time. I could see it coming. With him, I could tell he's got to get like, I don't want to say unruly, he's got to get like, have like a tantrum per se. When I first saw him, I went over and said, Jace, look at me. I had him stop looking at me. I'm going to take two deep breaths together. We did that and I was like, okay, Mr. Calm, tell me what's wrong. He was able to tell me what was wrong, so I was able to walk him through it and calm him down, so he was able to finish it. He was able to finish the activity and not mess out on what other children were doing. Because the other kids had moved on and he was still trying to figure out what that activity was. That would help me, help him to calm him down and say, hey, we got this, it'll be okay.",
+        "attempt_count": 1,
+        "attempts": [
+          {
+            "flow_index": 2,
+            "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q3_trait_trait_1",
+            "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+            "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q3_trait_trait_1_mic.wav",
+            "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q3_trait_trait_1_sys.wav",
+            "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q3_trait_trait_1_transcript.txt",
+            "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q3_trait_trait_1_transcript.jsonl",
+            "candidate_label": "CANDIDATE",
+            "candidate_transcript": "Can you repeat the question one more time? I'm sorry. Let's see. We were doing one of our one-on-one learning lessons. We were talking about the letter, I think it was letter A that day, and they found all the letter A pictures or they had to count how many of a certain thing there was. He was like, I just can't do it because he was getting frustrated. He wasn't the most on the space. You can clearly see he was upset, happy, but I could see he was getting frustrated. I was like, so-and-so, what's wrong? He was like, I can't do it, Mr. I can't do it. I was like, yes, you can. I'm going to take a deep breath. I'm going to help you do it. I'll show him how to do one. He was able to do it on his own. Because I don't want him to get frustrated and get so out of, what's the word I want to use? I don't want him to feel like he had support in doing that thing he needed to do. Once I showed him how to do it, he did it perfectly. The next. The next time. I could see it coming. With him, I could tell he's got to get like, I don't want to say unruly, he's got to get like, have like a tantrum per se. When I first saw him, I went over and said, Jace, look at me. I had him stop looking at me. I'm going to take two deep breaths together. We did that and I was like, okay, Mr. Calm, tell me what's wrong. He was able to tell me what was wrong, so I was able to walk him through it and calm him down, so he was able to finish it. He was able to finish the activity and not mess out on what other children were doing. Because the other kids had moved on and he was still trying to figure out what that activity was. That would help me, help him to calm him down and say, hey, we got this, it'll be okay."
+          }
+        ]
+      },
+      {
+        "flow_index": 3,
+        "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q4_trait_trait_2",
+        "wav_paths": {
+          "mic": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q4_trait_trait_2_mic.wav",
+          "system": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q4_trait_trait_2_sys.wav"
+        },
+        "transcript_paths": {
+          "jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q4_trait_trait_2_transcript.jsonl",
+          "txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q4_trait_trait_2_transcript.txt"
+        },
+        "candidate_label": "CANDIDATE",
+        "candidate_transcript": "[Q4 Attempt 1]\nokay i have a perfect seven because i was doing it's the perfect example because i was doing when i first started my job when i was in new orleans i did pre-k one day i was like i need to move to preschool because we need a preschool teacher we need a head lead teacher you're qualified i was like okay cool but they have it on a friday a monday i throw it into three o'clock and i was like i don't know any of the kids i had been in there just like to observe it sounds like throwing like a hey this is three-year classroom this is what the here's your children i was like because i didn't know any of the kids i didn't know like the routines and the parents i didn't know really know anything about them and i hadn't observed them in their in their natural in their area so i was that's why i was on the ground because i was like i don't know what to do even though i mean all those years i have been as a teacher i was like i felt uncomfortable because i didn't know i was stressed i was the one so i had my boss so i said i kind of stepped outside for a minute just to collect my collect my thoughts because i was thrown into there was no like no warning no like at least a week to like you know absorb them so i was like that's how i managed my stress because i was like i felt like i was gonna throw it in there without no like i wasn't prepared basically because i was it was like a friday monday i was like hey this is your classroom now go for it i was like okay cool i said that's when i saw this is taking the rest i said yo i took out stuff i saw i said i took it back i was like you know you can do this you're doing this for 60 someone years you got this i had to give myself a pep talk so that's what i do again and that was totally fine for the rest of the time in there",
+        "attempt_count": 1,
+        "attempts": [
+          {
+            "flow_index": 3,
+            "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q4_trait_trait_2",
+            "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+            "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q4_trait_trait_2_mic.wav",
+            "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q4_trait_trait_2_sys.wav",
+            "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q4_trait_trait_2_transcript.txt",
+            "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q4_trait_trait_2_transcript.jsonl",
+            "candidate_label": "CANDIDATE",
+            "candidate_transcript": "okay i have a perfect seven because i was doing it's the perfect example because i was doing when i first started my job when i was in new orleans i did pre-k one day i was like i need to move to preschool because we need a preschool teacher we need a head lead teacher you're qualified i was like okay cool but they have it on a friday a monday i throw it into three o'clock and i was like i don't know any of the kids i had been in there just like to observe it sounds like throwing like a hey this is three-year classroom this is what the here's your children i was like because i didn't know any of the kids i didn't know like the routines and the parents i didn't know really know anything about them and i hadn't observed them in their in their natural in their area so i was that's why i was on the ground because i was like i don't know what to do even though i mean all those years i have been as a teacher i was like i felt uncomfortable because i didn't know i was stressed i was the one so i had my boss so i said i kind of stepped outside for a minute just to collect my collect my thoughts because i was thrown into there was no like no warning no like at least a week to like you know absorb them so i was like that's how i managed my stress because i was like i felt like i was gonna throw it in there without no like i wasn't prepared basically because i was it was like a friday monday i was like hey this is your classroom now go for it i was like okay cool i said that's when i saw this is taking the rest i said yo i took out stuff i saw i said i took it back i was like you know you can do this you're doing this for 60 someone years you got this i had to give myself a pep talk so that's what i do again and that was totally fine for the rest of the time in there"
+          }
+        ]
+      },
+      {
+        "flow_index": 4,
+        "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q5_trait_trait_3",
+        "wav_paths": {
+          "mic": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q5_trait_trait_3_mic.wav",
+          "system": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q5_trait_trait_3_sys.wav"
+        },
+        "transcript_paths": {
+          "jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q5_trait_trait_3_transcript.jsonl",
+          "txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q5_trait_trait_3_transcript.txt"
+        },
+        "candidate_label": "CANDIDATE",
+        "candidate_transcript": "[Q5 Attempt 1]\nthat's a good question um i would say of course i would ask them you know try to calm down ask them what's wrong and if they could tell me explain to me what's wrong i'd try to fix that issue first and then i would call another teacher saying this song so sandy's having a hard time doctor would you mind stepping in and switching places with me and see if that helps the child to feel more comfortable because i don't want to like make it feel more uncomfortable you know so i'd have another teacher step in and say hey can you switch with me i knew this for me and then just maybe cut to the parent and i don't know that just that this happened that day and so you could figure out what what happened what the issue was or something happened at home or whatever with her with that child i don't know i don't want to like force the child to it's a hard question because i don't want to have the child sitting in like you know their mess i try to like make it like a fun game in a way just to you know because i don't want to leave the child in their wet diaper or their sole diaper because that's just uncalled for so i'm trying my best to like make it a fun game somehow to get them to warm up to me or calm down so that's why i could change their diaper that's the yeah that's what i",
+        "attempt_count": 1,
+        "attempts": [
+          {
+            "flow_index": 4,
+            "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q5_trait_trait_3",
+            "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+            "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q5_trait_trait_3_mic.wav",
+            "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q5_trait_trait_3_sys.wav",
+            "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q5_trait_trait_3_transcript.txt",
+            "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q5_trait_trait_3_transcript.jsonl",
+            "candidate_label": "CANDIDATE",
+            "candidate_transcript": "that's a good question um i would say of course i would ask them you know try to calm down ask them what's wrong and if they could tell me explain to me what's wrong i'd try to fix that issue first and then i would call another teacher saying this song so sandy's having a hard time doctor would you mind stepping in and switching places with me and see if that helps the child to feel more comfortable because i don't want to like make it feel more uncomfortable you know so i'd have another teacher step in and say hey can you switch with me i knew this for me and then just maybe cut to the parent and i don't know that just that this happened that day and so you could figure out what what happened what the issue was or something happened at home or whatever with her with that child i don't know i don't want to like force the child to it's a hard question because i don't want to have the child sitting in like you know their mess i try to like make it like a fun game in a way just to you know because i don't want to leave the child in their wet diaper or their sole diaper because that's just uncalled for so i'm trying my best to like make it a fun game somehow to get them to warm up to me or calm down so that's why i could change their diaper that's the yeah that's what i"
+          }
+        ]
+      },
+      {
+        "flow_index": 5,
+        "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q6_trait_trait_4",
+        "wav_paths": {
+          "mic": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q6_trait_trait_4_mic.wav",
+          "system": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q6_trait_trait_4_sys.wav"
+        },
+        "transcript_paths": {
+          "jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q6_trait_trait_4_transcript.jsonl",
+          "txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q6_trait_trait_4_transcript.txt"
+        },
+        "candidate_label": "CANDIDATE",
+        "candidate_transcript": "[Q6 Attempt 1]\nAnd then just, let's see, okay, we were outside, I was outside with my pre-K club, we were getting ready to come and go and line up to go inside, so the other class would come outside. This one little child was like, teacher, teacher, I need water, I need water. I was like, it's going to be two minutes, we're going to go inside and get water, because I'll have the only water bottle drink. I was like, teacher, teacher, I'm thirsty, thirsty, we're going to go inside in two seconds, you know, two minutes to get some to drink. And then he walked away, he went out and asked another teacher, I said, teacher, I'm thirsty, can I get some water? So she took him inside and got him some water, and I was like, I was kind of upset, because I was like, I just told this child, we're going to go inside in two seconds and get water, and he didn't like that, so he went and asked another teacher, and the teacher said, oh, yeah, sure. So I was kind of frustrated with that, because I was like, this child kind of, you know, so then my boss called me later, and she was like, yeah, we were outside, I saw that you had an attitude with this child. And I was like, yeah, I'm going to go inside and get some water. So I was kind of frustrated with that, because I was like, this child kind of, you know, so then my boss called me later, and she was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, things are fine.",
+        "attempt_count": 1,
+        "attempts": [
+          {
+            "flow_index": 5,
+            "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q6_trait_trait_4",
+            "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+            "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q6_trait_trait_4_mic.wav",
+            "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q6_trait_trait_4_sys.wav",
+            "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q6_trait_trait_4_transcript.txt",
+            "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q6_trait_trait_4_transcript.jsonl",
+            "candidate_label": "CANDIDATE",
+            "candidate_transcript": "And then just, let's see, okay, we were outside, I was outside with my pre-K club, we were getting ready to come and go and line up to go inside, so the other class would come outside. This one little child was like, teacher, teacher, I need water, I need water. I was like, it's going to be two minutes, we're going to go inside and get water, because I'll have the only water bottle drink. I was like, teacher, teacher, I'm thirsty, thirsty, we're going to go inside in two seconds, you know, two minutes to get some to drink. And then he walked away, he went out and asked another teacher, I said, teacher, I'm thirsty, can I get some water? So she took him inside and got him some water, and I was like, I was kind of upset, because I was like, I just told this child, we're going to go inside in two seconds and get water, and he didn't like that, so he went and asked another teacher, and the teacher said, oh, yeah, sure. So I was kind of frustrated with that, because I was like, this child kind of, you know, so then my boss called me later, and she was like, yeah, we were outside, I saw that you had an attitude with this child. And I was like, yeah, I'm going to go inside and get some water. So I was kind of frustrated with that, because I was like, this child kind of, you know, so then my boss called me later, and she was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, things are fine."
+          }
+        ]
+      },
+      {
+        "flow_index": 6,
+        "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q7_trait_trait_5",
+        "wav_paths": {
+          "mic": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q7_trait_trait_5_mic.wav",
+          "system": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q7_trait_trait_5_sys.wav"
+        },
+        "transcript_paths": {
+          "jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q7_trait_trait_5_transcript.jsonl",
+          "txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q7_trait_trait_5_transcript.txt"
+        },
+        "candidate_label": "CANDIDATE",
+        "candidate_transcript": "[Q7 Attempt 1]\nThere's so many stories. Let's see. It was, I think the thing was, like, I think it was, I think the thing was, like, community workers or something. And that day we happened to be talking about, like, a firetruck.",
+        "attempt_count": 1,
+        "attempts": [
+          {
+            "flow_index": 6,
+            "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q7_trait_trait_5",
+            "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+            "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q7_trait_trait_5_mic.wav",
+            "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q7_trait_trait_5_sys.wav",
+            "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q7_trait_trait_5_transcript.txt",
+            "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q7_trait_trait_5_transcript.jsonl",
+            "candidate_label": "CANDIDATE",
+            "candidate_transcript": "There's so many stories. Let's see. It was, I think the thing was, like, I think it was, I think the thing was, like, community workers or something. And that day we happened to be talking about, like, a firetruck."
+          }
+        ]
+      },
+      {
+        "flow_index": 7,
+        "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q8_trait_trait_6",
+        "wav_paths": {
+          "mic": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q8_trait_trait_6_mic.wav",
+          "system": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q8_trait_trait_6_sys.wav"
+        },
+        "transcript_paths": {
+          "jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q8_trait_trait_6_transcript.jsonl",
+          "txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q8_trait_trait_6_transcript.txt"
+        },
+        "candidate_label": "CANDIDATE",
+        "candidate_transcript": "[Q8 Attempt 1]",
+        "attempt_count": 1,
+        "attempts": [
+          {
+            "flow_index": 7,
+            "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q8_trait_trait_6",
+            "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+            "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q8_trait_trait_6_mic.wav",
+            "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q8_trait_trait_6_sys.wav",
+            "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q8_trait_trait_6_transcript.txt",
+            "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q8_trait_trait_6_transcript.jsonl",
+            "candidate_label": "CANDIDATE",
+            "candidate_transcript": ""
+          }
+        ]
+      },
+      {
+        "flow_index": 8,
+        "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q9_trait_trait_7",
+        "wav_paths": {
+          "mic": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q9_trait_trait_7_mic.wav",
+          "system": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q9_trait_trait_7_sys.wav"
+        },
+        "transcript_paths": {
+          "jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q9_trait_trait_7_transcript.jsonl",
+          "txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q9_trait_trait_7_transcript.txt"
+        },
+        "candidate_label": "CANDIDATE",
+        "candidate_transcript": "[Q9 Attempt 1]",
+        "attempt_count": 1,
+        "attempts": [
+          {
+            "flow_index": 8,
+            "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q9_trait_trait_7",
+            "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+            "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q9_trait_trait_7_mic.wav",
+            "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q9_trait_trait_7_sys.wav",
+            "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q9_trait_trait_7_transcript.txt",
+            "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q9_trait_trait_7_transcript.jsonl",
+            "candidate_label": "CANDIDATE",
+            "candidate_transcript": ""
+          }
+        ]
+      },
+      {
+        "flow_index": 9,
+        "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q10_trait_trait_8",
+        "wav_paths": {
+          "mic": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q10_trait_trait_8_mic.wav",
+          "system": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q10_trait_trait_8_sys.wav"
+        },
+        "transcript_paths": {
+          "jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q10_trait_trait_8_transcript.jsonl",
+          "txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q10_trait_trait_8_transcript.txt"
+        },
+        "candidate_label": "CANDIDATE",
+        "candidate_transcript": "[Q10 Attempt 1]",
+        "attempt_count": 1,
+        "attempts": [
+          {
+            "flow_index": 9,
+            "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q10_trait_trait_8",
+            "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+            "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q10_trait_trait_8_mic.wav",
+            "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q10_trait_trait_8_sys.wav",
+            "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q10_trait_trait_8_transcript.txt",
+            "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q10_trait_trait_8_transcript.jsonl",
+            "candidate_label": "CANDIDATE",
+            "candidate_transcript": ""
+          }
+        ]
+      },
+      {
+        "flow_index": 10,
+        "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q11_trait_trait_9",
+        "wav_paths": {
+          "mic": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q11_trait_trait_9_mic.wav",
+          "system": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q11_trait_trait_9_sys.wav"
+        },
+        "transcript_paths": {
+          "jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q11_trait_trait_9_transcript.jsonl",
+          "txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q11_trait_trait_9_transcript.txt"
+        },
+        "candidate_label": "CANDIDATE",
+        "candidate_transcript": "[Q11 Attempt 1]",
+        "attempt_count": 1,
+        "attempts": [
+          {
+            "flow_index": 10,
+            "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q11_trait_trait_9",
+            "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+            "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q11_trait_trait_9_mic.wav",
+            "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q11_trait_trait_9_sys.wav",
+            "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q11_trait_trait_9_transcript.txt",
+            "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q11_trait_trait_9_transcript.jsonl",
+            "candidate_label": "CANDIDATE",
+            "candidate_transcript": ""
+          }
+        ]
+      },
+      {
+        "flow_index": 11,
+        "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q12_custom_FT_or_PT",
+        "wav_paths": {
+          "mic": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q12_custom_FT_or_PT_mic.wav",
+          "system": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q12_custom_FT_or_PT_sys.wav"
+        },
+        "transcript_paths": {
+          "jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q12_custom_FT_or_PT_transcript.jsonl",
+          "txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q12_custom_FT_or_PT_transcript.txt"
+        },
+        "candidate_label": "CANDIDATE",
+        "candidate_transcript": "[Q12 Attempt 1]",
+        "attempt_count": 1,
+        "attempts": [
+          {
+            "flow_index": 11,
+            "base_name": "Candidate_Latoya_Nugent_2026-06-19_Q12_custom_FT_or_PT",
+            "output_dir": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews",
+            "mic_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q12_custom_FT_or_PT_mic.wav",
+            "sys_wav": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q12_custom_FT_or_PT_sys.wav",
+            "transcript_txt": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q12_custom_FT_or_PT_transcript.txt",
+            "transcript_jsonl": "C:\\Users\\Dnord\\Dropbox (Old)\\Dropbox\\David LPL work\\Initial Teacher Interview Guide\\interviews\\Candidate_Latoya_Nugent_2026-06-19_Q12_custom_FT_or_PT_transcript.jsonl",
+            "candidate_label": "CANDIDATE",
+            "candidate_transcript": ""
+          }
+        ]
+      }
+    ],
+    "custom_answers": [
+      {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no",
+        "skipped": false
+      },
+      {
+        "question_text": "Are you looking for full-time or part-time?",
+        "answer": "full-time or part-time",
+        "skipped": false
+      },
+      {
+        "question_text": "Tell me a little about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$18",
+        "skipped": false
+      },
+      {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "asap",
+        "skipped": false
+      },
+      {
+        "question_text": "Why are you applying to our company, Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      }
+    ],
+    "flow_transcript": [
+      {
+        "type": "custom",
+        "id": "Why-ECE",
+        "title": "Custom Question",
+        "question": "Tell me a little about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false,
+        "candidate_transcript": "[Q1 Attempt 1]\nAm I supposed to, because I can't, I'm not able to see you, am I not supposed to see you? Okay, I was like, I hear a voice, but I don't see you. It's okay. Exactly. So I was born and raised in California, then moved to Maryland, then moved to Texas, then Maryland, then came back here. Tell my dad that, but I've been teaching. I went to school for teaching. I initially wanted to be a preschool, like a kindergarten teacher, but I was like, you know what, I'd rather be where, it didn't matter to me, I wanted to work in any capacity, whether it was in, whether it was like public school, after school, preschool, anything. So I've been teaching, worked with preschoolers, ages like infants to like maybe like school age for 15, 16 years. I've done preschool, I've done after school, I've done recess duty at school. I've done just about everything you can think of. My last job when I was in Maryland, I was a pre-K teacher, then moved to like the preschool, like three-year-old classroom. And I just love working with kids. I was always called like the child whisperer, because I was like, because I was a school teacher at my church, they were like, you know, even in church, they were like, get the child to my head, she'll get him to accommodate, she'll get him to, you know, just stay chill or whatever. But I just love working with children. I feel like it's just, it's just fun for me, because I get to see them. I learn, I love to do arts and crafts, it's like one of my favorite things to do, like arts and crafts and do like cooking things with them. So I just love working with children, it's fun."
+      },
+      {
+        "type": "custom",
+        "id": "Why-LPL",
+        "title": "Custom Question",
+        "question": "Why are you applying to our company, Launch Pad Learning?",
+        "answer": "",
+        "skipped": false,
+        "candidate_transcript": "[Q2 Attempt 1]\nbecause it seems like very like like homey in a way if that makes sense and i just felt like it was something i could like benefit from something different than something different than i've worked at before no i'm not no because i just moved here maybe two months ago"
+      },
+      {
+        "type": "trait",
+        "id": "trait_1",
+        "title": "Empathy & Respect for Children",
+        "question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+        "raw_score": 4,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "candidate_transcript": "[Q3 Attempt 1]\nCan you repeat the question one more time? I'm sorry. Let's see. We were doing one of our one-on-one learning lessons. We were talking about the letter, I think it was letter A that day, and they found all the letter A pictures or they had to count how many of a certain thing there was. He was like, I just can't do it because he was getting frustrated. He wasn't the most on the space. You can clearly see he was upset, happy, but I could see he was getting frustrated. I was like, so-and-so, what's wrong? He was like, I can't do it, Mr. I can't do it. I was like, yes, you can. I'm going to take a deep breath. I'm going to help you do it. I'll show him how to do one. He was able to do it on his own. Because I don't want him to get frustrated and get so out of, what's the word I want to use? I don't want him to feel like he had support in doing that thing he needed to do. Once I showed him how to do it, he did it perfectly. The next. The next time. I could see it coming. With him, I could tell he's got to get like, I don't want to say unruly, he's got to get like, have like a tantrum per se. When I first saw him, I went over and said, Jace, look at me. I had him stop looking at me. I'm going to take two deep breaths together. We did that and I was like, okay, Mr. Calm, tell me what's wrong. He was able to tell me what was wrong, so I was able to walk him through it and calm him down, so he was able to finish it. He was able to finish the activity and not mess out on what other children were doing. Because the other kids had moved on and he was still trying to figure out what that activity was. That would help me, help him to calm him down and say, hey, we got this, it'll be okay."
+      },
+      {
+        "type": "trait",
+        "id": "trait_2",
+        "title": "Emotional Regulation Under Stress",
+        "question": "Tell me about a time you felt overwhelmed or stressed at work with children present. What did you do to manage, not the kids, but yourself and your stress?",
+        "raw_score": 5,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "candidate_transcript": "[Q4 Attempt 1]\nokay i have a perfect seven because i was doing it's the perfect example because i was doing when i first started my job when i was in new orleans i did pre-k one day i was like i need to move to preschool because we need a preschool teacher we need a head lead teacher you're qualified i was like okay cool but they have it on a friday a monday i throw it into three o'clock and i was like i don't know any of the kids i had been in there just like to observe it sounds like throwing like a hey this is three-year classroom this is what the here's your children i was like because i didn't know any of the kids i didn't know like the routines and the parents i didn't know really know anything about them and i hadn't observed them in their in their natural in their area so i was that's why i was on the ground because i was like i don't know what to do even though i mean all those years i have been as a teacher i was like i felt uncomfortable because i didn't know i was stressed i was the one so i had my boss so i said i kind of stepped outside for a minute just to collect my collect my thoughts because i was thrown into there was no like no warning no like at least a week to like you know absorb them so i was like that's how i managed my stress because i was like i felt like i was gonna throw it in there without no like i wasn't prepared basically because i was it was like a friday monday i was like hey this is your classroom now go for it i was like okay cool i said that's when i saw this is taking the rest i said yo i took out stuff i saw i said i took it back i was like you know you can do this you're doing this for 60 someone years you got this i had to give myself a pep talk so that's what i do again and that was totally fine for the rest of the time in there"
+      },
+      {
+        "type": "trait",
+        "id": "trait_3",
+        "title": "Respect for Children’s Rights & Safety",
+        "question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering. They are pulling away and crying. Walk me through exactly what you would do and say, step by step.",
+        "raw_score": 2,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "candidate_transcript": "[Q5 Attempt 1]\nthat's a good question um i would say of course i would ask them you know try to calm down ask them what's wrong and if they could tell me explain to me what's wrong i'd try to fix that issue first and then i would call another teacher saying this song so sandy's having a hard time doctor would you mind stepping in and switching places with me and see if that helps the child to feel more comfortable because i don't want to like make it feel more uncomfortable you know so i'd have another teacher step in and say hey can you switch with me i knew this for me and then just maybe cut to the parent and i don't know that just that this happened that day and so you could figure out what what happened what the issue was or something happened at home or whatever with her with that child i don't know i don't want to like force the child to it's a hard question because i don't want to have the child sitting in like you know their mess i try to like make it like a fun game in a way just to you know because i don't want to leave the child in their wet diaper or their sole diaper because that's just uncalled for so i'm trying my best to like make it a fun game somehow to get them to warm up to me or calm down so that's why i could change their diaper that's the yeah that's what i"
+      },
+      {
+        "type": "trait",
+        "id": "trait_4",
+        "title": "Coachability",
+        "question": "Tell me about a time you received constructive criticism or feedback you didn’t expect or didn’t fully agree with. What happened next?",
+        "raw_score": 3,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "candidate_transcript": "[Q6 Attempt 1]\nAnd then just, let's see, okay, we were outside, I was outside with my pre-K club, we were getting ready to come and go and line up to go inside, so the other class would come outside. This one little child was like, teacher, teacher, I need water, I need water. I was like, it's going to be two minutes, we're going to go inside and get water, because I'll have the only water bottle drink. I was like, teacher, teacher, I'm thirsty, thirsty, we're going to go inside in two seconds, you know, two minutes to get some to drink. And then he walked away, he went out and asked another teacher, I said, teacher, I'm thirsty, can I get some water? So she took him inside and got him some water, and I was like, I was kind of upset, because I was like, I just told this child, we're going to go inside in two seconds and get water, and he didn't like that, so he went and asked another teacher, and the teacher said, oh, yeah, sure. So I was kind of frustrated with that, because I was like, this child kind of, you know, so then my boss called me later, and she was like, yeah, we were outside, I saw that you had an attitude with this child. And I was like, yeah, I'm going to go inside and get some water. So I was kind of frustrated with that, because I was like, this child kind of, you know, so then my boss called me later, and she was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, I was kind of frustrated with that, so he went and asked another teacher, and I was like, yeah, things are fine."
+      },
+      {
+        "type": "trait",
+        "id": "trait_5",
+        "title": "Reliability & Accountability",
+        "question": "Tell me about a time something, such as a lesson plan, did not go as expected and your role in it.",
+        "raw_score": 3,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "candidate_transcript": "[Q7 Attempt 1]\nThere's so many stories. Let's see. It was, I think the thing was, like, I think it was, I think the thing was, like, community workers or something. And that day we happened to be talking about, like, a firetruck."
+      },
+      {
+        "type": "trait",
+        "id": "trait_6",
+        "title": "Team Orientation",
+        "question": "Tell me about a time you had a challenge with another adult. How did you navigate it?",
+        "raw_score": 2,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "candidate_transcript": "[Q8 Attempt 1]"
+      },
+      {
+        "type": "trait",
+        "id": "trait_7",
+        "title": "Curiosity & Learning",
+        "question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+        "raw_score": 2,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "candidate_transcript": "[Q9 Attempt 1]"
+      },
+      {
+        "type": "trait",
+        "id": "trait_8",
+        "title": "Gentleness & Physical Awareness",
+        "question": "Tell me about how you physically care for infants or toddlers during routines like feeding, diapering, or comforting.",
+        "raw_score": 3,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "candidate_transcript": "[Q10 Attempt 1]"
+      },
+      {
+        "type": "trait",
+        "id": "trait_9",
+        "title": "Patience with Nonverbal Communication",
+        "question": "How do you understand what a nonverbal child needs when they’re crying or upset? Can you walk me through how you respond in those moments?",
+        "raw_score": 2,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "candidate_transcript": "[Q11 Attempt 1]"
+      },
+      {
+        "type": "custom",
+        "id": "FT-or-PT",
+        "title": "Custom Question",
+        "question": "Are you looking for full-time or part-time?",
+        "answer": "full-time or part-time",
+        "skipped": false,
+        "candidate_transcript": "[Q12 Attempt 1]"
+      },
+      {
+        "type": "custom",
+        "id": "Not-Avail",
+        "title": "Custom Question",
+        "question": "Are there any hours you are absolutely not available to work?",
+        "answer": "no",
+        "skipped": false,
+        "candidate_transcript": ""
+      },
+      {
+        "type": "custom",
+        "id": "Start",
+        "title": "Custom Question",
+        "question": "When could you start if we decide to move forward?",
+        "answer": "asap",
+        "skipped": false,
+        "candidate_transcript": ""
+      },
+      {
+        "type": "custom",
+        "id": "Pay",
+        "title": "Custom Question",
+        "question": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "$18",
+        "skipped": false,
+        "candidate_transcript": ""
+      }
+    ],
+    "transcript_metadata": {
+      "transcript_complete": false,
+      "transcript_completeness_status": "partial",
+      "remaining_question_indices": [
+        15
+      ]
+    },
+    "transcript_complete": false,
+    "remaining_question_indices": [
+      15
+    ],
+    "answer_summaries": [],
+    "executive_summary": "",
+    "interview_highlights": [],
+    "summary_status": "processing",
+    "summary_warnings": [
+      "Local DeepSeek summary is still processing."
+    ],
+    "model_signal_suggestions_by_trait": {},
+    "model_suggestion_status": "processing",
+    "model_suggestion_warnings": [
+      "Local DeepSeek trait suggestions are still processing."
+    ],
+    "model_trait_scores_by_trait": {},
+    "model_scoring_status": "processing",
+    "model_scoring_warnings": [
+      "Local DeepSeek trait scoring is still processing."
+    ],
+    "interview_notes_document_path": "C:/Users/Dnord/Dropbox (Old)/Dropbox/David LPL work/Initial Teacher Interview Guide/interviews/Indeed Interview Notes/2026-06-19 - Palmdale - Latoya Nugent - Interview.docx"
+  },
+  "scoring": {
+    "rows": [
+      {
+        "trait_id": "trait_1",
+        "trait_name": "Empathy & Respect for Children",
+        "priority": "Critical",
+        "weight": 3,
+        "skipped": false,
+        "raw_score": 4,
+        "raw_score_math": 4,
+        "weighted_score": 12,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "no_example_after_followups": false,
+        "absolute_disqualifier": false,
+        "primary_question": "Tell me about a time a child was having a really hard moment emotionally. What did you notice about what they were feeling, and how did you respond?",
+        "system_checkbox_score": 12,
+        "net_signal_score": null,
+        "suggested_raw_score": null,
+        "final_raw_score": 4,
+        "interviewer_adjusted": false,
+        "adjustment_reason": "",
+        "deepseek_raw_score": null,
+        "deepseek_calculated_score": null,
+        "deepseek_signal_score": null,
+        "auto_no_hire_present": false,
+        "auto_no_hire_signal_ids": [],
+        "auto_no_hire_reasons": [],
+        "auto_no_hire_quotes": [],
+        "model_trait_score": {},
+        "selected_signal_ids": [],
+        "model_signal_suggestions": [],
+        "model_signal_override": {
+          "accepted_signal_ids": [],
+          "rejected_signal_ids": [],
+          "manual_only_signal_ids": []
+        }
+      },
+      {
+        "trait_id": "trait_2",
+        "trait_name": "Emotional Regulation Under Stress",
+        "priority": "Critical",
+        "weight": 3,
+        "skipped": false,
+        "raw_score": 5,
+        "raw_score_math": 5,
+        "weighted_score": 15,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "no_example_after_followups": false,
+        "absolute_disqualifier": false,
+        "primary_question": "Tell me about a time you felt overwhelmed or stressed at work with children present. What did you do to manage, not the kids, but yourself and your stress?",
+        "system_checkbox_score": 15,
+        "net_signal_score": null,
+        "suggested_raw_score": null,
+        "final_raw_score": 5,
+        "interviewer_adjusted": false,
+        "adjustment_reason": "",
+        "deepseek_raw_score": null,
+        "deepseek_calculated_score": null,
+        "deepseek_signal_score": null,
+        "auto_no_hire_present": false,
+        "auto_no_hire_signal_ids": [],
+        "auto_no_hire_reasons": [],
+        "auto_no_hire_quotes": [],
+        "model_trait_score": {},
+        "selected_signal_ids": [],
+        "model_signal_suggestions": [],
+        "model_signal_override": {
+          "accepted_signal_ids": [],
+          "rejected_signal_ids": [],
+          "manual_only_signal_ids": []
+        }
+      },
+      {
+        "trait_id": "trait_3",
+        "trait_name": "Respect for Children’s Rights & Safety",
+        "priority": "Critical",
+        "weight": 3,
+        "skipped": false,
+        "raw_score": 2,
+        "raw_score_math": 2,
+        "weighted_score": 6,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "no_example_after_followups": false,
+        "absolute_disqualifier": false,
+        "primary_question": "Imagine you’re caring for a child who clearly does not want to be touched during a routine task, like diapering. They are pulling away and crying. Walk me through exactly what you would do and say, step by step.",
+        "system_checkbox_score": 6,
+        "net_signal_score": null,
+        "suggested_raw_score": null,
+        "final_raw_score": 2,
+        "interviewer_adjusted": false,
+        "adjustment_reason": "",
+        "deepseek_raw_score": null,
+        "deepseek_calculated_score": null,
+        "deepseek_signal_score": null,
+        "auto_no_hire_present": false,
+        "auto_no_hire_signal_ids": [],
+        "auto_no_hire_reasons": [],
+        "auto_no_hire_quotes": [],
+        "model_trait_score": {},
+        "selected_signal_ids": [],
+        "model_signal_suggestions": [],
+        "model_signal_override": {
+          "accepted_signal_ids": [],
+          "rejected_signal_ids": [],
+          "manual_only_signal_ids": []
+        }
+      },
+      {
+        "trait_id": "trait_4",
+        "trait_name": "Coachability",
+        "priority": "High",
+        "weight": 2,
+        "skipped": false,
+        "raw_score": 3,
+        "raw_score_math": 3,
+        "weighted_score": 6,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "no_example_after_followups": false,
+        "absolute_disqualifier": false,
+        "primary_question": "Tell me about a time you received constructive criticism or feedback you didn’t expect or didn’t fully agree with. What happened next?",
+        "system_checkbox_score": 6,
+        "net_signal_score": null,
+        "suggested_raw_score": null,
+        "final_raw_score": 3,
+        "interviewer_adjusted": false,
+        "adjustment_reason": "",
+        "deepseek_raw_score": null,
+        "deepseek_calculated_score": null,
+        "deepseek_signal_score": null,
+        "auto_no_hire_present": false,
+        "auto_no_hire_signal_ids": [],
+        "auto_no_hire_reasons": [],
+        "auto_no_hire_quotes": [],
+        "model_trait_score": {},
+        "selected_signal_ids": [],
+        "model_signal_suggestions": [],
+        "model_signal_override": {
+          "accepted_signal_ids": [],
+          "rejected_signal_ids": [],
+          "manual_only_signal_ids": []
+        }
+      },
+      {
+        "trait_id": "trait_5",
+        "trait_name": "Reliability & Accountability",
+        "priority": "High",
+        "weight": 2,
+        "skipped": false,
+        "raw_score": 3,
+        "raw_score_math": 3,
+        "weighted_score": 6,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "no_example_after_followups": false,
+        "absolute_disqualifier": false,
+        "primary_question": "Tell me about a time something, such as a lesson plan, did not go as expected and your role in it.",
+        "system_checkbox_score": 6,
+        "net_signal_score": null,
+        "suggested_raw_score": null,
+        "final_raw_score": 3,
+        "interviewer_adjusted": false,
+        "adjustment_reason": "",
+        "deepseek_raw_score": null,
+        "deepseek_calculated_score": null,
+        "deepseek_signal_score": null,
+        "auto_no_hire_present": false,
+        "auto_no_hire_signal_ids": [],
+        "auto_no_hire_reasons": [],
+        "auto_no_hire_quotes": [],
+        "model_trait_score": {},
+        "selected_signal_ids": [],
+        "model_signal_suggestions": [],
+        "model_signal_override": {
+          "accepted_signal_ids": [],
+          "rejected_signal_ids": [],
+          "manual_only_signal_ids": []
+        }
+      },
+      {
+        "trait_id": "trait_6",
+        "trait_name": "Team Orientation",
+        "priority": "High",
+        "weight": 2,
+        "skipped": false,
+        "raw_score": 2,
+        "raw_score_math": 2,
+        "weighted_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "no_example_after_followups": false,
+        "absolute_disqualifier": false,
+        "primary_question": "Tell me about a time you had a challenge with another adult. How did you navigate it?",
+        "system_checkbox_score": 4,
+        "net_signal_score": null,
+        "suggested_raw_score": null,
+        "final_raw_score": 2,
+        "interviewer_adjusted": false,
+        "adjustment_reason": "",
+        "deepseek_raw_score": null,
+        "deepseek_calculated_score": null,
+        "deepseek_signal_score": null,
+        "auto_no_hire_present": false,
+        "auto_no_hire_signal_ids": [],
+        "auto_no_hire_reasons": [],
+        "auto_no_hire_quotes": [],
+        "model_trait_score": {},
+        "selected_signal_ids": [],
+        "model_signal_suggestions": [],
+        "model_signal_override": {
+          "accepted_signal_ids": [],
+          "rejected_signal_ids": [],
+          "manual_only_signal_ids": []
+        }
+      },
+      {
+        "trait_id": "trait_7",
+        "trait_name": "Curiosity & Learning",
+        "priority": "Medium",
+        "weight": 1,
+        "skipped": false,
+        "raw_score": 2,
+        "raw_score_math": 2,
+        "weighted_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "no_example_after_followups": false,
+        "absolute_disqualifier": false,
+        "primary_question": "Can you share something you’ve learned about children or yourself over time that changed how you approach your work?",
+        "system_checkbox_score": 2,
+        "net_signal_score": null,
+        "suggested_raw_score": null,
+        "final_raw_score": 2,
+        "interviewer_adjusted": false,
+        "adjustment_reason": "",
+        "deepseek_raw_score": null,
+        "deepseek_calculated_score": null,
+        "deepseek_signal_score": null,
+        "auto_no_hire_present": false,
+        "auto_no_hire_signal_ids": [],
+        "auto_no_hire_reasons": [],
+        "auto_no_hire_quotes": [],
+        "model_trait_score": {},
+        "selected_signal_ids": [],
+        "model_signal_suggestions": [],
+        "model_signal_override": {
+          "accepted_signal_ids": [],
+          "rejected_signal_ids": [],
+          "manual_only_signal_ids": []
+        }
+      },
+      {
+        "trait_id": "trait_8",
+        "trait_name": "Gentleness & Physical Awareness",
+        "priority": "Critical",
+        "weight": 3,
+        "skipped": false,
+        "raw_score": 3,
+        "raw_score_math": 3,
+        "weighted_score": 9,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "no_example_after_followups": false,
+        "absolute_disqualifier": false,
+        "primary_question": "Tell me about how you physically care for infants or toddlers during routines like feeding, diapering, or comforting.",
+        "system_checkbox_score": 9,
+        "net_signal_score": null,
+        "suggested_raw_score": null,
+        "final_raw_score": 3,
+        "interviewer_adjusted": false,
+        "adjustment_reason": "",
+        "deepseek_raw_score": null,
+        "deepseek_calculated_score": null,
+        "deepseek_signal_score": null,
+        "auto_no_hire_present": false,
+        "auto_no_hire_signal_ids": [],
+        "auto_no_hire_reasons": [],
+        "auto_no_hire_quotes": [],
+        "model_trait_score": {},
+        "selected_signal_ids": [],
+        "model_signal_suggestions": [],
+        "model_signal_override": {
+          "accepted_signal_ids": [],
+          "rejected_signal_ids": [],
+          "manual_only_signal_ids": []
+        }
+      },
+      {
+        "trait_id": "trait_9",
+        "trait_name": "Patience with Nonverbal Communication",
+        "priority": "High",
+        "weight": 2,
+        "skipped": false,
+        "raw_score": 2,
+        "raw_score_math": 2,
+        "weighted_score": 4,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "no_example_after_followups": false,
+        "absolute_disqualifier": false,
+        "primary_question": "How do you understand what a nonverbal child needs when they’re crying or upset? Can you walk me through how you respond in those moments?",
+        "system_checkbox_score": 4,
+        "net_signal_score": null,
+        "suggested_raw_score": null,
+        "final_raw_score": 2,
+        "interviewer_adjusted": false,
+        "adjustment_reason": "",
+        "deepseek_raw_score": null,
+        "deepseek_calculated_score": null,
+        "deepseek_signal_score": null,
+        "auto_no_hire_present": false,
+        "auto_no_hire_signal_ids": [],
+        "auto_no_hire_reasons": [],
+        "auto_no_hire_quotes": [],
+        "model_trait_score": {},
+        "selected_signal_ids": [],
+        "model_signal_suggestions": [],
+        "model_signal_override": {
+          "accepted_signal_ids": [],
+          "rejected_signal_ids": [],
+          "manual_only_signal_ids": []
+        }
+      }
+    ],
+    "weighted_total": 64,
+    "configured_max_weighted_total": 105,
+    "max_weighted_total": 105,
+    "max_weighted_total_included_traits": 105,
+    "percent_of_max": 60.95,
+    "percent_of_max_label": "60.95%",
+    "skipped_traits_count": 0,
+    "scored_traits_count": 9,
+    "critical_eq_1": false,
+    "critical_lt_3": true,
+    "disqualifier_present": false,
+    "auto_no_hire_present": false,
+    "locked_rule": "Any Critical trait raw score < 3 => Cannot assign HIRE",
+    "outcome": "No Hire"
+  },
+  "deepseek_settings": {
+    "DEEPSEEK_API_KEY": "ollama",
+    "DEEPSEEK_SUMMARY_ENABLED": "1",
+    "DEEPSEEK_API_BASE_URL": "http://127.0.0.1:11434/v1",
+    "DEEPSEEK_SUMMARY_MODEL": "deepseek-r1:1.5b",
+    "DEEPSEEK_SUMMARY_TIMEOUT_SECONDS": "20"
+  }
+}

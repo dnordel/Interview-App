@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from trait_definition_loader import (
+from scoring_reporting import (
     canonical_trait_id,
     load_trait_definitions_from_contract,
     load_trait_definitions_from_dir,
@@ -44,7 +44,7 @@ def test_load_trait_definitions_from_contract_reads_runtime_traits_dir(tmp_path:
     assert trait_definitions[0]["extended_signal_groups"][0]["group_id"] == "group_1"
 
 
-def test_load_trait_definitions_from_runtime_bundle_prefers_resolved_traits_dir(tmp_path: Path) -> None:
+def test_load_trait_definitions_from_runtime_bundle_prefers_bundled_weighted_traits(tmp_path: Path) -> None:
     resolved_traits_dir = tmp_path / "traits"
     resolved_traits_dir.mkdir()
     (resolved_traits_dir / "T2_CustomTrait.json").write_text(
@@ -62,6 +62,29 @@ def test_load_trait_definitions_from_runtime_bundle_prefers_resolved_traits_dir(
         {
             "resolved_paths": {"traits_dir": str(resolved_traits_dir)},
             "traits": [{"trait_id": "ignored_trait"}],
+        }
+    )
+
+    assert [item["trait_id"] for item in trait_definitions] == ["ignored_trait"]
+
+
+def test_load_trait_definitions_from_runtime_bundle_uses_resolved_traits_dir_without_bundle(tmp_path: Path) -> None:
+    resolved_traits_dir = tmp_path / "traits"
+    resolved_traits_dir.mkdir()
+    (resolved_traits_dir / "T2_CustomTrait.json").write_text(
+        json.dumps(
+            {
+                "trait_id": "trait_b",
+                "core_signals": [{"ref": "P2", "weight": 2}],
+                "extended_signal_groups": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    trait_definitions = load_trait_definitions_from_runtime_bundle(
+        {
+            "resolved_paths": {"traits_dir": str(resolved_traits_dir)},
         }
     )
 

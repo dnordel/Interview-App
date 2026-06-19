@@ -1,8 +1,9 @@
 from unittest.mock import patch
 
-from onboarding_models import EmailSettings
-from onboarding_notifier import send_escalation_email, send_reminder_email
-from onboarding_scheduler import ReminderItem
+from onboarding_operations import EmailSettings
+import onboarding_operations
+from onboarding_operations import send_escalation_email, send_reminder_email
+from onboarding_operations import ReminderItem
 
 
 def test_send_reminder_email_uses_tls_context_when_enabled():
@@ -23,11 +24,11 @@ def test_send_reminder_email_uses_tls_context_when_enabled():
         )
     ]
 
-    with patch("onboarding_notifier.ssl.create_default_context") as mock_create_context:
+    with patch("onboarding_operations.ssl.create_default_context") as mock_create_context:
         tls_context = object()
         mock_create_context.return_value = tls_context
 
-        with patch("onboarding_notifier.smtplib.SMTP") as mock_smtp:
+        with patch("onboarding_operations.smtplib.SMTP") as mock_smtp:
             send_reminder_email(settings, reminders)
 
     server = mock_smtp.return_value.__enter__.return_value
@@ -53,7 +54,7 @@ def test_send_reminder_email_renders_templates_when_present():
         )
     ]
 
-    with patch("onboarding_notifier.smtplib.SMTP") as mock_smtp:
+    with patch("onboarding_operations.smtplib.SMTP") as mock_smtp:
         send_reminder_email(settings, reminders, school="Hawthorne")
 
     message = mock_smtp.return_value.__enter__.return_value.send_message.call_args.args[0]
@@ -70,7 +71,7 @@ def test_send_escalation_email_falls_back_to_defaults_when_templates_blank():
     )
     body_lines = ["Escalation line 1", "Escalation line 2"]
 
-    with patch("onboarding_notifier.smtplib.SMTP") as mock_smtp:
+    with patch("onboarding_operations.smtplib.SMTP") as mock_smtp:
         send_escalation_email(settings, body_lines)
 
     message = mock_smtp.return_value.__enter__.return_value.send_message.call_args.args[0]
@@ -96,10 +97,14 @@ def test_send_reminder_email_sanitizes_subject_header_injection_patterns():
         )
     ]
 
-    with patch("onboarding_notifier.smtplib.SMTP") as mock_smtp:
+    with patch("onboarding_operations.smtplib.SMTP") as mock_smtp:
         send_reminder_email(settings, reminders)
 
     message = mock_smtp.return_value.__enter__.return_value.send_message.call_args.args[0]
     assert "\n" not in str(message["Subject"])
     assert "\r" not in str(message["Subject"])
     assert str(message["Subject"]) == "Reminder  Bcc: bad@example.com Pat"
+
+
+def test_notifier_wrapper_exports_new_owner_helpers():
+    assert send_reminder_email is onboarding_operations.send_reminder_email

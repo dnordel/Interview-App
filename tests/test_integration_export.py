@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from integration_export import (
+from scoring_reporting import (
     build_integration_payload,
     normalize_outcome_label,
     serialize_integration_payload,
@@ -33,6 +33,11 @@ class TestIntegrationExport(unittest.TestCase):
                     "years_experience": 7,
                 },
             },
+            "executive_summary": "Strong classroom routines.",
+            "interview_highlights": ["Uses visuals.", "Keeps family communication clear."],
+            "answer_summaries": [{"flow_index": 1, "summary": "Gave a concrete example."}],
+            "summary_status": "generated",
+            "summary_warnings": [],
             "custom_answers": [{"id": "c1", "answer": "Example"}],
             "flow_transcript": [
                 {
@@ -75,6 +80,10 @@ class TestIntegrationExport(unittest.TestCase):
         self.assertEqual(len(out["flow_transcript_slices"]), 1)
         self.assertEqual(out["referral_packet"]["resume_path"], "resume.pdf")
         self.assertEqual(len(out["communication_log"]), 1)
+        self.assertEqual(out["executive_summary"], "Strong classroom routines.")
+        self.assertEqual(out["interview_highlights"], ["Uses visuals.", "Keeps family communication clear."])
+        self.assertEqual(out["answer_summaries"], [{"flow_index": 1, "summary": "Gave a concrete example."}])
+        self.assertEqual(out["summary_status"], "generated")
 
     def test_serializer_writes_json_under_base_dir(self):
         export_payload = {"ok": True}

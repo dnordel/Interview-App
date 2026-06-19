@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from ui_components.history_data_grid import HistoryDataGrid
+from ui_composition import HistoryDataGrid
 
 
 class _FakeTree:
@@ -66,11 +66,15 @@ def test_handle_click_dispatches_callbacks_by_column() -> None:
 
     for column, expected in [
         ("#5", "offer"),
-        ("#6", "retranscribe"),
-        ("#7", "transcript"),
-        ("#8", "notes"),
+        ("#6", "notes"),
     ]:
         calls.clear()
         grid._tree = _FakeTree(column)
         grid._handle_click(SimpleNamespace(x=1, y=1))
         assert calls == ["selected", expected]
+
+
+def test_notes_link_label_shows_processing_until_deepseek_completes() -> None:
+    grid = _build_grid()
+
+    assert grid._row_values({"deepseek_processing_status": "processing"})[-1] == "Processing"

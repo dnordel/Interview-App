@@ -2,8 +2,9 @@ module:
   name: interview_app_whisper_runtime_policy
   language: python
   path: src/interview_app/whisper_runtime_policy.py
-  version: 1.0.1
-  description: Contracts for whisper_runtime_policy module.
+  version: 1.0.2
+  description: Deprecated compatibility wrapper for Whisper runtime selection and
+    fallback policy implemented by interview_runtime.
 functions:
 - name: resolve_runtime
   description: resolve_runtime function.
@@ -121,4 +122,5 @@ classes:
 data_structures:
 - name: RuntimeConfig
   type: dataclass
-dependencies: []
+dependencies:
+- module: interview_runtime

@@ -3,11 +3,19 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import platform_services
 import runtime_wrapper
 
 
 def _explode() -> None:
     raise ValueError("trace me")
+
+
+def test_runtime_wrapper_forwards_to_platform_services() -> None:
+    assert runtime_wrapper.parse_args is platform_services.parse_args
+    assert runtime_wrapper.main is platform_services.main
+    assert runtime_wrapper.write_wrapper_crash_report is platform_services.write_wrapper_crash_report
+    assert runtime_wrapper.traceback_origin is platform_services.traceback_origin
 
 
 def test_write_wrapper_crash_report_captures_origin(tmp_path) -> None:

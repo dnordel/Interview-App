@@ -2,8 +2,9 @@ module:
   name: interview_app_audio_runtime
   language: python
   path: src/interview_app/audio_runtime.py
-  version: 1.1.0
-  description: Contracts for audio_runtime module.
+  version: 1.1.2
+  description: Deprecated compatibility wrapper for audio runtime controller and Whisper
+    fallback helpers implemented by interview_runtime.
 functions: []
 classes:
 - name: AudioRuntimeController
@@ -60,7 +61,8 @@ classes:
       type: None
     exceptions:
     - TimeoutError
-    side_effects: writes transcript state, emits timeout logs, and persists snapshot data
+    side_effects: writes transcript state, emits timeout logs, and persists snapshot
+      data
   - name: _stop_and_transcribe_with_timeout
     description: AudioRuntimeController._stop_and_transcribe_with_timeout method.
     locked: false
@@ -86,7 +88,9 @@ classes:
     - TimeoutError
     side_effects: spawns daemon thread to enforce timeout bound for stop_and_transcribe
   - name: start_recording_session
-    description: AudioRuntimeController.start_recording_session method.
+    description: Start recording with configured/default Windows microphone device,
+      resolved Windows system device, Whisper runtime config, and current Whisper
+      settings.
     locked: false
     inputs:
       start_recording:
@@ -104,7 +108,8 @@ classes:
     returns:
       type: Any
     exceptions: []
-    side_effects: starts audio recording subprocesses
+    side_effects: starts audio recording subprocesses; may use interview_runtime.DEFAULT_WINDOWS_MIC_DEVICE
+      when app settings omit windows_microphone_device
   - name: start_recording_with_runtime_fallback
     description: AudioRuntimeController.start_recording_with_runtime_fallback method.
     locked: false
@@ -159,5 +164,4 @@ classes:
     side_effects: none
 data_structures: []
 dependencies:
-- interview_app_types
-- interview_app_whisper_runtime_policy
+- module: interview_runtime

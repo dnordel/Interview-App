@@ -1,0 +1,250 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-06-18T16:03:48.945287Z",
+  "updated_at": "2026-06-18T16:13:27.070121Z",
+  "interview": {
+    "interview_id": "Candidate_Yvonne_Mendez_2026-06-18_0d19bb0c",
+    "candidate_name": "Yvonne Mendez",
+    "interview_date": "2026-06-18"
+  },
+  "questions": {
+    "0": {
+      "flow_idx": 0,
+      "item_type": "custom",
+      "item_id": "Why-ECE",
+      "notes": {
+        "question_text": "Tell me about yourself and why early childhood education matters to you.",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q1 Attempt 1]\nWell, I've been working with children since age 16. You see the foundations of children. If they don't have those foundations, it becomes very hard for them to adjust as students in the upper classes. Give or take, because I've worked as a substitute longer. So I used to be an assistant.",
+      "updated_at": "2026-06-18T16:04:27.433968Z"
+    },
+    "1": {
+      "flow_idx": 1,
+      "item_type": "custom",
+      "item_id": "Why-LPL",
+      "notes": {
+        "question_text": "Why are you applying to our company, Launch Pad Learning?",
+        "answer": "",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q2 Attempt 1]\nBecause I really like it. It gives me an opportunity to be able to work with children inside the classroom rather than going to their houses, which becomes difficult for me.",
+      "updated_at": "2026-06-18T16:04:28.196615Z"
+    },
+    "2": {
+      "flow_idx": 2,
+      "item_type": "trait",
+      "item_id": "trait_1",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": [
+          "Q1_CO_REGULATES"
+        ]
+      },
+      "candidate_transcript": "[Q3 Attempt 1]\nThere was a time when a child came in crying to the classroom and they didn't want to participate in anything. So rather than push the child to continue to do what the other teacher was saying, I just told them to go ahead and sit down and told them to relax. And with my voice calm, he eventually stopped crying and he was just tired. Sometimes when the kids don't sleep well, they come in cranky. And then we went out to drink some water and we cooled off. Well, I was already cold, but he cooled off. And then he said, it's because I was tired. He didn't want his mom to wake him up. And so we just talked briefly and then we came back into the classroom and he was able to. Continue.",
+      "updated_at": "2026-06-18T16:05:37.130945Z"
+    },
+    "3": {
+      "flow_idx": 3,
+      "item_type": "trait",
+      "item_id": "trait_2",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": [
+          "S_SELF_REG_ACTION",
+          "S_CHILD_CENTERED"
+        ]
+      },
+      "candidate_transcript": "[Q4 Attempt 1]\nWell, I briefly closed my eyes for five seconds and then counted slowly one through ten. And it said, there's nothing here. It's personal. This is how work is sometimes. And then I continued. Well, children don't really stress me out. I can handle the chaotic time. It's sometimes when people are supposed to go to work and then you have a lot of teachers that, for whatever reason, they're not coming to work. So you're waiting patiently for the substitutes or somebody who's going to take their place. I remember that. There were so many people that missed the same day. So I had to just, because the children started asking, where's my teacher? So I just said, she's not here today. She's going to come back tomorrow. Remember that you're talking to children. And if I stress, I'm going to stress the children out.",
+      "updated_at": "2026-06-18T16:06:54.205304Z"
+    },
+    "4": {
+      "flow_idx": 4,
+      "item_type": "trait",
+      "item_id": "trait_3",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": [
+          "S_PROCESS_STRUCTURED",
+          "S_CALM_PRESENCE",
+          "S_CHILD_CENTERED"
+        ]
+      },
+      "candidate_transcript": "[Q5 Attempt 1]\nJust to say, what, does something bother you or what's going on, talk to them like real people and say, it's going to hurt more if we keep the pamper on you, just let me take care of it and speak to them in a slow, soft voice. And because maybe the child doesn't want to be changed because maybe he has a diaper rash and he may recall the pain. So the diaper still has to be changed, but don't get upset with the child. The child is only trying to see his best interests.",
+      "updated_at": "2026-06-18T16:07:51.576262Z"
+    },
+    "5": {
+      "flow_idx": 5,
+      "item_type": "trait",
+      "item_id": "trait_4",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": []
+      },
+      "candidate_transcript": "[Q6 Attempt 1]\nWell, when I get feedback or I'm told something is not supposed to be done that way, I don't really take it personally anymore because I understand every school works so differently. So I just need the time to be able to adjust and leave my ego out of the way.",
+      "updated_at": "2026-06-18T16:08:25.923802Z"
+    },
+    "6": {
+      "flow_idx": 6,
+      "item_type": "trait",
+      "item_id": "trait_5",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": []
+      },
+      "candidate_transcript": "[Q7 Attempt 1]\nsometimes with lesson plans it I think that's why it's called plan you think it's gonna be a great success with children but they're not feeling it so you have to have something to readjust so that it's not overwhelming not just for you but for the child for all the children involved",
+      "updated_at": "2026-06-18T16:09:05.151468Z"
+    },
+    "7": {
+      "flow_idx": 7,
+      "item_type": "trait",
+      "item_id": "trait_6",
+      "notes": {
+        "raw_score": 1,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": [
+          "S_BLAME"
+        ]
+      },
+      "candidate_transcript": "[Q8 Attempt 1]\nI think we have protocols in place if you have a situation with an adult and you never handle it in front of children. And if it leads to something more, you'll have to speak. That's why you'll have supervisors or managers. And sometimes it's just that you were having a bad day and you want that person to be the reason.",
+      "updated_at": "2026-06-18T16:09:45.607851Z"
+    },
+    "8": {
+      "flow_idx": 8,
+      "item_type": "trait",
+      "item_id": "trait_7",
+      "notes": {
+        "raw_score": 3,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": [
+          "S_CHILD_CENTERED"
+        ]
+      },
+      "candidate_transcript": "[Q9 Attempt 1]\nWell, I remember going to school and the children were all perfect in the book, but you have to remember every child comes with his or her unique personality, whatever their environment is. And just like when an adult has a bad day or an extra good day and they don't want to be at school, you have to remember, keep in mind those children are there to be able to enjoy school and however you impact them is going to affect them, positive or negative. So I always try to put myself in that situation, wondering, well, the child is regularly not upset. Something must have happened. So give the child a little bit of time.",
+      "updated_at": "2026-06-18T16:10:47.058501Z"
+    },
+    "9": {
+      "flow_idx": 9,
+      "item_type": "trait",
+      "item_id": "trait_10",
+      "notes": {
+        "raw_score": 2,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": []
+      },
+      "candidate_transcript": "[Q10 Attempt 1]\nthe child um wanted to go outside and then it was time to work inside so what i did was i said okay we're gonna go and drink water and go to the restroom but then when we come back we're gonna start to do work okay so the child just need a little break and that was uh fulfilling for the child to be able to leave the room a little bit and then come back",
+      "updated_at": "2026-06-18T16:11:29.414049Z"
+    },
+    "10": {
+      "flow_idx": 10,
+      "item_type": "trait",
+      "item_id": "trait_11",
+      "notes": {
+        "raw_score": 1,
+        "question_notes": "",
+        "trait_notes": "",
+        "verbatim_notes": "",
+        "absolute_disqualifier": false,
+        "skipped": false,
+        "no_example_after_followups": false,
+        "selected_signal_ids": []
+      },
+      "candidate_transcript": "[Q11 Attempt 1]\nWell, you use your senses. Maybe the child is crying because they need to have their diaper changed. And so you check. You check their temperature. You check to see if maybe he has or she has a rash on the legs or something. You try to eliminate anything that you think might be bothering the child because if the child doesn't regularly cry like that, something is bothering him or her.",
+      "updated_at": "2026-06-18T16:12:19.135478Z"
+    },
+    "11": {
+      "flow_idx": 11,
+      "item_type": "custom",
+      "item_id": "FT-or-PT",
+      "notes": {
+        "question_text": "Are you looking for full-time or part-time?",
+        "answer": "ful-time",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-06-18T16:12:25.932933Z"
+    },
+    "12": {
+      "flow_idx": 12,
+      "item_type": "custom",
+      "item_id": "Not-Avail",
+      "notes": {
+        "question_text": "Are there any hours you are absolutely not available to work?",
+        "answer": "no",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q13 Attempt 1]\num is this called second long beach okay is that far away from los angeles i'm sorry to ask no i've come to los angeles it's not far okay yeah i can work the hours",
+      "updated_at": "2026-06-18T16:13:06.087873Z"
+    },
+    "13": {
+      "flow_idx": 13,
+      "item_type": "custom",
+      "item_id": "Pay",
+      "notes": {
+        "question_text": "What kind of pay are you looking for? Is that negotiable?",
+        "answer": "the most we can",
+        "skipped": false
+      },
+      "candidate_transcript": "[Q14 Attempt 1]\nThe most amount you can give me.",
+      "updated_at": "2026-06-18T16:13:18.946456Z"
+    },
+    "14": {
+      "flow_idx": 14,
+      "item_type": "custom",
+      "item_id": "Start",
+      "notes": {
+        "question_text": "When could you start if we decide to move forward?",
+        "answer": "asap",
+        "skipped": false
+      },
+      "candidate_transcript": "",
+      "updated_at": "2026-06-18T16:13:27.070121Z"
+    }
+  }
+}

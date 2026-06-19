@@ -8,11 +8,12 @@ from typing import Any
 import pytest
 import yaml
 
-from ui_feedback import sanitize_user_error, should_display_modal
+from ui_composition import KeyboardPathSession
+from ui_composition import sanitize_user_error, should_display_modal
 
 CONTRACTS = [
-    Path("contracts/question_screens.contract.yaml"),
-    Path("contracts/ui_feedback.contract.yaml"),
+    Path("contracts/tk_theme.contract.yaml"),
+    Path("contracts/ui_composition.contract.yaml"),
     Path("contracts/ui_windows.contract.yaml"),
 ]
 
@@ -74,3 +75,7 @@ def test_security_ui_validation_controls_and_return_types() -> None:
     sanitized = sanitize_user_error("Traceback: File \"x.py\" line 1")
     assert sanitized == "An unexpected system issue occurred."
     assert isinstance(sanitized, str)
+
+
+def test_keyboard_telemetry_is_owned_by_flat_module() -> None:
+    assert KeyboardPathSession.__module__ == "ui_composition"

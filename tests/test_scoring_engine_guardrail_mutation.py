@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-import reporting
+import scoring_reporting as reporting
 
 
 def test_deliberate_scoring_engine_mutation() -> None:

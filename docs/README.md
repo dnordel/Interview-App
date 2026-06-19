@@ -28,6 +28,8 @@ docs/
 ├── accessibility_pr_checklist.md
 ├── CONTRIBUTING_DOCS.md
 ├── CONTRACT_TEST_MATRIX.md
+├── flattening_baseline.md
+├── flattening_migration_map.md
 ├── manual_qa_screen_template.md
 ├── manual_qa_ux_b006.md
 ├── RUBRIC_SCHEMA.md
@@ -73,6 +75,9 @@ Use `CONTRACT_REVIEW_WORKFLOW.md` for baseline + section drift checks, sequencin
 ### Contract review checklist
 Use `CONTRACT_REVIEW_CHECKLIST.md` for a quick single-developer local pass.
 
+### Flattened architecture
+Use `flattening_baseline.md` and `flattening_migration_map.md` to understand the five public modules, legacy wrapper policy, production import expectations, current validation status, and remaining manual smoke checks.
+
 ### Telemetry conventions
 Use `UX_EVENT_NAMING.md` before creating, naming, or reviewing UX events to keep event taxonomy and naming consistent.
 
@@ -93,6 +98,8 @@ Use `RUBRIC_SCHEMA.md` when editing or validating rubric structure and related s
 - [CONTRIBUTING_DOCS.md](./CONTRIBUTING_DOCS.md)
 - [CONTRACT_TEST_MATRIX.md](./CONTRACT_TEST_MATRIX.md)
 - [UI_UX_RECOMMENDATIONS_AND_TASK_STUBS.md](./UI_UX_RECOMMENDATIONS_AND_TASK_STUBS.md)
+- [flattening_baseline.md](./flattening_baseline.md)
+- [flattening_migration_map.md](./flattening_migration_map.md)
 - [manual_qa_ux_b006.md](./manual_qa_ux_b006.md)
 
 ### Templates

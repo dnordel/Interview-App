@@ -31,6 +31,7 @@ def _build_selected_refs(trait):
     refs = [signal["ref"] for signal in trait.get("core_signals", [])]
     for group in trait.get("extended_signal_groups", []):
         refs.extend(signal["ref"] for signal in group.get("signals", []))
+    refs.extend(signal["ref"] for signal in trait.get("extended_signals", []))
     return refs
 
 
@@ -42,10 +43,18 @@ def _sample_config():
             "output_dir": "./results",
         },
         "data_model": {"signal_resolution": {"allow_custom_signals": True}},
-        "scoring": {"core_multiplier": 1.5},
+        "scoring": {
+            "signal_score_to_raw_score": [
+                {"min": 7, "max": None, "raw_score": 5},
+                {"min": 4, "max": 6, "raw_score": 4},
+                {"min": 1, "max": 3, "raw_score": 3},
+                {"min": -3, "max": 0, "raw_score": 2},
+                {"min": None, "max": -4, "raw_score": 1},
+            ],
+        },
         "decision_engine": {
-            "thresholds": {"strong_hire": 20, "hire": 10, "borderline": 0},
-            "override_rules": {"auto_reject_if_critical": True},
+            "thresholds": {"hire": 10, "borderline": 0},
+            "override_rules": {"auto_reject_if_auto_no_hire_signal": True},
         },
     }
 
@@ -90,8 +99,8 @@ def test_module_import_and_critical_override_path(scoring_engine_class):
     assert summary == {
         "decision": "no_hire",
         "triggered_critical": True,
-        "locked_rule": "Contract override: selected critical signal triggers immediate no_hire",
-        "override_rationale": "Contract override: selected critical signal triggers immediate no_hire",
+        "locked_rule": "Contract override: selected automatic no-hire signal triggers immediate no_hire",
+        "override_rationale": "Contract override: selected automatic no-hire signal triggers immediate no_hire",
     }
 
 
@@ -126,23 +135,21 @@ def test_yaml_config_scores_and_decides_without_key_errors(scoring_engine_class)
 
     assert result["totals"]["core"] == 3
     assert result["totals"]["extended"] == 2
-    assert result["totals"]["final"] == pytest.approx(6.5)
-    assert result["decision"] == "no_hire"
+    assert result["totals"]["final"] == pytest.approx(5)
+    assert result["decision"] == "borderline"
+    assert result["traits"][0]["suggested_raw_score"] == 4
 
 
 def test_make_decision_uses_decision_engine_only(scoring_engine_class):
     config, signal_dictionary, _traits, _resolved_paths = scoring_engine_class.load_runtime_bundle(
         Path("Trait-Based Scoring/trait_based_scoring_contract.yaml")
     )
-    config["decision"] = {
-        "thresholds": {"strong_hire": 999, "hire": 999, "borderline": 999},
-        "modifiers": {"critical_flag": {"override": "no_hire"}},
-    }
+    config["decision_engine"]["thresholds"] = {"hire": 20, "borderline": 5}
 
     engine = scoring_engine_class(config, signal_dictionary)
 
-    assert engine.make_decision(final_score=25, critical_flag=False) == "strong_hire"
-    assert engine.make_decision(final_score=1, critical_flag=False) == "borderline"
+    assert engine.make_decision(final_score=25, critical_flag=False) == "hire"
+    assert engine.make_decision(final_score=1, critical_flag=False) == "no_hire"
 
 
 def test_startup_schema_raises_clear_path_for_missing_sections(scoring_engine_class):
@@ -159,9 +166,9 @@ def test_startup_schema_raises_clear_path_for_invalid_types(scoring_engine_class
     config, signal_dictionary, _traits, _resolved_paths = scoring_engine_class.load_runtime_bundle(
         Path("Trait-Based Scoring/trait_based_scoring_contract.yaml")
     )
-    config["scoring"]["core_multiplier"] = "1.5"
+    del config["scoring"]
 
-    with pytest.raises(TypeError, match="scoring.core_multiplier"):
+    with pytest.raises(KeyError, match="scoring"):
         scoring_engine_class(config, signal_dictionary)
 
 
@@ -170,7 +177,7 @@ def test_runtime_bundle_resolves_paths_relative_to_contract_file(runtime_bundle)
 
     assert config["paths"]["traits_dir"] == "."
     assert resolved_paths["traits_dir"].name == "Trait-Based Scoring"
-    assert resolved_paths["signal_dictionary"].name == "shared_signal_dictionary.json"
+    assert resolved_paths["weighted_signals"].name == "preschool_teacher_interview_signals_weighted.json"
     assert resolved_paths["output_dir"].name == "results"
     assert signal_dictionary["signals"]
     assert traits
@@ -215,6 +222,18 @@ def test_load_traits_from_dir_loads_json_files(scoring_engine_class, tmp_path):
     assert traits == [{"trait_id": "T1"}]
 
 
+def test_load_runtime_bundle_uses_weighted_signal_source(scoring_engine_class):
+    config, signal_dictionary, traits, resolved_paths = scoring_engine_class.load_runtime_bundle(
+        Path("Trait-Based Scoring/trait_based_scoring_contract.yaml")
+    )
+
+    assert config["_weighted_signal_source"] == str(resolved_paths["weighted_signals"])
+    assert {trait["trait_id"] for trait in traits} == {f"trait_{index}" for index in range(1, 12)}
+    assert "trait_11_json_version" not in {trait["trait_id"] for trait in traits}
+    assert signal_dictionary["signals"]
+    assert all("default_weight" in signal for signal in signal_dictionary["signals"])
+
+
 def test_loads_all_configured_traits_and_resolves_all_signal_refs(runtime_bundle, scoring_engine_class):
     config, signal_dictionary, traits, _resolved_paths = runtime_bundle
     engine = scoring_engine_class(config, signal_dictionary)
@@ -234,9 +253,8 @@ def test_loads_all_configured_traits_and_resolves_all_signal_refs(runtime_bundle
         assert result["trait_id"] == trait["trait_id"]
         assert len(result["selected_core"]) == len(trait.get("core_signals", []))
 
-        expected_extended = sum(
-            len(group.get("signals", [])) for group in trait.get("extended_signal_groups", [])
-        )
+        expected_extended = sum(len(group.get("signals", [])) for group in trait.get("extended_signal_groups", []))
+        expected_extended += len(trait.get("extended_signals", []))
         assert len(result["selected_extended"]) == expected_extended
 
 
@@ -254,11 +272,11 @@ def test_resolve_signal_handles_unknown_refs_based_on_configuration(scoring_engi
         strict_engine.resolve_signal({"ref": "UNKNOWN"})
 
 
-def test_high_score_with_critical_selection_returns_no_hire_and_metadata(scoring_engine_class):
+def test_high_score_with_auto_no_hire_selection_returns_no_hire_and_metadata(scoring_engine_class):
     config = _sample_config()
     signal_dictionary = {
         "signals": [
-            {"id": "S1", "label": "Critical", "default_weight": 15, "is_critical": True},
+            {"id": "S1", "label": "Critical", "default_weight": 0, "is_critical": True, "is_auto_no_hire": True},
             {"id": "S2", "label": "Support", "default_weight": 5, "is_critical": False},
         ]
     }
@@ -270,7 +288,7 @@ def test_high_score_with_critical_selection_returns_no_hire_and_metadata(scoring
     assert result["decision"] == "no_hire"
     assert result["any_critical_selected"] is True
     assert result["triggered_critical"] is True
-    assert result["locked_rule"] == "Contract override: selected critical signal triggers immediate no_hire"
+    assert result["locked_rule"] == "Contract override: selected automatic no-hire signal triggers immediate no_hire"
 
 
 def test_no_critical_selection_uses_threshold_decision(scoring_engine_class):
@@ -299,6 +317,44 @@ def test_build_decision_summary_matches_threshold_and_override_paths(scoring_eng
     summary = engine.build_decision_summary(12, True)
     assert summary["decision"] == "no_hire"
     assert summary["triggered_critical"] is True
+
+
+def test_signal_score_to_raw_score_conversion_boundaries(scoring_engine_class):
+    engine = scoring_engine_class(_sample_config(), {"signals": []})
+
+    assert [engine.convert_signal_score_to_raw_score(value) for value in [7, 6, 4, 3, 1, 0, -3, -4]] == [
+        5,
+        4,
+        4,
+        3,
+        3,
+        2,
+        2,
+        1,
+    ]
+
+
+def test_positive_and_negative_signals_net_to_suggested_score(scoring_engine_class):
+    engine = scoring_engine_class(
+        _sample_config(),
+        {"signals": [
+            {"id": "P1", "label": "Positive", "default_weight": 3},
+            {"id": "P2", "label": "Positive", "default_weight": 2},
+            {"id": "N1", "label": "Concern", "default_weight": -2},
+        ]},
+    )
+
+    result = engine.score_trait(
+        {
+            "trait_id": "trait_1",
+            "core_signals": [{"ref": "P1"}, {"ref": "N1"}],
+            "extended_signal_groups": [{"signals": [{"ref": "P2"}]}],
+        },
+        ["P1", "P2", "N1"],
+    )
+
+    assert result["net_signal_score"] == 3
+    assert result["suggested_raw_score"] == 3
 
 
 def test_debug_trait_prints_selected_signals(scoring_engine_class, capsys):

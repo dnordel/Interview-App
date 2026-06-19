@@ -177,7 +177,7 @@ Guarantee contract-driven test obligations are represented across the suite.
 
 ---
 
-## Section H — Tooling and process support (`scripts/`, `tools/`, docs)
+## Section H — Tooling and process support (`tools/`, docs)
 
 ### Objective
 Create repeatable review mechanics so contract synchronization is sustainable.

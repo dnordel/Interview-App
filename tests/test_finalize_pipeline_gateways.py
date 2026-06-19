@@ -48,7 +48,7 @@ def _build_app(flow_recordings: dict[int, dict] | None = None):
         "director_referral_endpoint": "https://example.test/referrals",
     }
     app._rubric_with_question_overrides = lambda: {"traits": []}
-    app._safe_attr = lambda name: Path("/tmp/transcript.docx") if name == "live_transcript_docx" else None
+    app._safe_attr = lambda _name: None
     app._finalize_current_question_audio_and_doc = lambda _idx: None
     app._collect_transcription_health_warnings = lambda: ["Transcription queue was delayed."]
     app._hydrate_state_from_session_store = lambda: None
@@ -142,7 +142,7 @@ def test_finalize_pipeline_result_payload_invariants(monkeypatch: pytest.MonkeyP
 
     assert result["out_path"] == "/tmp/final-notes.docx"
     assert result["integration_path"] == "/tmp/integration.json"
-    assert result["transcript_path"] == "/tmp/transcript.docx"
+    assert result["transcript_path"] == ""
     assert context.payload["flow_transcript"][0]["candidate_transcript"] == "hello"
     assert context.payload["audio_recording"] == context.recording_metadata
     assert context.payload["transcript_metadata"] == {
@@ -150,7 +150,7 @@ def test_finalize_pipeline_result_payload_invariants(monkeypatch: pytest.MonkeyP
         "transcript_completeness_status": "complete",
         "remaining_question_indices": [],
     }
-    assert app.state.referral_packet["transcript_path"] == "/tmp/transcript.docx"
+    assert app.state.referral_packet["transcript_path"] == ""
 
 
 
@@ -302,8 +302,9 @@ def test_finalize_gateway_persists_history_entry() -> None:
             }
         },
         scoring={"percent_of_max": 98, "outcome": "Hire"},
-        transcript_path="/tmp/transcript.docx",
+        transcript_path="",
         recording_metadata=[{"flow_index": 1}],
+        interview_notes_document_path="/tmp/final-notes.docx",
     )
 
     FinalizeGateways().persist_finalize_history(app, context, "/tmp/final-notes.docx")
@@ -311,4 +312,5 @@ def test_finalize_gateway_persists_history_entry() -> None:
     assert len(app.history_store.rows) == 1
     history_entry = app.history_store.rows[0]
     assert history_entry["interview_notes_path"] == "/tmp/final-notes.docx"
+    assert history_entry["transcript_path"] == ""
     assert history_entry["offer_status"] == "not_generated"

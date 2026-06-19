@@ -1,0 +1,1867 @@
+module:
+  name: scoring_reporting
+  language: python
+  path: src/scoring_reporting.py
+  version: 0.13.0
+  description: Flattened public interface for scoring, reporting, trait signals, exports,
+    referrals, email safety, offers, and templates, including DeepSeek-only advisory
+    signal scoring; only active legacy adapters remain in the compatibility module
+    inventory.
+functions:
+- name: normalize_candidate_title
+  description: Normalize an arbitrary title-like value to one of the supported candidate
+    honorifics.
+  locked: false
+  inputs:
+    value:
+      type: Any
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: normalize_degree_type
+  description: Normalize degree type to supported canonical abbreviations.
+  locked: false
+  inputs:
+    value:
+      type: Any
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: coerce_non_negative_int
+  description: Coerce integer-like values to non-negative integers.
+  locked: false
+  inputs:
+    value:
+      type: Any
+      required: true
+  returns:
+    type: int | None
+  exceptions: []
+  side_effects: none
+- name: validate_candidate_qualification
+  description: Validate and normalize candidate education and experience details.
+  locked: false
+  inputs:
+    has_degree_raw:
+      type: str
+      required: true
+    degree_type_raw:
+      type: str
+      required: true
+    degree_in_ece:
+      type: bool
+      required: true
+    ece_units_raw:
+      type: str
+      required: true
+    total_units_raw:
+      type: str
+      required: true
+    infant_toddler_class_completed:
+      type: bool
+      required: true
+    years_experience_raw:
+      type: str
+      required: true
+  returns:
+    type: tuple[bool, str, CandidateQualification]
+  exceptions: []
+  side_effects: none
+- name: parse_yes_no
+  description: Parse yes/no string values into a tri-state boolean.
+  locked: false
+  inputs:
+    value:
+      type: str
+      required: true
+  returns:
+    type: bool | None
+  exceptions: []
+  side_effects: none
+- name: sanitize_email_subject
+  description: Normalize and trim an email subject line to a safe header value.
+  locked: false
+  inputs:
+    subject:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: is_valid_email_address
+  description: Validate email address format using project policy.
+  locked: false
+  inputs:
+    value:
+      type: str
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+- name: sender_email_error_reason
+  description: Return policy reason code for rejected sender addresses.
+  locked: false
+  inputs:
+    value:
+      type: str
+      required: true
+  returns:
+    type: str | None
+  exceptions: []
+  side_effects: none
+- name: sender_email_domain_type
+  description: Classify sender domain as public, education, organization, or unknown.
+  locked: false
+  inputs:
+    value:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: normalize_referral_packet
+  description: Normalize referral packet values to stripped strings and backfill canonical
+    interview_notes_document_path from legacy fields when absent.
+  locked: false
+  inputs:
+    packet:
+      type: dict[str, str] | None
+      required: true
+  returns:
+    type: dict[str, str]
+  exceptions: []
+  side_effects: none
+- name: missing_required_docs
+  description: Return ordered labels for required referral packet documents that are
+    missing after normalization.
+  locked: false
+  inputs:
+    packet:
+      type: dict[str, str] | None
+      required: true
+  returns:
+    type: list[str]
+  exceptions: []
+  side_effects: none
+- name: validate_referral_packet
+  description: Validate that required referral packet document fields are populated
+    and return (is_valid, missing_labels).
+  locked: false
+  inputs:
+    packet:
+      type: dict[str, str] | None
+      required: true
+  returns:
+    type: tuple[bool, list[str]]
+  exceptions: []
+  side_effects: none
+- name: is_supported_document_path
+  description: Check whether a document path suffix is an allowed extension.
+  locked: false
+  inputs:
+    path_text:
+      type: str
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+- name: available_modules
+  description: Return remaining legacy scoring/reporting modules still exposed through
+    this flattened facade.
+  locked: false
+  inputs: {}
+  returns:
+    type: tuple[str, ...]
+  exceptions: []
+  side_effects: none
+- name: load_compat_module
+  description: Import a remaining legacy module that belongs to the scoring/reporting
+    facade.
+  locked: false
+  inputs:
+    module_name:
+      type: str
+      required: true
+  returns:
+    type: ModuleType
+  exceptions:
+  - AttributeError
+  side_effects: Imports the requested module.
+- name: module_ownership
+  description: Return the ownership map from each remaining legacy scoring/reporting
+    module to the flattened scoring_reporting module.
+  locked: false
+  inputs: {}
+  returns:
+    type: dict[str, str]
+  exceptions: []
+  side_effects: none
+- name: wrapper_policy
+  description: Return the compatibility wrapper policy for remaining legacy scoring/reporting
+    modules during flattening cleanup.
+  locked: false
+  inputs: {}
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: public_symbols
+  description: Return public symbols exposed by one remaining legacy scoring/reporting
+    module or by all remaining scoring/reporting modules.
+  locked: false
+  inputs:
+    module_name:
+      type: str | None
+      required: false
+      default: None
+  returns:
+    type: tuple[str, ...]
+  exceptions:
+  - AttributeError
+  side_effects: Imports remaining scoring/reporting compatibility modules.
+- name: resolve_compat_symbol
+  description: Resolve a public symbol from the remaining legacy modules owned by
+    this facade.
+  locked: false
+  inputs:
+    symbol_name:
+      type: str
+      required: true
+  returns:
+    type: Any
+  exceptions:
+  - AttributeError
+  side_effects: Imports legacy modules until the symbol is found.
+- name: placeholder_meta_for_context
+  description: Return placeholder metadata available for a template context.
+  locked: false
+  inputs:
+    context:
+      type: str
+      required: true
+  returns:
+    type: list[PlaceholderMeta]
+  exceptions: []
+  side_effects: none
+- name: placeholder_tokens_for_context
+  description: Return placeholder token strings for a context.
+  locked: false
+  inputs:
+    context:
+      type: str
+      required: true
+  returns:
+    type: list[str]
+  exceptions: []
+  side_effects: none
+- name: placeholder_picker_options
+  description: Build ordered picker labels for one or more contexts.
+  locked: false
+  inputs:
+    contexts:
+      type: Iterable[str]
+      required: true
+  returns:
+    type: list[str]
+  exceptions: []
+  side_effects: none
+- name: token_from_picker_label
+  description: Extract raw placeholder token from picker label text.
+  locked: false
+  inputs:
+    label:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: token_to_key
+  description: Convert placeholder token into canonical placeholder key.
+  locked: false
+  inputs:
+    token:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _match_key
+  description: Extract placeholder key from regex match object.
+  locked: false
+  inputs:
+    match:
+      type: re.Match[str]
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: extract_placeholders
+  description: Parse placeholder tokens from free-text template content.
+  locked: false
+  inputs:
+    text:
+      type: str
+      required: true
+  returns:
+    type: set[str]
+  exceptions: []
+  side_effects: none
+- name: missing_placeholder_keys
+  description: Return placeholders that are required but missing from values.
+  locked: false
+  inputs:
+    text:
+      type: str
+      required: true
+    values:
+      type: dict[str, object]
+      required: true
+    context:
+      type: str
+      required: true
+  returns:
+    type: list[str]
+  exceptions: []
+  side_effects: none
+- name: find_unknown_placeholders
+  description: Return unknown placeholders relative to context definitions.
+  locked: false
+  inputs:
+    text:
+      type: str
+      required: true
+    context:
+      type: str
+      required: true
+  returns:
+    type: set[str]
+  exceptions: []
+  side_effects: none
+- name: validate_template_map
+  description: Validate templates and return missing/unknown placeholder diagnostics.
+  locked: false
+  inputs:
+    templates:
+      type: dict[str, str]
+      required: true
+    context_by_key:
+      type: dict[str, str]
+      required: true
+  returns:
+    type: dict[str, set[str]]
+  exceptions: []
+  side_effects: none
+- name: render_template
+  description: Render placeholders from values using unknown placeholder policy.
+  locked: false
+  inputs:
+    template:
+      type: str
+      required: true
+    values:
+      type: dict[str, object]
+      required: true
+    context:
+      type: str | None
+      required: false
+      default: null
+    unknown_policy:
+      type: str
+      required: false
+      default: leave
+  returns:
+    type: str
+  exceptions:
+  - ValueError
+  side_effects: none
+- name: insert_token_into_widget
+  description: Insert token text into a supported Tk widget.
+  locked: false
+  inputs:
+    widget:
+      type: tk.Misc
+      required: true
+    token:
+      type: str
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: Mutates widget text content.
+- name: insert_token_into_focused_widget
+  description: Insert token into focused widget when widget type is allowed.
+  locked: false
+  inputs:
+    root:
+      type: tk.Misc
+      required: true
+    token:
+      type: str
+      required: true
+    allowed_widgets:
+      type: Iterable[tk.Misc]
+      required: false
+      default: ()
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: Mutates focused widget text content.
+- name: open_outlook_draft
+  description: Opens an Outlook draft on Windows and attaches only existing files
+    from the provided attachment list.
+  locked: false
+  inputs:
+    subject:
+      type: str
+      required: true
+    body:
+      type: str
+      required: true
+    attachments:
+      type: list[str]
+      required: true
+    to_recipients:
+      type: str
+      required: false
+      default: ''
+  returns:
+    type: None
+  exceptions:
+  - DirectorEmailDraftError
+  side_effects: launches Outlook via PowerShell COM automation on Windows
+- name: build_mailto_url
+  description: Builds a sanitized mailto URL for fallback email draft flows.
+  locked: false
+  inputs:
+    subject:
+      type: str
+      required: true
+    body:
+      type: str
+      required: true
+    to_recipients:
+      type: str
+      required: false
+      default: ''
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _normalize_mailto_recipients
+  description: Normalize and URL-encode mailto recipient lists while preserving comma
+    or semicolon separator style.
+  locked: false
+  inputs:
+    to_recipients:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _ps_quote
+  description: Escape a value for single-quoted PowerShell string usage.
+  locked: false
+  inputs:
+    value:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _allowed_referral_hosts_from_env
+  description: Load allowed director referral endpoint hosts from environment configuration.
+  locked: false
+  inputs: {}
+  returns:
+    type: set[str]
+  exceptions: []
+  side_effects: Reads environment variables.
+- name: _validate_referral_endpoint
+  description: Validate that director referral endpoint uses HTTPS and an allowed
+    host when configured.
+  locked: false
+  inputs:
+    endpoint:
+      type: str
+      required: true
+    allowed_hosts:
+      type: set[str] | None
+      required: false
+      default: null
+  returns:
+    type: str
+  exceptions:
+  - DirectorReferralError
+  side_effects: Reads environment variables when allowed_hosts is not supplied.
+- name: build_director_packet
+  description: Build the director referral packet from finalized interview payload,
+    scoring, report, integration export, and referral documents.
+  locked: false
+  inputs:
+    payload:
+      type: dict[str, Any]
+      required: true
+    scoring:
+      type: dict[str, Any]
+      required: true
+    report_path:
+      type: Path
+      required: true
+    integration_path:
+      type: Path
+      required: true
+    referral_packet:
+      type: dict[str, str]
+      required: true
+    generated_transcript_path:
+      type: Path | None
+      required: false
+      default: null
+      description: '[DEPRECATED] Optional legacy transcript-only path. New finalize
+        flow passes null and uses interview_notes_document_path/final report.'
+  returns:
+    type: dict[str, Any]
+  exceptions: []
+  side_effects: none
+- name: send_director_packet
+  description: POST a director referral packet to a validated HTTPS endpoint.
+  locked: false
+  inputs:
+    packet:
+      type: dict[str, Any]
+      required: true
+    endpoint:
+      type: str
+      required: true
+    timeout_seconds:
+      type: int
+      required: false
+      default: 12
+    allowed_hosts:
+      type: set[str] | None
+      required: false
+      default: null
+  returns:
+    type: dict[str, Any]
+  exceptions:
+  - DirectorReferralError
+  side_effects: Sends an HTTPS request to the configured referral endpoint.
+- name: default_referral_endpoint
+  description: Return the configured director referral endpoint from environment variables.
+  locked: false
+  inputs: {}
+  returns:
+    type: str
+  exceptions: []
+  side_effects: Reads environment variables.
+- name: append_communication_log
+  description: Append a director referral communication event as JSONL under the base
+    communications directory.
+  locked: false
+  inputs:
+    base_dir:
+      type: Path
+      required: true
+    event:
+      type: dict[str, Any]
+      required: true
+    candidate_name:
+      type: str
+      required: true
+  returns:
+    type: Path
+  exceptions:
+  - OSError
+  side_effects: Creates directories and appends a JSONL communication log entry.
+- name: normalize_outcome_label
+  description: Normalize scoring outcome labels for downstream integrations.
+  locked: false
+  inputs:
+    outcome:
+      type: Any
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: build_integration_payload
+  description: Build normalized integration payload from interview payload and scoring,
+    preserving generated executive summary, interview highlights, answer summaries,
+    and summary status metadata when present.
+  locked: false
+  inputs:
+    payload:
+      type: dict[str, Any]
+      required: true
+    scoring:
+      type: dict[str, Any]
+      required: true
+    include_flow_slices:
+      type: bool
+      required: false
+      default: true
+  returns:
+    type: dict[str, Any]
+  exceptions: []
+  side_effects: none
+- name: serialize_integration_payload
+  description: Serialize integration payload to JSON under integration exports directory.
+  locked: false
+  inputs:
+    base_output_dir:
+      type: Path
+      required: true
+    export_payload:
+      type: dict[str, Any]
+      required: true
+    candidate_name:
+      type: str
+      required: true
+  returns:
+    type: Path
+  exceptions:
+  - ValueError
+  - OSError
+  side_effects: Creates directories/files and writes JSON payload to disk.
+- name: _trait_note
+  description: Build trait-note slice used in integration payload.
+  locked: false
+  inputs:
+    row:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: dict[str, Any]
+  exceptions: []
+  side_effects: none
+- name: _flow_slices
+  description: Build filtered flow transcript slices with candidate transcript text.
+  locked: false
+  inputs:
+    flow_transcript:
+      type: list[dict[str, Any]]
+      required: true
+  returns:
+    type: list[dict[str, Any]]
+  exceptions: []
+  side_effects: none
+- name: _score_trait_signal_ids
+  description: Calculate the net DeepSeek signal score from supplied signal ids using
+    runtime trait signal weights; used only for advisory model scoring.
+  locked: false
+  inputs:
+    trait_definition:
+      type: dict[str, Any]
+      required: true
+    signal_ids:
+      type: list[str]
+      required: true
+    runtime_bundle:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: int | float | None
+  exceptions: []
+  side_effects: none
+- name: _deepseek_signal_advisory
+  description: Resolve model signal suggestions for one trait into net signal score,
+    suggested raw score, and automatic no-hire metadata.
+  locked: false
+  inputs:
+    trait_id:
+      type: str
+      required: true
+    model_signal_suggestions:
+      type: list[dict[str, Any]]
+      required: true
+  returns:
+    type: dict[str, Any]
+  exceptions: []
+  side_effects: Reads runtime trait signal bundle when available.
+- name: _signal_score_to_raw_score
+  description: Convert net signal score into the configured default 1-5 suggested
+    raw score.
+  locked: false
+  inputs:
+    net_signal_score:
+      type: int | float
+      required: true
+  returns:
+    type: int
+  exceptions: []
+  side_effects: none
+- name: _score_trait_signal_advisory
+  description: Score model signal suggestions against one runtime trait definition,
+    returning advisory net score, suggested raw score, and auto-no-hire metadata.
+  locked: false
+  inputs:
+    trait_definition:
+      type: dict[str, Any]
+      required: true
+    model_signal_suggestions:
+      type: list[dict[str, Any]]
+      required: true
+    runtime_bundle:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: dict[str, Any]
+  exceptions: []
+  side_effects: none
+- name: build_offer_filename
+  description: Build a safe offer letter filename from candidate name and creation
+    date.
+  locked: false
+  inputs:
+    first_name:
+      type: str
+      required: true
+    last_name:
+      type: str
+      required: true
+    created_on:
+      type: date
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: parse_clock_12h
+  description: Parse a 12-hour clock string into a datetime object.
+  locked: false
+  inputs:
+    value:
+      type: str
+      required: true
+  returns:
+    type: datetime
+  exceptions:
+  - ValueError
+  side_effects: none
+- name: build_signal_dictionary_index
+  description: Index signal-dictionary entries by runtime signal id for category-aware
+    normalization.
+  locked: false
+  inputs:
+    signal_dictionary:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: dict[str, dict[str, Any]]
+  exceptions: []
+  side_effects: none
+- name: normalize_trait_signal
+  description: Normalize one trait signal from either the legacy ref/weight schema
+    or the runtime id/base_weight schema.
+  locked: false
+  inputs:
+    signal:
+      type: dict[str, Any]
+      required: true
+    default_group_label:
+      type: str
+      required: true
+  returns:
+    type: CanonicalSignal
+  exceptions: []
+  side_effects: none
+- name: resolve_trait_signal_selection_id
+  description: Resolve the UI-facing selection identifier for a trait signal by preferring
+    legacy refs, then mapped shared-signal aliases, then the runtime signal id.
+  locked: false
+  inputs:
+    signal:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: resolve_trait_signal_runtime_id
+  description: Resolve the runtime signal id used by the scoring engine for a trait
+    signal record.
+  locked: false
+  inputs:
+    signal:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: signal_selection_aliases
+  description: Return every accepted selection alias for a trait signal, including
+    its runtime signal id and any shared-signal maps_to aliases.
+  locked: false
+  inputs:
+    signal:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: list[str]
+  exceptions: []
+  side_effects: none
+- name: resolve_trait_signal_label
+  description: Resolve the display label for a trait signal with a fallback value.
+  locked: false
+  inputs:
+    signal:
+      type: dict[str, Any]
+      required: true
+    fallback:
+      type: str
+      required: false
+      default: ''
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: resolve_trait_signal_weight
+  description: Resolve the numeric weight for a trait signal across weight, base_weight,
+    and default_weight fields.
+  locked: false
+  inputs:
+    signal:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: float
+  exceptions: []
+  side_effects: none
+- name: normalize_core_signals
+  description: Normalize core trait signals into the canonical UI/adapter signal shape.
+  locked: false
+  inputs:
+    core_signals:
+      type: list[dict[str, Any]]
+      required: true
+  returns:
+    type: list[CanonicalSignal]
+  exceptions: []
+  side_effects: none
+- name: normalize_extended_signal_groups
+  description: Normalize explicit extended groups or runtime extended_signals into
+    canonical grouped signal metadata.
+  locked: false
+  inputs:
+    trait_definition:
+      type: dict[str, Any]
+      required: true
+    signal_dictionary_index:
+      type: dict[str, dict[str, Any]] | None
+      required: false
+      default: null
+  returns:
+    type: list[CanonicalSignalGroup]
+  exceptions: []
+  side_effects: none
+- name: iter_trait_schema_signals
+  description: Flatten trait signals across core_signals, extended_signal_groups,
+    and extended_signals schemas.
+  locked: false
+  inputs:
+    trait_definition:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: list[dict[str, Any]]
+  exceptions: []
+  side_effects: none
+- name: load_trait_definitions_from_runtime_bundle
+  description: Resolve runtime trait definitions, preferring bundled weighted trait
+    payloads before legacy resolved trait-directory paths or runtime contract paths.
+  locked: false
+  inputs:
+    runtime_bundle:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: list[TraitDefinition]
+  exceptions: []
+  side_effects: May read configured runtime trait-definition JSON files from disk.
+- name: load_trait_definitions_from_contract
+  description: Resolve runtime trait definitions from the traits directory configured
+    by the runtime scoring contract.
+  locked: false
+  inputs:
+    runtime_contract_path:
+      type: str | Path
+      required: true
+  returns:
+    type: list[TraitDefinition]
+  exceptions: []
+  side_effects: Reads the runtime contract YAML and configured trait-definition JSON
+    files from disk.
+- name: load_trait_definitions_from_dir
+  description: Load trait definitions from a directory of runtime T*.json trait-definition
+    files.
+  locked: false
+  inputs:
+    traits_dir:
+      type: str | Path
+      required: true
+  returns:
+    type: list[TraitDefinition]
+  exceptions: []
+  side_effects: Reads runtime trait-definition JSON files from disk.
+- name: canonical_trait_id
+  description: Normalize rubric-style and legacy runtime trait identifiers into the
+    canonical rubric trait_<number> format.
+  locked: false
+  inputs:
+    trait_id:
+      type: Any
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: trait_id_aliases
+  description: Return canonical and legacy aliases for a trait identifier while preserving
+    deterministic order.
+  locked: false
+  inputs:
+    trait_id:
+      type: Any
+      required: true
+  returns:
+    type: list[str]
+  exceptions: []
+  side_effects: none
+- name: _resolve_traits_dir_from_bundle
+  description: Resolve the traits directory from runtime bundle resolved-path metadata
+    when available.
+  locked: false
+  inputs:
+    runtime_bundle:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: Path | None
+  exceptions: []
+  side_effects: none
+- name: _resolve_traits_dir_from_contract_payload
+  description: Resolve the traits directory from a runtime contract payload and contract
+    path.
+  locked: false
+  inputs:
+    contract_payload:
+      type: dict[str, Any]
+      required: true
+    runtime_contract_path:
+      type: str | Path
+      required: true
+  returns:
+    type: Path
+  exceptions: []
+  side_effects: none
+- name: _load_json
+  description: Load a JSON object from disk and coerce non-mapping payloads to an
+    empty mapping.
+  locked: false
+  inputs:
+    path:
+      type: Path
+      required: true
+  returns:
+    type: dict[str, Any]
+  exceptions: []
+  side_effects: Reads JSON files from disk.
+- name: _load_yaml
+  description: Load a YAML object from disk and coerce non-mapping payloads to an
+    empty mapping.
+  locked: false
+  inputs:
+    path:
+      type: Path
+      required: true
+  returns:
+    type: dict[str, Any]
+  exceptions: []
+  side_effects: Reads YAML files from disk.
+- name: default_signal_ui_definition
+  description: Return the explicit contract-aligned default trait signal UI metadata
+    used when runtime config is missing or trait definitions cannot be resolved.
+  locked: false
+  inputs:
+    trait_id:
+      type: str
+      required: true
+  returns:
+    type: SignalUIDefinition
+  exceptions: []
+  side_effects: none
+- name: load_trait_signal_ui_definition
+  description: Load runtime-backed signal rendering metadata for a scored trait screen
+    using the adapter-resolved trait-definition JSON source.
+  locked: false
+  inputs:
+    trait_id:
+      type: str
+      required: true
+    engine_module_contract_path:
+      type: str | Path
+      required: false
+      default: contracts/trait_based_scoring_engine.contract.yaml
+    engine_runtime_contract_path:
+      type: str | Path
+      required: false
+      default: Trait-Based Scoring/trait_based_scoring_contract.yaml
+  returns:
+    type: SignalUIDefinition
+  exceptions:
+  - ReportingValidationError
+  side_effects: Reads scoring runtime bundle assets from disk.
+- name: ensure_trait_signal_ui_definition
+  description: Load runtime-backed signal rendering metadata and raise a configuration
+    error when a scored rubric trait has no runtime signal definition.
+  locked: false
+  inputs:
+    trait_id:
+      type: str
+      required: true
+    engine_module_contract_path:
+      type: str | Path
+      required: false
+      default: contracts/trait_based_scoring_engine.contract.yaml
+    engine_runtime_contract_path:
+      type: str | Path
+      required: false
+      default: Trait-Based Scoring/trait_based_scoring_contract.yaml
+  returns:
+    type: SignalUIDefinition
+  exceptions:
+  - ReportingValidationError
+  side_effects: Reads scoring runtime bundle assets from disk.
+- name: normalize_trait_signal_selection_state
+  description: Normalize legacy trait signal-selection compatibility variants into
+    canonical selected_signal_ids filtered to the trait runtime definition.
+  locked: false
+  inputs:
+    trait_state:
+      type: dict[str, Any] | None
+      required: true
+    valid_signal_ids:
+      type: list[str]
+      required: true
+  returns:
+    type: list[str]
+  exceptions: []
+  side_effects: none
+- name: write_canonical_selected_signal_ids
+  description: Persist canonical selected_signal_ids to trait state while removing
+    legacy compatibility fields.
+  locked: false
+  inputs:
+    trait_state:
+      type: dict[str, Any]
+      required: true
+    selected_signal_ids:
+      type: list[str]
+      required: true
+  returns:
+    type: None
+  exceptions: []
+  side_effects: Mutates the provided trait-state mapping.
+- name: normalize_model_signal_suggestions
+  description: Normalize model-suggested trait observation signals with confidence
+    and rationale while filtering to valid runtime signal ids.
+  locked: false
+  inputs:
+    suggestions:
+      type: Any
+      required: true
+    valid_signal_ids:
+      type: list[str]
+      required: true
+  returns:
+    type: list[dict[str, Any]]
+  exceptions: []
+  side_effects: none
+- name: write_canonical_model_signal_suggestions
+  description: Persist canonical model_signal_suggestions separately from legacy
+    selected_signal_ids.
+  locked: false
+  inputs:
+    trait_state:
+      type: dict[str, Any]
+      required: true
+    suggestions:
+      type: list[dict[str, Any]]
+      required: true
+  returns:
+    type: None
+  exceptions: []
+  side_effects: Mutates the provided trait-state mapping.
+- name: trait_signal_override_state
+  description: Compare legacy selected_signal_ids with model_signal_suggestions without
+    changing scoring semantics.
+  locked: false
+  inputs:
+    trait_state:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: dict[str, list[str]]
+  exceptions: []
+  side_effects: none
+- name: count_selected_trait_checkbox_entries
+  description: Count selected legacy trait signal entries across canonical and compatibility
+    payloads.
+  locked: false
+  inputs:
+    state:
+      type: dict[str, Any]
+      required: true
+    trait_id:
+      type: str
+      required: true
+  returns:
+    type: int
+  exceptions:
+  - ValueError
+  side_effects: none
+- name: resolve_trait_selection_value
+  description: Resolve the first supported legacy trait signal-selection payload from a
+    trait state mapping.
+  locked: false
+  inputs:
+    state:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: Any
+  exceptions: []
+  side_effects: none
+- name: trait_requires_signal_selection
+  description: Determine whether finalize-aligned trait validation still requires
+    at least one legacy selected signal entry.
+  locked: false
+  inputs:
+    raw_state:
+      type: dict[str, Any]
+      required: true
+    normalized_trait_state:
+      type: dict[str, Any]
+      required: true
+    trait_id:
+      type: str
+      required: true
+  returns:
+    type: bool
+  exceptions:
+  - ValueError
+  side_effects: none
+- name: build_trait_scoring_payload
+  description: Normalize app trait state, invoke scoring, and return the shared finalize/export
+    scoring payload.
+  locked: false
+  inputs:
+    rubric:
+      type: dict[str, Any]
+      required: true
+    track_key:
+      type: Any
+      required: true
+    trait_state:
+      type: dict[str, dict[str, Any]] | None
+      required: true
+    engine_module_contract_path:
+      type: str | Path
+      required: false
+      default: contracts/trait_based_scoring_engine.contract.yaml
+    engine_runtime_contract_path:
+      type: str | Path
+      required: false
+      default: Trait-Based Scoring/trait_based_scoring_contract.yaml
+  returns:
+    type: NormalizedTraitScoringPayload
+  exceptions:
+  - ReportingValidationError
+  side_effects: Reads scoring contracts/runtime assets from disk.
+- name: load_module_contract_runtime_bundle
+  description: Load scoring engine module-contract metadata, runtime bundle metadata,
+    and trait definitions resolved from the configured runtime trait-definition source.
+  locked: false
+  inputs:
+    engine_module_contract_path:
+      type: str | Path
+      required: true
+    engine_runtime_contract_path:
+      type: str | Path
+      required: true
+  returns:
+    type: RuntimeBundleMetadata
+  exceptions: []
+  side_effects: Reads YAML scoring assets and configured trait-definition JSON files
+    from disk.
+- name: load_trait_definitions
+  description: Resolve runtime trait definitions from the configured traits directory
+    or contract path.
+  locked: false
+  inputs:
+    runtime_bundle:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: list[TraitDefinition]
+  exceptions: []
+  side_effects: May read configured runtime trait-definition JSON files from disk.
+- name: validate_runtime_bundle_metadata
+  description: Raise a validation error when runtime bundle metadata indicates scoring
+    configuration load failures.
+  locked: false
+  inputs:
+    runtime_bundle:
+      type: RuntimeBundleMetadata
+      required: true
+  returns:
+    type: None
+  exceptions:
+  - ReportingValidationError
+  side_effects: none
+- name: normalize_trait_state_item
+  description: Produce a canonical normalized trait-state object for one trait input,
+    normalizing accepted checkbox-selection variants into selected_signal_ids and
+    preserving separate model_signal_suggestions.
+  locked: false
+  inputs:
+    state:
+      type: dict[str, Any] | None
+      required: true
+  returns:
+    type: NormalizedTraitState
+  exceptions: []
+  side_effects: none
+- name: normalize_app_trait_state
+  description: Normalize raw app trait state into canonical trait-state objects keyed
+    by canonical rubric trait ids.
+  locked: false
+  inputs:
+    trait_state:
+      type: dict[str, dict[str, Any]] | None
+      required: true
+  returns:
+    type: dict[str, NormalizedTraitState]
+  exceptions: []
+  side_effects: none
+- name: validate_normalized_state
+  description: Validate canonical normalized trait state before scoring or finalize/export
+    mapping.
+  locked: false
+  inputs:
+    normalized_state:
+      type: dict[str, NormalizedTraitState]
+      required: true
+  returns:
+    type: None
+  exceptions:
+  - ReportingValidationError
+  side_effects: none
+- name: invoke_scoring_engine
+  description: Evaluate normalized trait state with the caller-resolved trait runtime
+    bundle and contract path.
+  locked: false
+  inputs:
+    rubric:
+      type: dict[str, Any]
+      required: true
+    track_key:
+      type: Any
+      required: true
+    normalized_state:
+      type: dict[str, NormalizedTraitState]
+      required: true
+    runtime_bundle:
+      type: RuntimeBundleMetadata
+      required: true
+    engine_runtime_contract_path:
+      type: str | Path
+      required: true
+  returns:
+    type: dict[str, Any]
+  exceptions:
+  - ReportingValidationError
+  side_effects: none
+- name: map_engine_output_to_normalized_shape
+  description: Convert scoring engine output into the shared finalize/export scoring
+    payload shape.
+  locked: false
+  inputs:
+    rubric:
+      type: dict[str, Any]
+      required: true
+    track_key:
+      type: Any
+      required: true
+    normalized_state:
+      type: dict[str, NormalizedTraitState]
+      required: true
+    engine_output:
+      type: dict[str, Any]
+      required: true
+    runtime_bundle:
+      type: RuntimeBundleMetadata
+      required: true
+  returns:
+    type: NormalizedTraitScoringPayload
+  exceptions: []
+  side_effects: none
+- name: __dir__
+  description: Return module attributes plus flattened public compatibility symbols
+    for editor and agent discovery.
+  locked: false
+  inputs: {}
+  returns:
+    type: list[str]
+  exceptions: []
+  side_effects: Imports remaining scoring/reporting compatibility modules.
+classes:
+- name: CandidateQualification
+  description: Normalized candidate education and prior experience details.
+  locked: false
+  attributes:
+    has_degree:
+      type: bool | None
+    degree_type:
+      type: str
+    degree_in_ece:
+      type: bool
+    ece_units_completed:
+      type: int | None
+    infant_toddler_class_completed:
+      type: bool
+    total_units_completed:
+      type: int | None
+    years_experience:
+      type: int | None
+  methods:
+  - name: to_dict
+    inputs: {}
+    returns:
+      type: dict[str, Any]
+  - name: from_dict
+    inputs:
+      payload:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: CandidateQualification
+- name: PlaceholderMeta
+  description: Metadata describing one placeholder token.
+  locked: false
+  attributes:
+    key:
+      type: str
+    label:
+      type: str
+    description:
+      type: str
+  methods: []
+- name: ReportingValidationError
+  description: Domain validation error raised during reporting/export operations.
+  locked: false
+  attributes: {}
+  methods: []
+- name: ScoringEngine
+  description: Static scoring workflow for interview trait evaluations.
+  locked: false
+  attributes: {}
+  methods:
+  - name: _coerce_raw_score
+    description: Coerce raw score candidate values into bounded integer values.
+    locked: false
+    inputs:
+      value:
+        type: Any
+        required: true
+    returns:
+      type: tuple[Optional[int], int]
+    exceptions: []
+    side_effects: none
+  - name: _get_track_config
+    description: Resolve and validate track configuration from rubric.
+    locked: false
+    inputs:
+      rubric:
+        type: dict[str, Any]
+        required: true
+      track_key:
+        type: Any
+        required: true
+    returns:
+      type: dict[str, Any]
+    exceptions:
+    - ReportingValidationError
+    side_effects: none
+  - name: _resolve_track_key_for_scoring
+    description: Resolve rubric track key from operator-selected track identifier.
+    locked: false
+    inputs:
+      rubric:
+        type: dict[str, Any]
+        required: true
+      track_key:
+        type: Any
+        required: true
+    returns:
+      type: str
+    exceptions:
+    - ReportingValidationError
+    side_effects: none
+  - name: _calculate_percent
+    description: Compute precise and rounded percentages.
+    locked: false
+    inputs:
+      weighted_total:
+        type: int
+        required: true
+      denominator:
+        type: int
+        required: true
+    returns:
+      type: tuple[Optional[Decimal], float]
+    exceptions: []
+    side_effects: none
+  - name: _is_critical_priority
+    description: Determine whether a trait priority should be treated as critical.
+    locked: false
+    inputs:
+      priority:
+        type: Any
+        required: true
+    returns:
+      type: bool
+    exceptions: []
+    side_effects: none
+  - name: evaluate
+    description: Evaluate human-confirmed trait raw scores as final scoring, attach
+      DeepSeek advisory signal scoring fields, detect incomplete scores and no-hire
+      overrides, and compute hiring outcome using skipped-aware thresholds.
+    locked: false
+    inputs:
+      rubric:
+        type: dict[str, Any]
+        required: true
+      track_key:
+        type: Any
+        required: true
+      trait_results:
+        type: dict[str, dict[str, Any]]
+        required: true
+    returns:
+      type: dict[str, Any]
+    exceptions:
+    - ReportingValidationError
+    side_effects: none
+- name: DraftManager
+  description: JSON draft persistence for interview sessions.
+  locked: false
+  attributes: {}
+  methods:
+  - name: __init__
+    description: Initialize draft/final output directories.
+    locked: false
+    inputs:
+      base_dir:
+        type: Path
+        required: true
+    returns:
+      type: Any
+    exceptions: []
+    side_effects: Creates draft and final directories.
+  - name: save_draft
+    description: Persist draft payload to timestamped JSON file.
+    locked: false
+    inputs:
+      payload:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: Path
+    exceptions:
+    - OSError
+    side_effects: Writes draft file to disk.
+  - name: load_draft
+    description: Load draft payload from JSON file.
+    locked: false
+    inputs:
+      path:
+        type: Path
+        required: true
+    returns:
+      type: dict[str, Any]
+    exceptions:
+    - OSError
+    - json.JSONDecodeError
+    side_effects: Reads draft file from disk.
+- name: DocxExporter
+  description: DOCX report exporter for finalized interview artifacts.
+  locked: false
+  attributes: {}
+  methods:
+  - name: __init__
+    description: Initialize report output directory.
+    locked: false
+    inputs:
+      output_dir:
+        type: Path
+        required: true
+    returns:
+      type: Any
+    exceptions: []
+    side_effects: Creates output directory.
+  - name: _require_candidate
+    description: Validate payload candidate object shape.
+    locked: false
+    inputs:
+      payload:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: dict[str, Any]
+    exceptions:
+    - ReportingValidationError
+    side_effects: none
+  - name: _require_candidate_field
+    description: Validate required candidate field and return normalized value.
+    locked: false
+    inputs:
+      candidate:
+        type: dict[str, Any]
+        required: true
+      field_name:
+        type: str
+        required: true
+    returns:
+      type: str
+    exceptions:
+    - ReportingValidationError
+    side_effects: none
+  - name: _extract_full_candidate_transcript
+    description: Collect full candidate transcript preferring per-flow Whisper transcript
+      text.
+    locked: false
+    inputs:
+      payload:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: export
+    description: |-
+      Generate finalized interview report document using the interview-notes
+      template layout: narrow margins, Times New Roman at no less than 12 pt, centered
+      title/subtitle, generated executive-summary and DeepSeek evidence-summary
+      sections, candidate snapshot and score tables, structured answer evidence
+      blocks (summary, evidence, rubric alignment, risk/gap) before full responses,
+      and trait detail sections that separate final interviewer raw/weighted scores
+      from DeepSeek advisory net signal score, suggested raw score, suggested weighted
+      score, model observations, auto-no-hire metadata, and compatibility selected
+      signal ids when present.
+    locked: false
+    inputs:
+      rubric:
+        type: dict[str, Any]
+        required: true
+      payload:
+        type: dict[str, Any]
+        required: true
+      scoring:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: Path
+    exceptions:
+    - ReportingValidationError
+    - OSError
+    side_effects: Writes DOCX report file to disk.
+- name: DirectorEmailDraftError
+  description: Raised when Outlook draft automation cannot be completed.
+  locked: false
+  attributes: {}
+  methods: []
+- name: DirectorReferralError
+  description: Raised when director referral packet delivery or endpoint validation
+    fails.
+  locked: false
+  attributes: {}
+  methods: []
+- name: OfferInput
+  description: Offer letter input payload including candidate, schedule, and compensation
+    details.
+  locked: false
+  attributes:
+    first_name:
+      type: str
+    last_name:
+      type: str
+    city:
+      type: str
+    position:
+      type: str
+    start_date:
+      type: date
+    start_time_12h:
+      type: str
+    end_time_12h:
+      type: str
+    hourly_pay:
+      type: float
+    hours:
+      type: int
+    created_on:
+      type: date
+  methods:
+  - name: pto
+    description: Computed PTO value for the base accrual tier.
+    locked: false
+    inputs: {}
+    returns:
+      type: int
+    exceptions: []
+    side_effects: none
+  - name: pto2
+    description: Computed PTO value for the higher accrual tier.
+    locked: false
+    inputs: {}
+    returns:
+      type: int
+    exceptions: []
+    side_effects: none
+  - name: offer_deadline
+    description: Offer acceptance deadline calculated from the creation date.
+    locked: false
+    inputs: {}
+    returns:
+      type: date
+    exceptions: []
+    side_effects: none
+- name: OfferTemplateError
+  description: Raised when an invalid offer template path or format is supplied.
+  locked: false
+  attributes: {}
+  methods: []
+- name: OfferLetterService
+  description: Offer letter template validation and placeholder rendering service.
+  locked: false
+  attributes:
+    ALLOWED_TEMPLATE_SUFFIXES:
+      type: set[str]
+    PLACEHOLDER_ORDER:
+      type: list[str]
+  methods:
+  - name: classify_employment_type
+    description: Classify weekly hours as full_time or part_time for template selection.
+    locked: false
+    inputs:
+      hours:
+        type: int
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: validate_template_path
+    description: Validate that an offer template exists and uses an allowed Word file
+      suffix.
+    locked: false
+    inputs:
+      path:
+        type: Path
+        required: true
+    returns:
+      type: None
+    exceptions:
+    - OfferTemplateError
+    side_effects: none
+  - name: build_replacements
+    description: Build placeholder replacements for an offer template.
+    locked: false
+    inputs:
+      data:
+        type: OfferInput
+        required: true
+    returns:
+      type: dict[str, str]
+    exceptions: []
+    side_effects: none
+  - name: render_offer
+    description: Render an offer document from a template path into the requested
+      output path.
+    locked: false
+    inputs:
+      template_path:
+        type: Path
+        required: true
+      output_path:
+        type: Path
+        required: true
+      data:
+        type: OfferInput
+        required: true
+    returns:
+      type: Path
+    exceptions:
+    - OfferTemplateError
+    side_effects: writes a Word document to disk
+  - name: _replace_document_text
+    description: Replace supported placeholders across document paragraphs and table
+      cells.
+    locked: false
+    inputs:
+      doc:
+        type: Document
+        required: true
+      replacements:
+        type: dict[str, str]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: mutates in-memory document content
+  - name: _replace_in_paragraph
+    description: Replace placeholders within a paragraph while preserving a single
+      merged text run.
+    locked: false
+    inputs:
+      paragraph:
+        type: Any
+        required: true
+      replacements:
+        type: dict[str, str]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: mutates in-memory paragraph runs
+- name: CanonicalSignalRecord
+  description: Dict-backed canonical signal record with comparison limited to stable
+    UI/adapter fields.
+  locked: false
+  attributes: {}
+  methods:
+  - name: __eq__
+    inputs:
+      other:
+        type: object
+        required: true
+    returns:
+      type: bool
+- name: CanonicalSignalGroupRecord
+  description: Dict-backed canonical signal group record with comparison limited to
+    group id, label, and signals.
+  locked: false
+  attributes: {}
+  methods:
+  - name: __eq__
+    inputs:
+      other:
+        type: object
+        required: true
+    returns:
+      type: bool
+data_structures:
+- name: TITLE_OPTIONS
+  description: Supported candidate honorific options.
+- name: DEFAULT_CANDIDATE_TITLE
+  description: Default candidate honorific used for unsupported input.
+- name: CANONICAL_DEGREE_TYPES
+  description: Supported normalized degree abbreviations.
+- name: REQUIRED_PACKET_DOCS
+  description: Required referral packet keys and labels.
+- name: OPTIONAL_PACKET_DOCS
+  description: Optional/deprecated referral packet keys retained for compatibility.
+- name: ALL_PACKET_DOCS
+  description: Ordered union of required and optional packet keys.
+- name: ALLOWED_DOC_EXTENSIONS
+  description: Allowed file suffixes for manually selected referral documents.
+- name: POSITION_OPTIONS
+  description: Supported offer-letter position labels.
+- name: DEFAULT_EXTENDED_GROUP_LABEL
+  description: Default label used for runtime extended trait signals without an explicit
+    category.
+- name: CanonicalSignal
+  description: Canonical in-memory signal shape shared by trait UI and adapter consumers.
+- name: CanonicalSignalGroup
+  description: Canonical grouped signal collection for extended trait UI rendering.
+- name: CANONICAL_SIGNAL_COMPARISON_KEYS
+  description: Stable canonical signal fields used for equality comparison.
+- name: DEFAULT_ENGINE_RUNTIME_CONTRACT
+  description: Default runtime contract path for trait-based scoring assets.
+- name: RUBRIC_TRAIT_ID_PATTERN
+  description: Regex pattern matching canonical rubric trait ids.
+- name: RUNTIME_TRAIT_ID_PATTERN
+  description: Regex pattern matching legacy runtime trait ids.
+- name: TraitDefinition
+  description: Runtime trait definition loaded from a configured trait JSON file.
+- name: SignalUIDefinition
+  description: Signal rendering metadata returned for one scored trait.
+- name: DEFAULT_CORE_DISPLAY_STYLE
+  description: Default display style for core trait signals.
+- name: DEFAULT_EXTENDED_DISPLAY_STYLE
+  description: Default display style for extended trait signals.
+- name: DEFAULT_CORE_SECTION_LABEL
+  description: Default UI section label for core trait signals.
+- name: DEFAULT_EXTENDED_SECTION_LABEL
+  description: Default UI section label for extended trait signals.
+- name: DEFAULT_EXTENDED_COLLAPSIBLE
+  description: Default setting for whether extended trait signal sections are collapsible.
+- name: DEFAULT_EXTENDED_DEFAULT_COLLAPSED
+  description: Default setting for whether extended trait signal sections start collapsed.
+- name: TRAIT_SELECTION_FIELDS
+  description: Accepted legacy trait signal-selection field names in priority order.
+- name: SELECTION_COLLECTION_TYPES
+  description: Accepted list-like collection types for legacy trait signal selections.
+- name: VALID_RAW_SCORES
+  description: Accepted interviewer raw score values.
+- name: CANONICAL_TRAIT_STATE_SCHEMA_VERSION
+  description: Schema version for normalized trait-state payloads.
+- name: OUTPUT_SCHEMA_VERSION
+  description: Schema version for normalized trait scoring output payloads.
+- name: DECISION_LABELS
+  description: Runtime scoring decision labels mapped to reporting outcome labels.
+- name: NormalizedTraitState
+  description: Canonical normalized trait-state object used for trait scoring.
+- name: RuntimeBundleMetadata
+  description: Scoring runtime metadata including resolved trait definitions and runtime
+    loading status.
+- name: NormalizedTraitScoringPayload
+  description: Shared finalize/export trait scoring payload shape.
+- name: PLACEHOLDER_PATTERN
+  description: Compiled expression matching double-braced template placeholders.
+- name: UNKNOWN_PLACEHOLDER_PRESERVE
+  description: Policy value that leaves unknown placeholders intact.
+- name: UNKNOWN_PLACEHOLDER_EMPTY
+  description: Policy value that renders unknown placeholders as empty text.
+- name: UNKNOWN_PLACEHOLDER_ERROR
+  description: Policy value that raises ValueError for unknown placeholders.
+- name: UNKNOWN_PLACEHOLDER_POLICIES
+  description: Allowed unknown placeholder rendering policies.
+- name: PLACEHOLDER_METADATA
+  description: Placeholder metadata keyed by canonical placeholder key.
+- name: PLACEHOLDERS_BY_CONTEXT
+  description: Ordered placeholder keys available for each template context.
+- name: _COMPAT_MODULES
+  description: Ordered tuple of remaining legacy module import paths exposed by scoring_reporting.
+- name: _WRAPPER_POLICY
+  description: Human-readable wrapper policy for remaining scoring/reporting compatibility
+    modules.
+dependencies:
+- module: platform_services
+- module: trait_scoring_adapter

@@ -1,7 +1,7 @@
 from datetime import date
 
-from onboarding_models import Employee, EmployeeTask
-from onboarding_ui_helpers import build_onboarding_overview, sorted_tasks_for_display, task_status
+from onboarding_operations import Employee, EmployeeTask
+from onboarding_operations import build_onboarding_overview, sorted_tasks_for_display, task_status
 
 
 def test_task_status_orders_urgency_levels():

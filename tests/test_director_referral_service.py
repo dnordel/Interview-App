@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import patch
 from pathlib import Path
 
-from director_referral_service import (
+from scoring_reporting import (
     DirectorReferralError,
     append_communication_log,
     build_director_packet,
@@ -60,7 +60,7 @@ class TestDirectorReferralService(unittest.TestCase):
         with self.assertRaises(DirectorReferralError):
             send_director_packet({"event": "director_referral_packet"}, "https://")
 
-    @patch("director_referral_service.request.urlopen")
+    @patch("scoring_reporting.request.urlopen")
     def test_send_director_packet_accepts_trusted_https_endpoint(self, mock_urlopen):
         mock_urlopen.return_value = _FakeResponse(status=201, body="accepted")
         result = send_director_packet(
