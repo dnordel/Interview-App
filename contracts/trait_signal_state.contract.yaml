@@ -1,0 +1,163 @@
+module:
+  name: trait_signal_state
+  language: python
+  path: src/trait_signal_state.py
+  version: 1.2.2
+  description: Deprecated compatibility wrapper for runtime-backed trait signal UI definitions and canonical checkbox selection helpers implemented by scoring_reporting.
+functions:
+- name: default_signal_ui_definition
+  description: Return the explicit contract-aligned default trait signal UI metadata used when runtime config is missing or trait definitions cannot be resolved.
+  locked: false
+  inputs:
+    trait_id:
+      type: str
+      required: true
+  returns:
+    type: SignalUIDefinition
+  exceptions: []
+  side_effects: none
+- name: load_trait_signal_ui_definition
+  description: Load runtime-backed signal rendering metadata for a scored trait screen
+    using the adapter-resolved trait-definition JSON source.
+  locked: false
+  inputs:
+    trait_id:
+      type: str
+      required: true
+    engine_module_contract_path:
+      type: str | Path
+      required: false
+      default: contracts/trait_based_scoring_engine.contract.yaml
+    engine_runtime_contract_path:
+      type: str | Path
+      required: false
+      default: Trait-Based Scoring/trait_based_scoring_contract.yaml
+  returns:
+    type: SignalUIDefinition
+  exceptions:
+  - ReportingValidationError
+  side_effects: Reads scoring runtime bundle assets from disk.
+- name: ensure_trait_signal_ui_definition
+  description: Load runtime-backed signal rendering metadata and raise a configuration error when a scored rubric trait has no runtime signal definition.
+  locked: false
+  inputs:
+    trait_id:
+      type: str
+      required: true
+    engine_module_contract_path:
+      type: str | Path
+      required: false
+      default: contracts/trait_based_scoring_engine.contract.yaml
+    engine_runtime_contract_path:
+      type: str | Path
+      required: false
+      default: Trait-Based Scoring/trait_based_scoring_contract.yaml
+  returns:
+    type: SignalUIDefinition
+  exceptions:
+  - ReportingValidationError
+  side_effects: Reads scoring runtime bundle assets from disk.
+- name: normalize_trait_signal_selection_state
+  description: Normalize trait checkbox selection compatibility variants into canonical
+    selected_signal_ids filtered to the trait runtime definition.
+  locked: false
+  inputs:
+    trait_state:
+      type: dict[str, Any] | None
+      required: true
+    valid_signal_ids:
+      type: list[str]
+      required: true
+  returns:
+    type: list[str]
+  exceptions: []
+  side_effects: none
+- name: write_canonical_selected_signal_ids
+  description: Persist canonical selected_signal_ids to trait state while removing
+    legacy compatibility fields.
+  locked: false
+  inputs:
+    trait_state:
+      type: dict[str, Any]
+      required: true
+    selected_signal_ids:
+      type: list[str]
+      required: true
+  returns:
+    type: None
+  exceptions: []
+  side_effects: Mutates the provided trait-state mapping.
+- name: count_selected_trait_checkbox_entries
+  description: Count selected trait checkbox entries across canonical and compatibility
+    selection payloads.
+  locked: false
+  inputs:
+    state:
+      type: dict[str, Any]
+      required: true
+    trait_id:
+      type: str
+      required: true
+  returns:
+    type: int
+  exceptions:
+  - ValueError
+  side_effects: none
+- name: resolve_trait_selection_value
+  description: Resolve the first supported trait checkbox-selection payload from a
+    trait state mapping.
+  locked: false
+  inputs:
+    state:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: Any
+  exceptions: []
+  side_effects: none
+- name: trait_requires_signal_selection
+  description: Determine whether finalize-aligned trait validation still requires
+    at least one selected signal checkbox.
+  locked: false
+  inputs:
+    raw_state:
+      type: dict[str, Any]
+      required: true
+    normalized_trait_state:
+      type: dict[str, Any]
+      required: true
+    trait_id:
+      type: str
+      required: true
+  returns:
+    type: bool
+  exceptions:
+  - ValueError
+  side_effects: none
+classes: []
+data_structures:
+- name: SignalUIDefinition
+  description: Signal rendering metadata returned for one scored trait.
+  fields:
+    trait_id:
+      type: str
+    core_display_style:
+      type: str
+    extended_display_style:
+      type: str
+    core_section_label:
+      type: str
+    extended_section_label:
+      type: str
+    extended_collapsible:
+      type: bool
+    extended_default_collapsed:
+      type: bool
+    core_signals:
+      type: list[dict[str, Any]]
+    extended_groups:
+      type: list[dict[str, Any]]
+    valid_signal_ids:
+      type: list[str]
+dependencies:
+- scoring_reporting

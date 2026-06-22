@@ -1,0 +1,134 @@
+module:
+  name: trait_definition_loader
+  language: python
+  path: src/trait_definition_loader.py
+  version: 1.1.1
+  description: Deprecated compatibility wrapper for runtime trait-definition resolution helpers implemented by scoring_reporting.
+functions:
+- name: load_trait_definitions_from_runtime_bundle
+  description: Resolve runtime trait definitions from resolved runtime bundle paths,
+    the runtime contract path, or bundled trait payload fallback data.
+  locked: false
+  inputs:
+    runtime_bundle:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: list[TraitDefinition]
+  exceptions: []
+  side_effects: May read configured runtime trait-definition JSON files from disk.
+- name: load_trait_definitions_from_contract
+  description: Resolve runtime trait definitions from the traits directory configured
+    by the runtime scoring contract.
+  locked: false
+  inputs:
+    runtime_contract_path:
+      type: str | Path
+      required: true
+  returns:
+    type: list[TraitDefinition]
+  exceptions: []
+  side_effects: Reads the runtime contract YAML and configured trait-definition JSON
+    files from disk.
+- name: load_trait_definitions_from_dir
+  description: Load trait definitions from a directory of runtime T*.json trait-definition
+    files.
+  locked: false
+  inputs:
+    traits_dir:
+      type: str | Path
+      required: true
+  returns:
+    type: list[TraitDefinition]
+  exceptions: []
+  side_effects: Reads runtime trait-definition JSON files from disk.
+- name: canonical_trait_id
+  description: Normalize rubric-style and legacy runtime trait identifiers into the
+    canonical rubric trait_<number> format.
+  locked: false
+  inputs:
+    trait_id:
+      type: Any
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: trait_id_aliases
+  description: Return canonical and legacy aliases for a trait identifier while preserving
+    deterministic order.
+  locked: false
+  inputs:
+    trait_id:
+      type: Any
+      required: true
+  returns:
+    type: list[str]
+  exceptions: []
+  side_effects: none
+- name: _resolve_traits_dir_from_bundle
+  description: Resolve the traits directory from runtime bundle resolved-path metadata
+    when available.
+  locked: false
+  inputs:
+    runtime_bundle:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: Path | None
+  exceptions: []
+  side_effects: none
+- name: _resolve_traits_dir_from_contract_payload
+  description: Resolve the traits directory from a runtime contract payload and contract
+    path.
+  locked: false
+  inputs:
+    contract_payload:
+      type: dict[str, Any]
+      required: true
+    runtime_contract_path:
+      type: str | Path
+      required: true
+  returns:
+    type: Path
+  exceptions: []
+  side_effects: none
+- name: _load_json
+  description: Load a JSON object from disk and coerce non-mapping payloads to an
+    empty mapping.
+  locked: false
+  inputs:
+    path:
+      type: Path
+      required: true
+  returns:
+    type: dict[str, Any]
+  exceptions: []
+  side_effects: Reads JSON files from disk.
+- name: _load_yaml
+  description: Load a YAML object from disk and coerce non-mapping payloads to an
+    empty mapping.
+  locked: false
+  inputs:
+    path:
+      type: Path
+      required: true
+  returns:
+    type: dict[str, Any]
+  exceptions: []
+  side_effects: Reads YAML files from disk.
+classes: []
+data_structures:
+- name: TraitDefinition
+  description: Runtime trait definition loaded from a configured trait JSON file.
+  fields:
+    trait_id:
+      type: str
+    core_signals:
+      type: list[dict[str, Any]]
+    extended_signal_groups:
+      type: list[dict[str, Any]]
+    trait_aliases:
+      type: list[str]
+dependencies:
+- scoring_reporting

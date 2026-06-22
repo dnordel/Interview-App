@@ -152,6 +152,32 @@ def _deepseek_worker_lock(job_path: Path):
                 pass
 
 
+def _deepseek_status_value(value: Any) -> str:
+    return str(value or "").strip().lower()
+
+
+def _deepseek_generated(payload: dict[str, Any]) -> bool:
+    return any(
+        _deepseek_status_value(payload.get(key)) in {"generated", "partial"}
+        for key in ("summary_status", "model_suggestion_status", "model_scoring_status")
+    )
+
+
+def _deepseek_complete(payload: dict[str, Any]) -> bool:
+    return (
+        _deepseek_status_value(payload.get("summary_status")) == "generated"
+        and _deepseek_status_value(payload.get("model_scoring_status")) == "generated"
+    )
+
+
+def _deepseek_history_status(payload: dict[str, Any]) -> tuple[str, str]:
+    if _deepseek_complete(payload):
+        return "complete", ""
+    if _deepseek_generated(payload):
+        return "partial", "DeepSeek processing partially completed."
+    return "failed", "DeepSeek processing failed to generate output."
+
+
 def _run_job_unlocked(job: dict[str, Any], job_path: Path) -> None:
     payload = dict(job.get("payload", {}) or {})
     scoring = dict(job.get("scoring", {}) or {})
@@ -161,17 +187,18 @@ def _run_job_unlocked(job: dict[str, Any], job_path: Path) -> None:
     trait_inputs = payload.get("trait_inputs", {}) if isinstance(payload.get("trait_inputs"), dict) else {}
 
     config = build_deepseek_summary_config(job.get("deepseek_settings", {}) if isinstance(job.get("deepseek_settings"), dict) else {})
-    payload.update(generate_deepseek_interview_summaries(flow_transcript, candidate, config=config))
     payload.update(generate_deepseek_trait_signal_suggestions(flow_transcript, trait_inputs, rubric=rubric, config=config))
     payload["trait_inputs"] = trait_inputs
 
     track = str(candidate.get("track", "") or "")
     if track:
         scoring = ScoringEngine.evaluate(rubric, track, trait_inputs)
+    payload.update(generate_deepseek_interview_summaries(flow_transcript, candidate, scoring=scoring, config=config))
 
     report_path = Path(str(job.get("report_path", "")).strip())
     output_dir = report_path.parent if str(report_path) else Path(str(job.get("base_dir", "."))) / "Indeed Interview Notes"
     out_path = DocxExporter(output_dir).export(rubric, payload, scoring)
+    processing_status, processing_warning = _deepseek_history_status(payload)
     _update_history(
         job,
         {
@@ -179,8 +206,8 @@ def _run_job_unlocked(job: dict[str, Any], job_path: Path) -> None:
             "determination": scoring.get("outcome", ""),
             "saved_report_path": str(out_path),
             "interview_notes_path": str(out_path),
-            "deepseek_processing_status": "complete",
-            "deepseek_processing_warning": "",
+            "deepseek_processing_status": processing_status,
+            "deepseek_processing_warning": processing_warning,
             "deepseek_completed_at": _utc_timestamp(),
         },
     )

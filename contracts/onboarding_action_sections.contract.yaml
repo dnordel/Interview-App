@@ -1,0 +1,52 @@
+module:
+  name: onboarding_action_sections
+  language: python
+  path: src/onboarding_action_sections.py
+  version: 1.1.1
+  description: Compatibility wrapper for declarative action-section metadata now implemented
+    by onboarding_operations.
+functions:
+- name: onboarding_action_sections
+  description: Returns intent-grouped onboarding action sections ordered for daily
+    operator workflows.
+  locked: false
+  inputs: {}
+  returns:
+    type: tuple[ActionSectionSpec, ...]
+  exceptions: []
+  side_effects: none
+classes:
+- name: ActionItemSpec
+  description: Immutable action button metadata including command routing and helper
+    copy.
+  locked: false
+  attributes:
+    label:
+      type: str
+    command_name:
+      type: str
+    emphasis:
+      type: ActionEmphasis
+    metrics_key:
+      type: str | None
+    helper_text:
+      type: str
+    shortcut_hint:
+      type: str
+  methods: []
+- name: ActionSectionSpec
+  description: Immutable grouping metadata for related onboarding actions.
+  locked: false
+  attributes:
+    title:
+      type: str
+    helper_text:
+      type: str
+    actions:
+      type: tuple[ActionItemSpec, ...]
+  methods: []
+data_structures:
+- name: ActionEmphasis
+  type: Literal["primary", "secondary"]
+dependencies:
+- module: onboarding_operations

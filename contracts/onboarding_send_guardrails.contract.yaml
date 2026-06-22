@@ -1,0 +1,72 @@
+module:
+  name: onboarding_send_guardrails
+  language: python
+  path: src/onboarding_send_guardrails.py
+  version: 1.0.1
+  description: Compatibility wrapper for onboarding send guardrails now implemented
+    by onboarding_operations.
+functions:
+- name: split_and_validate_recipients
+  description: split_and_validate_recipients function in onboarding_send_guardrails.
+  locked: false
+  inputs:
+    raw:
+      type: str
+      required: true
+  returns:
+    type: tuple[list[str], list[str]]
+  exceptions: []
+  side_effects: none
+- name: recipient_warning_text
+  description: recipient_warning_text function in onboarding_send_guardrails.
+  locked: false
+  inputs:
+    raw:
+      type: str
+      required: true
+    channel_label:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: validate_sender_email
+  description: validate_sender_email function in onboarding_send_guardrails.
+  locked: false
+  inputs:
+    value:
+      type: str
+      required: true
+  returns:
+    type: tuple[bool, str | None]
+  exceptions: []
+  side_effects: none
+- name: reminder_send_estimate
+  description: reminder_send_estimate function in onboarding_send_guardrails.
+  locked: false
+  inputs:
+    result:
+      type: Any
+      required: true
+  returns:
+    type: dict[str, int]
+  exceptions: []
+  side_effects: none
+- name: unknown_placeholder_actionable_message
+  description: unknown_placeholder_actionable_message function in onboarding_send_guardrails.
+  locked: false
+  inputs:
+    unknown:
+      type: dict[str, set[str]]
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+classes: []
+data_structures:
+- name: _EMAIL_PATTERN
+  type: constant
+dependencies:
+- module: onboarding_operations

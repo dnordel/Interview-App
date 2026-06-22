@@ -1009,12 +1009,12 @@ class DeepSeekSummaryConfig:
     enabled: bool
     api_key: str
     base_url: str = "http://127.0.0.1:11434/v1"
-    model: str = "deepseek-r1:1.5b"
-    timeout_seconds: float = 20.0
+    model: str = "deepseek-r1:8b"
+    timeout_seconds: float = 120.0
 
 
 _LOCAL_DEEPSEEK_BASE_URL = "http://127.0.0.1:11434/v1"
-_LOCAL_DEEPSEEK_MODEL = "deepseek-r1:1.5b"
+_LOCAL_DEEPSEEK_MODEL = "deepseek-r1:8b"
 _LOCAL_DEEPSEEK_API_KEY = "ollama"
 _LOCAL_DEEPSEEK_HOSTS = {"127.0.0.1", "localhost", "::1"}
 _DEEPSEEK_TEXT_LIMITS = {
@@ -1062,7 +1062,7 @@ def build_deepseek_summary_config(env: Mapping[str, str] | None = None) -> DeepS
     enabled = _env_flag(source.get("DEEPSEEK_SUMMARY_ENABLED"), False)
     base_url = _local_deepseek_base_url(source.get("DEEPSEEK_API_BASE_URL"))
     model = str(source.get("DEEPSEEK_SUMMARY_MODEL", "") or _LOCAL_DEEPSEEK_MODEL).strip()
-    timeout = _env_float(source.get("DEEPSEEK_SUMMARY_TIMEOUT_SECONDS"), 20.0)
+    timeout = _env_float(source.get("DEEPSEEK_SUMMARY_TIMEOUT_SECONDS"), 120.0)
     return DeepSeekSummaryConfig(
         enabled=enabled and bool(api_key),
         api_key=api_key,
@@ -1172,31 +1172,101 @@ def _deepseek_answer_summary_messages(items: list[dict[str, Any]], candidate: di
 def _deepseek_executive_summary_messages(
     answer_summaries: list[dict[str, Any]],
     candidate: dict[str, Any],
+    scoring: dict[str, Any] | None = None,
+    transcript_items: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, str]]:
-    payload = {"candidate": _candidate_deepseek_context(candidate), "answer_evidence": answer_summaries}
+    candidate_context = _candidate_deepseek_context(candidate)
     return [
         {
             "role": "system",
             "content": (
-                "You write the executive summary section for a preschool teacher interview report. "
-                "Return only one JSON object. Do not use markdown. Do not reveal reasoning. Do not echo input. "
-                "Use only supplied answer_evidence. Do not invent facts, generic praise, or a hiring decision."
+                "You are an expert hiring analyst and structured interview evaluator writing the executive summary section. "
+                "Return only one JSON object. Do not use markdown. Do not reveal reasoning. "
+                "Do not invent facts that are not in the transcript, scores, role context, or answer summaries."
             ),
         },
         {
             "role": "user",
             "content": (
-                "Write a concise evidence-first executive summary for Little People's Landing. Required output schema: "
+                "Use this executive summary template and write in a professional hiring tone.\n\n"
+                f"JOB TITLE:\n{candidate_context.get('track') or 'Unspecified role'}\n\n"
+                f"CANDIDATE NAME:\n{candidate_context.get('name') or 'Candidate'}\n\n"
+                f"INTERVIEW TRANSCRIPT:\n{_format_deepseek_transcript_for_prompt(transcript_items or [])}\n\n"
+                f"QUESTION SCORES / RATINGS:\n{_format_deepseek_scoring_for_prompt(scoring)}\n\n"
+                "DEEPSEEK ANSWER SUMMARIES:\n"
+                f"{json.dumps(answer_summaries, ensure_ascii=False)}\n\n"
+                "OPTIONAL ROLE CONTEXT OR RUBRIC:\n"
+                "Tailor summary to role. For preschool/lead/infant-toddler roles emphasize child-centeredness, "
+                "classroom management, warmth, safety, supervision, parent communication, reliability, "
+                "developmentally appropriate practice, routines, mentoring, and compliance as applicable.\n\n"
+                "Executive Summary Requirements:\n"
+                "1. Overall Recommendation: Strongly Recommend, Recommend, Recommend with Reservations, "
+                "Do Not Recommend, or Insufficient Information. Base this on transcript and scores.\n"
+                "2. Overall Fit Summary: one concise paragraph.\n"
+                "3. Key Strengths: 3 to 5 evidence-grounded strengths.\n"
+                "4. Key Concerns or Risks: 2 to 4 concerns or verification areas.\n"
+                "5. Role-Specific Analysis: match to specific role demands.\n"
+                "6. Score Pattern Analysis: highest/lowest areas, consistency, score/transcript mismatches.\n"
+                "7. Suggested Follow-Up Questions: 3 to 5 targeted questions.\n"
+                "8. Final Hiring Notes: short practical conclusion.\n\n"
+                "Important Writing Rules: be specific and evidence-based; do not overstate confidence; "
+                "do not include long quotes; do not mention AI; do not produce a full question-by-question report.\n\n"
+                "Required JSON output schema: "
                 '{"executive_summary": string, "interview_highlights": string[]}. '
-                "Rules: executive_summary is 2-4 concise bullets or sentences grounded in evidence; "
-                "interview_highlights are 0-5 concrete behavior/evidence bullets; include risks/gaps when evidence is weak. Data: "
-                f"{json.dumps(payload, ensure_ascii=False)}"
+                "Put complete markdown-formatted executive summary in executive_summary using these headings: "
+                "Recommendation, Overall Fit, Key Strengths, Key Concerns or Risks, Role-Specific Analysis, "
+                "Score Pattern Analysis, Suggested Follow-Up Questions, Final Hiring Notes. "
+                "Use interview_highlights for 0-5 concrete evidence bullets."
             ),
         },
     ]
 
 
+def _format_deepseek_transcript_for_prompt(items: list[dict[str, Any]]) -> str:
+    lines: list[str] = []
+    for item in items:
+        question = str(item.get("question") or item.get("title") or "").strip()
+        transcript = str(item.get("candidate_transcript") or "").strip()
+        if not transcript:
+            continue
+        label = f"Q{item.get('flow_index')}: {question}".strip()
+        lines.append(f"{label}\n{transcript}")
+    return "\n\n".join(lines) or "No transcript provided."
+
+
+def _format_deepseek_scoring_for_prompt(scoring: dict[str, Any] | None) -> str:
+    if not isinstance(scoring, dict) or not scoring:
+        return "No scoring provided."
+    summary = {
+        "outcome": scoring.get("outcome"),
+        "percent_of_max": scoring.get("percent_of_max"),
+        "weighted_total": scoring.get("weighted_total"),
+        "max_weighted_total": scoring.get("max_weighted_total"),
+    }
+    rows: list[dict[str, Any]] = []
+    for row in scoring.get("rows", []) or []:
+        if not isinstance(row, dict):
+            continue
+        rows.append(
+            {
+                "trait": row.get("name") or row.get("trait_id") or row.get("id"),
+                "interviewer_raw_score": row.get("raw_score"),
+                "interviewer_weighted_score": row.get("calculated_score"),
+                "deepseek_raw_score": row.get("deepseek_raw_score"),
+                "deepseek_weighted_score": row.get("deepseek_calculated_score"),
+                "deepseek_rationale": (row.get("model_trait_score") or {}).get("rationale")
+                if isinstance(row.get("model_trait_score"), dict)
+                else None,
+            }
+        )
+    return json.dumps({"summary": summary, "rows": rows}, ensure_ascii=False)
+
+
 def _request_deepseek_chat_completion(config: DeepSeekSummaryConfig, messages: list[dict[str, str]]) -> dict[str, Any]:
+    parsed_base_url = urllib.parse.urlparse(config.base_url)
+    if parsed_base_url.hostname in _LOCAL_DEEPSEEK_HOSTS:
+        return _request_local_ollama_json_completion(config, messages)
+
     body = {
         "model": config.model,
         "messages": messages,
@@ -1216,6 +1286,40 @@ def _request_deepseek_chat_completion(config: DeepSeekSummaryConfig, messages: l
     )
     with urllib.request.urlopen(request, timeout=config.timeout_seconds) as response:
         return json.loads(response.read().decode("utf-8"))
+
+
+def _request_local_ollama_json_completion(config: DeepSeekSummaryConfig, messages: list[dict[str, str]]) -> dict[str, Any]:
+    parsed_base_url = urllib.parse.urlparse(config.base_url)
+    host = parsed_base_url.netloc or "127.0.0.1:11434"
+    scheme = parsed_base_url.scheme or "http"
+    prompt_parts = []
+    for message in messages:
+        role = str(message.get("role") or "user").strip().upper()
+        content = str(message.get("content") or "").strip()
+        if content:
+            prompt_parts.append(f"{role}:\n{content}")
+    prompt_parts.append("ASSISTANT:\nReturn exactly one valid JSON object. No markdown.")
+    body = {
+        "model": config.model,
+        "prompt": "\n\n".join(prompt_parts),
+        "stream": False,
+        "format": "json",
+        "options": {
+            "temperature": 0,
+            "num_ctx": 32768,
+            "num_predict": 2048,
+        },
+    }
+    request = urllib.request.Request(
+        f"{scheme}://{host}/api/generate",
+        data=json.dumps(body).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(request, timeout=config.timeout_seconds) as response:
+        parsed = json.loads(response.read().decode("utf-8"))
+    content = str(parsed.get("response") or "").strip() if isinstance(parsed, dict) else ""
+    return {"choices": [{"message": {"content": content}}]}
 
 
 def _extract_deepseek_content(response: dict[str, Any]) -> str:
@@ -1287,6 +1391,7 @@ def _normalize_deepseek_answer_summary_payload(content: str, valid_flow_indices:
         raise ValueError("DeepSeek answer summary response missing required fields.")
     answer_summaries: list[dict[str, Any]] = []
     seen_flow_indices: set[Any] = set()
+    valid_by_text = {str(flow_index): flow_index for flow_index in valid_flow_indices}
     raw_summaries = parsed.get("answer_summaries", [])
     if not isinstance(raw_summaries, list):
         raise ValueError("DeepSeek answer summary response answer_summaries was not a list.")
@@ -1294,7 +1399,7 @@ def _normalize_deepseek_answer_summary_payload(content: str, valid_flow_indices:
         for item in raw_summaries:
             if not isinstance(item, dict):
                 continue
-            flow_index = item.get("flow_index")
+            flow_index = valid_by_text.get(str(item.get("flow_index")), item.get("flow_index"))
             summary = _clamp_deepseek_text(item.get("summary"), "summary")
             if flow_index not in valid_flow_indices or flow_index in seen_flow_indices or not summary:
                 continue
@@ -1352,6 +1457,7 @@ def generate_deepseek_interview_summaries(
     candidate: dict[str, Any],
     config: DeepSeekSummaryConfig | None = None,
     chat_completion: Optional[Callable[[DeepSeekSummaryConfig, list[dict[str, str]]], dict[str, Any]]] = None,
+    scoring: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     active_config = config or build_deepseek_summary_config()
     if not active_config.enabled:
@@ -1361,16 +1467,28 @@ def generate_deepseek_interview_summaries(
     if not items:
         return _blank_deepseek_summary("no_transcript", "No candidate transcript available for DeepSeek summary.")
 
+    answer_summaries: list[dict[str, Any]] = []
+    warnings: list[str] = []
+    first_error_type = ""
     try:
-        answer_messages = _deepseek_answer_summary_messages(items, candidate)
-        answer_completion = (
-            chat_completion(active_config, answer_messages)
-            if chat_completion
-            else _request_deepseek_chat_completion(active_config, answer_messages)
-        )
-        answer_content = _extract_deepseek_content(answer_completion)
-        answer_summaries = _normalize_deepseek_answer_summary_payload(answer_content, {item["flow_index"] for item in items})
-        executive_messages = _deepseek_executive_summary_messages(answer_summaries, candidate)
+        for item in items:
+            try:
+                answer_messages = _deepseek_answer_summary_messages([item], candidate)
+                answer_completion = (
+                    chat_completion(active_config, answer_messages)
+                    if chat_completion
+                    else _request_deepseek_chat_completion(active_config, answer_messages)
+                )
+                answer_content = _extract_deepseek_content(answer_completion)
+                answer_summaries.extend(_normalize_deepseek_answer_summary_payload(answer_content, {item["flow_index"]}))
+            except Exception as exc:
+                if not first_error_type:
+                    first_error_type = type(exc).__name__
+                warnings.append(f"DeepSeek answer summary failed: {type(exc).__name__}")
+                logger.warning("DeepSeek answer summary generation failed: %s", type(exc).__name__)
+        if not answer_summaries:
+            return _blank_deepseek_summary("failed", f"DeepSeek summary failed: {first_error_type or 'ValueError'}")
+        executive_messages = _deepseek_executive_summary_messages(answer_summaries, candidate, scoring, items)
         executive_completion = (
             chat_completion(active_config, executive_messages)
             if chat_completion
@@ -1384,10 +1502,18 @@ def generate_deepseek_interview_summaries(
             "executive_summary": executive["executive_summary"],
             "interview_highlights": executive["interview_highlights"],
             "summary_status": "generated" if has_summary_output else "failed",
-            "summary_warnings": [] if has_summary_output else ["DeepSeek summary response was empty."],
+            "summary_warnings": warnings if has_summary_output else ["DeepSeek summary response was empty."],
         }
     except Exception as exc:
         logger.warning("DeepSeek summary generation failed: %s", type(exc).__name__)
+        if answer_summaries:
+            return {
+                "answer_summaries": answer_summaries,
+                "executive_summary": "",
+                "interview_highlights": [],
+                "summary_status": "generated",
+                "summary_warnings": [*warnings, f"DeepSeek executive summary failed: {type(exc).__name__}"],
+            }
         return _blank_deepseek_summary("failed", f"DeepSeek summary failed: {type(exc).__name__}")
 
 
@@ -1530,7 +1656,8 @@ def _deepseek_trait_scoring_messages(items: list[dict[str, Any]], rubric: dict[s
         {
             "role": "system",
             "content": (
-                "Score preschool teacher interview trait answers using rubric.json descriptors. "
+                "You are a strict JSON scoring API. Score preschool teacher interview trait answers "
+                "using rubric.json descriptors. "
                 "Return only one JSON object. Do not use markdown. Do not reveal reasoning. Do not echo input. "
                 "Use only candidate_transcript and rubric descriptors. Raw score must be integer 1-5 where 5 is best. "
                 "Do not invent evidence, do not replace interviewer score, and do not make hiring decisions."
@@ -1543,7 +1670,8 @@ def _deepseek_trait_scoring_messages(items: list[dict[str, Any]], rubric: dict[s
                 '{"trait_scores": [{"trait_id": string, "raw_score": number, "evidence_quote": string, '
                 '"rationale": string, "risks_or_gaps": string}]}. '
                 "Rules: choose 1, 2, 3, 4, or 5 only; 5 is best; evidence_quote must be exact short candidate wording; "
-                "rationale must cite descriptor match; risks_or_gaps names missing evidence or disqualifier risk if present. Data: "
+                "rationale must cite descriptor match; risks_or_gaps names missing evidence or disqualifier risk if present. "
+                "Return no keys except trait_scores. Data: "
                 f"{json.dumps(payload, ensure_ascii=False)}"
             ),
         },
@@ -1617,6 +1745,14 @@ def _normalize_deepseek_trait_score_payload(
     }
 
 
+def _deepseek_generation_status(output: dict[str, Any], attempted_count: int) -> str:
+    if not output:
+        return "failed"
+    if len(output) < attempted_count:
+        return "partial"
+    return "generated"
+
+
 def _dedupe_deepseek_suggestions(suggestions: Any) -> list[dict[str, Any]]:
     if not isinstance(suggestions, list):
         return []
@@ -1655,41 +1791,61 @@ def generate_deepseek_trait_signal_suggestions(
             "no_transcript",
             "No trait transcript with runtime signal definitions available for DeepSeek suggestions.",
         )
-    messages = _deepseek_trait_suggestion_messages(items)
-    try:
-        completion = chat_completion(active_config, messages) if chat_completion else _request_deepseek_chat_completion(active_config, messages)
-        content = _extract_deepseek_content(completion)
-        result = _normalize_deepseek_trait_suggestion_payload(content, valid_ids_by_trait)
-    except Exception as exc:
-        logger.warning("DeepSeek trait suggestion generation failed: %s", type(exc).__name__)
-        return _blank_deepseek_trait_suggestions("failed", f"DeepSeek trait suggestions failed: {type(exc).__name__}")
 
-    suggestions_by_trait = result["model_signal_suggestions_by_trait"]
+    suggestions_by_trait: dict[str, list[dict[str, Any]]] = {}
+    suggestion_warnings: list[str] = []
+    for item in items:
+        trait_id = str(item.get("trait_id") or "").strip()
+        messages = _deepseek_trait_suggestion_messages([item])
+        try:
+            completion = chat_completion(active_config, messages) if chat_completion else _request_deepseek_chat_completion(active_config, messages)
+            content = _extract_deepseek_content(completion)
+            result = _normalize_deepseek_trait_suggestion_payload(content, {trait_id: valid_ids_by_trait.get(trait_id, [])})
+            suggestions_by_trait.update(result["model_signal_suggestions_by_trait"])
+        except Exception as exc:
+            logger.warning("DeepSeek trait suggestion generation failed: %s", type(exc).__name__)
+            suggestion_warnings.append(f"DeepSeek trait suggestions failed: {type(exc).__name__}")
+
     for trait_id, suggestions in suggestions_by_trait.items():
         state = trait_state.setdefault(trait_id, {})
         write_canonical_model_signal_suggestions(state, suggestions)
-    try:
-        score_messages = _deepseek_trait_scoring_messages(items, rubric)
-        score_completion = (
-            chat_completion(active_config, score_messages)
-            if chat_completion
-            else _request_deepseek_chat_completion(active_config, score_messages)
-        )
-        score_content = _extract_deepseek_content(score_completion)
-        score_result = _normalize_deepseek_trait_score_payload(score_content, set(valid_ids_by_trait))
-    except Exception as exc:
-        logger.warning("DeepSeek trait scoring failed: %s", type(exc).__name__)
-        score_result = {
-            "model_trait_scores_by_trait": {},
-            "model_scoring_status": "failed",
-            "model_scoring_warnings": [f"DeepSeek trait scoring failed: {type(exc).__name__}"],
-        }
-    for trait_id, score in score_result["model_trait_scores_by_trait"].items():
+
+    scores_by_trait: dict[str, dict[str, Any]] = {}
+    scoring_warnings: list[str] = []
+    for item in items:
+        trait_id = str(item.get("trait_id") or "").strip()
+        try:
+            score_messages = _deepseek_trait_scoring_messages([item], rubric)
+            score_completion = (
+                chat_completion(active_config, score_messages)
+                if chat_completion
+                else _request_deepseek_chat_completion(active_config, score_messages)
+            )
+            score_content = _extract_deepseek_content(score_completion)
+            score_result = _normalize_deepseek_trait_score_payload(score_content, {trait_id})
+            scores_by_trait.update(score_result["model_trait_scores_by_trait"])
+        except Exception as exc:
+            logger.warning("DeepSeek trait scoring failed: %s", type(exc).__name__)
+            scoring_warnings.append(f"DeepSeek trait scoring failed: {type(exc).__name__}")
+
+    for trait_id, score in scores_by_trait.items():
         state = trait_state.setdefault(trait_id, {})
         state["model_trait_score"] = score
         state["deepseek_raw_score"] = score["raw_score"]
-    result.update(score_result)
-    return result
+    suggestion_status = _deepseek_generation_status(suggestions_by_trait, len(items))
+    scoring_status = _deepseek_generation_status(scores_by_trait, len(items))
+    if suggestion_status == "failed" and not suggestion_warnings:
+        suggestion_warnings.append("DeepSeek trait suggestion response was empty.")
+    if scoring_status == "failed" and not scoring_warnings:
+        scoring_warnings.append("DeepSeek trait scoring response was empty.")
+    return {
+        "model_signal_suggestions_by_trait": suggestions_by_trait,
+        "model_suggestion_status": suggestion_status,
+        "model_suggestion_warnings": suggestion_warnings,
+        "model_trait_scores_by_trait": scores_by_trait,
+        "model_scoring_status": scoring_status,
+        "model_scoring_warnings": scoring_warnings,
+    }
 
 
 class TranscriptionQueueState:
@@ -2502,13 +2658,6 @@ def build_finalize_context(
         trait_inputs = {}
     if run_deepseek:
         deepseek_config = build_deepseek_summary_config(_deepseek_config_source_from_app(app))
-        payload.update(
-            generate_deepseek_interview_summaries(
-                flow_tx,
-                payload.get("candidate", {}) if isinstance(payload.get("candidate"), dict) else {},
-                config=deepseek_config,
-            )
-        )
         suggestion_result = generate_deepseek_trait_signal_suggestions(
             flow_tx,
             trait_inputs,
@@ -2516,6 +2665,14 @@ def build_finalize_context(
             config=deepseek_config,
         )
         payload.update(suggestion_result)
+        payload.update(
+            generate_deepseek_interview_summaries(
+                flow_tx,
+                payload.get("candidate", {}) if isinstance(payload.get("candidate"), dict) else {},
+                scoring=scoring,
+                config=deepseek_config,
+            )
+        )
     else:
         payload.update(_deepseek_processing_payload())
     payload["trait_inputs"] = trait_inputs

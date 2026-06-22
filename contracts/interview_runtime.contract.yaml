@@ -2,7 +2,7 @@ module:
   name: interview_runtime
   language: python
   path: src/interview_runtime.py
-  version: 0.15.0
+  version: 0.16.0
   description: Flattened public interface for interview state, session management,
     audio/transcription runtime, transcript summary seam, controllers, history, and
     finalize pipeline; only active legacy adapters remain in the compatibility module
@@ -257,7 +257,7 @@ functions:
   side_effects: May initialize cached transformers pipeline.
 - name: build_deepseek_summary_config
   description: Build local DeepSeek interview summary config from environment values,
-    defaulting to Ollama at 127.0.0.1 and the smallest local DeepSeek model while
+    defaulting to Ollama at 127.0.0.1 and the configured local 8b DeepSeek model while
     rejecting non-local base URLs.
   locked: false
   inputs:
@@ -269,13 +269,31 @@ functions:
     type: DeepSeekSummaryConfig
   exceptions: []
   side_effects: Reads process environment when env is null.
+- name: _request_local_ollama_json_completion
+  description: Send a local Ollama native /api/generate request with JSON format enabled
+    and adapt the response into the chat-completion shape used by DeepSeek parsing.
+  locked: false
+  inputs:
+    config:
+      type: DeepSeekSummaryConfig
+      required: true
+    messages:
+      type: list[dict[str, str]]
+      required: true
+  returns:
+    type: dict[str, Any]
+  exceptions:
+  - OSError
+  - json.JSONDecodeError
+  side_effects: Sends transcript-bearing prompt text only to a local Ollama host.
 - name: generate_deepseek_interview_summaries
-  description: Generate degraded, failed, or DeepSeek-backed finalize summaries
-    using separate prompts for individual answer evidence summaries and the executive
-    summary section; prompts are evidence-first, preschool-domain aware, reject
-    generic/invented claims, and accept plain, fenced, commented, or R1-think-wrapped
-    JSON object responses from local Ollama while validating required schema fields
-    fail-closed.
+  description: Generate degraded, failed, or DeepSeek-backed finalize summaries using
+    one small prompt per transcripted answer plus a separate executive summary prompt
+    based on the hiring-analyst template; executive-summary prompts include transcript,
+    candidate, answer-summary, and optional scoring context. Prompts are evidence-first,
+    role-aware, reject generic/invented claims, and validate JSON object responses
+    fail-closed while retaining successful answer summaries when another answer or
+    executive summary call fails.
   locked: false
   inputs:
     flow_transcript:
@@ -292,6 +310,10 @@ functions:
       type: Optional[Callable[[DeepSeekSummaryConfig, list[dict[str, str]]], dict[str, Any]]]
       required: false
       default: null
+    scoring:
+      type: dict[str, Any] | None
+      required: false
+      default: null
   returns:
     type: dict[str, Any]
     description: Contains answer_summaries, executive_summary, interview_highlights,
@@ -302,11 +324,10 @@ functions:
 - name: generate_deepseek_trait_signal_suggestions
   description: Generate degraded, failed, or DeepSeek-backed model trait observation
     suggestions and advisory 1-5 raw trait scores keyed by trait id without changing
-    human raw scores or compatibility selected_signal_ids; prompts receive rubric.json
-    scoring descriptors plus matching Trait-Based Scoring JSON signal definitions,
-    state that signals are DeepSeek-only advisory scoring evidence, and accept plain,
-    fenced, commented, or R1-think-wrapped JSON object responses while validating
-    schema fields fail-closed.
+    human raw scores or compatibility selected_signal_ids; each trait is requested
+    independently for signal suggestions and advisory raw scoring so one local Ollama
+    failure cannot suppress remaining trait output. Status values may be generated,
+    partial, failed, disabled, or no_transcript.
   locked: false
   inputs:
     flow_transcript:
@@ -459,9 +480,10 @@ functions:
   side_effects: Probes local ffmpeg audio devices when available.
 - name: build_finalize_context
   description: Build finalize payload, timestamp-split flow transcript, transcript
-    metadata, DeepSeek answer-summary/executive-summary fields or processing placeholders,
-    model trait suggestions, advisory model trait scores, and legacy empty transcript
-    path from app state.
+    metadata, model trait suggestions, advisory model trait scores, DeepSeek answer-summary/executive-summary
+    fields or processing placeholders, and legacy empty transcript path from app state;
+    local DeepSeek executive-summary prompts receive scoring context after advisory
+    model scoring is processed.
   locked: false
   inputs:
     app:

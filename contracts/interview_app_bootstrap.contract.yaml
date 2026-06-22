@@ -2,11 +2,11 @@ module:
   name: interview_app_bootstrap
   language: python
   path: src/interview_app/bootstrap.py
-  version: 1.2.0
+  version: 1.2.1
   description: Contracts for bootstrap module.
 functions:
 - name: build_default_settings
-  description: Build default Tk app settings, including local Ollama DeepSeek summary
+  description: Build default Tk app settings, including local Ollama deepseek-r1:8b summary
     defaults for finalize-time executive summary, interview highlights, and answer
     summaries.
   locked: false

@@ -2,7 +2,7 @@ module:
   name: deepseek_finalize_worker
   language: python
   path: src/deepseek_finalize_worker.py
-  version: 1.2.0
+  version: 1.2.2
   description: Detached local DeepSeek finalize worker that refreshes interview notes
     documents and history status after the GUI finalize flow returns, keeping DeepSeek
     signal scoring advisory and human raw scores final. Workers serialize processing
@@ -141,8 +141,57 @@ functions:
   exceptions:
   - OSError
   side_effects: Creates, reads, waits on, and removes a local lock file.
+- name: _deepseek_status_value
+  description: Normalize a DeepSeek status value for aggregate worker status checks.
+  locked: false
+  inputs:
+    value:
+      type: Any
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _deepseek_generated
+  description: Return whether any summary, suggestion, or advisory scoring output
+    was generated or partially generated.
+  locked: false
+  inputs:
+    payload:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+- name: _deepseek_complete
+  description: Return whether summary generation and advisory trait scoring both
+    completed successfully for worker history status.
+  locked: false
+  inputs:
+    payload:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+- name: _deepseek_history_status
+  description: Map DeepSeek payload status fields to sanitized history status and
+    warning text using complete, partial, or failed.
+  locked: false
+  inputs:
+    payload:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: tuple[str, str]
+  exceptions: []
+  side_effects: none
 - name: _run_job_unlocked
-  description: Execute one already-lock-protected DeepSeek finalize job.
+  description: Execute one already-lock-protected DeepSeek finalize job, generating
+    advisory trait suggestions/scoring and recomputed scoring before generating the
+    executive-summary prompt.
   locked: false
   inputs:
     job:
@@ -159,10 +208,11 @@ functions:
     JSON.
 - name: run_job
   description: Load one persisted DeepSeek finalize job, acquire the per-job-directory
-    DeepSeek lock, generate summary and trait advisory signal/scoring output through
-    local Ollama, recompute final scoring from human raw scores plus DeepSeek advisory
-    metadata, rewrite the interview notes DOCX, and mark the matching history row
-    complete.
+    DeepSeek lock, generate advisory trait signal/scoring output through local Ollama,
+    recompute final scoring from human raw scores plus DeepSeek advisory metadata,
+    generate answer summaries and executive summary with scoring context, rewrite
+    the interview notes DOCX, and mark the matching history row complete, partial,
+    or failed based on generated DeepSeek output.
   locked: false
   inputs:
     job_path:

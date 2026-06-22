@@ -93,7 +93,7 @@ If optional audio dependencies are unavailable, the interview app remains fully 
 ### Local DeepSeek summaries
 
 - Windows setup automatically installs Ollama when missing.
-- Setup pulls the smallest local DeepSeek model used by the app: `deepseek-r1:1.5b`.
+- Setup pulls the local DeepSeek model used by the app: `deepseek-r1:8b`.
 - DeepSeek summaries use Ollama at `http://127.0.0.1:11434/v1`; no DeepSeek API key is required.
 - To use a larger local Ollama model for better summary/signal quality, set `DEEPSEEK_SUMMARY_MODEL`
   before launch; setup will pull/use that local model instead of overwriting it with the fallback.

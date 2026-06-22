@@ -1,0 +1,145 @@
+module:
+  name: ui_components_history_data_grid
+  language: python
+  path: src/ui_components/history_data_grid.py
+  version: 1.2.0
+  description: Deprecated compatibility wrapper for history grid implementation owned by ui_composition; retranscription action is no longer shown.
+functions: []
+classes:
+- name: HistoryDataGrid
+  description: ttk.Frame widget for rendering and interacting with interview history rows.
+  locked: false
+  attributes:
+    sort_column:
+      type: str
+    sort_desc:
+      type: bool
+    filter_text:
+      type: str
+  methods:
+  - name: __init__
+    description: Initializes widget callbacks, sorting/filtering state, and treeview UI; on_retranscribe_action remains accepted for compatibility but is not displayed or invoked.
+    locked: false
+    inputs:
+      parent:
+        type: ttk.Frame
+        required: true
+      on_offer_action:
+        type: RowCallback
+        required: true
+      on_retranscribe_action:
+        type: RowCallback
+        required: true
+      on_open_transcript_link:
+        type: RowCallback
+        required: true
+      on_open_notes_link:
+        type: RowCallback
+        required: true
+      on_row_selected:
+        type: RowCallback
+        required: true
+      on_sort_changed:
+        type: SortCallback | None
+        required: false
+        default: None
+      sort_column:
+        type: str
+        required: false
+        default: interview_date
+      sort_desc:
+        type: bool
+        required: false
+        default: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: initializes tkinter child widgets
+  - name: set_rows
+    description: Replaces the full row set and refreshes the tree.
+    locked: false
+    inputs:
+      rows:
+        type: list[HistoryRow]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: set_filter_text
+    description: Updates filter text and refreshes visible rows.
+    locked: false
+    inputs:
+      value:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: visible_rows
+    description: Returns currently rendered rows in filter/sort order.
+    locked: false
+    inputs: {}
+    returns:
+      type: list[HistoryRow]
+    exceptions: []
+    side_effects: none
+  - name: selected_row
+    description: Returns the selected history row from the tree.
+    locked: false
+    inputs: {}
+    returns:
+      type: HistoryRow | None
+    exceptions: []
+    side_effects: none
+  - name: toggle_sort
+    description: Toggles sort direction or column and refreshes rendered rows.
+    locked: false
+    inputs:
+      column:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: updates in-memory state
+  - name: refresh_rows
+    description: Re-renders visible rows into the treeview.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: updates tkinter widgets
+  - name: _handle_click
+    description: Dispatches row click actions for offer, transcript, and notes columns.
+    locked: false
+    inputs:
+      event:
+        type: tk.Event
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: invokes action callbacks
+  - name: _handle_motion
+    description: Shows or hides hover tooltips for offer, transcript, and notes cells.
+    locked: false
+    inputs:
+      event:
+        type: tk.Event
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: updates tkinter tooltip window
+data_structures:
+- name: HistoryRow
+  description: History row mapping re-exported from ui_composition.
+- name: RowCallback
+  description: History row callback alias re-exported from ui_composition.
+- name: SortCallback
+  description: Sort callback alias re-exported from ui_composition.
+dependencies:
+- ui_composition

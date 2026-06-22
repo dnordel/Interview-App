@@ -1,0 +1,87 @@
+module:
+  name: onboarding_scroll_helpers
+  language: python
+  path: src/onboarding_scroll_helpers.py
+  version: 1.0.1
+  description: Compatibility wrapper for canvas-backed scrolling helpers now implemented
+    by onboarding_operations.
+functions:
+- name: build_scrollable_canvas_area
+  description: Creates a frame containing a canvas, a vertical scrollbar, and an interior
+    frame hosted in a canvas window.
+  locked: false
+  inputs:
+    parent:
+      type: tk.Misc
+      required: true
+    interior_padding:
+      type: int | tuple[int, int, int, int]
+      required: false
+      default: 0
+    canvas_kwargs:
+      type: dict[str, object] | None
+      required: false
+      default: null
+  returns:
+    type: ScrollableCanvasArea
+  exceptions: []
+  side_effects: Creates Tkinter widgets for a reusable scrollable canvas area.
+- name: bind_canvas_mousewheel
+  description: Binds cross-platform mouse-wheel handlers while the pointer or focus
+    remains within the scrollable canvas area.
+  locked: false
+  inputs:
+    canvas:
+      type: tk.Canvas
+      required: true
+    activate_widgets:
+      type: Sequence[tk.Misc]
+      required: true
+    release_widgets:
+      type: Sequence[tk.Misc]
+      required: false
+      default: []
+  returns:
+    type: None
+  exceptions: []
+  side_effects: Registers and removes global Tkinter wheel bindings tied to the supplied
+    canvas.
+- name: scroll_widget_into_view
+  description: Adjusts a canvas scroll position so a child widget becomes visible
+    within the viewport.
+  locked: false
+  inputs:
+    canvas:
+      type: tk.Canvas
+      required: true
+    widget:
+      type: tk.Misc
+      required: true
+    padding:
+      type: int
+      required: false
+      default: 12
+  returns:
+    type: None
+  exceptions: []
+  side_effects: Updates the canvas y-view when the target widget is off-screen.
+classes:
+- name: ScrollableCanvasArea
+  description: Container object that exposes the reusable widgets for a scrollable
+    canvas region.
+  locked: false
+  attributes:
+    shell:
+      type: ttk.Frame
+    canvas:
+      type: tk.Canvas
+    interior:
+      type: ttk.Frame
+    scrollbar:
+      type: ttk.Scrollbar
+    window_id:
+      type: int
+  methods: []
+data_structures: []
+dependencies:
+- module: onboarding_operations

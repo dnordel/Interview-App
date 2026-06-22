@@ -20,7 +20,9 @@ from urllib.parse import quote, urlparse
 
 from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.shared import Inches, Pt
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+from docx.shared import Inches, Pt, RGBColor
 import yaml
 
 from platform_services import Document, sanitize_filename
@@ -825,6 +827,25 @@ class DocxExporter:
         track_cfg = ScoringEngine._get_track_config(rubric, track_key)
         track_label = str(track_cfg.get("label") or track_key)
 
+        body_font = "Arial"
+        navy = "1F4E79"
+        teal = "0F766E"
+        pale_blue = "EAF3F8"
+        pale_teal = "E6F4F1"
+        pale_green = "EAF6EA"
+        pale_yellow = "FFF7D6"
+        white = "FFFFFF"
+        dark_text = "1F2937"
+        content_width_inches = 7.2
+        ai_generated_label = "AI-generated"
+        ai_suggested_label = "AI-suggested"
+        ai_advisory_label = "AI advisory"
+
+        included_rows = [row for row in scoring["rows"] if not row.get("skipped", False)]
+        deepseek_values = [row.get("deepseek_calculated_score") for row in included_rows]
+        deepseek_total_complete = bool(included_rows) and all(value is not None for value in deepseek_values)
+        deepseek_total = sum(int(value) for value in deepseek_values) if deepseek_total_complete else None
+
         doc = Document()
         for section in doc.sections:
             section.top_margin = Inches(0.55)
@@ -834,33 +855,53 @@ class DocxExporter:
 
         for style_name in ("Normal", "Title", "Heading 1", "Heading 2", "Heading 3", "List Bullet"):
             style = doc.styles[style_name]
-            style.font.name = "Times New Roman"
+            style.font.name = body_font
             style.font.size = Pt(12)
+            style.font.color.rgb = RGBColor.from_string(dark_text)
             if style_name.startswith("Heading") or style_name == "Title":
                 style.font.bold = True
             if style_name in {"Heading 1", "Heading 2", "Heading 3"}:
-                style.paragraph_format.space_before = Pt(6)
-                style.paragraph_format.space_after = Pt(0)
+                style.font.color.rgb = RGBColor.from_string(navy)
+                style.paragraph_format.space_before = Pt(10)
+                style.paragraph_format.space_after = Pt(4)
             elif style_name == "List Bullet":
-                style.paragraph_format.space_after = Pt(2)
+                style.paragraph_format.space_after = Pt(4)
+                style.paragraph_format.line_spacing = 1.12
+            if style_name == "Title":
+                style.font.size = Pt(17)
+                style.font.color.rgb = RGBColor.from_string(navy)
 
-        def normalize_paragraph(paragraph: Any) -> None:
+        def normalize_paragraph(paragraph: Any, *, size: float | None = 12, color: str | None = dark_text) -> None:
             for run in paragraph.runs:
-                run.font.name = "Times New Roman"
-                run.font.size = Pt(12)
+                run.font.name = body_font
+                if size is not None:
+                    run.font.size = Pt(size)
+                if color is not None:
+                    run.font.color.rgb = RGBColor.from_string(color)
 
         def add_heading(text: str, level: int = 1) -> Any:
             paragraph = doc.add_heading(text, level=level)
-            normalize_paragraph(paragraph)
+            normalize_paragraph(paragraph, size=15 if level == 1 else 13, color=navy)
             return paragraph
 
-        def add_text(text: str, *, style: str | None = None, bold: bool = False, align: Any = None) -> Any:
+        def add_text(
+            text: str,
+            *,
+            style: str | None = None,
+            bold: bool = False,
+            align: Any = None,
+            size: float = 12,
+            color: str = dark_text,
+        ) -> Any:
             paragraph = doc.add_paragraph(style=style)
             if align is not None:
                 paragraph.alignment = align
+            paragraph.paragraph_format.space_after = Pt(4)
+            paragraph.paragraph_format.line_spacing = 1.12
             run = paragraph.add_run(text)
-            run.font.name = "Times New Roman"
-            run.font.size = Pt(12)
+            run.font.name = body_font
+            run.font.size = Pt(size)
+            run.font.color.rgb = RGBColor.from_string(color)
             run.bold = bold
             return paragraph
 
@@ -868,39 +909,135 @@ class DocxExporter:
             paragraph = doc.add_paragraph()
             if space_after is not None:
                 paragraph.paragraph_format.space_after = Pt(space_after)
+            paragraph.paragraph_format.line_spacing = 1.12
             label_run = paragraph.add_run(label)
             label_run.bold = True
-            label_run.font.name = "Times New Roman"
+            label_run.font.name = body_font
             label_run.font.size = Pt(12)
+            label_run.font.color.rgb = RGBColor.from_string(navy)
             value_run = paragraph.add_run(text)
-            value_run.font.name = "Times New Roman"
+            value_run.font.name = body_font
             value_run.font.size = Pt(12)
+            value_run.font.color.rgb = RGBColor.from_string(dark_text)
             return paragraph
 
-        def format_cell(cell: Any, *, bold: bool = False) -> None:
+        def _replace_child(parent: Any, tag: str, child: Any) -> None:
+            for existing in list(parent):
+                if existing.tag == tag:
+                    parent.remove(existing)
+            parent.append(child)
+
+        def set_cell_shading(cell: Any, fill: str) -> None:
+            tc_pr = cell._tc.get_or_add_tcPr()
+            shd = OxmlElement("w:shd")
+            shd.set(qn("w:fill"), fill)
+            _replace_child(tc_pr, qn("w:shd"), shd)
+
+        def set_cell_margins(cell: Any, *, top: int = 80, bottom: int = 80, start: int = 120, end: int = 120) -> None:
+            tc_pr = cell._tc.get_or_add_tcPr()
+            tc_mar = tc_pr.first_child_found_in("w:tcMar")
+            if tc_mar is None:
+                tc_mar = OxmlElement("w:tcMar")
+                tc_pr.append(tc_mar)
+            for margin_name, margin_value in {
+                "top": top,
+                "bottom": bottom,
+                "start": start,
+                "end": end,
+            }.items():
+                node = tc_mar.find(qn(f"w:{margin_name}"))
+                if node is None:
+                    node = OxmlElement(f"w:{margin_name}")
+                    tc_mar.append(node)
+                node.set(qn("w:w"), str(margin_value))
+                node.set(qn("w:type"), "dxa")
+
+        def set_cell_width(cell: Any, width_dxa: int) -> None:
+            tc_pr = cell._tc.get_or_add_tcPr()
+            tc_w = tc_pr.first_child_found_in("w:tcW")
+            if tc_w is None:
+                tc_w = OxmlElement("w:tcW")
+                tc_pr.append(tc_w)
+            tc_w.set(qn("w:w"), str(width_dxa))
+            tc_w.set(qn("w:type"), "dxa")
+
+        def repeat_header_row(row: Any) -> None:
+            tr_pr = row._tr.get_or_add_trPr()
+            tbl_header = OxmlElement("w:tblHeader")
+            tbl_header.set(qn("w:val"), "true")
+            _replace_child(tr_pr, qn("w:tblHeader"), tbl_header)
+
+        def prevent_row_split(row: Any) -> None:
+            tr_pr = row._tr.get_or_add_trPr()
+            cant_split = OxmlElement("w:cantSplit")
+            _replace_child(tr_pr, qn("w:cantSplit"), cant_split)
+
+        def set_table_geometry(table: Any, widths: list[float], *, indent_dxa: int = 120) -> None:
+            width_dxa = [int(width * 1440) for width in widths]
+            table.autofit = False
+            tbl_pr = table._tbl.tblPr
+            tbl_w = OxmlElement("w:tblW")
+            tbl_w.set(qn("w:w"), str(sum(width_dxa)))
+            tbl_w.set(qn("w:type"), "dxa")
+            _replace_child(tbl_pr, qn("w:tblW"), tbl_w)
+            tbl_ind = OxmlElement("w:tblInd")
+            tbl_ind.set(qn("w:w"), str(indent_dxa))
+            tbl_ind.set(qn("w:type"), "dxa")
+            _replace_child(tbl_pr, qn("w:tblInd"), tbl_ind)
+            tbl_grid = OxmlElement("w:tblGrid")
+            for width in width_dxa:
+                grid_col = OxmlElement("w:gridCol")
+                grid_col.set(qn("w:w"), str(width))
+                tbl_grid.append(grid_col)
+            for existing in list(table._tbl):
+                if existing.tag == qn("w:tblGrid"):
+                    table._tbl.remove(existing)
+            table._tbl.insert(1, tbl_grid)
+            for row in table.rows:
+                prevent_row_split(row)
+                for index, cell in enumerate(row.cells):
+                    set_cell_width(cell, width_dxa[min(index, len(width_dxa) - 1)])
+
+        def format_cell(
+            cell: Any,
+            *,
+            bold: bool = False,
+            fill: str | None = None,
+            color: str = dark_text,
+            align: Any | None = None,
+        ) -> None:
             cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+            set_cell_margins(cell)
+            if fill:
+                set_cell_shading(cell, fill)
             for paragraph in cell.paragraphs:
-                normalize_paragraph(paragraph)
+                if align is not None:
+                    paragraph.alignment = align
+                paragraph.paragraph_format.space_after = Pt(0)
+                paragraph.paragraph_format.line_spacing = 1.08
+                normalize_paragraph(paragraph, size=12, color=color)
                 for run in paragraph.runs:
                     run.bold = bold
 
-        def add_box(text: str) -> Any:
+        def add_box(text: str, *, fill: str = pale_blue, bold: bool = False, color: str = dark_text) -> Any:
             table = doc.add_table(rows=1, cols=1)
             table.style = "Table Grid"
+            set_table_geometry(table, [content_width_inches])
             cell = table.rows[0].cells[0]
             cell.text = text
-            format_cell(cell)
+            format_cell(cell, bold=bold, fill=fill, color=color)
             return table
 
-        def add_key_value_table(rows: list[tuple[str, str]]) -> Any:
+        def add_key_value_table(rows: list[tuple[str, str]], *, label_fill: str = pale_blue) -> Any:
             table = doc.add_table(rows=0, cols=2)
             table.style = "Table Grid"
             for label, value in rows:
                 cells = table.add_row().cells
                 cells[0].text = label
                 cells[1].text = value
-                format_cell(cells[0], bold=True)
-                format_cell(cells[1])
+                format_cell(cells[0], bold=True, fill=label_fill, color=navy)
+                format_cell(cells[1], fill=white)
+            set_table_geometry(table, [2.2, 5.0])
             return table
 
         def signal_label_lookup() -> dict[str, str]:
@@ -921,11 +1058,22 @@ class DocxExporter:
 
         signal_labels = signal_label_lookup()
 
-        title = add_text("Structured Behavioral Interview Report", style="Title", align=WD_ALIGN_PARAGRAPH.CENTER)
+        title = add_text(
+            "Structured Behavioral Interview Report",
+            style="Title",
+            align=WD_ALIGN_PARAGRAPH.CENTER,
+            size=17,
+            color=navy,
+        )
         title.runs[0].bold = True
 
         subtitle_parts = [cname, school, track_label, f"Interview Date: {interview_date}"]
-        add_text(" | ".join(part for part in subtitle_parts if part), bold=True, align=WD_ALIGN_PARAGRAPH.CENTER)
+        add_text(
+            " | ".join(part for part in subtitle_parts if part),
+            bold=True,
+            align=WD_ALIGN_PARAGRAPH.CENTER,
+            color=teal,
+        )
 
         executive_summary = str(payload.get("executive_summary") or "").strip()
         if executive_summary:
@@ -938,16 +1086,25 @@ class DocxExporter:
             if str(item or "").strip()
         ]
         if interview_highlights:
-            add_heading("DeepSeek Evidence Summary")
+            add_heading(f"{ai_generated_label} Evidence Summary")
             for highlight in interview_highlights:
                 add_text(highlight, style="List Bullet")
 
         percent_of_max_label = scoring.get("percent_of_max_label", f"{scoring['percent_of_max']}%")
+        deepseek_total_text = (
+            f"{deepseek_total} / {scoring['max_weighted_total']}"
+            if deepseek_total is not None
+            else "N/A (incomplete)"
+        )
         add_box(
             "Recommendation: "
-            f"{scoring['outcome']}. {cname} received a weighted score of "
-            f"{scoring['weighted_total']} / {scoring['max_weighted_total']} "
-            f"({percent_of_max_label})."
+            f"{scoring['outcome']}. "
+            f"Interviewer score: {scoring['weighted_total']} / {scoring['max_weighted_total']} "
+            f"({percent_of_max_label}). "
+            f"{ai_suggested_label} score: {deepseek_total_text}."
+            f" Candidate: {cname}.",
+            fill=pale_green if scoring["outcome"] == "Hire" else pale_yellow,
+            bold=True,
         )
 
         has_degree = qualification.get("has_degree", None)
@@ -980,17 +1137,19 @@ class DocxExporter:
         )
 
         add_heading("Score Summary")
-        table = doc.add_table(rows=1, cols=6)
+        table = doc.add_table(rows=1, cols=7)
         table.style = "Table Grid"
         hdr = table.rows[0].cells
         hdr[0].text = "Trait"
         hdr[1].text = "Priority"
         hdr[2].text = "Weight"
-        hdr[3].text = "Interviewer Score"
-        hdr[4].text = "Human Weighted Score"
-        hdr[5].text = "DeepSeek Suggested Score"
+        hdr[3].text = "Interviewer\nRaw Score"
+        hdr[4].text = "Interviewer\nWeighted Score"
+        hdr[5].text = "AI-suggested\nRaw Score"
+        hdr[6].text = "AI-suggested\nWeighted Score"
+        repeat_header_row(table.rows[0])
         for cell in hdr:
-            format_cell(cell, bold=True)
+            format_cell(cell, bold=True, fill=pale_blue, color=navy, align=WD_ALIGN_PARAGRAPH.CENTER)
 
         for row in scoring["rows"]:
             cells = table.add_row().cells
@@ -1001,26 +1160,44 @@ class DocxExporter:
                 cells[3].text = "Skipped"
                 cells[4].text = "Excluded"
                 cells[5].text = "Excluded"
+                cells[6].text = "Excluded"
+                for index, cell in enumerate(cells):
+                    format_cell(cell, fill=pale_blue if index in {1, 2, 3, 4, 5, 6} else white)
                 continue
             raw_display = row.get("raw_score", None)
             cells[3].text = "N/A" if raw_display is None else str(raw_display)
             cells[4].text = str(row.get("system_checkbox_score", row["weighted_score"]))
+            suggested_raw_score = row.get("suggested_raw_score")
+            cells[5].text = "N/A" if suggested_raw_score is None else str(suggested_raw_score)
             deepseek_score = row.get("deepseek_calculated_score")
-            cells[5].text = "N/A" if deepseek_score is None else str(deepseek_score)
-            for cell in cells:
-                format_cell(cell)
+            cells[6].text = "N/A" if deepseek_score is None else str(deepseek_score)
+            for index, cell in enumerate(cells):
+                format_cell(
+                    cell,
+                    fill=pale_teal if index in {5, 6} else white,
+                    align=WD_ALIGN_PARAGRAPH.CENTER if index in {2, 3, 4, 5, 6} else None,
+                )
+        set_table_geometry(table, [2.05, 0.85, 0.5, 0.9, 1.0, 0.9, 1.0])
 
-        add_text(
+        add_box(
             f"Weighted Total: {scoring['weighted_total']} / {scoring['max_weighted_total']} | "
+            f"AI-suggested Total: {deepseek_total_text} | "
             f"Skipped scored questions: {scoring.get('skipped_traits_count', 0)} | "
-            f"Percent of Max: {percent_of_max_label} | Final Outcome: {scoring['outcome']}"
+            f"Percent of Max: {percent_of_max_label} | Final Outcome: {scoring['outcome']}",
+            fill=pale_teal,
+            bold=True,
         )
 
-        add_text(
+        locked_rule_display = str(scoring["locked_rule"] if scoring["locked_rule"] else "None").replace(
+            "DeepSeek",
+            ai_generated_label,
+        )
+        add_box(
             "Override Summary: "
             f"Any Critical trait = 1: {'Yes' if scoring['critical_eq_1'] else 'No'} | "
             f"Any Absolute Disqualifier observed: {'Yes' if scoring['disqualifier_present'] else 'No'} | "
-            f"Outcome lock rule: {scoring['locked_rule'] if scoring['locked_rule'] else 'None'}"
+            f"Outcome lock rule: {locked_rule_display}",
+            fill=pale_blue,
         )
 
         add_heading("Interview Question Summaries and Full Responses")
@@ -1050,7 +1227,7 @@ class DocxExporter:
                     )
                     add_key_value_table(
                         [
-                            ("DeepSeek summary", str(answer_summary.get("summary") or "").strip()),
+                            (f"{ai_generated_label} summary", str(answer_summary.get("summary") or "").strip()),
                             ("Evidence", evidence or "None cited"),
                             ("Rubric alignment", str(answer_summary.get("rubric_alignment") or "").strip() or "None cited"),
                             ("Risk/gap", str(answer_summary.get("risks_or_gaps") or "").strip() or "None cited"),
@@ -1074,10 +1251,10 @@ class DocxExporter:
                     dq = "Yes" if item.get("absolute_disqualifier") else "No"
                     add_labeled_text(
                         "Scoring notes: ",
-                        f"Interviewer Score: {'N/A' if raw is None else raw} | "
-                        f"Human Weighted Score: {'N/A' if system_score is None else system_score} | "
-                        f"DeepSeek Suggested Raw Score: {'N/A' if suggested_raw is None else suggested_raw} | "
-                        f"DeepSeek Suggested Weighted Score: {'N/A' if deepseek_score is None else deepseek_score} | "
+                        f"Interviewer Raw Score: {'N/A' if raw is None else raw} | "
+                        f"Interviewer Weighted Score: {'N/A' if system_score is None else system_score} | "
+                        f"{ai_suggested_label} Raw Score: {'N/A' if suggested_raw is None else suggested_raw} | "
+                        f"{ai_suggested_label} Weighted Score: {'N/A' if deepseek_score is None else deepseek_score} | "
                         f"No example after follow-ups: {ne} | Absolute Disqualifier Checked: {dq}",
                         space_after=4,
                     )
@@ -1115,14 +1292,14 @@ class DocxExporter:
                 [
                     ("Final interviewer raw score", "N/A" if raw_display is None else str(raw_display)),
                     ("Human weighted score", "N/A" if system_score is None else str(system_score)),
-                    ("DeepSeek net signal score", "N/A" if net_signal_score is None else str(net_signal_score)),
-                    ("DeepSeek suggested raw score", "N/A" if suggested_raw_score is None else str(suggested_raw_score)),
-                    ("DeepSeek suggested weighted score", "N/A" if deepseek_score is None else str(deepseek_score)),
-                    ("DeepSeek advisory raw score", "N/A" if deepseek_raw is None else str(deepseek_raw)),
-                    ("DeepSeek score evidence", str(model_trait_score.get("evidence_quote") or "").strip() or "None cited"),
-                    ("DeepSeek score rationale", str(model_trait_score.get("rationale") or "").strip() or "None cited"),
-                    ("DeepSeek score risk/gap", str(model_trait_score.get("risks_or_gaps") or "").strip() or "None cited"),
-                    ("Interviewer adjusted from DeepSeek suggestion", "Yes" if row.get("interviewer_adjusted") else "No"),
+                    ("AI net signal score", "N/A" if net_signal_score is None else str(net_signal_score)),
+                    (f"{ai_suggested_label} raw score", "N/A" if suggested_raw_score is None else str(suggested_raw_score)),
+                    (f"{ai_suggested_label} weighted score", "N/A" if deepseek_score is None else str(deepseek_score)),
+                    (f"{ai_advisory_label} raw score", "N/A" if deepseek_raw is None else str(deepseek_raw)),
+                    (f"{ai_generated_label} score evidence", str(model_trait_score.get("evidence_quote") or "").strip() or "None cited"),
+                    (f"{ai_generated_label} score rationale", str(model_trait_score.get("rationale") or "").strip() or "None cited"),
+                    (f"{ai_generated_label} score risk/gap", str(model_trait_score.get("risks_or_gaps") or "").strip() or "None cited"),
+                    (f"Interviewer adjusted from {ai_suggested_label} score", "Yes" if row.get("interviewer_adjusted") else "No"),
                     ("Adjustment reason", str(row.get("adjustment_reason") or "").strip() or "None"),
                     ("Automatic no-hire signal IDs", ", ".join(row.get("auto_no_hire_signal_ids", []) or []) or "None"),
                     ("Automatic no-hire reasons", "; ".join(row.get("auto_no_hire_reasons", []) or []) or "None"),
@@ -1139,7 +1316,7 @@ class DocxExporter:
                 add_box(", ".join(selected_signal_ids))
             model_suggestions = row.get("model_signal_suggestions", []) or []
             if model_suggestions:
-                add_text("DeepSeek advisory signal observations:", bold=True)
+                add_text(f"{ai_advisory_label} signal observations:", bold=True)
                 suggestion_table = doc.add_table(rows=1, cols=5)
                 suggestion_table.style = "Table Grid"
                 suggestion_headers = suggestion_table.rows[0].cells
@@ -1148,8 +1325,9 @@ class DocxExporter:
                 suggestion_headers[2].text = "Evidence"
                 suggestion_headers[3].text = "Rationale"
                 suggestion_headers[4].text = "Signal source"
+                repeat_header_row(suggestion_table.rows[0])
                 for cell in suggestion_headers:
-                    format_cell(cell, bold=True)
+                    format_cell(cell, bold=True, fill=navy, color=white, align=WD_ALIGN_PARAGRAPH.CENTER)
                 override = row.get("model_signal_override", {}) or {}
                 accepted = set(override.get("accepted_signal_ids", []) or [])
                 rejected = set(override.get("rejected_signal_ids", []) or [])
@@ -1167,16 +1345,17 @@ class DocxExporter:
                         cells[1].text = str(confidence)
                         cells[2].text = evidence_quote or "None cited"
                         cells[3].text = rationale
-                        cells[4].text = "Used by DeepSeek advisory scoring"
+                        cells[4].text = f"Used by {ai_advisory_label} scoring"
                         if signal_id in rejected:
-                            cells[4].text = "DeepSeek suggestion"
-                        for cell in cells:
-                            format_cell(cell)
+                            cells[4].text = "AI suggestion"
+                        for index, cell in enumerate(cells):
+                            format_cell(cell, fill=pale_teal if index == 4 else white)
+                set_table_geometry(suggestion_table, [1.45, 0.75, 1.9, 1.9, 1.2])
                 if override:
                     add_key_value_table(
                         [
-                            ("DeepSeek signal-scored observations", ", ".join(override.get("accepted_signal_ids", []) or []) or "None"),
-                            ("DeepSeek suggested observations", ", ".join(override.get("rejected_signal_ids", []) or []) or "None"),
+                            ("AI signal-scored observations", ", ".join(override.get("accepted_signal_ids", []) or []) or "None"),
+                            ("AI-suggested observations", ", ".join(override.get("rejected_signal_ids", []) or []) or "None"),
                             ("Compatibility selected-only observations", ", ".join(override.get("manual_only_signal_ids", []) or []) or "None"),
                         ]
                     )
@@ -1191,8 +1370,9 @@ class DocxExporter:
             header_cells = custom_table.rows[0].cells
             header_cells[0].text = "Question"
             header_cells[1].text = "Answer"
-            format_cell(header_cells[0], bold=True)
-            format_cell(header_cells[1], bold=True)
+            repeat_header_row(custom_table.rows[0])
+            format_cell(header_cells[0], bold=True, fill=navy, color=white)
+            format_cell(header_cells[1], bold=True, fill=navy, color=white)
             for i, item in enumerate(custom_answers, start=1):
                 qtext = (item.get("question_text") or "").strip()
                 ans = (item.get("answer") or "").strip()
@@ -1201,6 +1381,7 @@ class DocxExporter:
                 cells[1].text = ans if ans else "N/A"
                 format_cell(cells[0])
                 format_cell(cells[1])
+            set_table_geometry(custom_table, [2.4, 4.8])
 
         add_heading("Global Disqualifiers")
         for d in rubric["absolute_disqualifiers"]:
@@ -1216,11 +1397,15 @@ class DocxExporter:
             add_text("None recorded", style="List Bullet")
 
         for paragraph in doc.paragraphs:
-            normalize_paragraph(paragraph)
+            normalize_paragraph(paragraph, size=None, color=None)
         for table in doc.tables:
             for row in table.rows:
                 for cell in row.cells:
-                    format_cell(cell)
+                    cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+                    set_cell_margins(cell)
+                    for paragraph in cell.paragraphs:
+                        paragraph.paragraph_format.line_spacing = 1.08
+                        normalize_paragraph(paragraph, size=None, color=None)
 
         school_part = sanitize_filename(school) if school else "UnknownSchool"
         filename = f"{interview_date} - {school_part} - {sanitize_filename(cname)} - Interview.docx"

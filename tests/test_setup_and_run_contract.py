@@ -124,7 +124,7 @@ def test_setup_and_run_installs_local_deepseek_with_ollama() -> None:
     assert "Ensure-Ollama" in function_names
     assert "Ensure-DeepSeekModel" in function_names
     assert "Enable-LocalDeepSeekForLaunchedApp" in function_names
-    assert '$LocalDeepSeekModel = "deepseek-r1:1.5b"' in script_text
+    assert '$LocalDeepSeekModel = "deepseek-r1:8b"' in script_text
     assert '$LocalDeepSeekModel = $env:DEEPSEEK_SUMMARY_MODEL.Trim()' in script_text
     assert 'Join-Path $env:LOCALAPPDATA "Programs\\Ollama\\ollama.exe"' in script_text
     assert 'Join-Path $env:LOCALAPPDATA "Ollama\\ollama.exe"' in script_text

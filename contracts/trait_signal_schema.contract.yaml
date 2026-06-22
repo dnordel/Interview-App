@@ -1,0 +1,161 @@
+module:
+  name: trait_signal_schema
+  language: python
+  path: src/trait_signal_schema.py
+  version: 1.1.1
+  description: Deprecated compatibility wrapper for dual-schema trait-signal normalization helpers implemented by scoring_reporting.
+functions:
+- name: build_signal_dictionary_index
+  description: Index signal-dictionary entries by runtime signal id for category-aware normalization.
+  locked: false
+  inputs:
+    signal_dictionary:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: dict[str, dict[str, Any]]
+  exceptions: []
+  side_effects: none
+- name: normalize_trait_signal
+  description: Normalize one trait signal from either the legacy ref/weight schema or the runtime id/base_weight schema.
+  locked: false
+  inputs:
+    signal:
+      type: dict[str, Any]
+      required: true
+    default_group_label:
+      type: str
+      required: true
+  returns:
+    type: CanonicalSignal
+  exceptions: []
+  side_effects: none
+- name: resolve_trait_signal_selection_id
+  description: Resolve the UI-facing selection identifier for a trait signal by preferring
+    legacy refs, then mapped shared-signal aliases, then the runtime signal id.
+  locked: false
+  inputs:
+    signal:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: resolve_trait_signal_runtime_id
+  description: Resolve the runtime signal id used by the scoring engine for a trait
+    signal record.
+  locked: false
+  inputs:
+    signal:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: signal_selection_aliases
+  description: Return every accepted selection alias for a trait signal, including
+    its runtime signal id and any shared-signal maps_to aliases.
+  locked: false
+  inputs:
+    signal:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: list[str]
+  exceptions: []
+  side_effects: none
+- name: resolve_trait_signal_label
+  description: Resolve the display label for a trait signal with a fallback value.
+  locked: false
+  inputs:
+    signal:
+      type: dict[str, Any]
+      required: true
+    fallback:
+      type: str
+      required: false
+      default: ''
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: resolve_trait_signal_weight
+  description: Resolve the numeric weight for a trait signal across weight, base_weight, and default_weight fields.
+  locked: false
+  inputs:
+    signal:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: float
+  exceptions: []
+  side_effects: none
+- name: normalize_core_signals
+  description: Normalize core trait signals into the canonical UI/adapter signal shape.
+  locked: false
+  inputs:
+    core_signals:
+      type: list[dict[str, Any]]
+      required: true
+  returns:
+    type: list[CanonicalSignal]
+  exceptions: []
+  side_effects: none
+- name: normalize_extended_signal_groups
+  description: Normalize explicit extended groups or runtime extended_signals into canonical grouped signal metadata.
+  locked: false
+  inputs:
+    trait_definition:
+      type: dict[str, Any]
+      required: true
+    signal_dictionary_index:
+      type: dict[str, dict[str, Any]] | None
+      required: false
+      default: null
+  returns:
+    type: list[CanonicalSignalGroup]
+  exceptions: []
+  side_effects: none
+- name: iter_trait_schema_signals
+  description: Flatten trait signals across core_signals, extended_signal_groups, and extended_signals schemas.
+  locked: false
+  inputs:
+    trait_definition:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: list[dict[str, Any]]
+  exceptions: []
+  side_effects: none
+classes: []
+data_structures:
+- name: CanonicalSignal
+  description: Canonical in-memory signal shape shared by trait UI and adapter consumers.
+  fields:
+    signal_id:
+      type: str
+    runtime_signal_id:
+      type: str
+    selection_aliases:
+      type: list[str]
+    label:
+      type: str
+    group_label:
+      type: str
+    weight:
+      type: float
+    is_critical:
+      type: bool
+- name: CanonicalSignalGroup
+  description: Canonical grouped signal collection for extended trait UI rendering.
+  fields:
+    group_id:
+      type: str
+    group_label:
+      type: str
+    signals:
+      type: list[CanonicalSignal]
+dependencies:
+- scoring_reporting

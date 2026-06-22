@@ -227,8 +227,11 @@ def test_load_runtime_bundle_uses_weighted_signal_source(scoring_engine_class):
         Path("Trait-Based Scoring/trait_based_scoring_contract.yaml")
     )
 
+    expected_trait_ids = {f"trait_{index}" for index in range(1, 12)}
+    expected_trait_ids.update({f"bss_trait_{index}" for index in range(1, 14)})
+
     assert config["_weighted_signal_source"] == str(resolved_paths["weighted_signals"])
-    assert {trait["trait_id"] for trait in traits} == {f"trait_{index}" for index in range(1, 12)}
+    assert {trait["trait_id"] for trait in traits} == expected_trait_ids
     assert "trait_11_json_version" not in {trait["trait_id"] for trait in traits}
     assert signal_dictionary["signals"]
     assert all("default_weight" in signal for signal in signal_dictionary["signals"])
@@ -240,6 +243,7 @@ def test_loads_all_configured_traits_and_resolves_all_signal_refs(runtime_bundle
     dictionary_refs = {signal["id"] for signal in signal_dictionary["signals"]}
 
     expected_trait_ids = {f"trait_{index}" for index in range(1, 12)}
+    expected_trait_ids.update({f"bss_trait_{index}" for index in range(1, 14)})
     assert len(traits) == len(expected_trait_ids)
     assert {trait["trait_id"] for trait in traits} == expected_trait_ids
 

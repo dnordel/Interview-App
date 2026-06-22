@@ -1,0 +1,172 @@
+module:
+  name: ui_feedback
+  language: python
+  path: src/ui_feedback.py
+  version: 1.4.0
+  description: Compatibility wrapper for shared validation feedback and actionable error presentation helpers now implemented by ui_composition.
+functions:
+- name: format_guidance
+  description: Builds a standardized issue + next-step guidance sentence.
+  locked: false
+  inputs:
+    issue:
+      type: str
+      required: true
+    next_step:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: should_display_modal
+  description: Determines whether validation should be shown as a modal dialog.
+  locked: false
+  inputs:
+    severity:
+      type: str
+      required: true
+    irreversible_action:
+      type: bool
+      required: false
+      default: false
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+- name: sanitize_user_error
+  description: Redacts technical fragments from user-facing error text.
+  locked: false
+  inputs:
+    message:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: show_inline_field_error
+  description: Formats and displays field-level inline validation feedback.
+  locked: false
+  inputs:
+    inline_validation:
+      type: InlineValidationMessage
+      required: true
+    field_label:
+      type: str
+      required: true
+    cause:
+      type: str
+      required: true
+    corrective_action:
+      type: str
+      required: true
+    focus_widget:
+      type: tk.Widget | None
+      required: false
+    severity:
+      type: str
+      required: false
+      default: error
+  returns:
+    type: None
+  exceptions: []
+  side_effects: Updates inline validation state and may move UI focus.
+- name: create_main_gui_warning_presenter
+  description: Builds a dismissible non-blocking warning presenter for top-level GUI alerts.
+  locked: false
+  inputs:
+    parent:
+      type: tk.Misc
+      required: true
+    on_dismiss:
+      type: Callable[[], None] | None
+      required: false
+  returns:
+    type: MainGuiWarningPresenter
+  exceptions: []
+  side_effects: Creates Tk widgets and binds dismiss behavior.
+- name: present_transcription_partial_warning
+  description: Presents standardized partial-transcript warning copy through the main GUI warning presenter.
+  locked: false
+  inputs:
+    presenter:
+      type: MainGuiWarningPresenter | None
+      required: true
+    auto_expire_ms:
+      type: int | None
+      required: false
+      default: 12000
+  returns:
+    type: str
+  exceptions: []
+  side_effects: May render non-blocking warning banner in the main GUI.
+
+classes:
+- name: InlineValidationMessage
+  description: Reusable inline validation presenter that supports severity styling.
+  locked: false
+  attributes:
+    message_var:
+      type: tk.StringVar
+    message_label:
+      type: ttk.Label
+  methods:
+  - name: show
+    inputs:
+      issue:
+        type: str
+      next_step:
+        type: str
+      focus_widget:
+        type: tk.Widget | None
+      severity:
+        type: str
+    returns:
+      type: None
+  - name: clear
+    inputs: {}
+    returns:
+      type: None
+- name: MainGuiWarningPresenter
+  description: Reusable main-GUI warning banner presenter with dismiss and auto-expire behavior.
+  locked: false
+  attributes:
+    parent:
+      type: tk.Misc
+    frame:
+      type: ttk.Frame
+    message_var:
+      type: tk.StringVar
+    message_label:
+      type: ttk.Label
+    dismiss_button:
+      type: ttk.Button
+  methods:
+  - name: _find_pack_before_widget
+    inputs: {}
+    returns:
+      type: tk.Widget | None
+  - name: show
+    inputs:
+      message:
+        type: str
+      auto_expire_ms:
+        type: int | None
+    returns:
+      type: None
+  - name: _pack_frame_with_optional_before
+    inputs:
+      pack_kwargs:
+        type: dict[str, object]
+      before_widget:
+        type: tk.Widget | None
+    returns:
+      type: None
+  - name: dismiss
+    inputs: {}
+    returns:
+      type: None
+data_structures: []
+dependencies:
+- ui_composition

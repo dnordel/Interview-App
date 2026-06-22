@@ -1,0 +1,185 @@
+module:
+  name: offer_letter
+  language: python
+  path: src/offer_letter.py
+  version: 2.0.1
+  description: Deprecated compatibility wrapper for offer letter template validation, placeholder replacement, and output filename helpers implemented by scoring_reporting.
+functions:
+- name: build_offer_filename
+  description: Build a safe offer letter filename from candidate name and creation date.
+  locked: false
+  inputs:
+    first_name:
+      type: str
+      required: true
+    last_name:
+      type: str
+      required: true
+    created_on:
+      type: date
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: parse_clock_12h
+  description: Parse a 12-hour clock string into a datetime object.
+  locked: false
+  inputs:
+    value:
+      type: str
+      required: true
+  returns:
+    type: datetime
+  exceptions:
+  - ValueError
+  side_effects: none
+classes:
+- name: OfferInput
+  description: Offer letter input payload including title, schedule, and compensation details.
+  locked: false
+  attributes:
+    first_name:
+      type: str
+    last_name:
+      type: str
+    city:
+      type: str
+    position:
+      type: str
+    start_date:
+      type: date
+    start_time_12h:
+      type: str
+    end_time_12h:
+      type: str
+    hourly_pay:
+      type: float
+    hours:
+      type: int
+    created_on:
+      type: date
+  methods:
+  - name: pto
+    description: Computed PTO value for the base accrual tier.
+    locked: false
+    inputs: {}
+    returns:
+      type: int
+    exceptions: []
+    side_effects: none
+  - name: pto2
+    description: Computed PTO value for the higher accrual tier.
+    locked: false
+    inputs: {}
+    returns:
+      type: int
+    exceptions: []
+    side_effects: none
+  - name: offer_deadline
+    description: Offer acceptance deadline calculated from the creation date.
+    locked: false
+    inputs: {}
+    returns:
+      type: date
+    exceptions: []
+    side_effects: none
+- name: OfferTemplateError
+  description: Raised when an invalid offer template path or format is supplied.
+  locked: false
+  attributes: {}
+  methods: []
+- name: OfferLetterService
+  description: Offer letter template validation and placeholder rendering service.
+  locked: false
+  attributes:
+    ALLOWED_TEMPLATE_SUFFIXES:
+      type: set[str]
+    PLACEHOLDER_ORDER:
+      type: list[str]
+  methods:
+  - name: classify_employment_type
+    description: Classify weekly hours as full_time or part_time for template selection.
+    locked: false
+    inputs:
+      hours:
+        type: int
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: validate_template_path
+    description: Validate that an offer template exists and uses an allowed Word file suffix.
+    locked: false
+    inputs:
+      path:
+        type: Path
+        required: true
+    returns:
+      type: None
+    exceptions:
+    - OfferTemplateError
+    side_effects: none
+  - name: build_replacements
+    description: Build placeholder replacements for an offer template.
+    locked: false
+    inputs:
+      data:
+        type: OfferInput
+        required: true
+    returns:
+      type: dict[str, str]
+    exceptions: []
+    side_effects: none
+  - name: render_offer
+    description: Render an offer document from a template path into the requested output path.
+    locked: false
+    inputs:
+      template_path:
+        type: Path
+        required: true
+      output_path:
+        type: Path
+        required: true
+      data:
+        type: OfferInput
+        required: true
+    returns:
+      type: Path
+    exceptions:
+    - OfferTemplateError
+    side_effects: writes a Word document to disk
+  - name: _replace_document_text
+    description: Replace supported placeholders across document paragraphs and table cells.
+    locked: false
+    inputs:
+      doc:
+        type: Document
+        required: true
+      replacements:
+        type: dict[str, str]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: mutates in-memory document content
+  - name: _replace_in_paragraph
+    description: Replace placeholders within a paragraph while preserving a single merged text run.
+    locked: false
+    inputs:
+      paragraph:
+        type: Any
+        required: true
+      replacements:
+        type: dict[str, str]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: mutates in-memory paragraph runs
+data_structures:
+- name: OfferInput
+  type: dataclass
+dependencies:
+- scoring_reporting

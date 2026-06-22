@@ -2,7 +2,7 @@ module:
   name: scoring_reporting
   language: python
   path: src/scoring_reporting.py
-  version: 0.13.0
+  version: 0.13.2
   description: Flattened public interface for scoring, reporting, trait signals, exports,
     referrals, email safety, offers, and templates, including DeepSeek-only advisory
     signal scoring; only active legacy adapters remain in the compatibility module
@@ -1566,14 +1566,17 @@ classes:
   - name: export
     description: |-
       Generate finalized interview report document using the interview-notes
-      template layout: narrow margins, Times New Roman at no less than 12 pt, centered
-      title/subtitle, generated executive-summary and DeepSeek evidence-summary
-      sections, candidate snapshot and score tables, structured answer evidence
-      blocks (summary, evidence, rubric alignment, risk/gap) before full responses,
-      and trait detail sections that separate final interviewer raw/weighted scores
-      from DeepSeek advisory net signal score, suggested raw score, suggested weighted
-      score, model observations, auto-no-hire metadata, and compatibility selected
-      signal ids when present.
+      template layout: narrow margins, readable Arial typography at no less than 12
+      pt for body content, centered title/subtitle, professional blue/green heading
+      and table styling, shaded recommendation/score/override callouts, generated
+      executive-summary and AI-generated evidence-summary sections, candidate snapshot
+      and score tables, interviewer and AI-suggested score totals shown out of total
+      possible points, structured answer evidence blocks (summary, evidence, rubric
+      alignment, risk/gap) before full responses, and trait detail sections that
+      separate final interviewer raw/weighted scores from AI advisory net signal
+      score, suggested raw score, suggested weighted score, model
+      observations, auto-no-hire metadata, and compatibility selected signal ids
+      when present.
     locked: false
     inputs:
       rubric:

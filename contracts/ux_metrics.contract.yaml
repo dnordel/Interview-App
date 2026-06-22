@@ -1,0 +1,83 @@
+module:
+  name: ux_metrics
+  language: python
+  path: src/ux_metrics.py
+  version: 1.0.0
+  description: Deprecated compatibility wrapper for UX metrics helpers now owned by platform_services.
+functions:
+- name: build_monthly_summary
+  description: Forward to platform_services.build_monthly_summary.
+  locked: false
+  inputs:
+    month:
+      type: date
+      required: true
+    scope:
+      type: str
+      required: true
+    employees:
+      type: list[Any]
+      required: true
+    events:
+      type: list[dict[str, Any]]
+      required: true
+    grace_hours:
+      type: int
+      required: false
+      default: 24
+  returns:
+    type: MonthlyMetricsSummary
+  exceptions: []
+  side_effects: none
+classes:
+- name: MonthlyMetricsSummary
+  description: Forwarded summary DTO from platform_services.
+  locked: false
+  attributes:
+    month_key:
+      type: str
+    scope:
+      type: str
+    on_time_completion_pct:
+      type: float
+    overdue_count:
+      type: int
+    previous_overdue_count:
+      type: int
+    overdue_change_pct:
+      type: float | None
+    median_days_by_task_type:
+      type: dict[str, float]
+  methods: []
+- name: UxMetricsLogger
+  description: Forwarded metrics logger from platform_services.
+  locked: false
+  attributes: {}
+  methods: []
+data_structures:
+- name: EVENT_TASK_CREATED
+  type: str
+- name: EVENT_TASK_COMPLETED
+  type: str
+- name: EVENT_TASK_OVERDUE
+  type: str
+- name: EVENT_REMINDER_SENT
+  type: str
+- name: EVENT_INTERVIEW_FINALIZED
+  type: str
+- name: UX_EVENT_KINDS
+  type: tuple[str, ...]
+- name: UX_REQUIRED_FIELDS_BY_KIND
+  type: dict[str, tuple[str, ...]]
+- name: ONBOARDING_EVENT_REGISTRY
+  type: dict[str, dict[str, type[Any]]]
+- name: LEGACY_TO_CANONICAL_UX_EVENTS
+  type: dict[str, str]
+- name: SCOPE_EVENT_MONTH
+  type: str
+- name: SCOPE_CREATED_MONTH
+  type: str
+- name: SUMMARY_SCOPES
+  type: tuple[str, ...]
+dependencies:
+- module: platform_services

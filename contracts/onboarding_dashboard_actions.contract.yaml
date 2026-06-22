@@ -1,0 +1,127 @@
+module:
+  name: onboarding_dashboard_actions
+  language: python
+  path: src/onboarding_dashboard_actions.py
+  version: 1.0.1
+  description: Compatibility wrapper for onboarding dashboard action helpers now implemented
+    by onboarding_operations.
+functions:
+- name: build_dashboard_kpi_chips
+  description: build_dashboard_kpi_chips function in onboarding_dashboard_actions.
+  locked: false
+  inputs:
+    summary:
+      type: DashboardTodaySummary
+      required: true
+    employees:
+      type: list[Employee]
+      required: true
+    today:
+      type: date
+      required: true
+  returns:
+    type: list[DashboardKpiChip]
+  exceptions: []
+  side_effects: none
+- name: build_recommended_action
+  description: build_recommended_action function in onboarding_dashboard_actions.
+  locked: false
+  inputs:
+    summary:
+      type: DashboardTodaySummary
+      required: true
+    employees:
+      type: list[Employee]
+      required: true
+    today:
+      type: date
+      required: true
+  returns:
+    type: DashboardRecommendation
+  exceptions: []
+  side_effects: none
+- name: first_matching_navigation
+  description: first_matching_navigation function in onboarding_dashboard_actions.
+  locked: false
+  inputs:
+    employees:
+      type: list[Employee]
+      required: true
+    today:
+      type: date
+      required: true
+    filter_key:
+      type: str
+      required: true
+  returns:
+    type: dict[str, str] | None
+  exceptions: []
+  side_effects: none
+- name: kpi_navigation_target
+  description: kpi_navigation_target function in onboarding_dashboard_actions.
+  locked: false
+  inputs:
+    employees:
+      type: list[Employee]
+      required: true
+    today:
+      type: date
+      required: true
+    kpi_key:
+      type: str
+      required: true
+  returns:
+    type: dict[str, str] | None
+  exceptions: []
+  side_effects: none
+- name: _count_tasks_for_filter
+  description: _count_tasks_for_filter function in onboarding_dashboard_actions.
+  locked: false
+  inputs:
+    employees:
+      type: list[Employee]
+      required: true
+    today:
+      type: date
+      required: true
+    filter_key:
+      type: str
+      required: true
+  returns:
+    type: int
+  exceptions: []
+  side_effects: none
+classes:
+- name: DashboardKpiChip
+  description: DashboardKpiChip class in onboarding_dashboard_actions.
+  locked: false
+  attributes:
+    key:
+      type: str
+    label:
+      type: str
+    count:
+      type: int
+    filter_key:
+      type: str
+  methods: []
+- name: DashboardRecommendation
+  description: DashboardRecommendation class in onboarding_dashboard_actions.
+  locked: false
+  attributes:
+    message:
+      type: str
+    button_label:
+      type: str
+    action_key:
+      type: str
+    employee_id:
+      type: str | None
+    employee_name:
+      type: str | None
+    filter_key:
+      type: str | None
+  methods: []
+data_structures: []
+dependencies:
+- module: onboarding_operations

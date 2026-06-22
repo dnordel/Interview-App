@@ -1,0 +1,119 @@
+module:
+  name: director_referral_service
+  language: python
+  path: src/director_referral_service.py
+  version: 1.0.0
+  description: Deprecated compatibility wrapper for director referral packet construction, delivery, and communication logging implemented by scoring_reporting.
+functions:
+- name: _allowed_referral_hosts_from_env
+  description: Load allowed director referral endpoint hosts from environment configuration.
+  locked: false
+  inputs: {}
+  returns:
+    type: set[str]
+  exceptions: []
+  side_effects: Reads environment variables.
+- name: _validate_referral_endpoint
+  description: Validate that director referral endpoint uses HTTPS and an allowed host when configured.
+  locked: false
+  inputs:
+    endpoint:
+      type: str
+      required: true
+    allowed_hosts:
+      type: set[str] | None
+      required: false
+      default: null
+  returns:
+    type: str
+  exceptions:
+  - DirectorReferralError
+  side_effects: Reads environment variables when allowed_hosts is not supplied.
+- name: build_director_packet
+  description: Build the director referral packet from finalized interview payload, scoring, report, integration export, and referral documents.
+  locked: false
+  inputs:
+    payload:
+      type: dict[str, Any]
+      required: true
+    scoring:
+      type: dict[str, Any]
+      required: true
+    report_path:
+      type: Path
+      required: true
+    integration_path:
+      type: Path
+      required: true
+    referral_packet:
+      type: dict[str, str]
+      required: true
+    generated_transcript_path:
+      type: Path | None
+      required: false
+      default: null
+  returns:
+    type: dict[str, Any]
+  exceptions: []
+  side_effects: none
+- name: send_director_packet
+  description: POST a director referral packet to a validated HTTPS endpoint.
+  locked: false
+  inputs:
+    packet:
+      type: dict[str, Any]
+      required: true
+    endpoint:
+      type: str
+      required: true
+    timeout_seconds:
+      type: int
+      required: false
+      default: 12
+    allowed_hosts:
+      type: set[str] | None
+      required: false
+      default: null
+  returns:
+    type: dict[str, Any]
+  exceptions:
+  - DirectorReferralError
+  side_effects: Sends an HTTPS request to the configured referral endpoint.
+- name: default_referral_endpoint
+  description: Return the configured director referral endpoint from environment variables.
+  locked: false
+  inputs: {}
+  returns:
+    type: str
+  exceptions: []
+  side_effects: Reads environment variables.
+- name: append_communication_log
+  description: Append a director referral communication event as JSONL under the base communications directory.
+  locked: false
+  inputs:
+    base_dir:
+      type: Path
+      required: true
+    event:
+      type: dict[str, Any]
+      required: true
+    candidate_name:
+      type: str
+      required: true
+  returns:
+    type: Path
+  exceptions:
+  - OSError
+  side_effects: Creates directories and appends a JSONL communication log entry.
+classes:
+- name: DirectorReferralError
+  description: Raised when director referral packet delivery or endpoint validation fails.
+  locked: false
+  attributes: {}
+  methods: []
+data_structures:
+- name: request
+  description: urllib request module exposed for legacy tests and callers that patch urlopen.
+  type: module
+dependencies:
+- scoring_reporting
