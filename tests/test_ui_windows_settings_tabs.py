@@ -7,3 +7,4 @@ def test_settings_window_uses_task_oriented_tab_constants() -> None:
     assert SettingsWindow._TAB_NOTIFICATIONS == "notifications"
     assert SettingsWindow._TAB_STORAGE == "storage"
     assert SettingsWindow._TAB_SECURITY == "security"
+    assert SettingsWindow._TAB_DEEPSEEK == "deepseek"

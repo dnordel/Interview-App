@@ -115,7 +115,7 @@ def test_history_controller_refresh_renders_rows() -> None:
     assert shared.history_rows[0]["candidate_name"] == "Test"
 
 
-def test_finalize_controller_poll_retries_first_failure() -> None:
+def test_finalize_controller_poll_retries_first_failure_keeps_progress_open() -> None:
     calls: list[str] = []
     app = SimpleNamespace(
         _refresh_finalize_processing_state=lambda: None,
@@ -132,10 +132,10 @@ def test_finalize_controller_poll_retries_first_failure() -> None:
 
     controller.poll_finalize_worker(q)
 
-    assert calls == ["start:2", "close"]
+    assert calls == ["start:2"]
 
 
-def test_finalize_interview_dispatches_worker_and_closes_progress_immediately() -> None:
+def test_finalize_interview_dispatches_worker_returns_to_start_and_keeps_progress_open() -> None:
     root = _RootWindow()
     calls: list[str] = []
     app = SimpleNamespace(
@@ -143,6 +143,7 @@ def test_finalize_interview_dispatches_worker_and_closes_progress_immediately() 
         _show_finalize_progress=lambda: calls.append("show"),
         _start_finalize_worker=lambda attempt: calls.append(f"start:{attempt}"),
         _close_finalize_progress=lambda: calls.append("close"),
+        show_start_screen=lambda: calls.append("start-screen"),
         winfo_toplevel=lambda: root,
         current_finalize_correlation_id="",
     )
@@ -150,7 +151,7 @@ def test_finalize_interview_dispatches_worker_and_closes_progress_immediately() 
 
     controller.finalize_interview()
 
-    assert calls == ["validate", "show", "start:1", "close"]
+    assert calls == ["validate", "show", "start:1", "start-screen"]
 
 
 def test_finalize_interview_restores_main_window_focus_after_dispatch() -> None:
@@ -160,6 +161,7 @@ def test_finalize_interview_restores_main_window_focus_after_dispatch() -> None:
         _show_finalize_progress=lambda: None,
         _start_finalize_worker=lambda attempt: attempt,
         _close_finalize_progress=lambda: None,
+        show_start_screen=lambda: None,
         winfo_toplevel=lambda: root,
         current_finalize_correlation_id="",
     )
@@ -182,6 +184,7 @@ def test_finalize_interview_warns_when_pending_transcriptions_exist() -> None:
         _show_finalize_progress=lambda: calls.append("show"),
         _start_finalize_worker=lambda attempt: calls.append(f"start:{attempt}"),
         _close_finalize_progress=lambda: calls.append("close"),
+        show_start_screen=lambda: calls.append("start-screen"),
         winfo_toplevel=lambda: SimpleNamespace(lift=lambda: None, focus_force=lambda: None),
         current_finalize_correlation_id="",
     )
@@ -189,7 +192,7 @@ def test_finalize_interview_warns_when_pending_transcriptions_exist() -> None:
 
     controller.finalize_interview()
 
-    assert calls == ["validate", "show", "start:1", "close"]
+    assert calls == ["validate", "show", "start:1", "start-screen"]
     assert banner_calls == ["banner"]
     assert warning_messages == ["Transcription still processing in background; report may be partial."]
 

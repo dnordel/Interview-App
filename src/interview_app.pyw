@@ -255,6 +255,9 @@ class InterviewApp(tk.Tk):
         self.finalize_window: tk.Toplevel | None = None
         self.finalize_progress: ttk.Progressbar | None = None
         self.finalize_status_label: ttk.Label | None = None
+        self._finalize_progress_queue: queue.Queue[str] | None = None
+        self._finalize_progress_step = ""
+        self.finalize_deepseek_progress_path: Path | None = None
         self._finalize_worker_running = False
         self._transcription_cv = threading.Condition()
         self._transcription_in_progress = False
@@ -2792,14 +2795,16 @@ class InterviewApp(tk.Tk):
         win.geometry("480x140")
         win.resizable(False, False)
         win.transient(self)
-        win.grab_set()
         win.protocol("WM_DELETE_WINDOW", lambda: None)
+        self._finalize_progress_queue = queue.Queue()
+        self._finalize_progress_step = "Preparing finalize"
+        self.finalize_deepseek_progress_path = None
 
         container = ttk.Frame(win, padding=14)
         container.pack(fill="both", expand=True)
 
         log_hint = self.__dict__.get("_app_log_path") or get_configured_log_path()
-        status_text = "Processing transcription... this may take a minute."
+        status_text = self._finalize_progress_step
         if log_hint:
             status_text += f"\nStatus logs: {log_hint}"
         status_label = ttk.Label(
@@ -2819,14 +2824,61 @@ class InterviewApp(tk.Tk):
         self.finalize_progress = bar
         self.finalize_status_label = status_label
 
+    def _report_finalize_progress(self, step: str) -> None:
+        normalized = str(step or "").strip()
+        if not normalized:
+            return
+        progress_queue = self.__dict__.get("_finalize_progress_queue")
+        if progress_queue is None:
+            self._finalize_progress_step = normalized
+            return
+        try:
+            progress_queue.put_nowait(normalized)
+        except queue.Full:
+            self._finalize_progress_step = normalized
+
+    def _read_deepseek_progress_step(self) -> tuple[str, str]:
+        path = self.finalize_deepseek_progress_path
+        if path is None or not path.exists():
+            return "", ""
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return "", ""
+        if not isinstance(payload, dict):
+            return "", ""
+        return str(payload.get("step") or "").strip(), str(payload.get("status") or "").strip().lower()
+
+    def _watch_deepseek_finalize_progress(self, progress_path: str | Path | None) -> None:
+        if progress_path:
+            self.finalize_deepseek_progress_path = Path(progress_path)
+        if self.finalize_deepseek_progress_path is None:
+            self.after(2500, self._close_finalize_progress)
+            return
+        step, status = self._read_deepseek_progress_step()
+        if step:
+            self._finalize_progress_step = step
+            self._refresh_finalize_processing_state()
+        if status in {"complete", "failed"}:
+            self.after(2500, self._close_finalize_progress)
+            return
+        if self.finalize_window is not None and self.finalize_window.winfo_exists():
+            self.after(1000, lambda: self._watch_deepseek_finalize_progress(self.finalize_deepseek_progress_path))
+
     def _close_finalize_progress(self) -> None:
         if self.finalize_progress is not None:
             self.finalize_progress.stop()
             self.finalize_progress = None
         self.finalize_status_label = None
+        self._finalize_progress_queue = None
+        self._finalize_progress_step = ""
+        self.finalize_deepseek_progress_path = None
         if self.finalize_window is not None:
             if self.finalize_window.winfo_exists():
-                self.finalize_window.grab_release()
+                try:
+                    self.finalize_window.grab_release()
+                except tk.TclError:
+                    pass
                 self.finalize_window.destroy()
             self.finalize_window = None
 
@@ -2842,11 +2894,24 @@ class InterviewApp(tk.Tk):
         label = self.finalize_status_label
         if label is None:
             return
+        progress_queue = self._finalize_progress_queue
+        if progress_queue is not None:
+            while True:
+                try:
+                    self._finalize_progress_step = progress_queue.get_nowait()
+                except queue.Empty:
+                    break
+        deepseek_step, _status = self._read_deepseek_progress_step()
+        if deepseek_step:
+            self._finalize_progress_step = deepseek_step
+        if self._finalize_progress_step:
+            label.config(text=self._finalize_progress_step)
+            return
         pending = self._pending_transcription_count()
         if pending > 0:
-            label.config(text=f"Processing transcription... {pending} question(s) remaining.")
+            label.config(text=f"Transcribing... {pending} question(s) remaining.")
             return
-        label.config(text="Processing transcription... preparing final report.")
+        label.config(text="Preparing final report.")
 
     def _ordered_custom_answers(self) -> list[dict[str, Any]]:
         ordered: list[dict[str, Any]] = []

@@ -2,8 +2,8 @@ module:
   name: ui_components_history_data_grid
   language: python
   path: src/ui_components/history_data_grid.py
-  version: 1.2.0
-  description: Deprecated compatibility wrapper for history grid implementation owned by ui_composition; retranscription action is no longer shown.
+  version: 1.2.2
+  description: Deprecated compatibility wrapper for history grid implementation owned by ui_composition; school and position columns are displayed after primary offer and notes actions, and retranscription action is no longer shown.
 functions: []
 classes:
 - name: HistoryDataGrid

@@ -169,6 +169,70 @@ class TestDocxExporterValidation(unittest.TestCase):
         self.assertIn("I send weekly updates and hold check-ins.", table_text)
         self.assertNotIn("Interviewer note that should not replace transcript.", doc_text + table_text)
 
+    def test_export_collapses_duplicate_transcription_attempts(self):
+        duplicate_transcript = (
+            "[Q1 Attempt 1]\n"
+            "I use visual routines and songs.\n\n"
+            "[Q1 Attempt 2]\n"
+            "I use visual routines and songs."
+        )
+        payload = {
+            "candidate": {
+                "name": "Ada",
+                "interview_date": "2026-02-20",
+                "track": "general",
+            },
+            "flow_transcript": [
+                {
+                    "type": "custom",
+                    "title": "Custom Question",
+                    "question": "How do you transition children?",
+                    "candidate_transcript": duplicate_transcript,
+                }
+            ],
+            "custom_answers": [],
+        }
+
+        with tempfile.TemporaryDirectory() as td:
+            exporter = DocxExporter(Path(td))
+            out_path = exporter.export(self._rubric(), payload, self._scoring())
+            doc = Document(out_path)
+            table_text = "\n".join(cell.text for table in doc.tables for row in table.rows for cell in row.cells)
+
+        self.assertEqual(table_text.count("I use visual routines and songs."), 1)
+        self.assertNotIn("[Q1 Attempt 2]", table_text)
+
+    def test_export_marks_missing_trait_transcript_without_empty_answer_page(self):
+        payload = {
+            "candidate": {
+                "name": "Ada",
+                "interview_date": "2026-02-20",
+                "track": "general",
+            },
+            "flow_transcript": [
+                {
+                    "flow_index": 1,
+                    "type": "trait",
+                    "id": "trait_1",
+                    "title": "Empathy",
+                    "question": "How do you help a child?",
+                    "candidate_transcript": "",
+                    "raw_score": 5,
+                }
+            ],
+            "custom_answers": [],
+        }
+
+        with tempfile.TemporaryDirectory() as td:
+            exporter = DocxExporter(Path(td))
+            out_path = exporter.export(self._rubric(), payload, self._trait_scoring())
+            doc = Document(out_path)
+            doc_text = "\n".join(paragraph.text for paragraph in doc.paragraphs)
+            table_text = "\n".join(cell.text for table in doc.tables for row in table.rows for cell in row.cells)
+
+        self.assertIn("Full Candidate Answer (auto-transcribed): Not captured", doc_text)
+        self.assertNotIn("(No candidate transcript captured)", table_text)
+
     def test_export_places_executive_summary_before_report_sections(self):
         payload = {
             "candidate": {

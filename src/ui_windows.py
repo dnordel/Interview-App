@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Any
 from pathlib import Path
 
@@ -12,6 +13,12 @@ from scoring_reporting import (
     placeholder_picker_options,
     token_from_picker_label,
     validate_template_map,
+)
+from interview_runtime import (
+    DEEPSEEK_PROMPT_TEMPLATE_KEYS,
+    DEEPSEEK_QUESTION_PROMPT_TEMPLATE_KEYS,
+    DEFAULT_DEEPSEEK_PROMPT_TEMPLATES,
+    normalize_deepseek_prompt_templates,
 )
 from ui_composition import KeyboardPathSession, format_guidance
 from tk_theme import COLORS, apply_professional_ops_theme, configure_text_widget
@@ -27,6 +34,7 @@ class SettingsWindow(tk.Toplevel):
     _TAB_NOTIFICATIONS = "notifications"
     _TAB_STORAGE = "storage"
     _TAB_SECURITY = "security"
+    _TAB_DEEPSEEK = "deepseek"
 
     def __init__(self, app: "InterviewApp"):
         super().__init__(app)
@@ -58,6 +66,7 @@ class SettingsWindow(tk.Toplevel):
         self.whisper_vad_filter_var = BooleanVar(value=bool(self.app.settings.get("whisper_vad_filter", True)))
         self.whisper_beam_size_var = IntVar(value=int(self.app.settings.get("whisper_beam_size", 5) or 5))
         self.whisper_temperature_var = StringVar(value=str(self.app.settings.get("whisper_temperature", 0.0)))
+        self.deepseek_prompt_templates = normalize_deepseek_prompt_templates(self.app.settings.get("deepseek_prompt_templates", {}))
         self._high_risk_toggle_guard = False
         self.settings_placeholder_var = StringVar(value="")
         self._settings_template_widgets: list[tk.Misc] = []
@@ -70,6 +79,7 @@ class SettingsWindow(tk.Toplevel):
             self._TAB_GENERAL,
             self._TAB_TEMPLATES,
             self._TAB_NOTIFICATIONS,
+            self._TAB_DEEPSEEK,
             self._TAB_STORAGE,
             self._TAB_SECURITY,
         ]
@@ -93,18 +103,21 @@ class SettingsWindow(tk.Toplevel):
         general_tab = ttk.Frame(self.notebook, padding=10)
         templates_tab = ttk.Frame(self.notebook, padding=10)
         notifications_tab = ttk.Frame(self.notebook, padding=10)
+        deepseek_tab = ttk.Frame(self.notebook, padding=10)
         storage_tab = ttk.Frame(self.notebook, padding=10)
         security_tab = ttk.Frame(self.notebook, padding=10)
 
         self.notebook.add(general_tab, text="General")
         self.notebook.add(templates_tab, text="Templates")
         self.notebook.add(notifications_tab, text="Notifications")
+        self.notebook.add(deepseek_tab, text="DeepSeek")
         self.notebook.add(storage_tab, text="Storage")
         self.notebook.add(security_tab, text="Security")
 
         self._build_general_tab(general_tab)
         self._build_templates_tab(templates_tab)
         self._build_notifications_tab(notifications_tab)
+        self._build_deepseek_tab(deepseek_tab)
         self._build_storage_tab(storage_tab)
         self._build_security_tab(security_tab)
 
@@ -310,6 +323,74 @@ class SettingsWindow(tk.Toplevel):
         self.send_on_finalize_var.trace_add("write", self._on_send_on_finalize_toggled)
         self._tab_focus_targets[self._TAB_NOTIFICATIONS] = [endpoint_entry, send_check]
 
+    def _build_deepseek_tab(self, parent: ttk.Frame) -> None:
+        self._build_tab_header(
+            parent,
+            self._TAB_DEEPSEEK,
+            "DeepSeek prompt settings",
+            "Edit every prompt sent to local DeepSeek during finalize.",
+        )
+        scroller = ttk.Frame(parent)
+        scroller.pack(fill="both", expand=True)
+        canvas = tk.Canvas(scroller, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(scroller, orient="vertical", command=canvas.yview)
+        prompt_frame = ttk.Frame(canvas)
+        window_id = canvas.create_window((0, 0), window=prompt_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        prompt_frame.bind("<Configure>", lambda _event: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.bind("<Configure>", lambda event: canvas.itemconfigure(window_id, width=event.width))
+        self.deepseek_prompt_widgets: dict[str, tk.Text] = {}
+        self.deepseek_question_prompt_widgets: dict[str, tk.Text] = {}
+        labels = {
+            "answer_summary_system": "Per-question summary system prompt",
+            "answer_summary_user": "Per-question summary user prompt",
+            "executive_summary_system": "Executive summary system prompt",
+            "executive_summary_user": "Executive summary user prompt",
+            "trait_suggestion_system": "Trait signal suggestion system prompt",
+            "trait_suggestion_user": "Trait signal suggestion user prompt",
+            "trait_scoring_system": "Trait scoring system prompt",
+            "trait_scoring_user": "Trait scoring user prompt",
+        }
+        question_labels = {
+            "answer_summary_system_by_question": "Per-question answer summary system prompt overrides JSON",
+            "answer_summary_user_by_question": "Per-question answer summary prompt overrides JSON",
+            "trait_suggestion_system_by_question": "Per-question trait signal suggestion system prompt overrides JSON",
+            "trait_suggestion_user_by_question": "Per-question trait signal suggestion prompt overrides JSON",
+            "trait_scoring_system_by_question": "Per-question trait raw scoring system prompt overrides JSON",
+            "trait_scoring_user_by_question": "Per-question trait raw scoring prompt overrides JSON",
+        }
+        focus_targets: list[tk.Misc] = []
+        for row, key in enumerate(DEEPSEEK_PROMPT_TEMPLATE_KEYS):
+            box = ttk.LabelFrame(prompt_frame, text=labels[key], padding=6)
+            box.grid(row=row // 2, column=row % 2, sticky="nsew", padx=4, pady=4)
+            widget = tk.Text(box, height=5, wrap="word")
+            configure_text_widget(widget, font_size=int(self.app.settings.get("font_size", 10)))
+            widget.pack(fill="both", expand=True)
+            widget.insert("1.0", self.deepseek_prompt_templates.get(key, DEFAULT_DEEPSEEK_PROMPT_TEMPLATES[key]))
+            self.deepseek_prompt_widgets[key] = widget
+            self._field_focus_targets[f"deepseek_{key}"] = widget
+            self._build_field_error(box, f"deepseek_{key}")
+            focus_targets.append(widget)
+        for offset, key in enumerate(DEEPSEEK_QUESTION_PROMPT_TEMPLATE_KEYS, start=4):
+            box = ttk.LabelFrame(prompt_frame, text=question_labels[key], padding=6)
+            box.grid(row=offset, column=0, columnspan=2, sticky="nsew", padx=4, pady=4)
+            widget = tk.Text(box, height=5, wrap="word")
+            configure_text_widget(widget, font_size=int(self.app.settings.get("font_size", 10)))
+            widget.pack(fill="both", expand=True)
+            value = self.deepseek_prompt_templates.get(key, {})
+            widget.insert("1.0", json.dumps(value if isinstance(value, dict) else {}, indent=2, ensure_ascii=False))
+            self.deepseek_question_prompt_widgets[key] = widget
+            self._field_focus_targets[f"deepseek_{key}"] = widget
+            self._build_field_error(box, f"deepseek_{key}")
+            focus_targets.append(widget)
+        prompt_frame.columnconfigure(0, weight=1)
+        prompt_frame.columnconfigure(1, weight=1)
+        for row in range(10):
+            prompt_frame.rowconfigure(row, weight=1)
+        self._tab_focus_targets[self._TAB_DEEPSEEK] = focus_targets
+
     def _on_send_on_finalize_toggled(self, *_args: object) -> None:
         if self._high_risk_toggle_guard:
             return
@@ -464,6 +545,41 @@ class SettingsWindow(tk.Toplevel):
         self._tab_message_vars[self._TAB_SECURITY].set("Advanced defaults were restored.")
         self._log_telemetry("settings_whisper_defaults_restored")
 
+    def _deepseek_prompt_template_values(self) -> dict[str, Any]:
+        widgets = getattr(self, "deepseek_prompt_widgets", {})
+        question_widgets = getattr(self, "deepseek_question_prompt_widgets", {})
+        if not isinstance(widgets, dict):
+            return dict(getattr(self, "deepseek_prompt_templates", {}))
+        output: dict[str, Any] = {}
+        for key in DEEPSEEK_PROMPT_TEMPLATE_KEYS:
+            widget = widgets.get(key)
+            if widget is None:
+                output[key] = str(getattr(self, "deepseek_prompt_templates", {}).get(key, "")).strip()
+                continue
+            output[key] = widget.get("1.0", END).strip()
+        if isinstance(question_widgets, dict):
+            for key in DEEPSEEK_QUESTION_PROMPT_TEMPLATE_KEYS:
+                widget = question_widgets.get(key)
+                if widget is None:
+                    output[key] = getattr(self, "deepseek_prompt_templates", {}).get(key, {})
+                    continue
+                output[key] = widget.get("1.0", END).strip()
+        return output
+
+    @staticmethod
+    def _normalize_deepseek_question_prompt_json(value: Any) -> dict[str, str]:
+        if isinstance(value, dict):
+            raw = value
+        else:
+            raw_text = str(value or "").strip()
+            if not raw_text:
+                return {}
+            parsed = json.loads(raw_text)
+            if not isinstance(parsed, dict):
+                raise ValueError("DeepSeek per-question prompt overrides must be a JSON object.")
+            raw = parsed
+        return {str(key).strip(): str(prompt) for key, prompt in raw.items() if str(key).strip() and str(prompt).strip()}
+
     def _clear_tab_messages(self) -> None:
         for var in self._tab_message_vars.values():
             var.set("")
@@ -529,6 +645,55 @@ class SettingsWindow(tk.Toplevel):
                 "Director referral endpoint must start with http:// or https://.",
                 "Use <https://...> (or <http://...>) for the endpoint URL.",
             )
+        prompt_templates = self._deepseek_prompt_template_values()
+        required_placeholders = {
+            "answer_summary_user": "{payload_json}",
+            "executive_summary_user": "{answer_summaries_json}",
+            "trait_suggestion_user": "{payload_json}",
+            "trait_scoring_user": "{payload_json}",
+        }
+        per_question_required = {
+            "answer_summary_user_by_question": "{payload_json}",
+            "trait_suggestion_user_by_question": "{payload_json}",
+            "trait_scoring_user_by_question": "{payload_json}",
+        }
+        for key in DEEPSEEK_PROMPT_TEMPLATE_KEYS:
+            value = prompt_templates.get(key, "").strip()
+            if not value:
+                add_error(
+                    self._TAB_DEEPSEEK,
+                    f"deepseek_{key}",
+                    "DeepSeek prompt cannot be blank.",
+                    "Restore default text or enter a complete prompt.",
+                )
+                continue
+            required = required_placeholders.get(key)
+            if required and required not in value:
+                add_error(
+                    self._TAB_DEEPSEEK,
+                    f"deepseek_{key}",
+                    f"DeepSeek prompt must include {required}.",
+                    "Keep the data placeholder so candidate evidence reaches the model.",
+                )
+        for key, required in per_question_required.items():
+            try:
+                overrides = self._normalize_deepseek_question_prompt_json(prompt_templates.get(key, {}))
+            except (TypeError, ValueError, json.JSONDecodeError):
+                add_error(
+                    self._TAB_DEEPSEEK,
+                    f"deepseek_{key}",
+                    "Per-question prompt overrides must be valid JSON.",
+                    'Use an object like {"trait_1": "Prompt {payload_json}"}.',
+                )
+                continue
+            for question_key, prompt in overrides.items():
+                if required not in prompt:
+                    add_error(
+                        self._TAB_DEEPSEEK,
+                        f"deepseek_{key}",
+                        f"Prompt for {question_key} must include {required}.",
+                        "Keep the data placeholder so candidate evidence reaches the model.",
+                    )
         return errors
 
     def _apply_validation_messages(self, errors: dict[str, list[dict[str, str]]]) -> tuple[list[str], str | None]:
@@ -578,6 +743,10 @@ class SettingsWindow(tk.Toplevel):
             return
 
         templates = self._settings_template_values()
+        raw_deepseek_prompt_templates = self._deepseek_prompt_template_values()
+        for key in DEEPSEEK_QUESTION_PROMPT_TEMPLATE_KEYS:
+            raw_deepseek_prompt_templates[key] = self._normalize_deepseek_question_prompt_json(raw_deepseek_prompt_templates.get(key, {}))
+        deepseek_prompt_templates = normalize_deepseek_prompt_templates(raw_deepseek_prompt_templates)
         whisper_beam_size = max(1, min(10, int(self.whisper_beam_size_var.get() or 5)))
         whisper_temperature = float(self.whisper_temperature_var.get())
 
@@ -597,6 +766,7 @@ class SettingsWindow(tk.Toplevel):
         self.app.settings["welcome_email_subject_template"] = templates["welcome_subject"] or "Welcome to {school}, {candidate_name}!"
         self.app.settings["welcome_email_body_template"] = templates["welcome_body"]
         self.app.settings["welcome_onboarding_pdf_path"] = self.onboarding_pdf_var.get().strip()
+        self.app.settings["deepseek_prompt_templates"] = deepseek_prompt_templates
         self.app.settings["whisper_language"] = self.whisper_language_var.get().strip().lower() or "en"
         self.app.settings["whisper_vad_filter"] = bool(self.whisper_vad_filter_var.get())
         self.app.settings["whisper_beam_size"] = whisper_beam_size

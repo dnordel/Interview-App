@@ -2,7 +2,7 @@ module:
   name: data_store
   language: python
   path: src/data_store.py
-  version: 1.0.1
+  version: 1.0.2
   description: JSON-backed stores and loaders for interview runtime and onboarding
     settings.
 functions: []
@@ -210,12 +210,38 @@ classes:
     returns:
       type: None
 - name: InterviewHistoryStore
-  description: Persists finalized interview history entries.
+  description: Persists finalized interview history entries and reads legacy root-level
+    history rows when the canonical user_artifacts history path is used.
   locked: false
   attributes: {}
   methods:
   - name: load
+    description: Load canonical history rows merged after legacy root-level rows,
+      deduplicating by stable row key when both files contain the same interview.
     inputs: {}
+    returns:
+      type: list[dict[str, Any]]
+    side_effects: Reads user_artifacts/interview_history.json and, when using that
+      canonical path, may also read interview_history.json from the repository root.
+  - name: _load_from_path
+    inputs:
+      path:
+        type: Path | None
+        required: true
+    returns:
+      type: list[dict[str, Any]]
+  - name: _legacy_root_path
+    inputs: {}
+    returns:
+      type: Path | None
+  - name: _merge_history_rows
+    inputs:
+      legacy_rows:
+        type: list[dict[str, Any]]
+        required: true
+      canonical_rows:
+        type: list[dict[str, Any]]
+        required: true
     returns:
       type: list[dict[str, Any]]
   - name: append

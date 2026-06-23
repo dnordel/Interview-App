@@ -128,14 +128,24 @@ pip install -r requirements-dev.txt
 **Windows (recommended for non-technical users):**
 
 - Double-click `Start Preschool Teacher Interview Guide.bat` in the repository root.
-- This starts the same setup/launch flow without needing to open PowerShell manually.
+- This starts the setup/launch flow without needing to open PowerShell manually and now prefers the PySide6 redesigned workflow shell.
 - For debugger logging/console mode, run `.\setup_and_run.ps1 -DebugMode`.
+- `setup_and_run.ps1` tracks a requirements fingerprint in the per-user setup config, invalidates stale cached Tk app paths, and rechecks PySide6 when requirements change.
+- The legacy Tk interview app is still available by direct launch if needed.
 
 **Direct Python launch (advanced):**
 
 ```bash
 pythonw src/interview_app.pyw
 ```
+
+PySide6 redesign shell:
+
+```bash
+python src/pyside_interview_app.py
+```
+
+The PySide6 shell uses the same rubric and question-flow JSON as the existing app. During a live PySide6 interview, answers autosave under `user_artifacts/interviews/pyside_drafts/`.
 
 ### Launch Onboarding App
 
@@ -336,7 +346,8 @@ Open **Edit Questions** and ensure the selected role track has at least one acti
 
 ## Project Structure
 
-- `src/interview_app.pyw`: canonical interview app entry point.
+- `src/pyside_interview_app.py`: preferred interview app entry point.
+- `src/interview_app.pyw`: legacy Tk interview app entry point.
 - `src/Initial Teacher Interview Guide.pyw`: legacy wrapper forwarding to `src/interview_app.pyw`.
 - `src/app_content.py`: shared constants and helper content.
 - `src/data_store.py`: rubric/question persistence.

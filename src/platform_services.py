@@ -1613,7 +1613,25 @@ def atomic_write_json(path: Path, payload: Any, *, indent: int = 2, ensure_ascii
             json.dump(payload, file_obj, indent=indent, ensure_ascii=ensure_ascii)
             file_obj.flush()
             os.fsync(file_obj.fileno())
-        temp_path.replace(target_path)
+        replace_delay_seconds = 0.05
+        replaced = False
+        for replace_attempt in range(4):
+            try:
+                temp_path.replace(target_path)
+                replaced = True
+                break
+            except PermissionError as exc:
+                if target_path.exists():
+                    try:
+                        target_path.chmod(0o666)
+                    except OSError:
+                        pass
+                if replace_attempt == 3:
+                    raise
+                time.sleep(replace_delay_seconds)
+                replace_delay_seconds *= 2
+        if not replaced:
+            raise PermissionError(f"Could not replace {target_path}")
     except Exception:
         if temp_path.exists():
             temp_path.unlink()

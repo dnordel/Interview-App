@@ -79,6 +79,12 @@ services:
     modules:
     - web_app
     - web_app_backend
+  pyside_interview_redesign_service:
+    description: PySide6 workflow-first desktop redesign shell for interviews, candidates,
+      offers, onboarding, and admin studio while reusing local rubric, question flow,
+      and history JSON.
+    modules:
+    - pyside_interview_app
   shared_platform_service:
     description: Shared content/configuration loading, logging, persistence helpers,
       and runtime wrappers.
@@ -108,6 +114,9 @@ services:
 datastores:
   json_file_store:
     type: file_system_json
+    description: Canonical mutable app JSON lives under user_artifacts; interview
+      history also reads root-level interview_history.json as read-only legacy data
+      so past interviews from older app versions remain visible.
     used_by:
     - data_store
     - onboarding_operations

@@ -84,6 +84,28 @@ def test_setup_and_run_launches_runtime_wrapper_with_venv_python() -> None:
     assert '-PythonExe $venvPy' in script_text
 
 
+def test_setup_and_run_prefers_pyside_entrypoint_over_cached_tk_path() -> None:
+    script_text = SETUP_SCRIPT.read_text(encoding="utf-8")
+
+    assert '$PreferredInterviewAppFile = "pyside_interview_app.py"' in script_text
+    assert '$Cfg.App.PreferredInterviewAppFile = $PreferredInterviewAppFile' in script_text
+    assert 'Split-Path $Cfg.App.InterviewAppPath -Leaf' in script_text
+    assert '"pyside_interview_app.py",' in script_text
+    assert script_text.index('"pyside_interview_app.py",') < script_text.index('"interview_app.pyw",')
+    assert '$dlg.Filter = "Python GUI (*.py;*.pyw)|*.py;*.pyw"' in script_text
+
+
+def test_setup_and_run_versions_requirements_and_checks_pyside_dependency() -> None:
+    script_text = SETUP_SCRIPT.read_text(encoding="utf-8")
+    contract = yaml.safe_load(SETUP_CONTRACT.read_text(encoding="utf-8"))
+    function_names = {item["name"] for item in contract["functions"]}
+
+    assert "Get-RequirementsFingerprint" in function_names
+    assert "RequirementsFingerprint" in script_text
+    assert 'Get-FileHash -Algorithm SHA256 -Path $RequirementsPath' in script_text
+    assert '@{ Package = "PySide6"; Module = "PySide6" }' in script_text
+
+
 def test_setup_and_run_does_not_execute_legacy_vbcable_installer_tail() -> None:
     script_text = SETUP_SCRIPT.read_text(encoding="utf-8")
     modern_dialog_index = script_text.index("[void]$form.ShowDialog()")

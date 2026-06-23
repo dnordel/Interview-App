@@ -2,7 +2,7 @@ module:
   name: ui_composition
   language: python
   path: src/ui_composition.py
-  version: 0.11.2
+  version: 0.11.4
   description: Flattened public interface for Tkinter windows, question screens, validation
     feedback, routed views, keyboard telemetry, and reusable UI widgets; only active
     legacy adapters remain in the compatibility module inventory.
@@ -344,8 +344,8 @@ functions:
   - ValueError
   side_effects: none
 - name: runtime_trait_id_for_rubric_trait
-  description: Convert a rubric trait id in trait_<number> form into its runtime trait-id
-    prefix.
+  description: Convert a rubric trait id in trait_<number> or bss_trait_<number> form
+    into its runtime trait-id prefix.
   locked: false
   inputs:
     trait_id:
@@ -1559,8 +1559,10 @@ classes:
     side_effects: updates active UI shell
 - name: HistoryDataGrid
   description: Treeview-based history grid widget with sorting, filtering, tooltip,
-    and action callback dispatch; transcript and retranscription actions are no longer
-    shown, while interview notes show Processing during detached DeepSeek work.
+    action callback dispatch, and school/position metadata columns placed after primary
+    offer and notes actions so Generate Offer remains visible; transcript and retranscription
+    actions are no longer shown, while interview notes show Processing during detached
+    DeepSeek work.
   locked: false
   attributes:
     sort_column:
@@ -1726,6 +1728,8 @@ data_structures:
   description: Glob pattern used to locate runtime trait JSON files.
 - name: TRAIT_ID_ALIAS_PATTERN
   description: Regex for rubric trait_<number> ids.
+- name: BSS_TRAIT_ID_ALIAS_PATTERN
+  description: Regex for rubric bss_trait_<number> ids.
 - name: SIGNAL_ID_PATTERN
   description: Regex for runtime signal refs.
 - name: GROUP_ID_PATTERN

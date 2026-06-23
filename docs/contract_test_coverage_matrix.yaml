@@ -1,4 +1,4 @@
-last_updated: '2026-06-22'
+last_updated: '2026-06-23'
 sections:
 - name: interview_app
   tests:
@@ -15,7 +15,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-06-22T22:04:20.098647+00:00'
+generated_at_utc: '2026-06-23T22:12:42.631739+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -480,6 +480,33 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/data_store.contract.yaml
+  symbol: data_store.InterviewHistoryStore._legacy_root_path
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/data_store.contract.yaml
+  symbol: data_store.InterviewHistoryStore._load_from_path
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/data_store.contract.yaml
+  symbol: data_store.InterviewHistoryStore._merge_history_rows
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/data_store.contract.yaml
   symbol: data_store.InterviewHistoryStore.append
   kind: method
   tests:
@@ -841,6 +868,15 @@ entries:
     - return_type
 - contract: contracts/deepseek_finalize_worker.contract.yaml
   symbol: deepseek_finalize_worker._write_lock_file
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/deepseek_finalize_worker.contract.yaml
+  symbol: deepseek_finalize_worker._write_progress
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -3596,7 +3632,37 @@ entries:
     - return_type
     - security_leakage_prevention
 - contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime._deepseek_question_keys
+  kind: function
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime._render_deepseek_prompt_template
+  kind: function
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime._request_local_ollama_json_completion
+  kind: function
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime._resolve_deepseek_question_prompt
   kind: function
   tests:
   - path: tests/test_interview_root_contracts.py
@@ -3757,6 +3823,16 @@ entries:
     - security_leakage_prevention
 - contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime.module_ownership
+  kind: function
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime.normalize_deepseek_prompt_templates
   kind: function
   tests:
   - path: tests/test_interview_root_contracts.py
@@ -8377,6 +8453,168 @@ entries:
     - behavior
     - parameter_validation
     - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewSession.active_question
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewSession.generate_interview_notes_document
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewSession.generate_offer_document
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewSession.load
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewSession.offer_review_defaults
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewSession.review_summary
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewSession.save_answer_and_advance
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewSession.save_draft
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewSession.start
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewSession.to_draft
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow.show
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.build_interview_redesign_model
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.build_pyside_admin_studio_model
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.build_pyside_candidate_board
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.build_pyside_onboarding_board
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.latest_pyside_draft_path
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.launch_pyside_interview_app
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.main
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
 - contract: contracts/question_runtime_definition_service.contract.yaml
   symbol: question_runtime_definition_service.QuestionRuntimeDefinitionService.add_core_signal
   kind: method
@@ -10554,6 +10792,15 @@ entries:
     - return_type
 - contract: contracts/setup_and_run.contract.yaml
   symbol: setup_and_run.Get-RegistryAppPathsPythonCandidates
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_and_run.contract.yaml
+  symbol: setup_and_run.Get-RequirementsFingerprint
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -13473,6 +13720,16 @@ entries:
     - return_type
     - security_validation
 - contract: contracts/ui_windows.contract.yaml
+  symbol: ui_windows.SettingsWindow._build_deepseek_tab
+  kind: method
+  tests:
+  - path: tests/test_ui_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/ui_windows.contract.yaml
   symbol: ui_windows.SettingsWindow._build_field_error
   kind: method
   tests:
@@ -13593,6 +13850,16 @@ entries:
     - return_type
     - security_validation
 - contract: contracts/ui_windows.contract.yaml
+  symbol: ui_windows.SettingsWindow._deepseek_prompt_template_values
+  kind: method
+  tests:
+  - path: tests/test_ui_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/ui_windows.contract.yaml
   symbol: ui_windows.SettingsWindow._focus_field
   kind: method
   tests:
@@ -13624,6 +13891,16 @@ entries:
     - security_validation
 - contract: contracts/ui_windows.contract.yaml
   symbol: ui_windows.SettingsWindow._log_telemetry
+  kind: method
+  tests:
+  - path: tests/test_ui_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/ui_windows.contract.yaml
+  symbol: ui_windows.SettingsWindow._normalize_deepseek_question_prompt_json
   kind: method
   tests:
   - path: tests/test_ui_contract_interfaces.py

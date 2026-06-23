@@ -55,6 +55,24 @@ def _update_history(job: dict[str, Any], updates: dict[str, Any]) -> None:
     store.update_row(history_id, updates)
 
 
+def _write_progress(job: dict[str, Any], step: str, status: str = "processing") -> None:
+    progress_path = str(job.get("progress_path", "")).strip()
+    if not progress_path:
+        return
+    payload = {
+        "status": status,
+        "step": str(step or "").strip(),
+        "updated_at": _utc_timestamp(),
+    }
+    path = Path(progress_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = path.with_suffix(path.suffix + ".tmp")
+    with tmp_path.open("w", encoding="utf-8") as handle:
+        json.dump(payload, handle, indent=2)
+        handle.write("\n")
+    tmp_path.replace(path)
+
+
 def _lock_path_for_job(job_path: Path) -> Path:
     return Path(job_path).resolve().parent / _LOCK_FILENAME
 
@@ -187,16 +205,35 @@ def _run_job_unlocked(job: dict[str, Any], job_path: Path) -> None:
     trait_inputs = payload.get("trait_inputs", {}) if isinstance(payload.get("trait_inputs"), dict) else {}
 
     config = build_deepseek_summary_config(job.get("deepseek_settings", {}) if isinstance(job.get("deepseek_settings"), dict) else {})
-    payload.update(generate_deepseek_trait_signal_suggestions(flow_transcript, trait_inputs, rubric=rubric, config=config))
+    _write_progress(job, "Starting DeepSeek processing")
+    payload.update(
+        generate_deepseek_trait_signal_suggestions(
+            flow_transcript,
+            trait_inputs,
+            rubric=rubric,
+            config=config,
+            progress_callback=lambda step: _write_progress(job, step),
+        )
+    )
     payload["trait_inputs"] = trait_inputs
 
     track = str(candidate.get("track", "") or "")
     if track:
+        _write_progress(job, "Calculating final score")
         scoring = ScoringEngine.evaluate(rubric, track, trait_inputs)
-    payload.update(generate_deepseek_interview_summaries(flow_transcript, candidate, scoring=scoring, config=config))
+    payload.update(
+        generate_deepseek_interview_summaries(
+            flow_transcript,
+            candidate,
+            scoring=scoring,
+            config=config,
+            progress_callback=lambda step: _write_progress(job, step),
+        )
+    )
 
     report_path = Path(str(job.get("report_path", "")).strip())
     output_dir = report_path.parent if str(report_path) else Path(str(job.get("base_dir", "."))) / "Indeed Interview Notes"
+    _write_progress(job, "Updating interview notes document")
     out_path = DocxExporter(output_dir).export(rubric, payload, scoring)
     processing_status, processing_warning = _deepseek_history_status(payload)
     _update_history(
@@ -211,6 +248,7 @@ def _run_job_unlocked(job: dict[str, Any], job_path: Path) -> None:
             "deepseek_completed_at": _utc_timestamp(),
         },
     )
+    _write_progress(job, "Complete", "complete")
 
 
 def run_job(job_path: Path) -> None:
@@ -220,6 +258,7 @@ def run_job(job_path: Path) -> None:
     if not history_id:
         raise ValueError("DeepSeek finalize job missing history_id.")
 
+    _write_progress(job, "Waiting for DeepSeek queue")
     with _deepseek_worker_lock(job_path):
         _run_job_unlocked(job, job_path)
 
@@ -234,6 +273,7 @@ def main(argv: list[str]) -> int:
     except Exception as exc:
         try:
             job = _load_job(job_path)
+            _write_progress(job, f"DeepSeek processing failed: {type(exc).__name__}", "failed")
             _update_history(
                 job,
                 {

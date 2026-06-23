@@ -2,11 +2,11 @@ module:
   name: setup_and_run
   language: powershell
   path: setup_and_run.ps1
-  version: 1.3.0
+  version: 1.4.0
   description: Windows launcher bootstrap that checks prerequisites, installs Python
     3.11 when needed, provisions a per-user virtual environment that can reuse system
     site packages, installs local DeepSeek through Ollama, and starts the interview
-    app through the runtime wrapper.
+    PySide interview app through the runtime wrapper.
 functions:
 - name: Write-Log
   description: Append launcher diagnostics to the setup log file.
@@ -59,7 +59,8 @@ functions:
   side_effects: writes the persisted setup configuration and launcher log entries
 - name: Ensure-ConfigShape
   description: Normalize the configuration object so required nested properties exist
-    before later setup steps run, including one-time audio routing instruction state.
+    before later setup steps run, including one-time audio routing instruction state,
+    the preferred app entrypoint, and the requirements fingerprint.
   locked: false
   inputs:
     cfg:
@@ -347,10 +348,23 @@ functions:
   exceptions: []
   side_effects: reads the virtual environment pyvenv.cfg file and may write launcher
     log entries when that file cannot be read
+- name: Get-RequirementsFingerprint
+  description: Calculate the SHA256 fingerprint for requirements.txt so setup can
+    detect dependency requirement changes across runs.
+  locked: false
+  inputs:
+    RequirementsPath:
+      type: string
+      required: true
+  returns:
+    type: string
+  exceptions:
+  - Exception
+  side_effects: reads requirements.txt metadata and contents
 - name: Ensure-VenvAndDeps
   description: Create or repair the per-user virtual environment with system site
-    packages enabled, install requirements only when not already satisfied, and add
-    optional GPU dependencies when supported.
+    packages enabled, fingerprint requirements.txt for setup versioning, install
+    requirements, and add optional GPU dependencies when supported.
   locked: false
   inputs:
     PyExe:
@@ -364,7 +378,7 @@ functions:
     pip packages for unsatisfied requirements, and writes launcher log entries
 - name: Ensure-RequiredDepsInstalled
   description: Validate required Python modules inside the virtual environment and
-    install missing packages individually.
+    install missing packages individually, including PySide6 for the redesigned GUI.
   locked: false
   inputs:
     VenvPy:
@@ -377,8 +391,9 @@ functions:
   side_effects: executes package checks, may install required packages, and writes
     launcher log entries
 - name: Find-AppFile
-  description: Resolve the interview application entrypoint by using cached configuration,
-    repository defaults, or a user file picker.
+  description: Resolve the interview application entrypoint by preferring the PySide6
+    app, invalidating stale cached Tk entrypoints, using repository defaults, or
+    a user file picker.
   locked: false
   inputs:
     Cfg:
@@ -434,4 +449,5 @@ classes: []
 data_structures: []
 dependencies:
 - module: runtime_wrapper
+- module: pyside_interview_app
 - module: interview_app

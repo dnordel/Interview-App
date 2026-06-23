@@ -124,6 +124,26 @@ def test_security_filesystem_boundaries_and_diagnostics_artifacts(tmp_path: Path
     assert probe_audio_file(tmp_path / "missing.wav")["exists"] is False
 
 
+def test_atomic_write_json_retries_transient_windows_replace_denial(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    data_path = tmp_path / "question_overrides.json"
+    data_path.write_text('{"old": true}', encoding="utf-8")
+    original_replace = Path.replace
+    calls = {"count": 0}
+
+    def flaky_replace(self: Path, target: Path) -> Path:
+        if Path(target) == data_path and calls["count"] == 0:
+            calls["count"] += 1
+            raise PermissionError(5, "Access is denied", str(target))
+        return original_replace(self, target)
+
+    monkeypatch.setattr(Path, "replace", flaky_replace)
+
+    atomic_write_json(data_path, {"new": True})
+
+    assert calls["count"] == 1
+    assert safe_read_json(data_path, default={}) == {"new": True}
+
+
 def test_security_email_and_export_controls(tmp_path: Path) -> None:
     assert sanitize_email_subject(" Hello\r\nWorld ") == "Hello  World"
     assert sender_email_error_reason("bad-address") == "invalid_format"

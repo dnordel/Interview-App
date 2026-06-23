@@ -23,6 +23,7 @@ if ($env:DEEPSEEK_SUMMARY_MODEL -and $env:DEEPSEEK_SUMMARY_MODEL.Trim()) {
   $LocalDeepSeekModel = $env:DEEPSEEK_SUMMARY_MODEL.Trim()
 }
 $OllamaBaseUrl = "http://127.0.0.1:11434"
+$PreferredInterviewAppFile = "pyside_interview_app.py"
 
 # -------------------------
 # Logging
@@ -73,9 +74,6 @@ function Load-Config {
     } catch {
       Write-Log "Config read failed; using defaults. Error: $($_.Exception.Message)"
     }
-    App = [pscustomobject]@{
-      InterviewAppPath = $null
-    }
   }
 
   # Defaults
@@ -92,6 +90,11 @@ function Load-Config {
         Evidence = @()
         LastCheckedUtc = $null
       }
+      RequirementsFingerprint = $null
+    }
+    App = [pscustomobject]@{
+      InterviewAppPath = $null
+      PreferredInterviewAppFile = $PreferredInterviewAppFile
     }
   }
 }
@@ -129,11 +132,15 @@ function Ensure-ConfigShape($cfg) {
     $cfg | Add-Member -NotePropertyName Tools -NotePropertyValue ([pscustomobject]@{
       Python311Exe = $null
       VBCable = [pscustomobject]@{ Detected = $null; Evidence = @(); LastCheckedUtc = $null }
+      RequirementsFingerprint = $null
     }) -Force
   }
 
   if ($cfg.Tools.PSObject.Properties.Name -notcontains "Python311Exe") {
     $cfg.Tools | Add-Member -NotePropertyName Python311Exe -NotePropertyValue $null -Force
+  }
+  if ($cfg.Tools.PSObject.Properties.Name -notcontains "RequirementsFingerprint") {
+    $cfg.Tools | Add-Member -NotePropertyName RequirementsFingerprint -NotePropertyValue $null -Force
   }
 
   if (-not $cfg.Tools.VBCable) {
@@ -157,10 +164,19 @@ function Ensure-ConfigShape($cfg) {
   if (-not $cfg.App) {
     $cfg | Add-Member -NotePropertyName App -NotePropertyValue ([pscustomobject]@{
       InterviewAppPath = $null
+      PreferredInterviewAppFile = $PreferredInterviewAppFile
     }) -Force
   }
   elseif ($cfg.App.PSObject.Properties.Name -notcontains "InterviewAppPath") {
     $cfg.App | Add-Member -NotePropertyName InterviewAppPath -NotePropertyValue $null -Force
+  }
+  if ($cfg.App.PSObject.Properties.Name -notcontains "PreferredInterviewAppFile") {
+    $cfg.App | Add-Member -NotePropertyName PreferredInterviewAppFile -NotePropertyValue $PreferredInterviewAppFile -Force
+  }
+  if ($cfg.App.PreferredInterviewAppFile -ne $PreferredInterviewAppFile) {
+    Write-Log "Preferred app changed from '$($cfg.App.PreferredInterviewAppFile)' to '$PreferredInterviewAppFile'; clearing cached app path."
+    $cfg.App.PreferredInterviewAppFile = $PreferredInterviewAppFile
+    $cfg.App.InterviewAppPath = $null
   }
 
   return $cfg
@@ -932,6 +948,16 @@ function Test-VenvUsesSystemSitePackages([string]$VenvDir) {
   }
 }
 
+function Get-RequirementsFingerprint {
+  param([Parameter(Mandatory=$true)][string]$RequirementsPath)
+
+  if (-not (Test-Path $RequirementsPath)) {
+    throw "requirements.txt not found in app folder: $RequirementsPath"
+  }
+
+  return (Get-FileHash -Algorithm SHA256 -Path $RequirementsPath).Hash
+}
+
 function Ensure-VenvAndDeps([string]$PyExe) {
   $VenvBase = Join-Path (Get-ConfigBaseDir) "py311"
   $VenvDir  = Join-Path $VenvBase ".venv"
@@ -970,6 +996,16 @@ function Ensure-VenvAndDeps([string]$PyExe) {
     throw "requirements.txt not found in app folder: $req"
   }
 
+  $requirementsFingerprint = Get-RequirementsFingerprint -RequirementsPath $req
+  $cfg = Ensure-ConfigShape (Load-Config)
+  if ($cfg.Tools.RequirementsFingerprint -ne $requirementsFingerprint) {
+    Write-Log "Requirements fingerprint changed; installing dependencies. Old=$($cfg.Tools.RequirementsFingerprint); New=$requirementsFingerprint"
+    $cfg.Tools.RequirementsFingerprint = $requirementsFingerprint
+    Save-Config $cfg
+  } else {
+    Write-Log "Requirements fingerprint unchanged: $requirementsFingerprint"
+  }
+
   Write-Log "Installing base dependencies from $req..."
   $ec = Run-Proc -File $VenvPy -Args @("-m","pip","install","-r",$req)
   if ($ec -ne 0) { throw "pip install failed (exit code $ec)" }
@@ -1002,6 +1038,7 @@ function Ensure-RequiredDepsInstalled {
 
   $requiredDeps = @(
     @{ Package = "python-docx"; Module = "docx" },
+    @{ Package = "PySide6"; Module = "PySide6" },
     @{ Package = "tkcalendar"; Module = "tkcalendar" }
   )
 
@@ -1031,16 +1068,24 @@ function Ensure-RequiredDepsInstalled {
 function Find-AppFile {
   param([Parameter(Mandatory=$true)]$Cfg)
 
-  # 1️⃣ Try cached path first
+  $Cfg.App.PreferredInterviewAppFile = $PreferredInterviewAppFile
+
+  # 1) Try cached path first, but invalidate stale Tk/legacy paths after entrypoint changes.
   if ($Cfg.App.InterviewAppPath -and (Test-Path $Cfg.App.InterviewAppPath)) {
-    Write-Log "Using cached app path: $($Cfg.App.InterviewAppPath)"
-    return $Cfg.App.InterviewAppPath
+    $cachedLeaf = Split-Path $Cfg.App.InterviewAppPath -Leaf
+    if ($cachedLeaf -ieq $PreferredInterviewAppFile) {
+      Write-Log "Using cached app path: $($Cfg.App.InterviewAppPath)"
+      return $Cfg.App.InterviewAppPath
+    }
+    Write-Log "Cached app path '$cachedLeaf' does not match preferred '$PreferredInterviewAppFile'; re-detecting app."
+    $Cfg.App.InterviewAppPath = $null
   }
 
   Write-Log "Cached app path missing or invalid."
 
-  # 2️⃣ Try auto-detect in src folder
+  # 2) Try auto-detect in src folder.
   $candidates = @(
+    "pyside_interview_app.py",
     "interview_app.pyw",
     "Initial Teacher Interview Guide.pyw",
     "Initial Teacher Interview Guide_UPDATED.pyw"
@@ -1056,12 +1101,12 @@ function Find-AppFile {
     }
   }
 
-  # 3️⃣ Prompt user to locate it
+  # 3) Prompt user to locate it.
   Write-Log "App not found. Prompting user."
 
   $dlg = New-Object System.Windows.Forms.OpenFileDialog
-  $dlg.Title = "Locate the Interview App (.pyw)"
-  $dlg.Filter = "Python GUI (*.pyw)|*.pyw"
+  $dlg.Title = "Locate the Interview App (.py or .pyw)"
+  $dlg.Filter = "Python GUI (*.py;*.pyw)|*.py;*.pyw"
   $dlg.InitialDirectory = [Environment]::GetFolderPath("Desktop")
 
   if ($dlg.ShowDialog() -eq "OK") {

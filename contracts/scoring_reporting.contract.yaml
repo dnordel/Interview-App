@@ -2,7 +2,7 @@ module:
   name: scoring_reporting
   language: python
   path: src/scoring_reporting.py
-  version: 0.13.2
+  version: 0.14.0
   description: Flattened public interface for scoring, reporting, trait signals, exports,
     referrals, email safety, offers, and templates, including DeepSeek-only advisory
     signal scoring; only active legacy adapters remain in the compatibility module
@@ -1573,7 +1573,9 @@ classes:
       and score tables, interviewer and AI-suggested score totals shown out of total
       possible points, structured answer evidence blocks (summary, evidence, rubric
       alignment, risk/gap) before full responses, and trait detail sections that
-      separate final interviewer raw/weighted scores from AI advisory net signal
+      compact duplicate transcription-attempt blocks, mark missing per-question
+      transcripts inline without creating empty answer boxes, allow long transcript
+      boxes to split across pages to reduce blank space, and separate final interviewer raw/weighted scores from AI advisory net signal
       score, suggested raw score, suggested weighted score, model
       observations, auto-no-hire metadata, and compatibility selected signal ids
       when present.

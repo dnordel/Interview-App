@@ -2,7 +2,7 @@ module:
   name: interview_runtime
   language: python
   path: src/interview_runtime.py
-  version: 0.16.0
+  version: 0.17.0
   description: Flattened public interface for interview state, session management,
     audio/transcription runtime, transcript summary seam, controllers, history, and
     finalize pipeline; only active legacy adapters remain in the compatibility module
@@ -262,13 +262,74 @@ functions:
   locked: false
   inputs:
     env:
-      type: Mapping[str, str] | None
+      type: Mapping[str, Any] | None
       required: false
       default: null
   returns:
     type: DeepSeekSummaryConfig
   exceptions: []
   side_effects: Reads process environment when env is null.
+- name: normalize_deepseek_prompt_templates
+  description: Merge global and per-question DeepSeek prompt template settings with
+    defaults, accepting string global prompts and JSON-object per-question override
+    maps while dropping blank keys or blank override prompts.
+  locked: false
+  inputs:
+    value:
+      type: Any
+      required: true
+  returns:
+    type: dict[str, Any]
+  exceptions: []
+  side_effects: none
+- name: _render_deepseek_prompt_template
+  description: Render a DeepSeek prompt template by replacing supported named tokens
+    such as payload_json while leaving unrelated JSON-schema braces intact.
+  locked: false
+  inputs:
+    template:
+      type: str
+      required: true
+    values:
+      type: Mapping[str, Any]
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _deepseek_question_keys
+  description: Return candidate per-question prompt lookup keys from a transcript
+    or trait item, preferring id, trait_id, then flow_index.
+  locked: false
+  inputs:
+    item:
+      type: Mapping[str, Any]
+      required: true
+  returns:
+    type: list[str]
+  exceptions: []
+  side_effects: none
+- name: _resolve_deepseek_question_prompt
+  description: Select a per-question DeepSeek user prompt override from the configured
+    map, falling back to the global prompt template for that DeepSeek task.
+  locked: false
+  inputs:
+    prompt_templates:
+      type: Mapping[str, Any]
+      required: true
+    map_key:
+      type: str
+      required: true
+    default_key:
+      type: str
+      required: true
+    item:
+      type: Mapping[str, Any]
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
 - name: _request_local_ollama_json_completion
   description: Send a local Ollama native /api/generate request with JSON format enabled
     and adapt the response into the chat-completion shape used by DeepSeek parsing.
@@ -288,12 +349,15 @@ functions:
   side_effects: Sends transcript-bearing prompt text only to a local Ollama host.
 - name: generate_deepseek_interview_summaries
   description: Generate degraded, failed, or DeepSeek-backed finalize summaries using
-    one small prompt per transcripted answer plus a separate executive summary prompt
-    based on the hiring-analyst template; executive-summary prompts include transcript,
-    candidate, answer-summary, and optional scoring context. Prompts are evidence-first,
-    role-aware, reject generic/invented claims, and validate JSON object responses
-    fail-closed while retaining successful answer summaries when another answer or
-    executive summary call fails.
+    one configurable prompt per transcripted answer plus a separate configurable
+    executive summary prompt; per-question answer prompts may override the global
+    answer prompt by question id, trait id, or flow index. Executive-summary prompts
+    include transcript, candidate, answer-summary, and optional scoring context.
+    Prompts are evidence-first, role-aware, reject generic/invented claims, and
+    validate JSON object responses fail-closed while retaining successful answer
+    summaries when another answer or executive summary call fails. Optional progress
+    callbacks receive operator-facing step labels such as Summarizing Q1 and
+    Generating Executive Summary.
   locked: false
   inputs:
     flow_transcript:
@@ -314,6 +378,10 @@ functions:
       type: dict[str, Any] | None
       required: false
       default: null
+    progress_callback:
+      type: Optional[Callable[[str], None]]
+      required: false
+      default: null
   returns:
     type: dict[str, Any]
     description: Contains answer_summaries, executive_summary, interview_highlights,
@@ -325,8 +393,10 @@ functions:
   description: Generate degraded, failed, or DeepSeek-backed model trait observation
     suggestions and advisory 1-5 raw trait scores keyed by trait id without changing
     human raw scores or compatibility selected_signal_ids; each trait is requested
-    independently for signal suggestions and advisory raw scoring so one local Ollama
-    failure cannot suppress remaining trait output. Status values may be generated,
+    independently with configurable per-trait prompt overrides for signal suggestions
+    and advisory raw scoring so one local Ollama failure cannot suppress remaining
+    trait output. Optional progress callbacks receive operator-facing step labels
+    such as Analyzing Traits Q1 and Scoring Q1. Status values may be generated,
     partial, failed, disabled, or no_transcript.
   locked: false
   inputs:
@@ -346,6 +416,10 @@ functions:
       default: null
     chat_completion:
       type: Optional[Callable[[DeepSeekSummaryConfig, list[dict[str, str]]], dict[str, Any]]]
+      required: false
+      default: null
+    progress_callback:
+      type: Optional[Callable[[str], None]]
       required: false
       default: null
   returns:
@@ -512,7 +586,8 @@ functions:
   description: Persist a detached DeepSeek finalize job and launch the worker process
     so interview notes can be refreshed after the GUI finalize flow returns or exits;
     launched workers serialize execution through the DeepSeek finalize lock in the
-    job directory.
+    job directory. Each job includes a sibling progress JSON path for GUI polling of
+    exact DeepSeek steps.
   locked: false
   inputs:
     app:
@@ -531,8 +606,8 @@ functions:
     type: Path
   exceptions:
   - OSError
-  side_effects: Writes a local job JSON file and starts a detached Python worker when
-    a persistent history path is available; the worker later creates/removes the
+  side_effects: Writes a local job JSON file and progress path metadata, then starts
+    a detached Python worker when a persistent history path is available; the worker later creates/removes the
     per-directory DeepSeek finalize lock before local Ollama, DOCX, and history work.
 - name: raise_legacy_finalize_guardrail
   description: Fail closed when the disabled legacy finalize path is invoked.
@@ -1634,6 +1709,8 @@ classes:
       type: str
     timeout_seconds:
       type: float
+    prompt_templates:
+      type: dict[str, Any]
   methods: []
 - name: FinalizeGateways
   description: Finalize output gateway adapter for report export, integration export,

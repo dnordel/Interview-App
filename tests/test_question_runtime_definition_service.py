@@ -5,10 +5,12 @@ import pytest
 
 from ui_composition import (
     QuestionRuntimeDefinitionService,
+    build_runtime_trait_id,
     default_runtime_definition,
     list_signal_refs,
     next_trait_id,
     normalize_runtime_definition,
+    runtime_trait_id_for_rubric_trait,
 )
 
 
@@ -81,3 +83,13 @@ def test_runtime_definition_service_rejects_duplicate_refs_and_nonnumeric_weight
 def test_next_trait_id_uses_next_numeric_rubric_slot() -> None:
     rubric = {'traits': [{'id': 'trait_1'}, {'id': 'trait_7'}, {'id': 'custom'}]}
     assert next_trait_id(rubric) == 'trait_8'
+
+
+def test_bss_trait_ids_build_runtime_definitions_without_crashing(tmp_path: Path) -> None:
+    service = QuestionRuntimeDefinitionService(tmp_path)
+
+    definition = service.load_definition('bss_trait_1')
+
+    assert runtime_trait_id_for_rubric_trait('bss_trait_1') == 'BSS_T1'
+    assert build_runtime_trait_id('bss_trait_1', trait_name='Student Support') == 'BSS_T1_Student_Support'
+    assert definition['trait_id'] == 'BSS_T1'

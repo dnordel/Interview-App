@@ -162,6 +162,99 @@ def test_generate_deepseek_interview_summaries_uses_injected_completion() -> Non
     assert "executive summary section" in calls[1][1][0]["content"]
 
 
+def test_generate_deepseek_interview_summaries_uses_configured_prompt_templates() -> None:
+    config = DeepSeekSummaryConfig(
+        enabled=True,
+        api_key="secret-key",
+        prompt_templates={
+            "answer_summary_system": "CUSTOM ANSWER SYSTEM",
+            "answer_summary_user": "CUSTOM ANSWER USER {payload_json}",
+            "executive_summary_system": "CUSTOM EXEC SYSTEM",
+            "executive_summary_user": "CUSTOM EXEC USER {answer_summaries_json} {transcript_text}",
+        },
+    )
+    calls: list[list[dict[str, str]]] = []
+
+    def _completion(_config, messages):
+        calls.append(messages)
+        if messages[0]["content"] == "CUSTOM EXEC SYSTEM":
+            return {"choices": [{"message": {"content": '{"executive_summary":"Custom executive.","interview_highlights":[]}'}}]}
+        return {
+            "choices": [
+                {
+                    "message": {
+                        "content": (
+                            '{"answer_summaries":[{"flow_index":2,"summary":"Uses routines.",'
+                            '"evidence_quotes":["routines"],"rubric_alignment":"Routine support.",'
+                            '"risks_or_gaps":""}]}'
+                        )
+                    }
+                }
+            ]
+        }
+
+    result = generate_deepseek_interview_summaries(
+        [{"flow_index": 2, "question": "How?", "candidate_transcript": "I use routines."}],
+        {"name": "Ada", "track": "lead"},
+        config=config,
+        chat_completion=_completion,
+    )
+
+    assert result["executive_summary"] == "Custom executive."
+    assert calls[0][0]["content"] == "CUSTOM ANSWER SYSTEM"
+    assert calls[0][1]["content"].startswith("CUSTOM ANSWER USER ")
+    assert '"candidate_transcript": "I use routines."' in calls[0][1]["content"]
+    assert calls[1][0]["content"] == "CUSTOM EXEC SYSTEM"
+    assert "CUSTOM EXEC USER" in calls[1][1]["content"]
+    assert "Uses routines." in calls[1][1]["content"]
+
+
+def test_generate_deepseek_interview_summaries_uses_question_specific_answer_prompt() -> None:
+    config = DeepSeekSummaryConfig(
+        enabled=True,
+        api_key="secret-key",
+        prompt_templates={
+            "answer_summary_system_by_question": {
+                "custom_why_lpl": "CUSTOM Q SYSTEM",
+            },
+            "answer_summary_user_by_question": {
+                "custom_why_lpl": "CUSTOM Q PROMPT {payload_json}",
+            }
+        },
+    )
+    calls: list[list[dict[str, str]]] = []
+
+    def _completion(_config, messages):
+        calls.append(messages)
+        if "executive summary section" in messages[0]["content"]:
+            return {"choices": [{"message": {"content": '{"executive_summary":"Done.","interview_highlights":[]}'}}]}
+        return {
+            "choices": [
+                {
+                    "message": {
+                        "content": (
+                            '{"answer_summaries":[{"flow_index":2,"summary":"LPL mission fit.",'
+                            '"evidence_quotes":["mission"],"rubric_alignment":"Mission alignment.",'
+                            '"risks_or_gaps":""}]}'
+                        )
+                    }
+                }
+            ]
+        }
+
+    result = generate_deepseek_interview_summaries(
+        [{"id": "custom_why_lpl", "flow_index": 2, "question": "Why LPL?", "candidate_transcript": "I like the mission."}],
+        {"name": "Ada", "track": "lead"},
+        config=config,
+        chat_completion=_completion,
+    )
+
+    assert result["summary_status"] == "generated"
+    assert calls[0][0]["content"] == "CUSTOM Q SYSTEM"
+    assert calls[0][1]["content"].startswith("CUSTOM Q PROMPT ")
+    assert '"id": "custom_why_lpl"' in calls[0][1]["content"]
+
+
 def test_generate_deepseek_interview_summaries_feeds_scoring_into_executive_prompt() -> None:
     config = DeepSeekSummaryConfig(enabled=True, api_key="secret-key")
     executive_payloads: list[str] = []
@@ -250,6 +343,36 @@ def test_generate_deepseek_interview_summaries_chunks_answer_calls() -> None:
     assert result["summary_status"] == "generated"
     assert [item["flow_index"] for item in result["answer_summaries"]] == [1, 2]
     assert result["executive_summary"] == "Two answers summarized."
+
+
+def test_generate_deepseek_interview_summaries_reports_step_progress() -> None:
+    config = DeepSeekSummaryConfig(enabled=True, api_key="secret-key")
+    steps: list[str] = []
+
+    def fake_completion(_config, messages):
+        if "executive summary section" in messages[0]["content"]:
+            return {"choices": [{"message": {"content": '{"executive_summary":"Summary.","interview_highlights":[]}'}}]}
+        return {
+            "choices": [
+                {
+                    "message": {
+                        "content": '{"answer_summaries":[{"flow_index":1,"summary":"Uses routines.",'
+                        '"evidence_quotes":["routines"],"rubric_alignment":"Routines","risks_or_gaps":""}]}'
+                    }
+                }
+            ]
+        }
+
+    result = generate_deepseek_interview_summaries(
+        [{"flow_index": 1, "question": "How?", "candidate_transcript": "I use routines."}],
+        {"name": "Ada"},
+        config=config,
+        chat_completion=fake_completion,
+        progress_callback=steps.append,
+    )
+
+    assert result["summary_status"] == "generated"
+    assert steps == ["Summarizing Q1", "Generating Executive Summary"]
 
 
 def test_generate_deepseek_interview_summaries_accepts_fenced_json() -> None:
@@ -908,6 +1031,178 @@ def test_generate_deepseek_trait_signal_suggestions_filters_and_persists(monkeyp
     assert '"raw_score_range": [1, 5]' in scoring_prompt_payload
     assert '"descriptors": {"5": "Best evidence", "1": "Weak evidence"}' in scoring_prompt_payload
     assert "trait_based_scoring_json" in scoring_prompt_payload
+
+
+def test_generate_deepseek_trait_signal_suggestions_reports_step_progress(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        interview_runtime,
+        "_trait_suggestion_items",
+        lambda _flow, _rubric=None: (
+            [
+                {
+                    "trait_id": "trait_1",
+                    "flow_index": 1,
+                    "title": "Empathy",
+                    "question": "How?",
+                    "candidate_transcript": "I use routines.",
+                    "valid_signals": [{"signal_id": "S_MODEL", "label": "Uses routines"}],
+                    "rubric": {},
+                    "trait_based_scoring_json": {},
+                }
+            ],
+            {"trait_1": ["S_MODEL"]},
+        ),
+    )
+    steps: list[str] = []
+
+    def fake_completion(_config, messages):
+        if "Score preschool teacher" in messages[0]["content"]:
+            content = (
+                '{"trait_scores":[{"trait_id":"trait_1","raw_score":4,'
+                '"evidence_quote":"routines","rationale":"Matches.","risks_or_gaps":""}]}'
+            )
+        else:
+            content = (
+                '{"trait_suggestions":[{"trait_id":"trait_1","suggestions":['
+                '{"signal_id":"S_MODEL","confidence":0.9,"evidence_quote":"routines","rationale":"Matches."}]}]}'
+            )
+        return {"choices": [{"message": {"content": content}}]}
+
+    result = generate_deepseek_trait_signal_suggestions(
+        [{"type": "trait", "id": "trait_1", "candidate_transcript": "I use routines."}],
+        {},
+        config=DeepSeekSummaryConfig(enabled=True, api_key="secret-key"),
+        chat_completion=fake_completion,
+        progress_callback=steps.append,
+    )
+
+    assert result["model_suggestion_status"] == "generated"
+    assert result["model_scoring_status"] == "generated"
+    assert steps == ["Analyzing Traits Q1", "Scoring Q1"]
+
+
+def test_generate_deepseek_trait_signal_suggestions_uses_configured_prompt_templates(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        interview_runtime,
+        "_trait_suggestion_items",
+        lambda _flow, _rubric=None: (
+            [
+                {
+                    "trait_id": "trait_1",
+                    "flow_index": 1,
+                    "title": "Empathy",
+                    "question": "How?",
+                    "candidate_transcript": "I use routines.",
+                    "valid_signals": [{"signal_id": "S_MODEL", "label": "Uses routines"}],
+                    "rubric": {},
+                    "trait_based_scoring_json": {},
+                }
+            ],
+            {"trait_1": ["S_MODEL"]},
+        ),
+    )
+    config = DeepSeekSummaryConfig(
+        enabled=True,
+        api_key="secret-key",
+        prompt_templates={
+            "trait_suggestion_system": "CUSTOM SUGGEST SYSTEM",
+            "trait_suggestion_user": "CUSTOM SUGGEST USER {payload_json}",
+            "trait_scoring_system": "CUSTOM SCORE SYSTEM",
+            "trait_scoring_user": "CUSTOM SCORE USER {payload_json}",
+        },
+    )
+    calls: list[list[dict[str, str]]] = []
+
+    def _completion(_config, messages):
+        calls.append(messages)
+        if messages[0]["content"] == "CUSTOM SCORE SYSTEM":
+            content = (
+                '{"trait_scores":[{"trait_id":"trait_1","raw_score":4,'
+                '"evidence_quote":"routines","rationale":"Matches.","risks_or_gaps":""}]}'
+            )
+        else:
+            content = (
+                '{"trait_suggestions":[{"trait_id":"trait_1","suggestions":['
+                '{"signal_id":"S_MODEL","confidence":0.9,"evidence_quote":"routines","rationale":"Matches."}]}]}'
+            )
+        return {"choices": [{"message": {"content": content}}]}
+
+    result = generate_deepseek_trait_signal_suggestions(
+        [{"type": "trait", "id": "trait_1", "candidate_transcript": "I use routines."}],
+        {},
+        config=config,
+        chat_completion=_completion,
+    )
+
+    assert result["model_suggestion_status"] == "generated"
+    assert result["model_scoring_status"] == "generated"
+    assert calls[0][0]["content"] == "CUSTOM SUGGEST SYSTEM"
+    assert calls[0][1]["content"].startswith("CUSTOM SUGGEST USER ")
+    assert '"trait_id": "trait_1"' in calls[0][1]["content"]
+    assert calls[1][0]["content"] == "CUSTOM SCORE SYSTEM"
+    assert calls[1][1]["content"].startswith("CUSTOM SCORE USER ")
+    assert '"scoring_policy"' in calls[1][1]["content"]
+
+
+def test_generate_deepseek_trait_signal_suggestions_uses_trait_specific_prompts(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        interview_runtime,
+        "_trait_suggestion_items",
+        lambda _flow, _rubric=None: (
+            [
+                {
+                    "trait_id": "trait_1",
+                    "flow_index": 1,
+                    "title": "Empathy",
+                    "question": "How?",
+                    "candidate_transcript": "I use routines.",
+                    "valid_signals": [{"signal_id": "S_MODEL", "label": "Uses routines"}],
+                    "rubric": {},
+                    "trait_based_scoring_json": {},
+                }
+            ],
+            {"trait_1": ["S_MODEL"]},
+        ),
+    )
+    config = DeepSeekSummaryConfig(
+        enabled=True,
+        api_key="secret-key",
+        prompt_templates={
+            "trait_suggestion_system_by_question": {"trait_1": "CUSTOM TRAIT SUGGEST SYSTEM"},
+            "trait_suggestion_user_by_question": {"trait_1": "CUSTOM TRAIT SUGGEST {payload_json}"},
+            "trait_scoring_system_by_question": {"trait_1": "CUSTOM TRAIT SCORE SYSTEM"},
+            "trait_scoring_user_by_question": {"trait_1": "CUSTOM TRAIT SCORE {payload_json}"},
+        },
+    )
+    calls: list[list[dict[str, str]]] = []
+
+    def _completion(_config, messages):
+        calls.append(messages)
+        if messages[0]["content"] == "CUSTOM TRAIT SCORE SYSTEM":
+            content = (
+                '{"trait_scores":[{"trait_id":"trait_1","raw_score":4,'
+                '"evidence_quote":"routines","rationale":"Matches.","risks_or_gaps":""}]}'
+            )
+        else:
+            content = (
+                '{"trait_suggestions":[{"trait_id":"trait_1","suggestions":['
+                '{"signal_id":"S_MODEL","confidence":0.9,"evidence_quote":"routines","rationale":"Matches."}]}]}'
+            )
+        return {"choices": [{"message": {"content": content}}]}
+
+    result = generate_deepseek_trait_signal_suggestions(
+        [{"type": "trait", "id": "trait_1", "candidate_transcript": "I use routines."}],
+        {},
+        config=config,
+        chat_completion=_completion,
+    )
+
+    assert result["model_suggestion_status"] == "generated"
+    assert result["model_scoring_status"] == "generated"
+    assert calls[0][0]["content"] == "CUSTOM TRAIT SUGGEST SYSTEM"
+    assert calls[0][1]["content"].startswith("CUSTOM TRAIT SUGGEST ")
+    assert calls[1][0]["content"] == "CUSTOM TRAIT SCORE SYSTEM"
+    assert calls[1][1]["content"].startswith("CUSTOM TRAIT SCORE ")
 
 
 def test_generate_deepseek_trait_signal_suggestions_continues_after_trait_failure(monkeypatch: pytest.MonkeyPatch) -> None:

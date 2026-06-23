@@ -69,7 +69,7 @@ functions:
       - ValueError
     side_effects: none
   - name: runtime_trait_id_for_rubric_trait
-    description: Convert a rubric trait id in trait_<number> form into its runtime trait-id prefix.
+    description: Convert a rubric trait id in trait_<number> or bss_trait_<number> form into its runtime trait-id prefix.
     locked: false
     inputs:
       trait_id:

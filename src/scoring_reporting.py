@@ -972,7 +972,7 @@ class DocxExporter:
             cant_split = OxmlElement("w:cantSplit")
             _replace_child(tr_pr, qn("w:cantSplit"), cant_split)
 
-        def set_table_geometry(table: Any, widths: list[float], *, indent_dxa: int = 120) -> None:
+        def set_table_geometry(table: Any, widths: list[float], *, indent_dxa: int = 120, prevent_splits: bool = True) -> None:
             width_dxa = [int(width * 1440) for width in widths]
             table.autofit = False
             tbl_pr = table._tbl.tblPr
@@ -994,7 +994,8 @@ class DocxExporter:
                     table._tbl.remove(existing)
             table._tbl.insert(1, tbl_grid)
             for row in table.rows:
-                prevent_row_split(row)
+                if prevent_splits:
+                    prevent_row_split(row)
                 for index, cell in enumerate(row.cells):
                     set_cell_width(cell, width_dxa[min(index, len(width_dxa) - 1)])
 
@@ -1019,14 +1020,39 @@ class DocxExporter:
                 for run in paragraph.runs:
                     run.bold = bold
 
-        def add_box(text: str, *, fill: str = pale_blue, bold: bool = False, color: str = dark_text) -> Any:
+        def add_box(
+            text: str,
+            *,
+            fill: str = pale_blue,
+            bold: bool = False,
+            color: str = dark_text,
+            allow_split: bool = False,
+        ) -> Any:
             table = doc.add_table(rows=1, cols=1)
             table.style = "Table Grid"
-            set_table_geometry(table, [content_width_inches])
+            set_table_geometry(table, [content_width_inches], prevent_splits=not allow_split)
             cell = table.rows[0].cells[0]
             cell.text = text
             format_cell(cell, bold=bold, fill=fill, color=color)
             return table
+
+        def compact_transcript_attempts(text: str) -> str:
+            raw_text = str(text or "").strip()
+            if not raw_text:
+                return ""
+            pattern = re.compile(r"(?ms)^\[Q\d+\s+Attempt\s+\d+\]\s*\n?(.*?)(?=^\[Q\d+\s+Attempt\s+\d+\]\s*\n?|\Z)")
+            matches = [match.group(1).strip() for match in pattern.finditer(raw_text)]
+            if not matches:
+                return raw_text
+            unique_parts: list[str] = []
+            seen: set[str] = set()
+            for part in matches:
+                normalized = re.sub(r"\s+", " ", part).strip().lower()
+                if not normalized or normalized in seen:
+                    continue
+                seen.add(normalized)
+                unique_parts.append(part)
+            return "\n\n".join(unique_parts).strip()
 
         def add_key_value_table(rows: list[tuple[str, str]], *, label_fill: str = pale_blue) -> Any:
             table = doc.add_table(rows=0, cols=2)
@@ -1233,7 +1259,7 @@ class DocxExporter:
                             ("Risk/gap", str(answer_summary.get("risks_or_gaps") or "").strip() or "None cited"),
                         ]
                     )
-                cand_tx = (item.get("candidate_transcript") or "").strip()
+                cand_tx = compact_transcript_attempts(item.get("candidate_transcript") or "")
 
                 if itype == "trait":
                     raw = item.get("raw_score", None)
@@ -1260,7 +1286,9 @@ class DocxExporter:
                     )
                     if cand_tx:
                         add_text("Full Candidate Answer (auto-transcribed)", bold=True)
-                        add_box(cand_tx)
+                        add_box(cand_tx, allow_split=True)
+                    else:
+                        add_labeled_text("Full Candidate Answer (auto-transcribed): ", "Not captured")
                     if item.get("question_notes"):
                         add_labeled_text("Question Notes: ", str(item.get("question_notes", "")))
                     if item.get("trait_notes"):
@@ -1270,10 +1298,9 @@ class DocxExporter:
                 else:
                     if cand_tx:
                         add_text("Full Candidate Answer (auto-transcribed)", bold=True)
-                        add_box(cand_tx)
+                        add_box(cand_tx, allow_split=True)
                     else:
-                        add_text("Full Candidate Answer (auto-transcribed)", bold=True)
-                        add_box("(No candidate transcript captured)")
+                        add_labeled_text("Full Candidate Answer (auto-transcribed): ", "Not captured")
 
         add_heading("Trait-by-Trait Detail")
         for idx, row in enumerate(scoring["rows"], start=1):

@@ -77,4 +77,32 @@ def test_handle_click_dispatches_callbacks_by_column() -> None:
 def test_notes_link_label_shows_processing_until_deepseek_completes() -> None:
     grid = _build_grid()
 
-    assert grid._row_values({"deepseek_processing_status": "processing"})[-1] == "Processing"
+    assert grid._row_values({"deepseek_processing_status": "processing"})[5] == "Processing"
+
+
+def test_row_values_keep_offer_action_before_optional_metadata() -> None:
+    grid = _build_grid()
+    row = {
+        "interview_date": "2026-06-23",
+        "candidate_name": "Dana Teacher",
+        "school": "North Campus",
+        "track": "behavior_support_specialist",
+        "interview_score": "82",
+        "determination": "Recommended",
+        "offer_status": "not_generated",
+    }
+
+    assert grid._row_values(row) == (
+        "2026-06-23",
+        "Dana Teacher",
+        "82",
+        "Recommended",
+        "Generate Offer",
+        "Unavailable",
+        "North Campus",
+        "behavior_support_specialist",
+    )
+    assert HistoryDataGrid._column_name("#5") == "offer_action"
+    assert HistoryDataGrid._column_name("#6") == "notes_link"
+    assert HistoryDataGrid._column_name("#7") == "school"
+    assert HistoryDataGrid._column_name("#8") == "position"

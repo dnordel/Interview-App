@@ -1,0 +1,314 @@
+module:
+  name: pyside_interview_app
+  language: python
+  path: src/pyside_interview_app.py
+  version: 1.0.0
+  description: PySide6 redesign shell and headless view-model builder for guided interview workflow.
+functions:
+- name: build_interview_redesign_model
+  description: Build workflow-first home, setup, live interview, review, offer, onboarding, and admin view data from rubric, question flow, and history JSON.
+  locked: false
+  inputs:
+    rubric_path:
+      type: Path
+      required: false
+      default: DEFAULT_RUBRIC_PATH
+    overrides_path:
+      type: Path
+      required: false
+      default: QUESTIONS_OVERRIDE_PATH
+    history_path:
+      type: Path
+      required: false
+      default: INTERVIEW_HISTORY_PATH
+    school_options:
+      type: Sequence[str]
+      required: false
+      default: DEFAULT_SCHOOL_OPTIONS
+  returns:
+    type: InterviewRedesignModel
+  exceptions:
+  - ValueError
+  side_effects: Reads local rubric, question override, and history JSON; may normalize question flow through QuestionOverridesStore.
+- name: build_pyside_onboarding_board
+  description: Build PySide onboarding dashboard counts and employee next-task rows from existing onboarding state.
+  locked: false
+  inputs:
+    employees:
+      type: list[Any]
+      required: true
+    scheduler_settings:
+      type: dict[str, Any] | None
+      required: true
+    today:
+      type: date
+      required: true
+  returns:
+    type: PySideOnboardingBoard
+  exceptions: []
+  side_effects: none
+- name: build_pyside_candidate_board
+  description: Build PySide candidate list rows and hiring status summary from interview history rows.
+  locked: false
+  inputs:
+    history_rows:
+      type: list[dict[str, Any]]
+      required: true
+  returns:
+    type: PySideCandidateBoard
+  exceptions: []
+  side_effects: none
+- name: build_pyside_admin_studio_model
+  description: Build PySide Admin Studio section metadata, counts, validation warnings, and read-only detail rows.
+  locked: false
+  inputs:
+    model:
+      type: InterviewRedesignModel
+      required: true
+  returns:
+    type: PySideAdminStudioModel
+  exceptions: []
+  side_effects: none
+- name: latest_pyside_draft_path
+  description: Return the newest PySide draft JSON path from the draft directory, if one exists.
+  locked: false
+  inputs:
+    drafts_dir:
+      type: Path
+      required: false
+      default: DEFAULT_BASE_DIR / "pyside_drafts"
+  returns:
+    type: Path | None
+  exceptions: []
+  side_effects: Reads PySide draft directory metadata.
+- name: launch_pyside_interview_app
+  description: Launch the PySide6 redesigned desktop shell using the supplied model or current repository configuration.
+  locked: false
+  inputs:
+    model:
+      type: InterviewRedesignModel | None
+      required: false
+      default: null
+  returns:
+    type: int
+  exceptions:
+  - PySide6UnavailableError
+  side_effects: Creates a QApplication and opens the redesigned desktop window.
+- name: main
+  description: Command-line entry point for the PySide6 redesigned interview assistant.
+  locked: false
+  inputs: {}
+  returns:
+    type: int
+  exceptions:
+  - PySide6UnavailableError
+  side_effects: Launches the PySide6 desktop UI.
+classes:
+- name: PySideInterviewSession
+  description: Autosaved PySide interview session state for guided question flow and draft resume.
+  locked: false
+  attributes:
+    model:
+      type: InterviewRedesignModel
+    draft_path:
+      type: Path
+    candidate_name:
+      type: str
+    school:
+      type: str
+    track_key:
+      type: str
+    current_index:
+      type: int
+    answers:
+      type: dict[str, dict[str, Any]]
+  methods:
+  - name: start
+    description: Start a new guided interview session and persist initial draft state.
+    locked: false
+    inputs:
+      candidate_name:
+        type: str
+        required: true
+      school:
+        type: str
+        required: true
+      track_key:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions:
+    - ValueError
+    side_effects: Writes PySide draft JSON.
+  - name: active_question
+    description: Return the current configured question, or None when the session has reached review.
+    locked: false
+    inputs: {}
+    returns:
+      type: FlowQuestion | None
+    exceptions: []
+    side_effects: none
+  - name: save_answer_and_advance
+    description: Save one answer, score, and quick-action set, advance to the next question, and autosave the draft.
+    locked: false
+    inputs:
+      notes:
+        type: str
+        required: true
+      score:
+        type: str
+        required: false
+        default: ''
+      quick_actions:
+        type: Sequence[str]
+        required: false
+        default: ()
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Writes PySide draft JSON.
+  - name: review_summary
+    description: Evaluate completed PySide trait scores with existing scoring rules and return review-screen summary data.
+    locked: false
+    inputs: {}
+    returns:
+      type: PySideReviewSummary
+    exceptions:
+    - ReportingValidationError
+    side_effects: none
+  - name: offer_review_defaults
+    description: Return prefilled offer wizard fields from candidate setup and interview review outcome.
+    locked: false
+    inputs: {}
+    returns:
+      type: dict[str, str]
+    exceptions:
+    - ReportingValidationError
+    side_effects: none
+  - name: generate_offer_document
+    description: Render a Word offer letter from the completed PySide session and selected offer template.
+    locked: false
+    inputs:
+      template_path:
+        type: Path
+        required: true
+      output_dir:
+        type: Path
+        required: true
+      start_date:
+        type: date
+        required: true
+      start_time_12h:
+        type: str
+        required: true
+      end_time_12h:
+        type: str
+        required: true
+      hourly_pay:
+        type: float
+        required: true
+      hours:
+        type: int
+        required: true
+      created_on:
+        type: date
+        required: true
+    returns:
+      type: Path
+    exceptions:
+    - OfferTemplateError
+    - OSError
+    side_effects: Writes rendered offer DOCX to the selected output directory.
+  - name: generate_interview_notes_document
+    description: Generate a Word interview-notes document from PySide session answers and review summary.
+    locked: false
+    inputs:
+      output_dir:
+        type: Path
+        required: true
+    returns:
+      type: Path
+    exceptions:
+    - OSError
+    side_effects: Writes generated interview-notes DOCX to the selected output directory.
+  - name: to_draft
+    description: Serialize the session as versioned draft JSON data.
+    locked: false
+    inputs: {}
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: none
+  - name: save_draft
+    description: Atomically write current session state to the configured draft path.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions:
+    - OSError
+    side_effects: Writes PySide draft JSON.
+  - name: load
+    description: Load and validate a versioned PySide interview draft.
+    locked: false
+    inputs:
+      model:
+        type: InterviewRedesignModel
+        required: true
+      draft_path:
+        type: Path
+        required: true
+    returns:
+      type: PySideInterviewSession
+    exceptions:
+    - ValueError
+    side_effects: Reads PySide draft JSON.
+- name: PySideInterviewWindow
+  description: Main PySide6 window with navigation for Interviews, Candidates, Offers, Onboarding, and Admin Studio.
+  locked: false
+  attributes:
+    model:
+      type: InterviewRedesignModel
+    window:
+      type: QMainWindow
+  methods:
+  - name: show
+    description: Show the redesigned PySide6 main window.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Displays the QMainWindow.
+data_structures:
+- name: InterviewRedesignModel
+  type: dataclass
+  description: Headless UI model for navigation, setup readiness, interview flows, and home dashboard data.
+- name: TrackFlow
+  type: dataclass
+  description: Ordered question flow for one role track.
+- name: FlowQuestion
+  type: dataclass
+  description: Render-ready custom or scored interview question data.
+- name: ScoreCard
+  type: dataclass
+  description: One selectable score value and plain-language descriptor.
+- name: PySideReviewSummary
+  type: dataclass
+  description: Score, determination, missing scores, strongest evidence, concerns, and recommended next action for PySide review.
+- name: PySideOnboardingBoard
+  type: dataclass
+  description: Counts, next task, and employee rows for PySide onboarding board.
+- name: PySideCandidateBoard
+  type: dataclass
+  description: Candidate list rows and summary count for PySide candidate view.
+- name: PySideAdminStudioModel
+  type: dataclass
+  description: Admin Studio sections, counts, validation warnings, and rows for configuration review.
+dependencies:
+- module: data_store
+- module: onboarding_operations
+- module: platform_services
+- module: scoring_reporting
+- module: PySide6

@@ -2,12 +2,12 @@ module:
   name: deepseek_finalize_worker
   language: python
   path: src/deepseek_finalize_worker.py
-  version: 1.2.2
+  version: 1.3.0
   description: Detached local DeepSeek finalize worker that refreshes interview notes
     documents and history status after the GUI finalize flow returns, keeping DeepSeek
     signal scoring advisory and human raw scores final. Workers serialize processing
     through a per-deepseek_jobs lock file so local Ollama handles one finalize job
-    at a time.
+    at a time, and writes sanitized progress JSON for GUI polling.
 functions:
 - name: _utc_timestamp
   description: Return current UTC timestamp in persisted Z-suffixed ISO format.
@@ -57,6 +57,27 @@ functions:
     type: None
   exceptions: []
   side_effects: Writes interview history JSON when a row matches.
+- name: _write_progress
+  description: Write sanitized detached DeepSeek progress state for the GUI progress
+    popup, using only step/status/timestamp metadata and no transcript content.
+  locked: false
+  inputs:
+    job:
+      type: dict[str, Any]
+      required: true
+    step:
+      type: str
+      required: true
+    status:
+      type: str
+      required: false
+      default: processing
+  returns:
+    type: None
+  exceptions:
+  - OSError
+  side_effects: Writes or replaces a local progress JSON file when progress_path is
+    present in the job.
 - name: _lock_path_for_job
   description: Resolve the DeepSeek finalize lock path beside the persisted job file.
   locked: false

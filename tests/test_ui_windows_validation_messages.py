@@ -53,7 +53,8 @@ def _new_settings_window() -> SettingsWindow:
     window._TAB_TEMPLATES = "templates"
     window._TAB_SECURITY = "security"
     window._TAB_NOTIFICATIONS = "notifications"
-    window._tab_order = ["templates", "notifications", "security"]
+    window._TAB_DEEPSEEK = "deepseek"
+    window._tab_order = ["templates", "notifications", "deepseek", "security"]
     return window
 
 
@@ -63,6 +64,19 @@ def test_validation_errors_return_structured_items_with_guidance() -> None:
     window.endpoint_var = DummyVar("ftp://example")
     window._settings_template_values = lambda: {"director_subject": "Hello {bad_token}"}
     window._settings_template_contexts = lambda: {"director_subject": "director"}
+    window._deepseek_prompt_template_values = lambda: {
+        "answer_summary_system": "system",
+        "answer_summary_user": "Answer {payload_json}",
+        "executive_summary_system": "system",
+        "executive_summary_user": "Executive {answer_summaries_json}",
+        "trait_suggestion_system": "system",
+        "trait_suggestion_user": "Suggest {payload_json}",
+        "trait_scoring_system": "system",
+        "trait_scoring_user": "Score {payload_json}",
+        "answer_summary_user_by_question": {},
+        "trait_suggestion_user_by_question": {},
+        "trait_scoring_user_by_question": {},
+    }
 
     errors = window._validation_errors()
 
@@ -72,6 +86,42 @@ def test_validation_errors_return_structured_items_with_guidance() -> None:
     assert "Open Placeholders picker" in template_issue["guidance"]
     assert endpoint_issue["field"] == "director_referral_endpoint"
     assert "Use <https://...>" in endpoint_issue["guidance"]
+
+
+def test_validation_errors_require_deepseek_per_question_prompt_json_and_payload_placeholder() -> None:
+    window = _new_settings_window()
+    window.whisper_temperature_var = DummyVar("0.0")
+    window.endpoint_var = DummyVar("")
+    window._settings_template_values = lambda: {}
+    window._settings_template_contexts = lambda: {}
+    window._deepseek_prompt_template_values = lambda: {
+        "answer_summary_system": "system",
+        "answer_summary_user": "Answer {payload_json}",
+        "executive_summary_system": "system",
+        "executive_summary_user": "Executive {answer_summaries_json}",
+        "trait_suggestion_system": "system",
+        "trait_suggestion_user": "Suggest {payload_json}",
+        "trait_scoring_system": "system",
+        "trait_scoring_user": "Score {payload_json}",
+        "answer_summary_user_by_question": '{"custom_why_lpl": "Missing payload"}',
+        "trait_suggestion_user_by_question": "{bad json",
+        "trait_scoring_user_by_question": {"trait_1": "Score trait {payload_json}"},
+    }
+
+    errors = window._validation_errors()
+
+    deepseek_fields = [item["field"] for item in errors["deepseek"]]
+    assert "deepseek_answer_summary_user_by_question" in deepseek_fields
+    assert "deepseek_trait_suggestion_user_by_question" in deepseek_fields
+
+
+def test_normalize_deepseek_question_prompt_json_accepts_mapping_or_json() -> None:
+    assert SettingsWindow._normalize_deepseek_question_prompt_json({"trait_1": "Prompt {payload_json}"}) == {
+        "trait_1": "Prompt {payload_json}"
+    }
+    assert SettingsWindow._normalize_deepseek_question_prompt_json('{"2": "Prompt {payload_json}"}') == {
+        "2": "Prompt {payload_json}"
+    }
 
 
 def test_apply_validation_messages_sets_tab_summary_and_field_guidance() -> None:

@@ -546,7 +546,7 @@ functions:
   - ConfigValidationError
   side_effects: none
 - name: atomic_write_json
-  description: Write JSON payload atomically to a filesystem path.
+  description: Write JSON payload atomically to a filesystem path, retrying transient Windows replace denials from file sync or read-only targets.
   locked: false
   inputs:
     path:

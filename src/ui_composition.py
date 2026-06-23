@@ -62,6 +62,7 @@ RowCallback = Callable[[HistoryRow], None]
 SortCallback = Callable[[str, bool], None]
 TRAIT_FILE_PATTERN = "T*.json"
 TRAIT_ID_ALIAS_PATTERN = re.compile(r"trait_(\d+)", re.IGNORECASE)
+BSS_TRAIT_ID_ALIAS_PATTERN = re.compile(r"bss_trait_(\d+)", re.IGNORECASE)
 SIGNAL_ID_PATTERN = re.compile(r"^[A-Za-z0-9_]+$")
 GROUP_ID_PATTERN = re.compile(r"^[A-Za-z0-9_]+$")
 
@@ -1315,6 +1316,8 @@ class HistoryDataGrid(ttk.Frame):
         "determination",
         "offer_action",
         "notes_link",
+        "school",
+        "position",
     )
 
     def __init__(
@@ -1367,15 +1370,19 @@ class HistoryDataGrid(ttk.Frame):
         tree.heading("determination", text="Determination", command=lambda: self.toggle_sort("determination"))
         tree.heading("offer_action", text="Offer")
         tree.heading("notes_link", text="Interview Notes")
+        tree.heading("school", text="School", command=lambda: self.toggle_sort("school"))
+        tree.heading("position", text="Position", command=lambda: self.toggle_sort("position"))
 
     @staticmethod
     def _configure_columns(tree: ttk.Treeview) -> None:
         tree.column("interview_date", width=140, anchor="w")
-        tree.column("candidate_name", width=260, anchor="w")
-        tree.column("interview_score", width=140, anchor="center")
-        tree.column("determination", width=140, anchor="center")
-        tree.column("offer_action", width=140, anchor="center")
-        tree.column("notes_link", width=150, anchor="center")
+        tree.column("candidate_name", width=220, anchor="w")
+        tree.column("interview_score", width=120, anchor="center")
+        tree.column("determination", width=130, anchor="center")
+        tree.column("offer_action", width=130, anchor="center")
+        tree.column("notes_link", width=140, anchor="center")
+        tree.column("school", width=160, anchor="w")
+        tree.column("position", width=190, anchor="w")
 
     def set_rows(self, rows: list[HistoryRow]) -> None:
         self._all_rows = [dict(row) for row in rows]
@@ -1434,9 +1441,10 @@ class HistoryDataGrid(ttk.Frame):
                 str(row.get("history_id", "")),
                 str(row.get("interview_date", "")),
                 str(row.get("candidate_name", "")),
+                str(row.get("school", "")),
+                HistoryDataGrid._position_value(row),
                 str(row.get("interview_score", "")),
                 str(row.get("determination", "")),
-                str(row.get("school", "")),
                 str(row.get("offer_status", "")),
                 str(row.get("offer_path", "")),
                 str(row.get("offer_letter_path", "")),
@@ -1448,6 +1456,8 @@ class HistoryDataGrid(ttk.Frame):
     @staticmethod
     def _sort_key(row: HistoryRow, column: str) -> Any:
         if column != "interview_score":
+            if column == "position":
+                return HistoryDataGrid._position_value(row).lower()
             return str(row.get(column, "")).lower()
         value = row.get("interview_score", 0)
         try:
@@ -1522,7 +1532,13 @@ class HistoryDataGrid(ttk.Frame):
             str(row.get("determination", "")),
             self._offer_action_label(row),
             self._notes_link_label(row),
+            str(row.get("school", "")),
+            self._position_value(row),
         )
+
+    @staticmethod
+    def _position_value(row: HistoryRow) -> str:
+        return str(row.get("position") or row.get("track") or "").strip()
 
     @staticmethod
     def _offer_action_label(row: HistoryRow) -> str:
@@ -2248,9 +2264,14 @@ def runtime_trait_id_for_rubric_trait(trait_id: str) -> str:
     match = TRAIT_ID_ALIAS_PATTERN.fullmatch(candidate)
     if match:
         return f"T{int(match.group(1))}"
+    bss_match = BSS_TRAIT_ID_ALIAS_PATTERN.fullmatch(candidate)
+    if bss_match:
+        return f"BSS_T{int(bss_match.group(1))}"
     if candidate.startswith("T"):
         return candidate
-    raise ValueError("Trait id must use the 'trait_<number>' format.")
+    if candidate.startswith("BSS_T"):
+        return candidate
+    raise ValueError("Trait id must use the 'trait_<number>' or 'bss_trait_<number>' format.")
 
 
 def build_runtime_trait_id(trait_id: str, *, trait_name: str, existing_runtime_trait_id: Any = "") -> str:

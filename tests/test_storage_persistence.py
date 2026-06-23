@@ -49,6 +49,18 @@ def test_interview_history_store_append_persists_list(tmp_path: Path):
     ]
 
 
+def test_interview_history_store_loads_legacy_root_history(tmp_path: Path):
+    canonical_dir = tmp_path / "user_artifacts"
+    canonical_path = canonical_dir / "interview_history.json"
+    legacy_path = tmp_path / "interview_history.json"
+    legacy_path.write_text(
+        json.dumps([{"history_id": "old-1", "candidate_name": "Legacy Candidate"}]),
+        encoding="utf-8",
+    )
+    store = InterviewHistoryStore(canonical_path)
+
+    assert store.load() == [{"history_id": "old-1", "candidate_name": "Legacy Candidate"}]
+
 
 def test_interview_history_store_update_row_by_stable_key(tmp_path: Path):
     path = tmp_path / "interview_history.json"

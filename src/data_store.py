@@ -299,16 +299,50 @@ class InterviewHistoryStore:
         self.path = Path(path)
 
     def load(self) -> list[dict[str, Any]]:
-        if not self.path.exists():
+        rows = self._load_from_path(self.path)
+        legacy_rows = self._load_from_path(self._legacy_root_path())
+        if not rows:
+            return legacy_rows
+        if not legacy_rows:
+            return rows
+        return self._merge_history_rows(legacy_rows, rows)
+
+    def _load_from_path(self, path: Path | None) -> list[dict[str, Any]]:
+        if path is None or not path.exists():
             return []
         try:
-            with self.path.open("r", encoding="utf-8") as f:
+            with path.open("r", encoding="utf-8") as f:
                 data = json.load(f)
         except (json.JSONDecodeError, OSError):
             return []
         if not isinstance(data, list):
             return []
         return [item for item in data if isinstance(item, dict)]
+
+    def _legacy_root_path(self) -> Path | None:
+        if self.path.parent.name != "user_artifacts":
+            return None
+        legacy_path = self.path.parent.parent / self.path.name
+        if legacy_path == self.path:
+            return None
+        return legacy_path
+
+    @classmethod
+    def _merge_history_rows(
+        cls,
+        legacy_rows: list[dict[str, Any]],
+        canonical_rows: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        merged: list[dict[str, Any]] = []
+        seen_keys: set[str] = set()
+        for row in [*legacy_rows, *canonical_rows]:
+            key = cls.build_row_key(row)
+            if key and key in seen_keys:
+                continue
+            if key:
+                seen_keys.add(key)
+            merged.append(row)
+        return merged
 
     def append(self, entry: dict[str, Any]) -> None:
         items = self.load()

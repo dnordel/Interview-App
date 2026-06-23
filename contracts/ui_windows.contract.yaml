@@ -2,13 +2,13 @@ module:
   name: ui_windows
   language: python
   path: src/ui_windows.py
-  version: 1.1.4
+  version: 1.2.0
   description: Tkinter settings and question editor windows for interview workflows.
 functions: []
 classes:
 - name: SettingsWindow
   description: Settings modal with task-oriented tabs for templates, notifications,
-    storage, and safety.
+    DeepSeek prompt editing, storage, and safety.
   locked: false
   attributes:
     app:
@@ -83,6 +83,15 @@ classes:
         type: ttk.Frame
     returns:
       type: None
+  - name: _build_deepseek_tab
+    side_effects: Creates global DeepSeek prompt text editors and per-question prompt
+      override JSON editors for answer summaries, trait signal suggestions, and trait
+      raw scoring.
+    inputs:
+      parent:
+        type: ttk.Frame
+    returns:
+      type: None
   - name: _build_storage_tab
     side_effects: Creates storage path controls and field validation widgets.
     inputs:
@@ -148,6 +157,21 @@ classes:
     inputs: {}
     returns:
       type: None
+  - name: _deepseek_prompt_template_values
+    side_effects: none
+    inputs: {}
+    returns:
+      type: dict[str, Any]
+  - name: _normalize_deepseek_question_prompt_json
+    side_effects: none
+    inputs:
+      value:
+        type: Any
+    returns:
+      type: dict[str, str]
+    exceptions:
+    - ValueError
+    - json.JSONDecodeError
   - name: _clear_tab_messages
     side_effects: Clears tab banners and removes summary child widgets.
     inputs: {}
