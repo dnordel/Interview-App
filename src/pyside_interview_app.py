@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import json
 import os
+import queue
 import subprocess
 import sys
+import threading
+import time
 from difflib import SequenceMatcher
 from dataclasses import dataclass, field, replace
 from datetime import date
@@ -14,7 +17,16 @@ from typing import Any, Sequence
 
 from docx import Document
 from data_store import InterviewHistoryStore, QuestionOverridesStore, RubricLoader
-from interview_runtime import FinalizeGateways, build_finalize_context, enqueue_deepseek_finalize_job
+from interview_runtime import (
+    DEFAULT_WINDOWS_MIC_DEVICE,
+    FinalizeGateways,
+    build_finalize_context,
+    build_flow_time_windows,
+    enqueue_deepseek_finalize_job,
+    load_candidate_segments,
+    map_segments_to_flow_indices,
+    resolve_default_windows_system_device,
+)
 from onboarding_operations import JsonStore, build_dashboard_today_summary, filtered_tasks, task_status
 from platform_services import (
     DEFAULT_RUBRIC_PATH,
@@ -65,6 +77,8 @@ class PySideHistoryRow:
     offer_action: str
     notes_path: str
     report_path: str
+    deepseek_processing_status: str = ""
+    deepseek_processing_warning: str = ""
 
 
 @dataclass(frozen=True)
@@ -145,6 +159,7 @@ class PySideOnboardingBoard:
 class PySideCandidateBoard:
     total_candidates: int
     rows: list[dict[str, str]]
+    history_rows: list[PySideHistoryRow] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -167,6 +182,9 @@ class PySideInterviewSession:
     current_index: int = 0
     answers: dict[str, dict[str, Any]] = field(default_factory=dict)
     qualification: dict[str, Any] = field(default_factory=dict)
+    flow_time_marks: list[dict[str, Any]] = field(default_factory=list)
+    flow_candidate_transcripts: dict[int, str] = field(default_factory=dict)
+    flow_recordings: dict[int, dict[str, Any]] = field(default_factory=dict)
 
     def start(self, *, candidate_name: str, school: str, track_key: str) -> None:
         if track_key not in self.model.flows:
@@ -177,6 +195,9 @@ class PySideInterviewSession:
         self.current_index = 0
         self.answers = {}
         self.qualification = {}
+        self.flow_time_marks = []
+        self.flow_candidate_transcripts = {}
+        self.flow_recordings = {}
         self.save_draft()
 
     def _workflow_items(self) -> list[FlowQuestion]:
@@ -338,11 +359,7 @@ class PySideInterviewSession:
         adapter = _PySideFinalizeAdapter(self, base_dir=Path(base_dir), history_path=Path(history_path))
         warnings: list[str] = []
         scoring = ScoringEngine.evaluate(adapter._rubric_with_question_overrides(), adapter.state.track, adapter.state.trait_inputs)
-        transcript_metadata = {
-            "transcript_complete": True,
-            "transcript_completeness_status": "complete",
-            "remaining_question_indices": [],
-        }
+        transcript_metadata = self._transcript_metadata()
         context = build_finalize_context(adapter, scoring, warnings, transcript_metadata, run_deepseek=False)
         active_gateways = gateways or FinalizeGateways()
         out_path = active_gateways.export_report(adapter, context)
@@ -360,11 +377,27 @@ class PySideInterviewSession:
             "director_packet": director_packet,
             "warnings": warnings,
             "communication_log_path": str(comm_log_path) if comm_log_path else None,
-            "transcript_complete": True,
-            "transcript_completeness_status": "complete",
-            "remaining_question_indices": [],
+            "transcript_complete": transcript_metadata["transcript_complete"],
+            "transcript_completeness_status": transcript_metadata["transcript_completeness_status"],
+            "remaining_question_indices": transcript_metadata["remaining_question_indices"],
             "deepseek_job_path": str(deepseek_job_path) if deepseek_job_available else "",
             "deepseek_progress_path": str(deepseek_progress_path) if deepseek_job_available else "",
+        }
+
+    def _transcript_metadata(self) -> dict[str, Any]:
+        total = len(self._workflow_items())
+        missing: list[int] = []
+        for flow_idx in range(total):
+            transcript = str(self.flow_candidate_transcripts.get(flow_idx, "") or "").strip()
+            recording = self.flow_recordings.get(flow_idx, {}) or {}
+            if transcript or str(recording.get("candidate_transcript") or "").strip():
+                continue
+            missing.append(flow_idx + 1)
+        complete = not missing
+        return {
+            "transcript_complete": complete,
+            "transcript_completeness_status": "complete" if complete else "partial",
+            "remaining_question_indices": missing,
         }
 
     def to_draft(self) -> dict[str, Any]:
@@ -376,6 +409,9 @@ class PySideInterviewSession:
             "current_index": self.current_index,
             "qualification": self.qualification,
             "answers": self.answers,
+            "flow_time_marks": self.flow_time_marks,
+            "flow_candidate_transcripts": {str(key): value for key, value in self.flow_candidate_transcripts.items()},
+            "flow_recordings": {str(key): value for key, value in self.flow_recordings.items()},
         }
 
     def save_draft(self) -> None:
@@ -399,6 +435,15 @@ class PySideInterviewSession:
         qualification = payload.get("qualification", {})
         if not isinstance(qualification, dict):
             qualification = {}
+        flow_time_marks = payload.get("flow_time_marks", [])
+        if not isinstance(flow_time_marks, list):
+            flow_time_marks = []
+        flow_candidate_transcripts = payload.get("flow_candidate_transcripts", {})
+        if not isinstance(flow_candidate_transcripts, dict):
+            flow_candidate_transcripts = {}
+        flow_recordings = payload.get("flow_recordings", {})
+        if not isinstance(flow_recordings, dict):
+            flow_recordings = {}
         return cls(
             model=model,
             draft_path=Path(draft_path),
@@ -408,6 +453,17 @@ class PySideInterviewSession:
             current_index=max(0, current_index),
             qualification=_normalize_qualification_payload(qualification),
             answers={str(key): value for key, value in answers.items() if isinstance(value, dict)},
+            flow_time_marks=[dict(item) for item in flow_time_marks if isinstance(item, dict)],
+            flow_candidate_transcripts={
+                int(key): str(value)
+                for key, value in flow_candidate_transcripts.items()
+                if str(key).lstrip("-").isdigit()
+            },
+            flow_recordings={
+                int(key): dict(value)
+                for key, value in flow_recordings.items()
+                if str(key).lstrip("-").isdigit() and isinstance(value, dict)
+            },
         )
 
 
@@ -431,7 +487,7 @@ class _PySideFinalizeAdapter:
             track=session.track_key,
             trait_inputs=self._trait_inputs(),
             custom_inputs=self._custom_inputs(),
-            flow_recordings={},
+            flow_recordings=dict(session.flow_recordings),
             flow_candidate_transcripts=self._flow_candidate_transcripts(),
             referral_packet={"transcript_path": "", "interview_notes_path": ""},
             communication_log=[],
@@ -451,7 +507,12 @@ class _PySideFinalizeAdapter:
         return None
 
     def _serialize_flow_audio_recordings(self) -> list[dict[str, Any]]:
-        return []
+        recordings: list[dict[str, Any]] = []
+        for flow_idx in sorted(self.session.flow_recordings):
+            item = dict(self.session.flow_recordings.get(flow_idx, {}) or {})
+            item["flow_index"] = int(item.get("flow_index", flow_idx))
+            recordings.append(item)
+        return recordings
 
     def _ordered_custom_answers(self) -> list[dict[str, Any]]:
         custom_answers: list[dict[str, Any]] = []
@@ -471,7 +532,7 @@ class _PySideFinalizeAdapter:
 
     def _build_flow_transcript(self) -> list[dict[str, Any]]:
         transcript: list[dict[str, Any]] = []
-        for index, question in enumerate(self._workflow_items(), start=1):
+        for index, question in enumerate(self._workflow_items()):
             answer = self.session.answers.get(question.question_id, {})
             notes = str(answer.get("notes", "") or "")
             transcript.append(
@@ -488,7 +549,17 @@ class _PySideFinalizeAdapter:
         return transcript
 
     def _apply_candidate_transcripts_to_flow(self, _flow_tx: list[dict[str, Any]]) -> None:
-        return None
+        by_flow_index: dict[int, str] = {}
+        for key, value in self.session.flow_candidate_transcripts.items():
+            text = str(value or "").strip()
+            if text:
+                by_flow_index[int(key)] = text
+        for key, value in self.session.flow_recordings.items():
+            text = str((value or {}).get("candidate_transcript") or "").strip()
+            if text:
+                by_flow_index[int(key)] = text
+        for index, item in enumerate(_flow_tx):
+            item["candidate_transcript"] = by_flow_index.get(index, str(item.get("candidate_transcript") or ""))
 
     def _rewrite_live_transcript_docx_from_flow(self, _flow_tx: list[dict[str, Any]]) -> None:
         return None
@@ -540,11 +611,7 @@ class _PySideFinalizeAdapter:
         return custom
 
     def _flow_candidate_transcripts(self) -> dict[int, str]:
-        transcripts: dict[int, str] = {}
-        for index, question in enumerate(self._workflow_items(), start=1):
-            answer = self.session.answers.get(question.question_id, {})
-            transcripts[index - 1] = str(answer.get("notes", "") or "")
-        return transcripts
+        return dict(self.session.flow_candidate_transcripts)
 
     def _workflow_items(self) -> list[FlowQuestion]:
         return self.session._workflow_items()
@@ -591,6 +658,8 @@ def _build_pyside_history_rows(history_path: Path) -> list[PySideHistoryRow]:
                 offer_action=_history_offer_action(offer_status),
                 notes_path=_history_text(row, "interview_notes_path", "saved_report_path", "notes_path", default=""),
                 report_path=_history_text(row, "saved_report_path", "report_path", "interview_notes_path", default=""),
+                deepseek_processing_status=_history_text(row, "deepseek_processing_status", default="").strip().lower(),
+                deepseek_processing_warning=_history_text(row, "deepseek_processing_warning", default=""),
             )
         )
     return history_rows
@@ -829,23 +898,64 @@ def build_pyside_onboarding_board(
     )
 
 
-def build_pyside_candidate_board(history_rows: list[dict[str, Any]]) -> PySideCandidateBoard:
+def build_pyside_candidate_board(history_rows: Sequence[dict[str, Any] | PySideHistoryRow]) -> PySideCandidateBoard:
     by_candidate: dict[str, dict[str, str]] = {}
+    shared_history_rows: list[PySideHistoryRow] = []
     for row in history_rows:
-        candidate = _history_text(row, "candidate_name", "candidate", "name", default="Unknown candidate")
+        if isinstance(row, PySideHistoryRow):
+            candidate = row.candidate or "Unknown candidate"
+            shared_history_rows.append(row)
+            row_data = {
+                "school": row.school,
+                "role": row.position,
+                "score": row.score,
+                "status": row.status,
+                "next_action": row.offer_action,
+            }
+        else:
+            candidate = _history_text(row, "candidate_name", "candidate", "name", default="Unknown candidate")
+            offer_status = _history_text(row, "offer_status", default="").strip().lower()
+            offer_action = _history_text(row, "next_action", "recommended_next_action", default="")
+            if not offer_action:
+                offer_action = _history_offer_action(offer_status)
+            shared_history_rows.append(
+                PySideHistoryRow(
+                    row_key=_history_text(row, "history_id", "row_key", default=""),
+                    interview_date=_history_text(row, "interview_date", "date", default=""),
+                    candidate=candidate,
+                    school=_history_text(row, "school", default=""),
+                    position=_history_text(row, "position", "candidate_position", "role", "track", default=""),
+                    score=_history_text(row, "score", "percent_of_max", "overall_score", "interview_score", default=""),
+                    status=_history_text(row, "status", "interview_status", "outcome", "determination", default=""),
+                    offer_status=offer_status or "not_generated",
+                    offer_action=offer_action,
+                    notes_path=_history_text(row, "interview_notes_path", "saved_report_path", "notes_path", default=""),
+                    report_path=_history_text(row, "saved_report_path", "report_path", "interview_notes_path", default=""),
+                    deepseek_processing_status=_history_text(row, "deepseek_processing_status", default="").strip().lower(),
+                    deepseek_processing_warning=_history_text(row, "deepseek_processing_warning", default=""),
+                )
+            )
+            row_data = {
+                "school": _history_text(row, "school", default=""),
+                "role": _history_text(row, "role", "track", "position", default=""),
+                "score": _history_text(row, "score", "percent_of_max", "overall_score", default=""),
+                "status": _history_text(row, "status", "interview_status", "outcome", default=""),
+                "next_action": offer_action,
+            }
         if candidate in by_candidate:
             continue
         by_candidate[candidate] = {
             "candidate": candidate,
-            "school": _history_text(row, "school", default=""),
-            "role": _history_text(row, "role", "track", default=""),
-            "score": _history_text(row, "score", "percent_of_max", "overall_score", default=""),
-            "status": _history_text(row, "status", "interview_status", "outcome", default=""),
-            "next_action": _history_text(row, "next_action", "recommended_next_action", default="Review"),
+            "school": row_data["school"],
+            "role": row_data["role"],
+            "score": row_data["score"],
+            "status": row_data["status"],
+            "next_action": row_data["next_action"] or "Review",
         }
     return PySideCandidateBoard(
         total_candidates=len(by_candidate),
         rows=list(by_candidate.values()),
+        history_rows=shared_history_rows,
     )
 
 
@@ -862,17 +972,38 @@ def build_pyside_admin_studio_model(model: InterviewRedesignModel) -> PySideAdmi
                     "title": item.title,
                 }
             )
+    trait_rows: list[dict[str, str]] = []
+    for trait in model.rubric.get("traits", []) or []:
+        if not isinstance(trait, dict):
+            continue
+        trait_rows.append(
+            {
+                "key": str(trait.get("id", "")),
+                "label": str(trait.get("name", "")),
+                "type": str(trait.get("priority", "")),
+                "detail": str(trait.get("primary_question", "")),
+            }
+        )
+    signal_rows = [
+        {"key": f"disqualifier_{index}", "label": str(item), "type": "Disqualifier", "detail": ""}
+        for index, item in enumerate(model.rubric.get("absolute_disqualifiers", []) or [], start=1)
+    ]
     rows = {
         "Role Tracks": [
-            {"key": key, "label": label, "questions": str(len(model.flows.get(key, TrackFlow(key, label, [])).items))}
+            {
+                "key": key,
+                "label": label,
+                "type": "Track",
+                "detail": str(len(model.flows.get(key, TrackFlow(key, label, [])).items)),
+            }
             for key, label in model.track_labels.items()
         ],
         "Questions": question_rows,
-        "Rubrics": [{"key": "traits", "label": str(len(model.rubric.get("traits", []) or [])), "questions": ""}],
-        "Signals": [{"key": "disqualifiers", "label": str(len(model.rubric.get("absolute_disqualifiers", []) or [])), "questions": ""}],
-        "Templates": [{"key": "offer", "label": "Configure in Offer Wizard", "questions": ""}],
-        "Storage": [{"key": "drafts", "label": str(DEFAULT_BASE_DIR / "pyside_drafts"), "questions": ""}],
-        "Security": [{"key": "privacy", "label": "Candidate/interview records stay local", "questions": ""}],
+        "Rubrics": trait_rows,
+        "Signals": signal_rows,
+        "Templates": [{"key": "offer", "label": "Configure in Offer Wizard", "type": "Template", "detail": ""}],
+        "Storage": [{"key": "drafts", "label": str(DEFAULT_BASE_DIR / "pyside_drafts"), "type": "Path", "detail": ""}],
+        "Security": [{"key": "privacy", "label": "Candidate/interview records stay local", "type": "Policy", "detail": ""}],
     }
     return PySideAdminStudioModel(
         sections=sections,
@@ -1077,6 +1208,20 @@ class PySideInterviewWindow:
         self.history_search_text = ""
         self.history_school_filter_text = ""
         self.history_outcome_filter_text = ""
+        self.recording_session: Any | None = None
+        self.recording_base_name = ""
+        self.recording_started_monotonic: float | None = None
+        self.recording_candidate_label = "CANDIDATE"
+        self.recording_warning = ""
+        self._pyside_finalize_running = False
+        self._pyside_finalize_progress_step = ""
+        self.pyside_finalize_progress_dialog: Any | None = None
+        self.pyside_finalize_progress_label: Any | None = None
+        self.pyside_finalize_progress_bar: Any | None = None
+        self.pyside_finalize_deepseek_progress_path: Path | None = None
+        self._pyside_finalize_progress_queue: queue.Queue[str] | None = None
+        self._pyside_deepseek_progress_timer: Any | None = None
+        self._history_table_widgets: dict[str, Any] = {}
         self.window = QtWidgets.QMainWindow()
         self.window.setWindowFlags(standard_window_control_flags(QtCore))
         self.window.setWindowTitle(model.app_title)
@@ -1240,12 +1385,8 @@ class PySideInterviewWindow:
         controls.addWidget(outcome_filter, 1)
         recent_layout.addLayout(controls)
 
-        table = self.QtWidgets.QTableWidget(len(self.model.home.history_rows), 8)
-        table.setObjectName("PySideHistoryGrid")
-        table.setHorizontalHeaderLabels(["Date", "Candidate", "School", "Position", "Score", "Status", "Notes", "Offer"])
+        table = self._create_history_table("PySideHistoryGrid")
         self.history_table = table
-        table.horizontalHeader().setStretchLastSection(True)
-        table.setSortingEnabled(True)
         self._refresh_history_table()
         recent_layout.addWidget(table)
         layout.addWidget(recent, 1)
@@ -1298,17 +1439,34 @@ class PySideInterviewWindow:
         blob_tokens = blob.split()
         return all(_history_token_matches(term, blob_tokens) for term in query.split())
 
-    def _refresh_history_table(self) -> None:
-        table = getattr(self, "history_table", None)
+    def _create_history_table(self, object_name: str) -> Any:
+        table = self.QtWidgets.QTableWidget(0, 8)
+        table.setObjectName(object_name)
+        table.setHorizontalHeaderLabels(["Date", "Candidate", "School", "Position", "Score", "Status", "Notes", "Offer"])
+        table.horizontalHeader().setStretchLastSection(True)
+        table.setSortingEnabled(True)
+        self._history_table_widgets[object_name] = table
+        return table
+
+    def _refresh_history_table(self, table: Any | None = None, rows: Sequence[PySideHistoryRow] | None = None) -> None:
+        table = table or getattr(self, "history_table", None)
         if table is None:
             return
-        rows = self._filtered_history_rows()
+        visible_rows = list(rows) if rows is not None else self._filtered_history_rows()
         table.setSortingEnabled(False)
-        table.setRowCount(len(rows))
-        for row_index, row in enumerate(rows):
+        table.setRowCount(len(visible_rows))
+        for row_index, row in enumerate(visible_rows):
             self._populate_history_table_row(table, row_index, row)
         self._size_history_table_columns(table)
         table.setSortingEnabled(True)
+
+    def _refresh_all_history_tables(self) -> None:
+        home_table = getattr(self, "history_table", None)
+        if home_table is not None:
+            self._refresh_history_table(home_table)
+        candidate_table = getattr(self, "candidate_history_table", None)
+        if candidate_table is not None:
+            self._refresh_history_table(candidate_table, self.model.home.history_rows)
 
     def _populate_history_table_row(self, table: Any, row_index: int, row: PySideHistoryRow) -> None:
         values = [row.interview_date, row.candidate, row.school, row.position, row.score, row.status]
@@ -1319,10 +1477,13 @@ class PySideInterviewWindow:
             if background is not None:
                 item.setData(self.QtCore.Qt.ItemDataRole.BackgroundRole, background)
             table.setItem(row_index, column, item)
-        notes_button = self.QtWidgets.QPushButton("Open Notes")
+        notes_label, notes_enabled, notes_tooltip = self._history_notes_action_state(row)
+        notes_button = self.QtWidgets.QPushButton(notes_label)
         notes_button.setMaximumWidth(95)
         notes_button.setProperty("history_row_key", row.row_key)
-        notes_button.setEnabled(bool(row.notes_path and Path(row.notes_path).exists()))
+        notes_button.setEnabled(notes_enabled)
+        if notes_tooltip:
+            notes_button.setToolTip(notes_tooltip)
         notes_button.clicked.connect(lambda _checked=False, item=row: self._open_history_notes(item))
         table.setCellWidget(row_index, 6, notes_button)
         offer_button = self.QtWidgets.QPushButton(row.offer_action)
@@ -1331,6 +1492,18 @@ class PySideInterviewWindow:
         offer_button.setEnabled(bool(row.row_key))
         offer_button.clicked.connect(lambda _checked=False, item=row: self._open_history_offer(item))
         table.setCellWidget(row_index, 7, offer_button)
+
+    def _history_notes_action_state(self, row: PySideHistoryRow) -> tuple[str, bool, str]:
+        status = row.deepseek_processing_status.strip().lower()
+        if status == "processing":
+            return "Processing", False, "DeepSeek is still processing interview notes."
+        if status == "failed" and not (row.notes_path and Path(row.notes_path).exists()):
+            warning = row.deepseek_processing_warning.strip() or "DeepSeek processing failed."
+            return "Unavailable", False, warning
+        if row.notes_path and Path(row.notes_path).exists():
+            warning = row.deepseek_processing_warning.strip()
+            return "Open Notes", True, warning
+        return "Unavailable", False, "Interview notes file was not found."
 
     def _size_history_table_columns(self, table: Any) -> None:
         table.resizeColumnsToContents()
@@ -1401,8 +1574,26 @@ class PySideInterviewWindow:
         return None
 
     def _live_question_tab(self) -> Any:
-        page, layout = self._scrollable_page()
+        page = self.QtWidgets.QWidget()
+        outer_layout = self.QtWidgets.QVBoxLayout(page)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+        scroll = self.QtWidgets.QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(self.QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setVerticalScrollBarPolicy(self.QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll.setFrameShape(self.QtWidgets.QFrame.Shape.NoFrame)
+        content = self.QtWidgets.QWidget()
+        layout = self.QtWidgets.QVBoxLayout(content)
+        layout.setContentsMargins(24, 20, 24, 20)
+        layout.setSpacing(14)
+        scroll.setWidget(content)
+        outer_layout.addWidget(scroll, 1)
+        footer = self.QtWidgets.QHBoxLayout()
+        footer.setContentsMargins(24, 10, 24, 16)
+        footer.setSpacing(10)
+        outer_layout.addLayout(footer)
         self.live_question_layout = layout
+        self.live_footer_layout = footer
         self._render_live_question_page()
         return page
 
@@ -1441,6 +1632,7 @@ class PySideInterviewWindow:
         draft_path = self._default_draft_path(candidate_name or "Candidate")
         self.session = PySideInterviewSession(model=self.model, draft_path=draft_path)
         self.session.start(candidate_name=candidate_name, school=school, track_key=self.session_track_key)
+        self._start_pyside_interview_recording()
         self._render_live_question_page()
         self._render_review_page()
         self._render_offer_page()
@@ -1462,6 +1654,103 @@ class PySideInterviewWindow:
         self._render_offer_page()
         self.interview_tabs.setCurrentIndex(2 if self.session.active_question() is not None else 3)
 
+    def _safe_base_name(self) -> str:
+        raw = f"{self.session.candidate_name if self.session else 'Candidate'}_{date.today().isoformat()}"
+        safe = "".join(ch if ch.isalnum() else "_" for ch in raw).strip("_")
+        return safe or "Candidate"
+
+    def _start_pyside_interview_recording(self) -> None:
+        if self.session is None:
+            return
+        self.session.flow_time_marks = []
+        self.session.flow_candidate_transcripts = {}
+        self.session.flow_recordings = {}
+        self.recording_warning = ""
+        self.recording_started_monotonic = time.monotonic()
+        self.recording_base_name = self._safe_base_name()
+        self.recording_candidate_label = "CANDIDATE"
+        try:
+            from interview_audio_recorder import start_recording
+
+            self.recording_session = start_recording(
+                os_name="windows" if sys.platform.startswith("win") else "linux",
+                output_dir=DEFAULT_BASE_DIR,
+                base_name=self.recording_base_name,
+                win_mic_device=DEFAULT_WINDOWS_MIC_DEVICE,
+                win_sys_device=resolve_default_windows_system_device() if sys.platform.startswith("win") else None,
+            )
+        except (Exception, SystemExit) as exc:
+            self.recording_session = None
+            self.recording_warning = f"Recording unavailable: {exc}"
+        self.session.save_draft()
+
+    def _mark_flow_timestamp(self, flow_idx: int) -> None:
+        if self.session is None or self.recording_started_monotonic is None:
+            return
+        elapsed = max(0.0, time.monotonic() - self.recording_started_monotonic)
+        self._mark_flow_timestamp_at(flow_idx, elapsed)
+
+    def _mark_flow_timestamp_at(self, flow_idx: int, elapsed: float) -> None:
+        if self.session is None:
+            return
+        marks = self.session.flow_time_marks
+        if marks and int(marks[-1].get("flow_index", -1)) == flow_idx and "end_t" not in marks[-1]:
+            return
+        marks.append({"flow_index": flow_idx, "t": elapsed})
+        self.session.save_draft()
+
+    def _close_flow_timestamp(self, flow_idx: int) -> float | None:
+        if self.session is None or self.recording_started_monotonic is None:
+            return None
+        elapsed = max(0.0, time.monotonic() - self.recording_started_monotonic)
+        for mark in reversed(self.session.flow_time_marks):
+            if int(mark.get("flow_index", -1)) == flow_idx and "end_t" not in mark:
+                mark["end_t"] = elapsed
+                break
+        self.session.save_draft()
+        return elapsed
+
+    def _stop_pyside_interview_recording(self) -> None:
+        if self.session is None or self.recording_session is None:
+            return
+        try:
+            result = self.recording_session.stop_and_transcribe(
+                output_dir=DEFAULT_BASE_DIR,
+                base_name=self.recording_base_name or self._safe_base_name(),
+                language="en",
+            )
+            payload = {
+                "flow_index": -1,
+                "base_name": self.recording_base_name,
+                "output_dir": str(DEFAULT_BASE_DIR),
+                "mic_wav": str(result.mic_wav),
+                "sys_wav": str(result.sys_wav),
+                "transcript_txt": str(result.transcript_txt),
+                "transcript_jsonl": str(result.transcript_jsonl),
+                "candidate_label": self.recording_candidate_label,
+            }
+            self._apply_pyside_recording_result(payload)
+        except Exception as exc:
+            self.recording_warning = f"Recording/transcription failed: {exc}"
+        finally:
+            self.recording_session = None
+            self.recording_base_name = ""
+
+    def _apply_pyside_recording_result(self, recording_result: dict[str, Any]) -> None:
+        if self.session is None:
+            return
+        jsonl_path = Path(str(recording_result.get("transcript_jsonl") or ""))
+        segments = load_candidate_segments(jsonl_path, self.recording_candidate_label)
+        windows = build_flow_time_windows(self.session.flow_time_marks)
+        by_flow_index = map_segments_to_flow_indices(segments, windows)
+        for flow_idx, candidate_transcript in by_flow_index.items():
+            payload = dict(recording_result)
+            payload["flow_index"] = flow_idx
+            payload["candidate_transcript"] = candidate_transcript
+            self.session.flow_recordings[flow_idx] = payload
+            self.session.flow_candidate_transcripts[flow_idx] = candidate_transcript
+        self.session.save_draft()
+
     def _active_question(self) -> FlowQuestion | None:
         if self.session is not None:
             return self.session.active_question()
@@ -1472,11 +1761,13 @@ class PySideInterviewWindow:
             return None
         return flow.items[self.session_index]
 
-    def _save_and_next(self) -> None:
+    def _save_and_next(self, *, finalize: bool = False) -> None:
         item = self._active_question()
         if item is None:
             self.interview_tabs.setCurrentIndex(3)
             return
+        current_index = self.session.current_index if self.session is not None else self.session_index
+        boundary_elapsed = self._close_flow_timestamp(current_index)
         qualification: dict[str, Any] | None = None
         if item.kind == "qualification":
             qualification = self._collect_qualification_from_fields()
@@ -1501,6 +1792,8 @@ class PySideInterviewWindow:
             )
             self.session_index = self.session.current_index
             self.session_answers = dict(self.session.answers)
+            if self.session.active_question() is not None and boundary_elapsed is not None:
+                self._mark_flow_timestamp_at(self.session.current_index, boundary_elapsed)
         else:
             answer = {
                 "kind": item.kind,
@@ -1512,13 +1805,31 @@ class PySideInterviewWindow:
                 answer["qualification"] = qualification
             self.session_answers[item.question_id] = answer
             self.session_index += 1
+            if self._active_question() is not None and boundary_elapsed is not None:
+                self._mark_flow_timestamp_at(self.session_index, boundary_elapsed)
         if self._active_question() is None:
             self._render_review_page()
             self._render_offer_page()
             self.interview_tabs.setCurrentIndex(3)
+            if finalize:
+                self._generate_interview_notes_from_session()
+            return
+        if finalize:
+            self._render_review_page()
+            self._render_offer_page()
+            self.interview_tabs.setCurrentIndex(3)
+            self._generate_interview_notes_from_session()
             return
         self._render_live_question_page()
         self._render_offer_page()
+
+    def _finalize_from_live_question(self) -> None:
+        self._save_and_next(finalize=True)
+
+    def _exit_live_interview(self) -> None:
+        if self.session is not None:
+            self.session.save_draft()
+        self.interview_tabs.setCurrentIndex(0)
 
     def _render_live_question_page(self) -> None:
         layout = getattr(self, "live_question_layout", None)
@@ -1528,7 +1839,10 @@ class PySideInterviewWindow:
         item = self._active_question() or self._first_flow_item(kind="trait") or self._first_flow_item()
         if item is None:
             layout.addWidget(self._label("No configured interview questions."))
+            self._render_live_footer(None)
             return
+        current_index = self.session.current_index if self.session is not None else self.session_index
+        self._mark_flow_timestamp(current_index)
 
         layout.addWidget(self._label(item.progress_label, "SectionTitle"))
         split = self.QtWidgets.QHBoxLayout()
@@ -1572,11 +1886,33 @@ class PySideInterviewWindow:
             self.quick_action_checks.append(checkbox)
             right_layout.addWidget(checkbox)
         right_layout.addStretch(1)
-        save_next = self._primary_button("Save & Next")
-        save_next.clicked.connect(self._save_and_next)
-        right_layout.addWidget(save_next)
         split.addWidget(right, 1)
         layout.addLayout(split, 1)
+        self._render_live_footer(item)
+
+    def _render_live_footer(self, item: FlowQuestion | None) -> None:
+        footer = getattr(self, "live_footer_layout", None)
+        if footer is None:
+            return
+        self._clear_layout(footer)
+        footer.addStretch(1)
+        exit_button = self.QtWidgets.QPushButton("Exit")
+        exit_button.setProperty("pyside_live_footer_action", "exit")
+        exit_button.clicked.connect(self._exit_live_interview)
+        footer.addWidget(exit_button)
+        if item is None:
+            return
+        is_last = False
+        if self.session is not None:
+            is_last = self.session.current_index == len(self.session._workflow_items()) - 1
+        action = self._primary_button("Finalize" if is_last else "Next")
+        action.setProperty("pyside_live_footer_action", "finalize" if is_last else "next")
+        action.clicked.connect(
+            (lambda _checked=False: self._finalize_from_live_question())
+            if is_last
+            else (lambda _checked=False: self._save_and_next())
+        )
+        footer.addWidget(action)
 
     def _render_qualification_fields(self, layout: Any) -> None:
         stored = self.session.qualification if self.session is not None else {}
@@ -1687,7 +2023,9 @@ class PySideInterviewWindow:
         notes_button.clicked.connect(self._generate_interview_notes_from_session)
         actions.addWidget(notes_button)
         actions.addWidget(self.QtWidgets.QPushButton("Generate Offer"))
-        actions.addWidget(self.QtWidgets.QPushButton("Return Home"))
+        home_button = self.QtWidgets.QPushButton("Home")
+        home_button.clicked.connect(lambda: self.interview_tabs.setCurrentIndex(0))
+        actions.addWidget(home_button)
         summary_layout.addLayout(actions)
         self.review_status_label = self._label("")
         summary_layout.addWidget(self.review_status_label)
@@ -1702,13 +2040,161 @@ class PySideInterviewWindow:
         if self.session is None:
             self.review_status_label.setText("Start an interview before generating notes.")
             return
-        try:
-            result = self.session.finalize_interview(base_dir=DEFAULT_BASE_DIR, history_path=INTERVIEW_HISTORY_PATH)
-            output_path = result["out_path"]
-        except Exception as exc:
-            self.review_status_label.setText(f"Interview notes not generated: {exc}")
+        if self._pyside_finalize_running:
+            self.review_status_label.setText("Finalizing interview. Recording and notes are still processing.")
             return
-        self.review_status_label.setText(f"Interview finalized: {output_path}")
+        self._pyside_finalize_running = True
+        self._show_pyside_finalize_progress("Preparing finalize")
+        self.review_status_label.setText("Finalizing interview. Recording and notes are processing in the background.")
+        results: queue.Queue[dict[str, Any]] = queue.Queue(maxsize=1)
+        session = self.session
+
+        def _worker() -> None:
+            try:
+                self._report_pyside_finalize_progress("Stopping recording and transcribing")
+                self._stop_pyside_interview_recording()
+                self._report_pyside_finalize_progress("Building interview notes")
+                result = session.finalize_interview(base_dir=DEFAULT_BASE_DIR, history_path=INTERVIEW_HISTORY_PATH)
+                self._report_pyside_finalize_progress("Queueing DeepSeek processing")
+                results.put({"ok": True, "result": result, "warning": self.recording_warning})
+            except Exception as exc:  # noqa: BLE001
+                results.put({"ok": False, "error": exc})
+
+        threading.Thread(target=_worker, daemon=True).start()
+        timer = self.QtCore.QTimer(self.window)
+        timer.timeout.connect(lambda: self._poll_pyside_finalize_worker(results, timer))
+        timer.start(0)
+
+    def _poll_pyside_finalize_worker(self, results: queue.Queue[dict[str, Any]], timer: Any) -> None:
+        self._refresh_pyside_finalize_progress()
+        try:
+            message = results.get_nowait()
+        except queue.Empty:
+            return
+        timer.stop()
+        timer.deleteLater()
+        self._pyside_finalize_running = False
+        if not message.get("ok"):
+            self.review_status_label.setText(f"Interview notes not generated: {message.get('error')}")
+            self._report_pyside_finalize_progress("Interview notes not generated")
+            self._refresh_pyside_finalize_progress()
+            return
+        result = message.get("result", {})
+        output_path = result.get("out_path", "") if isinstance(result, dict) else ""
+        warning_text = str(message.get("warning") or "").strip()
+        warning = f" {warning_text}" if warning_text else ""
+        self.review_status_label.setText(f"Interview finalized: {output_path}{warning}")
+        self._reload_history_model()
+        if isinstance(result, dict) and result.get("deepseek_progress_path"):
+            self._watch_pyside_deepseek_finalize_progress(result.get("deepseek_progress_path"))
+        else:
+            self._report_pyside_finalize_progress("Interview finalized")
+            self._refresh_pyside_finalize_progress()
+
+    def _show_pyside_finalize_progress(self, step: str) -> None:
+        normalized = str(step or "").strip() or "Preparing finalize"
+        self._pyside_finalize_progress_step = normalized
+        if self.pyside_finalize_progress_dialog is not None:
+            self._refresh_pyside_finalize_progress()
+            return
+        dialog = self.QtWidgets.QDialog(self.window)
+        dialog.setWindowTitle("Finalizing Interview")
+        dialog.setModal(False)
+        dialog.resize(480, 140)
+        layout = self.QtWidgets.QVBoxLayout(dialog)
+        label = self._label(normalized)
+        label.setObjectName("PySideFinalizeProgressLabel")
+        layout.addWidget(label)
+        bar = self.QtWidgets.QProgressBar()
+        bar.setRange(0, 0)
+        layout.addWidget(bar)
+        layout.addWidget(self._label("Processing continues if this window is closed."))
+        dialog.finished.connect(lambda _result=0: self._clear_pyside_finalize_progress_dialog())
+        self.pyside_finalize_progress_dialog = dialog
+        self.pyside_finalize_progress_label = label
+        self.pyside_finalize_progress_bar = bar
+        self._pyside_finalize_progress_queue = queue.Queue()
+        dialog.show()
+
+    def _clear_pyside_finalize_progress_dialog(self) -> None:
+        timer = self._pyside_deepseek_progress_timer
+        if timer is not None:
+            timer.stop()
+            timer.deleteLater()
+            self._pyside_deepseek_progress_timer = None
+        if self.pyside_finalize_progress_bar is not None:
+            self.pyside_finalize_progress_bar = None
+        self.pyside_finalize_progress_dialog = None
+        self.pyside_finalize_progress_label = None
+        self._pyside_finalize_progress_queue = None
+
+    def _close_pyside_finalize_progress(self) -> None:
+        dialog = self.pyside_finalize_progress_dialog
+        if dialog is not None:
+            dialog.close()
+        self._clear_pyside_finalize_progress_dialog()
+        self._pyside_finalize_progress_queue = None
+        self.pyside_finalize_deepseek_progress_path = None
+
+    def _report_pyside_finalize_progress(self, step: str) -> None:
+        normalized = str(step or "").strip()
+        if not normalized:
+            return
+        progress_queue = self._pyside_finalize_progress_queue
+        if progress_queue is None:
+            self._pyside_finalize_progress_step = normalized
+            return
+        try:
+            progress_queue.put_nowait(normalized)
+        except queue.Full:
+            self._pyside_finalize_progress_step = normalized
+
+    def _refresh_pyside_finalize_progress(self) -> None:
+        progress_queue = self._pyside_finalize_progress_queue
+        if progress_queue is not None:
+            while True:
+                try:
+                    self._pyside_finalize_progress_step = progress_queue.get_nowait()
+                except queue.Empty:
+                    break
+        label = self.pyside_finalize_progress_label
+        if label is not None and self._pyside_finalize_progress_step:
+            label.setText(self._pyside_finalize_progress_step)
+
+    def _read_pyside_deepseek_progress_step(self) -> tuple[str, str]:
+        path = self.pyside_finalize_deepseek_progress_path
+        if path is None or not path.exists():
+            return "", ""
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return "", ""
+        if not isinstance(payload, dict):
+            return "", ""
+        return str(payload.get("step") or "").strip(), str(payload.get("status") or "").strip().lower()
+
+    def _watch_pyside_deepseek_finalize_progress(self, progress_path: str | Path | None) -> None:
+        if progress_path:
+            self.pyside_finalize_deepseek_progress_path = Path(progress_path)
+        step, status = self._read_pyside_deepseek_progress_step()
+        if step:
+            self._pyside_finalize_progress_step = step
+            self._refresh_pyside_finalize_progress()
+        if status in {"complete", "failed"}:
+            timer = self._pyside_deepseek_progress_timer
+            if timer is not None:
+                timer.stop()
+                timer.deleteLater()
+                self._pyside_deepseek_progress_timer = None
+            self._reload_history_model()
+            return
+        if self.pyside_finalize_progress_dialog is None:
+            return
+        if self._pyside_deepseek_progress_timer is None:
+            timer = self.QtCore.QTimer(self.window)
+            timer.timeout.connect(lambda: self._watch_pyside_deepseek_finalize_progress(self.pyside_finalize_deepseek_progress_path))
+            self._pyside_deepseek_progress_timer = timer
+            timer.start(1000)
 
     def _history_offer_defaults(self, row: PySideHistoryRow) -> dict[str, str]:
         return {
@@ -1745,10 +2231,7 @@ class PySideInterviewWindow:
                 recent_interviews=_recent_interviews_from_history_rows(history_rows),
             ),
         )
-        table = getattr(self, "history_table", None)
-        if table is None:
-            return
-        self._refresh_history_table()
+        self._refresh_all_history_tables()
 
     def _open_history_notes(self, row: PySideHistoryRow) -> None:
         path = Path(row.notes_path)
@@ -1881,6 +2364,22 @@ class PySideInterviewWindow:
             summary_layout.addWidget(self._label(warning))
         layout.addWidget(summary)
         tabs = self.QtWidgets.QTabWidget()
+        tabs.setObjectName("AdminStudioTabs")
+        tabs.setStyleSheet(
+            """
+            QTabBar::tab:selected {
+                background: #2563eb;
+                color: #ffffff;
+                border: 1px solid #2563eb;
+            }
+            QTabBar::tab:!selected {
+                background: #eef2f7;
+                color: #111827;
+                border: 1px solid #d9dee7;
+            }
+            """
+        )
+        self.admin_tabs = tabs
         for title in admin.sections:
             tab, tab_layout = self._page()
             tab_layout.addWidget(self._label(f"{title} editor", "SectionTitle"))
@@ -1888,15 +2387,22 @@ class PySideInterviewWindow:
             rows = admin.rows.get(title, [])
             table = self.QtWidgets.QTableWidget(len(rows), 4)
             table.setHorizontalHeaderLabels(["Key", "Label", "Type", "Detail"])
+            table.setEditTriggers(
+                self.QtWidgets.QAbstractItemView.EditTrigger.DoubleClicked
+                | self.QtWidgets.QAbstractItemView.EditTrigger.EditKeyPressed
+                | self.QtWidgets.QAbstractItemView.EditTrigger.AnyKeyPressed
+            )
             for row_index, row in enumerate(rows):
                 values = [
                     row.get("key", row.get("id", "")),
                     row.get("label", row.get("title", "")),
                     row.get("type", ""),
-                    row.get("questions", row.get("track", "")),
+                    row.get("detail", row.get("questions", row.get("track", ""))),
                 ]
                 for column, value in enumerate(values):
-                    table.setItem(row_index, column, self.QtWidgets.QTableWidgetItem(value))
+                    item = self.QtWidgets.QTableWidgetItem(value)
+                    item.setFlags(item.flags() | self.QtCore.Qt.ItemFlag.ItemIsEditable)
+                    table.setItem(row_index, column, item)
             table.horizontalHeader().setStretchLastSection(True)
             tab_layout.addWidget(table, 1)
             tabs.addTab(tab, title)
@@ -1942,19 +2448,7 @@ class PySideInterviewWindow:
     def _candidates_page(self) -> Any:
         page, layout = self._page()
         layout.addWidget(self._label("Candidates", "Title"))
-        board = build_pyside_candidate_board(
-            [
-                {
-                    "candidate_name": row.candidate,
-                    "school": row.school,
-                    "track": row.position,
-                    "score": row.score,
-                    "status": row.status,
-                    "next_action": row.offer_action,
-                }
-                for row in self.model.home.history_rows
-            ]
-        )
+        board = build_pyside_candidate_board(self.model.home.history_rows)
         summary, summary_layout = self._surface()
         summary_layout.addWidget(self._label(f"{board.total_candidates} candidates", "SectionTitle"))
         summary_layout.addWidget(self._label("Candidate list, interview notes, and hiring status."))
@@ -1962,13 +2456,9 @@ class PySideInterviewWindow:
 
         table_frame, table_layout = self._surface()
         table_layout.addWidget(self._label("Candidate List", "SectionTitle"))
-        table = self.QtWidgets.QTableWidget(len(board.rows), 6)
-        table.setHorizontalHeaderLabels(["Candidate", "School", "Role", "Score", "Status", "Next Action"])
-        for row_index, row in enumerate(board.rows):
-            values = [row["candidate"], row["school"], row["role"], row["score"], row["status"], row["next_action"]]
-            for column, value in enumerate(values):
-                table.setItem(row_index, column, self.QtWidgets.QTableWidgetItem(value))
-        table.horizontalHeader().setStretchLastSection(True)
+        table = self._create_history_table("PySideCandidateHistoryGrid")
+        self.candidate_history_table = table
+        self._refresh_history_table(table, board.history_rows)
         table_layout.addWidget(table)
         layout.addWidget(table_frame, 1)
         return page

@@ -2,11 +2,12 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.5.3
+  version: 1.8.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
-    content-sized history table behavior that preserves Tk-owned finalize, history,
-    document, and DeepSeek runtime contracts.
+    content-sized history table behavior, user-closable finalize progress, live
+    history refresh, and single-surface parity documentation for desktop Tk contracts
+    while preserving Tk-owned finalize, history, document, and DeepSeek runtime contracts.
 functions:
 - name: build_interview_redesign_model
   description: Build workflow-first home, setup, live interview, review, offer, onboarding, and admin view data from rubric, intro script, question flow, and merged canonical plus legacy history JSON.
@@ -51,18 +52,18 @@ functions:
   exceptions: []
   side_effects: none
 - name: build_pyside_candidate_board
-  description: Build PySide candidate list rows and hiring status summary from interview history rows.
+  description: Build PySide candidate list rows, shared history-grid rows, and hiring status summary from interview history rows.
   locked: false
   inputs:
     history_rows:
-      type: list[dict[str, Any]]
+      type: Sequence[dict[str, Any] | PySideHistoryRow]
       required: true
   returns:
     type: PySideCandidateBoard
   exceptions: []
   side_effects: none
 - name: build_pyside_admin_studio_model
-  description: Build PySide Admin Studio section metadata, counts, validation warnings, and read-only detail rows.
+  description: Build PySide Admin Studio section metadata, counts, validation warnings, and editable detail rows including rubric trait records.
   locked: false
   inputs:
     model:
@@ -174,6 +175,12 @@ classes:
       type: dict[str, dict[str, Any]]
     qualification:
       type: dict[str, Any]
+    flow_time_marks:
+      type: list[dict[str, Any]]
+    flow_candidate_transcripts:
+      type: dict[int, str]
+    flow_recordings:
+      type: dict[int, dict[str, Any]]
   methods:
   - name: start
     description: Start a new guided interview session at the school-specific intro script and persist initial draft state.
@@ -294,7 +301,7 @@ classes:
   - name: finalize_interview
     description: Finalize the completed PySide session using shared Tk desktop runtime
       contracts for scoring, DocxExporter report generation, integration export,
-      history persistence, and detached DeepSeek processing.
+      transcript metadata, history persistence, and detached DeepSeek processing.
     locked: false
     inputs:
       base_dir:
@@ -316,7 +323,17 @@ classes:
     - OSError
     side_effects: Writes interview-notes DOCX, integration export, finalized interview
       history row, and detached DeepSeek job/progress files when history persistence
-      has a path.
+      has a path; includes any PySide recording/transcript payload in the queued
+      DeepSeek job.
+  - name: _transcript_metadata
+    description: Build complete/partial transcript metadata from PySide flow transcript
+      and recording state for finalize/history payloads.
+    locked: false
+    inputs: {}
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: none
   - name: to_draft
     description: Serialize the session as versioned draft JSON data.
     locked: false
@@ -353,12 +370,13 @@ classes:
   description: Main PySide6 window with navigation for Interviews, Candidates, Offers,
     Onboarding, Admin Studio, top-level Tk/PySide UI switching, and scrollable
     live/review interview panes with wrapped long question and score text. The
-    home history grid shows Date, Candidate, School, Position, Score, Status,
+    home and Candidates history grids share the same Date, Candidate, School, Position, Score, Status,
     Interview Notes, and Offer actions; supports column sorting, fuzzy search,
     school/outcome filters, hiring-outcome row color, content-sized text columns,
-    and compact notes/offer action columns; Open Notes opens the selected interview
-    notes file and Generate Offer opens the PySide offer wizard for the selected
-    history row.
+    compact notes/offer action columns, Processing notes state during detached
+    DeepSeek work, and live refresh after finalize; Open Notes opens the selected
+    interview notes file and Generate Offer opens the PySide offer wizard for the
+    selected history row.
   locked: false
   attributes:
     model:
@@ -374,6 +392,140 @@ classes:
       type: None
     exceptions: []
     side_effects: Displays the QMainWindow.
+  - name: _start_pyside_interview_recording
+    description: Start optional continuous PySide interview recording using the shared
+      local recorder, or record a non-blocking warning when recording dependencies
+      are unavailable.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Resets PySide session transcript state and may start FFmpeg-backed
+      local recording.
+  - name: _stop_pyside_interview_recording
+    description: Stop optional PySide continuous recording, transcribe it locally,
+      map candidate transcript segments to interview flow items, and save the draft.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: May write WAV/transcript artifacts under DEFAULT_BASE_DIR and update
+      session flow_recordings/flow_candidate_transcripts.
+  - name: _render_live_footer
+    description: Render persistent Live Interview footer actions with Exit plus Next
+      or Finalize on the last question.
+    locked: false
+    inputs:
+      item:
+        type: FlowQuestion | None
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Re-renders the fixed PySide live-interview footer.
+  - name: _finalize_from_live_question
+    description: Save the current final answer, stamp the final transcript boundary,
+      start background recording/transcription plus finalize work, and show the
+      Interview Complete review screen without blocking the PySide UI thread.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Writes draft/finalize artifacts through a background worker and
+      switches to the review tab.
+  - name: _poll_pyside_finalize_worker
+    description: Poll background PySide finalize results, drain progress updates,
+      refresh history/candidate tables, and update review status text when recording/transcription
+      and notes generation complete or fail.
+    locked: false
+    inputs:
+      results:
+        type: queue.Queue[dict[str, Any]]
+        required: true
+      timer:
+        type: QTimer
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Stops the polling timer, clears finalize running state, updates
+      the review status label, refreshes visible history tables, and starts optional
+      detached DeepSeek progress polling.
+  - name: _show_pyside_finalize_progress
+    description: Show a user-closable non-modal PySide finalize progress dialog without
+      exposing candidate transcript or notes text.
+    locked: false
+    inputs:
+      step:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Creates or updates a QDialog and indeterminate progress bar.
+  - name: _report_pyside_finalize_progress
+    description: Queue or store one sanitized operator-facing finalize progress step
+      for the PySide progress dialog.
+    locked: false
+    inputs:
+      step:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates in-memory progress state.
+  - name: _refresh_pyside_finalize_progress
+    description: Drain queued PySide finalize progress updates and render the latest
+      step when the progress dialog is still open.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates visible progress label text.
+  - name: _read_pyside_deepseek_progress_step
+    description: Read local detached DeepSeek progress JSON produced by the finalize
+      queue and return sanitized step/status text.
+    locked: false
+    inputs: {}
+    returns:
+      type: tuple[str, str]
+    exceptions: []
+    side_effects: Reads a local progress JSON file path produced by finalize.
+  - name: _watch_pyside_deepseek_finalize_progress
+    description: Poll detached DeepSeek progress JSON while the PySide progress dialog
+      remains open, refresh visible status, and reload history when processing completes
+      or fails.
+    locked: false
+    inputs:
+      progress_path:
+        type: str | Path | None
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: May start or stop a QTimer and refresh visible history tables.
+  - name: _close_pyside_finalize_progress
+    description: Close the PySide finalize progress dialog and stop progress polling
+      without cancelling background transcription, finalize, or DeepSeek work.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Closes QDialog and clears progress widget references.
+  - name: _exit_live_interview
+    description: Persist current PySide draft state and return to the interview home tab.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Writes PySide draft JSON and changes visible tab.
   - name: _open_history_notes
     description: Open a selected history row's interview notes DOCX in the OS default
       application after verifying the local path exists.
@@ -420,13 +572,54 @@ classes:
     exceptions: []
     side_effects: Re-renders the visible PySide history table.
   - name: _refresh_history_table
-    description: Rebuild the visible PySide history rows from current in-memory search and filter state while preserving action buttons and sortable columns.
+    description: Rebuild a visible PySide history table from supplied rows or current in-memory search and filter state while preserving action buttons and sortable columns.
+    locked: false
+    inputs:
+      table:
+        type: QTableWidget | None
+        required: false
+        default: null
+      rows:
+        type: Sequence[PySideHistoryRow] | None
+        required: false
+        default: null
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Re-renders the visible PySide history table.
+  - name: _refresh_all_history_tables
+    description: Refresh every PySide table that renders finalized interview history,
+      including Home and Candidates, through the same row rendering code path.
     locked: false
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Re-renders the visible PySide history table.
+    side_effects: Re-renders registered PySide history table widgets.
+  - name: _history_notes_action_state
+    description: Return the Notes-column label, enabled state, and tooltip for a PySide
+      history row, showing Processing during detached DeepSeek work and preventing
+      missing-path opens.
+    locked: false
+    inputs:
+      row:
+        type: PySideHistoryRow
+        required: true
+    returns:
+      type: tuple[str, bool, str]
+    exceptions: []
+    side_effects: none
+  - name: _create_history_table
+    description: Create a shared PySide history-grid table with Date, Candidate, School, Position, Score, Status, Notes, and Offer columns.
+    locked: false
+    inputs:
+      object_name:
+        type: str
+        required: true
+    returns:
+      type: QTableWidget
+    exceptions: []
+    side_effects: Creates a PySide table widget.
   - name: _size_history_table_columns
     description: Size PySide history text columns to visible content while keeping Notes and Offer action columns compact.
     locked: false
@@ -448,8 +641,9 @@ data_structures:
   type: dataclass
   description: Render-ready finalized interview history row with stable row key,
     interview date, candidate, school, position, score, status, offer status/action,
-    notes path, and report path for the searchable, filterable, sortable, outcome-colored,
-    content-sized PySide history grid and offer workflow.
+    notes path, report path, and detached DeepSeek processing state/warning for the
+    searchable, filterable, sortable, outcome-colored, content-sized PySide history
+    grid and offer workflow.
 - name: TrackFlow
   type: dataclass
   description: Ordered question flow for one role track.
@@ -467,10 +661,19 @@ data_structures:
   description: Counts, next task, and employee rows for PySide onboarding board.
 - name: PySideCandidateBoard
   type: dataclass
-  description: Candidate list rows and summary count for PySide candidate view.
+  description: Candidate list rows, shared history-grid rows, and summary count for PySide candidate view.
 - name: PySideAdminStudioModel
   type: dataclass
-  description: Admin Studio sections, counts, validation warnings, and rows for configuration review.
+  description: Admin Studio sections, counts, validation warnings, and editable rows for configuration review.
+- name: tk_contract_parity
+  type: documented_parity_map
+  description: Single-surface PySide desktop parity marker for Tk-bearing contracts
+    including interview_app, ui_composition, ui_windows, question_settings_window,
+    question_screens, onboarding_app, onboarding_scrollable_modal, onboarding_scroll_helpers,
+    ui_feedback, tk_theme, keyboard_telemetry, template_placeholders, runtime_wrapper,
+    and setup_and_run. PySide implements matching interview finalize/history behavior
+    directly and documents partial/existing onboarding, admin, settings, validation,
+    path-safety, and UI-mode surfaces here rather than creating mirrored PySide modules.
 dependencies:
 - module: data_store
 - module: interview_runtime

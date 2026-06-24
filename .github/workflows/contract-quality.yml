@@ -31,7 +31,7 @@ jobs:
         run: pip install -r requirements-dev.txt
 
       - name: Run section-by-section drift checks
-        run: scripts/contract_review/run_section_checks.sh
+        run: bash scripts/contract_review/run_section_checks.sh
 
       - name: Run contract interface tests
         run: |

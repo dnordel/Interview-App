@@ -320,6 +320,13 @@ module_metadata:
     constraints:
     - Referral/integration dispatches must read interview_notes_document_path from
       finalize context payloads.
+  pyside_interview_app:
+    constraints:
+    - Acts as the single PySide desktop parity surface for Tk-bearing desktop contracts.
+    - Finalize progress is user-closable and does not cancel background transcription,
+      finalize, or DeepSeek work.
+    - Home and Candidates history tables refresh after finalize and show Processing
+      in the Notes column until detached DeepSeek work completes or fails.
   scoring_reporting:
     constraints:
     - Referral payload document attachment path must resolve from interview_notes_document_path.

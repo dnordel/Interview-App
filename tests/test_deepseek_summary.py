@@ -109,6 +109,38 @@ def test_deepseek_summary_config_rejects_hosted_base_url() -> None:
     assert config.base_url == "http://127.0.0.1:11434/v1"
 
 
+def test_deepseek_generated_sections_do_not_truncate_long_text() -> None:
+    long_summary = " ".join(["Specific safety, warmth, and classroom evidence"] * 40)
+    executive_payload = json.dumps(
+        {
+            "executive_summary": long_summary,
+            "interview_highlights": ["Uses safety routines."],
+        }
+    )
+    answer_payload = json.dumps(
+        {
+            "answer_summaries": [
+                {
+                    "flow_index": 1,
+                    "summary": long_summary,
+                    "evidence_quotes": ["Specific safety"],
+                    "rubric_alignment": long_summary,
+                    "risks_or_gaps": long_summary,
+                }
+            ]
+        }
+    )
+
+    executive = interview_runtime._normalize_deepseek_executive_summary_payload(executive_payload)
+    answers = interview_runtime._normalize_deepseek_answer_summary_payload(answer_payload, {1})
+
+    assert executive["executive_summary"] == long_summary
+    assert executive["executive_summary"].endswith("evidence")
+    assert answers[0]["summary"] == long_summary
+    assert answers[0]["rubric_alignment"] == long_summary
+    assert answers[0]["risks_or_gaps"] == long_summary
+
+
 def test_generate_deepseek_interview_summaries_uses_injected_completion() -> None:
     config = DeepSeekSummaryConfig(enabled=True, api_key="secret-key")
     calls = []

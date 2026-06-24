@@ -1,5 +1,6 @@
 import json
 import os
+import threading
 from datetime import date
 from pathlib import Path
 
@@ -180,6 +181,35 @@ def test_pyside_history_rows_expose_school_position_and_offer_action(tmp_path: P
     assert row.notes_path.endswith("notes.docx")
 
 
+def test_pyside_history_rows_expose_deepseek_processing_state(tmp_path: Path) -> None:
+    history_path = tmp_path / "interview_history.json"
+    history_path.write_text(
+        json.dumps(
+            [
+                {
+                    "history_id": "hist-1",
+                    "candidate_name": "Latoya Nugent",
+                    "deepseek_processing_status": "processing",
+                    "deepseek_processing_warning": "Queued for local DeepSeek.",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Palmdale"],
+    )
+
+    row = model.home.history_rows[0]
+
+    assert row.deepseek_processing_status == "processing"
+    assert row.deepseek_processing_warning == "Queued for local DeepSeek."
+
+
 def test_pyside_history_grid_shows_date_and_open_notes_action(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -219,6 +249,51 @@ def test_pyside_history_grid_shows_date_and_open_notes_action(tmp_path: Path) ->
     assert notes_button.text() == "Open Notes"
     assert notes_button.property("history_row_key") == "hist-1"
     assert notes_button.isEnabled()
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_history_grid_shows_processing_until_deepseek_finishes(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    history_path = tmp_path / "interview_history.json"
+    history_path.write_text(
+        json.dumps(
+            [
+                {
+                    "history_id": "hist-1",
+                    "candidate_name": "Latoya Nugent",
+                    "deepseek_processing_status": "processing",
+                    "interview_notes_path": str(tmp_path / "notes.docx"),
+                },
+                {
+                    "history_id": "hist-2",
+                    "candidate_name": "Dalia Gaspar",
+                    "deepseek_processing_status": "failed",
+                    "deepseek_processing_warning": "DeepSeek processing failed.",
+                },
+            ]
+        ),
+        encoding="utf-8",
+    )
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+
+    processing_button = window.history_table.cellWidget(0, 6)
+    failed_button = window.history_table.cellWidget(1, 6)
+
+    assert processing_button.text() == "Processing"
+    assert not processing_button.isEnabled()
+    assert processing_button.toolTip() == "DeepSeek is still processing interview notes."
+    assert failed_button.text() == "Unavailable"
+    assert not failed_button.isEnabled()
+    assert failed_button.toolTip() == "DeepSeek processing failed."
     window.window.close()
     app.processEvents()
 
@@ -620,6 +695,301 @@ def test_pyside_finalize_uses_desktop_artifacts_history_and_deepseek_queue(tmp_p
     assert result["deepseek_job_path"].endswith(f"deepseek-finalize-{rows[0]['history_id']}.json")
 
 
+def test_pyside_finalize_preserves_transcribed_audio_for_deepseek_job(tmp_path: Path, monkeypatch) -> None:
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
+    session.start(candidate_name="Latoya Nugent", school="Palmdale", track_key="preschool")
+    session.save_answer_and_advance(notes="Intro notes.", score="")
+    session.save_answer_and_advance(notes="Custom notes.", score="")
+    session.save_answer_and_advance(notes="Manual fallback notes.", score="5")
+    session.flow_recordings = {
+        index: {
+            "flow_index": index,
+            "base_name": "pyside-recording",
+            "transcript_jsonl": str(tmp_path / "transcript.jsonl"),
+            "candidate_transcript": transcript,
+        }
+        for index, transcript in {
+            0: "Candidate heard the intro.",
+            1: "Candidate gave custom answer.",
+            2: "Candidate described a warm child-centered example.",
+        }.items()
+    }
+    session.flow_candidate_transcripts = {
+        0: "Candidate heard the intro.",
+        1: "Candidate gave custom answer.",
+        2: "Candidate described a warm child-centered example.",
+    }
+    queued_payloads: list[dict[str, object]] = []
+
+    def _fake_enqueue(_app, context, out_path: str, history_id: str) -> Path:
+        queued_payloads.append(context.payload)
+        job_path = tmp_path / "deepseek_jobs" / f"deepseek-finalize-{history_id}.json"
+        job_path.parent.mkdir(parents=True, exist_ok=True)
+        job_path.write_text("{}", encoding="utf-8")
+        return job_path
+
+    monkeypatch.setattr(pyside_interview_app, "enqueue_deepseek_finalize_job", _fake_enqueue)
+
+    result = session.finalize_interview(base_dir=tmp_path, history_path=tmp_path / "interview_history.json")
+
+    assert result["transcript_complete"] is True
+    assert queued_payloads
+    payload = queued_payloads[0]
+    assert payload["flow_recordings"] == session.flow_recordings
+    assert payload["flow_transcript"][2]["candidate_transcript"] == (
+        "Candidate described a warm child-centered example."
+    )
+    assert payload["summary_status"] == "processing"
+
+
+def test_pyside_last_question_footer_finalizes_and_shows_complete_home(tmp_path: Path, monkeypatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    monkeypatch.setattr(window, "_start_pyside_interview_recording", lambda: None)
+    finalized: list[bool] = []
+
+    def _fake_generate() -> None:
+        finalized.append(True)
+        window.review_status_label.setText("Interview finalized: fake.docx")
+
+    monkeypatch.setattr(window, "_generate_interview_notes_from_session", _fake_generate)
+    window.home_candidate_input.setText("Latoya Nugent")
+    window._begin_selected_interview()
+
+    while window.session is not None and window.session.active_question() is not None:
+        question = window.session.active_question()
+        buttons = {
+            button.text(): button
+            for button in window.window.findChildren(qt_widgets.QPushButton)
+            if button.property("pyside_live_footer_action")
+        }
+        assert "Exit" in buttons
+        if question == window.session._workflow_items()[-1]:
+            assert "Finalize" in buttons
+            buttons["Finalize"].click()
+            break
+        assert "Next" in buttons
+        window.live_notes.setPlainText(f"notes for {question.question_id}")
+        buttons["Next"].click()
+
+    app.processEvents()
+
+    assert finalized == [True]
+    assert window.interview_tabs.currentIndex() == 3
+    assert "Interview Complete" in window.interview_tabs.currentWidget().findChild(qt_widgets.QLabel, "Title").text()
+    assert any(button.text() == "Home" for button in window.window.findChildren(qt_widgets.QPushButton))
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_next_marks_new_question_at_click_boundary(tmp_path: Path, monkeypatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    monkeypatch.setattr(window, "_start_pyside_interview_recording", lambda: None)
+    ticks = iter([100.0, 105.0, 109.0])
+    monkeypatch.setattr(pyside_interview_app.time, "monotonic", lambda: next(ticks))
+
+    window.home_candidate_input.setText("Latoya Nugent")
+    window._begin_selected_interview()
+    window.recording_started_monotonic = 100.0
+    window._render_live_question_page()
+    window.live_notes.setPlainText("Intro read.")
+    window._save_and_next()
+
+    marks = window.session.flow_time_marks
+    assert marks[0]["flow_index"] == 0
+    assert marks[0]["end_t"] == 5.0
+    assert marks[1]["flow_index"] == 1
+    assert marks[1]["t"] == 5.0
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_finalize_returns_while_recording_transcription_finishes(tmp_path: Path, monkeypatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    monkeypatch.setattr(window, "_start_pyside_interview_recording", lambda: None)
+    window.home_candidate_input.setText("Latoya Nugent")
+    window._begin_selected_interview()
+    while window.session.active_question() is not None:
+        window.session.save_answer_and_advance(
+            notes="Evidence.",
+            score="5" if window.session.current_index == 2 else "",
+        )
+    window._render_review_page()
+    started = threading.Event()
+    release = threading.Event()
+
+    class SlowRecordingSession:
+        def stop_and_transcribe(self, **_kwargs):
+            started.set()
+            release.wait(timeout=2)
+            raise RuntimeError("synthetic transcription delay")
+
+    window.recording_session = SlowRecordingSession()
+    finalized: list[bool] = []
+    monkeypatch.setattr(window.session, "finalize_interview", lambda **_kwargs: finalized.append(True) or {"out_path": "done.docx"})
+
+    window._generate_interview_notes_from_session()
+
+    assert started.wait(timeout=1)
+    assert finalized == []
+    assert "Finalizing interview" in window.review_status_label.text()
+    release.set()
+    for _ in range(50):
+        app.processEvents()
+        if "Interview finalized:" in window.review_status_label.text():
+            break
+
+    assert finalized == [True]
+    assert "Interview finalized: done.docx" in window.review_status_label.text()
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_finalize_progress_window_is_user_closable_and_non_canceling(tmp_path: Path, monkeypatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    window._show_pyside_finalize_progress("Stopping recording")
+
+    progress_dialog = window.pyside_finalize_progress_dialog
+    progress_label = window.pyside_finalize_progress_label
+
+    assert progress_dialog is not None
+    assert progress_label.text() == "Stopping recording"
+    assert progress_dialog.windowTitle() == "Finalizing Interview"
+
+    progress_dialog.close()
+    app.processEvents()
+
+    assert window.pyside_finalize_progress_dialog is None
+    assert window._pyside_finalize_running is False
+    window._report_pyside_finalize_progress("Building interview notes")
+    assert window._pyside_finalize_progress_step == "Building interview notes"
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_progress_window_polls_deepseek_progress_json(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    progress_path = tmp_path / "deepseek.progress.json"
+    progress_path.write_text(json.dumps({"step": "Updating interview notes document", "status": "processing"}), encoding="utf-8")
+
+    window._show_pyside_finalize_progress("Queueing DeepSeek processing")
+    window._watch_pyside_deepseek_finalize_progress(progress_path)
+    app.processEvents()
+
+    assert window.pyside_finalize_deepseek_progress_path == progress_path
+    assert "Updating interview notes document" in window.pyside_finalize_progress_label.text()
+
+    progress_path.write_text(json.dumps({"step": "Complete", "status": "complete"}), encoding="utf-8")
+    window._watch_pyside_deepseek_finalize_progress(progress_path)
+    app.processEvents()
+
+    assert "Complete" in window.pyside_finalize_progress_label.text()
+    window._close_pyside_finalize_progress()
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_finalize_reload_history_after_queueing_deepseek(tmp_path: Path, monkeypatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    history_path = tmp_path / "interview_history.json"
+    history_path.write_text("[]", encoding="utf-8")
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    window.session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
+    window.session.start(candidate_name="Latoya Nugent", school="Palmdale", track_key="preschool")
+    monkeypatch.setattr(window, "_stop_pyside_interview_recording", lambda: None)
+    monkeypatch.setattr(pyside_interview_app, "INTERVIEW_HISTORY_PATH", history_path)
+
+    def _fake_finalize(**_kwargs):
+        history_path.write_text(
+            json.dumps(
+                [
+                    {
+                        "history_id": "hist-1",
+                        "candidate_name": "Latoya Nugent",
+                        "deepseek_processing_status": "processing",
+                    }
+                ]
+            ),
+            encoding="utf-8",
+        )
+        return {"out_path": str(tmp_path / "notes.docx"), "deepseek_progress_path": ""}
+
+    monkeypatch.setattr(window.session, "finalize_interview", _fake_finalize)
+
+    window._generate_interview_notes_from_session()
+    for _ in range(50):
+        app.processEvents()
+        if window.history_table.rowCount() == 1:
+            break
+
+    assert window.history_table.rowCount() == 1
+    assert window.history_table.item(0, 1).text() == "Latoya Nugent"
+    assert window.history_table.cellWidget(0, 6).text() == "Processing"
+    assert window.candidate_history_table.rowCount() == 1
+    assert window.candidate_history_table.item(0, 1).text() == "Latoya Nugent"
+    assert window.candidate_history_table.cellWidget(0, 6).text() == "Processing"
+    window.window.close()
+    app.processEvents()
+
+
 def test_pyside_review_source_exposes_finalize_button_not_placeholder_notes() -> None:
     source = Path("src/pyside_interview_app.py").read_text(encoding="utf-8")
 
@@ -682,6 +1052,50 @@ def test_pyside_candidate_board_groups_history_by_candidate() -> None:
     assert board.rows[0]["next_action"] == "Generate Offer"
 
 
+def test_pyside_candidates_page_uses_history_table_layout_and_actions(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    notes_path = tmp_path / "notes.docx"
+    notes_path.write_text("docx placeholder", encoding="utf-8")
+    history_path = tmp_path / "interview_history.json"
+    history_path.write_text(
+        json.dumps(
+            [
+                {
+                    "history_id": "hist-1",
+                    "candidate_name": "Latoya Nugent",
+                    "school": "Palmdale",
+                    "position": "Preschool Teacher",
+                    "interview_date": "2026-06-23",
+                    "outcome": "Hire",
+                    "offer_status": "not_generated",
+                    "interview_notes_path": str(notes_path),
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+
+    assert window.candidate_history_table.columnCount() == window.history_table.columnCount() == 8
+    assert [
+        window.candidate_history_table.horizontalHeaderItem(column).text()
+        for column in range(window.candidate_history_table.columnCount())
+    ] == ["Date", "Candidate", "School", "Position", "Score", "Status", "Notes", "Offer"]
+    assert window.candidate_history_table.item(0, 1).text() == "Latoya Nugent"
+    assert window.candidate_history_table.cellWidget(0, 6).text() == "Open Notes"
+    assert window.candidate_history_table.cellWidget(0, 7).text() == "Generate Offer"
+    window.window.close()
+    app.processEvents()
+
+
 def test_pyside_admin_studio_model_separates_advanced_config(tmp_path: Path) -> None:
     model = build_interview_redesign_model(
         rubric_path=_write_test_rubric(tmp_path),
@@ -697,6 +1111,30 @@ def test_pyside_admin_studio_model_separates_advanced_config(tmp_path: Path) -> 
     assert admin.question_count == 2
     assert admin.advanced_json_hidden is True
     assert "Review validation warnings before saving rubric or scoring changes." in admin.validation_warnings
+
+
+def test_pyside_admin_tabs_show_editable_trait_rows_and_selected_color(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    qt_core = pytest.importorskip("PySide6.QtCore")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    tabs = window.admin_tabs
+    rubrics_table = tabs.widget(2).findChild(qt_widgets.QTableWidget)
+
+    assert "QTabBar::tab:selected" in tabs.styleSheet()
+    assert rubrics_table.rowCount() == 1
+    assert rubrics_table.item(0, 0).text() == "trait_1"
+    assert rubrics_table.item(0, 1).text() == "Empathy"
+    assert rubrics_table.item(0, 0).flags() & qt_core.Qt.ItemFlag.ItemIsEditable
+    window.window.close()
+    app.processEvents()
 
 
 def test_pyside_window_uses_native_title_minimize_and_maximize_controls() -> None:
@@ -846,6 +1284,30 @@ def test_pyside_live_question_wraps_scores_inside_vertical_scroll_area(tmp_path:
     assert any("consent-oriented strategies" in label.text() for label in score_labels)
     window.window.close()
     app.processEvents()
+
+
+def test_pyside_contract_documents_all_tk_desktop_contract_categories() -> None:
+    contract_text = Path("contracts/pyside_interview_app.contract.yaml").read_text(encoding="utf-8")
+    required_categories = [
+        "tk_contract_parity",
+        "interview_app",
+        "ui_composition",
+        "ui_windows",
+        "question_settings_window",
+        "question_screens",
+        "onboarding_app",
+        "onboarding_scrollable_modal",
+        "onboarding_scroll_helpers",
+        "ui_feedback",
+        "tk_theme",
+        "keyboard_telemetry",
+        "template_placeholders",
+        "runtime_wrapper",
+        "setup_and_run",
+    ]
+
+    for category in required_categories:
+        assert category in contract_text
 
 
 def _write_test_rubric(tmp_path: Path) -> Path:

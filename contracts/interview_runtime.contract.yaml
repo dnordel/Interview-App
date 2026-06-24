@@ -2,7 +2,7 @@ module:
   name: interview_runtime
   language: python
   path: src/interview_runtime.py
-  version: 0.17.0
+  version: 0.17.1
   description: Flattened public interface for interview state, session management,
     audio/transcription runtime, transcript summary seam, controllers, history, and
     finalize pipeline; only active legacy adapters remain in the compatibility module
@@ -385,7 +385,9 @@ functions:
   returns:
     type: dict[str, Any]
     description: Contains answer_summaries, executive_summary, interview_highlights,
-      summary_status, and summary_warnings.
+      summary_status, and summary_warnings; normalization preserves full generated
+      section prose within high safety bounds instead of clipping visible report
+      sections to short snippets.
   exceptions: []
   side_effects: May send transcript text to local Ollama when enabled and no injected
     chat_completion is provided.

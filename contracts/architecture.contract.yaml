@@ -82,8 +82,10 @@ services:
     - web_app_backend
   pyside_interview_redesign_service:
     description: PySide6 workflow-first desktop redesign shell for interviews, candidates,
-      offers, onboarding, and admin studio while reusing local rubric, question flow,
-      history JSON, and Tk-owned finalize/document/DeepSeek runtime contracts.
+      offers, onboarding, admin studio, user-closable finalize progress, live history
+      refresh, and single-surface parity documentation for desktop Tk contracts while
+      reusing local rubric, question flow, history JSON, and Tk-owned finalize/document/DeepSeek
+      runtime contracts.
     modules:
     - pyside_interview_app
   shared_platform_service:

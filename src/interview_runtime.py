@@ -1019,11 +1019,11 @@ _LOCAL_DEEPSEEK_MODEL = "deepseek-r1:8b"
 _LOCAL_DEEPSEEK_API_KEY = "ollama"
 _LOCAL_DEEPSEEK_HOSTS = {"127.0.0.1", "localhost", "::1"}
 _DEEPSEEK_TEXT_LIMITS = {
-    "summary": 420,
-    "evidence_quote": 220,
-    "rubric_alignment": 420,
-    "risks_or_gaps": 320,
-    "rationale": 180,
+    "summary": 8000,
+    "evidence_quote": 1000,
+    "rubric_alignment": 8000,
+    "risks_or_gaps": 8000,
+    "rationale": 4000,
 }
 DEEPSEEK_PROMPT_TEMPLATE_KEYS = (
     "answer_summary_system",
