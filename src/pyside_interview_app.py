@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 import sys
 from dataclasses import dataclass, field, replace
 from datetime import date
@@ -52,6 +54,7 @@ class RecentInterview:
 @dataclass(frozen=True)
 class PySideHistoryRow:
     row_key: str
+    interview_date: str
     candidate: str
     school: str
     position: str
@@ -577,6 +580,7 @@ def _build_pyside_history_rows(history_path: Path) -> list[PySideHistoryRow]:
         history_rows.append(
             PySideHistoryRow(
                 row_key=row_key,
+                interview_date=_history_text(row, "interview_date", "date", default=""),
                 candidate=_history_text(row, "candidate_name", "candidate", "name", default="Unknown candidate"),
                 school=_history_text(row, "school", default=""),
                 position=_history_text(row, "position", "candidate_position", "role", "track", default=""),
@@ -1182,19 +1186,24 @@ class PySideInterviewWindow:
 
         recent, recent_layout = self._surface()
         recent_layout.addWidget(self._label("Interview History", "SectionTitle"))
-        table = self.QtWidgets.QTableWidget(len(self.model.home.history_rows), 6)
+        table = self.QtWidgets.QTableWidget(len(self.model.home.history_rows), 8)
         table.setObjectName("PySideHistoryGrid")
-        table.setHorizontalHeaderLabels(["Candidate", "School", "Position", "Score", "Status", "Offer"])
+        table.setHorizontalHeaderLabels(["Date", "Candidate", "School", "Position", "Score", "Status", "Interview Notes", "Offer"])
         self.history_table = table
         for row_index, row in enumerate(self.model.home.history_rows):
-            values = [row.candidate, row.school, row.position, row.score, row.status]
+            values = [row.interview_date, row.candidate, row.school, row.position, row.score, row.status]
             for column, value in enumerate(values):
                 table.setItem(row_index, column, self.QtWidgets.QTableWidgetItem(value))
+            notes_button = self.QtWidgets.QPushButton("Open Notes")
+            notes_button.setProperty("history_row_key", row.row_key)
+            notes_button.setEnabled(bool(row.notes_path and Path(row.notes_path).exists()))
+            notes_button.clicked.connect(lambda _checked=False, item=row: self._open_history_notes(item))
+            table.setCellWidget(row_index, 6, notes_button)
             offer_button = self.QtWidgets.QPushButton(row.offer_action)
             offer_button.setProperty("history_row_key", row.row_key)
             offer_button.setEnabled(bool(row.row_key))
             offer_button.clicked.connect(lambda _checked=False, item=row: self._open_history_offer(item))
-            table.setCellWidget(row_index, 5, offer_button)
+            table.setCellWidget(row_index, 7, offer_button)
         table.horizontalHeader().setStretchLastSection(True)
         recent_layout.addWidget(table)
         layout.addWidget(recent, 1)
@@ -1595,13 +1604,33 @@ class PySideInterviewWindow:
             return
         table.setRowCount(len(history_rows))
         for row_index, row in enumerate(history_rows):
-            for column, value in enumerate([row.candidate, row.school, row.position, row.score, row.status]):
+            for column, value in enumerate([row.interview_date, row.candidate, row.school, row.position, row.score, row.status]):
                 table.setItem(row_index, column, self.QtWidgets.QTableWidgetItem(value))
+            notes_button = self.QtWidgets.QPushButton("Open Notes")
+            notes_button.setProperty("history_row_key", row.row_key)
+            notes_button.setEnabled(bool(row.notes_path and Path(row.notes_path).exists()))
+            notes_button.clicked.connect(lambda _checked=False, item=row: self._open_history_notes(item))
+            table.setCellWidget(row_index, 6, notes_button)
             offer_button = self.QtWidgets.QPushButton(row.offer_action)
             offer_button.setProperty("history_row_key", row.row_key)
             offer_button.setEnabled(bool(row.row_key))
             offer_button.clicked.connect(lambda _checked=False, item=row: self._open_history_offer(item))
-            table.setCellWidget(row_index, 5, offer_button)
+            table.setCellWidget(row_index, 7, offer_button)
+
+    def _open_history_notes(self, row: PySideHistoryRow) -> None:
+        path = Path(row.notes_path)
+        if not path.exists():
+            self.QtWidgets.QMessageBox.warning(self.window, "Interview Notes", "Interview notes file was not found.")
+            return
+        try:
+            if sys.platform.startswith("win"):
+                os.startfile(str(path))  # type: ignore[attr-defined]
+            elif sys.platform == "darwin":
+                subprocess.run(["open", str(path)], check=True)
+            else:
+                subprocess.run(["xdg-open", str(path)], check=True)
+        except OSError as exc:
+            self.QtWidgets.QMessageBox.warning(self.window, "Interview Notes", f"Could not open interview notes: {exc}")
 
     def _offer_page(self) -> Any:
         page, layout = self._page()

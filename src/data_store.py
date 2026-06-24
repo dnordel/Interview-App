@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
@@ -384,6 +385,62 @@ class InterviewHistoryStore:
             payload["offer_letter_path"] = path_text
             payload["offer_path"] = path_text
         return self.update_row(key, payload)
+
+    def repair_interview_notes_links(self, notes_dir: Path) -> int:
+        rows = self._load_from_path(self.path)
+        if not rows:
+            return 0
+        notes_index = self._interview_notes_index(Path(notes_dir))
+        if not notes_index:
+            return 0
+        repaired = 0
+        for row in rows:
+            if self._has_existing_notes_link(row):
+                continue
+            candidate = self._normalize_match_text(str(row.get("candidate_name", "") or row.get("candidate", "")))
+            interview_date = str(row.get("interview_date", "") or "").strip()
+            school = self._normalize_match_text(str(row.get("school", "") or ""))
+            notes_path = notes_index.get((interview_date, candidate, school)) or notes_index.get((interview_date, candidate, ""))
+            if notes_path is None:
+                continue
+            path_text = str(notes_path)
+            row["interview_notes_path"] = path_text
+            row["saved_report_path"] = path_text
+            row["notes_path"] = path_text
+            row["report_path"] = path_text
+            repaired += 1
+        if repaired:
+            self._save(rows)
+        return repaired
+
+    @classmethod
+    def _interview_notes_index(cls, notes_dir: Path) -> dict[tuple[str, str, str], Path]:
+        if not notes_dir.exists() or not notes_dir.is_dir():
+            return {}
+        index: dict[tuple[str, str, str], Path] = {}
+        pattern = re.compile(r"^(?P<date>\d{4}-\d{2}-\d{2}) - (?P<school>.+?) - (?P<candidate>.+?) - Interview\.docx$", re.IGNORECASE)
+        for path in notes_dir.glob("*.docx"):
+            match = pattern.match(path.name)
+            if match is None:
+                continue
+            interview_date = match.group("date")
+            school = cls._normalize_match_text(match.group("school"))
+            candidate = cls._normalize_match_text(match.group("candidate"))
+            index.setdefault((interview_date, candidate, school), path)
+            index.setdefault((interview_date, candidate, ""), path)
+        return index
+
+    @staticmethod
+    def _normalize_match_text(value: str) -> str:
+        return re.sub(r"\s+", " ", str(value or "").strip()).casefold()
+
+    @staticmethod
+    def _has_existing_notes_link(row: dict[str, Any]) -> bool:
+        for key in ("interview_notes_path", "saved_report_path", "notes_path", "report_path"):
+            path_text = str(row.get(key, "") or "").strip()
+            if path_text and Path(path_text).exists():
+                return True
+        return False
 
     def _save(self, items: list[dict[str, Any]]) -> None:
         atomic_write_json(self.path, items, indent=2, ensure_ascii=False)

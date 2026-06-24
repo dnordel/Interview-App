@@ -176,7 +176,51 @@ def test_pyside_history_rows_expose_school_position_and_offer_action(tmp_path: P
     assert row.position == "Preschool Teacher"
     assert row.offer_status == "not_generated"
     assert row.offer_action == "Generate Offer"
+    assert row.interview_date == ""
     assert row.notes_path.endswith("notes.docx")
+
+
+def test_pyside_history_grid_shows_date_and_open_notes_action(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    notes_path = tmp_path / "notes.docx"
+    notes_path.write_text("docx placeholder", encoding="utf-8")
+    history_path = tmp_path / "interview_history.json"
+    history_path.write_text(
+        json.dumps(
+            [
+                {
+                    "history_id": "hist-1",
+                    "candidate_name": "Latoya Nugent",
+                    "school": "Palmdale",
+                    "position": "Preschool Teacher",
+                    "interview_date": "2026-06-23",
+                    "offer_status": "not_generated",
+                    "interview_notes_path": str(notes_path),
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+
+    assert window.history_table.columnCount() == 8
+    assert window.history_table.horizontalHeaderItem(0).text() == "Date"
+    assert window.history_table.horizontalHeaderItem(6).text() == "Interview Notes"
+    assert window.history_table.item(0, 0).text() == "2026-06-23"
+    notes_button = window.history_table.cellWidget(0, 6)
+    assert notes_button.text() == "Open Notes"
+    assert notes_button.property("history_row_key") == "hist-1"
+    assert notes_button.isEnabled()
+    window.window.close()
+    app.processEvents()
 
 
 def test_pyside_session_autosaves_and_resumes_guided_interview(tmp_path: Path) -> None:

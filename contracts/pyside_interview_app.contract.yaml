@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.5.0
+  version: 1.5.1
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow that preserves Tk-owned finalize, history, document, and
     DeepSeek runtime contracts.
@@ -316,8 +316,10 @@ classes:
   description: Main PySide6 window with navigation for Interviews, Candidates, Offers,
     Onboarding, Admin Studio, top-level Tk/PySide UI switching, and scrollable
     live/review interview panes with wrapped long question and score text. The
-    home history grid shows Candidate, School, Position, Score, Status, and Offer
-    actions; Generate Offer opens the PySide offer wizard for the selected history row.
+    home history grid shows Date, Candidate, School, Position, Score, Status,
+    Interview Notes, and Offer actions; Open Notes opens the selected interview
+    notes file and Generate Offer opens the PySide offer wizard for the selected
+    history row.
   locked: false
   attributes:
     model:
@@ -333,6 +335,18 @@ classes:
       type: None
     exceptions: []
     side_effects: Displays the QMainWindow.
+  - name: _open_history_notes
+    description: Open a selected history row's interview notes DOCX in the OS default
+      application after verifying the local path exists.
+    locked: false
+    inputs:
+      row:
+        type: PySideHistoryRow
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: May launch the OS default document application or show a warning dialog.
 data_structures:
 - name: InterviewRedesignModel
   type: dataclass
@@ -342,8 +356,8 @@ data_structures:
 - name: PySideHistoryRow
   type: dataclass
   description: Render-ready finalized interview history row with stable row key,
-    candidate, school, position, score, status, offer status/action, notes path,
-    and report path for the PySide history grid and offer workflow.
+    interview date, candidate, school, position, score, status, offer status/action,
+    notes path, and report path for the PySide history grid and offer workflow.
 - name: TrackFlow
   type: dataclass
   description: Ordered question flow for one role track.

@@ -2,7 +2,7 @@ module:
   name: data_store
   language: python
   path: src/data_store.py
-  version: 1.0.2
+  version: 1.1.0
   description: JSON-backed stores and loaders for interview runtime and onboarding
     settings.
 functions: []
@@ -278,6 +278,43 @@ classes:
     returns:
       type: bool
     side_effects: Writes interview history JSON when the row is found.
+  - name: repair_interview_notes_links
+    description: Repair missing or broken interview-notes path fields by matching
+      history row candidate/date/school metadata to DOCX filenames in an interview
+      notes directory.
+    inputs:
+      notes_dir:
+        type: Path
+        required: true
+    returns:
+      type: int
+    side_effects: Writes interview history JSON when one or more rows are repaired.
+  - name: _interview_notes_index
+    description: Build normalized candidate/date/school lookup keys from interview
+      notes filenames shaped like YYYY-MM-DD - School - Candidate - Interview.docx.
+    inputs:
+      notes_dir:
+        type: Path
+        required: true
+    returns:
+      type: dict[tuple[str, str, str], Path]
+  - name: _normalize_match_text
+    description: Normalize filename/history text for case-insensitive matching.
+    inputs:
+      value:
+        type: str
+        required: true
+    returns:
+      type: str
+  - name: _has_existing_notes_link
+    description: Return whether a row already has a notes/report path field pointing
+      to an existing local file.
+    inputs:
+      row:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: bool
 - name: SchoolOfferSettingsStore
   description: Stores per-school offer template settings.
   locked: false

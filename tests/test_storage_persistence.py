@@ -78,6 +78,56 @@ def test_interview_history_store_update_row_by_stable_key(tmp_path: Path):
     assert store.update_row("row-123", {"offer_status": "generated"}) is True
     assert store.load()[0]["offer_status"] == "generated"
 
+
+def test_interview_history_store_repairs_missing_interview_notes_links(tmp_path: Path):
+    history_path = tmp_path / "interview_history.json"
+    notes_dir = tmp_path / "interviews" / "Indeed Interview Notes"
+    notes_dir.mkdir(parents=True)
+    notes_path = notes_dir / "2026-03-11 - Palmdale - Carolina Garcia - Interview.docx"
+    notes_path.write_text("docx placeholder", encoding="utf-8")
+    store = InterviewHistoryStore(history_path)
+    store.append(
+        {
+            "history_id": "hist-1",
+            "candidate_name": "Carolina Garcia",
+            "school": "Palmdale",
+            "interview_date": "2026-03-11",
+        }
+    )
+
+    assert store.repair_interview_notes_links(notes_dir) == 1
+
+    row = store.load()[0]
+    assert row["interview_notes_path"] == str(notes_path)
+    assert row["saved_report_path"] == str(notes_path)
+    assert row["notes_path"] == str(notes_path)
+    assert row["report_path"] == str(notes_path)
+
+
+def test_interview_history_store_does_not_replace_existing_valid_notes_link(tmp_path: Path):
+    history_path = tmp_path / "interview_history.json"
+    notes_dir = tmp_path / "interviews" / "Indeed Interview Notes"
+    notes_dir.mkdir(parents=True)
+    existing_path = notes_dir / "existing.docx"
+    existing_path.write_text("existing", encoding="utf-8")
+    (notes_dir / "2026-03-11 - Palmdale - Carolina Garcia - Interview.docx").write_text(
+        "new",
+        encoding="utf-8",
+    )
+    store = InterviewHistoryStore(history_path)
+    store.append(
+        {
+            "history_id": "hist-1",
+            "candidate_name": "Carolina Garcia",
+            "school": "Palmdale",
+            "interview_date": "2026-03-11",
+            "interview_notes_path": str(existing_path),
+        }
+    )
+
+    assert store.repair_interview_notes_links(notes_dir) == 0
+    assert store.load()[0]["interview_notes_path"] == str(existing_path)
+
 def test_school_offer_settings_store_save_and_load_round_trip(tmp_path: Path):
     path = tmp_path / "school_offer_settings.json"
     store = SchoolOfferSettingsStore(path)
