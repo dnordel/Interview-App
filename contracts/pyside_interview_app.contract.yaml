@@ -2,10 +2,11 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.5.1
+  version: 1.5.3
   description: PySide6 redesign shell and headless view-model builder for guided
-    interview workflow that preserves Tk-owned finalize, history, document, and
-    DeepSeek runtime contracts.
+    interview workflow with searchable, filterable, sortable, outcome-colored,
+    content-sized history table behavior that preserves Tk-owned finalize, history,
+    document, and DeepSeek runtime contracts.
 functions:
 - name: build_interview_redesign_model
   description: Build workflow-first home, setup, live interview, review, offer, onboarding, and admin view data from rubric, intro script, question flow, and merged canonical plus legacy history JSON.
@@ -92,6 +93,42 @@ functions:
       required: true
   returns:
     type: Any
+  exceptions: []
+  side_effects: none
+- name: _normalize_history_search
+  description: Normalize free-text PySide history search input or row metadata for case-insensitive fuzzy matching without exposing hidden candidate artifacts.
+  locked: false
+  inputs:
+    value:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _history_token_matches
+  description: Return whether one normalized search term approximately matches any normalized history metadata token.
+  locked: false
+  inputs:
+    term:
+      type: str
+      required: true
+    candidates:
+      type: list[str]
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+- name: _history_outcome_color
+  description: Map a normalized hiring outcome/status label to a soft table-row background color for the PySide history grid.
+  locked: false
+  inputs:
+    outcome:
+      type: str
+      required: true
+  returns:
+    type: str
   exceptions: []
   side_effects: none
 - name: launch_pyside_interview_app
@@ -317,7 +354,9 @@ classes:
     Onboarding, Admin Studio, top-level Tk/PySide UI switching, and scrollable
     live/review interview panes with wrapped long question and score text. The
     home history grid shows Date, Candidate, School, Position, Score, Status,
-    Interview Notes, and Offer actions; Open Notes opens the selected interview
+    Interview Notes, and Offer actions; supports column sorting, fuzzy search,
+    school/outcome filters, hiring-outcome row color, content-sized text columns,
+    and compact notes/offer action columns; Open Notes opens the selected interview
     notes file and Generate Offer opens the PySide offer wizard for the selected
     history row.
   locked: false
@@ -347,6 +386,58 @@ classes:
       type: None
     exceptions: []
     side_effects: May launch the OS default document application or show a warning dialog.
+  - name: _set_history_search_text
+    description: Update the in-memory PySide history fuzzy search text and refresh the visible history table.
+    locked: false
+    inputs:
+      value:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Re-renders the visible PySide history table.
+  - name: _set_history_school_filter
+    description: Update the selected school filter and refresh the visible PySide history table.
+    locked: false
+    inputs:
+      value:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Re-renders the visible PySide history table.
+  - name: _set_history_outcome_filter
+    description: Update the optional hiring outcome filter and refresh the visible PySide history table.
+    locked: false
+    inputs:
+      value:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Re-renders the visible PySide history table.
+  - name: _refresh_history_table
+    description: Rebuild the visible PySide history rows from current in-memory search and filter state while preserving action buttons and sortable columns.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Re-renders the visible PySide history table.
+  - name: _size_history_table_columns
+    description: Size PySide history text columns to visible content while keeping Notes and Offer action columns compact.
+    locked: false
+    inputs:
+      table:
+        type: QTableWidget
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates visible PySide history table column widths.
 data_structures:
 - name: InterviewRedesignModel
   type: dataclass
@@ -357,7 +448,8 @@ data_structures:
   type: dataclass
   description: Render-ready finalized interview history row with stable row key,
     interview date, candidate, school, position, score, status, offer status/action,
-    notes path, and report path for the PySide history grid and offer workflow.
+    notes path, and report path for the searchable, filterable, sortable, outcome-colored,
+    content-sized PySide history grid and offer workflow.
 - name: TrackFlow
   type: dataclass
   description: Ordered question flow for one role track.

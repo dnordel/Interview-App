@@ -213,12 +213,160 @@ def test_pyside_history_grid_shows_date_and_open_notes_action(tmp_path: Path) ->
 
     assert window.history_table.columnCount() == 8
     assert window.history_table.horizontalHeaderItem(0).text() == "Date"
-    assert window.history_table.horizontalHeaderItem(6).text() == "Interview Notes"
+    assert window.history_table.horizontalHeaderItem(6).text() == "Notes"
     assert window.history_table.item(0, 0).text() == "2026-06-23"
     notes_button = window.history_table.cellWidget(0, 6)
     assert notes_button.text() == "Open Notes"
     assert notes_button.property("history_row_key") == "hist-1"
     assert notes_button.isEnabled()
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_history_grid_filters_fuzzy_search_school_outcome_and_colors_rows(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    qt_core = pytest.importorskip("PySide6.QtCore")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    history_path = tmp_path / "interview_history.json"
+    history_path.write_text(
+        json.dumps(
+            [
+                {
+                    "history_id": "hist-1",
+                    "candidate_name": "Latoya Nugent",
+                    "school": "Palmdale",
+                    "position": "Preschool Teacher",
+                    "outcome": "Hire",
+                },
+                {
+                    "history_id": "hist-2",
+                    "candidate_name": "Dalia Gaspar",
+                    "school": "Hawthorne",
+                    "position": "Preschool Teacher",
+                    "outcome": "No Hire",
+                },
+                {
+                    "history_id": "hist-3",
+                    "candidate_name": "Mina Patel",
+                    "school": "Palmdale",
+                    "position": "Behavior Support Specialist",
+                    "outcome": "Needs Follow-up",
+                },
+            ]
+        ),
+        encoding="utf-8",
+    )
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Palmdale", "Hawthorne"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+
+    assert window.history_school_filter.itemText(0) == "All schools"
+    assert [window.history_table.item(row, 1).text() for row in range(window.history_table.rowCount())] == [
+        "Latoya Nugent",
+        "Dalia Gaspar",
+        "Mina Patel",
+    ]
+    hire_brush = window.history_table.item(0, 5).data(qt_core.Qt.ItemDataRole.BackgroundRole)
+    no_hire_brush = window.history_table.item(1, 5).data(qt_core.Qt.ItemDataRole.BackgroundRole)
+    assert hire_brush.color().name() != no_hire_brush.color().name()
+
+    window.history_search_input.setText("Latoya Nujent")
+    app.processEvents()
+
+    assert window.history_table.rowCount() == 1
+    assert window.history_table.item(0, 1).text() == "Latoya Nugent"
+
+    window.history_search_input.clear()
+    window.history_school_filter.setCurrentText("Palmdale")
+    window.history_outcome_filter.setCurrentText("Needs Follow-up")
+    app.processEvents()
+
+    assert window.history_table.rowCount() == 1
+    assert window.history_table.item(0, 1).text() == "Mina Patel"
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_history_grid_sorts_by_column(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    qt_core = pytest.importorskip("PySide6.QtCore")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    history_path = tmp_path / "interview_history.json"
+    history_path.write_text(
+        json.dumps(
+            [
+                {"history_id": "hist-1", "candidate_name": "Zara Lee", "school": "Palmdale", "outcome": "Hire"},
+                {"history_id": "hist-2", "candidate_name": "Ana Cruz", "school": "Hawthorne", "outcome": "No Hire"},
+            ]
+        ),
+        encoding="utf-8",
+    )
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Palmdale", "Hawthorne"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+
+    assert window.history_table.isSortingEnabled()
+
+    window.history_table.sortItems(1, qt_core.Qt.SortOrder.AscendingOrder)
+    app.processEvents()
+
+    assert [window.history_table.item(row, 1).text() for row in range(window.history_table.rowCount())] == [
+        "Ana Cruz",
+        "Zara Lee",
+    ]
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_history_grid_sizes_text_columns_and_keeps_action_buttons_compact(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    history_path = tmp_path / "interview_history.json"
+    history_path.write_text(
+        json.dumps(
+            [
+                {
+                    "history_id": "hist-1",
+                    "candidate_name": "Alexandria Montgomery",
+                    "school": "West Palmdale Learning Center",
+                    "position": "Behavior Support Specialist",
+                    "interview_date": "2026-06-24",
+                    "percent_of_max": "88.5",
+                    "outcome": "Needs Follow-up",
+                    "offer_status": "not_generated",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["West Palmdale Learning Center"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    table = window.history_table
+
+    for column in range(0, 6):
+        assert table.columnWidth(column) >= table.sizeHintForColumn(column)
+
+    assert table.horizontalHeaderItem(6).text() == "Notes"
+    assert table.columnWidth(6) <= 105
+    assert table.columnWidth(7) <= 125
+    assert table.cellWidget(0, 6).maximumWidth() <= 95
+    assert table.cellWidget(0, 7).maximumWidth() <= 115
     window.window.close()
     app.processEvents()
 

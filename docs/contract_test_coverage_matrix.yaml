@@ -15,7 +15,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-06-24T16:45:13.752876+00:00'
+generated_at_utc: '2026-06-24T17:23:27.767474+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -480,6 +480,24 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/data_store.contract.yaml
+  symbol: data_store.InterviewHistoryStore._has_existing_notes_link
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/data_store.contract.yaml
+  symbol: data_store.InterviewHistoryStore._interview_notes_index
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/data_store.contract.yaml
   symbol: data_store.InterviewHistoryStore._legacy_root_path
   kind: method
   tests:
@@ -507,6 +525,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/data_store.contract.yaml
+  symbol: data_store.InterviewHistoryStore._normalize_match_text
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/data_store.contract.yaml
   symbol: data_store.InterviewHistoryStore.append
   kind: method
   tests:
@@ -517,6 +544,15 @@ entries:
     - return_type
 - contract: contracts/data_store.contract.yaml
   symbol: data_store.InterviewHistoryStore.load
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/data_store.contract.yaml
+  symbol: data_store.InterviewHistoryStore.repair_interview_notes_links
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -8553,8 +8589,89 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._open_history_notes
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._refresh_history_table
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._set_history_outcome_filter
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._set_history_school_filter
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._set_history_search_text
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._size_history_table_columns
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow.show
   kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app._history_outcome_color
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app._history_token_matches
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app._normalize_history_search
+  kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
     focus:

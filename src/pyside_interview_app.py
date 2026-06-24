@@ -4,6 +4,7 @@ import json
 import os
 import subprocess
 import sys
+from difflib import SequenceMatcher
 from dataclasses import dataclass, field, replace
 from datetime import date
 from datetime import datetime
@@ -943,18 +944,47 @@ def _parse_iso_or_us_date(value: str) -> date:
     raise ValueError("Date must be YYYY-MM-DD or MM/DD/YYYY.")
 
 
+def _normalize_history_search(value: str) -> str:
+    text = "".join(ch.lower() if ch.isalnum() else " " for ch in value)
+    return " ".join(text.split())
+
+
+def _history_token_matches(term: str, candidates: list[str]) -> bool:
+    if not term:
+        return True
+    for candidate in candidates:
+        if term in candidate or candidate in term:
+            return True
+        if SequenceMatcher(None, term, candidate).ratio() >= 0.78:
+            return True
+    return False
+
+
+def _history_outcome_color(outcome: str) -> str:
+    normalized = _normalize_history_search(outcome)
+    if normalized in {"no hire", "reject", "rejected"}:
+        return "#fee2e2"
+    if normalized in {"hire", "hired", "accepted"}:
+        return "#dcfce7"
+    if normalized in {"needs follow up", "follow up", "followup", "pending"}:
+        return "#fef3c7"
+    if normalized in {"incomplete", "processing"}:
+        return "#e5e7eb"
+    return ""
+
+
 class PySide6UnavailableError(RuntimeError):
     pass
 
 
 def _import_qt() -> Any:
     try:
-        from PySide6 import QtCore, QtWidgets
+        from PySide6 import QtCore, QtGui, QtWidgets
     except ImportError as exc:
         raise PySide6UnavailableError(
             "PySide6 is not installed. Install requirements, then launch this redesign."
         ) from exc
-    return QtCore, QtWidgets
+    return QtCore, QtGui, QtWidgets
 
 
 def standard_window_control_flags(QtCore: Any) -> Any:
@@ -1033,8 +1063,9 @@ def _apply_styles(app: Any) -> None:
 
 class PySideInterviewWindow:
     def __init__(self, model: InterviewRedesignModel) -> None:
-        QtCore, QtWidgets = _import_qt()
+        QtCore, QtGui, QtWidgets = _import_qt()
         self.QtCore = QtCore
+        self.QtGui = QtGui
         self.QtWidgets = QtWidgets
         self.model = model
         self.session_track_key = next(iter(model.flows), "")
@@ -1043,6 +1074,9 @@ class PySideInterviewWindow:
         self.session: PySideInterviewSession | None = None
         self.selected_history_offer_row: PySideHistoryRow | None = None
         self.history_store = InterviewHistoryStore(model.history_path)
+        self.history_search_text = ""
+        self.history_school_filter_text = ""
+        self.history_outcome_filter_text = ""
         self.window = QtWidgets.QMainWindow()
         self.window.setWindowFlags(standard_window_control_flags(QtCore))
         self.window.setWindowTitle(model.app_title)
@@ -1186,28 +1220,140 @@ class PySideInterviewWindow:
 
         recent, recent_layout = self._surface()
         recent_layout.addWidget(self._label("Interview History", "SectionTitle"))
+        controls = self.QtWidgets.QHBoxLayout()
+        search = self.QtWidgets.QLineEdit()
+        search.setPlaceholderText("Search history")
+        search.textChanged.connect(self._set_history_search_text)
+        self.history_search_input = search
+        controls.addWidget(search, 2)
+
+        school_filter = self.QtWidgets.QComboBox()
+        school_filter.addItems(["All schools", *self._history_school_options()])
+        school_filter.currentTextChanged.connect(self._set_history_school_filter)
+        self.history_school_filter = school_filter
+        controls.addWidget(school_filter, 1)
+
+        outcome_filter = self.QtWidgets.QComboBox()
+        outcome_filter.addItems(["All outcomes", *self._history_outcome_options()])
+        outcome_filter.currentTextChanged.connect(self._set_history_outcome_filter)
+        self.history_outcome_filter = outcome_filter
+        controls.addWidget(outcome_filter, 1)
+        recent_layout.addLayout(controls)
+
         table = self.QtWidgets.QTableWidget(len(self.model.home.history_rows), 8)
         table.setObjectName("PySideHistoryGrid")
-        table.setHorizontalHeaderLabels(["Date", "Candidate", "School", "Position", "Score", "Status", "Interview Notes", "Offer"])
+        table.setHorizontalHeaderLabels(["Date", "Candidate", "School", "Position", "Score", "Status", "Notes", "Offer"])
         self.history_table = table
-        for row_index, row in enumerate(self.model.home.history_rows):
-            values = [row.interview_date, row.candidate, row.school, row.position, row.score, row.status]
-            for column, value in enumerate(values):
-                table.setItem(row_index, column, self.QtWidgets.QTableWidgetItem(value))
-            notes_button = self.QtWidgets.QPushButton("Open Notes")
-            notes_button.setProperty("history_row_key", row.row_key)
-            notes_button.setEnabled(bool(row.notes_path and Path(row.notes_path).exists()))
-            notes_button.clicked.connect(lambda _checked=False, item=row: self._open_history_notes(item))
-            table.setCellWidget(row_index, 6, notes_button)
-            offer_button = self.QtWidgets.QPushButton(row.offer_action)
-            offer_button.setProperty("history_row_key", row.row_key)
-            offer_button.setEnabled(bool(row.row_key))
-            offer_button.clicked.connect(lambda _checked=False, item=row: self._open_history_offer(item))
-            table.setCellWidget(row_index, 7, offer_button)
         table.horizontalHeader().setStretchLastSection(True)
+        table.setSortingEnabled(True)
+        self._refresh_history_table()
         recent_layout.addWidget(table)
         layout.addWidget(recent, 1)
         return page
+
+    def _history_school_options(self) -> list[str]:
+        values = {row.school for row in self.model.home.history_rows if row.school}
+        return sorted(values, key=str.lower)
+
+    def _history_outcome_options(self) -> list[str]:
+        values = {row.status for row in self.model.home.history_rows if row.status}
+        return sorted(values, key=str.lower)
+
+    def _set_history_search_text(self, value: str) -> None:
+        self.history_search_text = value.strip()
+        self._refresh_history_table()
+
+    def _set_history_school_filter(self, value: str) -> None:
+        self.history_school_filter_text = "" if value == "All schools" else value.strip()
+        self._refresh_history_table()
+
+    def _set_history_outcome_filter(self, value: str) -> None:
+        self.history_outcome_filter_text = "" if value == "All outcomes" else value.strip()
+        self._refresh_history_table()
+
+    def _filtered_history_rows(self) -> list[PySideHistoryRow]:
+        rows = self.model.home.history_rows
+        school = self.history_school_filter_text.lower()
+        outcome = self.history_outcome_filter_text.lower()
+        filtered: list[PySideHistoryRow] = []
+        for row in rows:
+            if school and row.school.lower() != school:
+                continue
+            if outcome and row.status.lower() != outcome:
+                continue
+            if not self._history_row_matches_search(row, self.history_search_text):
+                continue
+            filtered.append(row)
+        return filtered
+
+    def _history_row_matches_search(self, row: PySideHistoryRow, search_text: str) -> bool:
+        query = _normalize_history_search(search_text)
+        if not query:
+            return True
+        blob = _normalize_history_search(
+            " ".join([row.interview_date, row.candidate, row.school, row.position, row.score, row.status])
+        )
+        if query in blob:
+            return True
+        blob_tokens = blob.split()
+        return all(_history_token_matches(term, blob_tokens) for term in query.split())
+
+    def _refresh_history_table(self) -> None:
+        table = getattr(self, "history_table", None)
+        if table is None:
+            return
+        rows = self._filtered_history_rows()
+        table.setSortingEnabled(False)
+        table.setRowCount(len(rows))
+        for row_index, row in enumerate(rows):
+            self._populate_history_table_row(table, row_index, row)
+        self._size_history_table_columns(table)
+        table.setSortingEnabled(True)
+
+    def _populate_history_table_row(self, table: Any, row_index: int, row: PySideHistoryRow) -> None:
+        values = [row.interview_date, row.candidate, row.school, row.position, row.score, row.status]
+        background = self._history_outcome_brush(row.status)
+        for column, value in enumerate(values):
+            item = self.QtWidgets.QTableWidgetItem(value)
+            item.setData(self.QtCore.Qt.ItemDataRole.UserRole, row.row_key)
+            if background is not None:
+                item.setData(self.QtCore.Qt.ItemDataRole.BackgroundRole, background)
+            table.setItem(row_index, column, item)
+        notes_button = self.QtWidgets.QPushButton("Open Notes")
+        notes_button.setMaximumWidth(95)
+        notes_button.setProperty("history_row_key", row.row_key)
+        notes_button.setEnabled(bool(row.notes_path and Path(row.notes_path).exists()))
+        notes_button.clicked.connect(lambda _checked=False, item=row: self._open_history_notes(item))
+        table.setCellWidget(row_index, 6, notes_button)
+        offer_button = self.QtWidgets.QPushButton(row.offer_action)
+        offer_button.setMaximumWidth(115)
+        offer_button.setProperty("history_row_key", row.row_key)
+        offer_button.setEnabled(bool(row.row_key))
+        offer_button.clicked.connect(lambda _checked=False, item=row: self._open_history_offer(item))
+        table.setCellWidget(row_index, 7, offer_button)
+
+    def _size_history_table_columns(self, table: Any) -> None:
+        table.resizeColumnsToContents()
+        minimums = {
+            0: 115,
+            1: 170,
+            2: 190,
+            3: 210,
+            4: 75,
+            5: 130,
+            6: 90,
+            7: 110,
+        }
+        for column, minimum in minimums.items():
+            table.setColumnWidth(column, max(table.columnWidth(column), table.sizeHintForColumn(column), minimum))
+        table.setColumnWidth(6, min(table.columnWidth(6), 105))
+        table.setColumnWidth(7, min(table.columnWidth(7), 125))
+
+    def _history_outcome_brush(self, outcome: str) -> Any:
+        color = _history_outcome_color(outcome)
+        if not color:
+            return None
+        return self.QtGui.QBrush(self.QtGui.QColor(color))
 
     def _setup_tab(self) -> Any:
         page, layout = self._page()
@@ -1602,20 +1748,7 @@ class PySideInterviewWindow:
         table = getattr(self, "history_table", None)
         if table is None:
             return
-        table.setRowCount(len(history_rows))
-        for row_index, row in enumerate(history_rows):
-            for column, value in enumerate([row.interview_date, row.candidate, row.school, row.position, row.score, row.status]):
-                table.setItem(row_index, column, self.QtWidgets.QTableWidgetItem(value))
-            notes_button = self.QtWidgets.QPushButton("Open Notes")
-            notes_button.setProperty("history_row_key", row.row_key)
-            notes_button.setEnabled(bool(row.notes_path and Path(row.notes_path).exists()))
-            notes_button.clicked.connect(lambda _checked=False, item=row: self._open_history_notes(item))
-            table.setCellWidget(row_index, 6, notes_button)
-            offer_button = self.QtWidgets.QPushButton(row.offer_action)
-            offer_button.setProperty("history_row_key", row.row_key)
-            offer_button.setEnabled(bool(row.row_key))
-            offer_button.clicked.connect(lambda _checked=False, item=row: self._open_history_offer(item))
-            table.setCellWidget(row_index, 7, offer_button)
+        self._refresh_history_table()
 
     def _open_history_notes(self, row: PySideHistoryRow) -> None:
         path = Path(row.notes_path)
@@ -1851,7 +1984,7 @@ class PySideInterviewWindow:
 
 
 def launch_pyside_interview_app(model: InterviewRedesignModel | None = None) -> int:
-    QtCore, QtWidgets = _import_qt()
+    _QtCore, _QtGui, QtWidgets = _import_qt()
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv)
     _apply_styles(app)
     window = PySideInterviewWindow(model or build_interview_redesign_model())
