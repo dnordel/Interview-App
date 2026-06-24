@@ -128,10 +128,10 @@ pip install -r requirements-dev.txt
 **Windows (recommended for non-technical users):**
 
 - Double-click `Start Preschool Teacher Interview Guide.bat` in the repository root.
-- This starts the setup/launch flow without needing to open PowerShell manually and now prefers the PySide6 redesigned workflow shell.
+- This starts the setup/launch flow without needing to open PowerShell manually and defaults to the full-feature Tk desktop UI.
 - For debugger logging/console mode, run `.\setup_and_run.ps1 -DebugMode`.
-- `setup_and_run.ps1` tracks a requirements fingerprint in the per-user setup config, invalidates stale cached Tk app paths, and rechecks PySide6 when requirements change.
-- The legacy Tk interview app is still available by direct launch if needed.
+- Use the top **Tk UI / PySide UI** switch inside the desktop app to relaunch into the other UI.
+- `setup_and_run.ps1` tracks a requirements fingerprint and selected UI mode in the per-user setup config, invalidates stale cached app paths, and rechecks PySide6 when requirements change.
 
 **Direct Python launch (advanced):**
 
@@ -145,7 +145,7 @@ PySide6 redesign shell:
 python src/pyside_interview_app.py
 ```
 
-The PySide6 shell uses the same rubric and question-flow JSON as the existing app. During a live PySide6 interview, answers autosave under `user_artifacts/interviews/pyside_drafts/`.
+The PySide6 shell uses the same rubric and question-flow JSON as the existing app. Finalize, history, DOCX generation, and DeepSeek processing use the shared desktop runtime contracts.
 
 ### Launch Onboarding App
 

@@ -2,11 +2,11 @@ module:
   name: setup_and_run
   language: powershell
   path: setup_and_run.ps1
-  version: 1.4.0
+  version: 1.5.0
   description: Windows launcher bootstrap that checks prerequisites, installs Python
     3.11 when needed, provisions a per-user virtual environment that can reuse system
-    site packages, installs local DeepSeek through Ollama, and starts the interview
-    PySide interview app through the runtime wrapper.
+    site packages, installs local DeepSeek through Ollama, persists a selected UI
+    mode, and starts the Tk interview app by default through the runtime wrapper.
 functions:
 - name: Write-Log
   description: Append launcher diagnostics to the setup log file.
@@ -60,7 +60,7 @@ functions:
 - name: Ensure-ConfigShape
   description: Normalize the configuration object so required nested properties exist
     before later setup steps run, including one-time audio routing instruction state,
-    the preferred app entrypoint, and the requirements fingerprint.
+    selected UI mode, the preferred app entrypoint, and the requirements fingerprint.
   locked: false
   inputs:
     cfg:
@@ -70,6 +70,18 @@ functions:
     type: pscustomobject
   exceptions: []
   side_effects: may mutate the provided configuration object in memory
+- name: Resolve-PreferredInterviewAppFile
+  description: Resolve the selected UI mode to the matching interview app entrypoint,
+    defaulting invalid or missing modes to the Tk app.
+  locked: false
+  inputs:
+    Cfg:
+      type: pscustomobject
+      required: true
+  returns:
+    type: string
+  exceptions: []
+  side_effects: none
 - name: Start-PythonGuiApp
   description: Launch the interview application through python or pythonw with optional
     redirected logging.
@@ -390,10 +402,26 @@ functions:
   - Exception
   side_effects: executes package checks, may install required packages, and writes
     launcher log entries
+- name: Ensure-SelectedUiModeAvailable
+  description: Verify PySide6 can import when PySide mode is selected; otherwise
+    warn, persist Tk mode, clear stale app path, and continue with the Tk UI.
+  locked: false
+  inputs:
+    Cfg:
+      type: pscustomobject
+      required: true
+    VenvPy:
+      type: string
+      required: true
+  returns:
+    type: pscustomobject
+  exceptions: []
+  side_effects: executes a PySide6 import probe, may show a Windows Forms warning,
+    mutates configuration, writes setup_config.json, and writes launcher log entries
 - name: Find-AppFile
-  description: Resolve the interview application entrypoint by preferring the PySide6
-    app, invalidating stale cached Tk entrypoints, using repository defaults, or
-    a user file picker.
+  description: Resolve the interview application entrypoint by selected UI mode,
+    invalidating stale cached entrypoints, using repository defaults, or a user
+    file picker.
   locked: false
   inputs:
     Cfg:

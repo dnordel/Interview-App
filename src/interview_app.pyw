@@ -119,6 +119,7 @@ from ui_composition import (
     create_main_gui_warning_presenter,
     present_transcription_partial_warning,
 )
+from ui_mode_switch import switch_to_ui_mode
 from interview_runtime import (
     build_transcription_log_hint,
     format_runtime_init_error_message,
@@ -407,6 +408,11 @@ class InterviewApp(tk.Tk):
 
         ttk.Button(self.toolbar, text="A+", command=lambda: self.adjust_font_size(1)).pack(side="left", padx=2)
 
+        ttk.Separator(self.toolbar, orient="vertical").pack(side="left", fill="y", padx=10)
+        ttk.Label(self.toolbar, text="UI:").pack(side="left")
+        ttk.Button(self.toolbar, text="Tk UI", state="disabled").pack(side="left", padx=2)
+        ttk.Button(self.toolbar, text="PySide UI", command=lambda: self._switch_to_ui_mode("pyside")).pack(side="left", padx=2)
+
         self.main_warning_presenter = create_main_gui_warning_presenter(self, on_dismiss=self._clear_finalize_warning)
 
         self.main_holder = ttk.Frame(self)
@@ -436,6 +442,14 @@ class InterviewApp(tk.Tk):
         self.footer.pack(fill="x")
 
         wire_views(self)
+
+    def _switch_to_ui_mode(self, mode: str) -> None:
+        try:
+            switch_to_ui_mode(mode, app_root=Path(__file__).resolve().parent.parent)
+        except Exception as exc:
+            messagebox.showerror("Switch UI", f"Could not switch UI: {exc}")
+            return
+        self.after(100, self.destroy)
 
     def _configure_theme(self) -> None:
         apply_professional_ops_theme(self, font_size=int(self.settings["font_size"]))

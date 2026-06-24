@@ -2,11 +2,13 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.0.0
-  description: PySide6 redesign shell and headless view-model builder for guided interview workflow.
+  version: 1.4.1
+  description: PySide6 redesign shell and headless view-model builder for guided
+    interview workflow that preserves Tk-owned finalize, history, document, and
+    DeepSeek runtime contracts.
 functions:
 - name: build_interview_redesign_model
-  description: Build workflow-first home, setup, live interview, review, offer, onboarding, and admin view data from rubric, question flow, and history JSON.
+  description: Build workflow-first home, setup, live interview, review, offer, onboarding, and admin view data from rubric, intro script, question flow, and history JSON.
   locked: false
   inputs:
     rubric_path:
@@ -81,6 +83,17 @@ functions:
     type: Path | None
   exceptions: []
   side_effects: Reads PySide draft directory metadata.
+- name: standard_window_control_flags
+  description: Return PySide window flags that keep the native title bar, system menu, minimize, maximize, and close controls visible.
+  locked: false
+  inputs:
+    QtCore:
+      type: Any
+      required: true
+  returns:
+    type: Any
+  exceptions: []
+  side_effects: none
 - name: launch_pyside_interview_app
   description: Launch the PySide6 redesigned desktop shell using the supplied model or current repository configuration.
   locked: false
@@ -122,9 +135,11 @@ classes:
       type: int
     answers:
       type: dict[str, dict[str, Any]]
+    qualification:
+      type: dict[str, Any]
   methods:
   - name: start
-    description: Start a new guided interview session and persist initial draft state.
+    description: Start a new guided interview session at the school-specific intro script and persist initial draft state.
     locked: false
     inputs:
       candidate_name:
@@ -142,7 +157,7 @@ classes:
     - ValueError
     side_effects: Writes PySide draft JSON.
   - name: active_question
-    description: Return the current configured question, or None when the session has reached review.
+    description: Return the current intro, custom, or scored question, or None when the session has reached review.
     locked: false
     inputs: {}
     returns:
@@ -164,6 +179,10 @@ classes:
         type: Sequence[str]
         required: false
         default: ()
+      qualification:
+        type: dict[str, Any] | None
+        required: false
+        default: null
     returns:
       type: None
     exceptions: []
@@ -221,7 +240,9 @@ classes:
     - OSError
     side_effects: Writes rendered offer DOCX to the selected output directory.
   - name: generate_interview_notes_document
-    description: Generate a Word interview-notes document from PySide session answers and review summary.
+    description: Compatibility wrapper that finalizes the PySide session through
+      the shared desktop finalize path and returns the generated interview-notes
+      DOCX path.
     locked: false
     inputs:
       output_dir:
@@ -231,7 +252,34 @@ classes:
       type: Path
     exceptions:
     - OSError
-    side_effects: Writes generated interview-notes DOCX to the selected output directory.
+    side_effects: Writes generated interview-notes DOCX, integration export, history
+      row, and queued DeepSeek job metadata under the selected output directory.
+  - name: finalize_interview
+    description: Finalize the completed PySide session using shared Tk desktop runtime
+      contracts for scoring, DocxExporter report generation, integration export,
+      history persistence, and detached DeepSeek processing.
+    locked: false
+    inputs:
+      base_dir:
+        type: Path
+        required: false
+        default: DEFAULT_BASE_DIR
+      history_path:
+        type: Path
+        required: false
+        default: INTERVIEW_HISTORY_PATH
+      gateways:
+        type: FinalizeGateways | None
+        required: false
+        default: null
+    returns:
+      type: dict[str, Any]
+    exceptions:
+    - ReportingValidationError
+    - OSError
+    side_effects: Writes interview-notes DOCX, integration export, finalized interview
+      history row, and detached DeepSeek job/progress files when history persistence
+      has a path.
   - name: to_draft
     description: Serialize the session as versioned draft JSON data.
     locked: false
@@ -265,7 +313,9 @@ classes:
     - ValueError
     side_effects: Reads PySide draft JSON.
 - name: PySideInterviewWindow
-  description: Main PySide6 window with navigation for Interviews, Candidates, Offers, Onboarding, and Admin Studio.
+  description: Main PySide6 window with navigation for Interviews, Candidates, Offers,
+    Onboarding, Admin Studio, top-level Tk/PySide UI switching, and scrollable
+    live/review interview panes with wrapped long question and score text.
   locked: false
   attributes:
     model:
@@ -290,7 +340,7 @@ data_structures:
   description: Ordered question flow for one role track.
 - name: FlowQuestion
   type: dataclass
-  description: Render-ready custom or scored interview question data.
+  description: Render-ready intro, qualification, custom, or scored interview question data.
 - name: ScoreCard
   type: dataclass
   description: One selectable score value and plain-language descriptor.
@@ -308,7 +358,9 @@ data_structures:
   description: Admin Studio sections, counts, validation warnings, and rows for configuration review.
 dependencies:
 - module: data_store
+- module: interview_runtime
 - module: onboarding_operations
 - module: platform_services
 - module: scoring_reporting
+- module: ui_mode_switch
 - module: PySide6

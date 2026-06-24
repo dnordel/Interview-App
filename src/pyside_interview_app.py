@@ -2,14 +2,16 @@ from __future__ import annotations
 
 import json
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date
 from datetime import datetime
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Sequence
 
 from docx import Document
-from data_store import QuestionOverridesStore, RubricLoader
+from data_store import InterviewHistoryStore, QuestionOverridesStore, RubricLoader
+from interview_runtime import FinalizeGateways, build_finalize_context, enqueue_deepseek_finalize_job
 from onboarding_operations import JsonStore, build_dashboard_today_summary, filtered_tasks, task_status
 from platform_services import (
     DEFAULT_RUBRIC_PATH,
@@ -21,6 +23,9 @@ from platform_services import (
     compose_intro_script,
 )
 from scoring_reporting import OfferInput, OfferLetterService, ScoringEngine, build_offer_filename
+from scoring_reporting import build_integration_payload, serialize_integration_payload
+from scoring_reporting import CANONICAL_DEGREE_TYPES, CandidateQualification, validate_candidate_qualification
+from ui_mode_switch import switch_to_ui_mode
 
 
 APP_TITLE = "Interview Assistant"
@@ -141,6 +146,7 @@ class PySideInterviewSession:
     track_key: str = ""
     current_index: int = 0
     answers: dict[str, dict[str, Any]] = field(default_factory=dict)
+    qualification: dict[str, Any] = field(default_factory=dict)
 
     def start(self, *, candidate_name: str, school: str, track_key: str) -> None:
         if track_key not in self.model.flows:
@@ -150,15 +156,24 @@ class PySideInterviewSession:
         self.track_key = track_key
         self.current_index = 0
         self.answers = {}
+        self.qualification = {}
         self.save_draft()
 
-    def active_question(self) -> FlowQuestion | None:
+    def _workflow_items(self) -> list[FlowQuestion]:
         flow = self.model.flows.get(self.track_key)
         if flow is None:
+            return []
+        total = len(flow.items) + 1
+        return [
+            _intro_flow_question(self.school, total),
+            *[replace(item, progress_label=f"Question {index} of {total}") for index, item in enumerate(flow.items, start=2)],
+        ]
+
+    def active_question(self) -> FlowQuestion | None:
+        items = self._workflow_items()
+        if self.current_index < 0 or self.current_index >= len(items):
             return None
-        if self.current_index < 0 or self.current_index >= len(flow.items):
-            return None
-        return flow.items[self.current_index]
+        return items[self.current_index]
 
     def save_answer_and_advance(
         self,
@@ -166,12 +181,13 @@ class PySideInterviewSession:
         notes: str,
         score: str = "",
         quick_actions: Sequence[str] = (),
+        qualification: dict[str, Any] | None = None,
     ) -> None:
         question = self.active_question()
         if question is None:
             self.save_draft()
             return
-        self.answers[question.question_id] = {
+        answer = {
             "kind": question.kind,
             "title": question.title,
             "prompt": question.prompt,
@@ -179,6 +195,11 @@ class PySideInterviewSession:
             "score": score,
             "quick_actions": [str(action) for action in quick_actions],
         }
+        if question.kind == "qualification" or qualification is not None:
+            normalized = _normalize_qualification_payload(qualification or {})
+            self.qualification = normalized
+            answer["qualification"] = normalized
+        self.answers[question.question_id] = answer
         self.current_index += 1
         self.save_draft()
 
@@ -281,41 +302,50 @@ class PySideInterviewSession:
         return OfferLetterService.render_offer(Path(template_path), output_path, data)
 
     def generate_interview_notes_document(self, *, output_dir: Path) -> Path:
-        output = Path(output_dir)
-        output.mkdir(parents=True, exist_ok=True)
-        first_name, last_name = _split_candidate_name(self.candidate_name)
-        filename = f"{date.today().isoformat()} - Interview Notes - {_safe_filename(first_name + '_' + last_name)}.docx"
-        output_path = output / filename
-        summary = self.review_summary()
-        doc = Document()
-        doc.add_heading("Interview Notes", level=1)
-        doc.add_paragraph(f"Candidate: {self.candidate_name}")
-        doc.add_paragraph(f"School: {self.school}")
-        doc.add_paragraph(f"Role: {self.offer_review_defaults()['position']}")
-        doc.add_paragraph(f"Overall Score: {summary.percent_of_max}%")
-        doc.add_paragraph(f"Determination: {summary.outcome}")
-        doc.add_paragraph(f"Recommended Next Action: {summary.next_action}")
-        if summary.missing_scores:
-            doc.add_heading("Missing Scores", level=2)
-            for item in summary.missing_scores:
-                doc.add_paragraph(item, style="List Bullet")
-        if summary.strongest_evidence:
-            doc.add_heading("Strongest Evidence", level=2)
-            for item in summary.strongest_evidence:
-                doc.add_paragraph(item, style="List Bullet")
-        if summary.concerns:
-            doc.add_heading("Concerns", level=2)
-            for item in summary.concerns:
-                doc.add_paragraph(item, style="List Bullet")
-        doc.add_heading("Responses", level=2)
-        for answer in self.answers.values():
-            doc.add_paragraph(str(answer.get("title", "")))
-            score = str(answer.get("score", "") or "").strip()
-            if score:
-                doc.add_paragraph(f"Score: {score}")
-            doc.add_paragraph(str(answer.get("notes", "") or ""))
-        doc.save(output_path)
-        return output_path
+        result = self.finalize_interview(
+            base_dir=Path(output_dir),
+            history_path=Path(output_dir) / "interview_history.json",
+        )
+        return Path(result["out_path"])
+
+    def finalize_interview(
+        self,
+        *,
+        base_dir: Path = DEFAULT_BASE_DIR,
+        history_path: Path = INTERVIEW_HISTORY_PATH,
+        gateways: FinalizeGateways | None = None,
+    ) -> dict[str, Any]:
+        adapter = _PySideFinalizeAdapter(self, base_dir=Path(base_dir), history_path=Path(history_path))
+        warnings: list[str] = []
+        scoring = ScoringEngine.evaluate(adapter._rubric_with_question_overrides(), adapter.state.track, adapter.state.trait_inputs)
+        transcript_metadata = {
+            "transcript_complete": True,
+            "transcript_completeness_status": "complete",
+            "remaining_question_indices": [],
+        }
+        context = build_finalize_context(adapter, scoring, warnings, transcript_metadata, run_deepseek=False)
+        active_gateways = gateways or FinalizeGateways()
+        out_path = active_gateways.export_report(adapter, context)
+        integration_path = active_gateways.export_integration(adapter, context)
+        director_packet, comm_log_path = active_gateways.send_referral(adapter, context, out_path, integration_path)
+        history_id = active_gateways.persist_finalize_history(adapter, context, out_path)
+        deepseek_job_path = enqueue_deepseek_finalize_job(adapter, context, out_path, history_id)
+        deepseek_job_available = bool(getattr(deepseek_job_path, "name", ""))
+        deepseek_progress_path = deepseek_job_path.with_suffix(".progress.json") if deepseek_job_available else Path()
+        return {
+            "scoring": scoring,
+            "out_path": str(out_path),
+            "integration_path": Path(integration_path).as_posix(),
+            "transcript_path": context.transcript_path,
+            "director_packet": director_packet,
+            "warnings": warnings,
+            "communication_log_path": str(comm_log_path) if comm_log_path else None,
+            "transcript_complete": True,
+            "transcript_completeness_status": "complete",
+            "remaining_question_indices": [],
+            "deepseek_job_path": str(deepseek_job_path) if deepseek_job_available else "",
+            "deepseek_progress_path": str(deepseek_progress_path) if deepseek_job_available else "",
+        }
 
     def to_draft(self) -> dict[str, Any]:
         return {
@@ -324,6 +354,7 @@ class PySideInterviewSession:
             "school": self.school,
             "track_key": self.track_key,
             "current_index": self.current_index,
+            "qualification": self.qualification,
             "answers": self.answers,
         }
 
@@ -345,6 +376,9 @@ class PySideInterviewSession:
         answers = payload.get("answers", {})
         if not isinstance(answers, dict):
             raise ValueError("Invalid PySide interview draft answers")
+        qualification = payload.get("qualification", {})
+        if not isinstance(qualification, dict):
+            qualification = {}
         return cls(
             model=model,
             draft_path=Path(draft_path),
@@ -352,8 +386,148 @@ class PySideInterviewSession:
             school=str(payload.get("school", "")).strip(),
             track_key=track_key,
             current_index=max(0, current_index),
+            qualification=_normalize_qualification_payload(qualification),
             answers={str(key): value for key, value in answers.items() if isinstance(value, dict)},
         )
+
+
+class _PySideFinalizeAdapter:
+    def __init__(self, session: PySideInterviewSession, *, base_dir: Path, history_path: Path) -> None:
+        self.session = session
+        self.settings = {
+            "base_dir": str(base_dir),
+            "send_director_referral_on_finalize": False,
+            "director_referral_endpoint": "",
+            "deepseek_summary_enabled": True,
+            "deepseek_api_key": "ollama",
+            "deepseek_api_base_url": "http://127.0.0.1:11434/v1",
+            "deepseek_summary_model": "deepseek-r1:8b",
+            "deepseek_summary_timeout_seconds": 120,
+            "deepseek_prompt_templates": {},
+        }
+        self.history_store = InterviewHistoryStore(Path(history_path))
+        self.state = SimpleNamespace(
+            candidate_name=session.candidate_name,
+            track=session.track_key,
+            trait_inputs=self._trait_inputs(),
+            custom_inputs=self._custom_inputs(),
+            flow_recordings={},
+            flow_candidate_transcripts=self._flow_candidate_transcripts(),
+            referral_packet={"transcript_path": "", "interview_notes_path": ""},
+            communication_log=[],
+            to_dict=self._state_payload,
+        )
+
+    def _rubric_with_question_overrides(self) -> dict[str, Any]:
+        return dict(self.session.model.rubric)
+
+    def _safe_attr(self, _name: str) -> Any:
+        return None
+
+    def _collect_transcription_health_warnings(self) -> list[str]:
+        return []
+
+    def _hydrate_state_from_session_store(self) -> None:
+        return None
+
+    def _serialize_flow_audio_recordings(self) -> list[dict[str, Any]]:
+        return []
+
+    def _ordered_custom_answers(self) -> list[dict[str, Any]]:
+        custom_answers: list[dict[str, Any]] = []
+        for question in self._workflow_items():
+            if question.kind not in {"custom", "qualification", "intro"}:
+                continue
+            answer = self.session.answers.get(question.question_id, {})
+            custom_answers.append(
+                {
+                    "id": question.question_id,
+                    "question": question.prompt,
+                    "answer": str(answer.get("notes", "") or ""),
+                    "skipped": False,
+                }
+            )
+        return custom_answers
+
+    def _build_flow_transcript(self) -> list[dict[str, Any]]:
+        transcript: list[dict[str, Any]] = []
+        for index, question in enumerate(self._workflow_items(), start=1):
+            answer = self.session.answers.get(question.question_id, {})
+            notes = str(answer.get("notes", "") or "")
+            transcript.append(
+                {
+                    "flow_index": index,
+                    "type": question.kind,
+                    "id": question.question_id,
+                    "title": question.title,
+                    "prompt": question.prompt,
+                    "candidate_transcript": notes,
+                    "evaluator_notes": notes,
+                }
+            )
+        return transcript
+
+    def _apply_candidate_transcripts_to_flow(self, _flow_tx: list[dict[str, Any]]) -> None:
+        return None
+
+    def _rewrite_live_transcript_docx_from_flow(self, _flow_tx: list[dict[str, Any]]) -> None:
+        return None
+
+    def _state_payload(self) -> dict[str, Any]:
+        track = self.session.model.flows.get(self.session.track_key)
+        return {
+            "candidate": {
+                "name": self.session.candidate_name,
+                "candidate_name": self.session.candidate_name,
+                "interview_date": date.today().isoformat(),
+                "school": self.session.school,
+                "track": self.session.track_key,
+                "position": track.label if track is not None else self.session.track_key,
+                "qualification": dict(self.session.qualification),
+            }
+        }
+
+    def _trait_inputs(self) -> dict[str, dict[str, Any]]:
+        inputs: dict[str, dict[str, Any]] = {}
+        for question in self._workflow_items():
+            if question.kind != "trait":
+                continue
+            answer = self.session.answers.get(question.question_id, {})
+            quick_actions = [str(action) for action in answer.get("quick_actions", []) or []]
+            notes = str(answer.get("notes", "") or "")
+            inputs[question.question_id] = {
+                "raw_score": _coerce_session_score(answer.get("score")),
+                "question_notes": notes,
+                "trait_notes": notes,
+                "verbatim_notes": notes,
+                "absolute_disqualifier": "Disqualifier observed" in quick_actions,
+                "no_example_after_followups": "Candidate gave no example" in quick_actions,
+                "skipped": False,
+            }
+        return inputs
+
+    def _custom_inputs(self) -> dict[str, dict[str, Any]]:
+        custom: dict[str, dict[str, Any]] = {}
+        for question in self._workflow_items():
+            if question.kind not in {"custom", "qualification", "intro"}:
+                continue
+            answer = self.session.answers.get(question.question_id, {})
+            custom[question.question_id] = {
+                "question_text": question.prompt,
+                "answer": str(answer.get("notes", "") or ""),
+                "skipped": False,
+            }
+        return custom
+
+    def _flow_candidate_transcripts(self) -> dict[int, str]:
+        transcripts: dict[int, str] = {}
+        for index, question in enumerate(self._workflow_items(), start=1):
+            answer = self.session.answers.get(question.question_id, {})
+            transcripts[index - 1] = str(answer.get("notes", "") or "")
+        return transcripts
+
+    def _workflow_items(self) -> list[FlowQuestion]:
+        return self.session._workflow_items()
 
 
 def _history_text(row: dict[str, Any], *keys: str, default: str = "") -> str:
@@ -445,14 +619,34 @@ def _flow_question_for_trait(
 
 def _flow_question_for_custom(question: dict[str, Any], *, index: int, total: int) -> FlowQuestion:
     question_id = str(question.get("id", "")).strip()
+    kind = "qualification" if question_id == "Why-ECE" else "custom"
     return FlowQuestion(
-        kind="custom",
+        kind=kind,
         question_id=question_id,
-        title="Non-scored question",
+        title="Candidate qualification" if kind == "qualification" else "Non-scored question",
         prompt=str(question.get("text", "")).strip(),
         progress_label=f"Question {index + 1} of {total}",
         quick_actions=["Mark as important"],
     )
+
+
+def _intro_flow_question(school: str, total: int) -> FlowQuestion:
+    return FlowQuestion(
+        kind="intro",
+        question_id="intro_script",
+        title="Intro Script",
+        prompt=compose_intro_script(school),
+        progress_label=f"Question 1 of {total}",
+        quick_actions=["Mark as read"],
+    )
+
+
+def _normalize_qualification_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    return CandidateQualification.from_dict(payload).to_dict()
+
+
+def _optional_int_text(value: Any) -> str:
+    return "" if value is None else str(value)
 
 
 def _build_track_flow(
@@ -711,6 +905,18 @@ def _import_qt() -> Any:
     return QtCore, QtWidgets
 
 
+def standard_window_control_flags(QtCore: Any) -> Any:
+    window_type = QtCore.Qt.WindowType
+    return (
+        window_type.Window
+        | window_type.WindowTitleHint
+        | window_type.WindowSystemMenuHint
+        | window_type.WindowMinimizeButtonHint
+        | window_type.WindowMaximizeButtonHint
+        | window_type.WindowCloseButtonHint
+    )
+
+
 def _apply_styles(app: Any) -> None:
     app.setStyleSheet(
         """
@@ -784,6 +990,7 @@ class PySideInterviewWindow:
         self.session_answers: dict[str, dict[str, Any]] = {}
         self.session: PySideInterviewSession | None = None
         self.window = QtWidgets.QMainWindow()
+        self.window.setWindowFlags(standard_window_control_flags(QtCore))
         self.window.setWindowTitle(model.app_title)
         self.window.resize(1260, 820)
         self.stack = QtWidgets.QStackedWidget()
@@ -797,7 +1004,13 @@ class PySideInterviewWindow:
         layout = QtWidgets.QHBoxLayout(root)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.sidebar)
-        layout.addWidget(self.stack, 1)
+
+        content = QtWidgets.QWidget()
+        content_layout = QtWidgets.QVBoxLayout(content)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.addLayout(self._ui_switch_row())
+        content_layout.addWidget(self.stack, 1)
+        layout.addWidget(content, 1)
         self.window.setCentralWidget(root)
 
         self.stack.addWidget(self._interviews_page())
@@ -810,11 +1023,49 @@ class PySideInterviewWindow:
     def show(self) -> None:
         self.window.show()
 
+    def _ui_switch_row(self) -> Any:
+        row = self.QtWidgets.QHBoxLayout()
+        row.setContentsMargins(16, 10, 16, 0)
+        row.addStretch(1)
+        row.addWidget(self._label("UI:"))
+        tk_button = self.QtWidgets.QPushButton("Tk UI")
+        tk_button.clicked.connect(lambda: self._switch_to_ui_mode("tk"))
+        row.addWidget(tk_button)
+        pyside_button = self.QtWidgets.QPushButton("PySide UI")
+        pyside_button.setEnabled(False)
+        row.addWidget(pyside_button)
+        return row
+
+    def _switch_to_ui_mode(self, mode: str) -> None:
+        try:
+            switch_to_ui_mode(mode, app_root=Path(__file__).resolve().parent.parent)
+        except Exception as exc:
+            self.QtWidgets.QMessageBox.critical(self.window, "Switch UI", f"Could not switch UI: {exc}")
+            return
+        self.window.close()
+
     def _page(self) -> Any:
         page = self.QtWidgets.QWidget()
         layout = self.QtWidgets.QVBoxLayout(page)
         layout.setContentsMargins(24, 20, 24, 20)
         layout.setSpacing(14)
+        return page, layout
+
+    def _scrollable_page(self) -> tuple[Any, Any]:
+        page = self.QtWidgets.QWidget()
+        outer_layout = self.QtWidgets.QVBoxLayout(page)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+        scroll = self.QtWidgets.QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(self.QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setVerticalScrollBarPolicy(self.QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll.setFrameShape(self.QtWidgets.QFrame.Shape.NoFrame)
+        content = self.QtWidgets.QWidget()
+        layout = self.QtWidgets.QVBoxLayout(content)
+        layout.setContentsMargins(24, 20, 24, 20)
+        layout.setSpacing(14)
+        scroll.setWidget(content)
+        outer_layout.addWidget(scroll)
         return page, layout
 
     def _label(self, text: str, object_name: str = "") -> Any:
@@ -941,13 +1192,13 @@ class PySideInterviewWindow:
         return None
 
     def _live_question_tab(self) -> Any:
-        page, layout = self._page()
+        page, layout = self._scrollable_page()
         self.live_question_layout = layout
         self._render_live_question_page()
         return page
 
     def _review_tab(self) -> Any:
-        page, layout = self._page()
+        page, layout = self._scrollable_page()
         self.review_layout = layout
         self._render_review_page()
         return page
@@ -1017,6 +1268,11 @@ class PySideInterviewWindow:
         if item is None:
             self.interview_tabs.setCurrentIndex(3)
             return
+        qualification: dict[str, Any] | None = None
+        if item.kind == "qualification":
+            qualification = self._collect_qualification_from_fields()
+            if qualification is None:
+                return
         score = ""
         if hasattr(self, "score_group"):
             checked = self.score_group.checkedButton()
@@ -1028,16 +1284,24 @@ class PySideInterviewWindow:
             if checkbox.isChecked()
         ]
         if self.session is not None:
-            self.session.save_answer_and_advance(notes=notes, score=score, quick_actions=quick_actions)
+            self.session.save_answer_and_advance(
+                notes=notes,
+                score=score,
+                quick_actions=quick_actions,
+                qualification=qualification,
+            )
             self.session_index = self.session.current_index
             self.session_answers = dict(self.session.answers)
         else:
-            self.session_answers[item.question_id] = {
+            answer = {
                 "kind": item.kind,
                 "title": item.title,
                 "score": score,
                 "notes": notes,
             }
+            if qualification is not None:
+                answer["qualification"] = qualification
+            self.session_answers[item.question_id] = answer
             self.session_index += 1
         if self._active_question() is None:
             self._render_review_page()
@@ -1062,6 +1326,8 @@ class PySideInterviewWindow:
         left, left_layout = self._surface()
         left_layout.addWidget(self._label(item.title, "SectionTitle"))
         left_layout.addWidget(self._label(item.prompt))
+        if item.kind == "qualification":
+            self._render_qualification_fields(left_layout)
         if item.followups:
             followups = self.QtWidgets.QListWidget()
             followups.addItems(item.followups)
@@ -1078,9 +1344,16 @@ class PySideInterviewWindow:
         right_layout.addWidget(self._label("Score", "SectionTitle"))
         self.score_group = self.QtWidgets.QButtonGroup()
         for card in item.score_cards:
-            radio = self.QtWidgets.QRadioButton(f"{card.label}  {card.description}")
+            row = self.QtWidgets.QWidget()
+            row_layout = self.QtWidgets.QHBoxLayout(row)
+            row_layout.setContentsMargins(0, 0, 0, 0)
+            row_layout.setSpacing(8)
+            radio = self.QtWidgets.QRadioButton(card.label)
+            option_text = self._label(card.description, "ScoreOptionText")
+            row_layout.addWidget(radio, 0)
+            row_layout.addWidget(option_text, 1)
             self.score_group.addButton(radio)
-            right_layout.addWidget(radio)
+            right_layout.addWidget(row)
         if not item.score_cards:
             right_layout.addWidget(self._label("Non-scored question"))
         right_layout.addWidget(self._label("Quick Actions", "SectionTitle"))
@@ -1095,6 +1368,65 @@ class PySideInterviewWindow:
         right_layout.addWidget(save_next)
         split.addWidget(right, 1)
         layout.addLayout(split, 1)
+
+    def _render_qualification_fields(self, layout: Any) -> None:
+        stored = self.session.qualification if self.session is not None else {}
+        fields, fields_layout = self._surface()
+        fields_layout.addWidget(self._label("Education & Experience", "SectionTitle"))
+        form = self.QtWidgets.QFormLayout()
+
+        self.qualification_has_degree = self.QtWidgets.QComboBox()
+        self.qualification_has_degree.addItems(["", "Yes", "No"])
+        has_degree = stored.get("has_degree")
+        self.qualification_has_degree.setCurrentText("Yes" if has_degree is True else "No" if has_degree is False else "")
+        form.addRow("Has degree", self.qualification_has_degree)
+
+        self.qualification_degree_type = self.QtWidgets.QComboBox()
+        self.qualification_degree_type.addItems(["", *list(CANONICAL_DEGREE_TYPES)])
+        self.qualification_degree_type.setCurrentText(str(stored.get("degree_type", "") or ""))
+        form.addRow("Degree type", self.qualification_degree_type)
+
+        self.qualification_degree_in_ece = self.QtWidgets.QCheckBox("Degree is in ECE")
+        self.qualification_degree_in_ece.setChecked(bool(stored.get("degree_in_ece", False)))
+        form.addRow("", self.qualification_degree_in_ece)
+
+        self.qualification_ece_units = self.QtWidgets.QLineEdit()
+        self.qualification_ece_units.setText(_optional_int_text(stored.get("ece_units_completed")))
+        form.addRow("ECE units", self.qualification_ece_units)
+
+        self.qualification_infant_toddler = self.QtWidgets.QCheckBox("Infant/toddler class completed")
+        self.qualification_infant_toddler.setChecked(bool(stored.get("infant_toddler_class_completed", False)))
+        form.addRow("", self.qualification_infant_toddler)
+
+        self.qualification_total_units = self.QtWidgets.QLineEdit()
+        self.qualification_total_units.setText(_optional_int_text(stored.get("total_units_completed")))
+        form.addRow("Total units if no degree", self.qualification_total_units)
+
+        self.qualification_years = self.QtWidgets.QLineEdit()
+        self.qualification_years.setText(_optional_int_text(stored.get("years_experience")))
+        form.addRow("Years experience", self.qualification_years)
+
+        self.qualification_status_label = self._label("")
+        fields_layout.addLayout(form)
+        fields_layout.addWidget(self.qualification_status_label)
+        layout.addWidget(fields)
+
+    def _collect_qualification_from_fields(self) -> dict[str, Any] | None:
+        has_degree = self.qualification_has_degree.currentText().strip().lower()
+        ok, message, qualification = validate_candidate_qualification(
+            has_degree,
+            self.qualification_degree_type.currentText(),
+            self.qualification_degree_in_ece.isChecked(),
+            self.qualification_ece_units.text(),
+            self.qualification_total_units.text(),
+            self.qualification_infant_toddler.isChecked(),
+            self.qualification_years.text(),
+        )
+        if not ok:
+            self.qualification_status_label.setText(message)
+            return None
+        self.qualification_status_label.setText("")
+        return qualification.to_dict()
 
     def _render_review_page(self) -> None:
         layout = getattr(self, "review_layout", None)
@@ -1142,7 +1474,7 @@ class PySideInterviewWindow:
         else:
             summary_layout.addWidget(self._label("Overall score, determination, missing items, flagged answers, strongest evidence, and concerns appear here after interview completion."))
         actions = self.QtWidgets.QHBoxLayout()
-        notes_button = self._primary_button("Generate Interview Notes")
+        notes_button = self._primary_button("Finalize Interview")
         notes_button.clicked.connect(self._generate_interview_notes_from_session)
         actions.addWidget(notes_button)
         actions.addWidget(self.QtWidgets.QPushButton("Generate Offer"))
@@ -1162,11 +1494,12 @@ class PySideInterviewWindow:
             self.review_status_label.setText("Start an interview before generating notes.")
             return
         try:
-            output_path = self.session.generate_interview_notes_document(output_dir=DEFAULT_BASE_DIR / "pyside_notes")
+            result = self.session.finalize_interview(base_dir=DEFAULT_BASE_DIR, history_path=INTERVIEW_HISTORY_PATH)
+            output_path = result["out_path"]
         except Exception as exc:
             self.review_status_label.setText(f"Interview notes not generated: {exc}")
             return
-        self.review_status_label.setText(f"Interview notes generated: {output_path}")
+        self.review_status_label.setText(f"Interview finalized: {output_path}")
 
     def _offer_page(self) -> Any:
         page, layout = self._page()

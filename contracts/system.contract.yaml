@@ -44,14 +44,20 @@ modules:
     - interview_app_view_protocols
     - interview_app_views
     - tk_theme
+    - ui_mode_switch
   pyside_interview_app:
     path: src/pyside_interview_app.py
     depends_on:
     - data_store
+    - interview_runtime
     - onboarding_operations
     - platform_services
     - scoring_reporting
+    - ui_mode_switch
     - PySide6
+  ui_mode_switch:
+    path: src/ui_mode_switch.py
+    depends_on: []
   web_scored_question:
     path: web/scored-question/
     depends_on:
@@ -117,6 +123,7 @@ modules:
     - onboarding_operations
     - ui_composition
     - tk_theme
+    - ui_mode_switch
   interview_app___init__:
     path: src/interview_app/__init__.py
     depends_on:

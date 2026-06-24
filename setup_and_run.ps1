@@ -1,6 +1,8 @@
 #requires -version 5.1
 param(
-  [switch]$DebugMode
+  [switch]$DebugMode,
+  [ValidateSet("tk", "pyside")]
+  [string]$UiMode = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -23,7 +25,9 @@ if ($env:DEEPSEEK_SUMMARY_MODEL -and $env:DEEPSEEK_SUMMARY_MODEL.Trim()) {
   $LocalDeepSeekModel = $env:DEEPSEEK_SUMMARY_MODEL.Trim()
 }
 $OllamaBaseUrl = "http://127.0.0.1:11434"
-$PreferredInterviewAppFile = "pyside_interview_app.py"
+$DefaultUiMode = "tk"
+$DefaultInterviewAppFile = "interview_app.pyw"
+$PySideInterviewAppFile = "pyside_interview_app.py"
 
 # -------------------------
 # Logging
@@ -94,7 +98,8 @@ function Load-Config {
     }
     App = [pscustomobject]@{
       InterviewAppPath = $null
-      PreferredInterviewAppFile = $PreferredInterviewAppFile
+      PreferredUiMode = $DefaultUiMode
+      PreferredInterviewAppFile = $DefaultInterviewAppFile
     }
   }
 }
@@ -164,22 +169,48 @@ function Ensure-ConfigShape($cfg) {
   if (-not $cfg.App) {
     $cfg | Add-Member -NotePropertyName App -NotePropertyValue ([pscustomobject]@{
       InterviewAppPath = $null
-      PreferredInterviewAppFile = $PreferredInterviewAppFile
+      PreferredUiMode = $DefaultUiMode
+      PreferredInterviewAppFile = $DefaultInterviewAppFile
     }) -Force
   }
   elseif ($cfg.App.PSObject.Properties.Name -notcontains "InterviewAppPath") {
     $cfg.App | Add-Member -NotePropertyName InterviewAppPath -NotePropertyValue $null -Force
   }
-  if ($cfg.App.PSObject.Properties.Name -notcontains "PreferredInterviewAppFile") {
-    $cfg.App | Add-Member -NotePropertyName PreferredInterviewAppFile -NotePropertyValue $PreferredInterviewAppFile -Force
+  if ($cfg.App.PSObject.Properties.Name -notcontains "PreferredUiMode") {
+    $cfg.App | Add-Member -NotePropertyName PreferredUiMode -NotePropertyValue $DefaultUiMode -Force
   }
-  if ($cfg.App.PreferredInterviewAppFile -ne $PreferredInterviewAppFile) {
-    Write-Log "Preferred app changed from '$($cfg.App.PreferredInterviewAppFile)' to '$PreferredInterviewAppFile'; clearing cached app path."
-    $cfg.App.PreferredInterviewAppFile = $PreferredInterviewAppFile
+  if ($UiMode) {
+    $cfg.App.PreferredUiMode = $UiMode
+  }
+  elseif ($env:INTERVIEW_APP_UI_MODE -in @("tk", "pyside")) {
+    $cfg.App.PreferredUiMode = $env:INTERVIEW_APP_UI_MODE
+  }
+  elseif ($cfg.App.PreferredUiMode -notin @("tk", "pyside")) {
+    Write-Log "Invalid preferred UI mode '$($cfg.App.PreferredUiMode)'; using '$DefaultUiMode'."
+    $cfg.App.PreferredUiMode = $DefaultUiMode
+  }
+
+  $selectedAppFile = Resolve-PreferredInterviewAppFile -Cfg $cfg
+  if ($cfg.App.PSObject.Properties.Name -notcontains "PreferredInterviewAppFile") {
+    $cfg.App | Add-Member -NotePropertyName PreferredInterviewAppFile -NotePropertyValue $selectedAppFile -Force
+  }
+  if ($cfg.App.PreferredInterviewAppFile -ne $selectedAppFile) {
+    Write-Log "Preferred app changed from '$($cfg.App.PreferredInterviewAppFile)' to '$selectedAppFile'; clearing cached app path."
+    $cfg.App.PreferredInterviewAppFile = $selectedAppFile
     $cfg.App.InterviewAppPath = $null
   }
 
   return $cfg
+}
+
+function Resolve-PreferredInterviewAppFile {
+  param([Parameter(Mandatory=$true)]$Cfg)
+
+  $uiMode = [string]($Cfg.App.PreferredUiMode)
+  switch ($uiMode) {
+    "pyside" { return $PySideInterviewAppFile }
+    default { return $DefaultInterviewAppFile }
+  }
 }
 
 # -------------------------
@@ -1062,22 +1093,57 @@ function Ensure-RequiredDepsInstalled {
   }
 }
 
+function Ensure-SelectedUiModeAvailable {
+  param(
+    [Parameter(Mandatory=$true)]$Cfg,
+    [Parameter(Mandatory=$true)][string]$VenvPy
+  )
+
+  if ([string]$Cfg.App.PreferredUiMode -ne "pyside") {
+    return $Cfg
+  }
+
+  $ec = Run-Proc -File $VenvPy -Args @("-c", "import PySide6")
+  if ($ec -eq 0) {
+    return $Cfg
+  }
+
+  Write-Log "PySide UI is unavailable; falling back to Tk UI."
+  try {
+    Add-Type -AssemblyName System.Windows.Forms
+    [System.Windows.Forms.MessageBox]::Show(
+      "PySide UI is unavailable; falling back to Tk UI.",
+      "PySide UI unavailable",
+      [System.Windows.Forms.MessageBoxButtons]::OK,
+      [System.Windows.Forms.MessageBoxIcon]::Warning
+    ) | Out-Null
+  } catch {
+    Write-Log "Could not display PySide fallback message: $($_.Exception.Message)"
+  }
+  $Cfg.App.PreferredUiMode = $DefaultUiMode
+  $Cfg.App.PreferredInterviewAppFile = Resolve-PreferredInterviewAppFile -Cfg $Cfg
+  $Cfg.App.InterviewAppPath = $null
+  Save-Config $Cfg
+  return $Cfg
+}
+
 # -------------------------
 # App locator
 # -------------------------
 function Find-AppFile {
   param([Parameter(Mandatory=$true)]$Cfg)
 
-  $Cfg.App.PreferredInterviewAppFile = $PreferredInterviewAppFile
+  $preferredAppFile = Resolve-PreferredInterviewAppFile -Cfg $Cfg
+  $Cfg.App.PreferredInterviewAppFile = $preferredAppFile
 
   # 1) Try cached path first, but invalidate stale Tk/legacy paths after entrypoint changes.
   if ($Cfg.App.InterviewAppPath -and (Test-Path $Cfg.App.InterviewAppPath)) {
     $cachedLeaf = Split-Path $Cfg.App.InterviewAppPath -Leaf
-    if ($cachedLeaf -ieq $PreferredInterviewAppFile) {
+    if ($cachedLeaf -ieq $preferredAppFile) {
       Write-Log "Using cached app path: $($Cfg.App.InterviewAppPath)"
       return $Cfg.App.InterviewAppPath
     }
-    Write-Log "Cached app path '$cachedLeaf' does not match preferred '$PreferredInterviewAppFile'; re-detecting app."
+    Write-Log "Cached app path '$cachedLeaf' does not match preferred '$preferredAppFile'; re-detecting app."
     $Cfg.App.InterviewAppPath = $null
   }
 
@@ -1085,11 +1151,19 @@ function Find-AppFile {
 
   # 2) Try auto-detect in src folder.
   $candidates = @(
-    "pyside_interview_app.py",
     "interview_app.pyw",
+    "pyside_interview_app.py",
     "Initial Teacher Interview Guide.pyw",
     "Initial Teacher Interview Guide_UPDATED.pyw"
   )
+  if ($preferredAppFile -ieq $PySideInterviewAppFile) {
+    $candidates = @(
+      "pyside_interview_app.py",
+      "interview_app.pyw",
+      "Initial Teacher Interview Guide.pyw",
+      "Initial Teacher Interview Guide_UPDATED.pyw"
+    )
+  }
 
   foreach ($name in $candidates) {
     $p = Join-Path (Join-Path $AppDir "src") $name
@@ -1342,6 +1416,7 @@ $form.Add_Shown({
 
     Set-Progress 45 "Checking Python venv and app packages..."
     $venvPy = Ensure-VenvAndDeps $py
+    $cfg = Ensure-SelectedUiModeAvailable -Cfg $cfg -VenvPy $venvPy
 
     Set-Progress 65 "Checking local DeepSeek through Ollama ($LocalDeepSeekModel)..."
     Ensure-LocalDeepSeek

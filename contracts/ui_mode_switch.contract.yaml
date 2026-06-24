@@ -1,0 +1,116 @@
+module:
+  name: ui_mode_switch
+  language: python
+  path: src/ui_mode_switch.py
+  version: 1.0.0
+  description: Shared Tk/PySide UI-mode preference and relaunch helper for switching
+    desktop UI shells through setup_and_run.ps1.
+functions:
+- name: normalize_ui_mode
+  description: Normalize an arbitrary UI-mode value to tk or pyside, defaulting to tk.
+  locked: false
+  inputs:
+    value:
+      type: Any
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: default_setup_config_path
+  description: Resolve the per-user setup_config.json path under LOCALAPPDATA.
+  locked: false
+  inputs: {}
+  returns:
+    type: Path
+  exceptions: []
+  side_effects: none
+- name: read_preferred_ui_mode
+  description: Read the persisted UI mode from setup config, returning tk on missing
+    or invalid config.
+  locked: false
+  inputs:
+    config_path:
+      type: Path | None
+      required: false
+      default: null
+  returns:
+    type: str
+  exceptions: []
+  side_effects: reads setup_config.json when present
+- name: write_preferred_ui_mode
+  description: Persist selected UI mode and matching app entrypoint into setup config.
+  locked: false
+  inputs:
+    config_path:
+      type: Path | None
+      required: true
+    mode:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions:
+  - OSError
+  side_effects: writes setup_config.json
+- name: build_ui_mode_relaunch_command
+  description: Build the PowerShell command used to relaunch setup_and_run.ps1 with
+    a selected UI mode.
+  locked: false
+  inputs:
+    app_root:
+      type: Path
+      required: true
+    mode:
+      type: str
+      required: true
+    debug:
+      type: bool
+      required: false
+      default: false
+  returns:
+    type: list[str]
+  exceptions: []
+  side_effects: none
+- name: switch_to_ui_mode
+  description: Persist selected UI mode and start setup_and_run.ps1 for the sibling
+    desktop UI.
+  locked: false
+  inputs:
+    mode:
+      type: str
+      required: true
+    app_root:
+      type: Path | None
+      required: false
+      default: null
+    config_path:
+      type: Path | None
+      required: false
+      default: null
+    debug:
+      type: bool
+      required: false
+      default: false
+    popen:
+      type: Any
+      required: false
+      default: subprocess.Popen
+  returns:
+    type: str
+  exceptions:
+  - OSError
+  side_effects: writes setup_config.json and launches a PowerShell child process
+- name: exit_current_process
+  description: Exit the current Python process after relaunch when a caller wants
+    hard process replacement.
+  locked: false
+  inputs: {}
+  returns:
+    type: None
+  exceptions:
+  - SystemExit
+  side_effects: exits current process
+classes: []
+data_structures: []
+dependencies: []
