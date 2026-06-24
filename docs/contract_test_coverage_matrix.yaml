@@ -1,4 +1,4 @@
-last_updated: '2026-06-23'
+last_updated: '2026-06-24'
 sections:
 - name: interview_app
   tests:
@@ -15,7 +15,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-06-24T02:59:23.470182+00:00'
+generated_at_utc: '2026-06-24T16:45:13.752876+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -13647,6 +13647,15 @@ entries:
     - return_type
 - contract: contracts/ui_mode_switch.contract.yaml
   symbol: ui_mode_switch.build_ui_mode_relaunch_command
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/ui_mode_switch.contract.yaml
+  symbol: ui_mode_switch.current_python_executable
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py

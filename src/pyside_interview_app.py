@@ -50,11 +50,26 @@ class RecentInterview:
 
 
 @dataclass(frozen=True)
+class PySideHistoryRow:
+    row_key: str
+    candidate: str
+    school: str
+    position: str
+    score: str
+    status: str
+    offer_status: str
+    offer_action: str
+    notes_path: str
+    report_path: str
+
+
+@dataclass(frozen=True)
 class HomeModel:
     primary_action: str
     continue_action: str
     admin_visible_on_home: bool
     recent_interviews: list[RecentInterview]
+    history_rows: list[PySideHistoryRow]
 
 
 @dataclass(frozen=True)
@@ -100,6 +115,7 @@ class InterviewRedesignModel:
     home: HomeModel
     flows: dict[str, TrackFlow]
     rubric: dict[str, Any]
+    history_path: Path
 
 
 @dataclass(frozen=True)
@@ -538,26 +554,54 @@ def _history_text(row: dict[str, Any], *keys: str, default: str = "") -> str:
     return default
 
 
-def _load_recent_interviews(history_path: Path, *, limit: int = 6) -> list[RecentInterview]:
-    try:
-        rows = json.loads(Path(history_path).read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        rows = []
-    if not isinstance(rows, list):
-        rows = []
+def _history_offer_action(offer_status: str) -> str:
+    status = str(offer_status or "not_generated").strip().lower() or "not_generated"
+    if status == "not_generated":
+        return "Generate Offer"
+    if status == "generated":
+        return "Mark Approved"
+    if status == "approved":
+        return "Mark Accepted"
+    if status == "accepted":
+        return "Open Onboarding"
+    return "Review Offer"
 
-    recent: list[RecentInterview] = []
-    for row in rows[:limit]:
-        if not isinstance(row, dict):
-            continue
-        recent.append(
-            RecentInterview(
+
+def _build_pyside_history_rows(history_path: Path) -> list[PySideHistoryRow]:
+    store = InterviewHistoryStore(Path(history_path))
+    rows = store.load()
+    history_rows: list[PySideHistoryRow] = []
+    for row in rows:
+        row_key = store.build_row_key(row)
+        offer_status = _history_text(row, "offer_status", default="not_generated").strip().lower() or "not_generated"
+        history_rows.append(
+            PySideHistoryRow(
+                row_key=row_key,
                 candidate=_history_text(row, "candidate_name", "candidate", "name", default="Unknown candidate"),
                 school=_history_text(row, "school", default=""),
-                role=_history_text(row, "role", "track", default=""),
-                score=_history_text(row, "score", "percent_of_max", "overall_score", default=""),
-                status=_history_text(row, "status", "interview_status", "outcome", default=""),
-                next_action=_history_text(row, "next_action", "recommended_next_action", default="Review"),
+                position=_history_text(row, "position", "candidate_position", "role", "track", default=""),
+                score=_history_text(row, "score", "percent_of_max", "overall_score", "interview_score", default=""),
+                status=_history_text(row, "status", "interview_status", "outcome", "determination", default=""),
+                offer_status=offer_status,
+                offer_action=_history_offer_action(offer_status),
+                notes_path=_history_text(row, "interview_notes_path", "saved_report_path", "notes_path", default=""),
+                report_path=_history_text(row, "saved_report_path", "report_path", "interview_notes_path", default=""),
+            )
+        )
+    return history_rows
+
+
+def _recent_interviews_from_history_rows(history_rows: Sequence[PySideHistoryRow], *, limit: int = 6) -> list[RecentInterview]:
+    recent: list[RecentInterview] = []
+    for row in history_rows[:limit]:
+        recent.append(
+            RecentInterview(
+                candidate=row.candidate,
+                school=row.school,
+                role=row.position,
+                score=row.score,
+                status=row.status,
+                next_action=row.offer_action if row.offer_status == "not_generated" else "Review",
             )
         )
     return recent
@@ -716,6 +760,8 @@ def build_interview_redesign_model(
         ReadinessCheck("Question set loaded", bool(flows)),
         ReadinessCheck("Word template available", True),
     ]
+    resolved_history_path = Path(history_path)
+    history_rows = _build_pyside_history_rows(resolved_history_path)
     return InterviewRedesignModel(
         app_title=APP_TITLE,
         navigation=list(NAVIGATION),
@@ -727,10 +773,12 @@ def build_interview_redesign_model(
             primary_action="Start a New Interview",
             continue_action="Continue Draft",
             admin_visible_on_home=False,
-            recent_interviews=_load_recent_interviews(Path(history_path)),
+            recent_interviews=_recent_interviews_from_history_rows(history_rows),
+            history_rows=history_rows,
         ),
         flows=flows,
         rubric=loader.data,
+        history_path=resolved_history_path,
     )
 
 
@@ -989,6 +1037,8 @@ class PySideInterviewWindow:
         self.session_index = 0
         self.session_answers: dict[str, dict[str, Any]] = {}
         self.session: PySideInterviewSession | None = None
+        self.selected_history_offer_row: PySideHistoryRow | None = None
+        self.history_store = InterviewHistoryStore(model.history_path)
         self.window = QtWidgets.QMainWindow()
         self.window.setWindowFlags(standard_window_control_flags(QtCore))
         self.window.setWindowTitle(model.app_title)
@@ -1027,13 +1077,10 @@ class PySideInterviewWindow:
         row = self.QtWidgets.QHBoxLayout()
         row.setContentsMargins(16, 10, 16, 0)
         row.addStretch(1)
-        row.addWidget(self._label("UI:"))
-        tk_button = self.QtWidgets.QPushButton("Tk UI")
+        row.addWidget(self._label("Current UI: PySide"))
+        tk_button = self.QtWidgets.QPushButton("Switch to Tk UI")
         tk_button.clicked.connect(lambda: self._switch_to_ui_mode("tk"))
         row.addWidget(tk_button)
-        pyside_button = self.QtWidgets.QPushButton("PySide UI")
-        pyside_button.setEnabled(False)
-        row.addWidget(pyside_button)
         return row
 
     def _switch_to_ui_mode(self, mode: str) -> None:
@@ -1134,13 +1181,20 @@ class PySideInterviewWindow:
         layout.addWidget(draft)
 
         recent, recent_layout = self._surface()
-        recent_layout.addWidget(self._label("Recent Interviews", "SectionTitle"))
-        table = self.QtWidgets.QTableWidget(len(self.model.home.recent_interviews), 6)
-        table.setHorizontalHeaderLabels(["School", "Candidate", "Role", "Score", "Status", "Next Action"])
-        for row_index, row in enumerate(self.model.home.recent_interviews):
-            values = [row.school, row.candidate, row.role, row.score, row.status, row.next_action]
+        recent_layout.addWidget(self._label("Interview History", "SectionTitle"))
+        table = self.QtWidgets.QTableWidget(len(self.model.home.history_rows), 6)
+        table.setObjectName("PySideHistoryGrid")
+        table.setHorizontalHeaderLabels(["Candidate", "School", "Position", "Score", "Status", "Offer"])
+        self.history_table = table
+        for row_index, row in enumerate(self.model.home.history_rows):
+            values = [row.candidate, row.school, row.position, row.score, row.status]
             for column, value in enumerate(values):
                 table.setItem(row_index, column, self.QtWidgets.QTableWidgetItem(value))
+            offer_button = self.QtWidgets.QPushButton(row.offer_action)
+            offer_button.setProperty("history_row_key", row.row_key)
+            offer_button.setEnabled(bool(row.row_key))
+            offer_button.clicked.connect(lambda _checked=False, item=row: self._open_history_offer(item))
+            table.setCellWidget(row_index, 5, offer_button)
         table.horizontalHeader().setStretchLastSection(True)
         recent_layout.addWidget(table)
         layout.addWidget(recent, 1)
@@ -1501,6 +1555,54 @@ class PySideInterviewWindow:
             return
         self.review_status_label.setText(f"Interview finalized: {output_path}")
 
+    def _history_offer_defaults(self, row: PySideHistoryRow) -> dict[str, str]:
+        return {
+            "candidate": row.candidate,
+            "school": row.school,
+            "position": row.position,
+            "determination": row.status,
+            "next_action": row.offer_action,
+            "employment_type": "Full-time",
+            "start_date": "",
+            "start_time": "08:00 AM",
+            "end_time": "05:00 PM",
+            "hourly_pay": "",
+            "hours_week": "40",
+            "template_path": "",
+            "output_dir": str(DEFAULT_BASE_DIR / "offers"),
+        }
+
+    def _open_history_offer(self, row: PySideHistoryRow) -> None:
+        if not row.row_key:
+            return
+        self.selected_history_offer_row = row
+        self._render_offer_page()
+        self.sidebar.setCurrentRow(2)
+        self.stack.setCurrentIndex(2)
+
+    def _reload_history_model(self) -> None:
+        history_rows = _build_pyside_history_rows(self.model.history_path)
+        self.model = replace(
+            self.model,
+            home=replace(
+                self.model.home,
+                history_rows=history_rows,
+                recent_interviews=_recent_interviews_from_history_rows(history_rows),
+            ),
+        )
+        table = getattr(self, "history_table", None)
+        if table is None:
+            return
+        table.setRowCount(len(history_rows))
+        for row_index, row in enumerate(history_rows):
+            for column, value in enumerate([row.candidate, row.school, row.position, row.score, row.status]):
+                table.setItem(row_index, column, self.QtWidgets.QTableWidgetItem(value))
+            offer_button = self.QtWidgets.QPushButton(row.offer_action)
+            offer_button.setProperty("history_row_key", row.row_key)
+            offer_button.setEnabled(bool(row.row_key))
+            offer_button.clicked.connect(lambda _checked=False, item=row: self._open_history_offer(item))
+            table.setCellWidget(row_index, 5, offer_button)
+
     def _offer_page(self) -> Any:
         page, layout = self._page()
         self.offer_page_layout = layout
@@ -1515,7 +1617,12 @@ class PySideInterviewWindow:
         layout.addWidget(self._label("Generate Offer", "Title"))
         frame, frame_layout = self._surface()
         frame_layout.addWidget(self._label("Offer Review Wizard", "SectionTitle"))
-        defaults = self.session.offer_review_defaults() if self.session is not None else {}
+        if self.selected_history_offer_row is not None:
+            defaults = self._history_offer_defaults(self.selected_history_offer_row)
+        elif self.session is not None:
+            defaults = self.session.offer_review_defaults()
+        else:
+            defaults = {}
         form = self.QtWidgets.QFormLayout()
         fields = [
             ("Candidate", "candidate"),
@@ -1547,21 +1654,52 @@ class PySideInterviewWindow:
         layout.addWidget(frame)
         layout.addStretch(1)
 
+    def _render_offer_document_from_fields(self) -> Path:
+        candidate_name = self.offer_fields["candidate"].text().strip()
+        first_name, last_name = _split_candidate_name(candidate_name)
+        output_dir = Path(self.offer_fields["output_dir"].text().strip())
+        created_on = date.today()
+        output_path = output_dir / build_offer_filename(first_name, last_name, created_on)
+        data = OfferInput(
+            first_name=first_name,
+            last_name=last_name,
+            city=self.offer_fields["school"].text().strip(),
+            position=self.offer_fields["position"].text().strip(),
+            start_date=_parse_iso_or_us_date(self.offer_fields["start_date"].text().strip()),
+            start_time_12h=self.offer_fields["start_time"].text().strip(),
+            end_time_12h=self.offer_fields["end_time"].text().strip(),
+            hourly_pay=float(self.offer_fields["hourly_pay"].text().strip()),
+            hours=int(self.offer_fields["hours_week"].text().strip()),
+            created_on=created_on,
+        )
+        return OfferLetterService.render_offer(Path(self.offer_fields["template_path"].text().strip()), output_path, data)
+
     def _generate_offer_from_fields(self) -> None:
-        if self.session is None:
+        if self.session is None and self.selected_history_offer_row is None:
             self.offer_status_label.setText("Complete interview review before generating offer.")
             return
         try:
-            output_path = self.session.generate_offer_document(
-                template_path=Path(self.offer_fields["template_path"].text().strip()),
-                output_dir=Path(self.offer_fields["output_dir"].text().strip()),
-                start_date=_parse_iso_or_us_date(self.offer_fields["start_date"].text().strip()),
-                start_time_12h=self.offer_fields["start_time"].text().strip(),
-                end_time_12h=self.offer_fields["end_time"].text().strip(),
-                hourly_pay=float(self.offer_fields["hourly_pay"].text().strip()),
-                hours=int(self.offer_fields["hours_week"].text().strip()),
-                created_on=date.today(),
-            )
+            if self.selected_history_offer_row is not None:
+                output_path = self._render_offer_document_from_fields()
+                updated = self.history_store.update_offer_state(
+                    self.selected_history_offer_row.row_key,
+                    "generated",
+                    str(output_path),
+                )
+                if not updated:
+                    raise ValueError("History row could not be updated.")
+                self._reload_history_model()
+            else:
+                output_path = self.session.generate_offer_document(
+                    template_path=Path(self.offer_fields["template_path"].text().strip()),
+                    output_dir=Path(self.offer_fields["output_dir"].text().strip()),
+                    start_date=_parse_iso_or_us_date(self.offer_fields["start_date"].text().strip()),
+                    start_time_12h=self.offer_fields["start_time"].text().strip(),
+                    end_time_12h=self.offer_fields["end_time"].text().strip(),
+                    hourly_pay=float(self.offer_fields["hourly_pay"].text().strip()),
+                    hours=int(self.offer_fields["hours_week"].text().strip()),
+                    created_on=date.today(),
+                )
         except Exception as exc:
             self.offer_status_label.setText(f"Offer not generated: {exc}")
             return
@@ -1647,12 +1785,12 @@ class PySideInterviewWindow:
                 {
                     "candidate_name": row.candidate,
                     "school": row.school,
-                    "track": row.role,
+                    "track": row.position,
                     "score": row.score,
                     "status": row.status,
-                    "next_action": row.next_action,
+                    "next_action": row.offer_action,
                 }
-                for row in self.model.home.recent_interviews
+                for row in self.model.home.history_rows
             ]
         )
         summary, summary_layout = self._surface()

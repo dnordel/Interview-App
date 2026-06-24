@@ -409,9 +409,12 @@ class InterviewApp(tk.Tk):
         ttk.Button(self.toolbar, text="A+", command=lambda: self.adjust_font_size(1)).pack(side="left", padx=2)
 
         ttk.Separator(self.toolbar, orient="vertical").pack(side="left", fill="y", padx=10)
-        ttk.Label(self.toolbar, text="UI:").pack(side="left")
-        ttk.Button(self.toolbar, text="Tk UI", state="disabled").pack(side="left", padx=2)
-        ttk.Button(self.toolbar, text="PySide UI", command=lambda: self._switch_to_ui_mode("pyside")).pack(side="left", padx=2)
+        ttk.Label(self.toolbar, text="Current UI: Tk").pack(side="left")
+        ttk.Button(
+            self.toolbar,
+            text="Switch to PySide UI",
+            command=lambda: self._switch_to_ui_mode("pyside"),
+        ).pack(side="left", padx=6)
 
         self.main_warning_presenter = create_main_gui_warning_presenter(self, on_dismiss=self._clear_finalize_warning)
 

@@ -12,6 +12,10 @@ UI_MODE_TK = "tk"
 UI_MODE_PYSIDE = "pyside"
 DEFAULT_UI_MODE = UI_MODE_TK
 VALID_UI_MODES = {UI_MODE_TK, UI_MODE_PYSIDE}
+UI_MODE_APP_FILES = {
+    UI_MODE_TK: "interview_app.pyw",
+    UI_MODE_PYSIDE: "pyside_interview_app.py",
+}
 
 
 def normalize_ui_mode(value: Any) -> str:
@@ -61,22 +65,14 @@ def write_preferred_ui_mode(config_path: Path | None, mode: str) -> str:
     return selected
 
 
+def current_python_executable() -> str:
+    return sys.executable or "python"
+
+
 def build_ui_mode_relaunch_command(*, app_root: Path, mode: str, debug: bool = False) -> list[str]:
     selected = normalize_ui_mode(mode)
-    setup_script = Path(app_root) / "setup_and_run.ps1"
-    command = [
-        "powershell",
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        str(setup_script),
-        "-UiMode",
-        selected,
-    ]
-    if debug:
-        command.append("-DebugMode")
-    return command
+    app_path = Path(app_root) / "src" / UI_MODE_APP_FILES[selected]
+    return [current_python_executable(), str(app_path)]
 
 
 def switch_to_ui_mode(

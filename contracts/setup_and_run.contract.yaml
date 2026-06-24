@@ -2,7 +2,7 @@ module:
   name: setup_and_run
   language: powershell
   path: setup_and_run.ps1
-  version: 1.5.0
+  version: 1.5.1
   description: Windows launcher bootstrap that checks prerequisites, installs Python
     3.11 when needed, provisions a per-user virtual environment that can reuse system
     site packages, installs local DeepSeek through Ollama, persists a selected UI
@@ -208,13 +208,15 @@ functions:
     and write launcher log entries
 - name: Find-VBCableDriverEvidence
   description: Detect VB-CABLE installation evidence by checking known driver file
-    locations.
+    locations and Windows sound-device names.
   locked: false
   inputs: {}
   returns:
     type: string[]
   exceptions: []
-  side_effects: reads known driver paths from the local filesystem
+  side_effects: reads known driver paths from the local filesystem, queries local
+    Windows sound-device metadata, and may write launcher log entries when device
+    probing fails
 - name: Set-VBCableCache
   description: Persist the latest VB-CABLE detection result and supporting evidence
     in configuration.

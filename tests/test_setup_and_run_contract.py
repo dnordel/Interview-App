@@ -140,6 +140,20 @@ def test_setup_and_run_does_not_execute_legacy_vbcable_installer_tail() -> None:
     assert "return" in script_text[modern_dialog_index:legacy_tail_index]
 
 
+def test_setup_and_run_detects_working_vbcable_audio_device_before_prompt() -> None:
+    script_text = SETUP_SCRIPT.read_text(encoding="utf-8")
+
+    detection_index = script_text.index("function Find-VBCableDriverEvidence")
+    prompt_index = script_text.index("function Show-VBCablePrompt")
+    detection_body = script_text[detection_index:prompt_index]
+
+    assert "Get-CimInstance Win32_SoundDevice" in detection_body
+    assert '*CABLE Input*' in detection_body
+    assert '*CABLE Output*' in detection_body
+    assert '*VB-Audio*' in detection_body
+    assert "AudioDevice:" in detection_body
+
+
 def test_setup_and_run_describes_first_run_audio_routing_steps() -> None:
     script_text = SETUP_SCRIPT.read_text(encoding="utf-8")
     contract = yaml.safe_load(SETUP_CONTRACT.read_text(encoding="utf-8"))

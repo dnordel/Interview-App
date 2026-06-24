@@ -2,8 +2,9 @@ module:
   name: interview_app
   language: python
   path: src/interview_app.pyw
-  version: 1.2.8
-  description: Main Tkinter interview application entrypoint and runtime orchestration.
+  version: 1.2.9
+  description: Main Tkinter interview application entrypoint and runtime orchestration,
+    including explicit top-level PySide UI switching.
 functions: []
 classes:
 - name: InterviewApp

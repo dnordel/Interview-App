@@ -112,6 +112,73 @@ def test_redesign_model_prioritizes_guided_interview_workflow(tmp_path: Path) ->
     assert "Disqualifier observed" in scored.quick_actions
 
 
+def test_pyside_model_loads_legacy_history_into_history_rows(tmp_path: Path) -> None:
+    canonical_dir = tmp_path / "user_artifacts"
+    canonical_dir.mkdir()
+    legacy_path = tmp_path / "interview_history.json"
+    legacy_path.write_text(
+        json.dumps(
+            [
+                {
+                    "history_id": "legacy-1",
+                    "candidate_name": "Legacy Candidate",
+                    "school": "Palmdale",
+                    "position": "Preschool Teacher",
+                    "offer_status": "not_generated",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=canonical_dir / "interview_history.json",
+        school_options=["Palmdale"],
+    )
+
+    assert [row.candidate for row in model.home.history_rows] == ["Legacy Candidate"]
+    assert model.home.recent_interviews[0].candidate == "Legacy Candidate"
+
+
+def test_pyside_history_rows_expose_school_position_and_offer_action(tmp_path: Path) -> None:
+    history_path = tmp_path / "interview_history.json"
+    history_path.write_text(
+        json.dumps(
+            [
+                {
+                    "history_id": "hist-1",
+                    "candidate_name": "Latoya Nugent",
+                    "school": "Palmdale",
+                    "position": "Preschool Teacher",
+                    "percent_of_max": 88.5,
+                    "outcome": "Hire",
+                    "offer_status": "not_generated",
+                    "interview_notes_path": str(tmp_path / "notes.docx"),
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Palmdale"],
+    )
+
+    row = model.home.history_rows[0]
+
+    assert row.row_key == "hist-1"
+    assert row.school == "Palmdale"
+    assert row.position == "Preschool Teacher"
+    assert row.offer_status == "not_generated"
+    assert row.offer_action == "Generate Offer"
+    assert row.notes_path.endswith("notes.docx")
+
+
 def test_pyside_session_autosaves_and_resumes_guided_interview(tmp_path: Path) -> None:
     model = build_interview_redesign_model(
         rubric_path=_write_test_rubric(tmp_path),
@@ -464,6 +531,100 @@ def test_pyside_window_uses_native_title_minimize_and_maximize_controls() -> Non
     assert flags & FakeWindowType.WindowMaximizeButtonHint
     assert flags & FakeWindowType.WindowCloseButtonHint
     assert not flags & FakeWindowType.FramelessWindowHint
+
+
+def test_pyside_history_generate_offer_button_prefills_offer_wizard(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    history_path = tmp_path / "interview_history.json"
+    history_path.write_text(
+        json.dumps(
+            [
+                {
+                    "history_id": "hist-1",
+                    "candidate_name": "Latoya Nugent",
+                    "school": "Palmdale",
+                    "position": "Preschool Teacher",
+                    "outcome": "Hire",
+                    "offer_status": "not_generated",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+
+    button = next(
+        child
+        for child in window.window.findChildren(qt_widgets.QPushButton)
+        if child.text() == "Generate Offer" and child.property("history_row_key") == "hist-1"
+    )
+    assert button.isEnabled()
+
+    button.click()
+    app.processEvents()
+
+    assert window.stack.currentIndex() == 2
+    assert window.offer_fields["candidate"].text() == "Latoya Nugent"
+    assert window.offer_fields["school"].text() == "Palmdale"
+    assert window.offer_fields["position"].text() == "Preschool Teacher"
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_history_offer_generation_updates_history_status(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    history_path = tmp_path / "interview_history.json"
+    history_path.write_text(
+        json.dumps(
+            [
+                {
+                    "history_id": "hist-1",
+                    "candidate_name": "Latoya Nugent",
+                    "school": "Palmdale",
+                    "position": "Preschool Teacher",
+                    "outcome": "Hire",
+                    "offer_status": "not_generated",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    template_path = tmp_path / "template.docx"
+    doc = Document()
+    doc.add_paragraph("[First Name] [Last Name] | [City] | [Position]")
+    doc.save(template_path)
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    window._open_history_offer(model.home.history_rows[0])
+    window.offer_fields["template_path"].setText(str(template_path))
+    window.offer_fields["output_dir"].setText(str(tmp_path / "offers"))
+    window.offer_fields["start_date"].setText("2026-06-23")
+    window.offer_fields["hourly_pay"].setText("22.50")
+    window.offer_fields["hours_week"].setText("40")
+
+    window._generate_offer_from_fields()
+
+    rows = InterviewHistoryStore(history_path).load()
+    assert rows[0]["offer_status"] == "generated"
+    assert rows[0]["offer_letter_path"].endswith("2026-06-24 - Offer - Latoya_Nugent.docx")
+    assert "Offer generated:" in window.offer_status_label.text()
+    window.window.close()
+    app.processEvents()
 
 
 def test_pyside_live_question_wraps_scores_inside_vertical_scroll_area(tmp_path: Path) -> None:

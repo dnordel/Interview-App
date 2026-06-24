@@ -130,8 +130,8 @@ pip install -r requirements-dev.txt
 - Double-click `Start Preschool Teacher Interview Guide.bat` in the repository root.
 - This starts the setup/launch flow without needing to open PowerShell manually and defaults to the full-feature Tk desktop UI.
 - For debugger logging/console mode, run `.\setup_and_run.ps1 -DebugMode`.
-- Use the top **Tk UI / PySide UI** switch inside the desktop app to relaunch into the other UI.
-- `setup_and_run.ps1` tracks a requirements fingerprint and selected UI mode in the per-user setup config, invalidates stale cached app paths, and rechecks PySide6 when requirements change.
+- Use the top **Current UI / Switch to ... UI** control inside the desktop app to relaunch into the other UI.
+- `setup_and_run.ps1` tracks a requirements fingerprint and selected UI mode in the per-user setup config, invalidates stale cached app paths, and rechecks PySide6 when requirements change. In-app UI switching relaunches the selected desktop UI directly so setup prompts do not repeat.
 
 **Direct Python launch (advanced):**
 

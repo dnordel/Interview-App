@@ -10,7 +10,7 @@ $ErrorActionPreference = "Stop"
 # ===============================================
 # Interview Tool Setup (Per-user, Dropbox-safe)
 # - Cache-discovered app paths (Python) to avoid re-scanning every run
-# - Cache + validate VB-CABLE driver detection; skip prompt entirely if detected
+# - Cache + validate VB-CABLE detection; skip prompt entirely if detected
 # - Per-user Python 3.11.x install (no elevation) if missing
 # - Venv stored in LOCALAPPDATA (avoids Dropbox/OneDrive locks)
 # - Optional VB-CABLE prompt with "Don't ask again" only when NOT detected
@@ -737,6 +737,22 @@ function Find-VBCableDriverEvidence {
 
   foreach ($f in $driverCandidates) {
     if (Test-Path $f) { $evidence.Add("DriverFile:$f") }
+  }
+
+  try {
+    $devices = @(
+      Get-CimInstance Win32_SoundDevice -ErrorAction Stop | Where-Object {
+        $_.Name -like '*CABLE Input*' -or
+        $_.Name -like '*CABLE Output*' -or
+        $_.Name -like '*VB-Audio*'
+      }
+    )
+    foreach ($device in $devices) {
+      $name = [string]$device.Name
+      if ($name.Trim()) { $evidence.Add("AudioDevice:$name") }
+    }
+  } catch {
+    Write-Log "VB-CABLE audio device check failed: $($_.Exception.Message)"
   }
 
   return ,$evidence.ToArray()

@@ -2,13 +2,13 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.4.1
+  version: 1.5.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow that preserves Tk-owned finalize, history, document, and
     DeepSeek runtime contracts.
 functions:
 - name: build_interview_redesign_model
-  description: Build workflow-first home, setup, live interview, review, offer, onboarding, and admin view data from rubric, intro script, question flow, and history JSON.
+  description: Build workflow-first home, setup, live interview, review, offer, onboarding, and admin view data from rubric, intro script, question flow, and merged canonical plus legacy history JSON.
   locked: false
   inputs:
     rubric_path:
@@ -31,7 +31,7 @@ functions:
     type: InterviewRedesignModel
   exceptions:
   - ValueError
-  side_effects: Reads local rubric, question override, and history JSON; may normalize question flow through QuestionOverridesStore.
+  side_effects: Reads local rubric, question override, user_artifacts history JSON, and root-level legacy history JSON when the canonical history path is used; may normalize question flow through QuestionOverridesStore.
 - name: build_pyside_onboarding_board
   description: Build PySide onboarding dashboard counts and employee next-task rows from existing onboarding state.
   locked: false
@@ -315,7 +315,9 @@ classes:
 - name: PySideInterviewWindow
   description: Main PySide6 window with navigation for Interviews, Candidates, Offers,
     Onboarding, Admin Studio, top-level Tk/PySide UI switching, and scrollable
-    live/review interview panes with wrapped long question and score text.
+    live/review interview panes with wrapped long question and score text. The
+    home history grid shows Candidate, School, Position, Score, Status, and Offer
+    actions; Generate Offer opens the PySide offer wizard for the selected history row.
   locked: false
   attributes:
     model:
@@ -334,7 +336,14 @@ classes:
 data_structures:
 - name: InterviewRedesignModel
   type: dataclass
-  description: Headless UI model for navigation, setup readiness, interview flows, and home dashboard data.
+  description: Headless UI model for navigation, setup readiness, interview flows,
+    home dashboard/history data, rubric data, and the history JSON path used for
+    offer-status persistence.
+- name: PySideHistoryRow
+  type: dataclass
+  description: Render-ready finalized interview history row with stable row key,
+    candidate, school, position, score, status, offer status/action, notes path,
+    and report path for the PySide history grid and offer workflow.
 - name: TrackFlow
   type: dataclass
   description: Ordered question flow for one role track.
