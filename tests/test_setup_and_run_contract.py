@@ -65,6 +65,7 @@ def test_setup_and_run_contract_describes_current_python_and_venv_flow() -> None
     descriptions = " ".join(item["description"] for item in contract["functions"])
 
     assert "python-3.11.9-amd64.exe" in script_text
+    assert '$VenvBase = Join-Path (Get-ConfigBaseDir) "py311"' in script_text
     assert 'Run-Proc -File $PyExe -Args @("-m","venv","--system-site-packages",$VenvDir)' in script_text
     assert "Test-VenvUsesSystemSitePackages" in {item["name"] for item in contract["functions"]}
     assert "Existing venv is isolated; recreating to reuse system site packages." in script_text
@@ -74,6 +75,27 @@ def test_setup_and_run_contract_describes_current_python_and_venv_flow() -> None
     assert stale_names.isdisjoint({item["name"] for item in contract["functions"]})
     assert "per-user virtual environment" in contract["module"]["description"]
     assert "system site packages" in descriptions
+
+
+def test_windows_launchers_do_not_use_repo_root_venv() -> None:
+    launcher_paths = [
+        Path("Start Interview Assistant PySide6.bat"),
+        Path("scripts/windows/requirements.bat"),
+    ]
+
+    for launcher_path in launcher_paths:
+        launcher_text = launcher_path.read_text(encoding="utf-8")
+        assert '".venv\\Scripts\\python.exe"' not in launcher_text
+        assert "%APP_DIR%.venv" not in launcher_text
+
+    requirements_text = Path("scripts/windows/requirements.bat").read_text(encoding="utf-8")
+    pyside_launcher_text = Path("Start Interview Assistant PySide6.bat").read_text(
+        encoding="utf-8"
+    )
+
+    assert "%LOCALAPPDATA%\\LPL_InterviewTool\\py311" in requirements_text
+    assert "venv --system-site-packages" in requirements_text
+    assert '-File "%RUNNER%" -UiMode pyside' in pyside_launcher_text
 
 
 def test_setup_and_run_launches_runtime_wrapper_with_venv_python() -> None:

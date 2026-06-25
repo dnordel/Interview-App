@@ -2,11 +2,12 @@ module:
   name: setup_and_run
   language: powershell
   path: setup_and_run.ps1
-  version: 1.5.1
+  version: 1.5.2
   description: Windows launcher bootstrap that checks prerequisites, installs Python
     3.11 when needed, provisions a per-user virtual environment that can reuse system
-    site packages, installs local DeepSeek through Ollama, persists a selected UI
-    mode, and starts the Tk interview app by default through the runtime wrapper.
+    site packages under LOCALAPPDATA instead of the repository folder, installs
+    local DeepSeek through Ollama, persists a selected UI mode, and starts the Tk
+    interview app by default through the runtime wrapper.
 functions:
 - name: Write-Log
   description: Append launcher diagnostics to the setup log file.
@@ -376,9 +377,10 @@ functions:
   - Exception
   side_effects: reads requirements.txt metadata and contents
 - name: Ensure-VenvAndDeps
-  description: Create or repair the per-user virtual environment with system site
-    packages enabled, fingerprint requirements.txt for setup versioning, install
-    requirements, and add optional GPU dependencies when supported.
+  description: Create or repair the per-user virtual environment under LOCALAPPDATA
+    with system site packages enabled, fingerprint requirements.txt for setup
+    versioning, install requirements, and add optional GPU dependencies when
+    supported.
   locked: false
   inputs:
     PyExe:

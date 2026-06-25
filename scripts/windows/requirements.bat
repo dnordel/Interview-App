@@ -98,18 +98,18 @@ echo ============================================================
 echo 2) Creating virtual environment + installing dependencies
 echo ============================================================
 
-REM Install location: repository root
+REM App source stays in repository; venv lives in LOCALAPPDATA to avoid synced-folder locks.
 set "SCRIPT_DIR=%~dp0"
 set "APP_DIR=%SCRIPT_DIR%..\..\"
 cd /d "%APP_DIR%"
 
-set "VENV_DIR=%APP_DIR%.venv"
+set "VENV_DIR=%LOCALAPPDATA%\LPL_InterviewTool\py311\.venv"
 set "PIP_EXE=%VENV_DIR%\Scripts\pip.exe"
 set "VENV_PY=%VENV_DIR%\Scripts\python.exe"
 
 if not exist "%VENV_DIR%\Scripts\python.exe" (
   echo Creating venv at: "%VENV_DIR%"
-  "%PYEXE%" -m venv "%VENV_DIR%"
+  "%PYEXE%" -m venv --system-site-packages "%VENV_DIR%"
   if not "%errorlevel%"=="0" (
     echo.
     echo ERROR: Failed to create virtual environment.
@@ -170,7 +170,9 @@ echo ============================================================
 echo DONE
 echo ============================================================
 echo Next steps:
-echo - Keep this folder intact (it contains .venv and requirements.txt).
+echo - Keep this folder intact (it contains app source and requirements.txt).
+echo - Venv location:
+echo     "%VENV_DIR%"
 echo - Run the app using the venv Python:
 echo     "%VENV_PY%" "src\Initial Teacher Interview Guide.pyw"
 echo.
