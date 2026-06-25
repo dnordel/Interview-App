@@ -183,7 +183,8 @@ def test_score_web_draft_preview_uses_existing_scoring_engine(tmp_path, monkeypa
 
     assert preview["weighted_total"] == 11
     assert preview["configured_max_weighted_total"] == 20
-    assert preview["percent_of_max_label"] == "55.0%"
+    assert preview["max_weighted_total"] == 15
+    assert preview["percent_of_max_label"] == "73.33%"
     assert preview["scored_traits_count"] == 2
     assert preview["rows"][1]["no_example_after_followups"] is True
 

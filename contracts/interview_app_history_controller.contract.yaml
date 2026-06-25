@@ -2,7 +2,7 @@ module:
   name: interview_app_history_controller
   language: python
   path: src/interview_app/history_controller.py
-  version: 1.1.2
+  version: 1.2.0
   description: Deprecated compatibility wrapper for interview history table controller
     implemented by interview_runtime.
 functions: []
@@ -88,6 +88,17 @@ classes:
       type: None
     exceptions: []
     side_effects: none
+  - name: _on_delete_action
+    description: Forwards delete action callback for a selected history row.
+    locked: false
+    inputs:
+      row:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: invokes application service callbacks
   - name: _on_open_transcript_link
     description: Opens transcript path for a selected row when available.
     locked: false

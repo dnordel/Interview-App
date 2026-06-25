@@ -2,7 +2,7 @@ module:
   name: data_store
   language: python
   path: src/data_store.py
-  version: 1.1.0
+  version: 1.2.0
   description: JSON-backed stores and loaders for interview runtime and onboarding
     settings.
 functions: []
@@ -261,6 +261,16 @@ classes:
         required: true
     returns:
       type: bool
+  - name: delete_row
+    description: Delete one finalized interview history row by stable row key/history
+      id.
+    inputs:
+      row_key:
+        type: str
+        required: true
+    returns:
+      type: bool
+    side_effects: Writes interview history JSON when the row is found.
   - name: update_offer_state
     description: Update one history row's offer status and optional offer letter
       path using the row key/history id.

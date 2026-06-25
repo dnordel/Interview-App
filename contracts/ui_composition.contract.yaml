@@ -1596,6 +1596,10 @@ classes:
       on_row_selected:
         type: RowCallback
         required: true
+      on_delete_action:
+        type: RowCallback | None
+        required: false
+        default: None
       on_sort_changed:
         type: SortCallback | None
         required: false

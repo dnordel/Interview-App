@@ -3,9 +3,12 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import subprocess
 import sys
 import time
 import traceback
+import urllib.parse
+import urllib.request
 from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
@@ -28,6 +31,8 @@ _LOCK_FILENAME = "deepseek-finalize.lock"
 _LOCK_STALE_SECONDS = 60 * 60 * 2
 _LOCK_POLL_SECONDS = 1.0
 _REGENERATED_REPORT_SUFFIX = "regenerated"
+_LOCAL_DEEPSEEK_HOSTS = {"127.0.0.1", "localhost", "::1"}
+_OLLAMA_READY_TIMEOUT_SECONDS = 30.0
 
 
 def _utc_timestamp() -> str:
@@ -73,6 +78,70 @@ def _write_progress(job: dict[str, Any], step: str, status: str = "processing") 
         json.dump(payload, handle, indent=2)
         handle.write("\n")
     tmp_path.replace(path)
+
+
+def _local_ollama_api_ready(config: Any) -> bool:
+    parsed = urllib.parse.urlparse(str(getattr(config, "base_url", "") or "http://127.0.0.1:11434/v1"))
+    if parsed.hostname not in _LOCAL_DEEPSEEK_HOSTS:
+        return True
+    scheme = parsed.scheme or "http"
+    netloc = parsed.netloc or "127.0.0.1:11434"
+    try:
+        with urllib.request.urlopen(f"{scheme}://{netloc}/api/tags", timeout=2) as response:
+            return 200 <= int(getattr(response, "status", 200)) < 500
+    except OSError:
+        return False
+
+
+def _resolve_ollama_executable() -> str:
+    found = shutil.which("ollama.exe") or shutil.which("ollama")
+    if found:
+        return found
+    if os.name != "nt":
+        return "ollama"
+    candidates = [
+        Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Ollama" / "ollama.exe",
+        Path(os.environ.get("LOCALAPPDATA", "")) / "Ollama" / "ollama.exe",
+        Path("C:/Program Files/Ollama/ollama.exe"),
+    ]
+    for candidate in candidates:
+        if candidate.is_file():
+            return str(candidate)
+    return "ollama.exe"
+
+
+def _start_local_ollama_service(ollama_exe: str) -> None:
+    kwargs: dict[str, Any] = {
+        "stdin": subprocess.DEVNULL,
+        "stdout": subprocess.DEVNULL,
+        "stderr": subprocess.DEVNULL,
+    }
+    if os.name == "nt":
+        kwargs["creationflags"] = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) | getattr(
+            subprocess,
+            "CREATE_NO_WINDOW",
+            0,
+        )
+    subprocess.Popen([ollama_exe, "serve"], **kwargs)
+
+
+def _ensure_local_deepseek_runtime(job: dict[str, Any], config: Any) -> None:
+    parsed = urllib.parse.urlparse(str(getattr(config, "base_url", "") or ""))
+    if parsed.hostname not in _LOCAL_DEEPSEEK_HOSTS:
+        return
+    _write_progress(job, "Checking local Ollama service")
+    if _local_ollama_api_ready(config):
+        _write_progress(job, "Local Ollama service ready")
+        return
+    _write_progress(job, "Starting local Ollama service")
+    _start_local_ollama_service(_resolve_ollama_executable())
+    deadline = time.monotonic() + _OLLAMA_READY_TIMEOUT_SECONDS
+    while time.monotonic() < deadline:
+        if _local_ollama_api_ready(config):
+            _write_progress(job, "Local Ollama service ready")
+            return
+        time.sleep(0.5)
+    raise RuntimeError("Local Ollama service did not become ready")
 
 
 def _lock_path_for_job(job_path: Path) -> Path:
@@ -258,6 +327,7 @@ def _run_job_unlocked(job: dict[str, Any], job_path: Path) -> None:
     trait_inputs = payload.get("trait_inputs", {}) if isinstance(payload.get("trait_inputs"), dict) else {}
 
     config = build_deepseek_summary_config(job.get("deepseek_settings", {}) if isinstance(job.get("deepseek_settings"), dict) else {})
+    _ensure_local_deepseek_runtime(job, config)
     _write_progress(job, "Starting DeepSeek processing")
     payload.update(
         generate_deepseek_trait_signal_suggestions(

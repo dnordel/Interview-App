@@ -154,6 +154,24 @@ def test_finalize_interview_dispatches_worker_returns_to_start_and_keeps_progres
     assert calls == ["validate", "show", "start:1", "start-screen"]
 
 
+def test_finalize_interview_ignores_second_click_while_worker_running() -> None:
+    calls: list[str] = []
+    app = SimpleNamespace(
+        _finalize_worker_running=True,
+        validate_before_finalize=lambda: calls.append("validate"),
+        _show_finalize_progress=lambda: calls.append("show"),
+        _start_finalize_worker=lambda attempt: calls.append(f"start:{attempt}"),
+        show_start_screen=lambda: calls.append("start-screen"),
+        winfo_toplevel=lambda: SimpleNamespace(lift=lambda: None, focus_force=lambda: None),
+        current_finalize_correlation_id="in-flight",
+    )
+    controller = FinalizePipelineController(app, AppSharedState())
+
+    controller.finalize_interview()
+
+    assert calls == []
+
+
 def test_finalize_interview_restores_main_window_focus_after_dispatch() -> None:
     root = _RootWindow()
     app = SimpleNamespace(

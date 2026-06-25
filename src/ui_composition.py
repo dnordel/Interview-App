@@ -1318,6 +1318,7 @@ class HistoryDataGrid(ttk.Frame):
         "notes_link",
         "school",
         "position",
+        "delete_action",
     )
 
     def __init__(
@@ -1329,6 +1330,7 @@ class HistoryDataGrid(ttk.Frame):
         on_open_transcript_link: RowCallback,
         on_open_notes_link: RowCallback,
         on_row_selected: RowCallback,
+        on_delete_action: RowCallback | None = None,
         on_sort_changed: SortCallback | None = None,
         sort_column: str = "interview_date",
         sort_desc: bool = True,
@@ -1338,6 +1340,7 @@ class HistoryDataGrid(ttk.Frame):
         self._on_retranscribe_action = on_retranscribe_action
         self._on_open_transcript_link = on_open_transcript_link
         self._on_open_notes_link = on_open_notes_link
+        self._on_delete_action = on_delete_action
         self._on_row_selected = on_row_selected
         self._on_sort_changed = on_sort_changed
         self.sort_column = sort_column
@@ -1372,6 +1375,7 @@ class HistoryDataGrid(ttk.Frame):
         tree.heading("notes_link", text="Interview Notes")
         tree.heading("school", text="School", command=lambda: self.toggle_sort("school"))
         tree.heading("position", text="Position", command=lambda: self.toggle_sort("position"))
+        tree.heading("delete_action", text="Delete")
 
     @staticmethod
     def _configure_columns(tree: ttk.Treeview) -> None:
@@ -1383,6 +1387,7 @@ class HistoryDataGrid(ttk.Frame):
         tree.column("notes_link", width=140, anchor="center")
         tree.column("school", width=160, anchor="w")
         tree.column("position", width=190, anchor="w")
+        tree.column("delete_action", width=90, anchor="center")
 
     def set_rows(self, rows: list[HistoryRow]) -> None:
         self._all_rows = [dict(row) for row in rows]
@@ -1482,6 +1487,10 @@ class HistoryDataGrid(ttk.Frame):
         if column_name == "notes_link":
             self._hide_tooltip()
             self._on_open_notes_link(row)
+            return
+        if column_name == "delete_action" and self._on_delete_action is not None:
+            self._hide_tooltip()
+            self._on_delete_action(row)
 
     def _handle_motion(self, event: tk.Event) -> None:
         item_id = self._tree.identify_row(event.y)
@@ -1489,7 +1498,7 @@ class HistoryDataGrid(ttk.Frame):
             self._hide_tooltip()
             return
         column_name = self._column_name(self._tree.identify_column(event.x))
-        if column_name not in {"offer_action", "notes_link"}:
+        if column_name not in {"offer_action", "notes_link", "delete_action"}:
             self._hide_tooltip()
             return
         row = self._row_by_key(str(item_id))
@@ -1534,6 +1543,7 @@ class HistoryDataGrid(ttk.Frame):
             self._notes_link_label(row),
             str(row.get("school", "")),
             self._position_value(row),
+            "Delete",
         )
 
     @staticmethod
@@ -1577,6 +1587,8 @@ class HistoryDataGrid(ttk.Frame):
     def _tooltip_for_cell(self, row: HistoryRow, column_name: str) -> str:
         if column_name == "offer_action":
             return self._offer_tooltip(row)
+        if column_name == "delete_action":
+            return "Delete this history entry after confirmation."
         status = str(row.get("deepseek_processing_status", "")).strip().lower()
         if status == "processing":
             return "DeepSeek is still processing interview notes. You can close the program; processing will continue."

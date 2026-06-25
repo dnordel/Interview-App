@@ -2,8 +2,8 @@ module:
   name: ui_components_history_data_grid
   language: python
   path: src/ui_components/history_data_grid.py
-  version: 1.2.2
-  description: Deprecated compatibility wrapper for history grid implementation owned by ui_composition; school and position columns are displayed after primary offer and notes actions, and retranscription action is no longer shown.
+  version: 1.3.0
+  description: Deprecated compatibility wrapper for history grid implementation owned by ui_composition; school and position columns are displayed after primary offer and notes actions, a confirmed delete action column is shown, and retranscription action is no longer shown.
 functions: []
 classes:
 - name: HistoryDataGrid
@@ -36,6 +36,10 @@ classes:
       on_open_notes_link:
         type: RowCallback
         required: true
+      on_delete_action:
+        type: RowCallback | None
+        required: false
+        default: None
       on_row_selected:
         type: RowCallback
         required: true
@@ -113,7 +117,7 @@ classes:
     exceptions: []
     side_effects: updates tkinter widgets
   - name: _handle_click
-    description: Dispatches row click actions for offer, transcript, and notes columns.
+    description: Dispatches row click actions for offer, notes, and delete columns.
     locked: false
     inputs:
       event:
@@ -124,7 +128,7 @@ classes:
     exceptions: []
     side_effects: invokes action callbacks
   - name: _handle_motion
-    description: Shows or hides hover tooltips for offer, transcript, and notes cells.
+    description: Shows or hides hover tooltips for offer, notes, and delete cells.
     locked: false
     inputs:
       event:

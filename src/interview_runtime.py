@@ -1163,6 +1163,22 @@ def _deepseek_question_keys(item: Mapping[str, Any]) -> list[str]:
     return keys
 
 
+def _deepseek_progress_label(action: str, item: Mapping[str, Any], fallback: str = "") -> str:
+    raw_index = item.get("flow_index") or item.get("trait_id") or fallback
+    question_part = f"Q{raw_index}" if str(raw_index or "").strip() else str(fallback or "").strip()
+    raw_title = str(item.get("title") or item.get("trait_name") or "").strip()
+    if not raw_title:
+        raw_title = str(item.get("question") or "").strip()
+    title = re.sub(r"\s+", " ", raw_title)[:80].strip()
+    if question_part and title:
+        return f"{action} {question_part}: {title}"
+    if question_part:
+        return f"{action} {question_part}"
+    if title:
+        return f"{action}: {title}"
+    return action
+
+
 def _resolve_deepseek_question_prompt(
     prompt_templates: Mapping[str, Any],
     map_key: str,
@@ -1652,8 +1668,9 @@ def generate_deepseek_interview_summaries(
     try:
         for item in items:
             try:
+                step_label = _deepseek_progress_label("Summarizing", item)
                 if progress_callback:
-                    progress_callback(f"Summarizing Q{item['flow_index']}")
+                    progress_callback(step_label)
                 answer_messages = _deepseek_answer_summary_messages([item], candidate, active_config.prompt_templates)
                 answer_result = _normalize_deepseek_completion_until_valid(
                     active_config,
@@ -1661,7 +1678,7 @@ def generate_deepseek_interview_summaries(
                     lambda content: _normalize_deepseek_answer_summary_payload(content, {item["flow_index"]}),
                     chat_completion=chat_completion,
                     progress_callback=progress_callback,
-                    step_label=f"Summarizing Q{item['flow_index']}",
+                    step_label=step_label,
                 )
                 answer_summaries.extend(answer_result)
             except Exception as exc:
@@ -2003,8 +2020,9 @@ def generate_deepseek_trait_signal_suggestions(
     suggestion_warnings: list[str] = []
     for item in items:
         trait_id = str(item.get("trait_id") or "").strip()
+        step_label = _deepseek_progress_label("Analyzing Traits", item, trait_id)
         if progress_callback:
-            progress_callback(f"Analyzing Traits Q{item.get('flow_index') or trait_id}")
+            progress_callback(step_label)
         messages = _deepseek_trait_suggestion_messages([item], active_config.prompt_templates)
         try:
             result = _normalize_deepseek_completion_until_valid(
@@ -2016,7 +2034,7 @@ def generate_deepseek_trait_signal_suggestions(
                 ),
                 chat_completion=chat_completion,
                 progress_callback=progress_callback,
-                step_label=f"Analyzing Traits Q{item.get('flow_index') or trait_id}",
+                step_label=step_label,
             )
             suggestions_by_trait.update(result["model_signal_suggestions_by_trait"])
         except Exception as exc:
@@ -2031,9 +2049,10 @@ def generate_deepseek_trait_signal_suggestions(
     scoring_warnings: list[str] = []
     for item in items:
         trait_id = str(item.get("trait_id") or "").strip()
+        step_label = _deepseek_progress_label("Scoring", item, trait_id)
         try:
             if progress_callback:
-                progress_callback(f"Scoring Q{item.get('flow_index') or trait_id}")
+                progress_callback(step_label)
             score_messages = _deepseek_trait_scoring_messages([item], rubric, active_config.prompt_templates)
             score_result = _normalize_deepseek_completion_until_valid(
                 active_config,
@@ -2041,7 +2060,7 @@ def generate_deepseek_trait_signal_suggestions(
                 lambda content: _normalize_deepseek_trait_score_payload(content, {trait_id}),
                 chat_completion=chat_completion,
                 progress_callback=progress_callback,
-                step_label=f"Scoring Q{item.get('flow_index') or trait_id}",
+                step_label=step_label,
             )
             scores_by_trait.update(score_result["model_trait_scores_by_trait"])
         except Exception as exc:
@@ -2781,6 +2800,7 @@ class HistoryController:
             on_retranscribe_action=self._on_retranscribe_action,
             on_open_transcript_link=self._on_open_transcript_link,
             on_open_notes_link=self._on_open_notes_link,
+            on_delete_action=self._on_delete_action,
             on_row_selected=self._on_row_selected,
             on_sort_changed=self._on_sort_changed,
             sort_column=self.app.history_sort_column,
@@ -2819,6 +2839,9 @@ class HistoryController:
 
     def _on_retranscribe_action(self, row: dict[str, Any]) -> None:
         return
+
+    def _on_delete_action(self, row: dict[str, Any]) -> None:
+        self.app._history_actions_service().handle_delete_for_row(row)
 
     def _on_open_transcript_link(self, row: dict[str, Any]) -> None:
         self._open_history_link(row, "transcript_path")
@@ -2935,6 +2958,19 @@ def _python_executable_for_worker() -> str:
     return "python"
 
 
+def _write_deepseek_launch_progress(progress_path: Path, step: str, status: str = "processing") -> None:
+    atomic_write_json(
+        progress_path,
+        {
+            "status": status,
+            "step": str(step or "").strip(),
+            "updated_at": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+        },
+        indent=2,
+        ensure_ascii=False,
+    )
+
+
 def enqueue_deepseek_finalize_job(app: Any, context: FinalizeContext, out_path: str, history_id: str) -> Path:
     history_path = str(getattr(app.history_store, "path", "")).strip()
     if not history_path:
@@ -2956,6 +2992,7 @@ def enqueue_deepseek_finalize_job(app: Any, context: FinalizeContext, out_path: 
         "progress_path": str(progress_path),
     }
     atomic_write_json(job_path, job_payload, indent=2, ensure_ascii=False)
+    _write_deepseek_launch_progress(progress_path, "Launching local DeepSeek worker")
     _start_deepseek_finalize_worker(job_path)
     return job_path
 
@@ -3124,6 +3161,8 @@ class FinalizePipelineController:
             messagebox_module.showerror("Finalize Error", f"{exc}\n\n{traceback.format_exc()}")
 
     def _dispatch_finalize_work(self) -> None:
+        if bool(getattr(self.app, "_finalize_worker_running", False)):
+            return
         self.app.validate_before_finalize()
         self._warn_if_finalize_starts_with_pending_transcriptions()
         self.app.current_finalize_correlation_id = uuid4().hex

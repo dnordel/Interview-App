@@ -2,7 +2,7 @@ module:
   name: interview_runtime
   language: python
   path: src/interview_runtime.py
-  version: 0.19.0
+  version: 0.20.0
   description: Flattened public interface for interview state, session management,
     audio/transcription runtime, transcript summary seam, controllers, history, and
     finalize pipeline; only active legacy adapters remain in the compatibility module
@@ -309,6 +309,25 @@ functions:
     type: list[str]
   exceptions: []
   side_effects: none
+- name: _deepseek_progress_label
+  description: Build an operator-facing DeepSeek progress label that includes processing
+    action, question number or trait id, and section/question title when present.
+  locked: false
+  inputs:
+    action:
+      type: str
+      required: true
+    item:
+      type: Mapping[str, Any]
+      required: true
+    fallback:
+      type: str
+      required: false
+      default: ""
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
 - name: _resolve_deepseek_question_prompt
   description: Select a per-question DeepSeek user prompt override from the configured
     map, falling back to the global prompt template for that DeepSeek task.
@@ -410,18 +429,21 @@ functions:
   side_effects: May repeat local Ollama requests for the same prompt until a valid
     JSON object matching the expected shape is returned or max_attempts is reached.
 - name: generate_deepseek_interview_summaries
-  description: Generate degraded, failed, or DeepSeek-backed finalize summaries using
-    one configurable prompt per transcripted answer plus a separate configurable
+  description: >-
+    Generate degraded, failed, or DeepSeek-backed finalize summaries using one
+    configurable prompt per transcripted answer plus a separate configurable
     executive summary prompt; per-question answer prompts may override the global
-    answer prompt by question id, trait id, or flow index. Executive-summary prompts
-    include transcript, candidate, answer-summary, and optional scoring context.
-    Prompts are evidence-first, role-aware, reject generic/invented claims, request
-    concise renderable executive-summary sections with stable headings and bounded
-    strengths, risks, and follow-up counts, and retry invalid JSON responses for the
-    same prompt until valid, then validate JSON object responses fail-closed; detached
-    workers require generated summary status before notes export so incomplete prompt
-    output is not written as final notes. Optional progress callbacks receive operator-facing
-    step labels such as Summarizing Q1 and Generating Executive Summary.
+    answer prompt by question id, trait id, or flow index. Executive-summary
+    prompts include transcript, candidate, answer-summary, and optional scoring
+    context. Prompts are evidence-first, role-aware, reject generic/invented
+    claims, request concise renderable executive-summary sections with stable
+    headings and bounded strengths, risks, and follow-up counts, and retry
+    invalid JSON responses for the same prompt until valid, then validate JSON
+    object responses fail-closed; detached workers require generated summary
+    status before notes export so incomplete prompt output is not written as
+    final notes. Optional progress callbacks receive operator-facing step labels
+    such as "Summarizing Q1: Classroom routines" and "Generating Executive
+    Summary".
   locked: false
   inputs:
     flow_transcript:
@@ -455,16 +477,18 @@ functions:
   side_effects: May send transcript text to local Ollama when enabled and no injected
     chat_completion is provided.
 - name: generate_deepseek_trait_signal_suggestions
-  description: Generate degraded, failed, or DeepSeek-backed model trait observation
-    suggestions and advisory 1-5 raw trait scores keyed by trait id without changing
-    human raw scores or compatibility selected_signal_ids; each trait is requested
-    independently with configurable per-trait prompt overrides for signal suggestions
-    and advisory raw scoring. Local Ollama calls have no read timeout and invalid
-    JSON responses are retried for the same prompt until valid; detached workers require
-    generated suggestion and scoring statuses before notes export so incomplete prompt
-    output is not written as final notes. Optional progress callbacks receive operator-facing
-    step labels such as Analyzing Traits Q1 and Scoring Q1. Status values may be
-    generated, partial, failed, disabled, or no_transcript.
+  description: >-
+    Generate degraded, failed, or DeepSeek-backed model trait observation
+    suggestions and advisory 1-5 raw trait scores keyed by trait id without
+    changing human raw scores or compatibility selected_signal_ids; each trait is
+    requested independently with configurable per-trait prompt overrides for
+    signal suggestions and advisory raw scoring. Local Ollama calls have no read
+    timeout and invalid JSON responses are retried for the same prompt until
+    valid; detached workers require generated suggestion and scoring statuses
+    before notes export so incomplete prompt output is not written as final notes.
+    Optional progress callbacks receive operator-facing step labels such as
+    "Analyzing Traits Q1: Empathy" and "Scoring Q1: Empathy". Status values may
+    be generated, partial, failed, disabled, or no_transcript.
   locked: false
   inputs:
     flow_transcript:
@@ -649,6 +673,27 @@ functions:
   side_effects: Applies candidate transcript text to flow payloads, may invoke local
     DeepSeek when requested and enabled, and clears the legacy referral transcript
     path for new finalize output.
+- name: _write_deepseek_launch_progress
+  description: Seed sanitized detached DeepSeek progress JSON before starting the
+    worker process so GUI polling has an immediate operator-facing status.
+  locked: false
+  inputs:
+    progress_path:
+      type: Path
+      required: true
+    step:
+      type: str
+      required: true
+    status:
+      type: str
+      required: false
+      default: processing
+  returns:
+    type: None
+  exceptions:
+  - OSError
+  side_effects: Writes or replaces a local progress JSON file containing only status,
+    step, and timestamp metadata.
 - name: enqueue_deepseek_finalize_job
   description: Persist a detached DeepSeek finalize job and launch the worker process
     so interview notes can be refreshed after the GUI finalize flow returns or exits;
@@ -673,7 +718,7 @@ functions:
     type: Path
   exceptions:
   - OSError
-  side_effects: Writes a local job JSON file and progress path metadata, then starts
+  side_effects: Writes a local job JSON file, seeds sanitized progress JSON, and starts
     a detached Python worker when a persistent history path is available; the worker later creates/removes the
     per-directory DeepSeek finalize lock before local Ollama, DOCX, and history work.
 - name: raise_legacy_finalize_guardrail

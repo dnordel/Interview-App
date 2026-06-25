@@ -63,10 +63,12 @@ def test_handle_click_dispatches_callbacks_by_column() -> None:
     grid._on_retranscribe_action = lambda _row: calls.append("retranscribe")
     grid._on_open_transcript_link = lambda _row: calls.append("transcript")
     grid._on_open_notes_link = lambda _row: calls.append("notes")
+    grid._on_delete_action = lambda _row: calls.append("delete")
 
     for column, expected in [
         ("#5", "offer"),
         ("#6", "notes"),
+        ("#9", "delete"),
     ]:
         calls.clear()
         grid._tree = _FakeTree(column)
@@ -101,8 +103,10 @@ def test_row_values_keep_offer_action_before_optional_metadata() -> None:
         "Unavailable",
         "North Campus",
         "behavior_support_specialist",
+        "Delete",
     )
     assert HistoryDataGrid._column_name("#5") == "offer_action"
     assert HistoryDataGrid._column_name("#6") == "notes_link"
     assert HistoryDataGrid._column_name("#7") == "school"
     assert HistoryDataGrid._column_name("#8") == "position"
+    assert HistoryDataGrid._column_name("#9") == "delete_action"

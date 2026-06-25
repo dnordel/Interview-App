@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.8.0
+  version: 1.9.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, user-closable finalize progress, live
@@ -371,9 +371,9 @@ classes:
     Onboarding, Admin Studio, top-level Tk/PySide UI switching, and scrollable
     live/review interview panes with wrapped long question and score text. The
     home and Candidates history grids share the same Date, Candidate, School, Position, Score, Status,
-    Interview Notes, and Offer actions; supports column sorting, fuzzy search,
+    Interview Notes, Offer, and confirmed Delete actions; supports column sorting, fuzzy search,
     school/outcome filters, hiring-outcome row color, content-sized text columns,
-    compact notes/offer action columns, Processing notes state during detached
+    compact notes/offer/delete action columns, Processing notes state during detached
     DeepSeek work, and live refresh after finalize; Open Notes opens the selected
     interview notes file and Generate Offer opens the PySide offer wizard for the
     selected history row.
@@ -538,6 +538,19 @@ classes:
       type: None
     exceptions: []
     side_effects: May launch the OS default document application or show a warning dialog.
+  - name: _delete_history_row
+    description: Confirm with the operator, delete one selected PySide history row
+      by stable row key, and reload Home/Candidates history tables when deletion succeeds.
+    locked: false
+    inputs:
+      row:
+        type: PySideHistoryRow
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Shows a PySide confirmation dialog, may update persisted history,
+      and refreshes visible history tables.
   - name: _set_history_search_text
     description: Update the in-memory PySide history fuzzy search text and refresh the visible history table.
     locked: false
@@ -610,7 +623,7 @@ classes:
     exceptions: []
     side_effects: none
   - name: _create_history_table
-    description: Create a shared PySide history-grid table with Date, Candidate, School, Position, Score, Status, Notes, and Offer columns.
+    description: Create a shared PySide history-grid table with Date, Candidate, School, Position, Score, Status, Notes, Offer, and Delete columns.
     locked: false
     inputs:
       object_name:
@@ -621,7 +634,7 @@ classes:
     exceptions: []
     side_effects: Creates a PySide table widget.
   - name: _size_history_table_columns
-    description: Size PySide history text columns to visible content while keeping Notes and Offer action columns compact.
+    description: Size PySide history text columns to visible content while keeping Notes, Offer, and Delete action columns compact.
     locked: false
     inputs:
       table:

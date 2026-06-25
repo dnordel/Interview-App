@@ -2,7 +2,7 @@ module:
   name: interview_app_finalize_pipeline
   language: python
   path: src/interview_app/finalize_pipeline.py
-  version: 2.2.0
+  version: 2.3.0
   description: Deprecated compatibility wrapper for finalize orchestration implemented
     by interview_runtime.
 functions:
@@ -36,7 +36,8 @@ classes:
   attributes: {}
   methods:
   - name: finalize_interview
-    description: FinalizePipelineController.finalize_interview method.
+    description: Dispatch finalize once per active in-flight interview finalization;
+      duplicate clicks while the worker is running are ignored.
     locked: false
     inputs: {}
     returns:
@@ -52,7 +53,8 @@ classes:
     exceptions: []
     side_effects: updates in-memory state
   - name: _dispatch_finalize_work
-    description: FinalizePipelineController._dispatch_finalize_work method.
+    description: Validate and start finalize work unless another finalize worker
+      is already running for the interview.
     locked: false
     inputs: {}
     returns:

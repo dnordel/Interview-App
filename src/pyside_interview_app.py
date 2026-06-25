@@ -1440,9 +1440,9 @@ class PySideInterviewWindow:
         return all(_history_token_matches(term, blob_tokens) for term in query.split())
 
     def _create_history_table(self, object_name: str) -> Any:
-        table = self.QtWidgets.QTableWidget(0, 8)
+        table = self.QtWidgets.QTableWidget(0, 9)
         table.setObjectName(object_name)
-        table.setHorizontalHeaderLabels(["Date", "Candidate", "School", "Position", "Score", "Status", "Notes", "Offer"])
+        table.setHorizontalHeaderLabels(["Date", "Candidate", "School", "Position", "Score", "Status", "Notes", "Offer", "Delete"])
         table.horizontalHeader().setStretchLastSection(True)
         table.setSortingEnabled(True)
         self._history_table_widgets[object_name] = table
@@ -1492,6 +1492,12 @@ class PySideInterviewWindow:
         offer_button.setEnabled(bool(row.row_key))
         offer_button.clicked.connect(lambda _checked=False, item=row: self._open_history_offer(item))
         table.setCellWidget(row_index, 7, offer_button)
+        delete_button = self.QtWidgets.QPushButton("Delete")
+        delete_button.setMaximumWidth(80)
+        delete_button.setProperty("history_row_key", row.row_key)
+        delete_button.setEnabled(bool(row.row_key))
+        delete_button.clicked.connect(lambda _checked=False, item=row: self._delete_history_row(item))
+        table.setCellWidget(row_index, 8, delete_button)
 
     def _history_notes_action_state(self, row: PySideHistoryRow) -> tuple[str, bool, str]:
         status = row.deepseek_processing_status.strip().lower()
@@ -1516,11 +1522,13 @@ class PySideInterviewWindow:
             5: 130,
             6: 90,
             7: 110,
+            8: 80,
         }
         for column, minimum in minimums.items():
             table.setColumnWidth(column, max(table.columnWidth(column), table.sizeHintForColumn(column), minimum))
         table.setColumnWidth(6, min(table.columnWidth(6), 105))
         table.setColumnWidth(7, min(table.columnWidth(7), 125))
+        table.setColumnWidth(8, min(table.columnWidth(8), 95))
 
     def _history_outcome_brush(self, outcome: str) -> Any:
         color = _history_outcome_color(outcome)
@@ -2247,6 +2255,23 @@ class PySideInterviewWindow:
                 subprocess.run(["xdg-open", str(path)], check=True)
         except OSError as exc:
             self.QtWidgets.QMessageBox.warning(self.window, "Interview Notes", f"Could not open interview notes: {exc}")
+
+    def _delete_history_row(self, row: PySideHistoryRow) -> None:
+        if not row.row_key:
+            return
+        result = self.QtWidgets.QMessageBox.question(
+            self.window,
+            "Delete History Entry",
+            f"Delete history entry for {row.candidate}?\n\nThis removes the row from interview history.",
+            self.QtWidgets.QMessageBox.StandardButton.Yes | self.QtWidgets.QMessageBox.StandardButton.No,
+            self.QtWidgets.QMessageBox.StandardButton.No,
+        )
+        if result != self.QtWidgets.QMessageBox.StandardButton.Yes:
+            return
+        if not self.history_store.delete_row(row.row_key):
+            self.QtWidgets.QMessageBox.warning(self.window, "Delete History Entry", "History entry was not found.")
+            return
+        self._reload_history_model()
 
     def _offer_page(self) -> Any:
         page, layout = self._page()

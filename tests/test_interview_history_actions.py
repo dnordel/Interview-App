@@ -21,6 +21,7 @@ class _HistoryStoreStub:
         self.row_key = row_key
         self.offer_updates: list[tuple[str, str, str]] = []
         self.row_updates: list[tuple[str, dict[str, object]]] = []
+        self.deleted_keys: list[str] = []
 
     def build_row_key(self, _row):
         return self.row_key
@@ -31,6 +32,10 @@ class _HistoryStoreStub:
 
     def update_row(self, row_key, payload):
         self.row_updates.append((row_key, payload))
+        return True
+
+    def delete_row(self, row_key):
+        self.deleted_keys.append(row_key)
         return True
 
 
@@ -82,6 +87,16 @@ class TestInterviewHistoryActions(unittest.TestCase):
             "Transcription",
             "Retranscription is no longer available from interview history.",
         )
+
+    def test_delete_history_row_confirms_deletes_and_refreshes(self):
+        app = _AppStub()
+        service = HistoryActionsService(app)
+
+        with patch("interview_app.history_actions.messagebox.askyesno", return_value=True):
+            service.handle_delete_for_row({"history_id": "row-1"})
+
+        self.assertEqual(app.history_store.deleted_keys, ["row-1"])
+        self.assertEqual(app.refresh_count, 1)
 
 
 if __name__ == "__main__":

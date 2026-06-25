@@ -241,14 +241,19 @@ def test_pyside_history_grid_shows_date_and_open_notes_action(tmp_path: Path) ->
     )
     window = pyside_interview_app.PySideInterviewWindow(model)
 
-    assert window.history_table.columnCount() == 8
+    assert window.history_table.columnCount() == 9
     assert window.history_table.horizontalHeaderItem(0).text() == "Date"
     assert window.history_table.horizontalHeaderItem(6).text() == "Notes"
+    assert window.history_table.horizontalHeaderItem(8).text() == "Delete"
     assert window.history_table.item(0, 0).text() == "2026-06-23"
     notes_button = window.history_table.cellWidget(0, 6)
     assert notes_button.text() == "Open Notes"
     assert notes_button.property("history_row_key") == "hist-1"
     assert notes_button.isEnabled()
+    delete_button = window.history_table.cellWidget(0, 8)
+    assert delete_button.text() == "Delete"
+    assert delete_button.property("history_row_key") == "hist-1"
+    assert delete_button.isEnabled()
     window.window.close()
     app.processEvents()
 
@@ -1084,14 +1089,50 @@ def test_pyside_candidates_page_uses_history_table_layout_and_actions(tmp_path: 
     )
     window = pyside_interview_app.PySideInterviewWindow(model)
 
-    assert window.candidate_history_table.columnCount() == window.history_table.columnCount() == 8
+    assert window.candidate_history_table.columnCount() == window.history_table.columnCount() == 9
     assert [
         window.candidate_history_table.horizontalHeaderItem(column).text()
         for column in range(window.candidate_history_table.columnCount())
-    ] == ["Date", "Candidate", "School", "Position", "Score", "Status", "Notes", "Offer"]
+    ] == ["Date", "Candidate", "School", "Position", "Score", "Status", "Notes", "Offer", "Delete"]
     assert window.candidate_history_table.item(0, 1).text() == "Latoya Nugent"
     assert window.candidate_history_table.cellWidget(0, 6).text() == "Open Notes"
     assert window.candidate_history_table.cellWidget(0, 7).text() == "Generate Offer"
+    assert window.candidate_history_table.cellWidget(0, 8).text() == "Delete"
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_history_delete_requires_confirmation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    history_path = tmp_path / "interview_history.json"
+    history_path.write_text(
+        json.dumps(
+            [
+                {"history_id": "hist-1", "candidate_name": "Latoya Nugent"},
+                {"history_id": "hist-2", "candidate_name": "Dana Teacher"},
+            ]
+        ),
+        encoding="utf-8",
+    )
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    no = window.QtWidgets.QMessageBox.StandardButton.No
+    yes = window.QtWidgets.QMessageBox.StandardButton.Yes
+
+    monkeypatch.setattr(window.QtWidgets.QMessageBox, "question", lambda *_args, **_kwargs: no)
+    window._delete_history_row(model.home.history_rows[0])
+    assert [row["history_id"] for row in json.loads(history_path.read_text(encoding="utf-8"))] == ["hist-1", "hist-2"]
+
+    monkeypatch.setattr(window.QtWidgets.QMessageBox, "question", lambda *_args, **_kwargs: yes)
+    window._delete_history_row(model.home.history_rows[0])
+    assert [row["history_id"] for row in json.loads(history_path.read_text(encoding="utf-8"))] == ["hist-2"]
     window.window.close()
     app.processEvents()
 
@@ -1251,7 +1292,8 @@ def test_pyside_history_offer_generation_updates_history_status(tmp_path: Path) 
 
     rows = InterviewHistoryStore(history_path).load()
     assert rows[0]["offer_status"] == "generated"
-    assert rows[0]["offer_letter_path"].endswith("2026-06-24 - Offer - Latoya_Nugent.docx")
+    expected_name = f"{date.today().isoformat()} - Offer - Latoya_Nugent.docx"
+    assert rows[0]["offer_letter_path"].endswith(expected_name)
     assert "Offer generated:" in window.offer_status_label.text()
     window.window.close()
     app.processEvents()

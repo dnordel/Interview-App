@@ -375,6 +375,17 @@ class InterviewHistoryStore:
             return True
         return False
 
+    def delete_row(self, row_key: str) -> bool:
+        key = str(row_key).strip()
+        if not key:
+            return False
+        items = self.load()
+        kept = [item for item in items if self.build_row_key(item) != key]
+        if len(kept) == len(items):
+            return False
+        self._save(kept)
+        return True
+
     def update_offer_state(self, row_key: str, offer_status: str, offer_letter_path: str = "") -> bool:
         key = str(row_key).strip()
         if not key:

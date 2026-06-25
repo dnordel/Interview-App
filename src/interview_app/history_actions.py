@@ -49,5 +49,19 @@ class HistoryActionsService:
     def handle_retranscribe_for_row(self, row: dict[str, Any]) -> None:
         messagebox.showinfo("Transcription", "Retranscription is no longer available from interview history.")
 
+    def handle_delete_for_row(self, row: dict[str, Any]) -> None:
+        row_key = self._row_key(row)
+        if not row_key:
+            return
+        candidate = str(row.get("candidate_name") or "this interview").strip() or "this interview"
+        if not messagebox.askyesno(
+            "Delete History Entry",
+            f"Delete history entry for {candidate}?\n\nThis removes the row from interview history.",
+        ):
+            return
+        if not self.app.history_store.delete_row(row_key):
+            return
+        self.app._refresh_history_tree()
+
     def _row_key(self, row: dict[str, Any]) -> HistoryRowKey:
         return str(self.app.history_store.build_row_key(row)).strip()

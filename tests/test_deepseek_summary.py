@@ -418,7 +418,14 @@ def test_generate_deepseek_interview_summaries_reports_step_progress() -> None:
         }
 
     result = generate_deepseek_interview_summaries(
-        [{"flow_index": 1, "question": "How?", "candidate_transcript": "I use routines."}],
+        [
+            {
+                "flow_index": 1,
+                "title": "Classroom routines",
+                "question": "How?",
+                "candidate_transcript": "I use routines.",
+            }
+        ],
         {"name": "Ada"},
         config=config,
         chat_completion=fake_completion,
@@ -426,7 +433,7 @@ def test_generate_deepseek_interview_summaries_reports_step_progress() -> None:
     )
 
     assert result["summary_status"] == "generated"
-    assert steps == ["Summarizing Q1", "Generating Executive Summary"]
+    assert steps == ["Summarizing Q1: Classroom routines", "Generating Executive Summary"]
 
 
 def test_generate_deepseek_interview_summaries_accepts_fenced_json() -> None:
@@ -631,6 +638,53 @@ def test_enqueue_deepseek_finalize_job_writes_job_and_launches_worker(tmp_path, 
     job_payload = job_path.read_text(encoding="utf-8")
     assert '"history_id": "hist-1"' in job_payload
     assert str(job_path) in calls[0]["args"]
+    progress_path = job_path.with_suffix(".progress.json")
+    progress = json.loads(progress_path.read_text(encoding="utf-8"))
+    assert progress["step"] == "Launching local DeepSeek worker"
+    assert progress["status"] == "processing"
+
+
+def test_deepseek_finalize_worker_starts_local_ollama_and_reports_specific_steps(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    progress_path = tmp_path / "deepseek.progress.json"
+    progress_steps: list[str] = []
+    readiness_checks = iter([False, True])
+    popen_calls: list[list[str]] = []
+
+    monkeypatch.setattr(deepseek_finalize_worker, "_local_ollama_api_ready", lambda _config: next(readiness_checks))
+    monkeypatch.setattr(deepseek_finalize_worker, "_resolve_ollama_executable", lambda: "C:\\Ollama\\ollama.exe")
+
+    class _Popen:
+        def __init__(self, args, **_kwargs):
+            popen_calls.append(list(args))
+
+    monkeypatch.setattr(deepseek_finalize_worker.subprocess, "Popen", _Popen)
+
+    original_write_progress = deepseek_finalize_worker._write_progress
+
+    def _capture_progress(job, step, status="processing"):
+        progress_steps.append(step)
+        original_write_progress(job, step, status)
+
+    monkeypatch.setattr(deepseek_finalize_worker, "_write_progress", _capture_progress)
+
+    config = DeepSeekSummaryConfig(
+        enabled=True,
+        api_key="ollama",
+        base_url="http://127.0.0.1:11434/v1",
+        model="deepseek-r1:8b",
+        timeout_seconds=3,
+        prompt_templates={},
+    )
+    deepseek_finalize_worker._ensure_local_deepseek_runtime({"progress_path": str(progress_path)}, config)
+
+    assert progress_steps == [
+        "Checking local Ollama service",
+        "Starting local Ollama service",
+        "Local Ollama service ready",
+    ]
+    assert popen_calls == [["C:\\Ollama\\ollama.exe", "serve"]]
 
 
 def test_deepseek_finalize_worker_updates_history_status(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1257,7 +1311,7 @@ def test_generate_deepseek_trait_signal_suggestions_reports_step_progress(monkey
 
     assert result["model_suggestion_status"] == "generated"
     assert result["model_scoring_status"] == "generated"
-    assert steps == ["Analyzing Traits Q1", "Scoring Q1"]
+    assert steps == ["Analyzing Traits Q1: Empathy", "Scoring Q1: Empathy"]
 
 
 def test_generate_deepseek_trait_signal_suggestions_retries_invalid_json_until_valid(monkeypatch: pytest.MonkeyPatch) -> None:

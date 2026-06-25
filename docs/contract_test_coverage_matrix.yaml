@@ -1,4 +1,4 @@
-last_updated: '2026-06-24'
+last_updated: '2026-06-25'
 sections:
 - name: interview_app
   tests:
@@ -15,7 +15,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-06-25T04:12:45.697019+00:00'
+generated_at_utc: '2026-06-25T19:20:09.834465+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -543,6 +543,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/data_store.contract.yaml
+  symbol: data_store.InterviewHistoryStore.delete_row
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/data_store.contract.yaml
   symbol: data_store.InterviewHistoryStore.load
   kind: method
   tests:
@@ -822,6 +831,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/deepseek_finalize_worker.contract.yaml
+  symbol: deepseek_finalize_worker._ensure_local_deepseek_runtime
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/deepseek_finalize_worker.contract.yaml
   symbol: deepseek_finalize_worker._export_interview_notes
   kind: function
   tests:
@@ -850,6 +868,15 @@ entries:
     - return_type
 - contract: contracts/deepseek_finalize_worker.contract.yaml
   symbol: deepseek_finalize_worker._load_lock_metadata
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/deepseek_finalize_worker.contract.yaml
+  symbol: deepseek_finalize_worker._local_ollama_api_ready
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -903,7 +930,25 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/deepseek_finalize_worker.contract.yaml
+  symbol: deepseek_finalize_worker._resolve_ollama_executable
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/deepseek_finalize_worker.contract.yaml
   symbol: deepseek_finalize_worker._run_job_unlocked
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/deepseek_finalize_worker.contract.yaml
+  symbol: deepseek_finalize_worker._start_local_ollama_service
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -1722,6 +1767,16 @@ entries:
     - return_type
     - security_side_effects
 - contract: contracts/interview_app_history_actions.contract.yaml
+  symbol: interview_app_history_actions.HistoryActionsService.handle_delete_for_row
+  kind: method
+  tests:
+  - path: tests/test_interview_app_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_side_effects
+- contract: contracts/interview_app_history_actions.contract.yaml
   symbol: interview_app_history_actions.HistoryActionsService.handle_offer_action_for_row
   kind: method
   tests:
@@ -1753,6 +1808,16 @@ entries:
     - security_side_effects
 - contract: contracts/interview_app_history_actions.contract.yaml
   symbol: interview_app_history_actions.HistoryActionsService.update_history_offer_status
+  kind: method
+  tests:
+  - path: tests/test_interview_app_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_side_effects
+- contract: contracts/interview_app_history_controller.contract.yaml
+  symbol: interview_app_history_controller.HistoryController._on_delete_action
   kind: method
   tests:
   - path: tests/test_interview_app_contract_interfaces.py
@@ -3704,6 +3769,16 @@ entries:
     - return_type
     - security_leakage_prevention
 - contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime._deepseek_progress_label
+  kind: function
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime._deepseek_question_keys
   kind: function
   tests:
@@ -3765,6 +3840,16 @@ entries:
     - security_leakage_prevention
 - contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime._safe_token
+  kind: function
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime._write_deepseek_launch_progress
   kind: function
   tests:
   - path: tests/test_interview_root_contracts.py
@@ -8664,6 +8749,15 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._create_history_table
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._delete_history_row
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py

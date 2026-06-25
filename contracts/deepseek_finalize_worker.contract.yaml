@@ -2,7 +2,7 @@ module:
   name: deepseek_finalize_worker
   language: python
   path: src/deepseek_finalize_worker.py
-  version: 1.4.0
+  version: 1.5.0
   description: Detached local DeepSeek finalize worker that refreshes interview notes
     documents and history status after the GUI finalize flow returns, keeping DeepSeek
     signal scoring advisory and human raw scores final. Workers serialize processing
@@ -78,6 +78,59 @@ functions:
   - OSError
   side_effects: Writes or replaces a local progress JSON file when progress_path is
     present in the job.
+- name: _local_ollama_api_ready
+  description: Return whether the configured local Ollama HTTP API is responding,
+    treating non-local DeepSeek endpoints as externally managed and ready.
+  locked: false
+  inputs:
+    config:
+      type: Any
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: Sends a bounded local HTTP readiness request to /api/tags for local
+    Ollama endpoints.
+- name: _resolve_ollama_executable
+  description: Resolve the Ollama executable from PATH or common Windows install
+    locations, falling back to the platform command name.
+  locked: false
+  inputs: {}
+  returns:
+    type: str
+  exceptions: []
+  side_effects: Reads PATH and local filesystem metadata.
+- name: _start_local_ollama_service
+  description: Start the local Ollama service process with stdio discarded and no
+    shell interpolation.
+  locked: false
+  inputs:
+    ollama_exe:
+      type: str
+      required: true
+  returns:
+    type: None
+  exceptions:
+  - OSError
+  side_effects: Starts an ollama serve subprocess.
+- name: _ensure_local_deepseek_runtime
+  description: For local Ollama-backed DeepSeek config, report readiness progress,
+    start Ollama when not responding, and fail closed if the API does not become ready.
+  locked: false
+  inputs:
+    job:
+      type: dict[str, Any]
+      required: true
+    config:
+      type: Any
+      required: true
+  returns:
+    type: None
+  exceptions:
+  - RuntimeError
+  - OSError
+  side_effects: Writes sanitized progress JSON, may start a local Ollama subprocess,
+    and polls the local Ollama API.
 - name: _lock_path_for_job
   description: Resolve the DeepSeek finalize lock path beside the persisted job file.
   locked: false
@@ -292,7 +345,7 @@ functions:
   exceptions:
   - OSError
   - RuntimeError
-  side_effects: May call local Ollama, writes DOCX output, and updates interview history
+  side_effects: May start and call local Ollama, writes DOCX output, and updates interview history
     JSON.
 - name: run_job
   description: Load one persisted DeepSeek finalize job, acquire the per-job-directory
@@ -311,8 +364,8 @@ functions:
   exceptions:
   - ValueError
   - OSError
-  side_effects: Reads job JSON, creates/removes the DeepSeek lock, may call local
-    Ollama, writes DOCX output, and updates interview history JSON.
+  side_effects: Reads job JSON, creates/removes the DeepSeek lock, may start and call
+    local Ollama, writes DOCX output, and updates interview history JSON.
 - name: main
   description: CLI entrypoint for running one detached DeepSeek finalize job.
   locked: false

@@ -79,6 +79,17 @@ def test_interview_history_store_update_row_by_stable_key(tmp_path: Path):
     assert store.load()[0]["offer_status"] == "generated"
 
 
+def test_interview_history_store_delete_row_by_stable_key(tmp_path: Path):
+    path = tmp_path / "interview_history.json"
+    store = InterviewHistoryStore(path)
+    store.append({"history_id": "keep", "candidate_name": "A"})
+    store.append({"history_id": "delete", "candidate_name": "B"})
+
+    assert store.delete_row("delete") is True
+    assert store.load() == [{"history_id": "keep", "candidate_name": "A"}]
+    assert store.delete_row("missing") is False
+
+
 def test_interview_history_store_repairs_missing_interview_notes_links(tmp_path: Path):
     history_path = tmp_path / "interview_history.json"
     notes_dir = tmp_path / "interviews" / "Indeed Interview Notes"
