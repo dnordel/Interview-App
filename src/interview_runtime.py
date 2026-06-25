@@ -1018,13 +1018,6 @@ _LOCAL_DEEPSEEK_BASE_URL = "http://127.0.0.1:11434/v1"
 _LOCAL_DEEPSEEK_MODEL = "deepseek-r1:8b"
 _LOCAL_DEEPSEEK_API_KEY = "ollama"
 _LOCAL_DEEPSEEK_HOSTS = {"127.0.0.1", "localhost", "::1"}
-_DEEPSEEK_TEXT_LIMITS = {
-    "summary": 8000,
-    "evidence_quote": 1000,
-    "rubric_alignment": 8000,
-    "risks_or_gaps": 8000,
-    "rationale": 4000,
-}
 DEEPSEEK_PROMPT_TEMPLATE_KEYS = (
     "answer_summary_system",
     "answer_summary_user",
@@ -1062,11 +1055,12 @@ DEFAULT_DEEPSEEK_PROMPT_TEMPLATES: dict[str, str] = {
     ),
     "executive_summary_system": (
         "You are an expert hiring analyst and structured interview evaluator writing the executive summary section. "
-        "Return only one JSON object. Do not use markdown. Do not reveal reasoning. "
+        "Return only one JSON object. Do not reveal reasoning. "
         "Do not invent facts that are not in the transcript, scores, role context, or answer summaries."
     ),
     "executive_summary_user": (
-        "Use this executive summary template and write in a professional hiring tone.\n\n"
+        "Use this executive summary template and write in a professional hiring tone. "
+        "Keep it concise enough for a director to scan in the first page of the interview notes.\n\n"
         "JOB TITLE:\n{track}\n\n"
         "CANDIDATE NAME:\n{candidate_name}\n\n"
         "INTERVIEW TRANSCRIPT:\n{transcript_text}\n\n"
@@ -1076,23 +1070,20 @@ DEFAULT_DEEPSEEK_PROMPT_TEMPLATES: dict[str, str] = {
         "Tailor summary to role. For preschool/lead/infant-toddler roles emphasize child-centeredness, "
         "classroom management, warmth, safety, supervision, parent communication, reliability, "
         "developmentally appropriate practice, routines, mentoring, and compliance as applicable.\n\n"
-        "Executive Summary Requirements:\n"
-        "1. Overall Recommendation: Strongly Recommend, Recommend, Recommend with Reservations, "
+        "Use these exact section headings in executive_summary, each on its own line:\n"
+        "Recommendation: Strongly Recommend, Recommend, Recommend with Reservations, "
         "Do Not Recommend, or Insufficient Information. Base this on transcript and scores.\n"
-        "2. Overall Fit Summary: one concise paragraph.\n"
-        "3. Key Strengths: 3 to 5 evidence-grounded strengths.\n"
-        "4. Key Concerns or Risks: 2 to 4 concerns or verification areas.\n"
-        "5. Role-Specific Analysis: match to specific role demands.\n"
-        "6. Score Pattern Analysis: highest/lowest areas, consistency, score/transcript mismatches.\n"
-        "7. Suggested Follow-Up Questions: 3 to 5 targeted questions.\n"
-        "8. Final Hiring Notes: short practical conclusion.\n\n"
+        "Overall Fit: 3 to 5 sentences.\n"
+        "Key Strengths: exactly 3 bullets, evidence-grounded.\n"
+        "Key Concerns or Risks: exactly 3 bullets, including verification areas when evidence is weak.\n"
+        "Role-Specific Analysis: 2 to 4 sentences matching evidence to role demands.\n"
+        "Score Pattern Analysis: 2 to 4 sentences on highest/lowest areas, consistency, and score/transcript mismatches.\n"
+        "Suggested Follow-Up Questions: exactly 3 numbered questions.\n"
+        "Final Hiring Notes: 1 to 3 practical closing sentences.\n\n"
         "Important Writing Rules: be specific and evidence-based; do not overstate confidence; "
         "do not include long quotes; do not mention AI; do not produce a full question-by-question report.\n\n"
         "Required JSON output schema: "
         '{"executive_summary": string, "interview_highlights": string[]}. '
-        "Put complete markdown-formatted executive summary in executive_summary using these headings: "
-        "Recommendation, Overall Fit, Key Strengths, Key Concerns or Risks, Role-Specific Analysis, "
-        "Score Pattern Analysis, Suggested Follow-Up Questions, Final Hiring Notes. "
         "Use interview_highlights for 0-5 concrete evidence bullets."
     ),
     "trait_suggestion_system": (
@@ -1463,7 +1454,7 @@ def _request_local_ollama_json_completion(config: DeepSeekSummaryConfig, message
         "options": {
             "temperature": 0,
             "num_ctx": 32768,
-            "num_predict": 2048,
+            "num_predict": 4096,
         },
     }
     request = urllib.request.Request(
@@ -1489,6 +1480,39 @@ def _extract_deepseek_content(response: dict[str, Any]) -> str:
     if not isinstance(message, dict):
         return ""
     return str(message.get("content") or "").strip()
+
+
+def _request_deepseek_content(
+    config: DeepSeekSummaryConfig,
+    messages: list[dict[str, str]],
+    chat_completion: Optional[Callable[[DeepSeekSummaryConfig, list[dict[str, str]]], dict[str, Any]]] = None,
+) -> str:
+    completion = chat_completion(config, messages) if chat_completion else _request_deepseek_chat_completion(config, messages)
+    return _extract_deepseek_content(completion)
+
+
+def _normalize_deepseek_completion_until_valid(
+    config: DeepSeekSummaryConfig,
+    messages: list[dict[str, str]],
+    normalizer: Callable[[str], dict[str, Any] | list[dict[str, Any]]],
+    *,
+    chat_completion: Optional[Callable[[DeepSeekSummaryConfig, list[dict[str, str]]], dict[str, Any]]] = None,
+    progress_callback: Optional[Callable[[str], None]] = None,
+    step_label: str = "DeepSeek prompt",
+    max_attempts: int = 3,
+) -> dict[str, Any] | list[dict[str, Any]]:
+    attempts = max(1, int(max_attempts))
+    last_error: Exception | None = None
+    for attempt in range(1, attempts + 1):
+        content = _request_deepseek_content(config, messages, chat_completion)
+        try:
+            return normalizer(content)
+        except (json.JSONDecodeError, ValueError) as exc:
+            last_error = exc
+            logger.warning("DeepSeek response normalization failed; retrying %s: %s", step_label, type(exc).__name__)
+            if progress_callback and attempt < attempts:
+                progress_callback(f"{step_label} returned invalid JSON; retrying")
+    raise ValueError(f"{step_label} returned invalid JSON after {attempts} attempts") from last_error
 
 
 def _strip_deepseek_reasoning_wrappers(content: str) -> str:
@@ -1536,9 +1560,7 @@ def _load_deepseek_json_object(content: str) -> dict[str, Any]:
 
 
 def _clamp_deepseek_text(value: Any, field_name: str) -> str:
-    text = str(value or "").strip()
-    limit = _DEEPSEEK_TEXT_LIMITS.get(field_name, 500)
-    return text[:limit]
+    return str(value or "").strip()
 
 
 def _normalize_deepseek_answer_summary_payload(content: str, valid_flow_indices: set[Any]) -> list[dict[str, Any]]:
@@ -1633,13 +1655,15 @@ def generate_deepseek_interview_summaries(
                 if progress_callback:
                     progress_callback(f"Summarizing Q{item['flow_index']}")
                 answer_messages = _deepseek_answer_summary_messages([item], candidate, active_config.prompt_templates)
-                answer_completion = (
-                    chat_completion(active_config, answer_messages)
-                    if chat_completion
-                    else _request_deepseek_chat_completion(active_config, answer_messages)
+                answer_result = _normalize_deepseek_completion_until_valid(
+                    active_config,
+                    answer_messages,
+                    lambda content: _normalize_deepseek_answer_summary_payload(content, {item["flow_index"]}),
+                    chat_completion=chat_completion,
+                    progress_callback=progress_callback,
+                    step_label=f"Summarizing Q{item['flow_index']}",
                 )
-                answer_content = _extract_deepseek_content(answer_completion)
-                answer_summaries.extend(_normalize_deepseek_answer_summary_payload(answer_content, {item["flow_index"]}))
+                answer_summaries.extend(answer_result)
             except Exception as exc:
                 if not first_error_type:
                     first_error_type = type(exc).__name__
@@ -1650,13 +1674,14 @@ def generate_deepseek_interview_summaries(
         if progress_callback:
             progress_callback("Generating Executive Summary")
         executive_messages = _deepseek_executive_summary_messages(answer_summaries, candidate, scoring, items, active_config.prompt_templates)
-        executive_completion = (
-            chat_completion(active_config, executive_messages)
-            if chat_completion
-            else _request_deepseek_chat_completion(active_config, executive_messages)
+        executive = _normalize_deepseek_completion_until_valid(
+            active_config,
+            executive_messages,
+            _normalize_deepseek_executive_summary_payload,
+            chat_completion=chat_completion,
+            progress_callback=progress_callback,
+            step_label="Generating Executive Summary",
         )
-        executive_content = _extract_deepseek_content(executive_completion)
-        executive = _normalize_deepseek_executive_summary_payload(executive_content)
         has_summary_output = bool(executive["executive_summary"] or executive["interview_highlights"] or answer_summaries)
         return {
             "answer_summaries": answer_summaries,
@@ -1982,9 +2007,17 @@ def generate_deepseek_trait_signal_suggestions(
             progress_callback(f"Analyzing Traits Q{item.get('flow_index') or trait_id}")
         messages = _deepseek_trait_suggestion_messages([item], active_config.prompt_templates)
         try:
-            completion = chat_completion(active_config, messages) if chat_completion else _request_deepseek_chat_completion(active_config, messages)
-            content = _extract_deepseek_content(completion)
-            result = _normalize_deepseek_trait_suggestion_payload(content, {trait_id: valid_ids_by_trait.get(trait_id, [])})
+            result = _normalize_deepseek_completion_until_valid(
+                active_config,
+                messages,
+                lambda content: _normalize_deepseek_trait_suggestion_payload(
+                    content,
+                    {trait_id: valid_ids_by_trait.get(trait_id, [])},
+                ),
+                chat_completion=chat_completion,
+                progress_callback=progress_callback,
+                step_label=f"Analyzing Traits Q{item.get('flow_index') or trait_id}",
+            )
             suggestions_by_trait.update(result["model_signal_suggestions_by_trait"])
         except Exception as exc:
             logger.warning("DeepSeek trait suggestion generation failed: %s", type(exc).__name__)
@@ -2002,13 +2035,14 @@ def generate_deepseek_trait_signal_suggestions(
             if progress_callback:
                 progress_callback(f"Scoring Q{item.get('flow_index') or trait_id}")
             score_messages = _deepseek_trait_scoring_messages([item], rubric, active_config.prompt_templates)
-            score_completion = (
-                chat_completion(active_config, score_messages)
-                if chat_completion
-                else _request_deepseek_chat_completion(active_config, score_messages)
+            score_result = _normalize_deepseek_completion_until_valid(
+                active_config,
+                score_messages,
+                lambda content: _normalize_deepseek_trait_score_payload(content, {trait_id}),
+                chat_completion=chat_completion,
+                progress_callback=progress_callback,
+                step_label=f"Scoring Q{item.get('flow_index') or trait_id}",
             )
-            score_content = _extract_deepseek_content(score_completion)
-            score_result = _normalize_deepseek_trait_score_payload(score_content, {trait_id})
             scores_by_trait.update(score_result["model_trait_scores_by_trait"])
         except Exception as exc:
             logger.warning("DeepSeek trait scoring failed: %s", type(exc).__name__)

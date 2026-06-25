@@ -175,7 +175,7 @@ class TestScoringEngineEvaluate(unittest.TestCase):
         self.assertEqual(scoring["weighted_total"], 156)
         self.assertEqual(scoring["max_weighted_total_included_traits"], 195)
         self.assertEqual(scoring["configured_max_weighted_total"], 200)
-        self.assertEqual(scoring["percent_of_max"], 78.0)
+        self.assertEqual(scoring["percent_of_max"], 80.0)
         self.assertEqual(scoring["outcome"], "Hire")
 
         rows_by_trait = {row["trait_id"]: row for row in scoring["rows"]}
@@ -195,7 +195,7 @@ class TestScoringEngineEvaluate(unittest.TestCase):
 
         self.assertEqual(scoring["weighted_total"], 156)
         self.assertEqual(scoring["max_weighted_total_included_traits"], 195)
-        self.assertEqual(scoring["percent_of_max"], 78.0)
+        self.assertEqual(scoring["percent_of_max"], 80.0)
         self.assertEqual(scoring["outcome"], "Hire")
 
     def test_invalid_track_key_uses_current_fallback_behavior(self):
@@ -255,7 +255,7 @@ class TestScoringEngineEvaluate(unittest.TestCase):
 
         self.assertEqual(pct_rounded, 79.75)
 
-    def test_missing_applicable_trait_score_returns_incomplete(self):
+    def test_unrated_applicable_trait_score_is_treated_as_skipped(self):
         rubric = self._rubric()
         trait_results = {
             "trait_a": {"raw_score": 4},
@@ -265,8 +265,13 @@ class TestScoringEngineEvaluate(unittest.TestCase):
 
         scoring = ScoringEngine.evaluate(rubric, "general", trait_results)
 
-        self.assertEqual(scoring["outcome"], "Incomplete")
-        self.assertEqual(scoring["locked_rule"], "One or more applicable traits are missing final raw scores")
+        rows_by_trait = {row["trait_id"]: row for row in scoring["rows"]}
+        self.assertTrue(rows_by_trait["trait_b"]["skipped"])
+        self.assertEqual(rows_by_trait["trait_b"]["weighted_score"], 0)
+        self.assertEqual(scoring["skipped_traits_count"], 1)
+        self.assertEqual(scoring["max_weighted_total_included_traits"], 195)
+        self.assertEqual(scoring["outcome"], "Hire")
+        self.assertIsNone(scoring["locked_rule"])
 
     def test_deepseek_auto_no_hire_signal_overrides_human_hire_score(self):
         rubric = self._rubric()

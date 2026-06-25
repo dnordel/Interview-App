@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import sys
 import time
 import traceback
@@ -26,6 +27,7 @@ from scoring_reporting import DocxExporter, ScoringEngine
 _LOCK_FILENAME = "deepseek-finalize.lock"
 _LOCK_STALE_SECONDS = 60 * 60 * 2
 _LOCK_POLL_SECONDS = 1.0
+_REGENERATED_REPORT_SUFFIX = "regenerated"
 
 
 def _utc_timestamp() -> str:
@@ -196,6 +198,57 @@ def _deepseek_history_status(payload: dict[str, Any]) -> tuple[str, str]:
     return "failed", "DeepSeek processing failed to generate output."
 
 
+def _require_deepseek_statuses(payload: dict[str, Any], required: tuple[str, ...]) -> None:
+    incomplete = [name for name in required if _deepseek_status_value(payload.get(name)) != "generated"]
+    if incomplete:
+        raise RuntimeError(f"DeepSeek prompts incomplete: {', '.join(incomplete)}")
+
+
+def _timestamp_for_filename() -> str:
+    return _utc_timestamp().replace("-", "").replace(":", "").replace("T", "-").replace("Z", "").split(".")[0]
+
+
+def _regenerated_report_path(report_path: Path) -> Path:
+    base_path = Path(report_path)
+    timestamp = _timestamp_for_filename()
+    candidate = base_path.with_name(f"{base_path.stem} - {_REGENERATED_REPORT_SUFFIX} {timestamp}{base_path.suffix}")
+    counter = 2
+    while candidate.exists():
+        candidate = base_path.with_name(
+            f"{base_path.stem} - {_REGENERATED_REPORT_SUFFIX} {timestamp} ({counter}){base_path.suffix}"
+        )
+        counter += 1
+    return candidate
+
+
+def _export_interview_notes(
+    job: dict[str, Any],
+    job_path: Path,
+    rubric: dict[str, Any],
+    payload: dict[str, Any],
+    scoring: dict[str, Any],
+) -> Path:
+    report_path = Path(str(job.get("report_path", "")).strip())
+    output_dir = report_path.parent if str(report_path) else Path(str(job.get("base_dir", "."))) / "Indeed Interview Notes"
+    try:
+        return DocxExporter(output_dir).export(rubric, payload, scoring)
+    except PermissionError:
+        if not str(report_path):
+            raise
+        fallback_path = _regenerated_report_path(report_path)
+        temp_dir = Path(job_path).resolve().parent / f"{Path(job_path).stem}-report-retry"
+        if temp_dir.exists():
+            shutil.rmtree(temp_dir)
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            temp_report = DocxExporter(temp_dir).export(rubric, payload, scoring)
+            fallback_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(temp_report), str(fallback_path))
+            return fallback_path
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+
 def _run_job_unlocked(job: dict[str, Any], job_path: Path) -> None:
     payload = dict(job.get("payload", {}) or {})
     scoring = dict(job.get("scoring", {}) or {})
@@ -215,6 +268,7 @@ def _run_job_unlocked(job: dict[str, Any], job_path: Path) -> None:
             progress_callback=lambda step: _write_progress(job, step),
         )
     )
+    _require_deepseek_statuses(payload, ("model_suggestion_status", "model_scoring_status"))
     payload["trait_inputs"] = trait_inputs
 
     track = str(candidate.get("track", "") or "")
@@ -230,11 +284,10 @@ def _run_job_unlocked(job: dict[str, Any], job_path: Path) -> None:
             progress_callback=lambda step: _write_progress(job, step),
         )
     )
+    _require_deepseek_statuses(payload, ("summary_status",))
 
-    report_path = Path(str(job.get("report_path", "")).strip())
-    output_dir = report_path.parent if str(report_path) else Path(str(job.get("base_dir", "."))) / "Indeed Interview Notes"
     _write_progress(job, "Updating interview notes document")
-    out_path = DocxExporter(output_dir).export(rubric, payload, scoring)
+    out_path = _export_interview_notes(job, job_path, rubric, payload, scoring)
     processing_status, processing_warning = _deepseek_history_status(payload)
     _update_history(
         job,

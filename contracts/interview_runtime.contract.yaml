@@ -2,7 +2,7 @@ module:
   name: interview_runtime
   language: python
   path: src/interview_runtime.py
-  version: 0.17.1
+  version: 0.19.0
   description: Flattened public interface for interview state, session management,
     audio/transcription runtime, transcript summary seam, controllers, history, and
     finalize pipeline; only active legacy adapters remain in the compatibility module
@@ -332,7 +332,10 @@ functions:
   side_effects: none
 - name: _request_local_ollama_json_completion
   description: Send a local Ollama native /api/generate request with JSON format enabled
-    and adapt the response into the chat-completion shape used by DeepSeek parsing.
+    and adapt the response into the chat-completion shape used by DeepSeek parsing;
+    local Ollama requests use the configured HTTP read timeout and a bounded response
+    token cap so malformed or overlong local generations cannot block detached finalize
+    export indefinitely.
   locked: false
   inputs:
     config:
@@ -347,17 +350,78 @@ functions:
   - OSError
   - json.JSONDecodeError
   side_effects: Sends transcript-bearing prompt text only to a local Ollama host.
+- name: _request_deepseek_content
+  description: Request one DeepSeek completion through an injected callable or the
+    configured local request path and return extracted message content.
+  locked: false
+  inputs:
+    config:
+      type: DeepSeekSummaryConfig
+      required: true
+    messages:
+      type: list[dict[str, str]]
+      required: true
+    chat_completion:
+      type: Optional[Callable[[DeepSeekSummaryConfig, list[dict[str, str]]], dict[str, Any]]]
+      required: false
+      default: null
+  returns:
+    type: str
+  exceptions:
+  - OSError
+  - json.JSONDecodeError
+  side_effects: May send transcript-bearing prompt text to local Ollama.
+- name: _normalize_deepseek_completion_until_valid
+  description: Re-request the same DeepSeek prompt until the provided normalizer accepts
+    a valid JSON response, preserving fail-closed generated-output semantics for every
+    prompt group.
+  locked: false
+  inputs:
+    config:
+      type: DeepSeekSummaryConfig
+      required: true
+    messages:
+      type: list[dict[str, str]]
+      required: true
+    normalizer:
+      type: Callable[[str], dict[str, Any] | list[dict[str, Any]]]
+      required: true
+    chat_completion:
+      type: Optional[Callable[[DeepSeekSummaryConfig, list[dict[str, str]]], dict[str, Any]]]
+      required: false
+      default: null
+    progress_callback:
+      type: Optional[Callable[[str], None]]
+      required: false
+      default: null
+    step_label:
+      type: str
+      required: false
+      default: DeepSeek prompt
+    max_attempts:
+      type: int
+      required: false
+      default: 3
+  returns:
+    type: dict[str, Any] | list[dict[str, Any]]
+  exceptions:
+  - OSError
+  - ValueError
+  side_effects: May repeat local Ollama requests for the same prompt until a valid
+    JSON object matching the expected shape is returned or max_attempts is reached.
 - name: generate_deepseek_interview_summaries
   description: Generate degraded, failed, or DeepSeek-backed finalize summaries using
     one configurable prompt per transcripted answer plus a separate configurable
     executive summary prompt; per-question answer prompts may override the global
     answer prompt by question id, trait id, or flow index. Executive-summary prompts
     include transcript, candidate, answer-summary, and optional scoring context.
-    Prompts are evidence-first, role-aware, reject generic/invented claims, and
-    validate JSON object responses fail-closed while retaining successful answer
-    summaries when another answer or executive summary call fails. Optional progress
-    callbacks receive operator-facing step labels such as Summarizing Q1 and
-    Generating Executive Summary.
+    Prompts are evidence-first, role-aware, reject generic/invented claims, request
+    concise renderable executive-summary sections with stable headings and bounded
+    strengths, risks, and follow-up counts, and retry invalid JSON responses for the
+    same prompt until valid, then validate JSON object responses fail-closed; detached
+    workers require generated summary status before notes export so incomplete prompt
+    output is not written as final notes. Optional progress callbacks receive operator-facing
+    step labels such as Summarizing Q1 and Generating Executive Summary.
   locked: false
   inputs:
     flow_transcript:
@@ -386,8 +450,7 @@ functions:
     type: dict[str, Any]
     description: Contains answer_summaries, executive_summary, interview_highlights,
       summary_status, and summary_warnings; normalization preserves full generated
-      section prose within high safety bounds instead of clipping visible report
-      sections to short snippets.
+      section prose without character clipping.
   exceptions: []
   side_effects: May send transcript text to local Ollama when enabled and no injected
     chat_completion is provided.
@@ -396,10 +459,12 @@ functions:
     suggestions and advisory 1-5 raw trait scores keyed by trait id without changing
     human raw scores or compatibility selected_signal_ids; each trait is requested
     independently with configurable per-trait prompt overrides for signal suggestions
-    and advisory raw scoring so one local Ollama failure cannot suppress remaining
-    trait output. Optional progress callbacks receive operator-facing step labels
-    such as Analyzing Traits Q1 and Scoring Q1. Status values may be generated,
-    partial, failed, disabled, or no_transcript.
+    and advisory raw scoring. Local Ollama calls have no read timeout and invalid
+    JSON responses are retried for the same prompt until valid; detached workers require
+    generated suggestion and scoring statuses before notes export so incomplete prompt
+    output is not written as final notes. Optional progress callbacks receive operator-facing
+    step labels such as Analyzing Traits Q1 and Scoring Q1. Status values may be
+    generated, partial, failed, disabled, or no_transcript.
   locked: false
   inputs:
     flow_transcript:

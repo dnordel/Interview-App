@@ -2,7 +2,7 @@ module:
   name: deepseek_finalize_worker
   language: python
   path: src/deepseek_finalize_worker.py
-  version: 1.3.0
+  version: 1.4.0
   description: Detached local DeepSeek finalize worker that refreshes interview notes
     documents and history status after the GUI finalize flow returns, keeping DeepSeek
     signal scoring advisory and human raw scores final. Workers serialize processing
@@ -209,10 +209,76 @@ functions:
     type: tuple[str, str]
   exceptions: []
   side_effects: none
+- name: _require_deepseek_statuses
+  description: Fail closed when required DeepSeek prompt groups did not all generate,
+    preventing incomplete prompt output from being exported into interview notes.
+  locked: false
+  inputs:
+    payload:
+      type: dict[str, Any]
+      required: true
+    required:
+      type: tuple[str, ...]
+      required: true
+  returns:
+    type: None
+  exceptions:
+  - RuntimeError
+  side_effects: none
+- name: _timestamp_for_filename
+  description: Return a UTC timestamp string safe for regenerated report filenames.
+  locked: false
+  inputs: {}
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _regenerated_report_path
+  description: Resolve a sibling DOCX path with a regenerated timestamp suffix when
+    the original interview notes report cannot be overwritten.
+  locked: false
+  inputs:
+    report_path:
+      type: Path
+      required: true
+  returns:
+    type: Path
+  exceptions: []
+  side_effects: Checks local filesystem path existence to avoid overwriting an existing
+    regenerated report.
+- name: _export_interview_notes
+  description: Export refreshed interview notes, falling back to a sibling regenerated
+    DOCX path when the original report path is locked by another process.
+  locked: false
+  inputs:
+    job:
+      type: dict[str, Any]
+      required: true
+    job_path:
+      type: Path
+      required: true
+    rubric:
+      type: dict[str, Any]
+      required: true
+    payload:
+      type: dict[str, Any]
+      required: true
+    scoring:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: Path
+  exceptions:
+  - PermissionError
+  - OSError
+  side_effects: Writes DOCX output, may create and remove a temporary retry directory,
+    and may move regenerated output to a sibling report path.
 - name: _run_job_unlocked
   description: Execute one already-lock-protected DeepSeek finalize job, generating
     advisory trait suggestions/scoring and recomputed scoring before generating the
-    executive-summary prompt.
+    executive-summary prompt; uses a regenerated sibling report path if the original
+    DOCX is locked. Fails closed before DOCX export when any required DeepSeek prompt
+    group did not generate.
   locked: false
   inputs:
     job:
@@ -225,6 +291,7 @@ functions:
     type: None
   exceptions:
   - OSError
+  - RuntimeError
   side_effects: May call local Ollama, writes DOCX output, and updates interview history
     JSON.
 - name: run_job

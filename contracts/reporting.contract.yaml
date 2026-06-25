@@ -2,7 +2,7 @@ module:
   name: reporting
   language: python
   path: src/reporting.py
-  version: 1.1.2
+  version: 1.2.0
   description: Deprecated compatibility wrapper for scoring, draft persistence, and report document export services implemented by scoring_reporting.
 functions: []
 classes:
@@ -196,7 +196,7 @@ classes:
     exceptions: []
     side_effects: none
   - name: export
-    description: Generate finalized interview report document.
+    description: Generate finalized interview report document through scoring_reporting, preserving the director-ready DOCX layout with bulleted executive strengths/concerns, scorecard before answer summaries, compact question/rating/summary cards, and full transcript/evidence detail in appendices.
     locked: false
     inputs:
       rubric:
