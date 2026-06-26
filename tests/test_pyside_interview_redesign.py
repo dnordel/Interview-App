@@ -296,8 +296,8 @@ def test_pyside_history_grid_shows_processing_until_deepseek_finishes(tmp_path: 
     assert processing_button.text() == "Processing"
     assert not processing_button.isEnabled()
     assert processing_button.toolTip() == "DeepSeek is still processing interview notes."
-    assert failed_button.text() == "Unavailable"
-    assert not failed_button.isEnabled()
+    assert failed_button.text() == "Failed/Retry"
+    assert failed_button.isEnabled()
     assert failed_button.toolTip() == "DeepSeek processing failed."
     window.window.close()
     app.processEvents()
@@ -991,6 +991,93 @@ def test_pyside_finalize_reload_history_after_queueing_deepseek(tmp_path: Path, 
     assert window.candidate_history_table.rowCount() == 1
     assert window.candidate_history_table.item(0, 1).text() == "Latoya Nugent"
     assert window.candidate_history_table.cellWidget(0, 6).text() == "Processing"
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_history_grid_shows_failed_retry_for_failed_deepseek_row(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    notes_path = tmp_path / "notes.docx"
+    notes_path.write_text("docx placeholder", encoding="utf-8")
+    history_path = tmp_path / "interview_history.json"
+    history_path.write_text(
+        json.dumps(
+            [
+                {
+                    "history_id": "hist-1",
+                    "candidate_name": "Latoya Nugent",
+                    "interview_notes_path": str(notes_path),
+                    "deepseek_processing_status": "failed",
+                    "deepseek_processing_warning": "DeepSeek processing failed.",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+
+    button = window.history_table.cellWidget(0, 6)
+
+    assert button.text() == "Failed/Retry"
+    assert button.isEnabled()
+    assert "DeepSeek processing failed." in button.toolTip()
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_failed_retry_button_requeues_deepseek_job(tmp_path: Path, monkeypatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    history_path = tmp_path / "interview_history.json"
+    history_path.write_text(
+        json.dumps(
+            [
+                {
+                    "history_id": "hist-1",
+                    "candidate_name": "Latoya Nugent",
+                    "deepseek_processing_status": "failed",
+                    "deepseek_processing_warning": "DeepSeek processing failed.",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    job_path = tmp_path / "deepseek_jobs" / "deepseek-finalize-hist-1.json"
+    job_path.parent.mkdir()
+    job_path.write_text(json.dumps({"history_id": "hist-1"}), encoding="utf-8")
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    calls: list[Path] = []
+
+    def _fake_retry(job_path: Path) -> Path:
+        calls.append(Path(job_path))
+        InterviewHistoryStore(history_path).update_row(
+            "hist-1",
+            {"deepseek_processing_status": "processing", "deepseek_processing_warning": ""},
+        )
+        return Path(job_path).with_suffix(".progress.json")
+
+    monkeypatch.setattr(pyside_interview_app, "retry_deepseek_finalize_job", _fake_retry)
+
+    window.history_table.cellWidget(0, 6).click()
+    app.processEvents()
+
+    assert calls == [job_path]
+    assert window.history_table.cellWidget(0, 6).text() == "Processing"
     window.window.close()
     app.processEvents()
 

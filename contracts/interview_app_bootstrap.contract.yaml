@@ -2,20 +2,20 @@ module:
   name: interview_app_bootstrap
   language: python
   path: src/interview_app/bootstrap.py
-  version: 1.3.0
+  version: 1.4.0
   description: Contracts for bootstrap module.
 functions:
 - name: build_default_settings
   description: Build default Tk app settings, including local Ollama deepseek-r1:8b summary
     defaults for finalize-time executive summary, interview highlights, and answer
     summaries plus editable DeepSeek prompt templates and per-question prompt override
-    maps persisted through the app settings JSON.
+    maps loaded from config/deepseek_prompts.json.
   locked: false
   inputs: {}
   returns:
     type: dict[str, Any]
   exceptions: []
-  side_effects: none
+  side_effects: Reads config/deepseek_prompts.json when present.
 - name: create_fonts
   description: create_fonts function.
   locked: false

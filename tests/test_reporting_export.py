@@ -46,6 +46,7 @@ class TestDocxExporterValidation(unittest.TestCase):
         return {
             "rows": [
                 {
+                    "trait_id": "trait_1",
                     "trait_name": "Empathy",
                     "priority": "Critical",
                     "weight": 3,
@@ -298,17 +299,19 @@ class TestDocxExporterValidation(unittest.TestCase):
                 [
                     "**Recommendation**: Recommend with reservations.",
                     "**Overall Fit**: Calm and practical, with several classroom examples.",
+                    "**Role-Specific Match**: Matches toddler routines and family communication.",
+                    "**Score Pattern**: High empathy evidence, lower safety specificity.",
                     "**Key Strengths**:",
                     "- Uses visual routines during transitions.",
                     "- Communicates with families early.",
                     "**Key Concerns or Risks**:",
                     "- Needs more safety-specific detail.",
                     "- Limited examples of accountability.",
-                    "**Role-Specific Analysis**: Matches toddler routines and family communication.",
-                    "**Score Pattern Analysis**: High empathy evidence, lower safety specificity.",
                     "**Suggested Follow-Up Questions**:",
                     "1. How would you handle a child resisting diapering?",
                     "2. What would you document after a safety incident?",
+                    "3. How do you incorporate parent feedback into classroom practice?",
+                    "4. How do you manage stress while maintaining student care?",
                     "**Final Hiring Notes**: Verify safety judgment before final offer.",
                 ]
             ),
@@ -322,22 +325,35 @@ class TestDocxExporterValidation(unittest.TestCase):
         full_text = _doc_text(doc)
         paragraphs = [paragraph.text for paragraph in doc.paragraphs]
         recommendation_cells = [
-            table.rows[0].cells[0].text
+            table.rows[0].cells[0]
             for table in doc.tables
-            if table.rows[0].cells[0].text.startswith("Recommendation:")
+            if table.rows[0].cells[0].text == "Recommendation: Recommend with reservations."
         ]
-        executive_table_texts = [
-            table.rows[0].cells[0].text
+        at_a_glance_table = next(table for table in doc.tables if table.rows[0].cells[0].text == "Overall Fit")
+        strengths_table = next(table for table in doc.tables if table.rows[0].cells[0].text == "Key Strengths")
+        final_note_cells = [
+            table.rows[0].cells[0]
             for table in doc.tables
-            if table.rows[0].cells[0].text in {"Overall Fit", "Key Strengths"}
+            if table.rows[0].cells[0].text.startswith("Final Hiring Notes:")
         ]
 
         self.assertIn("Executive Summary", paragraphs)
-        self.assertIn("Recommendation: Recommend with reservations.", recommendation_cells)
-        self.assertIn("Overall Fit", executive_table_texts)
-        self.assertIn("Key Strengths", executive_table_texts)
+        self.assertEqual(recommendation_cells[0].text, "Recommendation: Recommend with reservations.")
+        self.assertTrue(_cell_xml_contains(recommendation_cells[0], 'w:fill="3A3100"'))
+        self.assertTrue(_cell_xml_contains(recommendation_cells[0], 'w:color w:val="FFFFFF"'))
+        self.assertEqual([row.cells[0].text for row in at_a_glance_table.rows], ["Overall Fit", "Role-Specific Match", "Score Pattern"])
+        self.assertTrue(_cell_xml_contains(at_a_glance_table.rows[0].cells[0], 'w:fill="263940"'))
+        self.assertTrue(_cell_xml_contains(at_a_glance_table.rows[0].cells[0], 'w:color w:val="B7D4FF"'))
+        self.assertEqual(strengths_table.rows[0].cells[0].text, "Key Strengths")
+        self.assertEqual(strengths_table.rows[0].cells[1].text, "Key Concerns or Risks")
+        self.assertTrue(_cell_xml_contains(strengths_table.rows[0].cells[0], 'w:fill="203B23"'))
+        self.assertTrue(_cell_xml_contains(strengths_table.rows[0].cells[1], 'w:fill="3A3100"'))
+        self.assertTrue(final_note_cells)
+        self.assertTrue(_cell_xml_contains(final_note_cells[0], 'w:fill="263940"'))
+        self.assertTrue(_cell_xml_contains(final_note_cells[0], 'w:color w:val="FFFFFF"'))
         self.assertIn("Uses visual routines during transitions.", full_text)
         self.assertIn("How would you handle a child resisting diapering?", full_text)
+        self.assertIn("How do you manage stress while maintaining student care?", full_text)
         self.assertNotIn("**Recommendation**", full_text)
         self.assertNotIn("- Uses visual routines", full_text)
         self.assertNotIn("1. How would you handle", full_text)
@@ -364,6 +380,42 @@ class TestDocxExporterValidation(unittest.TestCase):
         self.assertIn("Plain follow-up needed.", full_text)
         self.assertNotIn("**Unexpected Notes**", full_text)
         self.assertNotIn("- Candidate stayed calm.", full_text)
+
+    def test_export_formats_structured_executive_summary_sections(self):
+        payload = {
+            "candidate": {
+                "name": "Ada",
+                "interview_date": "2026-02-20",
+                "track": "general",
+            },
+            "executive_summary_sections": {
+                "recommendation": "Recommend with reservations.",
+                "overall_fit": "Calm and practical.",
+                "role_specific_match": "Matches toddler routines.",
+                "score_pattern": "High empathy, lower specificity.",
+                "key_strengths": ["Uses visual routines.", "Communicates early.", "Stays calm."],
+                "key_concerns_or_risks": ["Needs safety detail.", "Verify reliability.", "Probe coachability."],
+                "suggested_follow_up_questions": ["Q1?", "Q2?", "Q3?", "Q4?"],
+                "final_hiring_notes": "Verify safety judgment.",
+            },
+        }
+
+        with tempfile.TemporaryDirectory() as td:
+            exporter = DocxExporter(Path(td))
+            out_path = exporter.export(self._rubric(), payload, self._scoring())
+            doc = Document(out_path)
+
+        full_text = _doc_text(doc)
+        recommendation_cells = [
+            table.rows[0].cells[0]
+            for table in doc.tables
+            if table.rows[0].cells[0].text == "Recommendation: Recommend with reservations."
+        ]
+        self.assertTrue(recommendation_cells)
+        self.assertTrue(_cell_xml_contains(recommendation_cells[0], 'w:fill="3A3100"'))
+        self.assertIn("Role-Specific Match", full_text)
+        self.assertIn("Q4?", full_text)
+        self.assertIn("Final Hiring Notes: Verify safety judgment.", full_text)
 
     def test_export_uses_interview_notes_template_layout(self):
         payload = {
@@ -399,7 +451,8 @@ class TestDocxExporterValidation(unittest.TestCase):
         ]
         self.assertTrue(recommendation_cells)
         self.assertIn("Interviewer score: 0 / 10", recommendation_cells[0].text)
-        self.assertIn("AI-suggested score: N/A (incomplete)", recommendation_cells[0].text)
+        self.assertIn("AI advisory score: N/A (incomplete)", recommendation_cells[0].text)
+        self.assertIn("AI-generated trait-based score: not generated", recommendation_cells[0].text)
         self.assertTrue(_cell_xml_contains(recommendation_cells[0], 'w:fill="FFF7D6"'))
         self.assertTrue(
             any(
@@ -496,8 +549,9 @@ class TestDocxExporterValidation(unittest.TestCase):
             "flow_transcript": [
                 {
                     "flow_index": 1,
-                    "type": "custom",
-                    "title": "Transitions",
+                    "type": "trait",
+                    "id": "trait_1",
+                    "title": "Empathy",
                     "question": "How do you support transitions?",
                     "candidate_transcript": "I use visual timers.",
                 }
@@ -506,7 +560,7 @@ class TestDocxExporterValidation(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as td:
             exporter = DocxExporter(Path(td))
-            out_path = exporter.export(self._rubric(), payload, self._scoring())
+            out_path = exporter.export(self._rubric(), payload, self._trait_scoring())
             doc = Document(out_path)
 
         full_text = _doc_text(doc)
@@ -526,6 +580,67 @@ class TestDocxExporterValidation(unittest.TestCase):
         self.assertIn("Predictable routine support.", full_text)
         self.assertGreater(full_text.index("uses visual timer"), full_text.index("Interview Transcript Appendix"))
         self.assertGreater(full_text.index("Needs more safety detail."), full_text.index("Interview Transcript Appendix"))
+
+    def test_export_omits_ratings_for_non_scored_answer_summary_and_intro_sections(self):
+        payload = {
+            "candidate": {
+                "name": "Ada",
+                "interview_date": "2026-02-20",
+                "track": "general",
+            },
+            "answer_summaries": [
+                {
+                    "flow_index": 1,
+                    "summary": "Intro summary should not render.",
+                },
+                {
+                    "flow_index": 2,
+                    "summary": "Candidate described family partnership.",
+                    "evidence_quotes": ["weekly check-ins"],
+                    "rubric_alignment": "",
+                    "risks_or_gaps": "",
+                },
+            ],
+            "flow_transcript": [
+                {
+                    "flow_index": 1,
+                    "type": "intro",
+                    "title": "Intro Script",
+                    "question": "Introductory script",
+                    "candidate_transcript": "Intro text should not render.",
+                },
+                {
+                    "flow_index": 2,
+                    "type": "custom",
+                    "title": "Family Partnership",
+                    "question": "How do you partner with families?",
+                    "candidate_transcript": "I use weekly check-ins.",
+                },
+            ],
+        }
+
+        with tempfile.TemporaryDirectory() as td:
+            exporter = DocxExporter(Path(td))
+            out_path = exporter.export(self._rubric(), payload, self._scoring())
+            doc = Document(out_path)
+
+        full_text = _doc_text(doc)
+        summary_cards = [
+            table
+            for table in doc.tables
+            if table.rows[0].cells[0].text.startswith("Question: How do you partner with families?")
+        ]
+
+        self.assertTrue(summary_cards)
+        custom_card_text = "\n".join(cell.text for row in summary_cards[0].rows for cell in row.cells)
+        self.assertNotIn("Interviewer rating", custom_card_text)
+        self.assertNotIn("AI-advisory rating", custom_card_text)
+        self.assertNotIn("AI-trait-based rating", custom_card_text)
+        self.assertIn("Answer summary", custom_card_text)
+        self.assertNotIn("Intro Script", full_text)
+        self.assertNotIn("Introductory script", full_text)
+        self.assertNotIn("Intro text should not render.", full_text)
+        self.assertNotIn("Intro summary should not render.", full_text)
 
     def test_export_collapses_missing_ai_advisory_scoring(self):
         scoring = self._trait_scoring()
@@ -575,11 +690,35 @@ class TestDocxExporterValidation(unittest.TestCase):
             table_text = "\n".join(cell.text for table in doc.tables for row in table.rows for cell in row.cells)
 
         self.assertIn("Interviewer score: 15 / 15", table_text)
-        self.assertIn("AI-suggested score: 9 / 15", table_text)
+        self.assertIn("AI advisory score: 9 / 15 (60.0%).", table_text)
+        self.assertIn("AI-generated trait-based score: 9 / 15 (60.0%).", table_text)
         self.assertIn("AI-suggested Total: 9 / 15", table_text)
         self.assertIn("Weighted Total: 15 / 15", table_text)
         self.assertNotIn("AI-suggested score: N/A (incomplete)", doc_text + table_text)
         self.assertNotIn("DeepSeek", doc_text + table_text)
+
+    def test_recommendation_callout_reports_interviewer_advisory_and_trait_based_scores(self):
+        payload = {
+            "candidate": {
+                "name": "Ada",
+                "interview_date": "2026-02-20",
+                "track": "general",
+            },
+        }
+        scoring = self._trait_scoring()
+        scoring["rows"][0]["deepseek_calculated_score"] = 12
+        scoring["rows"][0]["model_trait_score"]["raw_score"] = 3
+
+        with tempfile.TemporaryDirectory() as td:
+            exporter = DocxExporter(Path(td))
+            out_path = exporter.export(self._rubric(), payload, scoring)
+            doc = Document(out_path)
+            table_text = "\n".join(cell.text for table in doc.tables for row in table.rows for cell in row.cells)
+
+        self.assertIn("Recommendation: Hire.", table_text)
+        self.assertIn("Interviewer score: 15 / 15 (100.0%).", table_text)
+        self.assertIn("AI advisory score: 12 / 15 (80.0%).", table_text)
+        self.assertIn("AI-generated trait-based score: 9 / 15 (60.0%).", table_text)
 
     def test_export_reports_incomplete_deepseek_total_when_any_included_trait_missing_score(self):
         payload = {
@@ -599,7 +738,8 @@ class TestDocxExporterValidation(unittest.TestCase):
             table_text = "\n".join(cell.text for table in doc.tables for row in table.rows for cell in row.cells)
 
         self.assertIn("Interviewer score: 15 / 15", table_text)
-        self.assertIn("AI-suggested score: N/A (incomplete)", table_text)
+        self.assertIn("AI advisory score: N/A (incomplete).", table_text)
+        self.assertIn("AI-generated trait-based score: 9 / 15 (60.0%).", table_text)
         self.assertIn("AI-suggested Total: N/A (incomplete)", table_text)
 
     def test_export_explains_incomplete_human_and_missing_ai_recommendation_status(self):
@@ -650,8 +790,8 @@ class TestDocxExporterValidation(unittest.TestCase):
         self.assertIn("Recommendation: Hire.", table_text)
         self.assertIn("Skipped scored questions: 1", table_text)
         self.assertNotIn("missing final raw score", table_text)
-        self.assertIn("AI-suggested score: not generated (suggestions: processing; scoring: processing).", table_text)
-        self.assertNotIn("AI-suggested score: N/A (incomplete)", table_text)
+        self.assertIn("AI advisory score: not generated (suggestions: processing; scoring: processing).", table_text)
+        self.assertNotIn("AI advisory score: N/A (incomplete)", table_text)
 
     def test_export_treats_legacy_unrated_rows_as_skipped_and_omits_notes(self):
         payload = {

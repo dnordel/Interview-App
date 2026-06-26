@@ -850,6 +850,32 @@ def _parse_executive_summary_sections(summary: str) -> dict[str, list[str]]:
     return {key: values for key, values in sections.items() if values}
 
 
+def _executive_summary_sections_from_structured(value: Any) -> dict[str, list[str]]:
+    if not isinstance(value, dict):
+        return {}
+    mapped = {
+        "recommendation": value.get("recommendation"),
+        "overall_fit": value.get("overall_fit"),
+        "role_specific": value.get("role_specific_match"),
+        "score_pattern": value.get("score_pattern"),
+        "strengths": value.get("key_strengths"),
+        "concerns": value.get("key_concerns_or_risks"),
+        "follow_up": value.get("suggested_follow_up_questions"),
+        "final_notes": value.get("final_hiring_notes"),
+    }
+    sections: dict[str, list[str]] = {}
+    for key, raw_value in mapped.items():
+        if isinstance(raw_value, list):
+            cleaned_items = [_clean_executive_summary_text(item) for item in raw_value]
+            cleaned_items = [item for item in cleaned_items if item]
+        else:
+            cleaned = _clean_executive_summary_text(raw_value)
+            cleaned_items = [cleaned] if cleaned else []
+        if cleaned_items:
+            sections[key] = cleaned_items
+    return sections
+
+
 class DocxExporter:
     """Exports a finalized interview report to a single .docx file (one per candidate)."""
 
@@ -965,6 +991,16 @@ class DocxExporter:
         deepseek_values = [row.get("deepseek_calculated_score") for row in included_rows]
         deepseek_total_complete = bool(included_rows) and all(value is not None for value in deepseek_values)
         deepseek_total = sum(int(value) for value in deepseek_values) if deepseek_total_complete else None
+        trait_based_values: list[int | None] = []
+        for row in included_rows:
+            model_trait_score = row.get("model_trait_score", {}) if isinstance(row.get("model_trait_score"), dict) else {}
+            raw_score = model_trait_score.get("raw_score")
+            if raw_score is None:
+                trait_based_values.append(None)
+                continue
+            trait_based_values.append(int(raw_score) * int(row.get("weight", 0) or 0))
+        trait_based_total_complete = bool(included_rows) and all(value is not None for value in trait_based_values)
+        trait_based_total = sum(int(value) for value in trait_based_values if value is not None) if trait_based_total_complete else None
         model_suggestion_status = str(payload.get("model_suggestion_status") or "").strip()
         model_scoring_status = str(payload.get("model_scoring_status") or "").strip()
         any_ai_score = any(value is not None for value in deepseek_values)
@@ -1177,14 +1213,19 @@ class DocxExporter:
                 unique_parts.append(part)
             return "\n\n".join(unique_parts).strip()
 
-        def add_key_value_table(rows: list[tuple[str, str]], *, label_fill: str = pale_blue) -> Any:
+        def add_key_value_table(
+            rows: list[tuple[str, str]],
+            *,
+            label_fill: str = pale_blue,
+            label_color: str = navy,
+        ) -> Any:
             table = doc.add_table(rows=0, cols=2)
             table.style = "Table Grid"
             for label, value in rows:
                 cells = table.add_row().cells
                 cells[0].text = label
                 cells[1].text = value
-                format_cell(cells[0], bold=True, fill=label_fill, color=navy)
+                format_cell(cells[0], bold=True, fill=label_fill, color=label_color)
                 format_cell(cells[1], fill=white)
             set_table_geometry(table, [2.2, 5.0])
             return table
@@ -1219,6 +1260,7 @@ class DocxExporter:
             *,
             left_fill: str = pale_blue,
             right_fill: str = pale_blue,
+            header_color: str = navy,
         ) -> Any:
             table = doc.add_table(rows=2, cols=2)
             table.style = "Table Grid"
@@ -1228,8 +1270,8 @@ class DocxExporter:
             header[1].text = right_title
             set_cell_paragraph_text(body[0], left_values, bulleted=True)
             set_cell_paragraph_text(body[1], right_values, bulleted=True)
-            format_cell(header[0], bold=True, fill=left_fill, color=navy, align=WD_ALIGN_PARAGRAPH.CENTER)
-            format_cell(header[1], bold=True, fill=right_fill, color=navy, align=WD_ALIGN_PARAGRAPH.CENTER)
+            format_cell(header[0], bold=True, fill=left_fill, color=header_color, align=WD_ALIGN_PARAGRAPH.CENTER)
+            format_cell(header[1], bold=True, fill=right_fill, color=header_color, align=WD_ALIGN_PARAGRAPH.CENTER)
             format_cell(body[0], fill=white)
             format_cell(body[1], fill=white)
             set_table_geometry(table, [3.6, 3.6], prevent_splits=False)
@@ -1243,16 +1285,18 @@ class DocxExporter:
             ]
             rows = [(label, value) for label, value in rows if value.strip()]
             if rows:
-                add_key_value_table(rows, label_fill=pale_blue)
+                add_key_value_table(rows, label_fill="263940", label_color="B7D4FF")
 
-        def render_executive_summary(summary: str) -> None:
-            sections = _parse_executive_summary_sections(summary)
+        def render_executive_summary(summary: str, structured_sections: Any = None) -> None:
+            sections = _executive_summary_sections_from_structured(structured_sections)
+            if not sections:
+                sections = _parse_executive_summary_sections(summary)
             if not sections:
                 return
             add_heading("Executive Summary")
             recommendation = " ".join(sections.get("recommendation", [])).strip()
             if recommendation:
-                add_box(f"Recommendation: {recommendation}", fill=pale_yellow, bold=True)
+                add_box(f"Recommendation: {recommendation}", fill="3A3100", bold=True, color=white)
             add_executive_at_a_glance(sections)
             strengths = sections.get("strengths", [])
             concerns = sections.get("concerns", [])
@@ -1262,8 +1306,9 @@ class DocxExporter:
                     strengths or ["None cited"],
                     "Key Concerns or Risks",
                     concerns or ["None cited"],
-                    left_fill=pale_green,
-                    right_fill=pale_yellow,
+                    left_fill="203B23",
+                    right_fill="3A3100",
+                    header_color="B7D4FF",
                 )
             follow_up = sections.get("follow_up", [])
             if follow_up:
@@ -1272,7 +1317,7 @@ class DocxExporter:
                     add_text(_clean_executive_summary_text(item), style="List Number")
             final_notes = " ".join(sections.get("final_notes", [])).strip()
             if final_notes:
-                add_box(f"Final Hiring Notes: {final_notes}", fill=pale_blue)
+                add_box(f"Final Hiring Notes: {final_notes}", fill="263940", color=white)
             additional_notes = sections.get("additional_notes", [])
             if additional_notes:
                 add_text("Additional Notes", bold=True, color=navy)
@@ -1314,7 +1359,18 @@ class DocxExporter:
             color=teal,
         )
 
-        flow_transcript = payload.get("flow_transcript", []) or []
+        raw_flow_transcript = payload.get("flow_transcript", []) or []
+
+        def is_intro_flow_item(item: dict[str, Any]) -> bool:
+            item_type = str(item.get("type") or "").strip().lower()
+            item_id = str(item.get("id") or item.get("trait_id") or "").strip().lower()
+            return item_type in {"intro", "intro_script", "introduction"} or item_id in {"intro", "intro_script"}
+
+        flow_transcript = [
+            item
+            for item in raw_flow_transcript
+            if isinstance(item, dict) and not is_intro_flow_item(item)
+        ]
         answer_summaries = [
             item
             for item in payload.get("answer_summaries", []) or []
@@ -1334,6 +1390,15 @@ class DocxExporter:
         def flow_question_for_index(flow_index: Any) -> str:
             item = flow_by_index.get(flow_index, {}) or {}
             return str(item.get("question") or item.get("title") or "").strip()
+
+        def is_scored_answer_summary(item: dict[str, Any]) -> bool:
+            flow_item = flow_by_index.get(item.get("flow_index"), {}) or {}
+            if not isinstance(flow_item, dict):
+                return False
+            item_type = str(flow_item.get("type") or "").strip().lower()
+            if item_type and item_type != "trait":
+                return False
+            return scoring_row_for_flow_item(flow_item) is not None
 
         def row_has_risk(row: dict[str, Any]) -> bool:
             return bool(
@@ -1418,7 +1483,8 @@ class DocxExporter:
         ]
         missing_score_traits = [name for name in missing_score_traits if name]
         if deepseek_total is not None:
-            deepseek_total_text = f"{deepseek_total} / {scoring['max_weighted_total']}"
+            _ai_pct_raw, ai_percent = ScoringEngine._calculate_percent(deepseek_total, int(scoring["max_weighted_total"]))
+            deepseek_total_text = f"{deepseek_total} / {scoring['max_weighted_total']} ({ai_percent}%)"
         elif not any_ai_score and (model_suggestion_status or model_scoring_status):
             deepseek_total_text = (
                 "not generated "
@@ -1426,6 +1492,19 @@ class DocxExporter:
             )
         else:
             deepseek_total_text = "N/A (incomplete)"
+        if trait_based_total is not None:
+            _trait_pct_raw, trait_percent = ScoringEngine._calculate_percent(
+                trait_based_total,
+                int(scoring["max_weighted_total"]),
+            )
+            trait_based_total_text = f"{trait_based_total} / {scoring['max_weighted_total']} ({trait_percent}%)"
+        elif not any(str((row.get("model_trait_score") or {}).get("raw_score") or "").strip() for row in included_rows):
+            trait_based_total_text = (
+                "not generated "
+                f"(suggestions: {model_suggestion_status or 'not available'}; scoring: {model_scoring_status or 'not available'})"
+            )
+        else:
+            trait_based_total_text = "N/A (incomplete)"
         recommendation_text = str(scoring["outcome"])
         if str(scoring.get("outcome") or "").strip().lower() == "incomplete" and missing_score_traits:
             recommendation_text = f"{recommendation_text} (missing final raw score: {', '.join(missing_score_traits)})"
@@ -1437,15 +1516,17 @@ class DocxExporter:
             f"Threshold status: {threshold_status_text()} "
             f"Override/disqualifier status: "
             f"{'Active' if scoring['critical_eq_1'] or scoring['disqualifier_present'] or scoring['locked_rule'] else 'None active'}. "
-            f"{ai_suggested_label} score: {deepseek_total_text}. "
+            f"AI advisory score: {deepseek_total_text}. "
+            f"{ai_generated_label} trait-based score: {trait_based_total_text}. "
             f"Candidate: {cname}.",
             fill=pale_green if scoring["outcome"] == "Hire" else pale_yellow,
             bold=True,
         )
 
         executive_summary = str(payload.get("executive_summary") or "").strip()
-        if executive_summary:
-            render_executive_summary(executive_summary)
+        executive_summary_sections = payload.get("executive_summary_sections")
+        if executive_summary or isinstance(executive_summary_sections, dict):
+            render_executive_summary(executive_summary, executive_summary_sections)
         interview_highlights = [
             str(item or "").strip()
             for item in payload.get("interview_highlights", []) or []
@@ -1521,21 +1602,28 @@ class DocxExporter:
         else:
             for item in sorted(answer_summaries, key=lambda value: value.get("flow_index", 0) or 0):
                 flow_index = item.get("flow_index")
+                if flow_index not in flow_by_index:
+                    continue
                 question = flow_question_for_index(flow_index) or f"Question {flow_index or ''}".strip()
                 row = scoring_row_for_answer_summary(item)
                 model_trait_score = row.get("model_trait_score", {}) if row else {}
-                summary_card = doc.add_table(rows=6, cols=2)
+                rows = [
+                    ("Question text", question),
+                ]
+                if is_scored_answer_summary(item):
+                    rows.extend(
+                        [
+                            ("Interviewer rating", raw_rating_text(row.get("raw_score") if row else None)),
+                            ("AI-advisory rating", raw_rating_text(row.get("suggested_raw_score") if row else None)),
+                            ("AI-trait-based rating", raw_rating_text(model_trait_score.get("raw_score") if model_trait_score else None)),
+                        ]
+                    )
+                rows.append(("Answer summary", str(item.get("summary") or "").strip()))
+                summary_card = doc.add_table(rows=len(rows) + 1, cols=2)
                 summary_card.style = "Table Grid"
                 title_cell = summary_card.rows[0].cells[0].merge(summary_card.rows[0].cells[1])
                 title_cell.text = f"Question: {question}"
                 format_cell(title_cell, bold=True, fill=pale_blue, color=navy)
-                rows = [
-                    ("Question text", question),
-                    ("Interviewer rating", raw_rating_text(row.get("raw_score") if row else None)),
-                    ("AI-advisory rating", raw_rating_text(row.get("suggested_raw_score") if row else None)),
-                    ("AI-trait-based rating", raw_rating_text(model_trait_score.get("raw_score") if model_trait_score else None)),
-                    ("Answer summary", str(item.get("summary") or "").strip()),
-                ]
                 for row_index, (label, value) in enumerate(rows, start=1):
                     cells = summary_card.rows[row_index].cells
                     cells[0].text = label

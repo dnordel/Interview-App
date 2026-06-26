@@ -2,7 +2,7 @@ module:
   name: scoring_reporting
   language: python
   path: src/scoring_reporting.py
-  version: 0.18.0
+  version: 0.18.3
   description: Flattened public interface for scoring, reporting, trait signals, exports,
     referrals, email safety, offers, and templates, including DeepSeek-only advisory
     signal scoring; only active legacy adapters remain in the compatibility module
@@ -1607,11 +1607,16 @@ classes:
       Generate a director-ready finalized interview decision brief DOCX using the
       interview-notes template layout: narrow margins, readable Arial typography at
       no less than 12 pt for body content, centered title/subtitle, professional
-      blue/green heading and table styling, shaded recommendation/score/override
-      callouts, a structured generated executive-summary decision brief that strips
-      markdown markers and renders recommendation, at-a-glance fit/role/score fields,
-      bulleted side-by-side strengths and concerns, follow-up questions, final notes,
-      and fallback additional notes; AI-generated evidence-summary sections; scorecard
+      blue/green heading and table styling, shaded recommendation callout before
+      the executive summary with interviewer, AI advisory, and AI-generated
+      trait-based scores as weighted fractions and percentages plus threshold and
+      override/disqualifier status, a structured generated executive-summary
+      decision brief that accepts
+      DeepSeek executive_summary_sections JSON or legacy markdown-like summary text,
+      strips markdown markers, and renders a color-coded recommendation box, boxed
+      at-a-glance fit/role/score rows, side-by-side strengths and concerns boxes,
+      follow-up questions, final-notes box, and fallback additional notes;
+      AI-generated evidence-summary sections; scorecard
       snapshot immediately after the executive summary; consolidated answer summaries
       near the top as stacked readable cards ordered by question text, interviewer
       rating, AI-advisory rating, AI-trait-based rating, and answer summary; candidate
@@ -1622,9 +1627,11 @@ classes:
       detail in the transcript appendix, compacts duplicate transcription-attempt
       blocks, marks missing per-question transcripts inline without creating empty
       answer boxes, allows long transcript boxes to split across pages to reduce blank
-      space, and preserves final interviewer raw/weighted scores, AI advisory net
-      signal score, suggested raw score, suggested weighted score, model observations,
-      auto-no-hire metadata, and compatibility selected signal ids when present.
+      space, excludes intro/script flow items from rendered notes sections, omits
+      score/rating rows from non-scored custom answer-summary cards, and preserves
+      final interviewer raw/weighted scores, AI advisory net signal score, suggested
+      raw score, suggested weighted score, model observations, auto-no-hire metadata,
+      and compatibility selected signal ids when present.
     locked: false
     inputs:
       rubric:

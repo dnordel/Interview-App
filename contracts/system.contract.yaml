@@ -2,6 +2,7 @@ modules:
   interview_runtime:
     path: src/interview_runtime.py
     depends_on:
+    - deepseek_prompts_json
     - platform_services
     - scoring_reporting
     - transformers
@@ -82,6 +83,9 @@ modules:
     depends_on: []
   question_overrides_json:
     path: config/question_overrides.json
+    depends_on: []
+  deepseek_prompts_json:
+    path: config/deepseek_prompts.json
     depends_on: []
   interview_history_json:
     path: user_artifacts/interview_history.json

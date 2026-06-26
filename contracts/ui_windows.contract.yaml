@@ -2,7 +2,7 @@ module:
   name: ui_windows
   language: python
   path: src/ui_windows.py
-  version: 1.2.0
+  version: 1.3.0
   description: Tkinter settings and question editor windows for interview workflows.
 functions: []
 classes:
@@ -84,9 +84,9 @@ classes:
     returns:
       type: None
   - name: _build_deepseek_tab
-    side_effects: Creates global DeepSeek prompt text editors and per-question prompt
-      override JSON editors for answer summaries, trait signal suggestions, and trait
-      raw scoring.
+    side_effects: Creates global DeepSeek prompt text editors and human-readable
+      per-question Question/Prompt editors for answer summaries, AI advisory trait
+      evaluation, and AI trait raw scoring.
     inputs:
       parent:
         type: ttk.Frame
@@ -312,5 +312,6 @@ data_structures: []
 dependencies:
 - module: platform_services
 - module: scoring_reporting
+- module: interview_runtime
 - module: ui_composition
 - module: tk_theme

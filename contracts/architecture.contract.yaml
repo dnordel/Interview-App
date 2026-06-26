@@ -120,7 +120,9 @@ datastores:
     type: file_system_json
     description: Canonical mutable app JSON lives under user_artifacts; interview
       history also reads root-level interview_history.json as read-only legacy data
-      so past interviews from older app versions remain visible.
+      so past interviews from older app versions remain visible. DeepSeek prompt
+      templates live in config/deepseek_prompts.json for source-controlled prompt
+      editing and per-question override maps.
     used_by:
     - data_store
     - onboarding_operations

@@ -2,7 +2,7 @@ module:
   name: interview_runtime
   language: python
   path: src/interview_runtime.py
-  version: 0.20.0
+  version: 0.22.0
   description: Flattened public interface for interview state, session management,
     audio/transcription runtime, transcript summary seam, controllers, history, and
     finalize pipeline; only active legacy adapters remain in the compatibility module
@@ -258,7 +258,8 @@ functions:
 - name: build_deepseek_summary_config
   description: Build local DeepSeek interview summary config from environment values,
     defaulting to Ollama at 127.0.0.1 and the configured local 8b DeepSeek model while
-    rejecting non-local base URLs.
+    rejecting non-local base URLs and loading prompt templates from config/deepseek_prompts.json
+    when no explicit prompt map is supplied.
   locked: false
   inputs:
     env:
@@ -268,11 +269,43 @@ functions:
   returns:
     type: DeepSeekSummaryConfig
   exceptions: []
-  side_effects: Reads process environment when env is null.
+  side_effects: Reads process environment when env is null and may read config/deepseek_prompts.json.
+- name: load_deepseek_prompt_templates
+  description: Load and normalize DeepSeek prompt templates from config/deepseek_prompts.json,
+    falling back to built-in defaults when the file is missing or invalid.
+  locked: false
+  inputs:
+    path:
+      type: Path | None
+      required: false
+      default: null
+  returns:
+    type: dict[str, Any]
+  exceptions: []
+  side_effects: Reads a local prompt config JSON file when present.
+- name: save_deepseek_prompt_templates
+  description: Normalize and atomically persist global and per-question DeepSeek prompt
+    templates to config/deepseek_prompts.json or a supplied path.
+  locked: false
+  inputs:
+    templates:
+      type: Mapping[str, Any]
+      required: true
+    path:
+      type: Path | None
+      required: false
+      default: null
+  returns:
+    type: dict[str, Any]
+  exceptions:
+  - OSError
+  side_effects: Writes a local prompt config JSON file.
 - name: normalize_deepseek_prompt_templates
   description: Merge global and per-question DeepSeek prompt template settings with
     defaults, accepting string global prompts and JSON-object per-question override
-    maps while dropping blank keys or blank override prompts.
+    maps while dropping blank keys or blank override prompts. Default user prompts
+    include explicit JSON output templates for answer summaries, executive summary
+    sections, trait suggestions, and trait scoring.
   locked: false
   inputs:
     value:
@@ -281,6 +314,32 @@ functions:
   returns:
     type: dict[str, Any]
   exceptions: []
+  side_effects: none
+- name: format_deepseek_question_prompt_overrides
+  description: Convert per-question DeepSeek prompt override maps into human-readable
+    Question/Prompt blocks for Settings UI editing instead of raw JSON.
+  locked: false
+  inputs:
+    value:
+      type: Any
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: parse_deepseek_question_prompt_overrides
+  description: Parse human-readable Question/Prompt blocks or legacy JSON maps into
+    normalized per-question DeepSeek prompt override dictionaries.
+  locked: false
+  inputs:
+    value:
+      type: Any
+      required: true
+  returns:
+    type: dict[str, str]
+  exceptions:
+  - ValueError
+  - json.JSONDecodeError
   side_effects: none
 - name: _render_deepseek_prompt_template
   description: Render a DeepSeek prompt template by replacing supported named tokens
@@ -436,8 +495,11 @@ functions:
     answer prompt by question id, trait id, or flow index. Executive-summary
     prompts include transcript, candidate, answer-summary, and optional scoring
     context. Prompts are evidence-first, role-aware, reject generic/invented
-    claims, request concise renderable executive-summary sections with stable
-    headings and bounded strengths, risks, and follow-up counts, and retry
+    claims, request an explicit executive_summary_sections JSON object matching
+    the director-scan template order of recommendation, overall fit,
+    role-specific match, score pattern, paired strengths/concerns, four follow-up
+    questions, and final hiring notes, synthesize compatible executive_summary
+    text when structured sections are returned without summary text, and retry
     invalid JSON responses for the same prompt until valid, then validate JSON
     object responses fail-closed; detached workers require generated summary
     status before notes export so incomplete prompt output is not written as
@@ -470,9 +532,10 @@ functions:
       default: null
   returns:
     type: dict[str, Any]
-    description: Contains answer_summaries, executive_summary, interview_highlights,
-      summary_status, and summary_warnings; normalization preserves full generated
-      section prose without character clipping.
+    description: Contains answer_summaries, executive_summary,
+      executive_summary_sections, interview_highlights, summary_status, and
+      summary_warnings; normalization preserves full generated section prose
+      without character clipping.
   exceptions: []
   side_effects: May send transcript text to local Ollama when enabled and no injected
     chat_completion is provided.
@@ -721,6 +784,26 @@ functions:
   side_effects: Writes a local job JSON file, seeds sanitized progress JSON, and starts
     a detached Python worker when a persistent history path is available; the worker later creates/removes the
     per-directory DeepSeek finalize lock before local Ollama, DOCX, and history work.
+- name: retry_deepseek_finalize_job
+  description: Relaunch an existing persisted DeepSeek finalize job from its saved
+    job JSON, mark the matching history row back to processing, seed retry progress,
+    recover a failed same-job DeepSeek queue lock when progress metadata proves the
+    prior attempt failed, and return the progress JSON path used by GUI polling.
+    Worker resume behavior is driven by checkpointed payload and scoring already
+    persisted in the job file.
+  locked: false
+  inputs:
+    job_path:
+      type: Path
+      required: true
+  returns:
+    type: Path
+  exceptions:
+  - ValueError
+  - OSError
+  side_effects: Reads a local job JSON/progress/lock file, may remove a failed same-job
+    lock, updates interview history JSON when identifiers are present, writes sanitized
+    retry progress JSON, and starts a detached Python worker without shell interpolation.
 - name: raise_legacy_finalize_guardrail
   description: Fail closed when the disabled legacy finalize path is invoked.
   locked: false
@@ -2015,6 +2098,7 @@ data_structures:
   description: Human-readable wrapper policy for remaining interview runtime compatibility
     modules.
 dependencies:
+- module: data_store
 - module: platform_services
 - module: ui_composition
 - module: scoring_reporting

@@ -122,6 +122,11 @@ def test_normalize_deepseek_question_prompt_json_accepts_mapping_or_json() -> No
     assert SettingsWindow._normalize_deepseek_question_prompt_json('{"2": "Prompt {payload_json}"}') == {
         "2": "Prompt {payload_json}"
     }
+    assert SettingsWindow._normalize_deepseek_question_prompt_json(
+        "Question: custom_why_lpl\nPrompt:\nPrompt {payload_json}"
+    ) == {
+        "custom_why_lpl": "Prompt {payload_json}"
+    }
 
 
 def test_apply_validation_messages_sets_tab_summary_and_field_guidance() -> None:

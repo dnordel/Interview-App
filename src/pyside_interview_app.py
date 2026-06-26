@@ -26,6 +26,7 @@ from interview_runtime import (
     load_candidate_segments,
     map_segments_to_flow_indices,
     resolve_default_windows_system_device,
+    retry_deepseek_finalize_job,
 )
 from onboarding_operations import JsonStore, build_dashboard_today_summary, filtered_tasks, task_status
 from platform_services import (
@@ -1503,9 +1504,9 @@ class PySideInterviewWindow:
         status = row.deepseek_processing_status.strip().lower()
         if status == "processing":
             return "Processing", False, "DeepSeek is still processing interview notes."
-        if status == "failed" and not (row.notes_path and Path(row.notes_path).exists()):
+        if status == "failed":
             warning = row.deepseek_processing_warning.strip() or "DeepSeek processing failed."
-            return "Unavailable", False, warning
+            return "Failed/Retry", True, warning
         if row.notes_path and Path(row.notes_path).exists():
             warning = row.deepseek_processing_warning.strip()
             return "Open Notes", True, warning
@@ -2241,7 +2242,42 @@ class PySideInterviewWindow:
         )
         self._refresh_all_history_tables()
 
+    def _deepseek_retry_job_path_for_row(self, row: PySideHistoryRow) -> Path | None:
+        row_key = str(row.row_key or "").strip()
+        if not row_key:
+            return None
+        job_name = f"deepseek-finalize-{row_key}.json"
+        if Path(job_name).name != job_name:
+            return None
+        candidates = [
+            self.model.history_path.parent / "deepseek_jobs" / job_name,
+        ]
+        if self.model.history_path.parent.name == "user_artifacts":
+            candidates.insert(0, self.model.history_path.parent / "interviews" / "deepseek_jobs" / job_name)
+        candidates.append(DEFAULT_BASE_DIR / "deepseek_jobs" / job_name)
+        for candidate in candidates:
+            if candidate.exists():
+                return candidate
+        return candidates[0]
+
+    def _retry_history_deepseek(self, row: PySideHistoryRow) -> None:
+        job_path = self._deepseek_retry_job_path_for_row(row)
+        if job_path is None or not job_path.exists():
+            self.QtWidgets.QMessageBox.warning(self.window, "DeepSeek Retry", "DeepSeek job file was not found.")
+            return
+        try:
+            progress_path = retry_deepseek_finalize_job(job_path)
+        except (OSError, ValueError) as exc:
+            self.QtWidgets.QMessageBox.warning(self.window, "DeepSeek Retry", f"Could not retry DeepSeek processing: {exc}")
+            return
+        self._reload_history_model()
+        self._show_pyside_finalize_progress("Retrying local DeepSeek worker")
+        self._watch_pyside_deepseek_finalize_progress(progress_path)
+
     def _open_history_notes(self, row: PySideHistoryRow) -> None:
+        if row.deepseek_processing_status.strip().lower() == "failed":
+            self._retry_history_deepseek(row)
+            return
         path = Path(row.notes_path)
         if not path.exists():
             self.QtWidgets.QMessageBox.warning(self.window, "Interview Notes", "Interview notes file was not found.")

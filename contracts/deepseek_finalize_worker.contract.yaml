@@ -2,12 +2,14 @@ module:
   name: deepseek_finalize_worker
   language: python
   path: src/deepseek_finalize_worker.py
-  version: 1.5.0
+  version: 1.6.0
   description: Detached local DeepSeek finalize worker that refreshes interview notes
     documents and history status after the GUI finalize flow returns, keeping DeepSeek
     signal scoring advisory and human raw scores final. Workers serialize processing
     through a per-deepseek_jobs lock file so local Ollama handles one finalize job
-    at a time, and writes sanitized progress JSON for GUI polling.
+    at a time, writes sanitized progress JSON for GUI polling, and checkpoints
+    completed DeepSeek stages back into the job file so retry can resume after
+    the last completed stage.
 functions:
 - name: _utc_timestamp
   description: Return current UTC timestamp in persisted Z-suffixed ISO format.
@@ -59,7 +61,9 @@ functions:
   side_effects: Writes interview history JSON when a row matches.
 - name: _write_progress
   description: Write sanitized detached DeepSeek progress state for the GUI progress
-    popup, using only step/status/timestamp metadata and no transcript content.
+    popup, using only step/status/timestamp metadata and no transcript content,
+    through the shared atomic JSON writer so transient Windows/Dropbox replace
+    denials are retried.
   locked: false
   inputs:
     job:
@@ -74,10 +78,10 @@ functions:
       default: processing
   returns:
     type: None
-  exceptions:
-  - OSError
+  exceptions: []
   side_effects: Writes or replaces a local progress JSON file when progress_path is
-    present in the job.
+    present in the job; persistent OS write failures are treated as non-fatal so
+    DeepSeek processing can continue.
 - name: _local_ollama_api_ready
   description: Return whether the configured local Ollama HTTP API is responding,
     treating non-local DeepSeek endpoints as externally managed and ready.
@@ -239,8 +243,8 @@ functions:
   exceptions: []
   side_effects: none
 - name: _deepseek_complete
-  description: Return whether summary generation and advisory trait scoring both
-    completed successfully for worker history status.
+  description: Return whether summary generation, advisory trait suggestions, and
+    advisory trait scoring all completed successfully for worker history status.
   locked: false
   inputs:
     payload:
@@ -264,7 +268,9 @@ functions:
   side_effects: none
 - name: _require_deepseek_statuses
   description: Fail closed when required DeepSeek prompt groups did not all generate,
-    preventing incomplete prompt output from being exported into interview notes.
+    preventing incomplete prompt output from being exported into interview notes;
+    callers may explicitly allow non-generated statuses such as partial or no_transcript
+    for advisory-only stages where summaries can still be generated.
   locked: false
   inputs:
     payload:
@@ -273,11 +279,67 @@ functions:
     required:
       type: tuple[str, ...]
       required: true
+    allowed:
+      type: tuple[str, ...]
+      required: false
+      default: ("generated",)
   returns:
     type: None
   exceptions:
   - RuntimeError
   side_effects: none
+- name: _trait_advisory_ready
+  description: Return whether the trait advisory stage can be considered usable
+    for worker resume/continuation; suggestions may be generated, partial, or unavailable
+    for no transcript, while advisory scoring must be generated or unavailable for
+    no transcript.
+  locked: false
+  inputs:
+    payload:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+- name: _deepseek_failure_warning
+  description: Convert a worker exception into a sanitized operator-facing DeepSeek
+    processing warning, preserving incomplete-prompt details while keeping generic
+    exception names for other failure classes.
+  locked: false
+  inputs:
+    exc:
+      type: Exception
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _checkpoint_job
+  description: Persist the latest DeepSeek payload and scoring into the job JSON
+    after a stage completes so a later retry can resume from the last checkpoint.
+    Uses the shared atomic JSON writer so transient Windows/Dropbox replace denials
+    are retried.
+  locked: false
+  inputs:
+    job_path:
+      type: Path
+      required: true
+    job:
+      type: dict[str, Any]
+      required: true
+    payload:
+      type: dict[str, Any]
+      required: true
+    scoring:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: None
+  exceptions:
+  - OSError
+  side_effects: Atomically rewrites the local job JSON file with updated payload
+    and scoring fields.
 - name: _timestamp_for_filename
   description: Return a UTC timestamp string safe for regenerated report filenames.
   locked: false
@@ -328,10 +390,11 @@ functions:
     and may move regenerated output to a sibling report path.
 - name: _run_job_unlocked
   description: Execute one already-lock-protected DeepSeek finalize job, generating
-    advisory trait suggestions/scoring and recomputed scoring before generating the
-    executive-summary prompt; uses a regenerated sibling report path if the original
-    DOCX is locked. Fails closed before DOCX export when any required DeepSeek prompt
-    group did not generate.
+    or resuming advisory trait suggestions/scoring and recomputed scoring before
+    generating or resuming answer/executive summaries; checkpoints completed stages
+    to the job JSON so GUI retry can resume after the last completed stage. Uses
+    a regenerated sibling report path if the original DOCX is locked. Fails closed
+    before DOCX export when any required DeepSeek prompt group did not generate.
   locked: false
   inputs:
     job:

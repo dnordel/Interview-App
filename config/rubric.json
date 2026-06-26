@@ -185,7 +185,7 @@
         "infant_toddler",
         "preschool"
       ],
-      "primary_question": "Tell me about a time you felt overwhelmed or stressed at work with children present. What did you do to manage, not the kids, but yourself and your stress?",
+      "primary_question": "Tell me about a time you felt overwhelmed or stressed at work with children present. What did you do to regulate yourself and manage, not the kids, but yourself and your stress?",
       "descriptors": {
         "5": "Acknowledges stress. Takes responsibility for self-regulation. Names specific coping strategies. Reflective tone.",
         "4": "Describes effort to stay calm. Names some strategies. Tone is calm and intentional.",
@@ -237,7 +237,7 @@
         "infant_toddler",
         "preschool"
       ],
-      "primary_question": "Tell me about a time you received constructive criticism or feedback you didn’t expect or didn’t fully agree with. What happened next?",
+      "primary_question": "Tell me about the last time you received constructive criticism or feedback. What happened that prompted it, what was the specific feedback, and what happened next?",
       "descriptors": {
         "5": "Reflective, accountable, open to growth. Acknowledges discomfort but describes specific adjustments or learning.",
         "4": "Accepts feedback with some adjustment. May acknowledge initial discomfort but focuses on how they made changes or learned from it.",
@@ -340,7 +340,7 @@
       "applicable_tracks": [
         "infant_toddler"
       ],
-      "primary_question": "Tell me about how you physically care for infants or toddlers during routines like feeding, diapering, or comforting.",
+      "primary_question": "Tell me about how you care for infants or toddlers during routines like diapering.",
       "descriptors": {
         "5": "Uses gentle, respectful language. Names activity to child. Emphasizes safety and responsiveness. Describes pacing and watching for cues.",
         "4": "Describes careful and respectful handling. May mention safety and being gentle but with less emphasis on child cues or autonomy.",

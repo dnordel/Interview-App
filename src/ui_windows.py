@@ -18,7 +18,11 @@ from interview_runtime import (
     DEEPSEEK_PROMPT_TEMPLATE_KEYS,
     DEEPSEEK_QUESTION_PROMPT_TEMPLATE_KEYS,
     DEFAULT_DEEPSEEK_PROMPT_TEMPLATES,
+    format_deepseek_question_prompt_overrides,
+    load_deepseek_prompt_templates,
     normalize_deepseek_prompt_templates,
+    parse_deepseek_question_prompt_overrides,
+    save_deepseek_prompt_templates,
 )
 from ui_composition import KeyboardPathSession, format_guidance
 from tk_theme import COLORS, apply_professional_ops_theme, configure_text_widget
@@ -66,7 +70,7 @@ class SettingsWindow(tk.Toplevel):
         self.whisper_vad_filter_var = BooleanVar(value=bool(self.app.settings.get("whisper_vad_filter", True)))
         self.whisper_beam_size_var = IntVar(value=int(self.app.settings.get("whisper_beam_size", 5) or 5))
         self.whisper_temperature_var = StringVar(value=str(self.app.settings.get("whisper_temperature", 0.0)))
-        self.deepseek_prompt_templates = normalize_deepseek_prompt_templates(self.app.settings.get("deepseek_prompt_templates", {}))
+        self.deepseek_prompt_templates = normalize_deepseek_prompt_templates(load_deepseek_prompt_templates())
         self._high_risk_toggle_guard = False
         self.settings_placeholder_var = StringVar(value="")
         self._settings_template_widgets: list[tk.Misc] = []
@@ -354,12 +358,12 @@ class SettingsWindow(tk.Toplevel):
             "trait_scoring_user": "Trait scoring user prompt",
         }
         question_labels = {
-            "answer_summary_system_by_question": "Per-question answer summary system prompt overrides JSON",
-            "answer_summary_user_by_question": "Per-question answer summary prompt overrides JSON",
-            "trait_suggestion_system_by_question": "Per-question trait signal suggestion system prompt overrides JSON",
-            "trait_suggestion_user_by_question": "Per-question trait signal suggestion prompt overrides JSON",
-            "trait_scoring_system_by_question": "Per-question trait raw scoring system prompt overrides JSON",
-            "trait_scoring_user_by_question": "Per-question trait raw scoring prompt overrides JSON",
+            "answer_summary_system_by_question": "Question-specific answer summary system prompts",
+            "answer_summary_user_by_question": "Question-specific answer summary user prompts",
+            "trait_suggestion_system_by_question": "Question-specific AI advisory evaluation system prompts",
+            "trait_suggestion_user_by_question": "Question-specific AI advisory evaluation user prompts",
+            "trait_scoring_system_by_question": "Question-specific AI trait scoring system prompts",
+            "trait_scoring_user_by_question": "Question-specific AI trait scoring user prompts",
         }
         focus_targets: list[tk.Misc] = []
         for row, key in enumerate(DEEPSEEK_PROMPT_TEMPLATE_KEYS):
@@ -380,10 +384,15 @@ class SettingsWindow(tk.Toplevel):
             configure_text_widget(widget, font_size=int(self.app.settings.get("font_size", 10)))
             widget.pack(fill="both", expand=True)
             value = self.deepseek_prompt_templates.get(key, {})
-            widget.insert("1.0", json.dumps(value if isinstance(value, dict) else {}, indent=2, ensure_ascii=False))
+            widget.insert("1.0", format_deepseek_question_prompt_overrides(value if isinstance(value, dict) else {}))
             self.deepseek_question_prompt_widgets[key] = widget
             self._field_focus_targets[f"deepseek_{key}"] = widget
             self._build_field_error(box, f"deepseek_{key}")
+            self._wrapped_label(
+                box,
+                text="Format: Question: trait_1, next line Prompt:, then prompt text. Separate entries with ---.",
+                foreground="#475569",
+            ).pack(anchor="w", pady=(4, 0))
             focus_targets.append(widget)
         prompt_frame.columnconfigure(0, weight=1)
         prompt_frame.columnconfigure(1, weight=1)
@@ -568,17 +577,7 @@ class SettingsWindow(tk.Toplevel):
 
     @staticmethod
     def _normalize_deepseek_question_prompt_json(value: Any) -> dict[str, str]:
-        if isinstance(value, dict):
-            raw = value
-        else:
-            raw_text = str(value or "").strip()
-            if not raw_text:
-                return {}
-            parsed = json.loads(raw_text)
-            if not isinstance(parsed, dict):
-                raise ValueError("DeepSeek per-question prompt overrides must be a JSON object.")
-            raw = parsed
-        return {str(key).strip(): str(prompt) for key, prompt in raw.items() if str(key).strip() and str(prompt).strip()}
+        return parse_deepseek_question_prompt_overrides(value)
 
     def _clear_tab_messages(self) -> None:
         for var in self._tab_message_vars.values():
@@ -682,8 +681,8 @@ class SettingsWindow(tk.Toplevel):
                 add_error(
                     self._TAB_DEEPSEEK,
                     f"deepseek_{key}",
-                    "Per-question prompt overrides must be valid JSON.",
-                    'Use an object like {"trait_1": "Prompt {payload_json}"}.',
+                    "Per-question prompt overrides must use valid Question/Prompt blocks.",
+                    "Use: Question: trait_1, Prompt:, prompt text; separate entries with ---.",
                 )
                 continue
             for question_key, prompt in overrides.items():
@@ -766,6 +765,7 @@ class SettingsWindow(tk.Toplevel):
         self.app.settings["welcome_email_subject_template"] = templates["welcome_subject"] or "Welcome to {school}, {candidate_name}!"
         self.app.settings["welcome_email_body_template"] = templates["welcome_body"]
         self.app.settings["welcome_onboarding_pdf_path"] = self.onboarding_pdf_var.get().strip()
+        deepseek_prompt_templates = save_deepseek_prompt_templates(deepseek_prompt_templates)
         self.app.settings["deepseek_prompt_templates"] = deepseek_prompt_templates
         self.app.settings["whisper_language"] = self.whisper_language_var.get().strip().lower() or "en"
         self.app.settings["whisper_vad_filter"] = bool(self.whisper_vad_filter_var.get())

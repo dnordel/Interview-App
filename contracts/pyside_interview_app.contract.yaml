@@ -2,12 +2,13 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.9.0
+  version: 1.10.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
-    content-sized history table behavior, user-closable finalize progress, live
-    history refresh, and single-surface parity documentation for desktop Tk contracts
-    while preserving Tk-owned finalize, history, document, and DeepSeek runtime contracts.
+    content-sized history table behavior, failed DeepSeek retry actions, user-closable
+    finalize progress, live history refresh, and single-surface parity documentation
+    for desktop Tk contracts while preserving Tk-owned finalize, history, document,
+    and DeepSeek runtime contracts.
 functions:
 - name: build_interview_redesign_model
   description: Build workflow-first home, setup, live interview, review, offer, onboarding, and admin view data from rubric, intro script, question flow, and merged canonical plus legacy history JSON.
@@ -526,9 +527,38 @@ classes:
       type: None
     exceptions: []
     side_effects: Writes PySide draft JSON and changes visible tab.
+  - name: _deepseek_retry_job_path_for_row
+    description: Resolve the persisted DeepSeek job JSON path for a failed history
+      row from the row key and configured history/base directories, rejecting unsafe
+      path-bearing row keys.
+    locked: false
+    inputs:
+      row:
+        type: PySideHistoryRow
+        required: true
+    returns:
+      type: Path | None
+    exceptions: []
+    side_effects: Checks local filesystem path existence.
+  - name: _retry_history_deepseek
+    description: Relaunch a failed DeepSeek finalize job for a history row, refresh
+      history tables to Processing, and attach the existing progress dialog watcher
+      to the retry progress JSON.
+    locked: false
+    inputs:
+      row:
+        type: PySideHistoryRow
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Reads a local job JSON path, updates history through interview_runtime
+      retry behavior, starts a detached worker, shows warnings on failure, and refreshes
+      visible history/progress UI.
   - name: _open_history_notes
     description: Open a selected history row's interview notes DOCX in the OS default
-      application after verifying the local path exists.
+      application after verifying the local path exists, or retry failed detached
+      DeepSeek processing when the row is in failed state.
     locked: false
     inputs:
       row:
@@ -611,8 +641,8 @@ classes:
     side_effects: Re-renders registered PySide history table widgets.
   - name: _history_notes_action_state
     description: Return the Notes-column label, enabled state, and tooltip for a PySide
-      history row, showing Processing during detached DeepSeek work and preventing
-      missing-path opens.
+      history row, showing Processing during detached DeepSeek work, Failed/Retry
+      when detached DeepSeek failed, and preventing missing-path opens.
     locked: false
     inputs:
       row:

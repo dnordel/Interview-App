@@ -18,8 +18,12 @@ from interview_runtime import (
     build_finalize_context,
     build_deepseek_summary_config,
     enqueue_deepseek_finalize_job,
+    format_deepseek_question_prompt_overrides,
     generate_deepseek_interview_summaries,
     generate_deepseek_trait_signal_suggestions,
+    parse_deepseek_question_prompt_overrides,
+    retry_deepseek_finalize_job,
+    save_deepseek_prompt_templates,
 )
 
 
@@ -97,6 +101,47 @@ def test_deepseek_summary_config_enables_local_ollama_without_hosted_api_key() -
     assert config.api_key == "ollama"
     assert config.base_url == "http://127.0.0.1:11434/v1"
     assert config.model == "deepseek-r1:8b"
+
+
+def test_deepseek_summary_config_loads_prompt_templates_from_config_file(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
+    prompt_path = tmp_path / "deepseek_prompts.json"
+    save_deepseek_prompt_templates(
+        {
+            "answer_summary_user": "CONFIG ANSWER {payload_json}",
+            "trait_scoring_user_by_question": {"trait_1": "CONFIG SCORE {payload_json}"},
+        },
+        prompt_path,
+    )
+    monkeypatch.setattr(interview_runtime, "DEEPSEEK_PROMPTS_CONFIG_PATH", prompt_path)
+
+    config = build_deepseek_summary_config({"DEEPSEEK_SUMMARY_ENABLED": "1"})
+
+    assert config.prompt_templates["answer_summary_user"] == "CONFIG ANSWER {payload_json}"
+    assert config.prompt_templates["trait_scoring_user_by_question"] == {
+        "trait_1": "CONFIG SCORE {payload_json}"
+    }
+
+
+def test_deepseek_question_prompt_layout_roundtrips_human_blocks() -> None:
+    layout = (
+        "Question: trait_1\n"
+        "Prompt:\n"
+        "Score empathy using only transcript {payload_json}\n\n"
+        "---\n\n"
+        "Question: custom_why_lpl\n"
+        "Prompt:\n"
+        "Summarize mission fit {payload_json}"
+    )
+
+    parsed = parse_deepseek_question_prompt_overrides(layout)
+    rendered = format_deepseek_question_prompt_overrides(parsed)
+
+    assert parsed == {
+        "trait_1": "Score empathy using only transcript {payload_json}",
+        "custom_why_lpl": "Summarize mission fit {payload_json}",
+    }
+    assert "Question: trait_1" in rendered
+    assert '"trait_1"' not in rendered
 
 
 def test_deepseek_summary_config_rejects_hosted_base_url() -> None:
@@ -189,6 +234,7 @@ def test_generate_deepseek_interview_summaries_uses_injected_completion() -> Non
             }
         ],
         "executive_summary": "Strong classroom routines.",
+        "executive_summary_sections": {},
         "interview_highlights": ["Uses visuals.", "Keeps calm transitions."],
         "summary_status": "generated",
         "summary_warnings": [],
@@ -254,13 +300,56 @@ def test_default_deepseek_executive_prompt_requests_concise_renderable_sections(
     )
     prompt = messages[1]["content"]
 
-    assert "Use these exact section headings" in prompt
+    assert "Use these exact sections" in prompt
+    assert '"executive_summary_sections"' in prompt
+    assert '"role_specific_match"' in prompt
+    assert '"score_pattern"' in prompt
+    assert '"suggested_follow_up_questions": [string, string, string, string]' in prompt
+    assert prompt.index("Overall Fit: 3 to 5 sentences") < prompt.index("Role-Specific Match: 2 to 4 sentences")
+    assert prompt.index("Role-Specific Match: 2 to 4 sentences") < prompt.index("Score Pattern: 2 to 4 sentences")
+    assert prompt.index("Score Pattern: 2 to 4 sentences") < prompt.index("Key Strengths: exactly 3 bullets")
     assert "Overall Fit: 3 to 5 sentences" in prompt
     assert "Key Strengths: exactly 3 bullets" in prompt
     assert "Key Concerns or Risks: exactly 3 bullets" in prompt
-    assert "Suggested Follow-Up Questions: exactly 3 numbered questions" in prompt
+    assert "Suggested Follow-Up Questions: exactly 4 numbered questions" in prompt
+    assert "Final Hiring Notes: 1 to 2 practical closing sentences" in prompt
     assert "markdown-formatted" not in prompt
     assert "Do not use markdown" not in messages[0]["content"]
+
+
+def test_default_deepseek_user_prompts_include_json_output_templates() -> None:
+    prompts = interview_runtime.DEFAULT_DEEPSEEK_PROMPT_TEMPLATES
+
+    for key in ("answer_summary_user", "executive_summary_user", "trait_suggestion_user", "trait_scoring_user"):
+        prompt = prompts[key]
+        assert "JSON output template:" in prompt
+        assert "Return exactly this JSON shape" in prompt
+
+
+def test_deepseek_executive_summary_normalizer_accepts_structured_sections() -> None:
+    payload = json.dumps(
+        {
+            "executive_summary_sections": {
+                "recommendation": "Recommend with reservations.",
+                "overall_fit": "Calm and practical.",
+                "role_specific_match": "Matches toddler routines.",
+                "score_pattern": "High empathy, lower specificity.",
+                "key_strengths": ["Uses visual routines.", "Communicates early.", "Stays calm."],
+                "key_concerns_or_risks": ["Needs safety detail.", "Verify reliability.", "Probe coachability."],
+                "suggested_follow_up_questions": ["Q1?", "Q2?", "Q3?", "Q4?"],
+                "final_hiring_notes": "Verify safety judgment.",
+            },
+            "interview_highlights": ["Uses visual routines."],
+        }
+    )
+
+    result = interview_runtime._normalize_deepseek_executive_summary_payload(payload)
+
+    assert result["executive_summary_sections"]["recommendation"] == "Recommend with reservations."
+    assert result["executive_summary_sections"]["suggested_follow_up_questions"] == ["Q1?", "Q2?", "Q3?", "Q4?"]
+    assert "Role-Specific Match: Matches toddler routines." in result["executive_summary"]
+    assert "4. Q4?" in result["executive_summary"]
+    assert result["interview_highlights"] == ["Uses visual routines."]
 
 
 def test_generate_deepseek_interview_summaries_uses_question_specific_answer_prompt() -> None:
@@ -644,6 +733,140 @@ def test_enqueue_deepseek_finalize_job_writes_job_and_launches_worker(tmp_path, 
     assert progress["status"] == "processing"
 
 
+def test_retry_deepseek_finalize_job_marks_history_processing_and_relaunches(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[Path] = []
+    history_path = tmp_path / "history.json"
+    history_path.write_text(
+        json.dumps(
+            [
+                {
+                    "history_id": "hist-1",
+                    "candidate_name": "Ada",
+                    "deepseek_processing_status": "failed",
+                    "deepseek_processing_warning": "DeepSeek processing failed.",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    job_path = tmp_path / "deepseek_jobs" / "deepseek-finalize-hist-1.json"
+    job_path.parent.mkdir()
+    job_path.write_text(
+        json.dumps(
+            {
+                "history_id": "hist-1",
+                "history_path": str(history_path),
+                "progress_path": str(job_path.with_suffix(".progress.json")),
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(interview_runtime, "_start_deepseek_finalize_worker", lambda path: calls.append(Path(path)))
+
+    progress_path = interview_runtime.retry_deepseek_finalize_job(job_path)
+
+    assert progress_path == job_path.with_suffix(".progress.json")
+    assert calls == [job_path]
+    row = json.loads(history_path.read_text(encoding="utf-8"))[0]
+    assert row["deepseek_processing_status"] == "processing"
+    assert row["deepseek_processing_warning"] == ""
+    progress = json.loads(progress_path.read_text(encoding="utf-8"))
+    assert progress["step"] == "Retrying local DeepSeek worker"
+
+
+def test_retry_deepseek_finalize_job_recovers_failed_same_job_lock(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[Path] = []
+    job_path = tmp_path / "deepseek_jobs" / "deepseek-finalize-hist-1.json"
+    job_path.parent.mkdir()
+    progress_path = job_path.with_suffix(".progress.json")
+    lock_path = job_path.parent / "deepseek-finalize.lock"
+    job_path.write_text(
+        json.dumps({"history_id": "hist-1", "progress_path": str(progress_path)}),
+        encoding="utf-8",
+    )
+    progress_path.write_text(json.dumps({"status": "failed"}), encoding="utf-8")
+    lock_path.write_text(json.dumps({"job": job_path.stem, "pid": 999999}), encoding="utf-8")
+    monkeypatch.setattr(interview_runtime, "_start_deepseek_finalize_worker", lambda path: calls.append(Path(path)))
+
+    retry_deepseek_finalize_job(job_path)
+
+    assert calls == [job_path]
+    assert not lock_path.exists()
+
+
+def test_deepseek_finalize_worker_resumes_from_checkpointed_trait_output(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    history_path = tmp_path / "history.json"
+    history_path.write_text(
+        json.dumps(
+            [
+                {
+                    "history_id": "hist-1",
+                    "deepseek_processing_status": "failed",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    report_path = tmp_path / "notes.docx"
+    progress_path = tmp_path / "deepseek.progress.json"
+    job_path = tmp_path / "deepseek_jobs" / "deepseek-finalize-hist-1.json"
+    job_path.parent.mkdir()
+    job_path.write_text(
+        json.dumps(
+            {
+                "history_id": "hist-1",
+                "history_path": str(history_path),
+                "base_dir": str(tmp_path),
+                "report_path": str(report_path),
+                "rubric": {"tracks": {"preschool": {}}},
+                "payload": {
+                    "candidate": {"track": "preschool"},
+                    "flow_transcript": [{"flow_index": 1, "candidate_transcript": "Candidate answer."}],
+                    "trait_inputs": {"trait_1": {"raw_score": 4}},
+                    "model_suggestion_status": "generated",
+                    "model_scoring_status": "generated",
+                    "model_signal_suggestions_by_trait": {"trait_1": []},
+                    "model_trait_scores_by_trait": {"trait_1": {"raw_score": 4}},
+                },
+                "scoring": {"percent_of_max": 80, "outcome": "Hire"},
+                "deepseek_settings": {},
+                "progress_path": str(progress_path),
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    def _unexpected_trait_generation(*_args, **_kwargs):
+        raise AssertionError("trait generation should be skipped when checkpointed")
+
+    monkeypatch.setattr(deepseek_finalize_worker, "generate_deepseek_trait_signal_suggestions", _unexpected_trait_generation)
+    monkeypatch.setattr(deepseek_finalize_worker, "_ensure_local_deepseek_runtime", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        deepseek_finalize_worker,
+        "generate_deepseek_interview_summaries",
+        lambda *_args, **_kwargs: {"summary_status": "generated", "answer_summaries": []},
+    )
+    monkeypatch.setattr(deepseek_finalize_worker.ScoringEngine, "evaluate", staticmethod(lambda *_args, **_kwargs: {"percent_of_max": 88, "outcome": "Hire"}))
+
+    class _Exporter:
+        def __init__(self, output_dir):
+            self.output_dir = Path(output_dir)
+
+        def export(self, *_args):
+            out = self.output_dir / "notes.docx"
+            out.write_text("notes", encoding="utf-8")
+            return out
+
+    monkeypatch.setattr(deepseek_finalize_worker, "DocxExporter", _Exporter)
+
+    deepseek_finalize_worker.run_job(job_path)
+
+    row = json.loads(history_path.read_text(encoding="utf-8"))[0]
+    assert row["deepseek_processing_status"] == "complete"
+
+
 def test_deepseek_finalize_worker_starts_local_ollama_and_reports_specific_steps(
     tmp_path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -925,10 +1148,58 @@ def test_deepseek_finalize_worker_fails_without_export_when_deepseek_outputs_are
     result = deepseek_finalize_worker.main(["deepseek_finalize_worker.py", str(job_path)])
 
     row = store.load()[0]
+    job = json.loads(job_path.read_text(encoding="utf-8"))
     assert result == 1
     assert export_called is False
     assert row["deepseek_processing_status"] == "failed"
-    assert row["deepseek_processing_warning"] == "DeepSeek processing failed: RuntimeError"
+    assert row["deepseek_processing_warning"] == (
+        "DeepSeek processing failed: DeepSeek prompts incomplete: model_suggestion_status, model_scoring_status"
+    )
+    assert job["payload"]["model_suggestion_status"] == "failed"
+    assert job["payload"]["model_scoring_status"] == "failed"
+
+
+def test_deepseek_progress_write_retries_transient_replace_permission_error(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    progress_path = tmp_path / "deepseek.progress.json"
+    original_replace = Path.replace
+    calls = {"count": 0}
+
+    def _flaky_replace(self: Path, target: Path) -> Path:
+        if Path(target) == progress_path and calls["count"] == 0:
+            calls["count"] += 1
+            raise PermissionError("sync lock")
+        return original_replace(self, target)
+
+    monkeypatch.setattr(Path, "replace", _flaky_replace)
+
+    deepseek_finalize_worker._write_progress({"progress_path": str(progress_path)}, "Retrying local DeepSeek worker")
+
+    payload = json.loads(progress_path.read_text(encoding="utf-8"))
+    assert calls["count"] == 1
+    assert payload["status"] == "processing"
+    assert payload["step"] == "Retrying local DeepSeek worker"
+
+
+def test_deepseek_progress_write_does_not_abort_on_persistent_replace_permission_error(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    progress_path = tmp_path / "deepseek.progress.json"
+    original_replace = Path.replace
+
+    def _locked_replace(self: Path, target: Path) -> Path:
+        if Path(target) == progress_path:
+            raise PermissionError("sync lock")
+        return original_replace(self, target)
+
+    monkeypatch.setattr(Path, "replace", _locked_replace)
+
+    deepseek_finalize_worker._write_progress({"progress_path": str(progress_path)}, "Retrying local DeepSeek worker")
+
+    assert not progress_path.exists()
 
 
 def test_deepseek_finalize_worker_marks_failed_when_no_deepseek_outputs_generate(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -987,7 +1258,139 @@ def test_deepseek_finalize_worker_marks_failed_when_no_deepseek_outputs_generate
     assert result == 1
     assert export_called is False
     assert row["deepseek_processing_status"] == "failed"
-    assert row["deepseek_processing_warning"] == "DeepSeek processing failed: RuntimeError"
+    assert row["deepseek_processing_warning"] == (
+        "DeepSeek processing failed: DeepSeek prompts incomplete: model_suggestion_status, model_scoring_status"
+    )
+
+
+def test_deepseek_finalize_worker_exports_partial_when_trait_advisory_has_no_transcript(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    history_path = tmp_path / "history.json"
+    store = InterviewHistoryStore(history_path)
+    store.append(
+        {
+            "history_id": "hist-1",
+            "candidate_name": "Ada",
+            "interview_date": "2026-02-20",
+            "saved_at": "2026-02-20T00:00:00Z",
+            "deepseek_processing_status": "processing",
+        }
+    )
+
+    class _Exporter:
+        def __init__(self, output_dir):
+            self.output_dir = Path(output_dir)
+
+        def export(self, _rubric, _payload, _scoring):
+            out_path = self.output_dir / "updated.docx"
+            out_path.write_text("docx placeholder", encoding="utf-8")
+            return out_path
+
+    monkeypatch.setattr(
+        deepseek_finalize_worker,
+        "generate_deepseek_interview_summaries",
+        lambda *_args, **_kwargs: {"summary_status": "generated", "answer_summaries": [{"flow_index": 1, "summary": "Summary."}]},
+    )
+    monkeypatch.setattr(
+        deepseek_finalize_worker,
+        "generate_deepseek_trait_signal_suggestions",
+        lambda *_args, **_kwargs: {"model_suggestion_status": "no_transcript", "model_scoring_status": "no_transcript"},
+    )
+    monkeypatch.setattr(deepseek_finalize_worker, "DocxExporter", _Exporter)
+    monkeypatch.setattr(
+        deepseek_finalize_worker.ScoringEngine,
+        "evaluate",
+        staticmethod(lambda *_args, **_kwargs: {"percent_of_max": 88, "outcome": "Hire"}),
+    )
+    job_path = tmp_path / "job.json"
+    job_path.write_text(
+        json.dumps(
+            {
+                "history_id": "hist-1",
+                "history_path": str(history_path),
+                "report_path": str(tmp_path / "original.docx"),
+                "rubric": {},
+                "payload": {"candidate": {"track": "lead"}, "flow_transcript": [], "trait_inputs": {}},
+                "scoring": {},
+                "deepseek_settings": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    deepseek_finalize_worker.run_job(job_path)
+
+    row = store.load()[0]
+    assert row["deepseek_processing_status"] == "partial"
+    assert row["deepseek_processing_warning"] == "DeepSeek processing partially completed."
+    assert row["interview_notes_path"] == str(tmp_path / "updated.docx")
+
+
+def test_deepseek_finalize_worker_exports_partial_when_trait_suggestions_are_partial(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    history_path = tmp_path / "history.json"
+    store = InterviewHistoryStore(history_path)
+    store.append(
+        {
+            "history_id": "hist-1",
+            "candidate_name": "Ada",
+            "interview_date": "2026-02-20",
+            "saved_at": "2026-02-20T00:00:00Z",
+            "deepseek_processing_status": "processing",
+        }
+    )
+
+    class _Exporter:
+        def __init__(self, output_dir):
+            self.output_dir = Path(output_dir)
+
+        def export(self, _rubric, _payload, _scoring):
+            out_path = self.output_dir / "updated.docx"
+            out_path.write_text("docx placeholder", encoding="utf-8")
+            return out_path
+
+    monkeypatch.setattr(
+        deepseek_finalize_worker,
+        "generate_deepseek_interview_summaries",
+        lambda *_args, **_kwargs: {"summary_status": "generated", "answer_summaries": [{"flow_index": 1, "summary": "Summary."}]},
+    )
+    monkeypatch.setattr(
+        deepseek_finalize_worker,
+        "generate_deepseek_trait_signal_suggestions",
+        lambda *_args, **_kwargs: {"model_suggestion_status": "partial", "model_scoring_status": "generated"},
+    )
+    monkeypatch.setattr(deepseek_finalize_worker, "DocxExporter", _Exporter)
+    monkeypatch.setattr(
+        deepseek_finalize_worker.ScoringEngine,
+        "evaluate",
+        staticmethod(lambda *_args, **_kwargs: {"percent_of_max": 88, "outcome": "Hire"}),
+    )
+    job_path = tmp_path / "job.json"
+    job_path.write_text(
+        json.dumps(
+            {
+                "history_id": "hist-1",
+                "history_path": str(history_path),
+                "report_path": str(tmp_path / "original.docx"),
+                "rubric": {},
+                "payload": {"candidate": {"track": "lead"}, "flow_transcript": [], "trait_inputs": {}},
+                "scoring": {},
+                "deepseek_settings": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    deepseek_finalize_worker.run_job(job_path)
+
+    row = store.load()[0]
+    assert row["deepseek_processing_status"] == "partial"
+    assert row["deepseek_processing_warning"] == "DeepSeek processing partially completed."
+    assert row["interview_notes_path"] == str(tmp_path / "updated.docx")
 
 
 def test_deepseek_finalize_worker_lock_serializes_jobs(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1263,6 +1666,7 @@ def test_generate_deepseek_trait_signal_suggestions_filters_and_persists(monkeyp
     assert "rubric.json descriptors" in calls[1][0]["content"]
     assert '"raw_score_range": [1, 5]' in scoring_prompt_payload
     assert '"descriptors": {"5": "Best evidence", "1": "Weak evidence"}' in scoring_prompt_payload
+    assert '"interviewer_raw_score"' not in scoring_prompt_payload
     assert "trait_based_scoring_json" in scoring_prompt_payload
 
 

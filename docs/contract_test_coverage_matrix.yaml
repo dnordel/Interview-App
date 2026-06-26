@@ -1,4 +1,4 @@
-last_updated: '2026-06-25'
+last_updated: '2026-06-26'
 sections:
 - name: interview_app
   tests:
@@ -15,7 +15,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-06-25T19:20:09.834465+00:00'
+generated_at_utc: '2026-06-26T15:57:28.830240+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -786,7 +786,25 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/deepseek_finalize_worker.contract.yaml
+  symbol: deepseek_finalize_worker._checkpoint_job
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/deepseek_finalize_worker.contract.yaml
   symbol: deepseek_finalize_worker._deepseek_complete
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/deepseek_finalize_worker.contract.yaml
+  symbol: deepseek_finalize_worker._deepseek_failure_warning
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -958,6 +976,15 @@ entries:
     - return_type
 - contract: contracts/deepseek_finalize_worker.contract.yaml
   symbol: deepseek_finalize_worker._timestamp_for_filename
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/deepseek_finalize_worker.contract.yaml
+  symbol: deepseek_finalize_worker._trait_advisory_ready
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -3939,6 +3966,16 @@ entries:
     - return_type
     - security_leakage_prevention
 - contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime.format_deepseek_question_prompt_overrides
+  kind: function
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime.format_transcription_health_summary
   kind: function
   tests:
@@ -3989,6 +4026,16 @@ entries:
     - return_type
     - security_leakage_prevention
 - contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime.load_deepseek_prompt_templates
+  kind: function
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime.map_segments_to_flow_indices
   kind: function
   tests:
@@ -4010,6 +4057,16 @@ entries:
     - security_leakage_prevention
 - contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime.normalize_deepseek_prompt_templates
+  kind: function
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime.parse_deepseek_question_prompt_overrides
   kind: function
   tests:
   - path: tests/test_interview_root_contracts.py
@@ -4129,7 +4186,27 @@ entries:
     - return_type
     - security_leakage_prevention
 - contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime.retry_deepseek_finalize_job
+  kind: function
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime.sanitize_transcription_error_reason
+  kind: function
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime.save_deepseek_prompt_templates
   kind: function
   tests:
   - path: tests/test_interview_root_contracts.py
@@ -8757,6 +8834,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._deepseek_retry_job_path_for_row
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._delete_history_row
   kind: method
   tests:
@@ -8857,6 +8943,15 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._report_pyside_finalize_progress
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._retry_history_deepseek
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py

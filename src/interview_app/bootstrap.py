@@ -8,7 +8,7 @@ from tkinter import font as tkfont
 
 from platform_services import DEFAULT_BASE_DIR, DEFAULT_FONT_SIZE, INTRO_BODY_FONT_SPEC, INTRO_HEADING_FONT_SPEC
 from scoring_reporting import default_referral_endpoint
-from interview_runtime import AppSharedState, DEFAULT_DEEPSEEK_PROMPT_TEMPLATES
+from interview_runtime import AppSharedState, load_deepseek_prompt_templates
 
 from .audio_runtime import AudioRuntimeController
 from .dashboard_controller import DashboardController
@@ -48,7 +48,7 @@ def build_default_settings() -> dict[str, Any]:
         "deepseek_api_base_url": "http://127.0.0.1:11434/v1",
         "deepseek_summary_model": "deepseek-r1:8b",
         "deepseek_summary_timeout_seconds": 120,
-        "deepseek_prompt_templates": dict(DEFAULT_DEEPSEEK_PROMPT_TEMPLATES),
+        "deepseek_prompt_templates": load_deepseek_prompt_templates(),
         "director_referral_endpoint": default_referral_endpoint(),
         "send_director_referral_on_finalize": False,
         "director_email_to": str(os.environ.get("DIRECTOR_EMAIL_TO", "")).strip(),

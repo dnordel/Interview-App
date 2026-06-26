@@ -14,6 +14,7 @@ import urllib.parse
 import urllib.request
 from collections import deque
 from concurrent.futures import Future, ThreadPoolExecutor
+from contextlib import nullcontext
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from functools import lru_cache
@@ -26,6 +27,7 @@ from uuid import uuid4
 
 from tkinter import messagebox
 
+from data_store import InterviewHistoryStore
 from scoring_reporting import (
     CandidateQualification,
     DEFAULT_ENGINE_MODULE_CONTRACT,
@@ -51,6 +53,8 @@ from platform_services import EVENT_INTERVIEW_FINALIZED, atomic_write_json, is_v
 
 CURRENT_SCHEMA_VERSION = 1
 logger = logging.getLogger(__name__)
+REPO_ROOT = Path(__file__).resolve().parents[1]
+DEEPSEEK_PROMPTS_CONFIG_PATH = REPO_ROOT / "config" / "deepseek_prompts.json"
 TRANSCRIPTION_TIMEOUT_REASON = "transcription_timeout"
 DEFAULT_WINDOWS_MIC_DEVICE = "Microphone (Realtek USB Audio)"
 _WINDOWS_AUDIO_DEVICE_ALIASES = (
@@ -1046,9 +1050,19 @@ DEFAULT_DEEPSEEK_PROMPT_TEMPLATES: dict[str, str] = {
         "behavior guidance, and flexibility."
     ),
     "answer_summary_user": (
-        "Create evidence-first summaries from candidate_transcript values. Required output schema: "
-        '{"answer_summaries": [{"flow_index": number|string, "summary": string, "evidence_quotes": string[], '
-        '"rubric_alignment": string, "risks_or_gaps": string}]}. '
+        "Create evidence-first summaries from candidate_transcript values. Return exactly this JSON shape. "
+        "JSON output template:\n"
+        "{\n"
+        '  "answer_summaries": [\n'
+        "    {\n"
+        '      "flow_index": "number-or-string-from-input",\n'
+        '      "summary": "one evidence-first sentence",\n'
+        '      "evidence_quotes": ["exact short candidate phrase"],\n'
+        '      "rubric_alignment": "observed preschool-teacher behavior",\n'
+        '      "risks_or_gaps": "missing or weak evidence, or empty string"\n'
+        "    }\n"
+        "  ]\n"
+        "}\n"
         "Rules: each answer summary is one sentence; evidence_quotes must be exact short phrases from candidate_transcript; "
         "rubric_alignment names observed preschool-teacher behavior; risks_or_gaps names missing or "
         "weak evidence, or empty string if none. Data: {payload_json}"
@@ -1070,20 +1084,33 @@ DEFAULT_DEEPSEEK_PROMPT_TEMPLATES: dict[str, str] = {
         "Tailor summary to role. For preschool/lead/infant-toddler roles emphasize child-centeredness, "
         "classroom management, warmth, safety, supervision, parent communication, reliability, "
         "developmentally appropriate practice, routines, mentoring, and compliance as applicable.\n\n"
-        "Use these exact section headings in executive_summary, each on its own line:\n"
+        "Use these exact sections in executive_summary_sections and mirrored executive_summary text:\n"
         "Recommendation: Strongly Recommend, Recommend, Recommend with Reservations, "
         "Do Not Recommend, or Insufficient Information. Base this on transcript and scores.\n"
         "Overall Fit: 3 to 5 sentences.\n"
+        "Role-Specific Match: 2 to 4 sentences matching evidence to role demands.\n"
+        "Score Pattern: 2 to 4 sentences on highest/lowest areas, consistency, and score/transcript mismatches.\n"
         "Key Strengths: exactly 3 bullets, evidence-grounded.\n"
         "Key Concerns or Risks: exactly 3 bullets, including verification areas when evidence is weak.\n"
-        "Role-Specific Analysis: 2 to 4 sentences matching evidence to role demands.\n"
-        "Score Pattern Analysis: 2 to 4 sentences on highest/lowest areas, consistency, and score/transcript mismatches.\n"
-        "Suggested Follow-Up Questions: exactly 3 numbered questions.\n"
-        "Final Hiring Notes: 1 to 3 practical closing sentences.\n\n"
+        "Suggested Follow-Up Questions: exactly 4 numbered questions.\n"
+        "Final Hiring Notes: 1 to 2 practical closing sentences.\n\n"
         "Important Writing Rules: be specific and evidence-based; do not overstate confidence; "
         "do not include long quotes; do not mention AI; do not produce a full question-by-question report.\n\n"
-        "Required JSON output schema: "
-        '{"executive_summary": string, "interview_highlights": string[]}. '
+        "Return exactly this JSON shape. JSON output template:\n"
+        "{\n"
+        '  "executive_summary_sections": {\n'
+        '    "recommendation": "Strongly Recommend | Recommend | Recommend with Reservations | Do Not Recommend | Insufficient Information, with candidate name when useful",\n'
+        '    "overall_fit": "3 to 5 evidence-based sentences",\n'
+        '    "role_specific_match": "2 to 4 evidence-based sentences",\n'
+        '    "score_pattern": "2 to 4 evidence-based sentences",\n'
+        '    "key_strengths": ["strength 1", "strength 2", "strength 3"],\n'
+        '    "key_concerns_or_risks": ["risk 1", "risk 2", "risk 3"],\n'
+        '    "suggested_follow_up_questions": [string, string, string, string],\n'
+        '    "final_hiring_notes": "1 to 2 practical closing sentences"\n'
+        "  },\n"
+        '  "executive_summary": "same content as section text, using the exact section headings",\n'
+        '  "interview_highlights": ["0 to 5 concrete evidence bullets"]\n'
+        "}\n"
         "Use interview_highlights for 0-5 concrete evidence bullets."
     ),
     "trait_suggestion_system": (
@@ -1092,13 +1119,27 @@ DEFAULT_DEEPSEEK_PROMPT_TEMPLATES: dict[str, str] = {
         "Use Little People's Landing rubric context: child safety, empathy, co-regulation, concrete "
         "classroom examples, family communication, teamwork, coachability, accountability, gentleness, "
         "curiosity, behavior guidance, and flexibility. Use only provided signal_id values. Do not invent "
-        "evidence, change human selections, or decide hiring/scoring. Signals are for DeepSeek advisory "
-        "scoring only; do not imply interviewer checkbox selections."
+        "evidence, consider interviewer raw scores, change human selections, or decide hiring/scoring. "
+        "Signals are for DeepSeek advisory scoring only; do not imply interviewer checkbox selections."
     ),
     "trait_suggestion_user": (
-        "Create trait_suggestions from candidate_transcript values and valid_signals labels. Required output schema: "
-        '{"trait_suggestions": [{"trait_id": string, "suggestions": '
-        '[{"signal_id": string, "confidence": number, "evidence_quote": string, "rationale": string}]}]}. '
+        "Create trait_suggestions from candidate_transcript values and valid_signals labels. Return exactly this JSON shape. "
+        "JSON output template:\n"
+        "{\n"
+        '  "trait_suggestions": [\n'
+        "    {\n"
+        '      "trait_id": "trait id from input",\n'
+        '      "suggestions": [\n'
+        "        {\n"
+        '          "signal_id": "valid signal_id from input",\n'
+        '          "confidence": 0.0,\n'
+        '          "evidence_quote": "exact short candidate wording",\n'
+        '          "rationale": "connection between evidence and signal label"\n'
+        "        }\n"
+        "      ]\n"
+        "    }\n"
+        "  ]\n"
+        "}\n"
         "Rules: evidence_quote must be exact short candidate wording; rationale must connect evidence to "
         "signal label; include automatic no-hire signal IDs only when directly supported by the transcript; "
         "omit low-evidence guesses; confidence 0 to 1. Data: {payload_json}"
@@ -1108,12 +1149,23 @@ DEFAULT_DEEPSEEK_PROMPT_TEMPLATES: dict[str, str] = {
         "using rubric.json descriptors. "
         "Return only one JSON object. Do not use markdown. Do not reveal reasoning. Do not echo input. "
         "Use only candidate_transcript and rubric descriptors. Raw score must be integer 1-5 where 5 is best. "
-        "Do not invent evidence, do not replace interviewer score, and do not make hiring decisions."
+        "Do not invent evidence, do not consider interviewer raw scores, do not replace interviewer score, "
+        "and do not make hiring decisions."
     ),
     "trait_scoring_user": (
-        "Create advisory trait_scores using each trait rubric descriptors and scoring_policy. Required output schema: "
-        '{"trait_scores": [{"trait_id": string, "raw_score": number, "evidence_quote": string, '
-        '"rationale": string, "risks_or_gaps": string}]}. '
+        "Create advisory trait_scores using each trait rubric descriptors and scoring_policy. Return exactly this JSON shape. "
+        "JSON output template:\n"
+        "{\n"
+        '  "trait_scores": [\n'
+        "    {\n"
+        '      "trait_id": "trait id from input",\n'
+        '      "raw_score": 1,\n'
+        '      "evidence_quote": "exact short candidate wording",\n'
+        '      "rationale": "descriptor match",\n'
+        '      "risks_or_gaps": "missing evidence or disqualifier risk if present"\n'
+        "    }\n"
+        "  ]\n"
+        "}\n"
         "Rules: choose 1, 2, 3, 4, or 5 only; 5 is best; evidence_quote must be exact short candidate wording; "
         "rationale must cite descriptor match; risks_or_gaps names missing evidence or disqualifier risk if present. "
         "Return no keys except trait_scores. Data: {payload_json}"
@@ -1122,6 +1174,26 @@ DEFAULT_DEEPSEEK_PROMPT_TEMPLATES: dict[str, str] = {
 DEFAULT_DEEPSEEK_QUESTION_PROMPT_TEMPLATES: dict[str, dict[str, str]] = {
     key: {} for key in DEEPSEEK_QUESTION_PROMPT_TEMPLATE_KEYS
 }
+
+
+def load_deepseek_prompt_templates(path: Path | None = None) -> dict[str, Any]:
+    path = DEEPSEEK_PROMPTS_CONFIG_PATH if path is None else Path(path)
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        raw = {}
+    return normalize_deepseek_prompt_templates(raw)
+
+
+def save_deepseek_prompt_templates(
+    templates: Mapping[str, Any],
+    path: Path | None = None,
+) -> dict[str, Any]:
+    path = DEEPSEEK_PROMPTS_CONFIG_PATH if path is None else Path(path)
+    normalized = normalize_deepseek_prompt_templates(dict(templates))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    atomic_write_json(path, normalized, indent=2, ensure_ascii=False)
+    return normalized
 
 
 def normalize_deepseek_prompt_templates(value: Any) -> dict[str, Any]:
@@ -1144,6 +1216,50 @@ def normalize_deepseek_prompt_templates(value: Any) -> dict[str, Any]:
             if clean_key and isinstance(prompt, str) and prompt.strip():
                 cleaned[clean_key] = prompt
         output[key] = cleaned
+    return output
+
+
+def format_deepseek_question_prompt_overrides(value: Any) -> str:
+    overrides = normalize_deepseek_prompt_templates({"answer_summary_user_by_question": value})[
+        "answer_summary_user_by_question"
+    ]
+    if not overrides:
+        return ""
+    blocks: list[str] = []
+    for question_key, prompt in sorted(overrides.items()):
+        blocks.append(f"Question: {question_key}\nPrompt:\n{prompt.strip()}")
+    return "\n\n---\n\n".join(blocks)
+
+
+def parse_deepseek_question_prompt_overrides(value: Any) -> dict[str, str]:
+    if isinstance(value, dict):
+        return {
+            str(key).strip(): str(prompt).strip()
+            for key, prompt in value.items()
+            if str(key).strip() and str(prompt).strip()
+        }
+    raw_text = str(value or "").strip()
+    if not raw_text:
+        return {}
+    if raw_text.startswith("{"):
+        parsed = json.loads(raw_text)
+        if not isinstance(parsed, dict):
+            raise ValueError("DeepSeek per-question prompt overrides must be a JSON object.")
+        return parse_deepseek_question_prompt_overrides(parsed)
+    output: dict[str, str] = {}
+    for block in re.split(r"(?m)^\s*---\s*$", raw_text):
+        lines = block.strip().splitlines()
+        if not lines:
+            continue
+        if not lines[0].lower().startswith("question:"):
+            raise ValueError("Each DeepSeek per-question prompt block must start with 'Question: <id>'.")
+        question_key = lines[0].split(":", 1)[1].strip()
+        prompt_lines = lines[1:]
+        if prompt_lines and prompt_lines[0].strip().lower() == "prompt:":
+            prompt_lines = prompt_lines[1:]
+        prompt = "\n".join(prompt_lines).strip()
+        if question_key and prompt:
+            output[question_key] = prompt
     return output
 
 
@@ -1231,7 +1347,12 @@ def build_deepseek_summary_config(env: Mapping[str, Any] | None = None) -> DeepS
     base_url = _local_deepseek_base_url(source.get("DEEPSEEK_API_BASE_URL"))
     model = str(source.get("DEEPSEEK_SUMMARY_MODEL", "") or _LOCAL_DEEPSEEK_MODEL).strip()
     timeout = _env_float(source.get("DEEPSEEK_SUMMARY_TIMEOUT_SECONDS"), 120.0)
-    prompt_templates = normalize_deepseek_prompt_templates(source.get("DEEPSEEK_PROMPT_TEMPLATES"))
+    prompt_source = source.get("DEEPSEEK_PROMPT_TEMPLATES")
+    prompt_templates = (
+        normalize_deepseek_prompt_templates(prompt_source)
+        if prompt_source
+        else load_deepseek_prompt_templates()
+    )
     return DeepSeekSummaryConfig(
         enabled=enabled and bool(api_key),
         api_key=api_key,
@@ -1264,7 +1385,7 @@ def _deepseek_config_source_from_app(app: Any) -> dict[str, Any]:
     for settings_key, env_key in key_map.items():
         if settings_key in settings and not source.get(env_key):
             source[env_key] = str(settings.get(settings_key, "") or "")
-    source["DEEPSEEK_PROMPT_TEMPLATES"] = settings.get("deepseek_prompt_templates", {})
+    source["DEEPSEEK_PROMPT_TEMPLATES"] = load_deepseek_prompt_templates()
     return source
 
 
@@ -1272,6 +1393,7 @@ def _blank_deepseek_summary(status: str, warning: str) -> dict[str, Any]:
     return {
         "answer_summaries": [],
         "executive_summary": "",
+        "executive_summary_sections": {},
         "interview_highlights": [],
         "summary_status": status,
         "summary_warnings": [warning] if warning else [],
@@ -1616,9 +1738,12 @@ def _normalize_deepseek_answer_summary_payload(content: str, valid_flow_indices:
 
 def _normalize_deepseek_executive_summary_payload(content: str) -> dict[str, Any]:
     parsed = _load_deepseek_json_object(content)
-    if "executive_summary" not in parsed or "interview_highlights" not in parsed:
+    if "executive_summary" not in parsed and "executive_summary_sections" not in parsed:
         raise ValueError("DeepSeek executive summary response missing required fields.")
+    sections = _normalize_deepseek_executive_summary_sections(parsed.get("executive_summary_sections"))
     executive_summary = _clamp_deepseek_text(parsed.get("executive_summary"), "summary")
+    if sections and not executive_summary:
+        executive_summary = _executive_summary_sections_to_text(sections)
     interview_highlights: list[str] = []
     raw_highlights = parsed.get("interview_highlights", [])
     if not isinstance(raw_highlights, list):
@@ -1629,8 +1754,62 @@ def _normalize_deepseek_executive_summary_payload(content: str) -> dict[str, Any
             interview_highlights.append(highlight)
     return {
         "executive_summary": executive_summary,
+        "executive_summary_sections": sections,
         "interview_highlights": interview_highlights[:5],
     }
+
+
+def _normalize_deepseek_executive_summary_sections(value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        return {}
+    scalar_keys = ("recommendation", "overall_fit", "role_specific_match", "score_pattern", "final_hiring_notes")
+    list_keys = ("key_strengths", "key_concerns_or_risks", "suggested_follow_up_questions")
+    output: dict[str, Any] = {}
+    for key in scalar_keys:
+        text = _clamp_deepseek_text(value.get(key), "summary")
+        if text:
+            output[key] = text
+    for key in list_keys:
+        raw_items = value.get(key, [])
+        if not isinstance(raw_items, list):
+            continue
+        limit = 4 if key == "suggested_follow_up_questions" else 3
+        items = [_clamp_deepseek_text(item, "summary") for item in raw_items]
+        items = [item for item in items if item][:limit]
+        if items:
+            output[key] = items
+    return output
+
+
+def _executive_summary_sections_to_text(sections: dict[str, Any]) -> str:
+    lines: list[str] = []
+    scalar_map = [
+        ("recommendation", "Recommendation"),
+        ("overall_fit", "Overall Fit"),
+        ("role_specific_match", "Role-Specific Match"),
+        ("score_pattern", "Score Pattern"),
+    ]
+    for key, label in scalar_map:
+        value = str(sections.get(key) or "").strip()
+        if value:
+            lines.append(f"{label}: {value}")
+    list_map = [
+        ("key_strengths", "Key Strengths"),
+        ("key_concerns_or_risks", "Key Concerns or Risks"),
+    ]
+    for key, label in list_map:
+        values = [str(item or "").strip() for item in sections.get(key, []) or [] if str(item or "").strip()]
+        if values:
+            lines.append(f"{label}:")
+            lines.extend(f"- {item}" for item in values)
+    questions = [str(item or "").strip() for item in sections.get("suggested_follow_up_questions", []) or [] if str(item or "").strip()]
+    if questions:
+        lines.append("Suggested Follow-Up Questions:")
+        lines.extend(f"{index}. {item}" for index, item in enumerate(questions, start=1))
+    final_notes = str(sections.get("final_hiring_notes") or "").strip()
+    if final_notes:
+        lines.append(f"Final Hiring Notes: {final_notes}")
+    return "\n".join(lines)
 
 
 def _normalize_deepseek_summary_payload(content: str, valid_flow_indices: set[Any]) -> dict[str, Any]:
@@ -1640,6 +1819,7 @@ def _normalize_deepseek_summary_payload(content: str, valid_flow_indices: set[An
     return {
         "answer_summaries": answer_summaries,
         "executive_summary": executive["executive_summary"],
+        "executive_summary_sections": {},
         "interview_highlights": executive["interview_highlights"],
         "summary_status": "generated" if has_summary_output else "failed",
         "summary_warnings": [] if has_summary_output else ["DeepSeek summary response was empty."],
@@ -1703,6 +1883,7 @@ def generate_deepseek_interview_summaries(
         return {
             "answer_summaries": answer_summaries,
             "executive_summary": executive["executive_summary"],
+            "executive_summary_sections": executive.get("executive_summary_sections", {}),
             "interview_highlights": executive["interview_highlights"],
             "summary_status": "generated" if has_summary_output else "failed",
             "summary_warnings": warnings if has_summary_output else ["DeepSeek summary response was empty."],
@@ -1713,6 +1894,7 @@ def generate_deepseek_interview_summaries(
             return {
                 "answer_summaries": answer_summaries,
                 "executive_summary": "",
+                "executive_summary_sections": {},
                 "interview_highlights": [],
                 "summary_status": "generated",
                 "summary_warnings": [*warnings, f"DeepSeek executive summary failed: {type(exc).__name__}"],
@@ -2997,6 +3179,51 @@ def enqueue_deepseek_finalize_job(app: Any, context: FinalizeContext, out_path: 
     return job_path
 
 
+def retry_deepseek_finalize_job(job_path: Path) -> Path:
+    path = Path(job_path)
+    with path.open("r", encoding="utf-8") as handle:
+        job = json.load(handle)
+    if not isinstance(job, dict):
+        raise ValueError("DeepSeek finalize job must be a JSON object.")
+    progress_path = Path(str(job.get("progress_path") or path.with_suffix(".progress.json")))
+    history_path = str(job.get("history_path", "")).strip()
+    history_id = str(job.get("history_id", "")).strip()
+    if history_path and history_id:
+        InterviewHistoryStore(Path(history_path)).update_row(
+            history_id,
+            {
+                "deepseek_processing_status": "processing",
+                "deepseek_processing_warning": "",
+                "deepseek_completed_at": None,
+            },
+        )
+    _recover_failed_deepseek_retry_lock(path, progress_path)
+    _write_deepseek_launch_progress(progress_path, "Retrying local DeepSeek worker")
+    _start_deepseek_finalize_worker(path)
+    return progress_path
+
+
+def _recover_failed_deepseek_retry_lock(job_path: Path, progress_path: Path) -> None:
+    lock_path = Path(job_path).resolve().parent / "deepseek-finalize.lock"
+    if not lock_path.exists():
+        return
+    try:
+        progress = json.loads(Path(progress_path).read_text(encoding="utf-8"))
+        metadata = json.loads(lock_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return
+    if not isinstance(progress, dict) or not isinstance(metadata, dict):
+        return
+    if str(progress.get("status") or "").strip().lower() != "failed":
+        return
+    if str(metadata.get("job") or "").strip() != Path(job_path).stem:
+        return
+    try:
+        lock_path.unlink()
+    except OSError:
+        return
+
+
 def _start_deepseek_finalize_worker(job_path: Path) -> None:
     script_path = Path(__file__).resolve().with_name("deepseek_finalize_worker.py")
     log_dir = job_path.parent / "logs"
@@ -3006,7 +3233,13 @@ def _start_deepseek_finalize_worker(job_path: Path) -> None:
     creationflags = 0
     if os.name == "nt":
         creationflags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) | getattr(subprocess, "DETACHED_PROCESS", 0)
-    with stdout_path.open("ab") as stdout, stderr_path.open("ab") as stderr:
+    try:
+        stdout_context = stdout_path.open("ab")
+        stderr_context = stderr_path.open("ab")
+    except PermissionError:
+        stdout_context = nullcontext(subprocess.DEVNULL)
+        stderr_context = nullcontext(subprocess.DEVNULL)
+    with stdout_context as stdout, stderr_context as stderr:
         subprocess.Popen(
             [_python_executable_for_worker(), str(script_path), str(job_path)],
             cwd=str(Path(__file__).resolve().parents[1]),

@@ -25,6 +25,7 @@ from interview_runtime import (
     generate_deepseek_interview_summaries,
     generate_deepseek_trait_signal_suggestions,
 )
+from platform_services import atomic_write_json
 from scoring_reporting import DocxExporter, ScoringEngine
 
 _LOCK_FILENAME = "deepseek-finalize.lock"
@@ -71,13 +72,10 @@ def _write_progress(job: dict[str, Any], step: str, status: str = "processing") 
         "step": str(step or "").strip(),
         "updated_at": _utc_timestamp(),
     }
-    path = Path(progress_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp_path = path.with_suffix(path.suffix + ".tmp")
-    with tmp_path.open("w", encoding="utf-8") as handle:
-        json.dump(payload, handle, indent=2)
-        handle.write("\n")
-    tmp_path.replace(path)
+    try:
+        atomic_write_json(Path(progress_path), payload, indent=2, ensure_ascii=False)
+    except OSError:
+        return
 
 
 def _local_ollama_api_ready(config: Any) -> bool:
@@ -255,6 +253,7 @@ def _deepseek_generated(payload: dict[str, Any]) -> bool:
 def _deepseek_complete(payload: dict[str, Any]) -> bool:
     return (
         _deepseek_status_value(payload.get("summary_status")) == "generated"
+        and _deepseek_status_value(payload.get("model_suggestion_status")) == "generated"
         and _deepseek_status_value(payload.get("model_scoring_status")) == "generated"
     )
 
@@ -267,10 +266,38 @@ def _deepseek_history_status(payload: dict[str, Any]) -> tuple[str, str]:
     return "failed", "DeepSeek processing failed to generate output."
 
 
-def _require_deepseek_statuses(payload: dict[str, Any], required: tuple[str, ...]) -> None:
-    incomplete = [name for name in required if _deepseek_status_value(payload.get(name)) != "generated"]
+def _require_deepseek_statuses(
+    payload: dict[str, Any],
+    required: tuple[str, ...],
+    allowed: tuple[str, ...] = ("generated",),
+) -> None:
+    allowed_statuses = {str(status).strip().lower() for status in allowed}
+    incomplete = [name for name in required if _deepseek_status_value(payload.get(name)) not in allowed_statuses]
     if incomplete:
         raise RuntimeError(f"DeepSeek prompts incomplete: {', '.join(incomplete)}")
+
+
+def _trait_advisory_ready(payload: dict[str, Any]) -> bool:
+    suggestion_status = _deepseek_status_value(payload.get("model_suggestion_status"))
+    scoring_status = _deepseek_status_value(payload.get("model_scoring_status"))
+    return suggestion_status in {"generated", "partial", "no_transcript"} and scoring_status in {
+        "generated",
+        "no_transcript",
+    }
+
+
+def _deepseek_failure_warning(exc: Exception) -> str:
+    message = str(exc).strip()
+    if isinstance(exc, RuntimeError) and message.startswith("DeepSeek prompts incomplete:"):
+        return f"DeepSeek processing failed: {message}"
+    return f"DeepSeek processing failed: {type(exc).__name__}"
+
+
+def _checkpoint_job(job_path: Path, job: dict[str, Any], payload: dict[str, Any], scoring: dict[str, Any]) -> None:
+    updated = dict(job)
+    updated["payload"] = payload
+    updated["scoring"] = scoring
+    atomic_write_json(Path(job_path), updated, indent=2, ensure_ascii=False)
 
 
 def _timestamp_for_filename() -> str:
@@ -329,31 +356,44 @@ def _run_job_unlocked(job: dict[str, Any], job_path: Path) -> None:
     config = build_deepseek_summary_config(job.get("deepseek_settings", {}) if isinstance(job.get("deepseek_settings"), dict) else {})
     _ensure_local_deepseek_runtime(job, config)
     _write_progress(job, "Starting DeepSeek processing")
-    payload.update(
-        generate_deepseek_trait_signal_suggestions(
-            flow_transcript,
-            trait_inputs,
-            rubric=rubric,
-            config=config,
-            progress_callback=lambda step: _write_progress(job, step),
+    if not _trait_advisory_ready(payload):
+        payload.update(
+            generate_deepseek_trait_signal_suggestions(
+                flow_transcript,
+                trait_inputs,
+                rubric=rubric,
+                config=config,
+                progress_callback=lambda step: _write_progress(job, step),
+            )
         )
-    )
-    _require_deepseek_statuses(payload, ("model_suggestion_status", "model_scoring_status"))
-    payload["trait_inputs"] = trait_inputs
+        payload["trait_inputs"] = trait_inputs
+        _checkpoint_job(job_path, job, payload, scoring)
+        _require_deepseek_statuses(
+            payload,
+            ("model_suggestion_status", "model_scoring_status"),
+            allowed=("generated", "partial", "no_transcript"),
+        )
+    else:
+        _write_progress(job, "Resuming after trait analysis checkpoint")
 
     track = str(candidate.get("track", "") or "")
     if track:
         _write_progress(job, "Calculating final score")
         scoring = ScoringEngine.evaluate(rubric, track, trait_inputs)
-    payload.update(
-        generate_deepseek_interview_summaries(
-            flow_transcript,
-            candidate,
-            scoring=scoring,
-            config=config,
-            progress_callback=lambda step: _write_progress(job, step),
+        _checkpoint_job(job_path, job, payload, scoring)
+    if _deepseek_status_value(payload.get("summary_status")) != "generated":
+        payload.update(
+            generate_deepseek_interview_summaries(
+                flow_transcript,
+                candidate,
+                scoring=scoring,
+                config=config,
+                progress_callback=lambda step: _write_progress(job, step),
+            )
         )
-    )
+        _checkpoint_job(job_path, job, payload, scoring)
+    else:
+        _write_progress(job, "Resuming after summary checkpoint")
     _require_deepseek_statuses(payload, ("summary_status",))
 
     _write_progress(job, "Updating interview notes document")
@@ -396,12 +436,13 @@ def main(argv: list[str]) -> int:
     except Exception as exc:
         try:
             job = _load_job(job_path)
-            _write_progress(job, f"DeepSeek processing failed: {type(exc).__name__}", "failed")
+            warning = _deepseek_failure_warning(exc)
+            _write_progress(job, warning, "failed")
             _update_history(
                 job,
                 {
                     "deepseek_processing_status": "failed",
-                    "deepseek_processing_warning": f"DeepSeek processing failed: {type(exc).__name__}",
+                    "deepseek_processing_warning": warning,
                     "deepseek_completed_at": _utc_timestamp(),
                 },
             )
