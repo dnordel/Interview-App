@@ -122,7 +122,9 @@ datastores:
       history also reads root-level interview_history.json as read-only legacy data
       so past interviews from older app versions remain visible. DeepSeek prompt
       templates live in config/deepseek_prompts.json for source-controlled prompt
-      editing and per-question override maps.
+      editing and per-question override maps; runtime role-context injection keeps
+      executive prompts scoped to the selected job title instead of embedding all
+      role-specific guidance in every request.
     used_by:
     - data_store
     - onboarding_operations

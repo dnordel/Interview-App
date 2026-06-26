@@ -15,7 +15,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-06-26T15:57:28.830240+00:00'
+generated_at_utc: '2026-06-26T16:23:18.965980+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -3796,6 +3796,16 @@ entries:
     - return_type
     - security_leakage_prevention
 - contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime._deepseek_debug_log_path
+  kind: function
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime._deepseek_progress_label
   kind: function
   tests:
@@ -3876,6 +3886,16 @@ entries:
     - return_type
     - security_leakage_prevention
 - contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime._write_deepseek_debug_log
+  kind: function
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime._write_deepseek_launch_progress
   kind: function
   tests:
@@ -3915,6 +3935,10 @@ entries:
     - parameter_validation
     - return_type
     - security_leakage_prevention
+  - path: tests/test_deepseek_summary.py::test_deepseek_summary_config_allows_long_local_timeout
+    focus:
+    - behavior
+    - parameter_validation
 - contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime.build_finalize_context
   kind: function
@@ -4005,6 +4029,10 @@ entries:
     - parameter_validation
     - return_type
     - security_leakage_prevention
+  - path: tests/test_deepseek_summary.py::test_generate_deepseek_trait_signal_suggestions_preserves_empty_valid_suggestion_response
+    focus:
+    - behavior
+    - return_type
 - contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime.list_windows_dshow_audio_devices
   kind: function
@@ -10060,6 +10088,12 @@ entries:
     - parameter_validation
     - return_type
     - security_controls
+  - path: tests/test_reporting_export.py::TestDocxExporterValidation::test_export_renders_answer_summaries_as_readable_cards
+    focus:
+    - behavior
+  - path: tests/test_reporting_export.py::TestDocxExporterValidation::test_answer_summary_card_explains_missing_signal_advisory_rating
+    focus:
+    - behavior
 - contract: contracts/scoring_reporting.contract.yaml
   symbol: scoring_reporting.DraftManager.__init__
   kind: method

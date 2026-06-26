@@ -196,7 +196,7 @@ classes:
     exceptions: []
     side_effects: none
   - name: export
-    description: Generate finalized interview report document through scoring_reporting, preserving the director-ready DOCX layout with bulleted executive strengths/concerns, scorecard before answer summaries, compact question/rating/summary cards, and full transcript/evidence detail in appendices.
+    description: Generate finalized interview report document through scoring_reporting, preserving the director-ready DOCX layout with bulleted executive strengths/concerns, a compact scorecard before answer summaries, compact question/rating/summary cards, full transcript detail in appendices, no hiring-manager evidence-notes section, no duplicated answer-summary evidence in the transcript appendix, and no interviewer-adjustment rows in the AI advisory appendix.
     locked: false
     inputs:
       rubric:

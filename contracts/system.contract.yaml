@@ -86,7 +86,8 @@ modules:
     depends_on: []
   deepseek_prompts_json:
     path: config/deepseek_prompts.json
-    depends_on: []
+    depends_on:
+    - interview_runtime
   interview_history_json:
     path: user_artifacts/interview_history.json
     depends_on: []

@@ -4,7 +4,7 @@ from pathlib import Path
 
 from docx.shared import Inches, Pt
 from docx_compat import Document
-from scoring_reporting import DocxExporter, ReportingValidationError
+from scoring_reporting import DocxExporter, ReportingValidationError, _executive_summary_sections_from_structured
 
 
 def _cell_xml_contains(cell, text: str) -> bool:
@@ -18,6 +18,19 @@ def _doc_text(doc) -> str:
 
 
 class TestDocxExporterValidation(unittest.TestCase):
+    def test_structured_executive_sections_flatten_nested_new_prompt_schema(self):
+        sections = _executive_summary_sections_from_structured(
+            {
+                "recommendation": {"rating": "Recommend", "rationale": "Evidence supports fit."},
+                "key_strengths": [{"strength": "Warm routines", "evidence": "Uses greeting rituals."}],
+                "key_concerns_or_risks": [{"concern": "Safety detail", "evidence_or_gap": "Needs more supervision examples."}],
+            }
+        )
+
+        self.assertEqual(sections["recommendation"], ["Recommend: Evidence supports fit."])
+        self.assertEqual(sections["strengths"], ["Warm routines: Uses greeting rituals."])
+        self.assertEqual(sections["concerns"], ["Safety detail: Needs more supervision examples."])
+
     def _rubric(self):
         return {
             "traits": [],
@@ -466,10 +479,10 @@ class TestDocxExporterValidation(unittest.TestCase):
             for table in doc.tables
             if table.rows[0].cells[0].text == "Trait"
         ][0]
-        self.assertEqual(header_cells[3].text, "Interviewer\nRaw Score")
-        self.assertEqual(header_cells[4].text, "Interviewer\nWeighted Score")
-        self.assertEqual(header_cells[5].text, "AI-suggested\nRaw Score")
-        self.assertEqual(header_cells[6].text, "AI-suggested\nWeighted Score")
+        self.assertEqual(header_cells[3].text, "Raw\nScore")
+        self.assertEqual(header_cells[4].text, "Weighted\nScore")
+        self.assertEqual(header_cells[5].text, "AI Raw\nScore")
+        self.assertEqual(header_cells[6].text, "AI Weighted\nScore")
         self.assertTrue(_cell_xml_contains(header_cells[0], 'w:fill="EAF3F8"'))
         self.assertTrue(_cell_xml_contains(header_cells[0], "<w:tcMar>"))
 
@@ -519,12 +532,14 @@ class TestDocxExporterValidation(unittest.TestCase):
         self.assertLess(paragraphs.index("Consolidated Answer Summaries"), paragraphs.index("Candidate Snapshot"))
         self.assertLess(paragraphs.index("Candidate Snapshot"), paragraphs.index("Director Decision Brief"))
         self.assertLess(paragraphs.index("Director Decision Brief"), paragraphs.index("Critical Safety Review"))
-        self.assertLess(paragraphs.index("Critical Safety Review"), paragraphs.index("Hiring Manager Evidence Notes"))
-        self.assertLess(paragraphs.index("Hiring Manager Evidence Notes"), paragraphs.index("Interview Transcript Appendix"))
+        self.assertLess(paragraphs.index("Critical Safety Review"), paragraphs.index("Interview Transcript Appendix"))
         self.assertLess(paragraphs.index("Interview Transcript Appendix"), paragraphs.index("AI Advisory Appendix"))
         self.assertEqual(full_text.count("Uses gentle redirection."), 1)
         self.assertGreater(full_text.index("I use a gentle voice."), full_text.index("Interview Transcript Appendix"))
         self.assertGreater(full_text.index("AI advisory signal observations:"), full_text.index("AI Advisory Appendix"))
+        self.assertNotIn("Hiring Manager Evidence Notes", paragraphs)
+        self.assertNotIn("Global disqualifiers reviewed:", full_text)
+        self.assertNotIn("Answer summary evidence", full_text)
         scorecard = [table for table in doc.tables if table.rows[0].cells[0].text == "Trait"][0]
         self.assertTrue(_cell_xml_contains(scorecard.rows[1].cells[0], 'w:fill="FFF7D6"'))
         self.assertTrue(_cell_xml_contains(scorecard.rows[1].cells[5], 'w:fill="E6F4F1"'))
@@ -572,14 +587,19 @@ class TestDocxExporterValidation(unittest.TestCase):
 
         self.assertTrue(summary_cards)
         self.assertEqual(len(summary_cards[0].columns), 2)
-        self.assertIn("Question text", full_text)
+        summary_card_text = "\n".join(cell.text for row in summary_cards[0].rows for cell in row.cells)
+        self.assertNotIn("Question text", summary_card_text)
         self.assertIn("Interviewer rating", full_text)
         self.assertIn("AI-advisory rating", full_text)
         self.assertIn("AI-trait-based rating", full_text)
         self.assertIn("Answer summary", full_text)
-        self.assertIn("Predictable routine support.", full_text)
-        self.assertGreater(full_text.index("uses visual timer"), full_text.index("Interview Transcript Appendix"))
-        self.assertGreater(full_text.index("Needs more safety detail."), full_text.index("Interview Transcript Appendix"))
+        self.assertIn("uses visual timer; sings cleanup song", summary_card_text)
+        self.assertIn("Predictable routine support.", summary_card_text)
+        self.assertIn("Needs more safety detail.", summary_card_text)
+        transcript_index = [paragraph.text for paragraph in doc.paragraphs].index("Interview Transcript Appendix")
+        later_paragraphs = "\n".join(paragraph.text for paragraph in doc.paragraphs[transcript_index:])
+        self.assertNotIn("Answer summary evidence", later_paragraphs)
+        self.assertNotIn("Needs more safety detail.", later_paragraphs)
 
     def test_export_omits_ratings_for_non_scored_answer_summary_and_intro_sections(self):
         payload = {
@@ -672,6 +692,45 @@ class TestDocxExporterValidation(unittest.TestCase):
         self.assertIn("AI advisory scoring not generated", full_text)
         self.assertIn("suggestions: processing", full_text)
         self.assertNotIn("AI net signal score\nN/A", full_text)
+
+    def test_answer_summary_card_explains_missing_signal_advisory_rating(self):
+        scoring = self._trait_scoring()
+        scoring["rows"][0]["suggested_raw_score"] = None
+        scoring["rows"][0]["net_signal_score"] = None
+        scoring["rows"][0]["model_signal_suggestions"] = []
+        payload = {
+            "candidate": {
+                "name": "Ada",
+                "interview_date": "2026-02-20",
+                "track": "general",
+            },
+            "answer_summaries": [
+                {
+                    "flow_index": 1,
+                    "summary": "Candidate described support.",
+                }
+            ],
+            "flow_transcript": [
+                {
+                    "flow_index": 1,
+                    "type": "trait",
+                    "id": "trait_1",
+                    "question": "How do you support transitions?",
+                    "candidate_transcript": "I use visual timers.",
+                }
+            ],
+        }
+
+        with tempfile.TemporaryDirectory() as td:
+            exporter = DocxExporter(Path(td))
+            out_path = exporter.export(self._rubric(), payload, scoring)
+            doc = Document(out_path)
+
+        table_text = "\n".join(cell.text for table in doc.tables for row in table.rows for cell in row.cells)
+
+        self.assertIn("AI-advisory rating\nNo supported signals", table_text)
+        self.assertIn("AI-trait-based rating\n3/5", table_text)
+        self.assertNotIn("AI-advisory rating\nN/A", table_text)
 
     def test_export_reports_complete_deepseek_total_out_of_max(self):
         payload = {
@@ -865,16 +924,16 @@ class TestDocxExporterValidation(unittest.TestCase):
 
         self.assertIn("Compatibility selected signal IDs:", doc_text)
         self.assertIn("AI advisory signal observations:", doc_text)
-        self.assertIn("Interviewer\nRaw Score", table_text)
-        self.assertIn("Interviewer\nWeighted Score", table_text)
-        self.assertIn("AI-suggested\nRaw Score", table_text)
-        self.assertIn("AI-suggested\nWeighted Score", table_text)
-        self.assertIn("Final interviewer raw score", table_text)
-        self.assertIn("Human weighted score", table_text)
+        self.assertIn("Raw\nScore", table_text)
+        self.assertIn("Weighted\nScore", table_text)
+        self.assertIn("AI Raw\nScore", table_text)
+        self.assertIn("AI Weighted\nScore", table_text)
+        self.assertNotIn("Final interviewer raw score", table_text)
+        self.assertNotIn("Human weighted score", table_text)
         self.assertIn("AI net signal score", table_text)
         self.assertIn("AI-suggested raw score", table_text)
-        self.assertIn("Interviewer adjusted from AI-suggested score", table_text)
-        self.assertIn("Adjustment reason", table_text)
+        self.assertNotIn("Interviewer adjusted from AI-suggested score", table_text)
+        self.assertNotIn("Adjustment reason", table_text)
         self.assertIn("AI advisory raw score", table_text)
         self.assertIn("AI-suggested weighted score", table_text)
         self.assertIn("AI-generated score evidence", table_text)

@@ -103,6 +103,17 @@ def test_deepseek_summary_config_enables_local_ollama_without_hosted_api_key() -
     assert config.model == "deepseek-r1:8b"
 
 
+def test_deepseek_summary_config_allows_long_local_timeout() -> None:
+    config = build_deepseek_summary_config(
+        {
+            "DEEPSEEK_SUMMARY_ENABLED": "1",
+            "DEEPSEEK_SUMMARY_TIMEOUT_SECONDS": "900",
+        }
+    )
+
+    assert config.timeout_seconds == 900
+
+
 def test_deepseek_summary_config_loads_prompt_templates_from_config_file(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
     prompt_path = tmp_path / "deepseek_prompts.json"
     save_deepseek_prompt_templates(
@@ -161,6 +172,7 @@ def test_deepseek_generated_sections_do_not_truncate_long_text() -> None:
     long_evidence = " ".join(["candidate evidence quote"] * 120)
     executive_payload = json.dumps(
         {
+            "executive_summary_sections": {"overall_fit": long_summary},
             "executive_summary": long_summary,
             "interview_highlights": ["Uses safety routines."],
         }
@@ -197,7 +209,7 @@ def test_generate_deepseek_interview_summaries_uses_injected_completion() -> Non
     def _completion(active_config, messages):
         calls.append((active_config, messages))
         if "executive summary section" in messages[0]["content"]:
-            content = '{"executive_summary":"Strong classroom routines.","interview_highlights":["Uses visuals.","Keeps calm transitions."]}'
+            content = '{"executive_summary_sections":{"overall_fit":"Strong classroom routines."},"executive_summary":"Strong classroom routines.","interview_highlights":["Uses visuals.","Keeps calm transitions."]}'
         else:
             content = (
                 '{"answer_summaries":[{"flow_index":2,"summary":"Uses visual schedules.",'
@@ -234,8 +246,9 @@ def test_generate_deepseek_interview_summaries_uses_injected_completion() -> Non
             }
         ],
         "executive_summary": "Strong classroom routines.",
-        "executive_summary_sections": {},
+        "executive_summary_sections": {"overall_fit": "Strong classroom routines."},
         "interview_highlights": ["Uses visuals.", "Keeps calm transitions."],
+        "confidence": None,
         "summary_status": "generated",
         "summary_warnings": [],
     }
@@ -260,7 +273,7 @@ def test_generate_deepseek_interview_summaries_uses_configured_prompt_templates(
     def _completion(_config, messages):
         calls.append(messages)
         if messages[0]["content"] == "CUSTOM EXEC SYSTEM":
-            return {"choices": [{"message": {"content": '{"executive_summary":"Custom executive.","interview_highlights":[]}'}}]}
+            return {"choices": [{"message": {"content": '{"executive_summary_sections":{"overall_fit":"Custom executive."},"executive_summary":"Custom executive.","interview_highlights":[]}'}}]}
         return {
             "choices": [
                 {
@@ -326,6 +339,24 @@ def test_default_deepseek_user_prompts_include_json_output_templates() -> None:
         assert "Return exactly this JSON shape" in prompt
 
 
+def test_configured_executive_prompt_uses_only_matching_role_context() -> None:
+    config = build_deepseek_summary_config({"DEEPSEEK_SUMMARY_ENABLED": "1"})
+    messages = interview_runtime._deepseek_executive_summary_messages(
+        [{"flow_index": 1, "summary": "Mentors assistants."}],
+        {"name": "Ada", "track": "Lead Teacher"},
+        scoring={"outcome": "Hire", "rows": []},
+        transcript_items=[{"flow_index": 1, "question": "Leadership?", "candidate_transcript": "I mentor assistants."}],
+        prompt_templates=config.prompt_templates,
+    )
+    prompt = messages[1]["content"]
+
+    assert "mentoring assistants" in prompt
+    assert "safe sleep awareness" not in prompt
+    assert "avoiding diagnosis" not in prompt
+    assert "licensing/compliance" not in prompt
+    assert "Role-tailoring guide" not in prompt
+
+
 def test_deepseek_executive_summary_normalizer_accepts_structured_sections() -> None:
     payload = json.dumps(
         {
@@ -370,7 +401,7 @@ def test_generate_deepseek_interview_summaries_uses_question_specific_answer_pro
     def _completion(_config, messages):
         calls.append(messages)
         if "executive summary section" in messages[0]["content"]:
-            return {"choices": [{"message": {"content": '{"executive_summary":"Done.","interview_highlights":[]}'}}]}
+            return {"choices": [{"message": {"content": '{"executive_summary_sections":{"overall_fit":"Done."},"executive_summary":"Done.","interview_highlights":[]}'}}]}
         return {
             "choices": [
                 {
@@ -405,7 +436,7 @@ def test_generate_deepseek_interview_summaries_feeds_scoring_into_executive_prom
     def _completion(_config, messages):
         if "executive summary section" in messages[0]["content"]:
             executive_payloads.append(messages[1]["content"])
-            return {"choices": [{"message": {"content": '{"executive_summary":"Recommend with reservations.","interview_highlights":["Strong routines."]}'}}]}
+            return {"choices": [{"message": {"content": '{"executive_summary_sections":{"overall_fit":"Recommend with reservations."},"executive_summary":"Recommend with reservations.","interview_highlights":["Strong routines."]}'}}]}
         return {
             "choices": [
                 {
@@ -454,7 +485,7 @@ def test_generate_deepseek_interview_summaries_chunks_answer_calls() -> None:
 
     def _completion(_config, messages):
         if "executive summary section" in messages[0]["content"]:
-            return {"choices": [{"message": {"content": '{"executive_summary":"Two answers summarized.","interview_highlights":["Uses routines."]}'}}]}
+            return {"choices": [{"message": {"content": '{"executive_summary_sections":{"overall_fit":"Two answers summarized."},"executive_summary":"Two answers summarized.","interview_highlights":["Uses routines."]}'}}]}
         answer_payloads.append(messages[1]["content"])
         if "visual timers" in messages[1]["content"]:
             content = (
@@ -494,7 +525,7 @@ def test_generate_deepseek_interview_summaries_reports_step_progress() -> None:
 
     def fake_completion(_config, messages):
         if "executive summary section" in messages[0]["content"]:
-            return {"choices": [{"message": {"content": '{"executive_summary":"Summary.","interview_highlights":[]}'}}]}
+            return {"choices": [{"message": {"content": '{"executive_summary_sections":{"overall_fit":"Summary."},"executive_summary":"Summary.","interview_highlights":[]}'}}]}
         return {
             "choices": [
                 {
@@ -530,7 +561,7 @@ def test_generate_deepseek_interview_summaries_accepts_fenced_json() -> None:
 
     def _completion(_config, messages):
         if "executive summary section" in messages[0]["content"]:
-            content = '```json\n{"executive_summary":"Calm transition support.","interview_highlights":["Uses picture cues."]}\n```'
+            content = '```json\n{"executive_summary_sections":{"overall_fit":"Calm transition support."},"executive_summary":"Calm transition support.","interview_highlights":["Uses picture cues."]}\n```'
         else:
             content = (
                 '```json\n{"answer_summaries":[{"flow_index":1,"summary":"Uses picture schedules.",'
@@ -559,6 +590,76 @@ def test_generate_deepseek_interview_summaries_accepts_fenced_json() -> None:
     assert result["interview_highlights"] == ["Uses picture cues."]
     assert result["answer_summaries"][0]["summary"] == "Uses picture schedules."
     assert result["answer_summaries"][0]["evidence_quotes"] == ["picture schedules"]
+
+
+def test_generate_deepseek_interview_summaries_repairs_validates_logs_and_keeps_exact_quotes(tmp_path: Path) -> None:
+    config = DeepSeekSummaryConfig(
+        enabled=True,
+        api_key="secret-key",
+        debug_log_dir=tmp_path / "deepseek-debug",
+    )
+    calls: list[list[dict[str, str]]] = []
+
+    def _completion(_config, messages):
+        calls.append(messages)
+        system_text = messages[0]["content"]
+        if "executive summary section" in system_text:
+            return {
+                "choices": [
+                    {
+                        "message": {
+                            "content": (
+                                "notes before "
+                                '{"executive_summary_sections":{"recommendation":{"rating":"Recommend","rationale":"Supported."}},'
+                                '"executive_summary":"Recommendation: Recommend","interview_highlights":[],"confidence":0.55}'
+                                " notes after"
+                            )
+                        }
+                    }
+                ]
+            }
+        if len(calls) == 1:
+            return {"choices": [{"message": {"content": '{"wrong_key":[]}'}}]}
+        return {
+            "choices": [
+                {
+                    "message": {
+                        "content": (
+                            'prefix {"answer_summaries":[{"flow_index":1,"summary":"Uses routines.",'
+                            '"evidence_quotes":["visual routines","not in transcript"],"rubric_alignment":"Routine support.",'
+                            '"risks_or_gaps":"","confidence":0.82}]} suffix'
+                        )
+                    }
+                }
+            ]
+        }
+
+    result = generate_deepseek_interview_summaries(
+        [{"flow_index": 1, "question": "How?", "candidate_transcript": "I use visual routines."}],
+        {"name": "Ada", "track": "Lead Teacher"},
+        config=config,
+        chat_completion=_completion,
+    )
+
+    assert len(calls) == 3
+    assert "Return only valid JSON matching the required schema" in calls[1][-1]["content"]
+    assert result["summary_status"] == "generated"
+    assert result["answer_summaries"][0]["evidence_quotes"] == ["visual routines"]
+    assert result["answer_summaries"][0]["confidence"] == 0.82
+    assert result["confidence"] == 0.55
+    log_files = list((tmp_path / "deepseek-debug").glob("*.jsonl"))
+    assert log_files
+    log_text = log_files[0].read_text(encoding="utf-8")
+    assert '"prompt_name": "answer_summary"' in log_text
+    assert '"parse_success": false' in log_text
+    assert '"candidate_name": "Ada"' in log_text
+    assert '"job_title": "Lead Teacher"' in log_text
+
+
+def test_deepseek_json_parser_skips_invalid_brace_text_before_valid_object() -> None:
+    parsed = interview_runtime._load_deepseek_json_object('noise {not json} then {"answer_summaries":[]}')
+
+    assert parsed == {"answer_summaries": []}
 
 
 def test_generate_deepseek_interview_summaries_stops_invalid_executive_retry() -> None:
@@ -591,10 +692,10 @@ def test_generate_deepseek_interview_summaries_stops_invalid_executive_retry() -
         chat_completion=_completion,
     )
 
-    assert calls == 4
+    assert calls == 3
     assert result["summary_status"] == "generated"
     assert result["answer_summaries"][0]["summary"] == "Uses routines."
-    assert result["executive_summary"] == ""
+    assert result["executive_summary"] == "Executive summary could not be generated automatically. Please review transcript and scores manually."
     assert result["summary_warnings"] == ["DeepSeek executive summary failed: ValueError"]
 
 
@@ -603,7 +704,7 @@ def test_generate_deepseek_interview_summaries_generates_with_highlights_only() 
 
     def _completion(_config, messages):
         if "executive summary section" in messages[0]["content"]:
-            content = '{"executive_summary":"","interview_highlights":["Patient family communication."]}'
+            content = '{"executive_summary_sections":{},"executive_summary":"","interview_highlights":["Patient family communication."]}'
         else:
             content = (
                 '{"answer_summaries":[{"flow_index":1,"summary":"Communicates patiently with families.",'
@@ -1461,7 +1562,7 @@ def test_build_finalize_context_uses_settings_summary_config(monkeypatch: pytest
     def _completion(config, messages):
         assert config.api_key == "settings-key"
         if "executive summary section" in messages[0]["content"]:
-            content = '{"executive_summary":"Settings summary.","interview_highlights":["Settings highlight."]}'
+            content = '{"executive_summary_sections":{"overall_fit":"Settings summary."},"executive_summary":"Settings summary.","interview_highlights":["Settings highlight."]}'
         else:
             content = (
                 '{"answer_summaries":[{"flow_index":1,"summary":"Settings answer.",'
@@ -1522,19 +1623,19 @@ def test_build_finalize_context_stores_model_suggestions_separately(monkeypatch:
 
     def _completion(_config, messages):
         system_text = messages[0]["content"]
-        if "trait-based scoring observations" in system_text:
+        if "trait_suggestions" in messages[1]["content"]:
             content = (
                 '{"trait_suggestions":[{"trait_id":"trait_1","suggestions":['
                 '{"signal_id":"S_MODEL","confidence":0.9,"evidence_quote":"Transcript evidence","rationale":"Transcript evidence."}]}]}'
             )
-        elif "Score preschool teacher" in system_text:
+        elif "trait_scores" in messages[1]["content"]:
             content = (
                 '{"trait_scores":[{"trait_id":"trait_1","raw_score":4,'
                 '"evidence_quote":"Transcript evidence","rationale":"Matches score 4 descriptor.",'
                 '"risks_or_gaps":""}]}'
             )
         elif "executive summary section" in system_text:
-            content = '{"executive_summary":"Summary.","interview_highlights":[]}'
+            content = '{"executive_summary_sections":{"overall_fit":"Summary."},"executive_summary":"Summary.","interview_highlights":[]}'
         else:
             content = '{"answer_summaries":[{"flow_index":1,"summary":"Summary.","evidence_quotes":[],"rubric_alignment":"","risks_or_gaps":""}]}'
         return {"choices": [{"message": {"content": content}}]}
@@ -1716,6 +1817,53 @@ def test_generate_deepseek_trait_signal_suggestions_reports_step_progress(monkey
     assert result["model_suggestion_status"] == "generated"
     assert result["model_scoring_status"] == "generated"
     assert steps == ["Analyzing Traits Q1: Empathy", "Scoring Q1: Empathy"]
+
+
+def test_generate_deepseek_trait_signal_suggestions_preserves_empty_valid_suggestion_response(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        interview_runtime,
+        "_trait_suggestion_items",
+        lambda _flow, _rubric=None: (
+            [
+                {
+                    "trait_id": "trait_1",
+                    "flow_index": 1,
+                    "title": "Empathy",
+                    "question": "How?",
+                    "candidate_transcript": "I use routines.",
+                    "valid_signals": [{"signal_id": "S_MODEL", "label": "Uses routines"}],
+                    "rubric": {},
+                    "trait_based_scoring_json": {},
+                }
+            ],
+            {"trait_1": ["S_MODEL"]},
+        ),
+    )
+
+    def fake_completion(_config, messages):
+        if "Score preschool teacher" in messages[0]["content"]:
+            content = (
+                '{"trait_scores":[{"trait_id":"trait_1","raw_score":4,'
+                '"evidence_quote":"routines","rationale":"Matches.","risks_or_gaps":""}]}'
+            )
+        else:
+            content = '{"trait_suggestions":[{"trait_id":"trait_1","suggestions":[]}]}'
+        return {"choices": [{"message": {"content": content}}]}
+
+    trait_state: dict[str, dict[str, object]] = {"trait_1": {}}
+    result = generate_deepseek_trait_signal_suggestions(
+        [{"type": "trait", "id": "trait_1", "candidate_transcript": "I use routines."}],
+        trait_state,
+        config=DeepSeekSummaryConfig(enabled=True, api_key="secret-key"),
+        chat_completion=fake_completion,
+    )
+
+    assert result["model_suggestion_status"] == "generated"
+    assert result["model_signal_suggestions_by_trait"] == {"trait_1": []}
+    assert result["model_suggestion_warnings"] == []
+    assert trait_state["trait_1"]["model_signal_suggestions"] == []
 
 
 def test_generate_deepseek_trait_signal_suggestions_retries_invalid_json_until_valid(monkeypatch: pytest.MonkeyPatch) -> None:

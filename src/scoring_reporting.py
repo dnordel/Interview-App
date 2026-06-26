@@ -866,14 +866,35 @@ def _executive_summary_sections_from_structured(value: Any) -> dict[str, list[st
     sections: dict[str, list[str]] = {}
     for key, raw_value in mapped.items():
         if isinstance(raw_value, list):
-            cleaned_items = [_clean_executive_summary_text(item) for item in raw_value]
+            cleaned_items = [_clean_executive_summary_text(_structured_executive_list_item_text(item, key)) for item in raw_value]
             cleaned_items = [item for item in cleaned_items if item]
+        elif isinstance(raw_value, dict) and key == "recommendation":
+            rating = _clean_executive_summary_text(raw_value.get("rating"))
+            rationale = _clean_executive_summary_text(raw_value.get("rationale"))
+            joined = ": ".join(item for item in (rating, rationale) if item)
+            cleaned_items = [joined] if joined else []
         else:
             cleaned = _clean_executive_summary_text(raw_value)
             cleaned_items = [cleaned] if cleaned else []
         if cleaned_items:
             sections[key] = cleaned_items
     return sections
+
+
+def _structured_executive_list_item_text(item: Any, key: str) -> Any:
+    if not isinstance(item, dict):
+        return item
+    if key == "strengths":
+        title = item.get("strength")
+        evidence = item.get("evidence")
+    elif key == "concerns":
+        title = item.get("concern")
+        evidence = item.get("evidence_or_gap")
+    else:
+        return item
+    parts = [_clean_executive_summary_text(part) for part in (title, evidence)]
+    parts = [part for part in parts if part]
+    return ": ".join(parts)
 
 
 class DocxExporter:
@@ -1165,6 +1186,7 @@ class DocxExporter:
             fill: str | None = None,
             color: str = dark_text,
             align: Any | None = None,
+            size: int = 12,
         ) -> None:
             cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
             set_cell_margins(cell)
@@ -1175,7 +1197,7 @@ class DocxExporter:
                     paragraph.alignment = align
                 paragraph.paragraph_format.space_after = Pt(0)
                 paragraph.paragraph_format.line_spacing = 1.08
-                normalize_paragraph(paragraph, size=12, color=color)
+                normalize_paragraph(paragraph, size=size, color=color)
                 for run in paragraph.runs:
                     run.bold = bold
 
@@ -1408,15 +1430,6 @@ class DocxExporter:
                 or str(row.get("model_trait_score", {}).get("risks_or_gaps") or "").strip()
             )
 
-        def evidence_status_for_row(row: dict[str, Any]) -> str:
-            if str(row.get("verbatim_notes") or "").strip():
-                return "Verbatim noted"
-            if str(row.get("question_notes") or "").strip() or str(row.get("trait_notes") or "").strip():
-                return "Interviewer notes"
-            if row.get("model_trait_score", {}).get("evidence_quote"):
-                return "AI evidence"
-            return "None recorded"
-
         def scoring_row_for_flow_item(item: dict[str, Any]) -> dict[str, Any] | None:
             item_trait_id = canonical_trait_id(item.get("id") or item.get("trait_id"))
             if item_trait_id:
@@ -1449,18 +1462,17 @@ class DocxExporter:
         def raw_rating_text(value: Any) -> str:
             return "N/A" if value is None else f"{value}/5"
 
-        def answer_summary_appendix_text(item: dict[str, Any]) -> str:
-            evidence = "; ".join(
-                str(quote or "").strip()
-                for quote in item.get("evidence_quotes", []) or []
-                if str(quote or "").strip()
-            )
-            lines = [
-                f"Evidence: {evidence or 'None cited'}",
-                f"Rubric alignment: {str(item.get('rubric_alignment') or '').strip() or 'None cited'}",
-                f"Risk/gap: {str(item.get('risks_or_gaps') or '').strip() or 'None cited'}",
-            ]
-            return "\n".join(lines)
+        def answer_card_ai_advisory_rating_text(row: dict[str, Any] | None) -> str:
+            if not row:
+                return "Not generated"
+            suggested_raw_score = row.get("suggested_raw_score")
+            if suggested_raw_score is not None:
+                return raw_rating_text(suggested_raw_score)
+            if row.get("model_signal_suggestions"):
+                return "No weighted signals"
+            if row.get("model_trait_score") or row.get("deepseek_raw_score") is not None:
+                return "No supported signals"
+            return "Not generated"
 
         def threshold_status_text() -> str:
             thresholds = track_cfg.get("thresholds", {}) or {}
@@ -1544,13 +1556,13 @@ class DocxExporter:
         hdr[0].text = "Trait"
         hdr[1].text = "Priority"
         hdr[2].text = "Weight"
-        hdr[3].text = "Interviewer\nRaw Score"
-        hdr[4].text = "Interviewer\nWeighted Score"
-        hdr[5].text = "AI-suggested\nRaw Score"
-        hdr[6].text = "AI-suggested\nWeighted Score"
+        hdr[3].text = "Raw\nScore"
+        hdr[4].text = "Weighted\nScore"
+        hdr[5].text = "AI Raw\nScore"
+        hdr[6].text = "AI Weighted\nScore"
         repeat_header_row(table.rows[0])
         for cell in hdr:
-            format_cell(cell, bold=True, fill=pale_blue, color=navy, align=WD_ALIGN_PARAGRAPH.CENTER)
+            format_cell(cell, bold=True, fill=pale_blue, color=navy, align=WD_ALIGN_PARAGRAPH.CENTER, size=10)
 
         for row in scoring["rows"]:
             if row.get("skipped", False):
@@ -1573,7 +1585,7 @@ class DocxExporter:
                     fill=pale_teal if index in {5, 6} else row_fill,
                     align=WD_ALIGN_PARAGRAPH.CENTER if index in {2, 3, 4, 5, 6} else None,
                 )
-        set_table_geometry(table, [2.05, 0.85, 0.5, 0.9, 1.0, 0.9, 1.0])
+        set_table_geometry(table, [2.0, 0.8, 0.75, 0.8, 0.95, 0.85, 1.05])
 
         add_box(
             f"Weighted Total: {scoring['weighted_total']} / {scoring['max_weighted_total']} | "
@@ -1607,18 +1619,29 @@ class DocxExporter:
                 question = flow_question_for_index(flow_index) or f"Question {flow_index or ''}".strip()
                 row = scoring_row_for_answer_summary(item)
                 model_trait_score = row.get("model_trait_score", {}) if row else {}
-                rows = [
-                    ("Question text", question),
-                ]
+                rows = []
                 if is_scored_answer_summary(item):
                     rows.extend(
                         [
                             ("Interviewer rating", raw_rating_text(row.get("raw_score") if row else None)),
-                            ("AI-advisory rating", raw_rating_text(row.get("suggested_raw_score") if row else None)),
+                            ("AI-advisory rating", answer_card_ai_advisory_rating_text(row)),
                             ("AI-trait-based rating", raw_rating_text(model_trait_score.get("raw_score") if model_trait_score else None)),
                         ]
                     )
                 rows.append(("Answer summary", str(item.get("summary") or "").strip()))
+                evidence_quotes = [
+                    str(quote or "").strip()
+                    for quote in item.get("evidence_quotes", []) or []
+                    if str(quote or "").strip()
+                ]
+                if evidence_quotes:
+                    rows.append(("Evidence", "; ".join(evidence_quotes)))
+                rubric_alignment = str(item.get("rubric_alignment") or "").strip()
+                if rubric_alignment:
+                    rows.append(("Rubric alignment", rubric_alignment))
+                risks_or_gaps = str(item.get("risks_or_gaps") or "").strip()
+                if risks_or_gaps:
+                    rows.append(("Risk/gap", risks_or_gaps))
                 summary_card = doc.add_table(rows=len(rows) + 1, cols=2)
                 summary_card.style = "Table Grid"
                 title_cell = summary_card.rows[0].cells[0].merge(summary_card.rows[0].cells[1])
@@ -1723,10 +1746,6 @@ class DocxExporter:
         else:
             add_text("No critical traits configured for this track.")
 
-        add_text("Global disqualifiers reviewed:", bold=True)
-        for d in rubric["absolute_disqualifiers"]:
-            add_text(str(d), style="List Bullet")
-
         add_text("Observed disqualifier evidence (from verbatim notes):", bold=True)
         evidence_added = False
         for row in scoring["rows"]:
@@ -1735,33 +1754,6 @@ class DocxExporter:
                 evidence_added = True
         if not evidence_added:
             add_text("None recorded", style="List Bullet")
-
-        add_heading("Hiring Manager Evidence Notes")
-        for idx, row in enumerate(scoring["rows"], start=1):
-            if row.get("skipped", False):
-                continue
-            add_heading(f"{idx}. {row['trait_name']}", level=2)
-            add_text(f"Priority: {row['priority']} | Weight: x{row['weight']}")
-            add_labeled_text("Primary Question: ", str(row["primary_question"]))
-            raw_display = row.get("raw_score", None)
-            system_score = row.get("system_checkbox_score", row.get("weighted_score"))
-            model_trait_score = row.get("model_trait_score", {}) or {}
-            ne = "Yes" if row.get("no_example_after_followups") else "No"
-            add_key_value_table(
-                [
-                    ("Final interviewer raw score", "N/A" if raw_display is None else str(raw_display)),
-                    ("Human weighted score", "N/A" if system_score is None else str(system_score)),
-                    ("Evidence status", evidence_status_for_row(row)),
-                    ("Risk/gap", str(model_trait_score.get("risks_or_gaps") or "").strip() or "None cited"),
-                    ("Automatic no-hire signal IDs", ", ".join(row.get("auto_no_hire_signal_ids", []) or []) or "None"),
-                    ("Automatic no-hire reasons", "; ".join(row.get("auto_no_hire_reasons", []) or []) or "None"),
-                    ("Automatic no-hire quotes", "; ".join(row.get("auto_no_hire_quotes", []) or []) or "None"),
-                    ("No example after follow-ups", ne),
-                ]
-            )
-            add_labeled_text("Question Notes: ", str(row["question_notes"]))
-            add_labeled_text("Trait Notes: ", str(row["trait_notes"]))
-            add_labeled_text("Verbatim quote/notes: ", str(row["verbatim_notes"]))
 
         add_heading("Custom Questions (Non-scored)")
         custom_answers = payload.get("custom_answers", []) or []
@@ -1806,15 +1798,6 @@ class DocxExporter:
                     add_box(cand_tx, allow_split=True)
                 else:
                     add_labeled_text("Full Candidate Answer (auto-transcribed): ", "Not captured")
-                matching_summaries = [
-                    summary
-                    for summary in answer_summaries
-                    if summary.get("flow_index") == item.get("flow_index", i)
-                ]
-                for summary in matching_summaries:
-                    add_text("Answer summary evidence", bold=True)
-                    add_box(answer_summary_appendix_text(summary), allow_split=True)
-
         add_heading("AI Advisory Appendix")
         add_box(
             f"{ai_advisory_label} content is supporting information only. "
@@ -1860,8 +1843,6 @@ class DocxExporter:
                     (f"{ai_generated_label} score evidence", str(model_trait_score.get("evidence_quote") or "").strip() or "None cited"),
                     (f"{ai_generated_label} score rationale", str(model_trait_score.get("rationale") or "").strip() or "None cited"),
                     (f"{ai_generated_label} score risk/gap", str(model_trait_score.get("risks_or_gaps") or "").strip() or "None cited"),
-                    (f"Interviewer adjusted from {ai_suggested_label} score", "Yes" if row.get("interviewer_adjusted") else "No"),
-                    ("Adjustment reason", str(row.get("adjustment_reason") or "").strip() or "None"),
                 ]
             )
             selected_signal_ids = [str(signal_id) for signal_id in row.get("selected_signal_ids", []) or [] if str(signal_id).strip()]

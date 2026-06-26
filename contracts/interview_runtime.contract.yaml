@@ -2,7 +2,7 @@ module:
   name: interview_runtime
   language: python
   path: src/interview_runtime.py
-  version: 0.22.0
+  version: 0.23.1
   description: Flattened public interface for interview state, session management,
     audio/transcription runtime, transcript summary seam, controllers, history, and
     finalize pipeline; only active legacy adapters remain in the compatibility module
@@ -258,8 +258,9 @@ functions:
 - name: build_deepseek_summary_config
   description: Build local DeepSeek interview summary config from environment values,
     defaulting to Ollama at 127.0.0.1 and the configured local 8b DeepSeek model while
-    rejecting non-local base URLs and loading prompt templates from config/deepseek_prompts.json
-    when no explicit prompt map is supplied.
+    rejecting non-local base URLs, resolving the model-output debug log directory,
+    and loading prompt templates from config/deepseek_prompts.json when no explicit
+    prompt map is supplied.
   locked: false
   inputs:
     env:
@@ -449,10 +450,54 @@ functions:
   - OSError
   - json.JSONDecodeError
   side_effects: May send transcript-bearing prompt text to local Ollama.
+- name: _deepseek_debug_log_path
+  description: Resolve the JSONL debug log path for raw DeepSeek model output when
+    debug logging is configured.
+  locked: false
+  inputs:
+    config:
+      type: DeepSeekSummaryConfig
+      required: true
+  returns:
+    type: Path | None
+  exceptions: []
+  side_effects: none
+- name: _write_deepseek_debug_log
+  description: Append one raw DeepSeek model-output debug event with prompt name,
+    response text, validation outcome, candidate name, job title, and timestamp.
+  locked: false
+  inputs:
+    config:
+      type: DeepSeekSummaryConfig
+      required: true
+    prompt_name:
+      type: str
+      required: true
+    model_response:
+      type: str
+      required: true
+    parse_success:
+      type: bool
+      required: true
+    validation_errors:
+      type: list[str]
+      required: true
+    candidate_name:
+      type: str
+      required: false
+      default: ''
+    job_title:
+      type: str
+      required: false
+      default: ''
+  returns:
+    type: None
+  exceptions: []
+  side_effects: May create a local log directory and append one JSONL event.
 - name: _normalize_deepseek_completion_until_valid
-  description: Re-request the same DeepSeek prompt until the provided normalizer accepts
-    a valid JSON response, preserving fail-closed generated-output semantics for every
-    prompt group.
+  description: Request one DeepSeek prompt, parse only the first valid JSON object,
+    validate it through the provided normalizer, log raw model output and validation
+    status, then retry once with a strict repair prompt when parsing or validation fails.
   locked: false
   inputs:
     config:
@@ -479,31 +524,45 @@ functions:
     max_attempts:
       type: int
       required: false
-      default: 3
+      default: 2
+    prompt_name:
+      type: str
+      required: false
+      default: ''
+    candidate_name:
+      type: str
+      required: false
+      default: ''
+    job_title:
+      type: str
+      required: false
+      default: ''
   returns:
     type: dict[str, Any] | list[dict[str, Any]]
   exceptions:
   - OSError
   - ValueError
-  side_effects: May repeat local Ollama requests for the same prompt until a valid
-    JSON object matching the expected shape is returned or max_attempts is reached.
+  side_effects: May repeat local Ollama requests for the same prompt and may append
+    JSONL debug events containing prompt name, raw response, validation outcome,
+    candidate name, job title, and timestamp.
 - name: generate_deepseek_interview_summaries
   description: >-
     Generate degraded, failed, or DeepSeek-backed finalize summaries using one
     configurable prompt per transcripted answer plus a separate configurable
     executive summary prompt; per-question answer prompts may override the global
     answer prompt by question id, trait id, or flow index. Executive-summary
-    prompts include transcript, candidate, answer-summary, and optional scoring
-    context. Prompts are evidence-first, role-aware, reject generic/invented
-    claims, request an explicit executive_summary_sections JSON object matching
+    prompts include transcript, candidate, answer-summary, selected job title,
+    matching role context, and optional scoring context. Prompts are evidence-first,
+    role-aware, reject generic/invented claims, request and require an explicit
+    executive_summary_sections JSON object matching
     the director-scan template order of recommendation, overall fit,
     role-specific match, score pattern, paired strengths/concerns, four follow-up
     questions, and final hiring notes, synthesize compatible executive_summary
     text when structured sections are returned without summary text, and retry
-    invalid JSON responses for the same prompt until valid, then validate JSON
-    object responses fail-closed; detached workers require generated summary
-    status before notes export so incomplete prompt output is not written as
-    final notes. Optional progress callbacks receive operator-facing step labels
+    invalid JSON responses once with a repair prompt, validate JSON object responses
+    against required top-level keys, remove unsupported generated evidence quotes,
+    preserve confidence values, and return a manual-review placeholder when an
+    executive section fails so document export can continue. Optional progress callbacks receive operator-facing step labels
     such as "Summarizing Q1: Classroom routines" and "Generating Executive
     Summary".
   locked: false
@@ -533,9 +592,9 @@ functions:
   returns:
     type: dict[str, Any]
     description: Contains answer_summaries, executive_summary,
-      executive_summary_sections, interview_highlights, summary_status, and
-      summary_warnings; normalization preserves full generated section prose
-      without character clipping.
+      executive_summary_sections, interview_highlights, confidence when supplied,
+      summary_status, and summary_warnings; normalization preserves full generated
+      section prose without character clipping.
   exceptions: []
   side_effects: May send transcript text to local Ollama when enabled and no injected
     chat_completion is provided.
@@ -545,11 +604,12 @@ functions:
     suggestions and advisory 1-5 raw trait scores keyed by trait id without
     changing human raw scores or compatibility selected_signal_ids; each trait is
     requested independently with configurable per-trait prompt overrides for
-    signal suggestions and advisory raw scoring. Local Ollama calls have no read
-    timeout and invalid JSON responses are retried for the same prompt until
-    valid; detached workers require generated suggestion and scoring statuses
-    before notes export so incomplete prompt output is not written as final notes.
-    Optional progress callbacks receive operator-facing step labels such as
+    signal suggestions and advisory raw scoring. Role context from transcript items
+    is included when available. Local Ollama calls use the configured timeout and
+    invalid JSON responses are retried once with a repair prompt; responses are
+    validated against required top-level keys, unsupported generated evidence quotes
+    are removed, confidence values are preserved, and failed traits remain advisory
+    partial output. Optional progress callbacks receive operator-facing step labels such as
     "Analyzing Traits Q1: Empathy" and "Scoring Q1: Empathy". Status values may
     be generated, partial, failed, disabled, or no_transcript.
   locked: false
@@ -580,7 +640,8 @@ functions:
     type: dict[str, Any]
     description: Contains model_signal_suggestions_by_trait, model_suggestion_status,
       model_suggestion_warnings, model_trait_scores_by_trait, model_scoring_status,
-      and model_scoring_warnings.
+      and model_scoring_warnings. A trait_suggestions item with an empty suggestions
+      list is a generated empty advisory result, not a failed generation.
   exceptions: []
   side_effects: May send transcript text to local Ollama when enabled and no injected
     chat_completion is provided.
@@ -1904,8 +1965,12 @@ classes:
       type: str
     timeout_seconds:
       type: float
+      description: Request timeout in seconds; defaults to 600 and accepts values
+        up to 1800 for slow local Ollama DeepSeek runs.
     prompt_templates:
       type: dict[str, Any]
+    debug_log_dir:
+      type: Path | None
   methods: []
 - name: FinalizeGateways
   description: Finalize output gateway adapter for report export, integration export,

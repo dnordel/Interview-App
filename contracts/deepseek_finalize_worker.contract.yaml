@@ -2,7 +2,7 @@ module:
   name: deepseek_finalize_worker
   language: python
   path: src/deepseek_finalize_worker.py
-  version: 1.6.0
+  version: 1.7.0
   description: Detached local DeepSeek finalize worker that refreshes interview notes
     documents and history status after the GUI finalize flow returns, keeping DeepSeek
     signal scoring advisory and human raw scores final. Workers serialize processing
@@ -267,10 +267,9 @@ functions:
   exceptions: []
   side_effects: none
 - name: _require_deepseek_statuses
-  description: Fail closed when required DeepSeek prompt groups did not all generate,
-    preventing incomplete prompt output from being exported into interview notes;
-    callers may explicitly allow non-generated statuses such as partial or no_transcript
-    for advisory-only stages where summaries can still be generated.
+  description: Fail closed when a caller explicitly requires DeepSeek prompt groups
+    to generate before continuing; advisory stages may allow partial/no_transcript
+    statuses, while summary failures are handled with document placeholders.
   locked: false
   inputs:
     payload:
@@ -393,8 +392,10 @@ functions:
     or resuming advisory trait suggestions/scoring and recomputed scoring before
     generating or resuming answer/executive summaries; checkpoints completed stages
     to the job JSON so GUI retry can resume after the last completed stage. Uses
-    a regenerated sibling report path if the original DOCX is locked. Fails closed
-    before DOCX export when any required DeepSeek prompt group did not generate.
+    a regenerated sibling report path if the original DOCX is locked. Injects the
+    candidate role context into transcript items before DeepSeek calls and exports
+    interview notes even when summaries are failed or partial, relying on placeholder
+    text and history status to surface failures.
   locked: false
   inputs:
     job:

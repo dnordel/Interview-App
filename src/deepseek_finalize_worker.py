@@ -21,6 +21,7 @@ if str(SRC) not in sys.path:
 
 from data_store import InterviewHistoryStore
 from interview_runtime import (
+    _attach_deepseek_role_context_to_flow,
     build_deepseek_summary_config,
     generate_deepseek_interview_summaries,
     generate_deepseek_trait_signal_suggestions,
@@ -351,6 +352,7 @@ def _run_job_unlocked(job: dict[str, Any], job_path: Path) -> None:
     rubric = dict(job.get("rubric", {}) or {})
     flow_transcript = [item for item in payload.get("flow_transcript", []) or [] if isinstance(item, dict)]
     candidate = payload.get("candidate", {}) if isinstance(payload.get("candidate"), dict) else {}
+    _attach_deepseek_role_context_to_flow(flow_transcript, candidate)
     trait_inputs = payload.get("trait_inputs", {}) if isinstance(payload.get("trait_inputs"), dict) else {}
 
     config = build_deepseek_summary_config(job.get("deepseek_settings", {}) if isinstance(job.get("deepseek_settings"), dict) else {})
@@ -394,7 +396,6 @@ def _run_job_unlocked(job: dict[str, Any], job_path: Path) -> None:
         _checkpoint_job(job_path, job, payload, scoring)
     else:
         _write_progress(job, "Resuming after summary checkpoint")
-    _require_deepseek_statuses(payload, ("summary_status",))
 
     _write_progress(job, "Updating interview notes document")
     out_path = _export_interview_notes(job, job_path, rubric, payload, scoring)
