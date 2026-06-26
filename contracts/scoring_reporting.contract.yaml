@@ -2,7 +2,7 @@ module:
   name: scoring_reporting
   language: python
   path: src/scoring_reporting.py
-  version: 0.18.8
+  version: 0.18.9
   description: Flattened public interface for scoring, reporting, trait signals, exports,
     referrals, email safety, offers, and templates, including DeepSeek-only advisory
     signal scoring; only active legacy adapters remain in the compatibility module
@@ -1608,8 +1608,8 @@ classes:
       interview-notes template layout: narrow margins, readable Arial typography at
       no less than 12 pt for body content, centered title/subtitle, professional
       blue/green heading and table styling, shaded recommendation callout before
-      the executive summary with interviewer, AI advisory, and AI-generated
-      trait-based scores as weighted fractions and percentages plus threshold and
+      the executive summary with interviewer, AI advisory aggregate, and
+      AI-trait-based aggregate scores as weighted fractions and percentages plus threshold and
       override/disqualifier status, a structured generated executive-summary
       decision brief that accepts
       DeepSeek executive_summary_sections JSON, including nested recommendation
@@ -1617,29 +1617,37 @@ classes:
       strips markdown markers, and renders a color-coded recommendation box, boxed
       at-a-glance fit/role/score rows, side-by-side strengths and concerns boxes,
       follow-up questions, final-notes box, and fallback additional notes;
-      AI-generated evidence-summary sections; scorecard
+      candidate snapshot immediately before the executive summary without
+      repeating candidate name, school/location, track, or interview date already
+      shown in the subtitle, showing Infant/toddler class completed only for
+      infant/toddler or BSS tracks and Total units completed only when the
+      candidate has no degree; AI-generated
+      evidence-summary sections; scorecard
       snapshot immediately after the executive summary with compact score headers and
       balanced score-column widths; consolidated answer summaries
       near the top as stacked readable cards ordered by exact question/prompt text,
-      one consolidated ratings row containing Interviewer, AI-Advisor, and
-      AI-trait-based ratings, answer summary, and concise
+      one consolidated ratings row containing Interviewer, AI-Advisor direct-model,
+      and AI-trait-based signal-weighted ratings, answer summary, and concise
       rubric/risk rows when generated for scored questions while suppressing
-      evidence rows and non-scored rubric-alignment rows; candidate
-      snapshot; director decision brief; critical safety review; transcript appendix;
+      evidence rows and non-scored rubric-alignment rows; director decision
+      brief; critical safety review whose evidence column
+      includes available human notes plus AI-generated risk_flag_evidence,
+      evidence_quote, and risks_or_gaps for flagged traits; transcript appendix;
       and AI advisory appendix that collapses missing generated AI scoring to a
       concise status note instead of repeated N/A rows and omits interviewer
       adjustment rows. The report keeps full candidate answers in the transcript
       appendix without duplicating per-question answer-summary evidence, compacts duplicate transcription-attempt
       blocks, marks missing per-question transcripts inline without creating empty
       answer boxes, keeps the question in each answer-card title without repeating
-      it in a separate Question text row, explains missing answer-card AI advisory
-      signal ratings as no supported signals, no weighted signals, or not generated
+      it in a separate Question text row, explains missing answer-card AI-trait-based
+      signal-weighted ratings as no supported signals, no weighted signals, or not generated
       instead of plain N/A, allows long transcript boxes to split
       across pages to reduce blank space, excludes intro/script flow items from rendered notes sections, omits
       score/rating rows from non-scored custom answer-summary cards, and preserves
-      final interviewer raw/weighted scores, AI advisory net signal score, suggested
-      raw score, suggested weighted score, model observations, auto-no-hire metadata,
-      and compatibility selected signal ids when present.
+      final interviewer raw/weighted scores, AI-trait-based net signal score,
+      signal-derived raw score, signal-derived weighted score, AI-Advisor model observations, auto-no-hire metadata,
+      and compatibility selected signal ids when present, and omits the legacy
+      Custom Questions (Non-scored) table from generated notes documents.
     locked: false
     inputs:
       rubric:

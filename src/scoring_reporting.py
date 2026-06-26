@@ -968,8 +968,8 @@ class DocxExporter:
         dark_text = "1F2937"
         content_width_inches = 7.2
         ai_generated_label = "AI-generated"
-        ai_suggested_label = "AI-suggested"
-        ai_advisory_label = "AI advisory"
+        ai_trait_based_label = "AI-trait-based"
+        ai_advisory_label = "AI-Advisor"
 
         scoring = dict(scoring)
         normalized_scoring_rows: list[dict[str, Any]] = []
@@ -1447,6 +1447,17 @@ class DocxExporter:
                 or str(row.get("model_trait_score", {}).get("risks_or_gaps") or "").strip()
             )
 
+        def critical_safety_evidence_text(row: dict[str, Any]) -> str:
+            human_notes = str(row.get("verbatim_notes") or row.get("question_notes") or row.get("trait_notes") or "").strip()
+            model_trait_score = row.get("model_trait_score", {}) if isinstance(row.get("model_trait_score"), dict) else {}
+            ai_parts = [
+                str(model_trait_score.get("risk_flag_evidence") or "").strip(),
+                str(model_trait_score.get("evidence_quote") or "").strip(),
+                str(model_trait_score.get("risks_or_gaps") or "").strip(),
+            ]
+            evidence_parts = [part for part in [human_notes, *ai_parts] if part]
+            return "; ".join(dict.fromkeys(evidence_parts)) or "None recorded"
+
         def scoring_row_for_flow_item(item: dict[str, Any]) -> dict[str, Any] | None:
             item_trait_id = canonical_trait_id(item.get("id") or item.get("trait_id"))
             if item_trait_id:
@@ -1479,7 +1490,7 @@ class DocxExporter:
         def raw_rating_text(value: Any) -> str:
             return "N/A" if value is None else f"{value}/5"
 
-        def answer_card_ai_advisory_rating_text(row: dict[str, Any] | None) -> str:
+        def answer_card_ai_trait_based_rating_text(row: dict[str, Any] | None) -> str:
             if not row:
                 return "Not generated"
             suggested_raw_score = row.get("suggested_raw_score")
@@ -1495,8 +1506,8 @@ class DocxExporter:
             return " | ".join(
                 [
                     f"Interviewer: {raw_rating_text(row.get('raw_score') if row else None)}",
-                    f"AI-Advisor: {answer_card_ai_advisory_rating_text(row)}",
-                    f"AI-trait-based: {raw_rating_text(model_trait_score.get('raw_score') if model_trait_score else None)}",
+                    f"{ai_advisory_label}: {raw_rating_text(model_trait_score.get('raw_score') if model_trait_score else None)}",
+                    f"{ai_trait_based_label}: {answer_card_ai_trait_based_rating_text(row)}",
                 ]
             )
 
@@ -1555,7 +1566,7 @@ class DocxExporter:
             f"Override/disqualifier status: "
             f"{'Active' if scoring['critical_eq_1'] or scoring['disqualifier_present'] or scoring['locked_rule'] else 'None active'}. "
             f"AI advisory score: {deepseek_total_text}. "
-            f"{ai_generated_label} trait-based score: {trait_based_total_text}. "
+            f"{ai_trait_based_label} score: {trait_based_total_text}. "
             f"Candidate: {cname}.",
             fill=pale_green if scoring["outcome"] == "Hire" else pale_yellow,
             bold=True,
@@ -1563,8 +1574,48 @@ class DocxExporter:
 
         executive_summary = str(payload.get("executive_summary") or "").strip()
         executive_summary_sections = payload.get("executive_summary_sections")
+
+        has_degree = qualification.get("has_degree", None)
+        has_degree_text = "Yes" if has_degree is True else "No" if has_degree is False else "Not provided"
+        degree_type = str(qualification.get("degree_type", "") or "").strip() or "N/A"
+        degree_in_ece = "Yes" if qualification.get("degree_in_ece", False) else "No"
+        ece_units = qualification.get("ece_units_completed", None)
+        ece_units_text = "N/A" if ece_units is None else str(ece_units)
+        infant_toddler = "Yes" if qualification.get("infant_toddler_class_completed", False) else "No"
+        total_units = qualification.get("total_units_completed", None)
+        total_units_text = "N/A" if total_units is None else str(total_units)
+        years_experience = qualification.get("years_experience", None)
+        years_experience_text = "N/A" if years_experience is None else str(years_experience)
+        track_key_text = str(track_key or "").strip().lower()
+        track_label_text = str(track_label or "").strip().lower()
+        show_infant_toddler_row = (
+            "infant" in track_key_text
+            or "infant" in track_label_text
+            or "toddler" in track_key_text
+            or "toddler" in track_label_text
+            or "behavior_support_specialist" in track_key_text
+            or "behavior support specialist" in track_label_text
+            or track_key_text == "bss"
+            or track_label_text == "bss"
+        )
+        snapshot_rows = [
+            ("Has degree", has_degree_text),
+            ("Degree type", degree_type),
+            ("Degree in Early Childhood Education (ECE)", degree_in_ece),
+            ("ECE units completed", ece_units_text),
+        ]
+        if show_infant_toddler_row:
+            snapshot_rows.append(("Infant/toddler class completed", infant_toddler))
+        if has_degree is False:
+            snapshot_rows.append(("Total units completed (if no degree)", total_units_text))
+        snapshot_rows.append(("Years of experience", years_experience_text))
+
+        add_heading("Candidate Snapshot")
+        add_key_value_table(snapshot_rows)
+
         if executive_summary or isinstance(executive_summary_sections, dict):
             render_executive_summary(executive_summary, executive_summary_sections)
+
         interview_highlights = [
             str(item or "").strip()
             for item in payload.get("interview_highlights", []) or []
@@ -1615,7 +1666,7 @@ class DocxExporter:
 
         add_box(
             f"Weighted Total: {scoring['weighted_total']} / {scoring['max_weighted_total']} | "
-            f"AI-suggested Total: {deepseek_total_text} | "
+            f"AI advisory Total: {deepseek_total_text} | "
             f"Skipped scored questions: {scoring.get('skipped_traits_count', 0)} | "
             f"Percent of Max: {percent_of_max_label} | Final Outcome: {scoring['outcome']}",
             fill=pale_teal,
@@ -1668,35 +1719,6 @@ class DocxExporter:
                     format_cell(cells[0], bold=True, fill=pale_blue, color=navy)
                     format_cell(cells[1], fill=pale_teal if "rating" in label.lower() else white)
                 set_table_geometry(summary_card, [1.8, 5.4], prevent_splits=False)
-
-        has_degree = qualification.get("has_degree", None)
-        has_degree_text = "Yes" if has_degree is True else "No" if has_degree is False else "Not provided"
-        degree_type = str(qualification.get("degree_type", "") or "").strip() or "N/A"
-        degree_in_ece = "Yes" if qualification.get("degree_in_ece", False) else "No"
-        ece_units = qualification.get("ece_units_completed", None)
-        ece_units_text = "N/A" if ece_units is None else str(ece_units)
-        infant_toddler = "Yes" if qualification.get("infant_toddler_class_completed", False) else "No"
-        total_units = qualification.get("total_units_completed", None)
-        total_units_text = "N/A" if total_units is None else str(total_units)
-        years_experience = qualification.get("years_experience", None)
-        years_experience_text = "N/A" if years_experience is None else str(years_experience)
-
-        add_heading("Candidate Snapshot")
-        add_key_value_table(
-            [
-                ("Candidate Name", cname),
-                ("School/Location", str(school or "N/A")),
-                ("Track", track_label),
-                ("Interview Date", interview_date),
-                ("Has degree", has_degree_text),
-                ("Degree type", degree_type),
-                ("Degree in Early Childhood Education (ECE)", degree_in_ece),
-                ("ECE units completed", ece_units_text),
-                ("Infant/toddler class completed", infant_toddler),
-                ("Total units completed (if no degree)", total_units_text),
-                ("Years of experience", years_experience_text),
-            ]
-        )
 
         add_heading("Director Decision Brief")
         strongest_rows = [
@@ -1752,7 +1774,7 @@ class DocxExporter:
                 cells[0].text = row["trait_name"]
                 cells[1].text = "N/A" if raw_display is None else str(raw_display)
                 cells[2].text = "Yes" if row_has_risk(row) else "No"
-                cells[3].text = str(row.get("verbatim_notes") or row.get("question_notes") or row.get("trait_notes") or "").strip() or "None recorded"
+                cells[3].text = critical_safety_evidence_text(row)
                 row_fill = pale_yellow if cells[2].text == "Yes" else pale_green
                 for index, cell in enumerate(cells):
                     format_cell(cell, fill=row_fill)
@@ -1768,29 +1790,6 @@ class DocxExporter:
                 evidence_added = True
         if not evidence_added:
             add_text("None recorded", style="List Bullet")
-
-        add_heading("Custom Questions (Non-scored)")
-        custom_answers = payload.get("custom_answers", []) or []
-        if not custom_answers:
-            add_text("None.")
-        else:
-            custom_table = doc.add_table(rows=1, cols=2)
-            custom_table.style = "Table Grid"
-            header_cells = custom_table.rows[0].cells
-            header_cells[0].text = "Question"
-            header_cells[1].text = "Answer"
-            repeat_header_row(custom_table.rows[0])
-            format_cell(header_cells[0], bold=True, fill=navy, color=white)
-            format_cell(header_cells[1], bold=True, fill=navy, color=white)
-            for i, item in enumerate(custom_answers, start=1):
-                qtext = (item.get("question_text") or "").strip()
-                ans = (item.get("answer") or "").strip()
-                cells = custom_table.add_row().cells
-                cells[0].text = qtext or f"Custom question {i}"
-                cells[1].text = ans if ans else "N/A"
-                format_cell(cells[0])
-                format_cell(cells[1])
-            set_table_geometry(custom_table, [2.4, 4.8])
 
         add_heading("Interview Transcript Appendix")
         if not flow_transcript:
@@ -1843,20 +1842,20 @@ class DocxExporter:
             add_heading(f"{idx}. {row['trait_name']}", level=2)
             if not row_has_ai_advisory(row):
                 add_box(
-                    "AI advisory scoring not generated for this trait "
+                    "AI scoring not generated for this trait "
                     f"(suggestions: {model_suggestion_status}; scoring: {model_scoring_status}).",
                     fill=pale_yellow,
                 )
                 continue
             add_key_value_table(
                 [
-                    ("AI net signal score", "N/A" if net_signal_score is None else str(net_signal_score)),
-                    (f"{ai_suggested_label} raw score", "N/A" if suggested_raw_score is None else str(suggested_raw_score)),
-                    (f"{ai_suggested_label} weighted score", "N/A" if deepseek_score is None else str(deepseek_score)),
+                    (f"{ai_trait_based_label} net signal score", "N/A" if net_signal_score is None else str(net_signal_score)),
+                    (f"{ai_trait_based_label} raw score", "N/A" if suggested_raw_score is None else str(suggested_raw_score)),
+                    (f"{ai_trait_based_label} weighted score", "N/A" if deepseek_score is None else str(deepseek_score)),
                     (f"{ai_advisory_label} raw score", "N/A" if deepseek_raw is None else str(deepseek_raw)),
-                    (f"{ai_generated_label} score evidence", str(model_trait_score.get("evidence_quote") or "").strip() or "None cited"),
-                    (f"{ai_generated_label} score rationale", str(model_trait_score.get("rationale") or "").strip() or "None cited"),
-                    (f"{ai_generated_label} score risk/gap", str(model_trait_score.get("risks_or_gaps") or "").strip() or "None cited"),
+                    (f"{ai_advisory_label} score evidence", str(model_trait_score.get("evidence_quote") or "").strip() or "None cited"),
+                    (f"{ai_advisory_label} score rationale", str(model_trait_score.get("rationale") or "").strip() or "None cited"),
+                    (f"{ai_advisory_label} score risk/gap", str(model_trait_score.get("risks_or_gaps") or "").strip() or "None cited"),
                 ]
             )
             selected_signal_ids = [str(signal_id) for signal_id in row.get("selected_signal_ids", []) or [] if str(signal_id).strip()]
@@ -1865,7 +1864,7 @@ class DocxExporter:
                 add_box(", ".join(selected_signal_ids))
             model_suggestions = row.get("model_signal_suggestions", []) or []
             if model_suggestions:
-                add_text(f"{ai_advisory_label} signal observations:", bold=True)
+                add_text(f"{ai_trait_based_label} signal observations:", bold=True)
                 suggestion_table = doc.add_table(rows=1, cols=5)
                 suggestion_table.style = "Table Grid"
                 suggestion_headers = suggestion_table.rows[0].cells
@@ -1893,7 +1892,7 @@ class DocxExporter:
                         cells[1].text = str(confidence)
                         cells[2].text = evidence_quote or "None cited"
                         cells[3].text = rationale
-                        cells[4].text = f"Used by {ai_advisory_label} scoring"
+                        cells[4].text = f"Used by {ai_trait_based_label} scoring"
                         if signal_id in rejected:
                             cells[4].text = "AI suggestion"
                         for index, cell in enumerate(cells):
@@ -1903,7 +1902,7 @@ class DocxExporter:
                     add_key_value_table(
                         [
                             ("AI signal-scored observations", ", ".join(override.get("accepted_signal_ids", []) or []) or "None"),
-                            ("AI-suggested observations", ", ".join(override.get("rejected_signal_ids", []) or []) or "None"),
+                            (f"{ai_advisory_label} observations", ", ".join(override.get("rejected_signal_ids", []) or []) or "None"),
                             ("Compatibility selected-only observations", ", ".join(override.get("manual_only_signal_ids", []) or []) or "None"),
                         ]
                     )

@@ -1207,12 +1207,14 @@ DEFAULT_DEEPSEEK_PROMPT_TEMPLATES: dict[str, str] = {
         '      "raw_score": 1,\n'
         '      "evidence_quote": "exact short candidate wording",\n'
         '      "rationale": "descriptor match",\n'
-        '      "risks_or_gaps": "missing evidence or disqualifier risk if present"\n'
+        '      "risks_or_gaps": "missing evidence or disqualifier risk if present",\n'
+        '      "risk_flag_evidence": "evidence explaining any risk flag, or empty string if no risk flag"\n'
         "    }\n"
         "  ]\n"
         "}\n"
         "Rules: choose 1, 2, 3, 4, or 5 only; 5 is best; evidence_quote must be exact short candidate wording; "
-        "rationale must cite descriptor match; risks_or_gaps names missing evidence or disqualifier risk if present. "
+        "rationale must cite descriptor match; risks_or_gaps names missing evidence or disqualifier risk if present; "
+        "risk_flag_evidence must explain why a risk flag should display when raw_score is 1 or 2 or risks_or_gaps is non-empty. "
         "Return no keys except trait_scores. Data: {payload_json}"
     ),
 }
@@ -2458,6 +2460,7 @@ def _normalize_deepseek_trait_score_payload(
             "evidence_quote": evidence_quote,
             "rationale": _clamp_deepseek_text(item.get("rationale"), "rationale"),
             "risks_or_gaps": _clamp_deepseek_text(item.get("risks_or_gaps"), "risks_or_gaps"),
+            "risk_flag_evidence": _clamp_deepseek_text(item.get("risk_flag_evidence"), "rationale"),
         }
         confidence = _normalize_deepseek_confidence(item.get("confidence"))
         if confidence is not None:

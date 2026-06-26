@@ -610,7 +610,7 @@ functions:
     is included when available. Local Ollama calls use the configured timeout and
     invalid JSON responses are retried once with a repair prompt; responses are
     validated against required top-level keys, unsupported generated evidence quotes
-    are removed, confidence values are preserved, and failed traits remain advisory
+    are removed, confidence values and risk_flag_evidence values are preserved, and failed traits remain advisory
     partial output. Optional progress callbacks receive operator-facing step labels such as
     "Analyzing Traits Q1: Empathy" and "Scoring Q1: Empathy". Status values may
     be generated, partial, failed, disabled, or no_transcript.
@@ -641,7 +641,8 @@ functions:
   returns:
     type: dict[str, Any]
     description: Contains model_signal_suggestions_by_trait, model_suggestion_status,
-      model_suggestion_warnings, model_trait_scores_by_trait, model_scoring_status,
+      model_suggestion_warnings, model_trait_scores_by_trait including
+      risk_flag_evidence when supplied, model_scoring_status,
       and model_scoring_warnings. A trait_suggestions item with an empty suggestions
       list is a generated empty advisory result, not a failed generation.
   exceptions: []

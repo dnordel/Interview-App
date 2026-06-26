@@ -1949,6 +1949,50 @@ def test_generate_deepseek_trait_signal_suggestions_filters_and_persists(monkeyp
     assert "trait_based_scoring_json" in scoring_prompt_payload
 
 
+def test_generate_deepseek_trait_scores_preserve_risk_flag_evidence(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        interview_runtime,
+        "load_trait_signal_ui_definition",
+        lambda _trait_id: {
+            "valid_signal_ids": ["S_CONCERN"],
+            "core_signals": [{"signal_id": "S_CONCERN", "label": "Concern"}],
+            "extended_groups": [],
+        },
+    )
+
+    calls = []
+
+    def _completion(_config, messages):
+        calls.append(messages)
+        if "Score preschool teacher" in messages[0]["content"]:
+            content = (
+                '{"trait_scores":[{"trait_id":"trait_1","raw_score":2,'
+                '"evidence_quote":"I yell first","rationale":"Matches low descriptor.",'
+                '"risks_or_gaps":"Unsafe first response.",'
+                '"risk_flag_evidence":"Candidate says they would yell first."}]}'
+            )
+        else:
+            content = (
+                '{"trait_suggestions":[{"trait_id":"trait_1","suggestions":['
+                '{"signal_id":"S_CONCERN","confidence":0.8,"evidence_quote":"I yell first","rationale":"Direct concern."}]}]}'
+            )
+        return {"choices": [{"message": {"content": content}}]}
+
+    trait_state = {"trait_1": {}}
+    result = generate_deepseek_trait_signal_suggestions(
+        [{"type": "trait", "id": "trait_1", "question": "How?", "candidate_transcript": "I yell first."}],
+        trait_state,
+        config=DeepSeekSummaryConfig(enabled=True, api_key="secret-key"),
+        chat_completion=_completion,
+        rubric={"traits": [{"id": "trait_1", "name": "Empathy", "descriptors": {"2": "Weak safety response"}}]},
+    )
+
+    scoring_prompt = calls[1][1]["content"]
+    assert '"risk_flag_evidence"' in scoring_prompt
+    assert result["model_trait_scores_by_trait"]["trait_1"]["risk_flag_evidence"] == "Candidate says they would yell first."
+    assert trait_state["trait_1"]["model_trait_score"]["risk_flag_evidence"] == "Candidate says they would yell first."
+
+
 def test_generate_deepseek_trait_signal_suggestions_reports_step_progress(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         interview_runtime,
