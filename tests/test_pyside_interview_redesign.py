@@ -1063,21 +1063,71 @@ def test_pyside_failed_retry_button_requeues_deepseek_job(tmp_path: Path, monkey
     window = pyside_interview_app.PySideInterviewWindow(model)
     calls: list[Path] = []
 
-    def _fake_retry(job_path: Path) -> Path:
+    def _fake_regenerate(job_path: Path, *, mode: str) -> Path:
         calls.append(Path(job_path))
+        calls.append(mode)
         InterviewHistoryStore(history_path).update_row(
             "hist-1",
             {"deepseek_processing_status": "processing", "deepseek_processing_warning": ""},
         )
         return Path(job_path).with_suffix(".progress.json")
 
-    monkeypatch.setattr(pyside_interview_app, "retry_deepseek_finalize_job", _fake_retry)
+    monkeypatch.setattr(pyside_interview_app, "regenerate_interview_notes_job", _fake_regenerate)
+    window._choose_pyside_notes_regeneration_mode = lambda _row: "full"
 
     window.history_table.cellWidget(0, 6).click()
     app.processEvents()
 
-    assert calls == [job_path]
+    assert calls == [job_path, "full"]
     assert window.history_table.cellWidget(0, 6).text() == "Processing"
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_existing_notes_can_be_regenerated(tmp_path: Path, monkeypatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    notes_path = tmp_path / "notes.docx"
+    notes_path.write_text("docx", encoding="utf-8")
+    history_path = tmp_path / "interview_history.json"
+    history_path.write_text(
+        json.dumps(
+            [
+                {
+                    "history_id": "hist-1",
+                    "candidate_name": "Latoya Nugent",
+                    "interview_notes_path": str(notes_path),
+                    "deepseek_processing_status": "complete",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    job_path = tmp_path / "deepseek_jobs" / "deepseek-finalize-hist-1.json"
+    job_path.parent.mkdir()
+    job_path.write_text(json.dumps({"history_id": "hist-1"}), encoding="utf-8")
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    calls: list[object] = []
+
+    monkeypatch.setattr(
+        pyside_interview_app,
+        "regenerate_interview_notes_job",
+        lambda path, *, mode: calls.extend([Path(path), mode]) or Path(path).with_suffix(".progress.json"),
+    )
+    window._choose_pyside_existing_notes_action = lambda _row: "regenerate"
+    window._choose_pyside_notes_regeneration_mode = lambda _row: "document_only"
+
+    window.history_table.cellWidget(0, 6).click()
+    app.processEvents()
+
+    assert calls == [job_path, "document_only"]
     window.window.close()
     app.processEvents()
 

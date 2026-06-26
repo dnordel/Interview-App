@@ -2,7 +2,7 @@ module:
   name: interview_app_history_controller
   language: python
   path: src/interview_app/history_controller.py
-  version: 1.2.0
+  version: 1.3.0
   description: Deprecated compatibility wrapper for interview history table controller
     implemented by interview_runtime.
 functions: []
@@ -111,7 +111,9 @@ classes:
     exceptions: []
     side_effects: opens filesystem path in default app
   - name: _on_open_notes_link
-    description: Opens interview notes path for a selected row when available.
+    description: Opens the selected row's existing interview notes after operator
+      confirmation, or routes to regeneration when the document is missing or the
+      operator chooses to rerun notes generation.
     locked: false
     inputs:
       row:
@@ -120,7 +122,9 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: opens filesystem path in default app
+    side_effects: may open filesystem path in default app, show modal choices, update
+      history status, seed progress JSON, and start a detached notes regeneration
+      worker
   - name: _open_history_link
     description: Validates and opens a path field from a row.
     locked: false
@@ -135,6 +139,55 @@ classes:
       type: None
     exceptions: []
     side_effects: opens filesystem path in default app
+  - name: _regenerate_history_notes
+    description: Resolve the selected row's persisted DeepSeek job, ask for rerun
+      mode, and start interview notes regeneration.
+    locked: false
+    inputs:
+      row:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: may show warning dialogs, update history status, seed progress JSON,
+      start a detached worker, and attach GUI progress polling
+  - name: _choose_existing_notes_action
+    description: Ask whether to open the current notes document, regenerate it, or
+      cancel.
+    locked: false
+    inputs:
+      row:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: str | None
+    exceptions: []
+    side_effects: shows modal question dialog
+  - name: _choose_notes_regeneration_mode
+    description: Ask whether notes regeneration should rerun local DeepSeek and rebuild
+      the document or rebuild only the document from saved data.
+    locked: false
+    inputs:
+      row:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: str | None
+    exceptions: []
+    side_effects: shows modal question dialog
+  - name: _deepseek_job_path_for_row
+    description: Resolve the persisted DeepSeek job JSON path from safe history row
+      id and configured history/base directories.
+    locked: false
+    inputs:
+      row:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: Path | None
+    exceptions: []
+    side_effects: checks local filesystem path existence
 data_structures: []
 dependencies:
 - module: interview_runtime

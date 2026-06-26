@@ -2,10 +2,10 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.10.0
+  version: 1.11.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
-    content-sized history table behavior, failed DeepSeek retry actions, user-closable
+    content-sized history table behavior, interview notes regeneration actions, user-closable
     finalize progress, live history refresh, and single-surface parity documentation
     for desktop Tk contracts while preserving Tk-owned finalize, history, document,
     and DeepSeek runtime contracts.
@@ -541,9 +541,9 @@ classes:
     exceptions: []
     side_effects: Checks local filesystem path existence.
   - name: _retry_history_deepseek
-    description: Relaunch a failed DeepSeek finalize job for a history row, refresh
-      history tables to Processing, and attach the existing progress dialog watcher
-      to the retry progress JSON.
+    description: Relaunch a persisted DeepSeek finalize job for a history row in full
+      or document-only regeneration mode, refresh history tables to Processing, and
+      attach the existing progress dialog watcher to the progress JSON.
     locked: false
     inputs:
       row:
@@ -553,12 +553,24 @@ classes:
       type: None
     exceptions: []
     side_effects: Reads a local job JSON path, updates history through interview_runtime
-      retry behavior, starts a detached worker, shows warnings on failure, and refreshes
-      visible history/progress UI.
+      regeneration behavior, starts a detached worker, shows warnings on failure,
+      and refreshes visible history/progress UI.
+  - name: _choose_pyside_notes_regeneration_mode
+    description: Ask whether notes regeneration should rerun local DeepSeek and rebuild
+      the document or rebuild only the document from saved data.
+    locked: false
+    inputs:
+      row:
+        type: PySideHistoryRow
+        required: true
+    returns:
+      type: str | None
+    exceptions: []
+    side_effects: Shows a PySide question dialog.
   - name: _open_history_notes
     description: Open a selected history row's interview notes DOCX in the OS default
-      application after verifying the local path exists, or retry failed detached
-      DeepSeek processing when the row is in failed state.
+      application after operator confirmation, or regenerate notes when the row failed,
+      the document is missing, or the operator chooses rerun for an existing document.
     locked: false
     inputs:
       row:
@@ -567,7 +579,20 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: May launch the OS default document application or show a warning dialog.
+    side_effects: May launch the OS default document application, show question/warning
+      dialogs, update history status, seed progress JSON, and start a detached regeneration worker.
+  - name: _choose_pyside_existing_notes_action
+    description: Ask whether to open the current notes document, regenerate it, or
+      cancel.
+    locked: false
+    inputs:
+      row:
+        type: PySideHistoryRow
+        required: true
+    returns:
+      type: str | None
+    exceptions: []
+    side_effects: Shows a PySide question dialog.
   - name: _delete_history_row
     description: Confirm with the operator, delete one selected PySide history row
       by stable row key, and reload Home/Candidates history tables when deletion succeeds.

@@ -2,14 +2,15 @@ module:
   name: deepseek_finalize_worker
   language: python
   path: src/deepseek_finalize_worker.py
-  version: 1.7.0
+  version: 1.8.0
   description: Detached local DeepSeek finalize worker that refreshes interview notes
     documents and history status after the GUI finalize flow returns, keeping DeepSeek
     signal scoring advisory and human raw scores final. Workers serialize processing
     through a per-deepseek_jobs lock file so local Ollama handles one finalize job
     at a time, writes sanitized progress JSON for GUI polling, and checkpoints
     completed DeepSeek stages back into the job file so retry can resume after
-    the last completed stage.
+    the last completed stage; document-only reruns reuse saved DeepSeek output
+    and rebuild only the DOCX.
 functions:
 - name: _utc_timestamp
   description: Return current UTC timestamp in persisted Z-suffixed ISO format.
@@ -395,7 +396,8 @@ functions:
     a regenerated sibling report path if the original DOCX is locked. Injects the
     candidate role context into transcript items before DeepSeek calls and exports
     interview notes even when summaries are failed or partial, relying on placeholder
-    text and history status to surface failures.
+    text and history status to surface failures. For rerun_mode=document_only, skips
+    local Ollama and scoring recomputation, exporting from saved payload/scoring.
   locked: false
   inputs:
     job:
@@ -409,15 +411,16 @@ functions:
   exceptions:
   - OSError
   - RuntimeError
-  side_effects: May start and call local Ollama, writes DOCX output, and updates interview history
-    JSON.
+  side_effects: May start and call local Ollama except in document-only rerun mode,
+    writes DOCX output, and updates interview history JSON.
 - name: run_job
   description: Load one persisted DeepSeek finalize job, acquire the per-job-directory
     DeepSeek lock, generate advisory trait signal/scoring output through local Ollama,
     recompute final scoring from human raw scores plus DeepSeek advisory metadata,
     generate answer summaries and executive summary with scoring context, rewrite
     the interview notes DOCX, and mark the matching history row complete, partial,
-    or failed based on generated DeepSeek output.
+    or failed based on generated DeepSeek output; document-only rerun jobs skip local
+    DeepSeek and rebuild the DOCX from saved job payload/scoring.
   locked: false
   inputs:
     job_path:

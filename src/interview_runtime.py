@@ -3349,13 +3349,93 @@ class HistoryController:
         self._open_history_link(row, "transcript_path")
 
     def _on_open_notes_link(self, row: dict[str, Any]) -> None:
-        self._open_history_link(row, "interview_notes_path")
+        if _history_path_exists(str(row.get("interview_notes_path", ""))):
+            action = self._choose_existing_notes_action(row)
+            if action == "regenerate":
+                self._regenerate_history_notes(row)
+                return
+            if action is None:
+                return
+            self._open_history_link(row, "interview_notes_path")
+            return
+        self._regenerate_history_notes(row)
 
     def _open_history_link(self, row: dict[str, Any], key: str) -> None:
         path_value = str(row.get(key, "")).strip()
         if not _history_path_exists(path_value):
             return
         self.app._open_path_in_default_app(path_value)
+
+    def _regenerate_history_notes(self, row: dict[str, Any]) -> None:
+        job_path = self._deepseek_job_path_for_row(row)
+        if job_path is None or not job_path.exists():
+            messagebox.showwarning("Regenerate Notes", "DeepSeek job file was not found.")
+            return
+        mode = self._choose_notes_regeneration_mode(row)
+        if mode is None:
+            return
+        try:
+            progress_path = regenerate_interview_notes_job(job_path, mode=mode)
+        except (OSError, ValueError) as exc:
+            messagebox.showwarning("Regenerate Notes", f"Could not regenerate interview notes: {exc}")
+            return
+        if hasattr(self.app, "_show_finalize_progress"):
+            self.app._show_finalize_progress()
+        if hasattr(self.app, "_watch_deepseek_finalize_progress"):
+            self.app._watch_deepseek_finalize_progress(progress_path)
+
+    def _choose_existing_notes_action(self, row: dict[str, Any]) -> str | None:
+        candidate = str(row.get("candidate_name", "") or "this interview").strip()
+        choice = messagebox.askyesnocancel(
+            "Interview Notes",
+            "Interview notes already exist for "
+            f"{candidate}.\n\n"
+            "Yes: open the current document.\n"
+            "No: regenerate the notes document.\n"
+            "Cancel: do nothing.",
+        )
+        if choice is True:
+            return "open"
+        if choice is False:
+            return "regenerate"
+        return None
+
+    def _choose_notes_regeneration_mode(self, row: dict[str, Any]) -> str | None:
+        candidate = str(row.get("candidate_name", "") or "this interview").strip()
+        choice = messagebox.askyesnocancel(
+            "Regenerate Notes",
+            "Regenerate interview notes for "
+            f"{candidate}?\n\n"
+            "Yes: rerun local DeepSeek and rebuild the document.\n"
+            "No: rebuild only the document from saved data.\n"
+            "Cancel: do nothing.",
+        )
+        if choice is True:
+            return "full"
+        if choice is False:
+            return "document_only"
+        return None
+
+    def _deepseek_job_path_for_row(self, row: dict[str, Any]) -> Path | None:
+        row_key = str(row.get("history_id", "")).strip()
+        if not row_key:
+            return None
+        job_name = f"deepseek-finalize-{row_key}.json"
+        if Path(job_name).name != job_name:
+            return None
+        candidates: list[Path] = []
+        history_path = Path(str(getattr(self.app.history_store, "path", "") or ""))
+        if str(history_path):
+            candidates.append(history_path.parent / "deepseek_jobs" / job_name)
+            if history_path.parent.name == "user_artifacts":
+                candidates.insert(0, history_path.parent / "interviews" / "deepseek_jobs" / job_name)
+        base_dir = str(getattr(self.app, "settings", {}).get("base_dir", "")).strip()
+        if base_dir:
+            candidates.append(Path(base_dir) / "deepseek_jobs" / job_name)
+        for candidate in candidates:
+            if candidate.exists():
+                return candidate
+        return candidates[0] if candidates else None
 
 
 PENDING_TRANSCRIPTION_WARNING = TRANSCRIPTION_PARTIAL_WARNING_COPY
@@ -3525,6 +3605,48 @@ def retry_deepseek_finalize_job(job_path: Path) -> Path:
     _write_deepseek_launch_progress(progress_path, "Retrying local DeepSeek worker")
     _start_deepseek_finalize_worker(path)
     return progress_path
+
+
+def regenerate_interview_notes_job(job_path: Path, *, mode: str) -> Path:
+    path = Path(job_path)
+    with path.open("r", encoding="utf-8") as handle:
+        job = json.load(handle)
+    if not isinstance(job, dict):
+        raise ValueError("DeepSeek finalize job must be a JSON object.")
+    normalized_mode = str(mode or "").strip().lower()
+    if normalized_mode not in {"full", "document_only"}:
+        raise ValueError("Regenerate mode must be 'full' or 'document_only'.")
+
+    progress_path = Path(str(job.get("progress_path") or path.with_suffix(".progress.json")))
+    job["rerun_mode"] = normalized_mode
+    if normalized_mode == "full":
+        payload = job.get("payload")
+        if isinstance(payload, dict):
+            payload.update(_deepseek_processing_payload())
+    atomic_write_json(path, job, indent=2, ensure_ascii=False)
+    _mark_deepseek_history_processing(job)
+    _recover_failed_deepseek_retry_lock(path, progress_path)
+    step = "Regenerating interview notes document"
+    if normalized_mode == "full":
+        step = "Regenerating local DeepSeek output and interview notes document"
+    _write_deepseek_launch_progress(progress_path, step)
+    _start_deepseek_finalize_worker(path)
+    return progress_path
+
+
+def _mark_deepseek_history_processing(job: dict[str, Any]) -> None:
+    history_path = str(job.get("history_path", "")).strip()
+    history_id = str(job.get("history_id", "")).strip()
+    if not history_path or not history_id:
+        return
+    InterviewHistoryStore(Path(history_path)).update_row(
+        history_id,
+        {
+            "deepseek_processing_status": "processing",
+            "deepseek_processing_warning": "",
+            "deepseek_completed_at": None,
+        },
+    )
 
 
 def _recover_failed_deepseek_retry_lock(job_path: Path, progress_path: Path) -> None:

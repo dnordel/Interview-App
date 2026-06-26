@@ -350,6 +350,24 @@ def _run_job_unlocked(job: dict[str, Any], job_path: Path) -> None:
     payload = dict(job.get("payload", {}) or {})
     scoring = dict(job.get("scoring", {}) or {})
     rubric = dict(job.get("rubric", {}) or {})
+    rerun_mode = str(job.get("rerun_mode", "") or "").strip().lower()
+    if rerun_mode == "document_only":
+        _write_progress(job, "Updating interview notes document")
+        out_path = _export_interview_notes(job, job_path, rubric, payload, scoring)
+        processing_status, processing_warning = _deepseek_history_status(payload)
+        _update_history(
+            job,
+            {
+                "saved_report_path": str(out_path),
+                "interview_notes_path": str(out_path),
+                "deepseek_processing_status": processing_status,
+                "deepseek_processing_warning": processing_warning,
+                "deepseek_completed_at": _utc_timestamp(),
+            },
+        )
+        _write_progress(job, "Complete", "complete")
+        return
+
     flow_transcript = [item for item in payload.get("flow_transcript", []) or [] if isinstance(item, dict)]
     candidate = payload.get("candidate", {}) if isinstance(payload.get("candidate"), dict) else {}
     _attach_deepseek_role_context_to_flow(flow_transcript, candidate)

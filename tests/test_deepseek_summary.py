@@ -22,6 +22,7 @@ from interview_runtime import (
     generate_deepseek_interview_summaries,
     generate_deepseek_trait_signal_suggestions,
     parse_deepseek_question_prompt_overrides,
+    regenerate_interview_notes_job,
     retry_deepseek_finalize_job,
     save_deepseek_prompt_templates,
 )
@@ -895,6 +896,81 @@ def test_retry_deepseek_finalize_job_recovers_failed_same_job_lock(tmp_path, mon
     assert not lock_path.exists()
 
 
+def test_regenerate_interview_notes_job_document_only_marks_mode_and_relaunches(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[Path] = []
+    history_path = tmp_path / "history.json"
+    history_path.write_text(json.dumps([{"history_id": "hist-1", "deepseek_processing_status": "complete"}]), encoding="utf-8")
+    job_path = tmp_path / "deepseek-finalize-hist-1.json"
+    job_path.write_text(
+        json.dumps(
+            {
+                "history_id": "hist-1",
+                "history_path": str(history_path),
+                "progress_path": str(job_path.with_suffix(".progress.json")),
+                "payload": {"summary_status": "generated"},
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(interview_runtime, "_start_deepseek_finalize_worker", lambda path: calls.append(Path(path)))
+
+    progress_path = regenerate_interview_notes_job(job_path, mode="document_only")
+
+    assert calls == [job_path]
+    assert progress_path == job_path.with_suffix(".progress.json")
+    job = json.loads(job_path.read_text(encoding="utf-8"))
+    assert job["rerun_mode"] == "document_only"
+    row = json.loads(history_path.read_text(encoding="utf-8"))[0]
+    assert row["deepseek_processing_status"] == "processing"
+    progress = json.loads(progress_path.read_text(encoding="utf-8"))
+    assert progress["step"] == "Regenerating interview notes document"
+
+
+def test_regenerate_interview_notes_job_full_mode_resets_deepseek_checkpoints(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[Path] = []
+    job_path = tmp_path / "deepseek-finalize-hist-1.json"
+    job_path.write_text(
+        json.dumps(
+            {
+                "history_id": "hist-1",
+                "progress_path": str(job_path.with_suffix(".progress.json")),
+                "payload": {
+                    "answer_summaries": [{"flow_index": 1, "summary": "Old"}],
+                    "executive_summary": "Old summary",
+                    "summary_status": "generated",
+                    "summary_warnings": [],
+                    "model_signal_suggestions_by_trait": {"t1": []},
+                    "model_suggestion_status": "generated",
+                    "model_suggestion_warnings": [],
+                    "model_trait_scores_by_trait": {"t1": {"raw_score": 4}},
+                    "model_scoring_status": "generated",
+                    "model_scoring_warnings": [],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(interview_runtime, "_start_deepseek_finalize_worker", lambda path: calls.append(Path(path)))
+
+    regenerate_interview_notes_job(job_path, mode="full")
+
+    assert calls == [job_path]
+    job = json.loads(job_path.read_text(encoding="utf-8"))
+    assert job["rerun_mode"] == "full"
+    payload = job["payload"]
+    assert payload["summary_status"] == "processing"
+    assert payload["model_suggestion_status"] == "processing"
+    assert payload["model_scoring_status"] == "processing"
+    assert payload["answer_summaries"] == []
+    assert payload["model_signal_suggestions_by_trait"] == {}
+
+
 def test_deepseek_finalize_worker_resumes_from_checkpointed_trait_output(
     tmp_path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -1138,6 +1214,66 @@ def test_deepseek_finalize_worker_uses_regenerated_notes_path_when_report_is_loc
     assert row["interview_notes_path"] == str(regenerated_report)
     assert export_dirs[0] == tmp_path
     assert export_dirs[1] != tmp_path
+
+
+def test_deepseek_finalize_worker_document_only_rerun_skips_deepseek_generation(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    history_path = tmp_path / "history.json"
+    store = InterviewHistoryStore(history_path)
+    store.append(
+        {
+            "history_id": "hist-1",
+            "candidate_name": "Ada",
+            "deepseek_processing_status": "processing",
+        }
+    )
+    calls: list[str] = []
+
+    class _Exporter:
+        def __init__(self, output_dir):
+            self.output_dir = Path(output_dir)
+
+        def export(self, _rubric, payload, scoring):
+            calls.append(f"export:{payload['summary_status']}:{scoring['outcome']}")
+            out_path = self.output_dir / "updated.docx"
+            out_path.write_text("docx placeholder", encoding="utf-8")
+            return out_path
+
+    monkeypatch.setattr(deepseek_finalize_worker, "_ensure_local_deepseek_runtime", lambda *_args: calls.append("ollama"))
+    monkeypatch.setattr(deepseek_finalize_worker, "generate_deepseek_interview_summaries", lambda *_args, **_kwargs: calls.append("summary"))
+    monkeypatch.setattr(deepseek_finalize_worker, "generate_deepseek_trait_signal_suggestions", lambda *_args, **_kwargs: calls.append("traits"))
+    monkeypatch.setattr(deepseek_finalize_worker, "DocxExporter", _Exporter)
+    job_path = tmp_path / "job.json"
+    job_path.write_text(
+        json.dumps(
+            {
+                "history_id": "hist-1",
+                "history_path": str(history_path),
+                "report_path": str(tmp_path / "original.docx"),
+                "rerun_mode": "document_only",
+                "rubric": {},
+                "payload": {
+                    "candidate": {"track": "lead"},
+                    "flow_transcript": [],
+                    "summary_status": "generated",
+                    "model_suggestion_status": "generated",
+                    "model_scoring_status": "generated",
+                },
+                "scoring": {"outcome": "Hire", "percent_of_max": 88},
+                "deepseek_settings": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    deepseek_finalize_worker.run_job(job_path)
+
+    assert calls == ["export:generated:Hire"]
+    row = store.load()[0]
+    assert row["deepseek_processing_status"] == "complete"
+    assert row["interview_notes_path"] == str(tmp_path / "updated.docx")
 
 
 def test_deepseek_finalize_worker_passes_final_scoring_to_summary_generation(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:

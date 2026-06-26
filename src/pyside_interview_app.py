@@ -25,8 +25,8 @@ from interview_runtime import (
     enqueue_deepseek_finalize_job,
     load_candidate_segments,
     map_segments_to_flow_indices,
+    regenerate_interview_notes_job,
     resolve_default_windows_system_device,
-    retry_deepseek_finalize_job,
 )
 from onboarding_operations import JsonStore, build_dashboard_today_summary, filtered_tasks, task_status
 from platform_services import (
@@ -2265,14 +2265,38 @@ class PySideInterviewWindow:
         if job_path is None or not job_path.exists():
             self.QtWidgets.QMessageBox.warning(self.window, "DeepSeek Retry", "DeepSeek job file was not found.")
             return
+        mode = self._choose_pyside_notes_regeneration_mode(row)
+        if mode is None:
+            return
         try:
-            progress_path = retry_deepseek_finalize_job(job_path)
+            progress_path = regenerate_interview_notes_job(job_path, mode=mode)
         except (OSError, ValueError) as exc:
             self.QtWidgets.QMessageBox.warning(self.window, "DeepSeek Retry", f"Could not retry DeepSeek processing: {exc}")
             return
         self._reload_history_model()
-        self._show_pyside_finalize_progress("Retrying local DeepSeek worker")
+        label = "Regenerating interview notes document"
+        if mode == "full":
+            label = "Regenerating local DeepSeek output and interview notes document"
+        self._show_pyside_finalize_progress(label)
         self._watch_pyside_deepseek_finalize_progress(progress_path)
+
+    def _choose_pyside_notes_regeneration_mode(self, row: PySideHistoryRow) -> str | None:
+        choice = self.QtWidgets.QMessageBox.question(
+            self.window,
+            "Regenerate Notes",
+            "Regenerate interview notes for "
+            f"{row.candidate_name or 'this interview'}?\n\n"
+            "Yes: rerun local DeepSeek and rebuild the document.\n"
+            "No: rebuild only the document from saved data.\n"
+            "Cancel: do nothing.",
+            self.QtWidgets.QMessageBox.Yes | self.QtWidgets.QMessageBox.No | self.QtWidgets.QMessageBox.Cancel,
+            self.QtWidgets.QMessageBox.Yes,
+        )
+        if choice == self.QtWidgets.QMessageBox.Yes:
+            return "full"
+        if choice == self.QtWidgets.QMessageBox.No:
+            return "document_only"
+        return None
 
     def _open_history_notes(self, row: PySideHistoryRow) -> None:
         if row.deepseek_processing_status.strip().lower() == "failed":
@@ -2280,7 +2304,13 @@ class PySideInterviewWindow:
             return
         path = Path(row.notes_path)
         if not path.exists():
-            self.QtWidgets.QMessageBox.warning(self.window, "Interview Notes", "Interview notes file was not found.")
+            self._retry_history_deepseek(row)
+            return
+        action = self._choose_pyside_existing_notes_action(row)
+        if action == "regenerate":
+            self._retry_history_deepseek(row)
+            return
+        if action is None:
             return
         try:
             if sys.platform.startswith("win"):
@@ -2291,6 +2321,24 @@ class PySideInterviewWindow:
                 subprocess.run(["xdg-open", str(path)], check=True)
         except OSError as exc:
             self.QtWidgets.QMessageBox.warning(self.window, "Interview Notes", f"Could not open interview notes: {exc}")
+
+    def _choose_pyside_existing_notes_action(self, row: PySideHistoryRow) -> str | None:
+        choice = self.QtWidgets.QMessageBox.question(
+            self.window,
+            "Interview Notes",
+            "Interview notes already exist for "
+            f"{row.candidate_name or 'this interview'}.\n\n"
+            "Yes: open the current document.\n"
+            "No: regenerate the notes document.\n"
+            "Cancel: do nothing.",
+            self.QtWidgets.QMessageBox.Yes | self.QtWidgets.QMessageBox.No | self.QtWidgets.QMessageBox.Cancel,
+            self.QtWidgets.QMessageBox.Yes,
+        )
+        if choice == self.QtWidgets.QMessageBox.Yes:
+            return "open"
+        if choice == self.QtWidgets.QMessageBox.No:
+            return "regenerate"
+        return None
 
     def _delete_history_row(self, row: PySideHistoryRow) -> None:
         if not row.row_key:

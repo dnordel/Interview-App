@@ -2,7 +2,7 @@ module:
   name: interview_runtime
   language: python
   path: src/interview_runtime.py
-  version: 0.23.1
+  version: 0.24.0
   description: Flattened public interface for interview state, session management,
     audio/transcription runtime, transcript summary seam, controllers, history, and
     finalize pipeline; only active legacy adapters remain in the compatibility module
@@ -865,6 +865,42 @@ functions:
   side_effects: Reads a local job JSON/progress/lock file, may remove a failed same-job
     lock, updates interview history JSON when identifiers are present, writes sanitized
     retry progress JSON, and starts a detached Python worker without shell interpolation.
+- name: regenerate_interview_notes_job
+  description: Relaunch an existing persisted DeepSeek finalize job in either full
+    local-DeepSeek-plus-document mode or document-only mode; full mode resets saved
+    DeepSeek checkpoint payload fields before worker launch, while document-only
+    mode preserves saved DeepSeek output and only rebuilds the interview notes DOCX.
+  locked: false
+  inputs:
+    job_path:
+      type: Path
+      required: true
+    mode:
+      type: str
+      required: true
+  returns:
+    type: Path
+  exceptions:
+  - ValueError
+  - OSError
+  side_effects: Reads and rewrites local job JSON with rerun mode, may reset saved
+    DeepSeek payload checkpoint fields, updates interview history JSON to processing,
+    seeds sanitized progress JSON, may remove a failed same-job lock, and starts
+    a detached Python worker without shell interpolation.
+- name: _mark_deepseek_history_processing
+  description: Mark the history row referenced by a persisted DeepSeek job as processing,
+    clearing warning and completion timestamp fields when both history path and history
+    id are available.
+  locked: false
+  inputs:
+    job:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: None
+  exceptions:
+  - OSError
+  side_effects: May update interview history JSON on disk.
 - name: raise_legacy_finalize_guardrail
   description: Fail closed when the disabled legacy finalize path is invoked.
   locked: false
