@@ -15,7 +15,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-06-26T19:16:01.538487+00:00'
+generated_at_utc: '2026-06-26T19:34:40.753682+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -1955,6 +1955,16 @@ entries:
     - security_side_effects
 - contract: contracts/interview_app_history_controller.contract.yaml
   symbol: interview_app_history_controller.HistoryController._regenerate_history_notes
+  kind: method
+  tests:
+  - path: tests/test_interview_app_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_side_effects
+- contract: contracts/interview_app_history_controller.contract.yaml
+  symbol: interview_app_history_controller.HistoryController._show_notes_regeneration_mode_dialog
   kind: method
   tests:
   - path: tests/test_interview_app_contract_interfaces.py

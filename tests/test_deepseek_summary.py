@@ -339,6 +339,38 @@ def test_default_deepseek_user_prompts_include_json_output_templates() -> None:
         assert "JSON output template:" in prompt
         assert "Return exactly this JSON shape" in prompt
 
+    answer_prompt = prompts["answer_summary_user"]
+    assert "question_label" in answer_prompt
+    assert "never a generic label like Non-scored question" in answer_prompt
+    assert "must be empty for non-scored answers" in answer_prompt
+
+
+def test_deepseek_answer_summary_normalizer_preserves_question_label() -> None:
+    payload = json.dumps(
+        {
+            "answer_summaries": [
+                {
+                    "flow_index": 1,
+                    "question_id": "custom_start",
+                    "question_label": "When could you start?",
+                    "summary": "Candidate can start next week.",
+                    "evidence_quotes": ["next week"],
+                    "rubric_alignment": "",
+                    "risks_or_gaps": "",
+                }
+            ]
+        }
+    )
+
+    result = interview_runtime._normalize_deepseek_answer_summary_payload(
+        payload,
+        {1},
+        "I can start next week.",
+    )
+
+    assert result[0]["question_id"] == "custom_start"
+    assert result[0]["question_label"] == "When could you start?"
+
 
 def test_configured_executive_prompt_uses_only_matching_role_context() -> None:
     config = build_deepseek_summary_config({"DEEPSEEK_SUMMARY_ENABLED": "1"})
@@ -815,9 +847,11 @@ def test_enqueue_deepseek_finalize_job_writes_job_and_launches_worker(tmp_path, 
             calls.append({"args": args, "kwargs": kwargs})
 
     monkeypatch.setattr(interview_runtime.subprocess, "Popen", _Popen)
+    history_store = InterviewHistoryStore(tmp_path / "history.json")
+    history_store.append({"history_id": "hist-1", "candidate_name": "Ada"})
     app = SimpleNamespace(
         settings={"base_dir": str(tmp_path), "deepseek_summary_enabled": True},
-        history_store=InterviewHistoryStore(tmp_path / "history.json"),
+        history_store=history_store,
         _rubric_with_question_overrides=lambda: {"tracks": {}},
     )
     context = SimpleNamespace(payload={"candidate": {"name": "Ada"}}, scoring={"outcome": "Hire"})
@@ -833,6 +867,9 @@ def test_enqueue_deepseek_finalize_job_writes_job_and_launches_worker(tmp_path, 
     progress = json.loads(progress_path.read_text(encoding="utf-8"))
     assert progress["step"] == "Launching local DeepSeek worker"
     assert progress["status"] == "processing"
+    row = history_store.load()[0]
+    assert row["deepseek_job_path"] == str(job_path)
+    assert row["deepseek_progress_path"] == str(progress_path)
 
 
 def test_retry_deepseek_finalize_job_marks_history_processing_and_relaunches(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -952,11 +989,15 @@ def test_regenerate_interview_notes_job_full_mode_resets_deepseek_checkpoints(
                     "model_scoring_status": "generated",
                     "model_scoring_warnings": [],
                 },
+                "deepseek_settings": {
+                    "DEEPSEEK_PROMPT_TEMPLATES": {"executive_summary_user": "old prompt"},
+                },
             }
         ),
         encoding="utf-8",
     )
     monkeypatch.setattr(interview_runtime, "_start_deepseek_finalize_worker", lambda path: calls.append(Path(path)))
+    monkeypatch.setattr(interview_runtime, "load_deepseek_prompt_templates", lambda: {"executive_summary_user": "new prompt"})
 
     regenerate_interview_notes_job(job_path, mode="full")
 
@@ -969,6 +1010,7 @@ def test_regenerate_interview_notes_job_full_mode_resets_deepseek_checkpoints(
     assert payload["model_scoring_status"] == "processing"
     assert payload["answer_summaries"] == []
     assert payload["model_signal_suggestions_by_trait"] == {}
+    assert job["deepseek_settings"]["DEEPSEEK_PROMPT_TEMPLATES"] == {"executive_summary_user": "new prompt"}
 
 
 def test_deepseek_finalize_worker_resumes_from_checkpointed_trait_output(

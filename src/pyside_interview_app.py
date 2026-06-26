@@ -2272,12 +2272,12 @@ class PySideInterviewWindow:
         return candidates[0]
 
     def _retry_history_deepseek(self, row: PySideHistoryRow) -> None:
+        mode = self._choose_pyside_notes_regeneration_mode(row)
+        if mode is None:
+            return
         job_path = self._deepseek_retry_job_path_for_row(row)
         if job_path is None or not job_path.exists():
             self.QtWidgets.QMessageBox.warning(self.window, "DeepSeek Retry", "DeepSeek job file was not found.")
-            return
-        mode = self._choose_pyside_notes_regeneration_mode(row)
-        if mode is None:
             return
         try:
             progress_path = regenerate_interview_notes_job(job_path, mode=mode)
@@ -2292,20 +2292,22 @@ class PySideInterviewWindow:
         self._watch_pyside_deepseek_finalize_progress(progress_path)
 
     def _choose_pyside_notes_regeneration_mode(self, row: PySideHistoryRow) -> str | None:
-        choice = self.QtWidgets.QMessageBox.question(
-            self.window,
-            "Regenerate Notes",
-            "Regenerate interview notes for "
-            f"{row.candidate_name or 'this interview'}?\n\n"
-            "Yes: rerun local DeepSeek and rebuild the document.\n"
-            "No: rebuild only the document from saved data.\n"
-            "Cancel: do nothing.",
-            self.QtWidgets.QMessageBox.Yes | self.QtWidgets.QMessageBox.No | self.QtWidgets.QMessageBox.Cancel,
-            self.QtWidgets.QMessageBox.Yes,
+        dialog = self.QtWidgets.QMessageBox(self.window)
+        dialog.setWindowTitle("Regenerate Notes")
+        dialog.setText(f"Regenerate interview notes for {row.candidate_name or 'this interview'}?")
+        dialog.setInformativeText(
+            "Choose full DeepSeek rerun when prompts changed.\n"
+            "Choose document-only when layout or document formatting changed."
         )
-        if choice == self.QtWidgets.QMessageBox.Yes:
+        full_button = dialog.addButton("Full DeepSeek + Document", self.QtWidgets.QMessageBox.AcceptRole)
+        document_button = dialog.addButton("Document Only", self.QtWidgets.QMessageBox.ActionRole)
+        dialog.addButton(self.QtWidgets.QMessageBox.Cancel)
+        dialog.setDefaultButton(full_button)
+        dialog.exec()
+        clicked = dialog.clickedButton()
+        if clicked == full_button:
             return "full"
-        if choice == self.QtWidgets.QMessageBox.No:
+        if clicked == document_button:
             return "document_only"
         return None
 

@@ -210,6 +210,39 @@ def test_history_controller_open_notes_opens_existing_document_without_prompt(tm
     assert calls == [f"open:{notes_path}"]
 
 
+def test_history_controller_regenerate_prompts_before_missing_job_warning(tmp_path, monkeypatch) -> None:
+    calls: list[str] = []
+    app = SimpleNamespace(
+        settings={"base_dir": str(tmp_path)},
+        history_store=SimpleNamespace(path=tmp_path / "interview_history.json"),
+    )
+    monkeypatch.setattr(interview_runtime.messagebox, "showwarning", lambda title, message: calls.append(f"warning:{message}"))
+    controller = HistoryController(app, AppSharedState())
+    controller._choose_notes_regeneration_mode = lambda _row: calls.append("mode") or "document_only"
+
+    controller._on_regenerate_notes_action(
+        {
+            "history_id": "hist-1",
+            "candidate_name": "Ada",
+        }
+    )
+
+    assert calls == ["mode", "warning:DeepSeek job file was not found."]
+
+
+def test_history_controller_regeneration_mode_uses_explicit_selector(tmp_path) -> None:
+    calls: list[str] = []
+    app = SimpleNamespace(
+        settings={"base_dir": str(tmp_path)},
+        history_store=SimpleNamespace(path=tmp_path / "interview_history.json"),
+    )
+    controller = HistoryController(app, AppSharedState())
+    controller._show_notes_regeneration_mode_dialog = lambda candidate: calls.append(candidate) or "full"
+
+    assert controller._choose_notes_regeneration_mode({"candidate_name": "Ada Lovelace"}) == "full"
+    assert calls == ["Ada Lovelace"]
+
+
 def test_finalize_controller_poll_retries_first_failure_keeps_progress_open() -> None:
     calls: list[str] = []
     app = SimpleNamespace(

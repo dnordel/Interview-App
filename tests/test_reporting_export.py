@@ -298,8 +298,15 @@ class TestDocxExporterValidation(unittest.TestCase):
         self.assertIn("Communicates consistently with families.", doc_text)
         self.assertIn("Answer summary", table_text)
         self.assertIn("Gave a concrete routine example.", table_text)
-        self.assertIn("songs and visual timers", table_text)
-        self.assertIn("Uses predictable transition supports.", table_text)
+        summary_cards = [
+            table
+            for table in doc.tables
+            if table.rows[0].cells[0].text.startswith("Question: How do you support transitions?")
+        ]
+        summary_card_text = "\n".join(cell.text for row in summary_cards[0].rows for cell in row.cells)
+        self.assertNotIn("Evidence", summary_card_text)
+        self.assertNotIn("songs and visual timers", summary_card_text)
+        self.assertNotIn("Uses predictable transition supports.", table_text)
 
     def test_export_renders_generated_executive_summary_as_structured_decision_brief(self):
         payload = {
@@ -589,11 +596,14 @@ class TestDocxExporterValidation(unittest.TestCase):
         self.assertEqual(len(summary_cards[0].columns), 2)
         summary_card_text = "\n".join(cell.text for row in summary_cards[0].rows for cell in row.cells)
         self.assertNotIn("Question text", summary_card_text)
-        self.assertIn("Interviewer rating", full_text)
-        self.assertIn("AI-advisory rating", full_text)
-        self.assertIn("AI-trait-based rating", full_text)
+        self.assertIn("Ratings", full_text)
+        self.assertIn("Interviewer: 5/5 | AI-Advisor: 4/5 | AI-trait-based: 3/5", summary_card_text)
+        self.assertNotIn("Interviewer rating", full_text)
+        self.assertNotIn("AI-advisory rating", full_text)
+        self.assertNotIn("AI-trait-based rating", full_text)
         self.assertIn("Answer summary", full_text)
-        self.assertIn("uses visual timer; sings cleanup song", summary_card_text)
+        self.assertNotIn("Evidence", summary_card_text)
+        self.assertNotIn("uses visual timer; sings cleanup song", summary_card_text)
         self.assertIn("Predictable routine support.", summary_card_text)
         self.assertIn("Needs more safety detail.", summary_card_text)
         transcript_index = [paragraph.text for paragraph in doc.paragraphs].index("Interview Transcript Appendix")
@@ -617,7 +627,7 @@ class TestDocxExporterValidation(unittest.TestCase):
                     "flow_index": 2,
                     "summary": "Candidate described family partnership.",
                     "evidence_quotes": ["weekly check-ins"],
-                    "rubric_alignment": "",
+                    "rubric_alignment": "Specific observed competency: Family communication",
                     "risks_or_gaps": "",
                 },
             ],
@@ -633,7 +643,8 @@ class TestDocxExporterValidation(unittest.TestCase):
                     "flow_index": 2,
                     "type": "custom",
                     "title": "Family Partnership",
-                    "question": "How do you partner with families?",
+                    "question": "",
+                    "prompt": "How do you partner with families?",
                     "candidate_transcript": "I use weekly check-ins.",
                 },
             ],
@@ -653,10 +664,15 @@ class TestDocxExporterValidation(unittest.TestCase):
 
         self.assertTrue(summary_cards)
         custom_card_text = "\n".join(cell.text for row in summary_cards[0].rows for cell in row.cells)
+        self.assertNotIn("Ratings", custom_card_text)
         self.assertNotIn("Interviewer rating", custom_card_text)
         self.assertNotIn("AI-advisory rating", custom_card_text)
         self.assertNotIn("AI-trait-based rating", custom_card_text)
         self.assertIn("Answer summary", custom_card_text)
+        self.assertNotIn("Evidence", custom_card_text)
+        self.assertNotIn("weekly check-ins", custom_card_text)
+        self.assertNotIn("Rubric alignment", custom_card_text)
+        self.assertNotIn("Specific observed competency: Family communication", custom_card_text)
         self.assertNotIn("Intro Script", full_text)
         self.assertNotIn("Introductory script", full_text)
         self.assertNotIn("Intro text should not render.", full_text)
@@ -728,8 +744,9 @@ class TestDocxExporterValidation(unittest.TestCase):
 
         table_text = "\n".join(cell.text for table in doc.tables for row in table.rows for cell in row.cells)
 
-        self.assertIn("AI-advisory rating\nNo supported signals", table_text)
-        self.assertIn("AI-trait-based rating\n3/5", table_text)
+        self.assertIn("Ratings\nInterviewer: 5/5 | AI-Advisor: No supported signals | AI-trait-based: 3/5", table_text)
+        self.assertNotIn("AI-advisory rating\nNo supported signals", table_text)
+        self.assertNotIn("AI-trait-based rating\n3/5", table_text)
         self.assertNotIn("AI-advisory rating\nN/A", table_text)
 
     def test_export_reports_complete_deepseek_total_out_of_max(self):

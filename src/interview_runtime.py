@@ -26,6 +26,7 @@ from types import ModuleType
 from typing import Any, Callable, Deque, Mapping, Optional, Sequence, TypedDict
 from uuid import uuid4
 
+import tkinter as tk
 from tkinter import messagebox
 
 from data_store import InterviewHistoryStore
@@ -1098,15 +1099,17 @@ DEFAULT_DEEPSEEK_PROMPT_TEMPLATES: dict[str, str] = {
         '  "answer_summaries": [\n'
         "    {\n"
         '      "flow_index": "number-or-string-from-input",\n'
+        '      "question_label": "exact question text from input question or prompt",\n'
         '      "summary": "one evidence-first sentence",\n'
         '      "evidence_quotes": ["exact short candidate phrase"],\n'
-        '      "rubric_alignment": "observed preschool-teacher behavior",\n'
+        '      "rubric_alignment": "observed preschool-teacher behavior for scored trait answers, or empty string for non-scored answers",\n'
         '      "risks_or_gaps": "missing or weak evidence, or empty string"\n'
         "    }\n"
         "  ]\n"
         "}\n"
-        "Rules: each answer summary is one sentence; evidence_quotes must be exact short phrases from candidate_transcript; "
-        "rubric_alignment names observed preschool-teacher behavior; risks_or_gaps names missing or "
+        "Rules: each answer summary is one sentence; question_label must be the exact input question or prompt text, never a generic label like Non-scored question; "
+        "evidence_quotes must be exact short phrases from candidate_transcript; "
+        "rubric_alignment names observed preschool-teacher behavior for scored trait answers and must be empty for non-scored answers; risks_or_gaps names missing or "
         "weak evidence, or empty string if none. Data: {payload_json}"
     ),
     "executive_summary_system": (
@@ -1465,7 +1468,8 @@ def _summary_transcript_items(flow_transcript: list[dict[str, Any]]) -> list[dic
                 "trait_id": canonical_trait_id(item.get("trait_id") or item.get("id")),
                 "flow_index": flow_index,
                 "title": str(item.get("title") or "").strip(),
-                "question": str(item.get("question") or "").strip(),
+                "question": str(item.get("question") or item.get("prompt") or "").strip(),
+                "prompt": str(item.get("prompt") or item.get("question") or "").strip(),
                 "candidate_transcript": transcript,
             }
         )
@@ -1936,6 +1940,8 @@ def _normalize_deepseek_answer_summary_payload(
             if flow_index not in valid_flow_indices or flow_index in seen_flow_indices or not summary:
                 continue
             seen_flow_indices.add(flow_index)
+            question_id = _clamp_deepseek_text(item.get("question_id"), "question_id")
+            question_label = _clamp_deepseek_text(item.get("question_label"), "question_label")
             normalized_item = {
                 "flow_index": flow_index,
                 "summary": summary,
@@ -1943,6 +1949,10 @@ def _normalize_deepseek_answer_summary_payload(
                 "rubric_alignment": _clamp_deepseek_text(item.get("rubric_alignment"), "rubric_alignment"),
                 "risks_or_gaps": _clamp_deepseek_text(item.get("risks_or_gaps"), "risks_or_gaps"),
             }
+            if question_id:
+                normalized_item["question_id"] = question_id
+            if question_label:
+                normalized_item["question_label"] = question_label
             confidence = _normalize_deepseek_confidence(item.get("confidence"))
             if confidence is not None:
                 normalized_item["confidence"] = confidence
@@ -3365,12 +3375,12 @@ class HistoryController:
         self.app._open_path_in_default_app(path_value)
 
     def _regenerate_history_notes(self, row: dict[str, Any]) -> None:
+        mode = self._choose_notes_regeneration_mode(row)
+        if mode is None:
+            return
         job_path = self._deepseek_job_path_for_row(row)
         if job_path is None or not job_path.exists():
             messagebox.showwarning("Regenerate Notes", "DeepSeek job file was not found.")
-            return
-        mode = self._choose_notes_regeneration_mode(row)
-        if mode is None:
             return
         try:
             progress_path = regenerate_interview_notes_job(job_path, mode=mode)
@@ -3384,14 +3394,75 @@ class HistoryController:
 
     def _choose_notes_regeneration_mode(self, row: dict[str, Any]) -> str | None:
         candidate = str(row.get("candidate_name", "") or "this interview").strip()
-        choice = messagebox.askyesnocancel(
-            "Regenerate Notes",
-            "Regenerate interview notes for "
-            f"{candidate}?\n\n"
-            "Yes: rerun local DeepSeek and rebuild the document.\n"
-            "No: rebuild only the document from saved data.\n"
-            "Cancel: do nothing.",
-        )
+        return self._show_notes_regeneration_mode_dialog(candidate)
+
+    def _show_notes_regeneration_mode_dialog(self, candidate: str) -> str | None:
+        root = self.app.winfo_toplevel() if hasattr(self.app, "winfo_toplevel") else self.app
+        result: dict[str, str | None] = {"mode": None}
+        try:
+            dialog = tk.Toplevel(root if hasattr(root, "tk") else None)
+            dialog.title("Regenerate Notes")
+            dialog.resizable(False, False)
+            dialog.attributes("-topmost", True)
+            if hasattr(dialog, "transient") and hasattr(root, "winfo_exists"):
+                dialog.transient(root)
+            body = tk.Frame(dialog, padx=18, pady=14)
+            body.pack(fill="both", expand=True)
+            tk.Label(
+                body,
+                text=f"Regenerate interview notes for {candidate}?",
+                font=("Segoe UI", 10, "bold"),
+                anchor="w",
+                justify="left",
+            ).pack(fill="x", pady=(0, 8))
+            tk.Label(
+                body,
+                text=(
+                    "Choose full DeepSeek rerun when prompts changed.\n"
+                    "Choose document-only when layout or document formatting changed."
+                ),
+                anchor="w",
+                justify="left",
+                wraplength=420,
+            ).pack(fill="x", pady=(0, 14))
+            buttons = tk.Frame(body)
+            buttons.pack(fill="x")
+
+            def choose(mode: str | None) -> None:
+                result["mode"] = mode
+                dialog.destroy()
+
+            tk.Button(buttons, text="Full DeepSeek + Document", command=lambda: choose("full"), width=24).pack(
+                side="left",
+                padx=(0, 8),
+            )
+            tk.Button(buttons, text="Document Only", command=lambda: choose("document_only"), width=16).pack(
+                side="left",
+                padx=(0, 8),
+            )
+            tk.Button(buttons, text="Cancel", command=lambda: choose(None), width=10).pack(side="right")
+            dialog.protocol("WM_DELETE_WINDOW", lambda: choose(None))
+            dialog.update_idletasks()
+            if hasattr(root, "winfo_rootx") and hasattr(root, "winfo_rooty"):
+                x = int(root.winfo_rootx()) + 80
+                y = int(root.winfo_rooty()) + 80
+                dialog.geometry(f"+{x}+{y}")
+            dialog.grab_set()
+            dialog.focus_force()
+            dialog.after(250, lambda: dialog.attributes("-topmost", False))
+            dialog.wait_window()
+            return result["mode"]
+        except tk.TclError:
+            parent = root if hasattr(root, "tk") else None
+            choice = messagebox.askyesnocancel(
+                "Regenerate Notes",
+                "Regenerate interview notes for "
+                f"{candidate}?\n\n"
+                "Yes: rerun local DeepSeek and rebuild the document.\n"
+                "No: rebuild only the document from saved data.\n"
+                "Cancel: do nothing.",
+                parent=parent,
+            )
         if choice is True:
             return "full"
         if choice is False:
@@ -3402,6 +3473,11 @@ class HistoryController:
         row_key = str(row.get("history_id", "")).strip()
         if not row_key:
             return None
+        stored_job_path = str(row.get("deepseek_job_path", "")).strip()
+        if stored_job_path:
+            stored_path = Path(stored_job_path)
+            if stored_path.name == f"deepseek-finalize-{row_key}.json" and stored_path.exists():
+                return stored_path
         job_name = f"deepseek-finalize-{row_key}.json"
         if Path(job_name).name != job_name:
             return None
@@ -3560,6 +3636,13 @@ def enqueue_deepseek_finalize_job(app: Any, context: FinalizeContext, out_path: 
         "progress_path": str(progress_path),
     }
     atomic_write_json(job_path, job_payload, indent=2, ensure_ascii=False)
+    InterviewHistoryStore(Path(history_path)).update_row(
+        history_id,
+        {
+            "deepseek_job_path": str(job_path),
+            "deepseek_progress_path": str(progress_path),
+        },
+    )
     _write_deepseek_launch_progress(progress_path, "Launching local DeepSeek worker")
     _start_deepseek_finalize_worker(job_path)
     return job_path
@@ -3605,6 +3688,9 @@ def regenerate_interview_notes_job(job_path: Path, *, mode: str) -> Path:
         payload = job.get("payload")
         if isinstance(payload, dict):
             payload.update(_deepseek_processing_payload())
+        deepseek_settings = job.get("deepseek_settings")
+        if isinstance(deepseek_settings, dict):
+            deepseek_settings["DEEPSEEK_PROMPT_TEMPLATES"] = load_deepseek_prompt_templates()
     atomic_write_json(path, job, indent=2, ensure_ascii=False)
     _mark_deepseek_history_processing(job)
     _recover_failed_deepseek_retry_lock(path, progress_path)

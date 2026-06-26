@@ -1179,6 +1179,46 @@ def test_pyside_open_notes_opens_existing_document_without_regenerate_prompt(tmp
     app.processEvents()
 
 
+def test_pyside_regenerate_prompts_before_missing_job_warning(tmp_path: Path, monkeypatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    history_path = tmp_path / "interview_history.json"
+    history_path.write_text(
+        json.dumps(
+            [
+                {
+                    "history_id": "hist-1",
+                    "candidate_name": "Latoya Nugent",
+                    "deepseek_processing_status": "complete",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    calls: list[str] = []
+    window._choose_pyside_notes_regeneration_mode = lambda _row: calls.append("mode") or "document_only"
+    monkeypatch.setattr(
+        window.QtWidgets.QMessageBox,
+        "warning",
+        lambda _parent, _title, message: calls.append(f"warning:{message}"),
+    )
+
+    window.history_table.cellWidget(0, 7).click()
+    app.processEvents()
+
+    assert calls == ["mode", "warning:DeepSeek job file was not found."]
+    window.window.close()
+    app.processEvents()
+
+
 def test_pyside_review_source_exposes_finalize_button_not_placeholder_notes() -> None:
     source = Path("src/pyside_interview_app.py").read_text(encoding="utf-8")
 

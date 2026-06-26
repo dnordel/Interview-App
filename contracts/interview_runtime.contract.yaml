@@ -2,7 +2,7 @@ module:
   name: interview_runtime
   language: python
   path: src/interview_runtime.py
-  version: 0.24.0
+  version: 0.24.1
   description: Flattened public interface for interview state, session management,
     audio/transcription runtime, transcript summary seam, controllers, history, and
     finalize pipeline; only active legacy adapters remain in the compatibility module
@@ -553,7 +553,9 @@ functions:
     answer prompt by question id, trait id, or flow index. Executive-summary
     prompts include transcript, candidate, answer-summary, selected job title,
     matching role context, and optional scoring context. Prompts are evidence-first,
-    role-aware, reject generic/invented claims, request and require an explicit
+    role-aware, reject generic/invented claims, preserve usable question/prompt
+    labels for answer summaries, require non-scored answers to leave rubric
+    alignment empty, request and require an explicit
     executive_summary_sections JSON object matching
     the director-scan template order of recommendation, overall fit,
     role-specific match, score pattern, paired strengths/concerns, four follow-up
@@ -842,9 +844,10 @@ functions:
     type: Path
   exceptions:
   - OSError
-  side_effects: Writes a local job JSON file, seeds sanitized progress JSON, and starts
-    a detached Python worker when a persistent history path is available; the worker later creates/removes the
-    per-directory DeepSeek finalize lock before local Ollama, DOCX, and history work.
+  side_effects: Writes a local job JSON file, stores deepseek_job_path and deepseek_progress_path
+    on the matching history row, seeds sanitized progress JSON, and starts a detached
+    Python worker when a persistent history path is available; the worker later creates/removes
+    the per-directory DeepSeek finalize lock before local Ollama, DOCX, and history work.
 - name: retry_deepseek_finalize_job
   description: Relaunch an existing persisted DeepSeek finalize job from its saved
     job JSON, mark the matching history row back to processing, seed retry progress,
@@ -868,8 +871,9 @@ functions:
 - name: regenerate_interview_notes_job
   description: Relaunch an existing persisted DeepSeek finalize job in either full
     local-DeepSeek-plus-document mode or document-only mode; full mode resets saved
-    DeepSeek checkpoint payload fields before worker launch, while document-only
-    mode preserves saved DeepSeek output and only rebuilds the interview notes DOCX.
+    DeepSeek checkpoint payload fields and refreshes prompt templates from current
+    config before worker launch, while document-only mode preserves saved DeepSeek
+    output and only rebuilds the interview notes DOCX.
   locked: false
   inputs:
     job_path:
@@ -884,9 +888,9 @@ functions:
   - ValueError
   - OSError
   side_effects: Reads and rewrites local job JSON with rerun mode, may reset saved
-    DeepSeek payload checkpoint fields, updates interview history JSON to processing,
-    seeds sanitized progress JSON, may remove a failed same-job lock, and starts
-    a detached Python worker without shell interpolation.
+    DeepSeek payload checkpoint fields and current prompt templates, updates interview
+    history JSON to processing, seeds sanitized progress JSON, may remove a failed
+    same-job lock, and starts a detached Python worker without shell interpolation.
 - name: _mark_deepseek_history_processing
   description: Mark the history row referenced by a persisted DeepSeek job as processing,
     clearing warning and completion timestamp fields when both history path and history

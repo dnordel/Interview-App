@@ -165,7 +165,8 @@ classes:
       start a detached worker, and attach GUI progress polling
   - name: _choose_notes_regeneration_mode
     description: Ask whether notes regeneration should rerun local DeepSeek and rebuild
-      the document or rebuild only the document from saved data.
+      the document or rebuild only the document from saved data, using a dedicated
+      selection dialog with explicit action buttons.
     locked: false
     inputs:
       row:
@@ -174,10 +175,24 @@ classes:
     returns:
       type: str | None
     exceptions: []
-    side_effects: shows modal question dialog
+    side_effects: shows modal selection dialog
+  - name: _show_notes_regeneration_mode_dialog
+    description: Show the owned topmost notes-regeneration selector with Full DeepSeek
+      plus Document, Document Only, and Cancel buttons.
+    locked: false
+    inputs:
+      candidate:
+        type: str
+        required: true
+    returns:
+      type: str | None
+    exceptions: []
+    side_effects: creates and destroys a modal tkinter dialog, falling back to a parented
+      messagebox if tkinter cannot create the custom dialog
   - name: _deepseek_job_path_for_row
-    description: Resolve the persisted DeepSeek job JSON path from safe history row
-      id and configured history/base directories.
+    description: Resolve the persisted DeepSeek job JSON path from a safe stored
+      deepseek_job_path when available, otherwise from safe history row id and configured
+      history/base directories.
     locked: false
     inputs:
       row:

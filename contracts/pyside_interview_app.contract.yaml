@@ -557,7 +557,8 @@ classes:
       and refreshes visible history/progress UI.
   - name: _choose_pyside_notes_regeneration_mode
     description: Ask whether notes regeneration should rerun local DeepSeek and rebuild
-      the document or rebuild only the document from saved data.
+      the document or rebuild only the document from saved data using explicit action
+      buttons.
     locked: false
     inputs:
       row:
@@ -566,7 +567,7 @@ classes:
     returns:
       type: str | None
     exceptions: []
-    side_effects: Shows a PySide question dialog.
+    side_effects: Shows a PySide modal selection dialog.
   - name: _open_history_notes
     description: Open a selected history row's interview notes DOCX in the OS default
       application immediately when the local path exists; when a failed row has no

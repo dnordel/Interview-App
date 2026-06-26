@@ -1409,9 +1409,26 @@ class DocxExporter:
             if row.get("skipped", False) and canonical_trait_id(row.get("trait_id"))
         }
 
-        def flow_question_for_index(flow_index: Any) -> str:
+        def usable_question_text(*values: Any) -> str:
+            generic_labels = {"custom question", "non-scored question", "question"}
+            for value in values:
+                text = str(value or "").strip()
+                if text and text.lower() not in generic_labels:
+                    return text
+            return ""
+
+        def flow_question_for_index(flow_index: Any, summary_item: dict[str, Any] | None = None) -> str:
             item = flow_by_index.get(flow_index, {}) or {}
-            return str(item.get("question") or item.get("title") or "").strip()
+            summary_item = summary_item or {}
+            return usable_question_text(
+                item.get("question"),
+                item.get("question_text"),
+                item.get("prompt"),
+                summary_item.get("question_label"),
+                summary_item.get("question_text"),
+                summary_item.get("question"),
+                item.get("title"),
+            )
 
         def is_scored_answer_summary(item: dict[str, Any]) -> bool:
             flow_item = flow_by_index.get(item.get("flow_index"), {}) or {}
@@ -1473,6 +1490,15 @@ class DocxExporter:
             if row.get("model_trait_score") or row.get("deepseek_raw_score") is not None:
                 return "No supported signals"
             return "Not generated"
+
+        def answer_card_rating_summary(row: dict[str, Any] | None, model_trait_score: dict[str, Any]) -> str:
+            return " | ".join(
+                [
+                    f"Interviewer: {raw_rating_text(row.get('raw_score') if row else None)}",
+                    f"AI-Advisor: {answer_card_ai_advisory_rating_text(row)}",
+                    f"AI-trait-based: {raw_rating_text(model_trait_score.get('raw_score') if model_trait_score else None)}",
+                ]
+            )
 
         def threshold_status_text() -> str:
             thresholds = track_cfg.get("thresholds", {}) or {}
@@ -1616,28 +1642,16 @@ class DocxExporter:
                 flow_index = item.get("flow_index")
                 if flow_index not in flow_by_index:
                     continue
-                question = flow_question_for_index(flow_index) or f"Question {flow_index or ''}".strip()
+                question = flow_question_for_index(flow_index, item) or f"Question {flow_index or ''}".strip()
                 row = scoring_row_for_answer_summary(item)
                 model_trait_score = row.get("model_trait_score", {}) if row else {}
                 rows = []
-                if is_scored_answer_summary(item):
-                    rows.extend(
-                        [
-                            ("Interviewer rating", raw_rating_text(row.get("raw_score") if row else None)),
-                            ("AI-advisory rating", answer_card_ai_advisory_rating_text(row)),
-                            ("AI-trait-based rating", raw_rating_text(model_trait_score.get("raw_score") if model_trait_score else None)),
-                        ]
-                    )
+                is_scored_summary = is_scored_answer_summary(item)
+                if is_scored_summary:
+                    rows.append(("Ratings", answer_card_rating_summary(row, model_trait_score)))
                 rows.append(("Answer summary", str(item.get("summary") or "").strip()))
-                evidence_quotes = [
-                    str(quote or "").strip()
-                    for quote in item.get("evidence_quotes", []) or []
-                    if str(quote or "").strip()
-                ]
-                if evidence_quotes:
-                    rows.append(("Evidence", "; ".join(evidence_quotes)))
                 rubric_alignment = str(item.get("rubric_alignment") or "").strip()
-                if rubric_alignment:
+                if is_scored_summary and rubric_alignment:
                     rows.append(("Rubric alignment", rubric_alignment))
                 risks_or_gaps = str(item.get("risks_or_gaps") or "").strip()
                 if risks_or_gaps:
