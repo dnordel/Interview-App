@@ -2,7 +2,7 @@ module:
   name: ui_composition
   language: python
   path: src/ui_composition.py
-  version: 0.11.4
+  version: 0.12.0
   description: Flattened public interface for Tkinter windows, question screens, validation
     feedback, routed views, keyboard telemetry, and reusable UI widgets; only active
     legacy adapters remain in the compatibility module inventory.
@@ -1560,9 +1560,9 @@ classes:
 - name: HistoryDataGrid
   description: Treeview-based history grid widget with sorting, filtering, tooltip,
     action callback dispatch, and school/position metadata columns placed after primary
-    offer and notes actions so Generate Offer remains visible; transcript and retranscription
-    actions are no longer shown, while interview notes show Processing during detached
-    DeepSeek work.
+    offer, notes, and regenerate-notes actions so Generate Offer remains visible;
+    transcript and retranscription actions are no longer shown, while interview
+    notes show Processing during detached DeepSeek work.
   locked: false
   attributes:
     sort_column:
@@ -1596,6 +1596,10 @@ classes:
       on_row_selected:
         type: RowCallback
         required: true
+      on_regenerate_notes_action:
+        type: RowCallback | None
+        required: false
+        default: None
       on_delete_action:
         type: RowCallback | None
         required: false
@@ -1674,7 +1678,8 @@ classes:
     exceptions: []
     side_effects: updates tkinter widgets
   - name: _handle_click
-    description: Dispatches row click actions for offer and notes columns.
+    description: Dispatches row click actions for offer, notes, regenerate-notes,
+      and delete columns.
     locked: false
     inputs:
       event:
@@ -1685,7 +1690,8 @@ classes:
     exceptions: []
     side_effects: invokes action callbacks
   - name: _handle_motion
-    description: Shows or hides hover tooltips for offer and notes cells.
+    description: Shows or hides hover tooltips for offer, notes, regenerate-notes,
+      and delete cells.
     locked: false
     inputs:
       event:

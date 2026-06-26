@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.11.0
+  version: 1.12.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, interview notes regeneration actions, user-closable
@@ -569,8 +569,8 @@ classes:
     side_effects: Shows a PySide question dialog.
   - name: _open_history_notes
     description: Open a selected history row's interview notes DOCX in the OS default
-      application after operator confirmation, or regenerate notes when the row failed,
-      the document is missing, or the operator chooses rerun for an existing document.
+      application immediately when the local path exists; when a failed row has no
+      notes document, route to regeneration.
     locked: false
     inputs:
       row:
@@ -579,20 +579,8 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: May launch the OS default document application, show question/warning
-      dialogs, update history status, seed progress JSON, and start a detached regeneration worker.
-  - name: _choose_pyside_existing_notes_action
-    description: Ask whether to open the current notes document, regenerate it, or
-      cancel.
-    locked: false
-    inputs:
-      row:
-        type: PySideHistoryRow
-        required: true
-    returns:
-      type: str | None
-    exceptions: []
-    side_effects: Shows a PySide question dialog.
+    side_effects: May launch the OS default document application, show a missing-file
+      warning dialog, or start regeneration for failed rows without a document.
   - name: _delete_history_row
     description: Confirm with the operator, delete one selected PySide history row
       by stable row key, and reload Home/Candidates history tables when deletion succeeds.

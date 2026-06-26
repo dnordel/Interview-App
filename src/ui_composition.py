@@ -1316,6 +1316,7 @@ class HistoryDataGrid(ttk.Frame):
         "determination",
         "offer_action",
         "notes_link",
+        "regenerate_notes_action",
         "school",
         "position",
         "delete_action",
@@ -1330,6 +1331,7 @@ class HistoryDataGrid(ttk.Frame):
         on_open_transcript_link: RowCallback,
         on_open_notes_link: RowCallback,
         on_row_selected: RowCallback,
+        on_regenerate_notes_action: RowCallback | None = None,
         on_delete_action: RowCallback | None = None,
         on_sort_changed: SortCallback | None = None,
         sort_column: str = "interview_date",
@@ -1340,6 +1342,7 @@ class HistoryDataGrid(ttk.Frame):
         self._on_retranscribe_action = on_retranscribe_action
         self._on_open_transcript_link = on_open_transcript_link
         self._on_open_notes_link = on_open_notes_link
+        self._on_regenerate_notes_action = on_regenerate_notes_action
         self._on_delete_action = on_delete_action
         self._on_row_selected = on_row_selected
         self._on_sort_changed = on_sort_changed
@@ -1373,6 +1376,7 @@ class HistoryDataGrid(ttk.Frame):
         tree.heading("determination", text="Determination", command=lambda: self.toggle_sort("determination"))
         tree.heading("offer_action", text="Offer")
         tree.heading("notes_link", text="Interview Notes")
+        tree.heading("regenerate_notes_action", text="Regenerate Notes")
         tree.heading("school", text="School", command=lambda: self.toggle_sort("school"))
         tree.heading("position", text="Position", command=lambda: self.toggle_sort("position"))
         tree.heading("delete_action", text="Delete")
@@ -1385,6 +1389,7 @@ class HistoryDataGrid(ttk.Frame):
         tree.column("determination", width=130, anchor="center")
         tree.column("offer_action", width=130, anchor="center")
         tree.column("notes_link", width=140, anchor="center")
+        tree.column("regenerate_notes_action", width=150, anchor="center")
         tree.column("school", width=160, anchor="w")
         tree.column("position", width=190, anchor="w")
         tree.column("delete_action", width=90, anchor="center")
@@ -1488,6 +1493,10 @@ class HistoryDataGrid(ttk.Frame):
             self._hide_tooltip()
             self._on_open_notes_link(row)
             return
+        if column_name == "regenerate_notes_action" and self._on_regenerate_notes_action is not None:
+            self._hide_tooltip()
+            self._on_regenerate_notes_action(row)
+            return
         if column_name == "delete_action" and self._on_delete_action is not None:
             self._hide_tooltip()
             self._on_delete_action(row)
@@ -1498,7 +1507,7 @@ class HistoryDataGrid(ttk.Frame):
             self._hide_tooltip()
             return
         column_name = self._column_name(self._tree.identify_column(event.x))
-        if column_name not in {"offer_action", "notes_link", "delete_action"}:
+        if column_name not in {"offer_action", "notes_link", "regenerate_notes_action", "delete_action"}:
             self._hide_tooltip()
             return
         row = self._row_by_key(str(item_id))
@@ -1541,6 +1550,7 @@ class HistoryDataGrid(ttk.Frame):
             str(row.get("determination", "")),
             self._offer_action_label(row),
             self._notes_link_label(row),
+            "Regenerate",
             str(row.get("school", "")),
             self._position_value(row),
             "Delete",
@@ -1587,6 +1597,8 @@ class HistoryDataGrid(ttk.Frame):
     def _tooltip_for_cell(self, row: HistoryRow, column_name: str) -> str:
         if column_name == "offer_action":
             return self._offer_tooltip(row)
+        if column_name == "regenerate_notes_action":
+            return "Regenerate interview notes from saved data or rerun local DeepSeek first."
         if column_name == "delete_action":
             return "Delete this history entry after confirmation."
         status = str(row.get("deepseek_processing_status", "")).strip().lower()

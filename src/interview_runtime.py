@@ -3302,6 +3302,7 @@ class HistoryController:
             on_retranscribe_action=self._on_retranscribe_action,
             on_open_transcript_link=self._on_open_transcript_link,
             on_open_notes_link=self._on_open_notes_link,
+            on_regenerate_notes_action=self._on_regenerate_notes_action,
             on_delete_action=self._on_delete_action,
             on_row_selected=self._on_row_selected,
             on_sort_changed=self._on_sort_changed,
@@ -3350,14 +3351,11 @@ class HistoryController:
 
     def _on_open_notes_link(self, row: dict[str, Any]) -> None:
         if _history_path_exists(str(row.get("interview_notes_path", ""))):
-            action = self._choose_existing_notes_action(row)
-            if action == "regenerate":
-                self._regenerate_history_notes(row)
-                return
-            if action is None:
-                return
             self._open_history_link(row, "interview_notes_path")
             return
+        self._regenerate_history_notes(row)
+
+    def _on_regenerate_notes_action(self, row: dict[str, Any]) -> None:
         self._regenerate_history_notes(row)
 
     def _open_history_link(self, row: dict[str, Any], key: str) -> None:
@@ -3383,22 +3381,6 @@ class HistoryController:
             self.app._show_finalize_progress()
         if hasattr(self.app, "_watch_deepseek_finalize_progress"):
             self.app._watch_deepseek_finalize_progress(progress_path)
-
-    def _choose_existing_notes_action(self, row: dict[str, Any]) -> str | None:
-        candidate = str(row.get("candidate_name", "") or "this interview").strip()
-        choice = messagebox.askyesnocancel(
-            "Interview Notes",
-            "Interview notes already exist for "
-            f"{candidate}.\n\n"
-            "Yes: open the current document.\n"
-            "No: regenerate the notes document.\n"
-            "Cancel: do nothing.",
-        )
-        if choice is True:
-            return "open"
-        if choice is False:
-            return "regenerate"
-        return None
 
     def _choose_notes_regeneration_mode(self, row: dict[str, Any]) -> str | None:
         candidate = str(row.get("candidate_name", "") or "this interview").strip()

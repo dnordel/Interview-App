@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 import threading
 from datetime import date
 from pathlib import Path
@@ -241,16 +242,21 @@ def test_pyside_history_grid_shows_date_and_open_notes_action(tmp_path: Path) ->
     )
     window = pyside_interview_app.PySideInterviewWindow(model)
 
-    assert window.history_table.columnCount() == 9
+    assert window.history_table.columnCount() == 10
     assert window.history_table.horizontalHeaderItem(0).text() == "Date"
     assert window.history_table.horizontalHeaderItem(6).text() == "Notes"
-    assert window.history_table.horizontalHeaderItem(8).text() == "Delete"
+    assert window.history_table.horizontalHeaderItem(7).text() == "Regenerate"
+    assert window.history_table.horizontalHeaderItem(9).text() == "Delete"
     assert window.history_table.item(0, 0).text() == "2026-06-23"
     notes_button = window.history_table.cellWidget(0, 6)
     assert notes_button.text() == "Open Notes"
     assert notes_button.property("history_row_key") == "hist-1"
     assert notes_button.isEnabled()
-    delete_button = window.history_table.cellWidget(0, 8)
+    regenerate_button = window.history_table.cellWidget(0, 7)
+    assert regenerate_button.text() == "Regenerate"
+    assert regenerate_button.property("history_row_key") == "hist-1"
+    assert regenerate_button.isEnabled()
+    delete_button = window.history_table.cellWidget(0, 9)
     assert delete_button.text() == "Delete"
     assert delete_button.property("history_row_key") == "hist-1"
     assert delete_button.isEnabled()
@@ -1026,7 +1032,7 @@ def test_pyside_history_grid_shows_failed_retry_for_failed_deepseek_row(tmp_path
 
     button = window.history_table.cellWidget(0, 6)
 
-    assert button.text() == "Failed/Retry"
+    assert button.text() == "Open Notes"
     assert button.isEnabled()
     assert "DeepSeek processing failed." in button.toolTip()
     window.window.close()
@@ -1075,7 +1081,7 @@ def test_pyside_failed_retry_button_requeues_deepseek_job(tmp_path: Path, monkey
     monkeypatch.setattr(pyside_interview_app, "regenerate_interview_notes_job", _fake_regenerate)
     window._choose_pyside_notes_regeneration_mode = lambda _row: "full"
 
-    window.history_table.cellWidget(0, 6).click()
+    window.history_table.cellWidget(0, 7).click()
     app.processEvents()
 
     assert calls == [job_path, "full"]
@@ -1121,13 +1127,54 @@ def test_pyside_existing_notes_can_be_regenerated(tmp_path: Path, monkeypatch) -
         "regenerate_interview_notes_job",
         lambda path, *, mode: calls.extend([Path(path), mode]) or Path(path).with_suffix(".progress.json"),
     )
-    window._choose_pyside_existing_notes_action = lambda _row: "regenerate"
     window._choose_pyside_notes_regeneration_mode = lambda _row: "document_only"
+
+    window.history_table.cellWidget(0, 7).click()
+    app.processEvents()
+
+    assert calls == [job_path, "document_only"]
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_open_notes_opens_existing_document_without_regenerate_prompt(tmp_path: Path, monkeypatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    notes_path = tmp_path / "notes.docx"
+    notes_path.write_text("docx", encoding="utf-8")
+    history_path = tmp_path / "interview_history.json"
+    history_path.write_text(
+        json.dumps(
+            [
+                {
+                    "history_id": "hist-1",
+                    "candidate_name": "Latoya Nugent",
+                    "interview_notes_path": str(notes_path),
+                    "deepseek_processing_status": "complete",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    calls: list[str] = []
+    monkeypatch.setattr(window, "_choose_pyside_notes_regeneration_mode", lambda _row: calls.append("prompt") or "full")
+    if sys.platform.startswith("win"):
+        monkeypatch.setattr(pyside_interview_app.os, "startfile", lambda path: calls.append(f"open:{path}"))
+    else:
+        monkeypatch.setattr(pyside_interview_app.subprocess, "run", lambda args, check: calls.append(f"open:{args[-1]}"))
 
     window.history_table.cellWidget(0, 6).click()
     app.processEvents()
 
-    assert calls == [job_path, "document_only"]
+    assert calls == [f"open:{notes_path}"]
     window.window.close()
     app.processEvents()
 
@@ -1226,15 +1273,16 @@ def test_pyside_candidates_page_uses_history_table_layout_and_actions(tmp_path: 
     )
     window = pyside_interview_app.PySideInterviewWindow(model)
 
-    assert window.candidate_history_table.columnCount() == window.history_table.columnCount() == 9
+    assert window.candidate_history_table.columnCount() == window.history_table.columnCount() == 10
     assert [
         window.candidate_history_table.horizontalHeaderItem(column).text()
         for column in range(window.candidate_history_table.columnCount())
-    ] == ["Date", "Candidate", "School", "Position", "Score", "Status", "Notes", "Offer", "Delete"]
+    ] == ["Date", "Candidate", "School", "Position", "Score", "Status", "Notes", "Regenerate", "Offer", "Delete"]
     assert window.candidate_history_table.item(0, 1).text() == "Latoya Nugent"
     assert window.candidate_history_table.cellWidget(0, 6).text() == "Open Notes"
-    assert window.candidate_history_table.cellWidget(0, 7).text() == "Generate Offer"
-    assert window.candidate_history_table.cellWidget(0, 8).text() == "Delete"
+    assert window.candidate_history_table.cellWidget(0, 7).text() == "Regenerate"
+    assert window.candidate_history_table.cellWidget(0, 8).text() == "Generate Offer"
+    assert window.candidate_history_table.cellWidget(0, 9).text() == "Delete"
     window.window.close()
     app.processEvents()
 

@@ -1441,9 +1441,11 @@ class PySideInterviewWindow:
         return all(_history_token_matches(term, blob_tokens) for term in query.split())
 
     def _create_history_table(self, object_name: str) -> Any:
-        table = self.QtWidgets.QTableWidget(0, 9)
+        table = self.QtWidgets.QTableWidget(0, 10)
         table.setObjectName(object_name)
-        table.setHorizontalHeaderLabels(["Date", "Candidate", "School", "Position", "Score", "Status", "Notes", "Offer", "Delete"])
+        table.setHorizontalHeaderLabels(
+            ["Date", "Candidate", "School", "Position", "Score", "Status", "Notes", "Regenerate", "Offer", "Delete"]
+        )
         table.horizontalHeader().setStretchLastSection(True)
         table.setSortingEnabled(True)
         self._history_table_widgets[object_name] = table
@@ -1487,29 +1489,36 @@ class PySideInterviewWindow:
             notes_button.setToolTip(notes_tooltip)
         notes_button.clicked.connect(lambda _checked=False, item=row: self._open_history_notes(item))
         table.setCellWidget(row_index, 6, notes_button)
+        regenerate_button = self.QtWidgets.QPushButton("Regenerate")
+        regenerate_button.setMaximumWidth(105)
+        regenerate_button.setProperty("history_row_key", row.row_key)
+        regenerate_button.setEnabled(bool(row.row_key) and row.deepseek_processing_status.strip().lower() != "processing")
+        regenerate_button.setToolTip("Regenerate interview notes from saved data or rerun local DeepSeek first.")
+        regenerate_button.clicked.connect(lambda _checked=False, item=row: self._retry_history_deepseek(item))
+        table.setCellWidget(row_index, 7, regenerate_button)
         offer_button = self.QtWidgets.QPushButton(row.offer_action)
         offer_button.setMaximumWidth(115)
         offer_button.setProperty("history_row_key", row.row_key)
         offer_button.setEnabled(bool(row.row_key))
         offer_button.clicked.connect(lambda _checked=False, item=row: self._open_history_offer(item))
-        table.setCellWidget(row_index, 7, offer_button)
+        table.setCellWidget(row_index, 8, offer_button)
         delete_button = self.QtWidgets.QPushButton("Delete")
         delete_button.setMaximumWidth(80)
         delete_button.setProperty("history_row_key", row.row_key)
         delete_button.setEnabled(bool(row.row_key))
         delete_button.clicked.connect(lambda _checked=False, item=row: self._delete_history_row(item))
-        table.setCellWidget(row_index, 8, delete_button)
+        table.setCellWidget(row_index, 9, delete_button)
 
     def _history_notes_action_state(self, row: PySideHistoryRow) -> tuple[str, bool, str]:
         status = row.deepseek_processing_status.strip().lower()
         if status == "processing":
             return "Processing", False, "DeepSeek is still processing interview notes."
-        if status == "failed":
-            warning = row.deepseek_processing_warning.strip() or "DeepSeek processing failed."
-            return "Failed/Retry", True, warning
         if row.notes_path and Path(row.notes_path).exists():
             warning = row.deepseek_processing_warning.strip()
             return "Open Notes", True, warning
+        if status == "failed":
+            warning = row.deepseek_processing_warning.strip() or "DeepSeek processing failed."
+            return "Failed/Retry", True, warning
         return "Unavailable", False, "Interview notes file was not found."
 
     def _size_history_table_columns(self, table: Any) -> None:
@@ -1522,14 +1531,16 @@ class PySideInterviewWindow:
             4: 75,
             5: 130,
             6: 90,
-            7: 110,
-            8: 80,
+            7: 105,
+            8: 110,
+            9: 80,
         }
         for column, minimum in minimums.items():
             table.setColumnWidth(column, max(table.columnWidth(column), table.sizeHintForColumn(column), minimum))
         table.setColumnWidth(6, min(table.columnWidth(6), 105))
-        table.setColumnWidth(7, min(table.columnWidth(7), 125))
-        table.setColumnWidth(8, min(table.columnWidth(8), 95))
+        table.setColumnWidth(7, min(table.columnWidth(7), 115))
+        table.setColumnWidth(8, min(table.columnWidth(8), 125))
+        table.setColumnWidth(9, min(table.columnWidth(9), 95))
 
     def _history_outcome_brush(self, outcome: str) -> Any:
         color = _history_outcome_color(outcome)
@@ -2299,18 +2310,12 @@ class PySideInterviewWindow:
         return None
 
     def _open_history_notes(self, row: PySideHistoryRow) -> None:
-        if row.deepseek_processing_status.strip().lower() == "failed":
-            self._retry_history_deepseek(row)
-            return
         path = Path(row.notes_path)
         if not path.exists():
-            self._retry_history_deepseek(row)
-            return
-        action = self._choose_pyside_existing_notes_action(row)
-        if action == "regenerate":
-            self._retry_history_deepseek(row)
-            return
-        if action is None:
+            if row.deepseek_processing_status.strip().lower() == "failed":
+                self._retry_history_deepseek(row)
+                return
+            self.QtWidgets.QMessageBox.warning(self.window, "Interview Notes", "Interview notes file was not found.")
             return
         try:
             if sys.platform.startswith("win"):
@@ -2321,24 +2326,6 @@ class PySideInterviewWindow:
                 subprocess.run(["xdg-open", str(path)], check=True)
         except OSError as exc:
             self.QtWidgets.QMessageBox.warning(self.window, "Interview Notes", f"Could not open interview notes: {exc}")
-
-    def _choose_pyside_existing_notes_action(self, row: PySideHistoryRow) -> str | None:
-        choice = self.QtWidgets.QMessageBox.question(
-            self.window,
-            "Interview Notes",
-            "Interview notes already exist for "
-            f"{row.candidate_name or 'this interview'}.\n\n"
-            "Yes: open the current document.\n"
-            "No: regenerate the notes document.\n"
-            "Cancel: do nothing.",
-            self.QtWidgets.QMessageBox.Yes | self.QtWidgets.QMessageBox.No | self.QtWidgets.QMessageBox.Cancel,
-            self.QtWidgets.QMessageBox.Yes,
-        )
-        if choice == self.QtWidgets.QMessageBox.Yes:
-            return "open"
-        if choice == self.QtWidgets.QMessageBox.No:
-            return "regenerate"
-        return None
 
     def _delete_history_row(self, row: PySideHistoryRow) -> None:
         if not row.row_key:

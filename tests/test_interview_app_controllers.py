@@ -172,8 +172,31 @@ def test_history_controller_can_regenerate_existing_notes(tmp_path, monkeypatch)
         lambda path, *, mode: calls.extend([Path(path), mode]) or progress_path,
     )
     controller = HistoryController(app, AppSharedState())
-    controller._choose_existing_notes_action = lambda _row: "regenerate"
     controller._choose_notes_regeneration_mode = lambda _row: "full"
+
+    controller._on_regenerate_notes_action(
+        {
+            "history_id": "hist-1",
+            "candidate_name": "Ada",
+            "interview_notes_path": str(notes_path),
+            "deepseek_processing_status": "complete",
+        }
+    )
+
+    assert calls == [job_path, "full", "show-progress", progress_path]
+
+
+def test_history_controller_open_notes_opens_existing_document_without_prompt(tmp_path) -> None:
+    calls: list[str] = []
+    notes_path = tmp_path / "notes.docx"
+    notes_path.write_text("docx", encoding="utf-8")
+    app = SimpleNamespace(
+        settings={"base_dir": str(tmp_path)},
+        history_store=SimpleNamespace(path=tmp_path / "interview_history.json"),
+        _open_path_in_default_app=lambda path: calls.append(f"open:{path}"),
+    )
+    controller = HistoryController(app, AppSharedState())
+    controller._choose_existing_notes_action = lambda _row: calls.append("prompt") or "open"
 
     controller._on_open_notes_link(
         {
@@ -184,7 +207,7 @@ def test_history_controller_can_regenerate_existing_notes(tmp_path, monkeypatch)
         }
     )
 
-    assert calls == [job_path, "full", "show-progress", progress_path]
+    assert calls == [f"open:{notes_path}"]
 
 
 def test_finalize_controller_poll_retries_first_failure_keeps_progress_open() -> None:

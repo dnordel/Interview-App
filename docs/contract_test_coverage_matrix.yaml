@@ -15,7 +15,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-06-26T19:00:30.901013+00:00'
+generated_at_utc: '2026-06-26T19:16:01.538487+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -1844,16 +1844,6 @@ entries:
     - return_type
     - security_side_effects
 - contract: contracts/interview_app_history_controller.contract.yaml
-  symbol: interview_app_history_controller.HistoryController._choose_existing_notes_action
-  kind: method
-  tests:
-  - path: tests/test_interview_app_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_side_effects
-- contract: contracts/interview_app_history_controller.contract.yaml
   symbol: interview_app_history_controller.HistoryController._choose_notes_regeneration_mode
   kind: method
   tests:
@@ -1905,6 +1895,16 @@ entries:
     - security_side_effects
 - contract: contracts/interview_app_history_controller.contract.yaml
   symbol: interview_app_history_controller.HistoryController._on_open_transcript_link
+  kind: method
+  tests:
+  - path: tests/test_interview_app_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_side_effects
+- contract: contracts/interview_app_history_controller.contract.yaml
+  symbol: interview_app_history_controller.HistoryController._on_regenerate_notes_action
   kind: method
   tests:
   - path: tests/test_interview_app_contract_interfaces.py
@@ -8888,15 +8888,6 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewSession.to_draft
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._choose_pyside_existing_notes_action
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
