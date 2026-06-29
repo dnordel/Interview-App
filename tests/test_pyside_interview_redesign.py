@@ -486,6 +486,131 @@ def test_pyside_session_autosaves_and_resumes_guided_interview(tmp_path: Path) -
     assert resumed.active_question().kind == "custom"
 
 
+def test_pyside_session_back_and_skip_preserve_answers_and_move_through_flow(tmp_path: Path) -> None:
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
+    session.start(candidate_name="Latoya Nugent", school="Palmdale", track_key="preschool")
+
+    intro = session.active_question()
+    session.save_answer_and_advance(notes="Intro complete.")
+    custom = session.active_question()
+    session.save_answer_and_advance(notes="Values aligned.")
+    scored = session.active_question()
+
+    session.go_back()
+
+    assert session.active_question() == custom
+    assert session.answers[custom.question_id]["notes"] == "Values aligned."
+
+    session.skip_active_question(notes="No extra custom notes.")
+    assert session.active_question() == scored
+
+    session.skip_active_question(notes="Skipped rating after discussion.")
+    assert session.active_question() is None
+    assert session.answers[scored.question_id]["score"] == ""
+    assert session.answers[scored.question_id]["skipped"] is True
+    assert intro is not None
+    assert session.answers[intro.question_id]["notes"] == "Intro complete."
+
+
+def test_pyside_live_footer_blocks_unrated_scored_next_and_keeps_skip_enabled(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
+    session.start(candidate_name="Latoya Nugent", school="Palmdale", track_key="preschool")
+    session.save_answer_and_advance(notes="Intro complete.")
+    session.save_answer_and_advance(notes="Values aligned.")
+    window.session = session
+    window.session_track_key = session.track_key
+    window.session_index = session.current_index
+    window._render_live_question_page()
+
+    footer_buttons = {
+        button.property("pyside_live_footer_action"): button
+        for button in window.interview_tabs.widget(2).findChildren(qt_widgets.QPushButton)
+        if button.property("pyside_live_footer_action")
+    }
+
+    assert footer_buttons["back"].isEnabled()
+    assert footer_buttons["skip"].isEnabled()
+    assert not footer_buttons["finalize"].isEnabled()
+
+    window.score_group.buttons()[0].setChecked(True)
+    app.processEvents()
+
+    assert footer_buttons["finalize"].isEnabled()
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_home_delete_saved_draft_requires_confirmation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    draft_path = tmp_path / "drafts" / "latoya.json"
+    draft_path.parent.mkdir()
+    draft_path.write_text('{"schema":"pyside_interview_draft.v1"}', encoding="utf-8")
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    monkeypatch.setattr(pyside_interview_app, "latest_pyside_draft_path", lambda: draft_path)
+    window._refresh_home_draft_panel()
+    no = window.QtWidgets.QMessageBox.StandardButton.No
+    yes = window.QtWidgets.QMessageBox.StandardButton.Yes
+
+    monkeypatch.setattr(window.QtWidgets.QMessageBox, "question", lambda *_args, **_kwargs: no)
+    window._delete_latest_draft()
+    assert draft_path.exists()
+
+    monkeypatch.setattr(window.QtWidgets.QMessageBox, "question", lambda *_args, **_kwargs: yes)
+    window._delete_latest_draft()
+    assert not draft_path.exists()
+    assert not window.home_continue_button.isEnabled()
+    assert not window.home_delete_draft_button.isEnabled()
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_back_reentry_overwrites_existing_flow_timestamp(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
+    session.start(candidate_name="Latoya Nugent", school="Palmdale", track_key="preschool")
+    window.session = session
+
+    window._mark_flow_timestamp_at(1, 12.0)
+    window._mark_flow_timestamp_at(1, 22.0, overwrite=True)
+
+    assert session.flow_time_marks == [{"flow_index": 1, "t": 22.0}]
+    window.window.close()
+    app.processEvents()
+
+
 def test_pyside_session_enforces_intro_custom_scored_final_custom_workflow(tmp_path: Path) -> None:
     model = build_interview_redesign_model(
         rubric_path=_write_test_rubric(tmp_path),
@@ -609,6 +734,49 @@ def test_pyside_offer_review_defaults_are_prefilled_from_completed_session(tmp_p
     assert defaults["position"] == "Preschool"
     assert defaults["determination"] == "Hire"
     assert defaults["next_action"] == "Generate Offer"
+
+
+def test_pyside_review_generate_offer_button_opens_session_offer_wizard(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
+    session.start(candidate_name="Latoya Nugent", school="Palmdale", track_key="preschool")
+    session.save_answer_and_advance(notes="Mission aligned.", score="")
+    session.save_answer_and_advance(notes="Values aligned.", score="")
+    session.save_answer_and_advance(notes="Warm child-centered example.", score="5")
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    window.session = session
+    window._render_review_page()
+
+    review_buttons = [
+        child
+        for child in window.interview_tabs.widget(3).findChildren(qt_widgets.QPushButton)
+        if child.text() == "Generate Offer"
+    ]
+    assert review_buttons
+
+    review_buttons[0].click()
+    app.processEvents()
+
+    assert window.stack.currentIndex() == 2
+    assert window.offer_fields["candidate"].text() == "Latoya Nugent"
+    assert window.offer_fields["school"].text() == "Palmdale"
+    assert window.offer_fields["position"].text() == "Preschool"
+    generate_buttons = [
+        child
+        for child in window.stack.widget(2).findChildren(qt_widgets.QPushButton)
+        if child.text() == "Generate Offer"
+    ]
+    assert generate_buttons
+    window.window.close()
+    app.processEvents()
 
 
 def test_pyside_session_generates_offer_document_from_template(tmp_path: Path) -> None:
@@ -791,10 +959,14 @@ def test_pyside_last_question_footer_finalizes_and_shows_complete_home(tmp_path:
         assert "Exit" in buttons
         if question == window.session._workflow_items()[-1]:
             assert "Finalize" in buttons
+            if question.score_cards:
+                window.score_group.buttons()[0].setChecked(True)
             buttons["Finalize"].click()
             break
         assert "Next" in buttons
         window.live_notes.setPlainText(f"notes for {question.question_id}")
+        if question.score_cards:
+            window.score_group.buttons()[0].setChecked(True)
         buttons["Next"].click()
 
     app.processEvents()
@@ -939,6 +1111,12 @@ def test_pyside_progress_window_polls_deepseek_progress_json(tmp_path: Path) -> 
 
     assert window.pyside_finalize_deepseek_progress_path == progress_path
     assert "Updating interview notes document" in window.pyside_finalize_progress_label.text()
+
+    progress_path.write_text(json.dumps({"step": "Summarizing Q3: Trait 1", "status": "processing"}), encoding="utf-8")
+    window._refresh_pyside_finalize_progress()
+    app.processEvents()
+
+    assert "Summarizing Q3: Trait 1" in window.pyside_finalize_progress_label.text()
 
     progress_path.write_text(json.dumps({"step": "Complete", "status": "complete"}), encoding="utf-8")
     window._watch_pyside_deepseek_finalize_progress(progress_path)

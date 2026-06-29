@@ -29,7 +29,7 @@ from uuid import uuid4
 import tkinter as tk
 from tkinter import messagebox
 
-from data_store import InterviewHistoryStore
+from data_store import InterviewHistoryStore, RubricLoader
 from scoring_reporting import (
     CandidateQualification,
     DEFAULT_ENGINE_MODULE_CONTRACT,
@@ -3473,30 +3473,13 @@ class HistoryController:
         return None
 
     def _deepseek_job_path_for_row(self, row: dict[str, Any]) -> Path | None:
-        row_key = str(row.get("history_id", "")).strip()
-        if not row_key:
-            return None
-        stored_job_path = str(row.get("deepseek_job_path", "")).strip()
-        if stored_job_path:
-            stored_path = Path(stored_job_path)
-            if stored_path.name == f"deepseek-finalize-{row_key}.json" and stored_path.exists():
-                return stored_path
-        job_name = f"deepseek-finalize-{row_key}.json"
-        if Path(job_name).name != job_name:
-            return None
-        candidates: list[Path] = []
         history_path = Path(str(getattr(self.app.history_store, "path", "") or ""))
-        if str(history_path):
-            candidates.append(history_path.parent / "deepseek_jobs" / job_name)
-            if history_path.parent.name == "user_artifacts":
-                candidates.insert(0, history_path.parent / "interviews" / "deepseek_jobs" / job_name)
         base_dir = str(getattr(self.app, "settings", {}).get("base_dir", "")).strip()
-        if base_dir:
-            candidates.append(Path(base_dir) / "deepseek_jobs" / job_name)
-        for candidate in candidates:
-            if candidate.exists():
-                return candidate
-        return candidates[0] if candidates else None
+        return resolve_deepseek_regeneration_job_path(
+            row,
+            history_path=history_path,
+            base_dir=Path(base_dir) if base_dir else None,
+        )
 
 
 PENDING_TRANSCRIPTION_WARNING = TRANSCRIPTION_PARTIAL_WARNING_COPY
@@ -3651,6 +3634,283 @@ def enqueue_deepseek_finalize_job(app: Any, context: FinalizeContext, out_path: 
     return job_path
 
 
+def resolve_deepseek_regeneration_job_path(
+    row: dict[str, Any],
+    *,
+    history_path: Path | None = None,
+    base_dir: Path | None = None,
+) -> Path | None:
+    row_key = str(row.get("history_id", "")).strip()
+    if not row_key:
+        return None
+    job_name = f"deepseek-finalize-{row_key}.json"
+    if Path(job_name).name != job_name:
+        return None
+
+    candidates = _deepseek_job_path_candidates(row, job_name, history_path=history_path, base_dir=base_dir)
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    if not candidates:
+        return None
+    return _synthesize_deepseek_job_from_session(
+        candidates[0],
+        row,
+        history_path=history_path,
+        base_dir=base_dir,
+    )
+
+
+def _deepseek_job_path_candidates(
+    row: dict[str, Any],
+    job_name: str,
+    *,
+    history_path: Path | None,
+    base_dir: Path | None,
+) -> list[Path]:
+    candidates: list[Path] = []
+    row_key = str(row.get("history_id", "")).strip()
+    stored_job_path = str(row.get("deepseek_job_path", "")).strip()
+    if stored_job_path:
+        stored_path = Path(stored_job_path)
+        if stored_path.name == f"deepseek-finalize-{row_key}.json" and stored_path.exists():
+            candidates.append(stored_path)
+    if history_path is not None and str(history_path):
+        normalized_history_path = Path(history_path)
+        candidates.append(normalized_history_path.parent / "deepseek_jobs" / job_name)
+        if normalized_history_path.parent.name == "user_artifacts":
+            candidates.insert(0, normalized_history_path.parent / "interviews" / "deepseek_jobs" / job_name)
+    if base_dir is not None and str(base_dir):
+        candidates.append(Path(base_dir) / "deepseek_jobs" / job_name)
+
+    output: list[Path] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        key = str(Path(candidate))
+        if key in seen:
+            continue
+        seen.add(key)
+        output.append(Path(candidate))
+    return output
+
+
+def _synthesize_deepseek_job_from_session(
+    job_path: Path,
+    row: dict[str, Any],
+    *,
+    history_path: Path | None,
+    base_dir: Path | None,
+) -> Path | None:
+    session = _load_matching_interview_session(row, history_path=history_path, base_dir=base_dir)
+    if session is None:
+        return None
+    flow_transcript, trait_inputs, custom_answers = _session_deepseek_inputs(session)
+    if not any(str(item.get("candidate_transcript") or "").strip() for item in flow_transcript):
+        return None
+
+    resolved_base_dir = Path(base_dir) if base_dir is not None and str(base_dir) else Path(job_path).parent.parent
+    progress_path = Path(job_path).with_suffix(".progress.json")
+    job = {
+        "history_id": str(row.get("history_id", "")).strip(),
+        "history_path": str(history_path or ""),
+        "base_dir": str(resolved_base_dir),
+        "report_path": str(row.get("interview_notes_path") or row.get("saved_report_path") or ""),
+        "rubric": _load_current_rubric_for_deepseek_job(),
+        "payload": {
+            "candidate": _candidate_payload_from_history_row(row, session),
+            "flow_transcript": flow_transcript,
+            "custom_answers": custom_answers,
+            "trait_inputs": trait_inputs,
+            "audio_recording": row.get("flow_recordings", []) if isinstance(row.get("flow_recordings"), list) else [],
+            "transcript_complete": True,
+            "remaining_question_indices": [],
+            **_deepseek_processing_payload(),
+        },
+        "scoring": _scoring_payload_from_history_row(row),
+        "deepseek_settings": _local_deepseek_settings_source(),
+        "progress_path": str(progress_path),
+        "source_session_path": str(session.get("_source_path", "")),
+    }
+    Path(job_path).parent.mkdir(parents=True, exist_ok=True)
+    atomic_write_json(Path(job_path), job, indent=2, ensure_ascii=False)
+    if history_path and str(row.get("history_id", "")).strip():
+        InterviewHistoryStore(Path(history_path)).update_row(
+            str(row.get("history_id", "")).strip(),
+            {
+                "deepseek_job_path": str(job_path),
+                "deepseek_progress_path": str(progress_path),
+            },
+        )
+    return Path(job_path)
+
+
+def _load_matching_interview_session(
+    row: dict[str, Any],
+    *,
+    history_path: Path | None,
+    base_dir: Path | None,
+) -> dict[str, Any] | None:
+    roots: list[Path] = []
+    if base_dir is not None and str(base_dir):
+        roots.append(Path(base_dir) / "interview_sessions")
+    if history_path is not None and str(history_path):
+        history_parent = Path(history_path).parent
+        roots.append(history_parent / "interviews" / "interview_sessions")
+        roots.append(history_parent / "interview_sessions")
+
+    candidate_name = _normalize_session_match_text(row.get("candidate_name"))
+    interview_date = str(row.get("interview_date") or "").strip()
+    best: tuple[float, Path, dict[str, Any]] | None = None
+    for root in _dedupe_paths(roots):
+        if not root.is_dir():
+            continue
+        for path in root.glob("*.json"):
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            if not isinstance(data, dict):
+                continue
+            interview = data.get("interview", {}) if isinstance(data.get("interview"), dict) else {}
+            name_matches = _normalize_session_match_text(interview.get("candidate_name")) == candidate_name
+            date_matches = str(interview.get("interview_date") or "").strip() == interview_date
+            if not name_matches or not date_matches:
+                continue
+            transcript_count = sum(
+                1
+                for item in (data.get("questions", {}) if isinstance(data.get("questions"), dict) else {}).values()
+                if isinstance(item, dict) and str(item.get("candidate_transcript") or "").strip()
+            )
+            if transcript_count <= 0:
+                continue
+            mtime = path.stat().st_mtime
+            candidate = (mtime, path, {**data, "_source_path": str(path)})
+            if best is None or candidate[0] > best[0]:
+                best = candidate
+    if best is None:
+        return None
+    return best[2]
+
+
+def _session_deepseek_inputs(session: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]], list[dict[str, Any]]]:
+    questions = session.get("questions", {}) if isinstance(session.get("questions"), dict) else {}
+    flow_transcript: list[dict[str, Any]] = []
+    trait_inputs: dict[str, dict[str, Any]] = {}
+    custom_answers: list[dict[str, Any]] = []
+    for fallback_idx, record in enumerate(questions.values()):
+        if not isinstance(record, dict):
+            continue
+        flow_idx = _coerce_flow_index(record.get("flow_idx"), fallback_idx)
+        item_type = str(record.get("item_type") or "").strip()
+        item_id = str(record.get("item_id") or flow_idx).strip()
+        notes = record.get("notes", {}) if isinstance(record.get("notes"), dict) else {}
+        question_text = str(notes.get("question_text") or "").strip()
+        candidate_transcript = str(record.get("candidate_transcript") or "").strip()
+        entry = {
+            "flow_index": flow_idx,
+            "type": item_type,
+            "id": item_id,
+            "title": _session_question_title(item_type, item_id),
+            "question": question_text,
+            "prompt": question_text,
+            "candidate_transcript": candidate_transcript,
+        }
+        flow_transcript.append(entry)
+        if item_type == "trait":
+            trait_inputs[item_id] = {
+                "raw_score": notes.get("raw_score"),
+                "question_notes": str(notes.get("question_notes") or ""),
+                "trait_notes": str(notes.get("trait_notes") or ""),
+                "verbatim_notes": str(notes.get("verbatim_notes") or ""),
+                "absolute_disqualifier": bool(notes.get("absolute_disqualifier", False)),
+                "no_example_after_followups": bool(notes.get("no_example_after_followups", False)),
+                "skipped": bool(notes.get("skipped", False)),
+                "selected_signal_ids": list(notes.get("selected_signal_ids", []) or []),
+            }
+        else:
+            custom_answers.append(
+                {
+                    "id": item_id,
+                    "question": question_text,
+                    "answer": str(notes.get("answer") or ""),
+                    "skipped": bool(notes.get("skipped", False)),
+                }
+            )
+    flow_transcript.sort(key=lambda item: int(item.get("flow_index", 0) or 0))
+    return flow_transcript, trait_inputs, custom_answers
+
+
+def _candidate_payload_from_history_row(row: dict[str, Any], session: dict[str, Any]) -> dict[str, Any]:
+    interview = session.get("interview", {}) if isinstance(session.get("interview"), dict) else {}
+    return {
+        "name": str(row.get("candidate_name") or interview.get("candidate_name") or "").strip(),
+        "candidate_name": str(row.get("candidate_name") or interview.get("candidate_name") or "").strip(),
+        "interview_date": str(row.get("interview_date") or interview.get("interview_date") or "").strip(),
+        "school": str(row.get("school") or "").strip(),
+        "track": str(row.get("track") or "").strip(),
+        "qualification": row.get("qualification", {}) if isinstance(row.get("qualification"), dict) else {},
+    }
+
+
+def _scoring_payload_from_history_row(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "percent_of_max": row.get("interview_score", 0),
+        "outcome": str(row.get("determination") or ""),
+        "rows": [],
+    }
+
+
+def _load_current_rubric_for_deepseek_job() -> dict[str, Any]:
+    try:
+        return RubricLoader(REPO_ROOT / "config" / "rubric.json").data
+    except Exception:
+        return {}
+
+
+def _local_deepseek_settings_source(settings: dict[str, Any] | None = None) -> dict[str, Any]:
+    source = dict(settings or {})
+    source["DEEPSEEK_SUMMARY_ENABLED"] = str(source.get("DEEPSEEK_SUMMARY_ENABLED") or "1")
+    source["DEEPSEEK_API_KEY"] = str(source.get("DEEPSEEK_API_KEY") or _LOCAL_DEEPSEEK_API_KEY)
+    source["DEEPSEEK_API_BASE_URL"] = str(source.get("DEEPSEEK_API_BASE_URL") or _LOCAL_DEEPSEEK_BASE_URL)
+    source["DEEPSEEK_SUMMARY_MODEL"] = str(source.get("DEEPSEEK_SUMMARY_MODEL") or _LOCAL_DEEPSEEK_MODEL)
+    try:
+        timeout = float(source.get("DEEPSEEK_SUMMARY_TIMEOUT_SECONDS") or 120)
+    except (TypeError, ValueError):
+        timeout = 120.0
+    source["DEEPSEEK_SUMMARY_TIMEOUT_SECONDS"] = str(int(min(max(timeout, 1.0), 120.0)))
+    source["DEEPSEEK_PROMPT_TEMPLATES"] = load_deepseek_prompt_templates()
+    return source
+
+
+def _normalize_session_match_text(value: Any) -> str:
+    return re.sub(r"\s+", " ", str(value or "").strip()).casefold()
+
+
+def _dedupe_paths(paths: list[Path]) -> list[Path]:
+    output: list[Path] = []
+    seen: set[str] = set()
+    for path in paths:
+        key = str(Path(path))
+        if key in seen:
+            continue
+        seen.add(key)
+        output.append(Path(path))
+    return output
+
+
+def _coerce_flow_index(value: Any, fallback: int) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return int(fallback)
+
+
+def _session_question_title(item_type: str, item_id: str) -> str:
+    if item_type == "trait":
+        return str(item_id or "Trait Question").replace("_", " ").title()
+    return "Custom Question"
+
+
 def retry_deepseek_finalize_job(job_path: Path) -> Path:
     path = Path(job_path)
     with path.open("r", encoding="utf-8") as handle:
@@ -3692,8 +3952,9 @@ def regenerate_interview_notes_job(job_path: Path, *, mode: str) -> Path:
         if isinstance(payload, dict):
             payload.update(_deepseek_processing_payload())
         deepseek_settings = job.get("deepseek_settings")
-        if isinstance(deepseek_settings, dict):
-            deepseek_settings["DEEPSEEK_PROMPT_TEMPLATES"] = load_deepseek_prompt_templates()
+        if not isinstance(deepseek_settings, dict):
+            deepseek_settings = {}
+        job["deepseek_settings"] = _local_deepseek_settings_source(deepseek_settings)
     atomic_write_json(path, job, indent=2, ensure_ascii=False)
     _mark_deepseek_history_processing(job)
     _recover_failed_deepseek_retry_lock(path, progress_path)

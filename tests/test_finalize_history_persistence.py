@@ -1,5 +1,6 @@
 import importlib.machinery
 import importlib.util
+import json
 import sys
 import tempfile
 import threading
@@ -38,7 +39,33 @@ class _DocxExporterStub:
         return Path("/tmp/generated-final-notes.docx")
 
 
+class _LabelStub:
+    def __init__(self):
+        self.text = ""
+
+    def config(self, *, text):
+        self.text = text
+
+
 class TestFinalizeHistoryPersistence(unittest.TestCase):
+    def test_finalize_progress_refresh_reads_deepseek_progress_file(self):
+        with tempfile.TemporaryDirectory() as td:
+            progress_path = Path(td) / "deepseek.progress.json"
+            progress_path.write_text(
+                json.dumps({"step": "Summarizing Q3: Trait 1", "status": "processing"}),
+                encoding="utf-8",
+            )
+            app = InterviewApp.__new__(InterviewApp)
+            label = _LabelStub()
+            app.finalize_status_label = label
+            app._finalize_progress_queue = None
+            app._finalize_progress_step = "Queueing DeepSeek processing"
+            app.finalize_deepseek_progress_path = progress_path
+
+            InterviewApp._refresh_finalize_processing_state(app)
+
+            self.assertEqual(label.text, "Summarizing Q3: Trait 1")
+
     def test_finalize_history_interview_notes_path_uses_generated_docx(self):
         with tempfile.TemporaryDirectory() as td:
             app = InterviewApp.__new__(InterviewApp)

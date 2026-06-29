@@ -259,6 +259,7 @@ class InterviewApp(tk.Tk):
         self._finalize_progress_queue: queue.Queue[str] | None = None
         self._finalize_progress_step = ""
         self.finalize_deepseek_progress_path: Path | None = None
+        self._finalize_progress_after_id: str | None = None
         self._finalize_worker_running = False
         self._transcription_cv = threading.Condition()
         self._transcription_in_progress = False
@@ -2840,6 +2841,7 @@ class InterviewApp(tk.Tk):
         self.finalize_window = win
         self.finalize_progress = bar
         self.finalize_status_label = status_label
+        self._schedule_finalize_progress_refresh()
 
     def _report_finalize_progress(self, step: str) -> None:
         normalized = str(step or "").strip()
@@ -2882,7 +2884,21 @@ class InterviewApp(tk.Tk):
         if self.finalize_window is not None and self.finalize_window.winfo_exists():
             self.after(1000, lambda: self._watch_deepseek_finalize_progress(self.finalize_deepseek_progress_path))
 
+    def _schedule_finalize_progress_refresh(self) -> None:
+        if self.finalize_window is None or not self.finalize_window.winfo_exists():
+            self._finalize_progress_after_id = None
+            return
+        self._refresh_finalize_processing_state()
+        self._finalize_progress_after_id = self.after(500, self._schedule_finalize_progress_refresh)
+
     def _close_finalize_progress(self) -> None:
+        after_id = self.__dict__.get("_finalize_progress_after_id")
+        if after_id is not None:
+            try:
+                self.after_cancel(after_id)
+            except tk.TclError:
+                pass
+            self._finalize_progress_after_id = None
         if self.finalize_progress is not None:
             self.finalize_progress.stop()
             self.finalize_progress = None

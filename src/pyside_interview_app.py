@@ -26,6 +26,7 @@ from interview_runtime import (
     load_candidate_segments,
     map_segments_to_flow_indices,
     regenerate_interview_notes_job,
+    resolve_deepseek_regeneration_job_path,
     resolve_default_windows_system_device,
 )
 from onboarding_operations import JsonStore, build_dashboard_today_summary, filtered_tasks, task_status
@@ -224,6 +225,7 @@ class PySideInterviewSession:
         score: str = "",
         quick_actions: Sequence[str] = (),
         qualification: dict[str, Any] | None = None,
+        skipped: bool = False,
     ) -> None:
         question = self.active_question()
         if question is None:
@@ -237,6 +239,8 @@ class PySideInterviewSession:
             "score": score,
             "quick_actions": [str(action) for action in quick_actions],
         }
+        if skipped:
+            answer["skipped"] = True
         if question.kind == "qualification" or qualification is not None:
             normalized = _normalize_qualification_payload(qualification or {})
             self.qualification = normalized
@@ -244,6 +248,17 @@ class PySideInterviewSession:
         self.answers[question.question_id] = answer
         self.current_index += 1
         self.save_draft()
+
+    def go_back(self) -> None:
+        if self.current_index <= 0:
+            self.current_index = 0
+            self.save_draft()
+            return
+        self.current_index -= 1
+        self.save_draft()
+
+    def skip_active_question(self, *, notes: str = "", quick_actions: Sequence[str] = ()) -> None:
+        self.save_answer_and_advance(notes=notes, score="", quick_actions=quick_actions, skipped=True)
 
     def review_summary(self) -> PySideReviewSummary:
         flow = self.model.flows.get(self.track_key)
@@ -1221,8 +1236,10 @@ class PySideInterviewWindow:
         self.pyside_finalize_progress_bar: Any | None = None
         self.pyside_finalize_deepseek_progress_path: Path | None = None
         self._pyside_finalize_progress_queue: queue.Queue[str] | None = None
+        self._pyside_finalize_progress_refresh_timer: Any | None = None
         self._pyside_deepseek_progress_timer: Any | None = None
         self._history_table_widgets: dict[str, Any] = {}
+        self._overwrite_next_live_timestamp = False
         self.window = QtWidgets.QMainWindow()
         self.window.setWindowFlags(standard_window_control_flags(QtCore))
         self.window.setWindowTitle(model.app_title)
@@ -1357,11 +1374,18 @@ class PySideInterviewWindow:
         draft, draft_layout = self._surface()
         draft_layout.addWidget(self._label(self.model.home.continue_action, "SectionTitle"))
         latest_draft = latest_pyside_draft_path()
-        draft_layout.addWidget(self._label(str(latest_draft) if latest_draft else "Latest saved interview appears here when available."))
+        self.home_draft_label = self._label(str(latest_draft) if latest_draft else "Latest saved interview appears here when available.")
+        draft_layout.addWidget(self.home_draft_label)
         continue_button = self.QtWidgets.QPushButton("Continue")
+        self.home_continue_button = continue_button
         continue_button.setEnabled(latest_draft is not None)
         continue_button.clicked.connect(lambda: self._continue_latest_draft())
         draft_layout.addWidget(continue_button)
+        delete_draft = self.QtWidgets.QPushButton("Delete Saved Draft")
+        self.home_delete_draft_button = delete_draft
+        delete_draft.setEnabled(latest_draft is not None)
+        delete_draft.clicked.connect(self._delete_latest_draft)
+        draft_layout.addWidget(delete_draft)
         layout.addWidget(draft)
 
         recent, recent_layout = self._surface()
@@ -1674,6 +1698,47 @@ class PySideInterviewWindow:
         self._render_offer_page()
         self.interview_tabs.setCurrentIndex(2 if self.session.active_question() is not None else 3)
 
+    def _refresh_home_draft_panel(self) -> None:
+        latest_draft = latest_pyside_draft_path()
+        if latest_draft is not None and not Path(latest_draft).exists():
+            latest_draft = None
+        label = getattr(self, "home_draft_label", None)
+        if label is not None:
+            label.setText(str(latest_draft) if latest_draft else "Latest saved interview appears here when available.")
+        continue_button = getattr(self, "home_continue_button", None)
+        if continue_button is not None:
+            continue_button.setEnabled(latest_draft is not None)
+        delete_button = getattr(self, "home_delete_draft_button", None)
+        if delete_button is not None:
+            delete_button.setEnabled(latest_draft is not None)
+
+    def _delete_latest_draft(self) -> None:
+        draft_path = latest_pyside_draft_path()
+        if draft_path is None or not Path(draft_path).exists():
+            self._refresh_home_draft_panel()
+            return
+        result = self.QtWidgets.QMessageBox.question(
+            self.window,
+            "Delete Saved Draft",
+            f"Delete saved draft?\n\n{draft_path}",
+            self.QtWidgets.QMessageBox.StandardButton.Yes | self.QtWidgets.QMessageBox.StandardButton.No,
+            self.QtWidgets.QMessageBox.StandardButton.No,
+        )
+        if result != self.QtWidgets.QMessageBox.StandardButton.Yes:
+            return
+        try:
+            Path(draft_path).unlink()
+        except FileNotFoundError:
+            pass
+        except OSError as exc:
+            self.QtWidgets.QMessageBox.warning(self.window, "Delete Saved Draft", f"Could not delete draft: {exc}")
+            return
+        if self.session is not None and Path(self.session.draft_path) == Path(draft_path):
+            self.session = None
+            self.session_index = 0
+            self.session_answers = {}
+        self._refresh_home_draft_panel()
+
     def _safe_base_name(self) -> str:
         raw = f"{self.session.candidate_name if self.session else 'Candidate'}_{date.today().isoformat()}"
         safe = "".join(ch if ch.isalnum() else "_" for ch in raw).strip("_")
@@ -1708,12 +1773,18 @@ class PySideInterviewWindow:
         if self.session is None or self.recording_started_monotonic is None:
             return
         elapsed = max(0.0, time.monotonic() - self.recording_started_monotonic)
-        self._mark_flow_timestamp_at(flow_idx, elapsed)
+        overwrite = self._overwrite_next_live_timestamp
+        self._overwrite_next_live_timestamp = False
+        self._mark_flow_timestamp_at(flow_idx, elapsed, overwrite=overwrite)
 
-    def _mark_flow_timestamp_at(self, flow_idx: int, elapsed: float) -> None:
+    def _mark_flow_timestamp_at(self, flow_idx: int, elapsed: float, *, overwrite: bool = False) -> None:
         if self.session is None:
             return
         marks = self.session.flow_time_marks
+        if any(int(mark.get("flow_index", -1)) == flow_idx for mark in marks):
+            if not overwrite:
+                return
+            marks[:] = [mark for mark in marks if int(mark.get("flow_index", -1)) != flow_idx]
         if marks and int(marks[-1].get("flow_index", -1)) == flow_idx and "end_t" not in marks[-1]:
             return
         marks.append({"flow_index": flow_idx, "t": elapsed})
@@ -1781,13 +1852,12 @@ class PySideInterviewWindow:
             return None
         return flow.items[self.session_index]
 
-    def _save_and_next(self, *, finalize: bool = False) -> None:
+    def _save_and_next(self, *, finalize: bool = False, skip: bool = False) -> None:
         item = self._active_question()
         if item is None:
             self.interview_tabs.setCurrentIndex(3)
             return
         current_index = self.session.current_index if self.session is not None else self.session_index
-        boundary_elapsed = self._close_flow_timestamp(current_index)
         qualification: dict[str, Any] | None = None
         if item.kind == "qualification":
             qualification = self._collect_qualification_from_fields()
@@ -1797,6 +1867,10 @@ class PySideInterviewWindow:
         if hasattr(self, "score_group"):
             checked = self.score_group.checkedButton()
             score = checked.text().split(" ", 1)[0] if checked is not None else ""
+        if item.score_cards and not score and not skip:
+            self._update_live_next_enabled(item)
+            return
+        boundary_elapsed = self._close_flow_timestamp(current_index)
         notes = self.live_notes.toPlainText() if hasattr(self, "live_notes") else ""
         quick_actions = [
             checkbox.text()
@@ -1804,12 +1878,15 @@ class PySideInterviewWindow:
             if checkbox.isChecked()
         ]
         if self.session is not None:
-            self.session.save_answer_and_advance(
-                notes=notes,
-                score=score,
-                quick_actions=quick_actions,
-                qualification=qualification,
-            )
+            if skip:
+                self.session.skip_active_question(notes=notes, quick_actions=quick_actions)
+            else:
+                self.session.save_answer_and_advance(
+                    notes=notes,
+                    score=score,
+                    quick_actions=quick_actions,
+                    qualification=qualification,
+                )
             self.session_index = self.session.current_index
             self.session_answers = dict(self.session.answers)
             if self.session.active_question() is not None and boundary_elapsed is not None:
@@ -1821,6 +1898,8 @@ class PySideInterviewWindow:
                 "score": score,
                 "notes": notes,
             }
+            if skip:
+                answer["skipped"] = True
             if qualification is not None:
                 answer["qualification"] = qualification
             self.session_answers[item.question_id] = answer
@@ -1845,6 +1924,22 @@ class PySideInterviewWindow:
 
     def _finalize_from_live_question(self) -> None:
         self._save_and_next(finalize=True)
+
+    def _skip_live_question(self) -> None:
+        self._save_and_next(skip=True)
+
+    def _go_back_live_question(self) -> None:
+        if self.session is not None:
+            self.session.go_back()
+            self.session_index = self.session.current_index
+            self.session_answers = dict(self.session.answers)
+            self._overwrite_next_live_timestamp = True
+        elif self.session_index > 0:
+            self.session_index -= 1
+            self._overwrite_next_live_timestamp = True
+        self._render_live_question_page()
+        self._render_review_page()
+        self._render_offer_page()
 
     def _exit_live_interview(self) -> None:
         if self.session is not None:
@@ -1892,11 +1987,14 @@ class PySideInterviewWindow:
             row_layout.setContentsMargins(0, 0, 0, 0)
             row_layout.setSpacing(8)
             radio = self.QtWidgets.QRadioButton(card.label)
+            radio.toggled.connect(lambda _checked, question=item: self._update_live_next_enabled(question))
             option_text = self._label(card.description, "ScoreOptionText")
             row_layout.addWidget(radio, 0)
             row_layout.addWidget(option_text, 1)
             self.score_group.addButton(radio)
             right_layout.addWidget(row)
+        if item.score_cards:
+            self.score_group.buttonClicked.connect(lambda _button: self._update_live_next_enabled(item))
         if not item.score_cards:
             right_layout.addWidget(self._label("Non-scored question"))
         right_layout.addWidget(self._label("Quick Actions", "SectionTitle"))
@@ -1909,30 +2007,77 @@ class PySideInterviewWindow:
         split.addWidget(right, 1)
         layout.addLayout(split, 1)
         self._render_live_footer(item)
+        self._restore_live_answer(item)
+        self._update_live_next_enabled(item)
 
     def _render_live_footer(self, item: FlowQuestion | None) -> None:
         footer = getattr(self, "live_footer_layout", None)
         if footer is None:
             return
         self._clear_layout(footer)
+        back_button = self.QtWidgets.QPushButton("Back")
+        back_button.setProperty("pyside_live_footer_action", "back")
+        back_button.setEnabled((self.session.current_index if self.session is not None else self.session_index) > 0)
+        back_button.clicked.connect(self._go_back_live_question)
+        footer.addWidget(back_button)
+        skip_button = self.QtWidgets.QPushButton("Skip")
+        skip_button.setProperty("pyside_live_footer_action", "skip")
+        skip_button.setEnabled(item is not None)
+        skip_button.clicked.connect(self._skip_live_question)
+        footer.addWidget(skip_button)
         footer.addStretch(1)
-        exit_button = self.QtWidgets.QPushButton("Exit")
-        exit_button.setProperty("pyside_live_footer_action", "exit")
-        exit_button.clicked.connect(self._exit_live_interview)
-        footer.addWidget(exit_button)
         if item is None:
+            exit_button = self.QtWidgets.QPushButton("Exit")
+            exit_button.setProperty("pyside_live_footer_action", "exit")
+            exit_button.clicked.connect(self._exit_live_interview)
+            footer.addWidget(exit_button)
             return
         is_last = False
         if self.session is not None:
             is_last = self.session.current_index == len(self.session._workflow_items()) - 1
         action = self._primary_button("Finalize" if is_last else "Next")
         action.setProperty("pyside_live_footer_action", "finalize" if is_last else "next")
+        self.live_next_button = action
         action.clicked.connect(
             (lambda _checked=False: self._finalize_from_live_question())
             if is_last
             else (lambda _checked=False: self._save_and_next())
         )
         footer.addWidget(action)
+        exit_button = self.QtWidgets.QPushButton("Exit")
+        exit_button.setProperty("pyside_live_footer_action", "exit")
+        exit_button.clicked.connect(self._exit_live_interview)
+        footer.addWidget(exit_button)
+
+    def _restore_live_answer(self, item: FlowQuestion) -> None:
+        answer = {}
+        if self.session is not None:
+            answer = self.session.answers.get(item.question_id, {})
+        else:
+            answer = self.session_answers.get(item.question_id, {})
+        if not answer:
+            return
+        if hasattr(self, "live_notes"):
+            self.live_notes.setPlainText(str(answer.get("notes", "") or ""))
+        stored_score = str(answer.get("score", "") or "").strip()
+        if stored_score and hasattr(self, "score_group"):
+            for button in self.score_group.buttons():
+                if button.text().split(" ", 1)[0] == stored_score:
+                    button.setChecked(True)
+                    break
+        stored_actions = {str(action) for action in answer.get("quick_actions", []) or []}
+        for checkbox in getattr(self, "quick_action_checks", []):
+            checkbox.setChecked(checkbox.text() in stored_actions)
+
+    def _update_live_next_enabled(self, item: FlowQuestion | None) -> None:
+        action = getattr(self, "live_next_button", None)
+        if action is None or item is None:
+            return
+        if not item.score_cards:
+            action.setEnabled(True)
+            return
+        checked = self.score_group.checkedButton() if hasattr(self, "score_group") else None
+        action.setEnabled(checked is not None)
 
     def _render_qualification_fields(self, layout: Any) -> None:
         stored = self.session.qualification if self.session is not None else {}
@@ -2042,7 +2187,9 @@ class PySideInterviewWindow:
         notes_button = self._primary_button("Finalize Interview")
         notes_button.clicked.connect(self._generate_interview_notes_from_session)
         actions.addWidget(notes_button)
-        actions.addWidget(self.QtWidgets.QPushButton("Generate Offer"))
+        offer_button = self._primary_button("Generate Offer")
+        offer_button.clicked.connect(self._open_session_offer)
+        actions.addWidget(offer_button)
         home_button = self.QtWidgets.QPushButton("Home")
         home_button.clicked.connect(lambda: self.interview_tabs.setCurrentIndex(0))
         actions.addWidget(home_button)
@@ -2134,6 +2281,10 @@ class PySideInterviewWindow:
         self.pyside_finalize_progress_label = label
         self.pyside_finalize_progress_bar = bar
         self._pyside_finalize_progress_queue = queue.Queue()
+        refresh_timer = self.QtCore.QTimer(dialog)
+        refresh_timer.timeout.connect(self._refresh_pyside_finalize_progress)
+        self._pyside_finalize_progress_refresh_timer = refresh_timer
+        refresh_timer.start(500)
         dialog.show()
 
     def _clear_pyside_finalize_progress_dialog(self) -> None:
@@ -2142,6 +2293,11 @@ class PySideInterviewWindow:
             timer.stop()
             timer.deleteLater()
             self._pyside_deepseek_progress_timer = None
+        refresh_timer = self._pyside_finalize_progress_refresh_timer
+        if refresh_timer is not None:
+            refresh_timer.stop()
+            refresh_timer.deleteLater()
+            self._pyside_finalize_progress_refresh_timer = None
         if self.pyside_finalize_progress_bar is not None:
             self.pyside_finalize_progress_bar = None
         self.pyside_finalize_progress_dialog = None
@@ -2177,6 +2333,9 @@ class PySideInterviewWindow:
                     self._pyside_finalize_progress_step = progress_queue.get_nowait()
                 except queue.Empty:
                     break
+        deepseek_step, _status = self._read_pyside_deepseek_progress_step()
+        if deepseek_step:
+            self._pyside_finalize_progress_step = deepseek_step
         label = self.pyside_finalize_progress_label
         if label is not None and self._pyside_finalize_progress_step:
             label.setText(self._pyside_finalize_progress_step)
@@ -2241,6 +2400,12 @@ class PySideInterviewWindow:
         self.sidebar.setCurrentRow(2)
         self.stack.setCurrentIndex(2)
 
+    def _open_session_offer(self) -> None:
+        self.selected_history_offer_row = None
+        self._render_offer_page()
+        self.sidebar.setCurrentRow(2)
+        self.stack.setCurrentIndex(2)
+
     def _reload_history_model(self) -> None:
         history_rows = _build_pyside_history_rows(self.model.history_path)
         self.model = replace(
@@ -2254,22 +2419,20 @@ class PySideInterviewWindow:
         self._refresh_all_history_tables()
 
     def _deepseek_retry_job_path_for_row(self, row: PySideHistoryRow) -> Path | None:
-        row_key = str(row.row_key or "").strip()
-        if not row_key:
-            return None
-        job_name = f"deepseek-finalize-{row_key}.json"
-        if Path(job_name).name != job_name:
-            return None
-        candidates = [
-            self.model.history_path.parent / "deepseek_jobs" / job_name,
-        ]
-        if self.model.history_path.parent.name == "user_artifacts":
-            candidates.insert(0, self.model.history_path.parent / "interviews" / "deepseek_jobs" / job_name)
-        candidates.append(DEFAULT_BASE_DIR / "deepseek_jobs" / job_name)
-        for candidate in candidates:
-            if candidate.exists():
-                return candidate
-        return candidates[0]
+        return resolve_deepseek_regeneration_job_path(
+            {
+                "history_id": row.row_key,
+                "candidate_name": row.candidate,
+                "interview_date": row.interview_date,
+                "school": row.school,
+                "track": row.position,
+                "interview_notes_path": row.notes_path,
+            },
+            history_path=self.model.history_path,
+            base_dir=self.model.history_path.parent / "interviews"
+            if self.model.history_path.parent.name == "user_artifacts"
+            else DEFAULT_BASE_DIR,
+        )
 
     def _retry_history_deepseek(self, row: PySideHistoryRow) -> None:
         mode = self._choose_pyside_notes_regeneration_mode(row)

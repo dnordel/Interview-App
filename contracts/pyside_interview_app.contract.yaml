@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.12.0
+  version: 1.13.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, interview notes regeneration actions, user-closable
@@ -210,7 +210,7 @@ classes:
     exceptions: []
     side_effects: none
   - name: save_answer_and_advance
-    description: Save one answer, score, and quick-action set, advance to the next question, and autosave the draft.
+    description: Save one answer, score, optional skipped state, and quick-action set, advance to the next question, and autosave the draft.
     locked: false
     inputs:
       notes:
@@ -228,6 +228,34 @@ classes:
         type: dict[str, Any] | None
         required: false
         default: null
+      skipped:
+        type: bool
+        required: false
+        default: false
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Writes PySide draft JSON.
+  - name: go_back
+    description: Move the guided PySide session back to the previous question without deleting saved answers and autosave the draft.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Writes PySide draft JSON.
+  - name: skip_active_question
+    description: Save the active question as intentionally skipped with optional notes and quick actions, leave score blank, advance to the next question, and autosave the draft.
+    locked: false
+    inputs:
+      notes:
+        type: str
+        required: false
+        default: ''
+      quick_actions:
+        type: Sequence[str]
+        required: false
+        default: ()
     returns:
       type: None
     exceptions: []
@@ -376,8 +404,8 @@ classes:
     school/outcome filters, hiring-outcome row color, content-sized text columns,
     compact notes/offer/delete action columns, Processing notes state during detached
     DeepSeek work, and live refresh after finalize; Open Notes opens the selected
-    interview notes file and Generate Offer opens the PySide offer wizard for the
-    selected history row.
+    interview notes file and Generate Offer opens the PySide offer wizard from
+    either the selected history row or completed review screen.
   locked: false
   attributes:
     model:
@@ -415,8 +443,9 @@ classes:
     side_effects: May write WAV/transcript artifacts under DEFAULT_BASE_DIR and update
       session flow_recordings/flow_candidate_transcripts.
   - name: _render_live_footer
-    description: Render persistent Live Interview footer actions with Exit plus Next
-      or Finalize on the last question.
+    description: Render persistent Live Interview footer actions with Back and Skip
+      on the left, Next or Finalize plus Exit on the right, and disable Next/Finalize
+      on scored questions until a rating is selected.
     locked: false
     inputs:
       item:
@@ -437,6 +466,44 @@ classes:
     exceptions: []
     side_effects: Writes draft/finalize artifacts through a background worker and
       switches to the review tab.
+  - name: _skip_live_question
+    description: Save the active live question as skipped and advance without requiring a scored rating.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Writes PySide draft JSON and re-renders the live interview page.
+  - name: _go_back_live_question
+    description: Return the live interview view to the previous question while preserving saved answers for review or overwrite.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Writes PySide draft JSON and re-renders live, review, and offer panes.
+  - name: _restore_live_answer
+    description: Rehydrate notes, selected score, and quick-action checks for a previously answered live question.
+    locked: false
+    inputs:
+      item:
+        type: FlowQuestion
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates visible live-interview form widgets.
+  - name: _update_live_next_enabled
+    description: Enable Next or Finalize for non-scored questions and for scored questions only after a rating is selected.
+    locked: false
+    inputs:
+      item:
+        type: FlowQuestion | None
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates visible live-interview footer button state.
   - name: _poll_pyside_finalize_worker
     description: Poll background PySide finalize results, drain progress updates,
       refresh history/candidate tables, and update review status text when recording/transcription
@@ -527,6 +594,22 @@ classes:
       type: None
     exceptions: []
     side_effects: Writes PySide draft JSON and changes visible tab.
+  - name: _refresh_home_draft_panel
+    description: Refresh the PySide home draft label and Continue/Delete Saved Draft button enabled states from the latest existing draft.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates visible PySide home draft controls.
+  - name: _delete_latest_draft
+    description: Confirm with the operator, delete the latest saved PySide interview draft when it still exists, clear the active matching session, and refresh home controls.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Shows a PySide confirmation dialog, may delete one draft JSON file, and updates visible home draft controls.
   - name: _deepseek_retry_job_path_for_row
     description: Resolve the persisted DeepSeek job JSON path for a failed history
       row from the row key and configured history/base directories, rejecting unsafe
@@ -582,6 +665,17 @@ classes:
     exceptions: []
     side_effects: May launch the OS default document application, show a missing-file
       warning dialog, or start regeneration for failed rows without a document.
+  - name: _open_session_offer
+    description: Route the completed active PySide session from the review screen
+      to the Offers wizard, clearing any selected history offer row so fields are
+      prefilled from current session answers.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Re-renders the offer page and switches sidebar/stack navigation
+      to Offers.
   - name: _delete_history_row
     description: Confirm with the operator, delete one selected PySide history row
       by stable row key, and reload Home/Candidates history tables when deletion succeeds.

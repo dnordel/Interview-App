@@ -489,16 +489,16 @@ class TestDocxExporterValidation(unittest.TestCase):
         self.assertEqual(str(doc.paragraphs[0].runs[0].font.color.rgb), "1F4E79")
         self.assertIn("Ada | Palmdale | General | Interview Date: 2026-02-20", doc.paragraphs[1].text)
         self.assertEqual(doc.paragraphs[1].alignment, 1)
-        recommendation_cells = [
+        top_summary_cells = [
             table.rows[0].cells[0]
             for table in doc.tables
-            if table.rows[0].cells[0].text.startswith("Recommendation:")
+            if table.rows[0].cells[0].text.startswith("Interviewer score:")
         ]
-        self.assertTrue(recommendation_cells)
-        self.assertIn("Interviewer score: 0 / 10", recommendation_cells[0].text)
-        self.assertIn("AI advisory score: N/A (incomplete)", recommendation_cells[0].text)
-        self.assertIn("AI-trait-based score: not generated", recommendation_cells[0].text)
-        self.assertTrue(_cell_xml_contains(recommendation_cells[0], 'w:fill="FFF7D6"'))
+        self.assertTrue(top_summary_cells)
+        self.assertIn("Interviewer score: 0 / 10", top_summary_cells[0].text)
+        self.assertIn("AI advisory score: N/A (incomplete)", top_summary_cells[0].text)
+        self.assertIn("AI-trait-based score: not generated", top_summary_cells[0].text)
+        self.assertTrue(_cell_xml_contains(top_summary_cells[0], 'w:fill="FFF7D6"'))
         snapshot_tables = [
             table
             for table in doc.tables
@@ -619,7 +619,7 @@ class TestDocxExporterValidation(unittest.TestCase):
         full_text = _doc_text(doc)
 
         self.assertEqual(paragraphs[0], "Candidate Interview Decision Brief")
-        self.assertTrue(doc.tables[0].rows[0].cells[0].text.startswith("Recommendation:"))
+        self.assertTrue(doc.tables[0].rows[0].cells[0].text.startswith("Interviewer score:"))
         self.assertLess(paragraphs.index("Candidate Snapshot"), paragraphs.index("Executive Summary"))
         self.assertLess(paragraphs.index("Candidate Snapshot"), paragraphs.index("Scorecard Snapshot"))
         self.assertLess(paragraphs.index("Scorecard Snapshot"), paragraphs.index("Consolidated Answer Summaries"))
@@ -907,7 +907,7 @@ class TestDocxExporterValidation(unittest.TestCase):
         self.assertNotIn("AI advisory score: N/A (incomplete)", doc_text + table_text)
         self.assertNotIn("DeepSeek", doc_text + table_text)
 
-    def test_recommendation_callout_reports_interviewer_advisory_and_trait_based_scores(self):
+    def test_score_callout_reports_interviewer_advisory_and_trait_based_scores_without_recommendation(self):
         payload = {
             "candidate": {
                 "name": "Ada",
@@ -925,7 +925,8 @@ class TestDocxExporterValidation(unittest.TestCase):
             doc = Document(out_path)
             table_text = "\n".join(cell.text for table in doc.tables for row in table.rows for cell in row.cells)
 
-        self.assertIn("Recommendation: Hire.", table_text)
+        first_table_text = doc.tables[0].rows[0].cells[0].text
+        self.assertNotIn("Recommendation:", first_table_text)
         self.assertIn("Interviewer score: 15 / 15 (100.0%).", table_text)
         self.assertIn("AI advisory score: 12 / 15 (80.0%).", table_text)
         self.assertIn("AI-trait-based score: 9 / 15 (60.0%).", table_text)
@@ -997,7 +998,6 @@ class TestDocxExporterValidation(unittest.TestCase):
             doc = Document(out_path)
             table_text = "\n".join(cell.text for table in doc.tables for row in table.rows for cell in row.cells)
 
-        self.assertIn("Recommendation: Hire.", table_text)
         self.assertIn("Skipped scored questions: 1", table_text)
         self.assertNotIn("missing final raw score", table_text)
         self.assertIn("AI advisory score: not generated (suggestions: processing; scoring: processing).", table_text)

@@ -2,7 +2,7 @@ module:
   name: scoring_reporting
   language: python
   path: src/scoring_reporting.py
-  version: 0.18.9
+  version: 0.18.10
   description: Flattened public interface for scoring, reporting, trait signals, exports,
     referrals, email safety, offers, and templates, including DeepSeek-only advisory
     signal scoring; only active legacy adapters remain in the compatibility module
@@ -1607,7 +1607,7 @@ classes:
       Generate a director-ready finalized interview decision brief DOCX using the
       interview-notes template layout: narrow margins, readable Arial typography at
       no less than 12 pt for body content, centered title/subtitle, professional
-      blue/green heading and table styling, shaded recommendation callout before
+      blue/green heading and table styling, shaded score summary callout before
       the executive summary with interviewer, AI advisory aggregate, and
       AI-trait-based aggregate scores as weighted fractions and percentages plus threshold and
       override/disqualifier status, a structured generated executive-summary

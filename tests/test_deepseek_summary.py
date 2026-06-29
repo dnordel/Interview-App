@@ -990,6 +990,10 @@ def test_regenerate_interview_notes_job_full_mode_resets_deepseek_checkpoints(
                     "model_scoring_warnings": [],
                 },
                 "deepseek_settings": {
+                    "DEEPSEEK_SUMMARY_ENABLED": "",
+                    "DEEPSEEK_API_KEY": "",
+                    "DEEPSEEK_API_BASE_URL": "",
+                    "DEEPSEEK_SUMMARY_MODEL": "",
                     "DEEPSEEK_PROMPT_TEMPLATES": {"executive_summary_user": "old prompt"},
                 },
             }
@@ -1010,6 +1014,11 @@ def test_regenerate_interview_notes_job_full_mode_resets_deepseek_checkpoints(
     assert payload["model_scoring_status"] == "processing"
     assert payload["answer_summaries"] == []
     assert payload["model_signal_suggestions_by_trait"] == {}
+    assert job["deepseek_settings"]["DEEPSEEK_SUMMARY_ENABLED"] == "1"
+    assert job["deepseek_settings"]["DEEPSEEK_API_KEY"] == "ollama"
+    assert job["deepseek_settings"]["DEEPSEEK_API_BASE_URL"] == "http://127.0.0.1:11434/v1"
+    assert job["deepseek_settings"]["DEEPSEEK_SUMMARY_MODEL"] == "deepseek-r1:8b"
+    assert job["deepseek_settings"]["DEEPSEEK_SUMMARY_TIMEOUT_SECONDS"] == "120"
     assert job["deepseek_settings"]["DEEPSEEK_PROMPT_TEMPLATES"] == {"executive_summary_user": "new prompt"}
 
 

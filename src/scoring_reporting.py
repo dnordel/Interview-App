@@ -1554,12 +1554,7 @@ class DocxExporter:
             )
         else:
             trait_based_total_text = "N/A (incomplete)"
-        recommendation_text = str(scoring["outcome"])
-        if str(scoring.get("outcome") or "").strip().lower() == "incomplete" and missing_score_traits:
-            recommendation_text = f"{recommendation_text} (missing final raw score: {', '.join(missing_score_traits)})"
         add_box(
-            "Recommendation: "
-            f"{recommendation_text}. "
             f"Interviewer score: {scoring['weighted_total']} / {scoring['max_weighted_total']} "
             f"({percent_of_max_label}). "
             f"Threshold status: {threshold_status_text()} "

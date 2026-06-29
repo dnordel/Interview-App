@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import queue
 import threading
 from pathlib import Path
@@ -228,6 +229,92 @@ def test_history_controller_regenerate_prompts_before_missing_job_warning(tmp_pa
     )
 
     assert calls == ["mode", "warning:DeepSeek job file was not found."]
+
+
+def test_history_controller_regenerates_from_saved_session_when_job_is_missing(tmp_path, monkeypatch) -> None:
+    calls: list[object] = []
+    history_path = tmp_path / "user_artifacts" / "interview_history.json"
+    history_path.parent.mkdir()
+    history_path.write_text(
+        json.dumps(
+            [
+                {
+                    "history_id": "hist-1",
+                    "candidate_name": "Ada Lovelace",
+                    "interview_date": "2026-01-02",
+                    "school": "Palmdale",
+                    "track": "infant_toddler",
+                    "interview_notes_path": str(tmp_path / "missing.docx"),
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    session_dir = history_path.parent / "interviews" / "interview_sessions"
+    session_dir.mkdir(parents=True)
+    session_path = session_dir / "Candidate_Ada_2026-01-02_abc__Ada_Lovelace__2026-01-02.json"
+    session_path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "interview": {
+                    "interview_id": "Candidate_Ada_2026-01-02_abc",
+                    "candidate_name": "Ada Lovelace",
+                    "interview_date": "2026-01-02",
+                },
+                "questions": {
+                    "0": {
+                        "flow_idx": 0,
+                        "item_type": "trait",
+                        "item_id": "trait_1",
+                        "notes": {"raw_score": 4, "skipped": False},
+                        "candidate_transcript": "Candidate described classroom safety routines.",
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    progress_path = history_path.parent / "interviews" / "deepseek_jobs" / "deepseek-finalize-hist-1.progress.json"
+    app = SimpleNamespace(
+        settings={"base_dir": str(history_path.parent / "interviews")},
+        history_store=SimpleNamespace(path=history_path),
+        _watch_deepseek_finalize_progress=lambda path: calls.append(Path(path)),
+        _show_finalize_progress=lambda: calls.append("show-progress"),
+    )
+
+    def _fake_regenerate(path: Path, *, mode: str) -> Path:
+        calls.extend([Path(path), mode])
+        assert Path(path).exists()
+        job = json.loads(Path(path).read_text(encoding="utf-8"))
+        assert job["history_id"] == "hist-1"
+        assert job["payload"]["candidate"]["name"] == "Ada Lovelace"
+        assert job["payload"]["flow_transcript"][0]["candidate_transcript"] == (
+            "Candidate described classroom safety routines."
+        )
+        assert job["payload"]["trait_inputs"]["trait_1"]["raw_score"] == 4
+        return progress_path
+
+    monkeypatch.setattr(interview_runtime, "regenerate_interview_notes_job", _fake_regenerate)
+    controller = HistoryController(app, AppSharedState())
+    controller._choose_notes_regeneration_mode = lambda _row: "full"
+
+    controller._on_regenerate_notes_action(
+        {
+            "history_id": "hist-1",
+            "candidate_name": "Ada Lovelace",
+            "interview_date": "2026-01-02",
+            "school": "Palmdale",
+            "track": "infant_toddler",
+        }
+    )
+
+    assert calls == [
+        history_path.parent / "interviews" / "deepseek_jobs" / "deepseek-finalize-hist-1.json",
+        "full",
+        "show-progress",
+        progress_path,
+    ]
 
 
 def test_history_controller_regeneration_mode_uses_explicit_selector(tmp_path) -> None:
