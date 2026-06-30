@@ -1950,6 +1950,12 @@ def test_generate_deepseek_trait_signal_suggestions_filters_and_persists(monkeyp
         {"signal_id": "S_ONE", "confidence": 0.8, "rationale": "Specific example.", "evidence_quote": "clear visual routine"}
     ]
     assert trait_state["trait_1"]["deepseek_raw_score"] == 4
+    suggestion_system_prompt = calls[0][0]["content"]
+    suggestion_user_prompt = calls[0][1]["content"]
+    assert "Treat rubric wording as reference context, not a grading rubric" in suggestion_system_prompt
+    assert "emotional intelligence" in suggestion_system_prompt
+    assert "start from question and answer content, not numeric rubric descriptors" in suggestion_user_prompt
+    assert "preschool role expectations" in suggestion_user_prompt
     scoring_prompt_payload = calls[1][1]["content"]
     assert "rubric.json descriptors" in calls[1][0]["content"]
     assert '"raw_score_range": [1, 5]' in scoring_prompt_payload

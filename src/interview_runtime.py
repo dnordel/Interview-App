@@ -1159,16 +1159,20 @@ DEFAULT_DEEPSEEK_PROMPT_TEMPLATES: dict[str, str] = {
         "Use interview_highlights for 0-5 concrete evidence bullets."
     ),
     "trait_suggestion_system": (
-        "Suggest preschool teacher interview trait-based scoring observations from candidate answer text. "
+        "Evaluate preschool and early childhood interview answers for advisory signal evidence. "
         "Return only one JSON object. Do not use markdown. Do not reveal reasoning. Do not echo input. "
-        "Use Little People's Landing rubric context: child safety, empathy, co-regulation, concrete "
-        "classroom examples, family communication, teamwork, coachability, accountability, gentleness, "
-        "curiosity, behavior guidance, and flexibility. Use only provided signal_id values. Do not invent "
-        "evidence, consider interviewer raw scores, change human selections, or decide hiring/scoring. "
-        "Signals are for DeepSeek advisory scoring only; do not imply interviewer checkbox selections."
+        "Use question text, candidate answer content, job title, role context, and valid_signals. "
+        "Treat rubric wording as reference context, not a grading rubric. Prioritize preschool employee "
+        "readiness: emotional intelligence, empathy, warmth, respectful child language, self-regulation, "
+        "co-regulation, patience, safe supervision, developmentally appropriate guidance, family communication, "
+        "teamwork, coachability, accountability, reliability, flexibility, and ethical boundaries. Use only "
+        "provided signal_id values. Do not invent evidence, consider interviewer raw scores, change human "
+        "selections, or decide hiring/scoring. Signals are for DeepSeek advisory scoring only; do not imply "
+        "interviewer checkbox selections."
     ),
     "trait_suggestion_user": (
-        "Create trait_suggestions from candidate_transcript values and valid_signals labels. Return exactly this JSON shape. "
+        "Create trait_suggestions by reading each actual question and candidate_transcript, then mapping supported "
+        "preschool or early childhood employee evidence to valid_signals labels. Return exactly this JSON shape. "
         "JSON output template:\n"
         "{\n"
         '  "trait_suggestions": [\n'
@@ -1185,9 +1189,16 @@ DEFAULT_DEEPSEEK_PROMPT_TEMPLATES: dict[str, str] = {
         "    }\n"
         "  ]\n"
         "}\n"
-        "Rules: evidence_quote must be exact short candidate wording; rationale must connect evidence to "
-        "signal label; include automatic no-hire signal IDs only when directly supported by the transcript; "
-        "omit low-evidence guesses; confidence 0 to 1. Data: {payload_json}"
+        "Evaluation priorities: start from question and answer content, not numeric rubric descriptors; weight "
+        "emotional intelligence and social-emotional care heavily, including empathy, attunement, warmth, "
+        "respect for children's feelings and autonomy, self-awareness under stress, co-regulation, patient "
+        "guidance, and reflective ownership; also evaluate safety, supervision, developmentally appropriate "
+        "practice, positive behavior guidance, family communication, teamwork, coachability, accountability, "
+        "reliability, flexibility, and ethical boundaries. Rules: evidence_quote must be exact short candidate "
+        "wording; rationale must connect evidence to the signal label and preschool role expectations; include "
+        "automatic no-hire signal IDs only when directly supported by the transcript; do not guess from silence, "
+        "but map concrete paraphrased evidence to the closest valid signal even when wording differs from rubric; "
+        "confidence 0 to 1. Data: {payload_json}"
     ),
     "trait_scoring_system": (
         "You are a strict JSON scoring API. Score preschool teacher interview trait answers "

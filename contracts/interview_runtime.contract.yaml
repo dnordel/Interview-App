@@ -2,7 +2,7 @@ module:
   name: interview_runtime
   language: python
   path: src/interview_runtime.py
-  version: 0.25.0
+  version: 0.25.1
   description: Flattened public interface for interview state, session management,
     audio/transcription runtime, transcript summary seam, controllers, history, and
     finalize pipeline; only active legacy adapters remain in the compatibility module
@@ -606,8 +606,10 @@ functions:
     suggestions and advisory 1-5 raw trait scores keyed by trait id without
     changing human raw scores or compatibility selected_signal_ids; each trait is
     requested independently with configurable per-trait prompt overrides for
-    signal suggestions and advisory raw scoring. Role context from transcript items
-    is included when available. Local Ollama calls use the configured timeout and
+    question-and-answer-first signal suggestions and advisory raw scoring, with
+    preschool employee readiness and emotional intelligence emphasized over
+    rubric-wording matches for the signal suggestion prompt. Role context from
+    transcript items is included when available. Local Ollama calls use the configured timeout and
     invalid JSON responses are retried once with a repair prompt; responses are
     validated against required top-level keys, unsupported generated evidence quotes
     are removed, confidence values and risk_flag_evidence values are preserved, and failed traits remain advisory
