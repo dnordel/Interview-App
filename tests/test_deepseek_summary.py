@@ -1505,6 +1505,48 @@ def test_deepseek_progress_write_persists_task_status_list(tmp_path) -> None:
     assert {"name": "Updating interview notes document", "status": "Queued"} in tasks
 
 
+def test_finalize_progress_tasks_mark_all_queued_finished_when_complete() -> None:
+    tasks = interview_runtime.build_finalize_progress_tasks(
+        "Complete",
+        "complete",
+        existing_tasks=[
+            {"name": "Analyzing traits", "status": "Queued"},
+            {"name": "Scoring traits", "status": "Queued"},
+            {"name": "Complete", "status": "Queued"},
+        ],
+    )
+
+    assert tasks == [
+        {"name": "Analyzing traits", "status": "Finished"},
+        {"name": "Scoring traits", "status": "Finished"},
+        {"name": "Complete", "status": "Finished"},
+    ]
+
+
+def test_finalize_progress_tasks_mark_ordered_prior_queued_steps_finished() -> None:
+    tasks = interview_runtime.build_finalize_progress_tasks(
+        "Generating Executive Summary",
+        "processing",
+        existing_tasks=[
+            {"name": "Starting local Ollama service", "status": "Queued"},
+            {"name": "Local Ollama service ready", "status": "Queued"},
+            {"name": "Analyzing traits", "status": "Queued"},
+            {"name": "Scoring traits", "status": "Queued"},
+            {"name": "Generating Executive Summary", "status": "Queued"},
+            {"name": "Updating interview notes document", "status": "Queued"},
+        ],
+    )
+
+    assert tasks == [
+        {"name": "Starting local Ollama service", "status": "Finished"},
+        {"name": "Local Ollama service ready", "status": "Finished"},
+        {"name": "Analyzing traits", "status": "Finished"},
+        {"name": "Scoring traits", "status": "Finished"},
+        {"name": "Generating Executive Summary", "status": "Processing"},
+        {"name": "Updating interview notes document", "status": "Queued"},
+    ]
+
+
 def test_deepseek_finalize_worker_marks_failed_when_no_deepseek_outputs_generate(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
     history_path = tmp_path / "history.json"
     store = InterviewHistoryStore(history_path)

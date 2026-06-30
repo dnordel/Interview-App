@@ -1266,6 +1266,35 @@ def test_pyside_progress_window_renders_task_status_list(tmp_path: Path) -> None
     app.processEvents()
 
 
+def test_pyside_progress_window_immediately_shows_ordered_tasks_in_scroll_area(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+
+    window._show_pyside_finalize_progress("Queueing DeepSeek processing")
+    app.processEvents()
+
+    scroll_areas = window.pyside_finalize_progress_dialog.findChildren(qt_widgets.QScrollArea)
+    progress_text = window.pyside_finalize_progress_label.text()
+
+    assert scroll_areas
+    assert window.pyside_finalize_progress_dialog.maximumHeight() <= 460
+    assert progress_text.index("Launching local DeepSeek worker") < progress_text.index("Waiting for DeepSeek queue")
+    assert progress_text.index("Analyzing traits") < progress_text.index("Scoring traits")
+    assert "Updating interview notes document" in progress_text
+    assert progress_text.rstrip().endswith("Queued")
+    window._close_pyside_finalize_progress()
+    window.window.close()
+    app.processEvents()
+
+
 def test_pyside_finalize_reload_history_after_queueing_deepseek(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")

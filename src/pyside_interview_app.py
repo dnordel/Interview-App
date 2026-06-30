@@ -19,6 +19,7 @@ from docx import Document
 from data_store import InterviewHistoryStore, QuestionOverridesStore, RubricLoader
 from interview_runtime import (
     DEFAULT_WINDOWS_MIC_DEVICE,
+    DEFAULT_DEEPSEEK_PROGRESS_TASKS,
     FinalizeGateways,
     build_finalize_progress_tasks,
     build_finalize_context,
@@ -56,6 +57,12 @@ QUICK_ACTIONS = [
     "Evidence captured",
     "Disqualifier observed",
 ]
+PYSIDE_FINALIZE_PROGRESS_TASKS = (
+    "Stopping recording and transcribing",
+    "Building interview notes",
+    "Queueing DeepSeek processing",
+    *DEFAULT_DEEPSEEK_PROGRESS_TASKS,
+)
 
 
 @dataclass(frozen=True)
@@ -1223,6 +1230,21 @@ def _apply_styles(app: Any) -> None:
             font-size: 18px;
             font-weight: 650;
         }
+        QLabel#PySideFinalizeProgressTitle {
+            font-size: 18px;
+            font-weight: 700;
+            background: transparent;
+        }
+        QLabel#PySideFinalizeProgressHelp {
+            color: #526071;
+            background: transparent;
+        }
+        QLabel#PySideFinalizeProgressLabel {
+            font-family: "Cascadia Mono", Consolas, monospace;
+            font-size: 12px;
+            background: #ffffff;
+            color: #172033;
+        }
         QPushButton {
             border: 1px solid #c9ced8;
             border-radius: 6px;
@@ -1263,6 +1285,11 @@ def _apply_styles(app: Any) -> None:
             background: #ffffff;
             border: 1px solid #d9dee7;
             gridline-color: #eef1f5;
+        }
+        QScrollArea#PySideFinalizeProgressScroll {
+            background: #ffffff;
+            border: 1px solid #d9dee7;
+            border-radius: 6px;
         }
         """
     )
@@ -2333,6 +2360,7 @@ class PySideInterviewWindow:
         self._pyside_finalize_progress_tasks = build_finalize_progress_tasks(
             normalized,
             existing_tasks=getattr(self, "_pyside_finalize_progress_tasks", []),
+            queued_steps=PYSIDE_FINALIZE_PROGRESS_TASKS,
         )
         if self.pyside_finalize_progress_dialog is not None:
             self._refresh_pyside_finalize_progress()
@@ -2340,17 +2368,35 @@ class PySideInterviewWindow:
         dialog = self.QtWidgets.QDialog(self.window)
         dialog.setWindowTitle("Finalizing Interview")
         dialog.setModal(False)
-        dialog.resize(560, 280)
+        dialog.resize(620, 380)
+        dialog.setMinimumSize(520, 320)
+        dialog.setMaximumHeight(460)
         layout = self.QtWidgets.QVBoxLayout(dialog)
+        layout.setContentsMargins(18, 16, 18, 16)
+        layout.setSpacing(10)
+        layout.addWidget(self._label("Finalizing Interview", "PySideFinalizeProgressTitle"))
+        layout.addWidget(self._label("Tasks run in order. Processing continues if this window is closed.", "PySideFinalizeProgressHelp"))
+        scroll = self.QtWidgets.QScrollArea()
+        scroll.setObjectName("PySideFinalizeProgressScroll")
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(self.QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setVerticalScrollBarPolicy(self.QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll.setFrameShape(self.QtWidgets.QFrame.Shape.NoFrame)
+        content = self.QtWidgets.QWidget()
+        content_layout = self.QtWidgets.QVBoxLayout(content)
+        content_layout.setContentsMargins(12, 10, 12, 10)
         label = self._label(
             format_finalize_progress_tasks(self._pyside_finalize_progress_tasks, fallback=normalized)
         )
         label.setObjectName("PySideFinalizeProgressLabel")
-        layout.addWidget(label)
+        label.setWordWrap(False)
+        content_layout.addWidget(label)
+        content_layout.addStretch(1)
+        scroll.setWidget(content)
+        layout.addWidget(scroll, 1)
         bar = self.QtWidgets.QProgressBar()
         bar.setRange(0, 0)
         layout.addWidget(bar)
-        layout.addWidget(self._label("Processing continues if this window is closed."))
         dialog.finished.connect(lambda _result=0: self._clear_pyside_finalize_progress_dialog())
         self.pyside_finalize_progress_dialog = dialog
         self.pyside_finalize_progress_label = label
@@ -2394,6 +2440,7 @@ class PySideInterviewWindow:
         self._pyside_finalize_progress_tasks = build_finalize_progress_tasks(
             normalized,
             existing_tasks=getattr(self, "_pyside_finalize_progress_tasks", []),
+            queued_steps=PYSIDE_FINALIZE_PROGRESS_TASKS,
         )
         progress_queue = self._pyside_finalize_progress_queue
         if progress_queue is None:
@@ -2413,6 +2460,7 @@ class PySideInterviewWindow:
                     self._pyside_finalize_progress_tasks = build_finalize_progress_tasks(
                         self._pyside_finalize_progress_step,
                         existing_tasks=getattr(self, "_pyside_finalize_progress_tasks", []),
+                        queued_steps=PYSIDE_FINALIZE_PROGRESS_TASKS,
                     )
                 except queue.Empty:
                     break

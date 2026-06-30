@@ -2,7 +2,7 @@ module:
   name: interview_runtime
   language: python
   path: src/interview_runtime.py
-  version: 0.26.0
+  version: 0.26.1
   description: Flattened public interface for interview state, session management,
     audio/transcription runtime, transcript summary seam, controllers, history, and
     finalize pipeline; only active legacy adapters remain in the compatibility module
@@ -816,8 +816,9 @@ functions:
   side_effects: none
 - name: build_finalize_progress_tasks
   description: Merge queued, existing, and current finalize progress steps into an
-    ordered task/status list, marking prior active tasks Finished and future tasks
-    Queued.
+    ordered task/status list, marking ordered prior Queued/Processing tasks Finished
+    when later work is reached and marking every remaining Queued/Processing task
+    Finished when the final status is complete.
   locked: false
   inputs:
     step:

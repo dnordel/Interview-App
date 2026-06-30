@@ -2,12 +2,13 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.16.1
+  version: 1.16.2
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, compact home draft actions beside the
     start action, interview notes regeneration actions, user-closable
-    finalize progress with task/status rows, live history refresh, and single-surface parity documentation
+    finalize progress with immediate ordered task/status rows in a compact scrollable
+    dialog, live history refresh, and single-surface parity documentation
     for desktop Tk contracts while preserving Tk-owned finalize, history, document,
     and DeepSeek runtime contracts.
 functions:
@@ -565,7 +566,8 @@ classes:
       detached DeepSeek progress polling.
   - name: _show_pyside_finalize_progress
     description: Show a user-closable non-modal PySide finalize progress dialog with
-      sanitized task/status rows and without exposing candidate transcript or notes
+      immediate ordered sanitized task/status rows in a compact scrollable task pane
+      and without exposing candidate transcript or notes
       text.
     locked: false
     inputs:
@@ -575,8 +577,8 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Creates or updates a QDialog, indeterminate progress bar, and task/status
-      label content.
+    side_effects: Creates or updates a QDialog, scroll area, indeterminate progress
+      bar, and task/status label content.
   - name: _report_pyside_finalize_progress
     description: Queue or store one sanitized operator-facing finalize progress step
       for the PySide progress dialog task list.
@@ -591,7 +593,7 @@ classes:
     side_effects: Updates in-memory progress step and task/status state.
   - name: _refresh_pyside_finalize_progress
     description: Drain queued PySide finalize progress updates and render task/status
-      rows when the progress dialog is still open.
+      rows in pipeline order when the progress dialog is still open.
     locked: false
     inputs: {}
     returns:

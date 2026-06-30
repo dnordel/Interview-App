@@ -3664,17 +3664,29 @@ def build_finalize_progress_tasks(
     current_status = finalize_progress_status_label(status)
     if current_step:
         found = False
-        for item in tasks:
+        current_index = -1
+        for index, item in enumerate(tasks):
             if item["name"] == current_step:
                 item["status"] = current_status
                 found = True
-            elif item["status"] == "Processing" and current_status == "Processing":
-                item["status"] = "Finished"
+                current_index = index
+                break
+        if found and current_status in {"Processing", "Finished", "Timed-out"}:
+            for item in tasks[:current_index]:
+                if item["status"] in {"Queued", "Processing"}:
+                    item["status"] = "Finished"
+            for item in tasks[current_index + 1 :]:
+                if item["status"] == "Processing" and current_status == "Processing":
+                    item["status"] = "Finished"
+        else:
+            for item in tasks:
+                if item["status"] == "Processing" and current_status == "Processing":
+                    item["status"] = "Finished"
         if not found:
             tasks.append({"name": current_step, "status": current_status})
     if current_status == "Finished":
         for item in tasks:
-            if item["status"] == "Processing":
+            if item["status"] in {"Processing", "Queued"}:
                 item["status"] = "Finished"
     return tasks
 
