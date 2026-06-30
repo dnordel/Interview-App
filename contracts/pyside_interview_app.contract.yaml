@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.16.0
+  version: 1.16.1
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, compact home draft actions beside the
@@ -76,7 +76,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: _history_has_no_hire_override
-  description: Return whether a persisted history row contains explicit automatic no-hire, disqualifier, critical-score, locked-rule, or override-rationale metadata that should preserve a No Hire status even when numeric score is 65% or higher.
+  description: Return whether a persisted history row contains explicit human disqualifier, critical-score, locked-rule, or override-rationale metadata that should preserve a No Hire status even when numeric score is 65% or higher; DeepSeek automatic no-hire advisory metadata alone does not preserve No Hire.
   locked: false
   inputs:
     row:
@@ -87,7 +87,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: _history_status_from_score
-  description: Derive PySide history display status from score thresholds, preserving incomplete and processing statuses plus explicit no-hire override metadata; 80% and above returns Hire, 65% through below 80% returns Borderline, and below 65% returns No Hire.
+  description: Derive PySide history display status from score thresholds, preserving incomplete and processing statuses plus explicit human no-hire override metadata; DeepSeek automatic no-hire advisory metadata alone follows the numeric score, 80% and above returns Hire, 65% through below 80% returns Borderline, and below 65% returns No Hire.
   locked: false
   inputs:
     row:

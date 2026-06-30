@@ -1685,6 +1685,27 @@ def test_pyside_candidate_board_recomputes_stale_history_status_from_score() -> 
     assert board.history_rows[0].status == "Borderline"
 
 
+def test_pyside_candidate_board_treats_ai_auto_no_hire_as_advisory_for_status() -> None:
+    rows = [
+        {
+            "candidate_name": "Tatiana",
+            "school": "Palmdale",
+            "track": "Preschool",
+            "determination": "No Hire",
+            "interview_score": 70.0,
+            "auto_no_hire_present": True,
+            "locked_rule": "DeepSeek automatic no-hire signal observed => Immediate NO HIRE",
+            "offer_status": "not_generated",
+        },
+    ]
+
+    board = build_pyside_candidate_board(rows)
+
+    assert board.rows[0]["score"] == "70.0"
+    assert board.rows[0]["status"] == "Borderline"
+    assert board.history_rows[0].status == "Borderline"
+
+
 def test_pyside_candidates_page_uses_history_table_layout_and_actions(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")

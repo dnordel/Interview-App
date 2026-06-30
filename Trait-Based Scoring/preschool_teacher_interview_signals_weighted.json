@@ -2,7 +2,7 @@
   "metadata": {
     "title": "STRUCTURED INTERVIEW SIGNALS AND WEIGHTS",
     "subtitle": "Observable Signal Checklist for Preschool Teacher and Behavior Support Specialist Interviews",
-    "version": "1.1",
+    "version": "1.2-revised-preschool-realistic-signals",
     "source_rubric": "rubric(4).json",
     "format_reference": "T1_Empathy(2).json",
     "notes": [
@@ -11,7 +11,11 @@
       "Trait priority multipliers preserve the original rubric weighting: Critical x3, High x2, Medium x1.",
       "Includes both the JSON version and recommended replacement version of Preschool Trait 11 due to inconsistency in the source rubric.",
       "Behavior Support Specialist signal definitions appended while preserving existing preschool signal IDs.",
-      "Runtime contract still points to this merged weighted signal source."
+      "Runtime contract still points to this merged weighted signal source.",
+      "Revised to add subtle, realistic weak-signal patterns candidates may reveal in interviews without directly admitting misconduct.",
+      "Preserves trait/question-level organization and existing signal IDs wherever the meaning remains substantially the same.",
+      "Adds preschool-specific coverage for supervision, ratios, family communication, inclusion, and role readiness.",
+      "Keeps base_weight naming to preserve the uploaded file structure and runtime compatibility; base_weight functions as the default signal weight."
     ]
   },
   "signal_weight_scale": {
@@ -312,6 +316,51 @@
           ],
           "auto_no_hire": true,
           "is_critical": true
+        },
+        {
+          "id": "Q1_SAFE_SOUNDING_VAGUE_EMPATHY",
+          "label": "Uses safe-sounding empathy language without a concrete response",
+          "maps_to": [
+            "S_VAGUE",
+            "S_EMOTIONAL_ATTUNEMENT"
+          ],
+          "base_weight": -1,
+          "signal_category": "neutral_or_mixed",
+          "evidence_hint": "Says they comforted, helped, or loved the child but cannot describe words, body position, timing, or follow-through.",
+          "auto_detect_tags": [
+            "vague",
+            "attunement"
+          ]
+        },
+        {
+          "id": "Q1_REDIRECTS_AWAY_FROM_FEELING",
+          "label": "Redirects away from the feeling rather than acknowledging it",
+          "maps_to": [
+            "S_REDIRECTION_WITHOUT_VALIDATION"
+          ],
+          "base_weight": -1,
+          "signal_category": "neutral_or_mixed",
+          "evidence_hint": "Moves quickly to distraction, activity, or compliance with little recognition of the child’s emotional state.",
+          "auto_detect_tags": [
+            "redirection",
+            "limited_validation"
+          ]
+        },
+        {
+          "id": "Q1_SEPARATION_ANXIETY_MINIMIZED",
+          "label": "Minimizes separation anxiety, fear, or sensory overwhelm",
+          "maps_to": [
+            "S_MINIMIZE",
+            "S_DEVELOPMENTAL_AWARENESS"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Treats crying at drop-off, fear, or sensory distress as something the child should simply get over.",
+          "auto_detect_tags": [
+            "separation_anxiety",
+            "sensory",
+            "dismissive"
+          ]
         }
       ],
       "suggested_follow_up_probes": [
@@ -591,6 +640,65 @@
           ],
           "auto_no_hire": true,
           "is_critical": true
+        },
+        {
+          "id": "Q2_STRESS_PREVENTION_PLAN",
+          "label": "Describes a prevention plan for high-stress classroom moments",
+          "maps_to": [
+            "S_PREVENTION",
+            "S_SELF_REGULATION"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Mentions preparation, asking for coverage before escalation, room setup, transitions, or personal coping routines.",
+          "auto_detect_tags": [
+            "prevention",
+            "self_regulation"
+          ]
+        },
+        {
+          "id": "Q2_REPAIR_AFTER_HARD_MOMENT",
+          "label": "Describes repair with children or team after a hard moment",
+          "maps_to": [
+            "S_REPAIR",
+            "S_ACCOUNTABILITY"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Mentions apologizing, reconnecting, debriefing, or changing future practice after stress.",
+          "auto_detect_tags": [
+            "repair",
+            "accountability"
+          ]
+        },
+        {
+          "id": "Q2_PROFESSIONAL_MASKING_ONLY",
+          "label": "Says they hide stress but gives no regulation strategy",
+          "maps_to": [
+            "S_SURFACE_REGULATION"
+          ],
+          "base_weight": -1,
+          "signal_category": "neutral_or_mixed",
+          "evidence_hint": "Focuses on appearing calm without explaining how they stay regulated or safe.",
+          "auto_detect_tags": [
+            "vague",
+            "surface"
+          ]
+        },
+        {
+          "id": "Q2_LEAVES_ROOM_WITHOUT_SUPERVISION_PLAN",
+          "label": "Mentions stepping away without explaining supervision coverage",
+          "maps_to": [
+            "S_SUPERVISION",
+            "S_SAFETY"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Leaving to calm down is described without ensuring another qualified adult is supervising.",
+          "auto_detect_tags": [
+            "supervision",
+            "safety"
+          ]
         }
       ],
       "suggested_follow_up_probes": [
@@ -853,6 +961,50 @@
           ],
           "auto_no_hire": true,
           "is_critical": true
+        },
+        {
+          "id": "Q3_PRIVACY_AWARENESS",
+          "label": "Mentions privacy during diapering, toileting, or changing",
+          "maps_to": [
+            "S_PRIVACY",
+            "S_DIGNITY"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Protects the child’s privacy and speaks discreetly during body-care routines.",
+          "auto_detect_tags": [
+            "privacy",
+            "dignity"
+          ]
+        },
+        {
+          "id": "Q3_EXPLAINS_NONNEGOTIABLE_CARE_WITH_WARMTH",
+          "label": "Explains necessary care with warmth instead of control",
+          "maps_to": [
+            "S_STRUCTURE_WITH_WARMTH"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Makes clear that hygiene or safety must happen while still using calm, respectful language.",
+          "auto_detect_tags": [
+            "warmth",
+            "safety"
+          ]
+        },
+        {
+          "id": "Q3_DISTRESS_SEEN_AS_DELAYING_SCHEDULE",
+          "label": "Frames the child’s distress mainly as delaying the schedule",
+          "maps_to": [
+            "S_ADULT_CENTERED",
+            "S_ROUTINE_PRESSURE"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Primary concern is getting back on schedule rather than supporting the child safely.",
+          "auto_detect_tags": [
+            "adult_centered",
+            "schedule"
+          ]
         }
       ],
       "suggested_follow_up_probes": [
@@ -1079,6 +1231,51 @@
           ],
           "auto_no_hire": true,
           "is_critical": true
+        },
+        {
+          "id": "Q4_FEEDBACK_TO_CHILD_OUTCOME",
+          "label": "Connects feedback to improved outcomes for children",
+          "maps_to": [
+            "S_CHILD_CENTERED",
+            "S_COACHABILITY"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Explains how using feedback improved classroom practice or child support.",
+          "auto_detect_tags": [
+            "feedback",
+            "child_outcome"
+          ]
+        },
+        {
+          "id": "Q4_SAYS_OPEN_BUT_NO_EXAMPLE",
+          "label": "Says they are open to feedback but gives no example",
+          "maps_to": [
+            "S_SURFACE_ACCEPTANCE",
+            "S_VAGUE"
+          ],
+          "base_weight": -1,
+          "signal_category": "neutral_or_mixed",
+          "evidence_hint": "Uses agreeable language but cannot name actual feedback or behavior change.",
+          "auto_detect_tags": [
+            "vague",
+            "feedback"
+          ]
+        },
+        {
+          "id": "Q4_ONLY_ACCEPTS_FEEDBACK_IF_DELIVERED_NICELY",
+          "label": "Only accepts feedback if it is delivered in their preferred style",
+          "maps_to": [
+            "S_DEFENSIVE",
+            "S_CONDITIONAL_COACHABILITY"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Focuses on how feedback was given and avoids the content or learning.",
+          "auto_detect_tags": [
+            "defensive",
+            "conditional"
+          ]
         }
       ],
       "suggested_follow_up_probes": [
@@ -1304,6 +1501,64 @@
           ],
           "auto_no_hire": true,
           "is_critical": true
+        },
+        {
+          "id": "Q5_DOCUMENTS_WHEN_APPROPRIATE",
+          "label": "Mentions documenting or reporting issues when appropriate",
+          "maps_to": [
+            "S_DOCUMENTATION",
+            "S_FOLLOW_THROUGH"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Knows when to document incidents, communication, safety concerns, or plan changes.",
+          "auto_detect_tags": [
+            "documentation",
+            "follow_through"
+          ]
+        },
+        {
+          "id": "Q5_ATTENDANCE_RELIABILITY_AWARENESS",
+          "label": "Shows awareness that reliability affects ratios and coworkers",
+          "maps_to": [
+            "S_RELIABILITY",
+            "S_RATIO_AWARENESS"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Connects attendance, punctuality, and follow-through to classroom coverage and safety.",
+          "auto_detect_tags": [
+            "reliability",
+            "ratios"
+          ]
+        },
+        {
+          "id": "Q5_GOOD_INTENTIONS_NO_SYSTEM",
+          "label": "Relies on good intentions without a system for follow-through",
+          "maps_to": [
+            "S_LOW_SYSTEMS"
+          ],
+          "base_weight": -1,
+          "signal_category": "neutral_or_mixed",
+          "evidence_hint": "Says they try their best but cannot describe reminders, documentation, planning, or communication habits.",
+          "auto_detect_tags": [
+            "vague",
+            "systems"
+          ]
+        },
+        {
+          "id": "Q5_CASUAL_ABOUT_LATENESS_ABSENCE",
+          "label": "Is casual about lateness, absences, or last-minute changes",
+          "maps_to": [
+            "S_RELIABILITY_CONCERN"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Minimizes attendance or punctuality despite its effect on ratios and classroom stability.",
+          "auto_detect_tags": [
+            "lateness",
+            "reliability"
+          ]
         }
       ],
       "suggested_follow_up_probes": [
@@ -1544,6 +1799,49 @@
           ],
           "auto_no_hire": true,
           "is_critical": true
+        },
+        {
+          "id": "Q6_COMMUNICATES_DURING_TRANSITIONS",
+          "label": "Communicates with coworkers during transitions and coverage changes",
+          "maps_to": [
+            "S_TEAM_COMMUNICATION",
+            "S_SUPERVISION"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Mentions handoffs, headcounts, role assignments, or letting coworkers know before leaving an area.",
+          "auto_detect_tags": [
+            "handoff",
+            "transitions"
+          ]
+        },
+        {
+          "id": "Q6_AVOIDS_GOSSIP_TRIANGULATION",
+          "label": "Avoids gossip, triangulation, or complaining to uninvolved staff",
+          "maps_to": [
+            "S_PROFESSIONAL_BOUNDARIES"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Keeps conflict resolution direct, appropriate, and child-focused.",
+          "auto_detect_tags": [
+            "boundaries",
+            "professionalism"
+          ]
+        },
+        {
+          "id": "Q6_VENTS_INSTEAD_OF_RESOLVES",
+          "label": "Vents about coworkers instead of resolving concerns professionally",
+          "maps_to": [
+            "S_LOW_PROFESSIONALISM"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Describes complaining, gossiping, or building sides rather than communicating directly or involving a supervisor appropriately.",
+          "auto_detect_tags": [
+            "gossip",
+            "conflict"
+          ]
         }
       ],
       "suggested_follow_up_probes": [
@@ -1759,6 +2057,49 @@
           ],
           "auto_no_hire": true,
           "is_critical": true
+        },
+        {
+          "id": "Q7_LEARNS_FROM_CHILDREN_AS_INDIVIDUALS",
+          "label": "Learns from children as individuals rather than applying one method to all",
+          "maps_to": [
+            "S_INDIVIDUALIZATION",
+            "S_GROWTH"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Recognizes different temperaments, communication styles, cultures, needs, or developmental levels.",
+          "auto_detect_tags": [
+            "individualization",
+            "growth"
+          ]
+        },
+        {
+          "id": "Q7_DEVELOPMENTAL_INSIGHT",
+          "label": "Shows developmental insight about preschool-aged children",
+          "maps_to": [
+            "S_DEVELOPMENTAL_AWARENESS"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Names age-appropriate expectations such as short attention span, emerging self-regulation, play-based learning, or need for repetition.",
+          "auto_detect_tags": [
+            "developmental_awareness"
+          ]
+        },
+        {
+          "id": "Q7_MEMORIZED_TRAINING_PHRASES",
+          "label": "Uses memorized training phrases without explaining practice",
+          "maps_to": [
+            "S_SCRIPTED",
+            "S_VAGUE"
+          ],
+          "base_weight": -1,
+          "signal_category": "neutral_or_mixed",
+          "evidence_hint": "Sounds familiar with terminology but cannot describe how they apply it with children.",
+          "auto_detect_tags": [
+            "scripted",
+            "vague"
+          ]
         }
       ],
       "suggested_follow_up_probes": [
@@ -2519,6 +2860,66 @@
           ],
           "auto_no_hire": true,
           "is_critical": true
+        },
+        {
+          "id": "Q10_PREVENTION_BEFORE_REACTION",
+          "label": "Describes prevention before reacting to behavior",
+          "maps_to": [
+            "S_PREVENTION",
+            "S_CLASSROOM_MANAGEMENT"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Mentions environment, routine, warnings, visuals, choices, transitions, or proactive support.",
+          "auto_detect_tags": [
+            "prevention",
+            "classroom_management"
+          ]
+        },
+        {
+          "id": "Q10_REDIRECTION_WITH_TEACHING",
+          "label": "Redirects while teaching the expected skill",
+          "maps_to": [
+            "S_REDIRECTION",
+            "S_TEACHING_SKILLS"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Redirection includes modeling, practice, replacement language, or teaching what to do instead.",
+          "auto_detect_tags": [
+            "redirection",
+            "teaching"
+          ]
+        },
+        {
+          "id": "Q10_TELLS_NO_ONLY",
+          "label": "Describes telling the child no without teaching or redirecting",
+          "maps_to": [
+            "S_CONTROL_LANGUAGE",
+            "S_LOW_GUIDANCE"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Main response is saying no, stop, or don’t without support, replacement skill, or follow-through.",
+          "auto_detect_tags": [
+            "no_only",
+            "compliance"
+          ]
+        },
+        {
+          "id": "Q10_OVERUSES_DIRECTOR_FOR_ROUTINE_BEHAVIOR",
+          "label": "Overuses calling the director for routine classroom behavior",
+          "maps_to": [
+            "S_LOW_ROLE_READINESS",
+            "S_ESCALATION_OVERUSE"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Escalates common preschool behavior rather than first using appropriate classroom guidance.",
+          "auto_detect_tags": [
+            "director",
+            "role_readiness"
+          ]
         }
       ],
       "suggested_follow_up_probes": [
@@ -2967,6 +3368,51 @@
           ],
           "auto_no_hire": true,
           "is_critical": true
+        },
+        {
+          "id": "Q11_REC_MAINTAINS_SUPERVISION_WHEN_PLAN_CHANGES",
+          "label": "Maintains supervision and ratios when adapting plans",
+          "maps_to": [
+            "S_SUPERVISION",
+            "S_RATIO_AWARENESS"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Mentions headcounts, coverage, transitions, or team communication while changing activities.",
+          "auto_detect_tags": [
+            "supervision",
+            "ratios"
+          ]
+        },
+        {
+          "id": "Q11_REC_TRANSITION_SUPPORT",
+          "label": "Uses transition supports when plans change",
+          "maps_to": [
+            "S_TRANSITIONS",
+            "S_DEVELOPMENTAL_AWARENESS"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Mentions warnings, songs, visuals, choices, or calm explanation to help children adjust.",
+          "auto_detect_tags": [
+            "transitions",
+            "visuals"
+          ]
+        },
+        {
+          "id": "Q11_REC_ADULT_FRUSTRATION_LEADS_RESPONSE",
+          "label": "Lets adult frustration drive the response to changed plans",
+          "maps_to": [
+            "S_ADULT_CENTERED",
+            "S_RIGIDITY"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Focuses on inconvenience, wasted effort, or children ruining the plan rather than adapting.",
+          "auto_detect_tags": [
+            "frustration",
+            "rigidity"
+          ]
         }
       ],
       "suggested_follow_up_probes": [
@@ -4875,6 +5321,925 @@
         "How did you check whether it was working?",
         "What did you do if staff were inconsistent?"
       ]
+    },
+    {
+      "trait_id": "trait_12",
+      "trait_name": "Supervision, Ratios & Group Awareness",
+      "priority": "Critical",
+      "trait_multiplier": 3,
+      "applicable_tracks": [
+        "preschool",
+        "infant_toddler"
+      ],
+      "question": "Tell me how you keep track of the whole group during busy times like outdoor play, transitions, meals, or when one child needs extra help.",
+      "score_1_auto_no_hire": true,
+      "core_signals": [
+        {
+          "id": "Q12_SCANS_WHOLE_GROUP",
+          "label": "Actively scans the whole group",
+          "maps_to": [
+            "S_SUPERVISION",
+            "S_GROUP_AWARENESS"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Mentions scanning, positioning, moving eyes, checking blind spots, or monitoring all children.",
+          "auto_detect_tags": [
+            "supervision",
+            "scanning"
+          ]
+        },
+        {
+          "id": "Q12_HEADCOUNTS_TRANSITIONS",
+          "label": "Uses headcounts and name-to-face checks during transitions",
+          "maps_to": [
+            "S_HEADCOUNT",
+            "S_TRANSITIONS"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Describes counting and verifying children before, during, and after transitions.",
+          "auto_detect_tags": [
+            "headcount",
+            "transitions"
+          ]
+        },
+        {
+          "id": "Q12_POSITIONING_FOR_VISIBILITY",
+          "label": "Positions self for visibility and quick response",
+          "maps_to": [
+            "S_POSITIONING",
+            "S_SAFETY"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Thinks about where to stand or move to see children and respond quickly.",
+          "auto_detect_tags": [
+            "positioning",
+            "visibility"
+          ]
+        },
+        {
+          "id": "Q12_RATIO_AWARENESS",
+          "label": "Shows awareness of ratios and coverage",
+          "maps_to": [
+            "S_RATIO_AWARENESS",
+            "S_LICENSING"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Understands that coverage affects safety and licensing and plans with coworkers.",
+          "auto_detect_tags": [
+            "ratios",
+            "licensing"
+          ]
+        },
+        {
+          "id": "Q12_COMMUNICATES_HANDOFFS",
+          "label": "Communicates handoffs before leaving an area or focusing on one child",
+          "maps_to": [
+            "S_HANDOFF",
+            "S_TEAMWORK"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Lets another adult know before stepping away or giving one child focused help.",
+          "auto_detect_tags": [
+            "handoff",
+            "teamwork"
+          ]
+        },
+        {
+          "id": "Q12_TUNNEL_VISION_ONE_CHILD",
+          "label": "Gets tunnel vision on one child and loses group awareness",
+          "maps_to": [
+            "S_SUPERVISION_GAP"
+          ],
+          "base_weight": -3,
+          "signal_category": "red_flag",
+          "evidence_hint": "Focuses on a challenging child without explaining how the rest of the group remains supervised.",
+          "auto_detect_tags": [
+            "tunnel_vision",
+            "supervision"
+          ],
+          "is_critical": true
+        },
+        {
+          "id": "Q12_TALKS_SAFETY_GENERALLY_NO_CONCRETE",
+          "label": "Talks about safety generally but not concretely",
+          "maps_to": [
+            "S_VAGUE_SAFETY"
+          ],
+          "base_weight": -1,
+          "signal_category": "neutral_or_mixed",
+          "evidence_hint": "Says safety is important but cannot explain scanning, positioning, ratios, or headcounts.",
+          "auto_detect_tags": [
+            "vague",
+            "safety"
+          ]
+        },
+        {
+          "id": "Q12_LEAVES_GROUP_UNCOVERED",
+          "label": "Describes leaving children or an area uncovered",
+          "maps_to": [
+            "S_ABSOLUTE_DISQUALIFIER"
+          ],
+          "base_weight": "AUTO_NO_HIRE",
+          "signal_category": "automatic_no_hire",
+          "evidence_hint": "Leaves a group unsupervised, steps away without coverage, or accepts an uncovered ratio gap.",
+          "auto_detect_tags": [
+            "absolute_disqualifier",
+            "supervision"
+          ],
+          "is_critical": true,
+          "auto_no_hire": true
+        }
+      ],
+      "extended_signals": [
+        {
+          "id": "Q12_ANTICIPATES_HIGH_RISK_MOMENTS",
+          "label": "Anticipates higher-risk moments",
+          "maps_to": [
+            "S_RISK_AWARENESS"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Identifies outdoor play, bathrooms, gates, climbing, meals, water, transitions, or arrival/dismissal as needing extra vigilance.",
+          "auto_detect_tags": [
+            "risk",
+            "transitions"
+          ]
+        },
+        {
+          "id": "Q12_ASSIGN_ROLES_WITH_COWORKER",
+          "label": "Coordinates roles with coworkers",
+          "maps_to": [
+            "S_TEAMWORK",
+            "S_SUPERVISION"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Mentions who watches which area, who handles bathroom trips, or who leads the line.",
+          "auto_detect_tags": [
+            "roles",
+            "coverage"
+          ]
+        },
+        {
+          "id": "Q12_STAYS_WITHIN_SIGHT_SOUND",
+          "label": "Mentions keeping children within sight and sound",
+          "maps_to": [
+            "S_SIGHT_SOUND"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Uses sight/sound supervision language or describes equivalent practice.",
+          "auto_detect_tags": [
+            "sight_sound",
+            "supervision"
+          ]
+        },
+        {
+          "id": "Q12_DOCUMENTS_OR_REPORTS_SAFETY_CONCERNS",
+          "label": "Documents or reports safety concerns appropriately",
+          "maps_to": [
+            "S_DOCUMENTATION",
+            "S_SAFETY"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Reports broken equipment, unsafe setup, incidents, or ratio concerns.",
+          "auto_detect_tags": [
+            "documentation",
+            "safety"
+          ]
+        },
+        {
+          "id": "Q12_RELIES_ON_CHILDREN_TO_REPORT",
+          "label": "Relies on children to report problems instead of active supervision",
+          "maps_to": [
+            "S_PASSIVE_SUPERVISION"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Assumes children will tell the teacher if something happens.",
+          "auto_detect_tags": [
+            "passive",
+            "supervision"
+          ]
+        },
+        {
+          "id": "Q12_SITS_OR_PHONE_DISTRACTION",
+          "label": "Mentions sitting back or distraction during active supervision",
+          "maps_to": [
+            "S_DISTRACTED_SUPERVISION"
+          ],
+          "base_weight": -3,
+          "signal_category": "red_flag",
+          "evidence_hint": "Describes passive watching, phone use, side conversations, or low attention during supervision.",
+          "auto_detect_tags": [
+            "distraction",
+            "supervision"
+          ],
+          "is_critical": true
+        },
+        {
+          "id": "Q12_UNCLEAR_RATIO_RULES",
+          "label": "Shows unclear understanding of ratio responsibility",
+          "maps_to": [
+            "S_RATIO_AWARENESS"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Does not understand that ratios and coverage are every teacher’s responsibility.",
+          "auto_detect_tags": [
+            "ratios",
+            "licensing"
+          ]
+        }
+      ],
+      "suggested_follow_up_probes": [
+        "Where would you position yourself on the playground?",
+        "How do you make sure you still know where every child is when one child needs help?",
+        "What do you do before stepping away from the group?",
+        "How do you handle bathroom trips or transitions while maintaining ratios?",
+        "What would you document or report after a safety concern?"
+      ]
+    },
+    {
+      "trait_id": "trait_13",
+      "trait_name": "Family Communication & Partnership",
+      "priority": "High",
+      "trait_multiplier": 2,
+      "applicable_tracks": [
+        "all"
+      ],
+      "question": "Tell me about a time you had to communicate with a parent or guardian about a child’s difficult day, behavior, injury, or concern. What did you say and how did you handle it?",
+      "score_1_auto_no_hire": false,
+      "core_signals": [
+        {
+          "id": "Q13_RESPECTFUL_FAMILY_TONE",
+          "label": "Speaks respectfully about families",
+          "maps_to": [
+            "S_FAMILY_PARTNERSHIP",
+            "S_RESPECT"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Uses respectful language even when describing difficult conversations.",
+          "auto_detect_tags": [
+            "family",
+            "respect"
+          ]
+        },
+        {
+          "id": "Q13_OBJECTIVE_OBSERVATIONS",
+          "label": "Uses objective observations rather than labels",
+          "maps_to": [
+            "S_OBJECTIVE_LANGUAGE",
+            "S_DOCUMENTATION"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Shares what was seen and done, not judgments about the child or family.",
+          "auto_detect_tags": [
+            "objective",
+            "documentation"
+          ]
+        },
+        {
+          "id": "Q13_BALANCES_HONESTY_REASSURANCE",
+          "label": "Balances honesty with reassurance",
+          "maps_to": [
+            "S_COMMUNICATION",
+            "S_EMOTIONAL_SAFETY"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Communicates concerns clearly while preserving trust and partnership.",
+          "auto_detect_tags": [
+            "honesty",
+            "reassurance"
+          ]
+        },
+        {
+          "id": "Q13_INVITES_PARENT_INPUT",
+          "label": "Invites parent input about the child",
+          "maps_to": [
+            "S_PARTNERSHIP",
+            "S_CURIOSITY"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Asks what works at home, what the family notices, or how to support consistency.",
+          "auto_detect_tags": [
+            "parent_input",
+            "partnership"
+          ]
+        },
+        {
+          "id": "Q13_KNOWS_ROLE_BOUNDARIES",
+          "label": "Knows when to involve director or follow school communication policy",
+          "maps_to": [
+            "S_ROLE_BOUNDARIES",
+            "S_PROFESSIONAL_JUDGMENT"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Recognizes which concerns require director support, documentation, or formal reporting.",
+          "auto_detect_tags": [
+            "director",
+            "boundaries"
+          ]
+        },
+        {
+          "id": "Q13_BLAMES_PARENT",
+          "label": "Blames parents for the child’s behavior or needs",
+          "maps_to": [
+            "S_BLAME",
+            "S_FAMILY_DISRESPECT"
+          ],
+          "base_weight": -3,
+          "signal_category": "red_flag",
+          "evidence_hint": "Frames the issue as the family’s fault without curiosity or partnership.",
+          "auto_detect_tags": [
+            "blame",
+            "family"
+          ],
+          "is_critical": true
+        },
+        {
+          "id": "Q13_OVERPROMISES_OR_DIAGNOSES",
+          "label": "Overpromises, diagnoses, or gives advice outside role",
+          "maps_to": [
+            "S_ROLE_BOUNDARIES",
+            "S_NON_DIAGNOSTIC"
+          ],
+          "base_weight": -3,
+          "signal_category": "red_flag",
+          "evidence_hint": "Claims certainty about diagnosis, cause, services, or parenting without proper role or evidence.",
+          "auto_detect_tags": [
+            "diagnosis",
+            "boundaries"
+          ],
+          "is_critical": true
+        },
+        {
+          "id": "Q13_DISCLOSES_CONFIDENTIAL_INFO",
+          "label": "Discloses confidential information inappropriately",
+          "maps_to": [
+            "S_ABSOLUTE_DISQUALIFIER"
+          ],
+          "base_weight": "AUTO_NO_HIRE",
+          "signal_category": "automatic_no_hire",
+          "evidence_hint": "Shares private information about another child, family, staff member, or incident outside appropriate channels.",
+          "auto_detect_tags": [
+            "absolute_disqualifier",
+            "confidentiality"
+          ],
+          "is_critical": true,
+          "auto_no_hire": true
+        }
+      ],
+      "extended_signals": [
+        {
+          "id": "Q13_USES_SPECIFIC_EXAMPLE",
+          "label": "Gives a specific parent communication example",
+          "maps_to": [
+            "S_EXAMPLE",
+            "S_COMMUNICATION"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Provides a real or realistic example with words used and follow-up.",
+          "auto_detect_tags": [
+            "example",
+            "communication"
+          ]
+        },
+        {
+          "id": "Q13_CALM_WITH_UPSET_PARENT",
+          "label": "Stays calm with an upset parent",
+          "maps_to": [
+            "S_SELF_REGULATION",
+            "S_FAMILY_COMMUNICATION"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Describes listening, lowering defensiveness, and bringing in support if needed.",
+          "auto_detect_tags": [
+            "calm",
+            "parent"
+          ]
+        },
+        {
+          "id": "Q13_FOLLOWS_UP",
+          "label": "Follows up after the conversation",
+          "maps_to": [
+            "S_FOLLOW_THROUGH"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Mentions update, documentation, checking progress, or team communication.",
+          "auto_detect_tags": [
+            "follow_up"
+          ]
+        },
+        {
+          "id": "Q13_SAFE_SOUNDING_NO_WORDS",
+          "label": "Says they communicate professionally but gives no wording",
+          "maps_to": [
+            "S_VAGUE"
+          ],
+          "base_weight": 0,
+          "signal_category": "neutral_or_mixed",
+          "evidence_hint": "Cannot explain what they would actually say to a parent.",
+          "auto_detect_tags": [
+            "vague"
+          ]
+        },
+        {
+          "id": "Q13_AVOIDS_HARD_CONVERSATIONS",
+          "label": "Avoids hard parent conversations or leaves all communication to others",
+          "maps_to": [
+            "S_LOW_ROLE_READINESS"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Shows unwillingness or inability to communicate routine classroom information appropriately.",
+          "auto_detect_tags": [
+            "avoidance",
+            "communication"
+          ]
+        },
+        {
+          "id": "Q13_DEFENSIVE_WITH_PARENT",
+          "label": "Becomes defensive when families question classroom decisions",
+          "maps_to": [
+            "S_DEFENSIVE"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Focuses on proving the parent wrong rather than listening and clarifying.",
+          "auto_detect_tags": [
+            "defensive",
+            "family"
+          ]
+        }
+      ],
+      "suggested_follow_up_probes": [
+        "What exact words would you use with the parent?",
+        "What would you document?",
+        "When would you involve the director?",
+        "How would you respond if the parent became upset?",
+        "How do you avoid sharing information about other children?"
+      ]
+    },
+    {
+      "trait_id": "trait_14",
+      "trait_name": "Inclusion & Individualized Support",
+      "priority": "High",
+      "trait_multiplier": 2,
+      "applicable_tracks": [
+        "all"
+      ],
+      "question": "Tell me about a time a child needed extra support because of language, behavior, development, sensory needs, disability, or a different way of communicating. How did you include and support the child?",
+      "score_1_auto_no_hire": false,
+      "core_signals": [
+        {
+          "id": "Q14_INCLUDES_CHILD_IN_GROUP",
+          "label": "Keeps the child included in the classroom community",
+          "maps_to": [
+            "S_INCLUSION",
+            "S_CHILD_CENTERED"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Supports participation rather than excluding or isolating the child.",
+          "auto_detect_tags": [
+            "inclusion",
+            "community"
+          ]
+        },
+        {
+          "id": "Q14_ADAPTS_SUPPORT_TO_CHILD",
+          "label": "Adapts support to the individual child",
+          "maps_to": [
+            "S_INDIVIDUALIZATION",
+            "S_ADAPTABILITY"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Changes communication, environment, materials, pacing, or expectations based on the child’s needs.",
+          "auto_detect_tags": [
+            "individualization",
+            "adaptability"
+          ]
+        },
+        {
+          "id": "Q14_USES_VISUALS_MODELING_CHOICES",
+          "label": "Uses visuals, modeling, choices, or sensory supports",
+          "maps_to": [
+            "S_DAP",
+            "S_SUPPORT_STRATEGIES"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Mentions concrete preschool-appropriate support tools.",
+          "auto_detect_tags": [
+            "visuals",
+            "modeling",
+            "sensory"
+          ]
+        },
+        {
+          "id": "Q14_STRENGTH_BASED_LANGUAGE",
+          "label": "Uses strength-based and respectful language",
+          "maps_to": [
+            "S_RESPECTFUL_LANGUAGE",
+            "S_INCLUSION"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Avoids defining the child by deficits or inconvenience.",
+          "auto_detect_tags": [
+            "strength_based",
+            "respect"
+          ]
+        },
+        {
+          "id": "Q14_COLLABORATES_WITH_TEAM_FAMILY",
+          "label": "Collaborates with team or family for consistency",
+          "maps_to": [
+            "S_TEAMWORK",
+            "S_FAMILY_PARTNERSHIP"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Mentions director, teachers, specialists, or parents as partners.",
+          "auto_detect_tags": [
+            "teamwork",
+            "family"
+          ]
+        },
+        {
+          "id": "Q14_LOW_EXPECTATIONS",
+          "label": "Shows low expectations for children with different needs",
+          "maps_to": [
+            "S_LOW_EXPECTATIONS",
+            "S_INCLUSION_CONCERN"
+          ],
+          "base_weight": -3,
+          "signal_category": "red_flag",
+          "evidence_hint": "Assumes the child cannot participate or learn without describing supports.",
+          "auto_detect_tags": [
+            "low_expectations",
+            "inclusion"
+          ],
+          "is_critical": true
+        },
+        {
+          "id": "Q14_ISOLATION_AS_DEFAULT",
+          "label": "Uses removal or isolation as the default support",
+          "maps_to": [
+            "S_EXCLUSION",
+            "S_CONTROL_LANGUAGE"
+          ],
+          "base_weight": -3,
+          "signal_category": "red_flag",
+          "evidence_hint": "Primary plan is keeping the child away from peers or activities.",
+          "auto_detect_tags": [
+            "isolation",
+            "exclusion"
+          ],
+          "is_critical": true
+        },
+        {
+          "id": "Q14_DISRESPECTS_DISABILITY_LANGUAGE",
+          "label": "Uses disrespectful or stigmatizing language about disability, behavior, or language needs",
+          "maps_to": [
+            "S_ABSOLUTE_DISQUALIFIER"
+          ],
+          "base_weight": "AUTO_NO_HIRE",
+          "signal_category": "automatic_no_hire",
+          "evidence_hint": "Uses mocking, demeaning, discriminatory, or contemptuous language about a child’s needs or identity.",
+          "auto_detect_tags": [
+            "absolute_disqualifier",
+            "disability",
+            "contempt"
+          ],
+          "is_critical": true,
+          "auto_no_hire": true
+        }
+      ],
+      "extended_signals": [
+        {
+          "id": "Q14_OBSERVES_TRIGGERS_AND_PATTERNS",
+          "label": "Observes triggers and patterns before choosing support",
+          "maps_to": [
+            "S_OBSERVATION",
+            "S_PREVENTION"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Looks at transitions, sensory load, language demands, fatigue, hunger, peer conflict, or environment.",
+          "auto_detect_tags": [
+            "observation",
+            "patterns"
+          ]
+        },
+        {
+          "id": "Q14_TEACHES_PEER_INCLUSION",
+          "label": "Supports peer inclusion respectfully",
+          "maps_to": [
+            "S_PEER_SUPPORT",
+            "S_INCLUSION"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Helps peers include the child without singling the child out or violating privacy.",
+          "auto_detect_tags": [
+            "peers",
+            "inclusion"
+          ]
+        },
+        {
+          "id": "Q14_ADJUSTS_EXPECTATIONS_DEVELOPMENTALLY",
+          "label": "Adjusts expectations developmentally without lowering dignity",
+          "maps_to": [
+            "S_DEVELOPMENTAL_AWARENESS"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Changes the demand while still treating the child as capable and valued.",
+          "auto_detect_tags": [
+            "developmental_awareness"
+          ]
+        },
+        {
+          "id": "Q14_GOOD_INTENTIONS_NO_STRATEGY",
+          "label": "Expresses kindness but gives no inclusion strategy",
+          "maps_to": [
+            "S_VAGUE"
+          ],
+          "base_weight": 0,
+          "signal_category": "neutral_or_mixed",
+          "evidence_hint": "Says they love or help all children but cannot describe concrete supports.",
+          "auto_detect_tags": [
+            "vague",
+            "kindness"
+          ]
+        },
+        {
+          "id": "Q14_ONE_SIZE_FITS_ALL",
+          "label": "Uses the same approach for every child",
+          "maps_to": [
+            "S_RIGIDITY",
+            "S_LOW_INDIVIDUALIZATION"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Shows limited ability to adapt to individual developmental or sensory needs.",
+          "auto_detect_tags": [
+            "rigidity",
+            "one_size"
+          ]
+        },
+        {
+          "id": "Q14_BLAMES_CHILD_FOR_NEEDS",
+          "label": "Blames the child for needing extra support",
+          "maps_to": [
+            "S_BLAME",
+            "S_ADULT_CENTERED"
+          ],
+          "base_weight": -3,
+          "signal_category": "red_flag",
+          "evidence_hint": "Frames support needs as the child being difficult, spoiled, attention-seeking, or disruptive.",
+          "auto_detect_tags": [
+            "blame",
+            "child_label"
+          ],
+          "is_critical": true
+        }
+      ],
+      "suggested_follow_up_probes": [
+        "What support did you change for that child?",
+        "How did you keep the child included with peers?",
+        "What did you notice before the child struggled?",
+        "How did you communicate with the team or family?",
+        "What would you do if the first support did not work?"
+      ]
+    },
+    {
+      "trait_id": "trait_15",
+      "trait_name": "Role Readiness, Adaptability & Classroom Follow-Through",
+      "priority": "Medium",
+      "trait_multiplier": 1,
+      "applicable_tracks": [
+        "all"
+      ],
+      "question": "This role can include routines, cleaning, transitions, documentation, outdoor supervision, teamwork, and changing plans quickly. Tell me about how you handle the less glamorous but important parts of preschool work.",
+      "score_1_auto_no_hire": false,
+      "core_signals": [
+        {
+          "id": "Q15_UNDERSTANDS_FULL_ROLE",
+          "label": "Understands the full preschool role beyond playing with children",
+          "maps_to": [
+            "S_ROLE_READINESS"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Mentions routines, safety, supervision, cleaning, documentation, communication, and teamwork.",
+          "auto_detect_tags": [
+            "role_readiness"
+          ]
+        },
+        {
+          "id": "Q15_FOLLOWS_ROUTINES_CONSISTENTLY",
+          "label": "Follows classroom routines consistently",
+          "maps_to": [
+            "S_RELIABILITY",
+            "S_CLASSROOM_MANAGEMENT"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Recognizes routines support safety, regulation, and smooth classroom flow.",
+          "auto_detect_tags": [
+            "routines",
+            "consistency"
+          ]
+        },
+        {
+          "id": "Q15_ADAPTS_WITHOUT_COMPLAINT",
+          "label": "Adapts to changing needs without resentment",
+          "maps_to": [
+            "S_ADAPTABILITY",
+            "S_PROFESSIONALISM"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Responds flexibly to staffing, child needs, schedule changes, or unexpected events.",
+          "auto_detect_tags": [
+            "adaptability"
+          ]
+        },
+        {
+          "id": "Q15_COMPLETES_UNGLAMOROUS_TASKS",
+          "label": "Accepts caregiving and cleaning tasks as part of child safety",
+          "maps_to": [
+            "S_CARE_ROUTINES",
+            "S_SAFETY"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Treats cleaning, diapering, meals, and setup as professional responsibilities.",
+          "auto_detect_tags": [
+            "cleaning",
+            "caregiving"
+          ]
+        },
+        {
+          "id": "Q15_NEEDS_CONSTANT_DIRECTION",
+          "label": "Needs constant direction for routine responsibilities",
+          "maps_to": [
+            "S_LOW_INITIATIVE",
+            "S_ROLE_READINESS"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Appears unable to anticipate routine classroom needs after training.",
+          "auto_detect_tags": [
+            "initiative",
+            "role_readiness"
+          ]
+        },
+        {
+          "id": "Q15_TASKS_BENEATH_THEM",
+          "label": "Suggests routine care, cleaning, or coverage is beneath them",
+          "maps_to": [
+            "S_ROLE_MISALIGNMENT"
+          ],
+          "base_weight": -3,
+          "signal_category": "red_flag",
+          "evidence_hint": "Shows status-based resistance to essential preschool duties.",
+          "auto_detect_tags": [
+            "role_misalignment"
+          ],
+          "is_critical": true
+        },
+        {
+          "id": "Q15_UNWILLING_REQUIRED_DUTIES",
+          "label": "States unwillingness to perform required role duties",
+          "maps_to": [
+            "S_ABSOLUTE_DISQUALIFIER"
+          ],
+          "base_weight": "AUTO_NO_HIRE",
+          "signal_category": "automatic_no_hire",
+          "evidence_hint": "Refuses required supervision, caregiving, cleaning, ratio coverage, or safety-related duties.",
+          "auto_detect_tags": [
+            "absolute_disqualifier",
+            "role_readiness"
+          ],
+          "is_critical": true,
+          "auto_no_hire": true
+        }
+      ],
+      "extended_signals": [
+        {
+          "id": "Q15_PRIORITIZES_SAFETY_WHEN_BUSY",
+          "label": "Prioritizes safety when busy or multitasking",
+          "maps_to": [
+            "S_SAFETY",
+            "S_JUDGMENT"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Knows what must pause when supervision, ratios, or child safety require attention.",
+          "auto_detect_tags": [
+            "safety",
+            "judgment"
+          ]
+        },
+        {
+          "id": "Q15_COMMUNICATES_LIMITS_AND_NEEDS",
+          "label": "Communicates limits and needs before problems grow",
+          "maps_to": [
+            "S_COMMUNICATION",
+            "S_HELP_SEEKING"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Asks for supplies, support, clarification, or coverage appropriately.",
+          "auto_detect_tags": [
+            "communication",
+            "help_seeking"
+          ]
+        },
+        {
+          "id": "Q15_USES_SYSTEMS_FOR_FOLLOW_THROUGH",
+          "label": "Uses systems for follow-through",
+          "maps_to": [
+            "S_SYSTEMS",
+            "S_RELIABILITY"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Mentions checklists, schedules, notes, reminders, or documentation habits.",
+          "auto_detect_tags": [
+            "systems",
+            "follow_through"
+          ]
+        },
+        {
+          "id": "Q15_SAYS_FLEXIBLE_NO_EXAMPLE",
+          "label": "Says they are flexible but gives no example",
+          "maps_to": [
+            "S_VAGUE"
+          ],
+          "base_weight": 0,
+          "signal_category": "neutral_or_mixed",
+          "evidence_hint": "Claims adaptability without describing a real adjustment or response.",
+          "auto_detect_tags": [
+            "vague",
+            "flexibility"
+          ]
+        },
+        {
+          "id": "Q15_OVERLY_IDEALIZED_VIEW",
+          "label": "Shows an overly idealized view of preschool work",
+          "maps_to": [
+            "S_ROLE_READINESS"
+          ],
+          "base_weight": -1,
+          "signal_category": "neutral_or_mixed",
+          "evidence_hint": "Focuses only on fun, creativity, or affection and omits routines, safety, and teamwork.",
+          "auto_detect_tags": [
+            "idealized",
+            "role_readiness"
+          ]
+        },
+        {
+          "id": "Q15_COMPLAINS_ABOUT_BASIC_TASKS",
+          "label": "Complains about basic preschool tasks",
+          "maps_to": [
+            "S_ROLE_MISALIGNMENT"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Frames routine tasks as unfair, annoying, or not part of teaching.",
+          "auto_detect_tags": [
+            "complaint",
+            "tasks"
+          ]
+        }
+      ],
+      "suggested_follow_up_probes": [
+        "Which parts of the preschool day are hardest for you?",
+        "How do you keep routines consistent when the room is busy?",
+        "How do you handle cleaning or care routines when children also need attention?",
+        "What systems help you remember documentation or follow-through?",
+        "What required duty would be most challenging for you?"
+      ]
     }
   ],
   "global_red_flags": [
@@ -5155,6 +6520,110 @@
       "label": "Skips the child’s emotional experience or adult’s internal self-regulation",
       "base_weight": -2,
       "signal_category": "red_flag"
+    },
+    {
+      "id": "GLOBAL_SAFE_SOUNDING_VAGUE",
+      "label": "Gives safe-sounding but vague answers with no concrete action",
+      "maps_to": [
+        "S_VAGUE"
+      ],
+      "base_weight": -1,
+      "signal_category": "neutral_or_mixed",
+      "evidence_hint": "Candidate uses agreeable language but cannot describe what they did or would do.",
+      "auto_detect_tags": [
+        "vague",
+        "scripted"
+      ]
+    },
+    {
+      "id": "GLOBAL_CONTROL_WITHOUT_TEACHING",
+      "label": "Focuses on control or obedience without teaching skills",
+      "maps_to": [
+        "S_CONTROL_LANGUAGE",
+        "S_LOW_GUIDANCE"
+      ],
+      "base_weight": -2,
+      "signal_category": "red_flag",
+      "evidence_hint": "The answer emphasizes compliance, strictness, or being in charge without redirection, modeling, or support.",
+      "auto_detect_tags": [
+        "control",
+        "compliance"
+      ]
+    },
+    {
+      "id": "GLOBAL_TALKS_SAFETY_NOT_CONCRETE",
+      "label": "Talks about safety generally but cannot explain supervision steps",
+      "maps_to": [
+        "S_VAGUE_SAFETY"
+      ],
+      "base_weight": -2,
+      "signal_category": "red_flag",
+      "evidence_hint": "No concrete scanning, headcounts, positioning, handoffs, or ratio awareness.",
+      "auto_detect_tags": [
+        "safety",
+        "vague"
+      ]
+    },
+    {
+      "id": "GLOBAL_BLAMES_FAMILIES_OR_CHILDREN",
+      "label": "Blames children or families for routine preschool challenges",
+      "maps_to": [
+        "S_BLAME"
+      ],
+      "base_weight": -3,
+      "signal_category": "red_flag",
+      "evidence_hint": "Externalizes challenges without curiosity, accountability, or partnership.",
+      "auto_detect_tags": [
+        "blame"
+      ],
+      "is_critical": true
+    },
+    {
+      "id": "GLOBAL_CONFIDENT_OUTSIDE_ROLE",
+      "label": "Claims certainty outside role, such as diagnosing or making promises to parents",
+      "maps_to": [
+        "S_ROLE_BOUNDARIES"
+      ],
+      "base_weight": -3,
+      "signal_category": "red_flag",
+      "evidence_hint": "Oversteps professional scope or school communication boundaries.",
+      "auto_detect_tags": [
+        "scope",
+        "diagnosis"
+      ],
+      "is_critical": true
+    },
+    {
+      "id": "GLOBAL_UNSUPERVISED_CHILDREN",
+      "label": "Describes or accepts children being unsupervised",
+      "maps_to": [
+        "S_ABSOLUTE_DISQUALIFIER"
+      ],
+      "base_weight": "AUTO_NO_HIRE",
+      "signal_category": "automatic_no_hire",
+      "evidence_hint": "Any statement indicating children may be left without required supervision or coverage.",
+      "auto_detect_tags": [
+        "absolute_disqualifier",
+        "supervision"
+      ],
+      "is_critical": true,
+      "auto_no_hire": true
+    },
+    {
+      "id": "GLOBAL_CONFIDENTIALITY_VIOLATION",
+      "label": "Discloses or says they would disclose confidential child or family information",
+      "maps_to": [
+        "S_ABSOLUTE_DISQUALIFIER"
+      ],
+      "base_weight": "AUTO_NO_HIRE",
+      "signal_category": "automatic_no_hire",
+      "evidence_hint": "Shares private information outside appropriate channels.",
+      "auto_detect_tags": [
+        "absolute_disqualifier",
+        "confidentiality"
+      ],
+      "is_critical": true,
+      "auto_no_hire": true
     }
   ],
   "global_strong_candidate_signals": [
@@ -5377,6 +6846,61 @@
       "label": "Owns mistakes and follows through",
       "base_weight": 3,
       "signal_category": "positive"
+    },
+    {
+      "id": "GLOBAL_CONCRETE_SUPERVISION",
+      "label": "Explains concrete supervision practices",
+      "maps_to": [
+        "S_SUPERVISION"
+      ],
+      "base_weight": 3,
+      "signal_category": "positive",
+      "evidence_hint": "Names scanning, headcounts, positioning, ratios, and handoffs.",
+      "auto_detect_tags": [
+        "supervision",
+        "headcount"
+      ]
+    },
+    {
+      "id": "GLOBAL_FAMILY_PARTNERSHIP",
+      "label": "Communicates with families as partners",
+      "maps_to": [
+        "S_FAMILY_PARTNERSHIP"
+      ],
+      "base_weight": 3,
+      "signal_category": "positive",
+      "evidence_hint": "Uses respectful, objective, and collaborative language with parents or guardians.",
+      "auto_detect_tags": [
+        "family",
+        "partnership"
+      ]
+    },
+    {
+      "id": "GLOBAL_INDIVIDUALIZES_SUPPORT",
+      "label": "Individualizes support for children with different needs",
+      "maps_to": [
+        "S_INDIVIDUALIZATION"
+      ],
+      "base_weight": 3,
+      "signal_category": "positive",
+      "evidence_hint": "Adapts communication, environment, expectations, or supports to the child.",
+      "auto_detect_tags": [
+        "individualization",
+        "inclusion"
+      ]
+    },
+    {
+      "id": "GLOBAL_PREVENTION_BEFORE_REACTION",
+      "label": "Uses prevention before reacting",
+      "maps_to": [
+        "S_PREVENTION"
+      ],
+      "base_weight": 3,
+      "signal_category": "positive",
+      "evidence_hint": "Anticipates triggers, transitions, environment, routine, and child needs.",
+      "auto_detect_tags": [
+        "prevention"
+      ]
     }
   ],
   "recommended_interview_form_fields": [
@@ -5401,7 +6925,14 @@
     "Suggested Follow-Up Notes",
     "Disqualifier Present Yes/No",
     "Final Outcome Hire/Borderline/No Hire",
-    "Hiring Manager Notes / Quotes"
+    "Hiring Manager Notes / Quotes",
+    "direct_quote_for_each_red_flag",
+    "follow_up_probe_used",
+    "specific_example_present",
+    "supervision_ratio_evidence",
+    "family_communication_evidence",
+    "inclusion_support_evidence",
+    "role_readiness_evidence"
   ],
   "scoring_logic": {
     "raw_score_range": [
@@ -5418,7 +6949,7 @@
   "tracks": {
     "infant_toddler": {
       "label": "Infant/Toddler",
-      "max_weighted_total": 105,
+      "max_weighted_total": 125,
       "thresholds": {
         "hire_percent_min": 80,
         "borderline_percent_min": 65,
@@ -5436,7 +6967,7 @@
     },
     "preschool": {
       "label": "Preschool",
-      "max_weighted_total": 95,
+      "max_weighted_total": 135,
       "thresholds": {
         "hire_percent_min": 80,
         "borderline_percent_min": 65,
@@ -5518,6 +7049,20 @@
     "Cannot describe how they regulate themselves during aggressive, loud, or stressful behavior",
     "Says they do not need coaching, feedback, or supervision",
     "Shows resentment toward children with special needs, sensory needs, speech delays, or behavior challenges",
-    "Cannot accept also working as a classroom teacher when not providing behavior support"
+    "Cannot accept also working as a classroom teacher when not providing behavior support",
+    "Leaving children unsupervised or accepting ratio gaps without coverage",
+    "Inappropriate disclosure of confidential child, family, or staff information",
+    "Refusal to perform required supervision, caregiving, cleaning, or safety duties",
+    "Discriminatory, mocking, or demeaning language about disability, language, culture, or developmental needs"
+  ],
+  "signal_design_rules": [
+    "Signals must be observable in candidate answers or reasonably inferable from the candidate’s described actions.",
+    "Signals describe what the candidate says, emphasizes, omits, or implies; they do not diagnose personality.",
+    "Positive and negative signals should be balanced within each trait.",
+    "Negative signals should capture realistic weak answers, including vague, adult-centered, rigid, compliance-focused, defensive, or developmentally inappropriate responses.",
+    "Critical flags are reserved for serious concerns requiring careful review, follow-up, or possible disqualification.",
+    "Automatic no-hire signals are reserved for explicit unsafe, contemptuous, discriminatory, forceful, retaliatory, or licensing-disregarding statements.",
+    "Similar signals should be consolidated unless they capture meaningfully different evidence.",
+    "Labels should be plain language and usable by interviewers during live scoring."
   ]
 }

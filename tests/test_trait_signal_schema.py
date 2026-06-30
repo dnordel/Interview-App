@@ -33,6 +33,7 @@ def test_resolve_trait_signal_selection_helpers_support_both_signal_schemas() ->
     assert resolve_trait_signal_label({"label": "Validate"}, fallback="fallback") == "Validate"
     assert resolve_trait_signal_weight({"weight": 2}) == 2.0
     assert resolve_trait_signal_weight({"base_weight": -3}) == -3.0
+    assert resolve_trait_signal_weight({"base_weight": "AUTO_NO_HIRE"}) == 0.0
 
 
 def test_normalize_core_signals_skips_blank_entries() -> None:

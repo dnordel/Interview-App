@@ -15,7 +15,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-06-30T16:40:10.104316+00:00'
+generated_at_utc: '2026-06-30T19:15:48.421540+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -4126,6 +4126,16 @@ entries:
     - return_type
     - security_leakage_prevention
 - contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime.build_finalize_progress_tasks
+  kind: function
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime.build_flow_time_windows
   kind: function
   tests:
@@ -4166,7 +4176,27 @@ entries:
     - return_type
     - security_leakage_prevention
 - contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime.finalize_progress_status_label
+  kind: function
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime.format_deepseek_question_prompt_overrides
+  kind: function
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime.format_finalize_progress_tasks
   kind: function
   tests:
   - path: tests/test_interview_root_contracts.py
@@ -9172,6 +9202,15 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._read_pyside_deepseek_progress_step
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._read_pyside_deepseek_progress_tasks
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py

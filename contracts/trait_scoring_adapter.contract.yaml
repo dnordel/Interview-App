@@ -2,7 +2,7 @@ module:
   name: trait_scoring_adapter
   language: python
   path: src/trait_scoring_adapter.py
-  version: 1.7.2
+  version: 1.7.3
   description: Deprecated compatibility wrapper for trait-state normalization, runtime
     scoring invocation, and finalize/export scoring payload mapping implemented by
     scoring_reporting.
@@ -568,7 +568,8 @@ functions:
   side_effects: none
 - name: _select_signal_refs_for_state
   description: Select signal references for one trait definition from canonical normalized
-    state using selected_signal_ids only.
+    state using selected_signal_ids only, excluding neutral zero-weight signals while
+    preserving AUTO_NO_HIRE sentinel signals as advisory metadata.
   locked: false
   inputs:
     trait_definition:
@@ -642,7 +643,9 @@ functions:
   side_effects: none
 - name: _build_compatibility_engine_output
   description: Project trait-engine session output into the reporting-compatible scoring
-    shape.
+    shape, preserving automatic no-hire signal metadata as advisory-only while
+    keeping human raw-score thresholds, disqualifier flags, and critical raw scores
+    authoritative for final outcome.
   locked: false
   inputs:
     rubric:

@@ -273,7 +273,7 @@ class TestScoringEngineEvaluate(unittest.TestCase):
         self.assertEqual(scoring["outcome"], "Hire")
         self.assertIsNone(scoring["locked_rule"])
 
-    def test_deepseek_auto_no_hire_signal_overrides_human_hire_score(self):
+    def test_deepseek_auto_no_hire_signal_is_advisory_and_does_not_override_human_hire_score(self):
         rubric = self._rubric()
         trait_results = {
             "trait_a": {
@@ -307,7 +307,8 @@ class TestScoringEngineEvaluate(unittest.TestCase):
         finally:
             __import__("scoring_reporting")._deepseek_signal_advisory = original
 
-        self.assertEqual(scoring["outcome"], "No Hire")
+        self.assertEqual(scoring["outcome"], "Hire")
+        self.assertIsNone(scoring["locked_rule"])
         self.assertTrue(scoring["auto_no_hire_present"])
         self.assertEqual(scoring["rows"][0]["auto_no_hire_signal_ids"], ["AUTO"])
 

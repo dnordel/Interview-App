@@ -657,10 +657,12 @@ def _coerce_history_percent(value: Any) -> float | None:
 
 
 def _history_has_no_hire_override(row: dict[str, Any]) -> bool:
-    override_keys = ("auto_no_hire_present", "disqualifier_present", "critical_eq_1", "critical_lt_3")
+    override_keys = ("disqualifier_present", "critical_eq_1", "critical_lt_3")
     if any(bool(row.get(key)) for key in override_keys):
         return True
     locked_rule = str(row.get("locked_rule") or row.get("override_rationale") or "").strip().lower()
+    if "automatic no-hire signal" in locked_rule or "deepseek automatic no-hire" in locked_rule:
+        return False
     return any(term in locked_rule for term in ("no hire", "disqualifier", "critical"))
 
 

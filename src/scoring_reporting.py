@@ -563,8 +563,6 @@ class ScoringEngine:
                 else None
             )
             auto_no_hire_signal_ids = list(deepseek_advisory.get("auto_no_hire_signal_ids", []) or [])
-            if auto_no_hire_signal_ids:
-                disqualifier_present = True
 
             rows.append(
                 {
@@ -625,9 +623,6 @@ class ScoringEngine:
         if missing_required_scores:
             outcome = "Incomplete"
             locked_rule = "One or more applicable traits are missing final raw scores"
-        elif auto_no_hire_present:
-            outcome = "No Hire"
-            locked_rule = "DeepSeek automatic no-hire signal observed => Immediate NO HIRE"
         elif disqualifier_present:
             outcome = "No Hire"
             locked_rule = "Any Absolute Disqualifier observed => Immediate NO HIRE"
@@ -2491,6 +2486,8 @@ def resolve_trait_signal_label(signal: dict[str, Any], *, fallback: str = "") ->
 
 def resolve_trait_signal_weight(signal: dict[str, Any]) -> float:
     raw_weight = signal.get("weight", signal.get("base_weight", signal.get("default_weight", 0)))
+    if isinstance(raw_weight, str) and raw_weight.strip().upper() == "AUTO_NO_HIRE":
+        return 0.0
     return float(raw_weight or 0)
 
 
@@ -3605,7 +3602,13 @@ def _select_signal_refs_for_state(trait_definition: dict[str, Any], state: dict[
         runtime_signal_id = resolve_trait_signal_runtime_id(signal)
         if not runtime_signal_id:
             continue
-        if resolve_trait_signal_weight(signal) == 0:
+        is_auto_no_hire = (
+            bool(signal.get("is_auto_no_hire", False))
+            or bool(signal.get("auto_no_hire", False))
+            or str(signal.get("signal_category", "") or "").strip().lower() == "automatic_no_hire"
+            or str(signal.get("base_weight", "") or "").strip().upper() == "AUTO_NO_HIRE"
+        )
+        if resolve_trait_signal_weight(signal) == 0 and not is_auto_no_hire:
             continue
         if not selected_signal_ids.intersection(signal_selection_aliases(signal)):
             continue
@@ -3683,12 +3686,13 @@ def _build_compatibility_engine_output(
     )
     locked_rule = session_result.get("locked_rule")
     override_rationale = session_result.get("override_rationale")
+    advisory_lock_text = str(locked_rule or override_rationale or "").strip().lower()
+    if "automatic no-hire signal" in advisory_lock_text or "deepseek automatic no-hire" in advisory_lock_text:
+        locked_rule = None
+        override_rationale = None
     if missing_required_scores:
         outcome = "Incomplete"
         locked_rule = "One or more applicable traits are missing final raw scores"
-    elif auto_no_hire_present:
-        outcome = "No Hire"
-        locked_rule = "DeepSeek automatic no-hire signal observed => Immediate NO HIRE"
     elif disqualifier_present:
         outcome = "No Hire"
         locked_rule = "Any Absolute Disqualifier observed => Immediate NO HIRE"

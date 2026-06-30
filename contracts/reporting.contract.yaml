@@ -2,7 +2,7 @@ module:
   name: reporting
   language: python
   path: src/reporting.py
-  version: 1.2.2
+  version: 1.2.3
   description: Deprecated compatibility wrapper for scoring, draft persistence, and report document export services implemented by scoring_reporting.
 functions: []
 classes:
@@ -83,7 +83,7 @@ classes:
     exceptions: []
     side_effects: none
   - name: evaluate
-    description: Evaluate scoring rows, aggregate totals, and compute hiring outcome using skipped-aware determination thresholds.
+    description: Evaluate scoring rows, aggregate totals, preserve DeepSeek advisory automatic no-hire metadata without letting it override the human final outcome, and compute hiring outcome using skipped-aware determination thresholds plus human disqualifier and critical-score overrides.
     locked: false
     inputs:
       rubric:

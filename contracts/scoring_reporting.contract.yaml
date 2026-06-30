@@ -2,7 +2,7 @@ module:
   name: scoring_reporting
   language: python
   path: src/scoring_reporting.py
-  version: 0.18.10
+  version: 0.18.11
   description: Flattened public interface for scoring, reporting, trait signals, exports,
     referrals, email safety, offers, and templates, including DeepSeek-only advisory
     signal scoring; only active legacy adapters remain in the compatibility module
@@ -831,7 +831,8 @@ functions:
   side_effects: none
 - name: resolve_trait_signal_weight
   description: Resolve the numeric weight for a trait signal across weight, base_weight,
-    and default_weight fields.
+    and default_weight fields, treating the AUTO_NO_HIRE sentinel as zero-weight
+    advisory metadata.
   locked: false
   inputs:
     signal:
@@ -1488,8 +1489,10 @@ classes:
   - name: evaluate
     description: Evaluate human-confirmed trait raw scores as final scoring, treating
       unrated applicable traits as skipped so they are excluded from totals and notes,
-      attach DeepSeek advisory signal scoring fields, detect no-hire overrides, and
-      compute hiring outcome using skipped-aware thresholds.
+      attach DeepSeek advisory signal scoring fields and automatic no-hire metadata
+      without letting advisory metadata override the human final outcome, detect
+      human disqualifier and critical-score no-hire overrides, and compute hiring
+      outcome using skipped-aware thresholds.
     locked: false
     inputs:
       rubric:

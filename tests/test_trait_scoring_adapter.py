@@ -774,6 +774,73 @@ class ScoringEngine:
         self.assertEqual(_max_weighted_total([TRAIT_DEFINITION], normalized_state), 4)
         self.assertEqual(_configured_max_weighted_total(rubric, "general", [TRAIT_DEFINITION]), 30)
 
+    def test_compatibility_output_keeps_auto_no_hire_signal_advisory(self):
+        rubric = {
+            "tracks": {"general": {"label": "General", "max_weighted_total": 30}},
+            "traits": [
+                {
+                    "id": "trait_a",
+                    "name": "Trait A",
+                    "priority": "high",
+                    "weight": 3,
+                    "primary_question": "Q1",
+                    "applicable_tracks": ["general"],
+                }
+            ],
+        }
+        trait_definition = {
+            "trait_id": "trait_a",
+            "question": "Describe classroom management.",
+            "core_signals": [
+                {
+                    "ref": "AUTO",
+                    "label": "Automatic no-hire advisory",
+                    "base_weight": "AUTO_NO_HIRE",
+                    "signal_category": "automatic_no_hire",
+                },
+                {"ref": "P1", "weight": 4},
+            ],
+            "extended_signal_groups": [],
+        }
+        normalized_state = {
+            "trait_a": {
+                "raw_score": 4,
+                "skipped": False,
+                "selected_signal_ids": ["P1"],
+                "model_signal_suggestions": [{"signal_id": "AUTO", "evidence_quote": "quoted"}],
+            }
+        }
+        session_result = {
+            "traits": [
+                {
+                    "trait_id": "trait_a",
+                    "final_score": 4,
+                    "auto_no_hire_present": True,
+                    "auto_no_hire_signal_ids": ["AUTO"],
+                }
+            ],
+            "totals": {"final": 4},
+            "decision": "no_hire",
+            "any_critical_selected": True,
+            "triggered_critical": True,
+            "locked_rule": "Contract override: selected automatic no-hire signal triggers immediate no_hire",
+            "override_rationale": "Contract override: selected automatic no-hire signal triggers immediate no_hire",
+        }
+
+        compatibility = _build_compatibility_engine_output(
+            rubric=rubric,
+            track_key="general",
+            normalized_state=normalized_state,
+            trait_definitions=[trait_definition],
+            runtime_bundle=_trait_runtime_bundle(),
+            session_result=session_result,
+        )
+
+        self.assertEqual(compatibility["outcome"], "Hire")
+        self.assertIsNone(compatibility["locked_rule"])
+        self.assertTrue(compatibility["auto_no_hire_present"])
+        self.assertEqual(compatibility["rows"][0]["auto_no_hire_signal_ids"], ["AUTO"])
+
     def test_legacy_signal_selections_do_not_override_human_raw_score(self):
         with patch("scoring_reporting._load_runtime_bundle", return_value=_trait_runtime_bundle()), patch(
             "scoring_reporting._load_trait_engine_class", return_value=_FakeTraitEngine
@@ -833,6 +900,26 @@ class ScoringEngine:
             selected,
             ["Q10_FRAMES_FROM_CHILD_PERSPECTIVE", "Q10_VALIDATES_CHILD_FEELINGS"],
         )
+
+    def test_select_signal_refs_for_state_keeps_auto_no_hire_sentinel(self):
+        trait_definition = {
+            "trait_id": "trait_10",
+            "core_signals": [
+                {
+                    "id": "Q10_AUTO",
+                    "base_weight": "AUTO_NO_HIRE",
+                    "signal_category": "automatic_no_hire",
+                },
+                {"id": "Q10_NEUTRAL", "base_weight": 0},
+            ],
+        }
+
+        selected = _select_signal_refs_for_state(
+            trait_definition,
+            {"selected_signal_ids": ["Q10_AUTO", "Q10_NEUTRAL"]},
+        )
+
+        self.assertEqual(selected, ["Q10_AUTO"])
 
     def test_select_signal_refs_for_state_supports_runtime_signal_alias_selections(self):
         trait_definition = {
