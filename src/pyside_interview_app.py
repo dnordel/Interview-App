@@ -1422,27 +1422,31 @@ class PySideInterviewWindow:
         self.home_school_combo = school
         form.addRow("Role", role)
         setup_layout.addLayout(form)
+
+        latest_draft = latest_pyside_draft_path()
+        self.home_draft_label = self._label(
+            f"Saved draft: {latest_draft.name}" if latest_draft else "No saved draft available."
+        )
+        if latest_draft:
+            self.home_draft_label.setToolTip(str(latest_draft))
+        setup_layout.addWidget(self.home_draft_label)
+
+        action_row = self.QtWidgets.QHBoxLayout()
         begin = self._primary_button("Begin Interview")
         begin.clicked.connect(self._begin_selected_interview)
-        setup_layout.addWidget(begin)
-        layout.addWidget(setup)
-
-        draft, draft_layout = self._surface()
-        draft_layout.addWidget(self._label(self.model.home.continue_action, "SectionTitle"))
-        latest_draft = latest_pyside_draft_path()
-        self.home_draft_label = self._label(str(latest_draft) if latest_draft else "Latest saved interview appears here when available.")
-        draft_layout.addWidget(self.home_draft_label)
+        action_row.addWidget(begin, 2)
         continue_button = self.QtWidgets.QPushButton("Continue")
         self.home_continue_button = continue_button
         continue_button.setEnabled(latest_draft is not None)
         continue_button.clicked.connect(lambda: self._continue_latest_draft())
-        draft_layout.addWidget(continue_button)
+        action_row.addWidget(continue_button, 1)
         delete_draft = self.QtWidgets.QPushButton("Delete Saved Draft")
         self.home_delete_draft_button = delete_draft
         delete_draft.setEnabled(latest_draft is not None)
         delete_draft.clicked.connect(self._delete_latest_draft)
-        draft_layout.addWidget(delete_draft)
-        layout.addWidget(draft)
+        action_row.addWidget(delete_draft, 1)
+        setup_layout.addLayout(action_row)
+        layout.addWidget(setup)
 
         recent, recent_layout = self._surface()
         recent_layout.addWidget(self._label("Interview History", "SectionTitle"))
@@ -1469,7 +1473,7 @@ class PySideInterviewWindow:
         table = self._create_history_table("PySideHistoryGrid")
         self.history_table = table
         self._refresh_history_table()
-        recent_layout.addWidget(table)
+        recent_layout.addWidget(table, 1)
         layout.addWidget(recent, 1)
         return page
 
@@ -1528,6 +1532,9 @@ class PySideInterviewWindow:
         )
         table.horizontalHeader().setStretchLastSection(True)
         table.setSortingEnabled(True)
+        policy = table.sizePolicy()
+        policy.setVerticalStretch(1)
+        table.setSizePolicy(policy)
         self._history_table_widgets[object_name] = table
         return table
 
@@ -1760,7 +1767,8 @@ class PySideInterviewWindow:
             latest_draft = None
         label = getattr(self, "home_draft_label", None)
         if label is not None:
-            label.setText(str(latest_draft) if latest_draft else "Latest saved interview appears here when available.")
+            label.setText(f"Saved draft: {latest_draft.name}" if latest_draft else "No saved draft available.")
+            label.setToolTip(str(latest_draft) if latest_draft else "")
         continue_button = getattr(self, "home_continue_button", None)
         if continue_button is not None:
             continue_button.setEnabled(latest_draft is not None)

@@ -2,10 +2,11 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.15.0
+  version: 1.15.1
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
-    content-sized history table behavior, interview notes regeneration actions, user-closable
+    content-sized history table behavior, compact home draft actions beside the
+    start action, interview notes regeneration actions, user-closable
     finalize progress, live history refresh, and single-surface parity documentation
     for desktop Tk contracts while preserving Tk-owned finalize, history, document,
     and DeepSeek runtime contracts.
@@ -438,8 +439,9 @@ classes:
   description: Main PySide6 window with navigation for Interviews, Candidates, Offers,
     Onboarding, Admin Studio, top-level Tk/PySide UI switching, and scrollable
     live/review interview panes with wrapped long question and score text. The
-    home and Candidates history grids share the same Date, Candidate, School, Position, Score, Status,
-    Interview Notes, Offer, and confirmed Delete actions; supports column sorting, fuzzy search,
+    home start panel places Continue/Delete Saved Draft actions beside Begin Interview
+    so the Home history grid remains visually prioritized; home and Candidates history grids share the same Date, Candidate, School, Position, Score, Status,
+    Interview Notes, Regenerate, Offer, and confirmed Delete actions; supports column sorting, fuzzy search,
     school/outcome filters, hiring-outcome row color, content-sized text columns,
     compact notes/offer/delete action columns, Processing notes state during detached
     DeepSeek work, and live refresh after finalize; Open Notes opens the selected
@@ -634,7 +636,7 @@ classes:
     exceptions: []
     side_effects: Writes PySide draft JSON and changes visible tab.
   - name: _refresh_home_draft_panel
-    description: Refresh the PySide home draft label and Continue/Delete Saved Draft button enabled states from the latest existing draft.
+    description: Refresh the compact PySide home draft label and adjacent Continue/Delete Saved Draft button enabled states from the latest existing draft.
     locked: false
     inputs: {}
     returns:
@@ -800,7 +802,7 @@ classes:
     exceptions: []
     side_effects: none
   - name: _create_history_table
-    description: Create a shared PySide history-grid table with Date, Candidate, School, Position, Score, Status, Notes, Offer, and Delete columns.
+    description: Create a shared expanding PySide history-grid table with Date, Candidate, School, Position, Score, Status, Notes, Regenerate, Offer, and Delete columns.
     locked: false
     inputs:
       object_name:

@@ -665,6 +665,32 @@ def test_pyside_home_delete_saved_draft_requires_confirmation(tmp_path: Path, mo
     app.processEvents()
 
 
+def test_pyside_home_draft_actions_share_start_panel_to_prioritize_history(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+
+    buttons = {button.text(): button for button in window.interview_tabs.widget(0).findChildren(qt_widgets.QPushButton)}
+    section_titles = [
+        label.text()
+        for label in window.interview_tabs.widget(0).findChildren(qt_widgets.QLabel, "SectionTitle")
+    ]
+
+    assert buttons["Continue"].parent() == buttons["Begin Interview"].parent()
+    assert buttons["Delete Saved Draft"].parent() == buttons["Begin Interview"].parent()
+    assert "Continue Draft" not in section_titles
+    assert window.history_table.sizePolicy().verticalStretch() >= 1
+    window.window.close()
+    app.processEvents()
+
+
 def test_pyside_back_reentry_overwrites_existing_flow_timestamp(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
