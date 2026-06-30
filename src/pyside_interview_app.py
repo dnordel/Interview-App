@@ -16,7 +16,14 @@ from types import SimpleNamespace
 from typing import Any, Sequence
 
 from docx import Document
-from data_store import InterviewHistoryStore, QuestionOverridesStore, RubricLoader
+from data_store import (
+    InterviewHistoryStore,
+    QuestionOverridesStore,
+    RubricLoader,
+    SchoolOfferSettingsStore,
+    default_school_offer_settings,
+    resolve_interview_notes_output_dir,
+)
 from interview_runtime import (
     DEFAULT_WINDOWS_MIC_DEVICE,
     DEFAULT_DEEPSEEK_PROGRESS_TASKS,
@@ -39,6 +46,7 @@ from platform_services import (
     DEFAULT_BASE_DIR,
     INTERVIEW_HISTORY_PATH,
     QUESTIONS_OVERRIDE_PATH,
+    SCHOOL_OFFER_SETTINGS_PATH,
     atomic_write_json,
     compose_intro_script,
 )
@@ -506,6 +514,7 @@ class _PySideFinalizeAdapter:
             "deepseek_summary_timeout_seconds": 120,
             "deepseek_prompt_templates": {},
         }
+        self.school_offer_store = SchoolOfferSettingsStore(SCHOOL_OFFER_SETTINGS_PATH)
         self.history_store = InterviewHistoryStore(Path(history_path))
         self.state = SimpleNamespace(
             candidate_name=session.candidate_name,
@@ -521,6 +530,13 @@ class _PySideFinalizeAdapter:
 
     def _rubric_with_question_overrides(self) -> dict[str, Any]:
         return dict(self.session.model.rubric)
+
+    def _interview_notes_output_dir(self) -> Path:
+        return resolve_interview_notes_output_dir(
+            Path(self.settings["base_dir"]),
+            self.session.school,
+            self.school_offer_store.load(),
+        )
 
     def _safe_attr(self, _name: str) -> Any:
         return None
@@ -1308,6 +1324,7 @@ class PySideInterviewWindow:
         self.session: PySideInterviewSession | None = None
         self.selected_history_offer_row: PySideHistoryRow | None = None
         self.history_store = InterviewHistoryStore(model.history_path)
+        self.school_offer_store = SchoolOfferSettingsStore(SCHOOL_OFFER_SETTINGS_PATH)
         self.history_search_text = ""
         self.history_school_filter_text = ""
         self.history_outcome_filter_text = ""
@@ -2822,8 +2839,81 @@ class PySideInterviewWindow:
             table.horizontalHeader().setStretchLastSection(True)
             tab_layout.addWidget(table, 1)
             tabs.addTab(tab, title)
+        self._add_school_folder_settings_tab(tabs)
         layout.addWidget(tabs, 1)
         return page
+
+    def _school_folder_settings_rows(self) -> list[tuple[str, str]]:
+        settings = default_school_offer_settings()
+        for school, cfg in self.school_offer_store.load().items():
+            settings.setdefault(
+                str(school),
+                {
+                    "full_time_template": "",
+                    "part_time_template": "",
+                    "offer_output_dir": "",
+                    "interview_notes_dir": "",
+                },
+            )
+            settings[str(school)].update(cfg)
+        return [
+            (school, str(cfg.get("interview_notes_dir", "")).strip())
+            for school, cfg in sorted(settings.items())
+        ]
+
+    def _add_school_folder_settings_tab(self, tabs: Any) -> None:
+        tab, tab_layout = self._page()
+        tab_layout.addWidget(self._label("School candidate folders", "SectionTitle"))
+        table = self.QtWidgets.QTableWidget(0, 2)
+        table.setObjectName("PySideSchoolFolderSettingsTable")
+        table.setHorizontalHeaderLabels(["School", "Interview notes folder"])
+        table.setEditTriggers(
+            self.QtWidgets.QAbstractItemView.EditTrigger.DoubleClicked
+            | self.QtWidgets.QAbstractItemView.EditTrigger.EditKeyPressed
+            | self.QtWidgets.QAbstractItemView.EditTrigger.AnyKeyPressed
+        )
+        for row_index, (school, notes_dir) in enumerate(self._school_folder_settings_rows()):
+            table.insertRow(row_index)
+            school_item = self.QtWidgets.QTableWidgetItem(school)
+            notes_item = self.QtWidgets.QTableWidgetItem(notes_dir)
+            school_item.setFlags(school_item.flags() | self.QtCore.Qt.ItemFlag.ItemIsEditable)
+            notes_item.setFlags(notes_item.flags() | self.QtCore.Qt.ItemFlag.ItemIsEditable)
+            table.setItem(row_index, 0, school_item)
+            table.setItem(row_index, 1, notes_item)
+        table.horizontalHeader().setStretchLastSection(True)
+        tab_layout.addWidget(table, 1)
+        save_button = self.QtWidgets.QPushButton("Save school folders")
+        save_button.clicked.connect(self._save_school_folder_settings)
+        tab_layout.addWidget(save_button)
+        self.school_folder_settings_table = table
+        tabs.addTab(tab, "School Folders")
+
+    def _save_school_folder_settings(self) -> None:
+        table = getattr(self, "school_folder_settings_table", None)
+        if table is None:
+            return
+        current = self.school_offer_store.load()
+        for row_index in range(table.rowCount()):
+            school_item = table.item(row_index, 0)
+            notes_item = table.item(row_index, 1)
+            school = school_item.text().strip() if school_item is not None else ""
+            if not school:
+                continue
+            notes_dir = notes_item.text().strip() if notes_item is not None else ""
+            if any(part.strip() == ".." for part in notes_dir.replace("/", "\\").split("\\")):
+                self.QtWidgets.QMessageBox.critical(
+                    self.window,
+                    "School folders",
+                    "Interview notes folders cannot contain '..'.",
+                )
+                return
+            cfg = dict(current.get(school, {}))
+            cfg.setdefault("full_time_template", "")
+            cfg.setdefault("part_time_template", "")
+            cfg.setdefault("offer_output_dir", "")
+            cfg["interview_notes_dir"] = notes_dir
+            current[school] = cfg
+        self.school_offer_store.save(current)
 
     def _onboarding_page(self) -> Any:
         page, layout = self._page()

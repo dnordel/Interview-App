@@ -977,6 +977,73 @@ def test_pyside_finalize_uses_desktop_artifacts_history_and_deepseek_queue(tmp_p
     assert result["deepseek_job_path"].endswith(f"deepseek-finalize-{rows[0]['history_id']}.json")
 
 
+def test_pyside_finalize_writes_interview_notes_to_school_dropbox_folder(tmp_path: Path, monkeypatch) -> None:
+    dropbox_root = tmp_path / "Dropbox"
+    base_dir = dropbox_root / "App" / "interviews"
+    settings_path = tmp_path / "school_offer_settings.json"
+    settings_path.write_text(
+        json.dumps(
+            {
+                "Palmdale": {
+                    "interview_notes_dir": r"\Dropbox\LPL PMD Office Shared\Staff\Candidates",
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
+    session.start(candidate_name="Latoya Nugent", school="Palmdale", track_key="preschool")
+    session.save_answer_and_advance(notes="Mission aligned.", score="")
+    session.save_answer_and_advance(notes="Values aligned.", score="")
+    session.save_answer_and_advance(notes="Warm child-centered example.", score="5")
+    monkeypatch.setattr(pyside_interview_app, "SCHOOL_OFFER_SETTINGS_PATH", settings_path)
+    monkeypatch.setattr(pyside_interview_app, "enqueue_deepseek_finalize_job", lambda *_args: Path())
+
+    result = session.finalize_interview(base_dir=base_dir, history_path=tmp_path / "interview_history.json")
+
+    report_path = Path(result["out_path"])
+    assert report_path.parent == dropbox_root / "LPL PMD Office Shared" / "Staff" / "Candidates"
+    assert report_path.exists()
+
+
+def test_pyside_admin_school_folder_settings_are_editable_and_persisted(tmp_path: Path, monkeypatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    settings_path = tmp_path / "school_offer_settings.json"
+    settings_path.write_text(
+        json.dumps({"Palmdale": {"offer_output_dir": "offers", "interview_notes_dir": "old"}}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(pyside_interview_app, "SCHOOL_OFFER_SETTINGS_PATH", settings_path)
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    table = window.school_folder_settings_table
+    palmdale_row = next(
+        row for row in range(table.rowCount()) if table.item(row, 0).text() == "Palmdale"
+    )
+    table.item(palmdale_row, 1).setText(r"\Dropbox\LPL PMD Office Shared\Staff\Candidates")
+
+    window._save_school_folder_settings()
+
+    saved = json.loads(settings_path.read_text(encoding="utf-8"))
+    assert saved["Palmdale"]["offer_output_dir"] == "offers"
+    assert saved["Palmdale"]["interview_notes_dir"] == r"\Dropbox\LPL PMD Office Shared\Staff\Candidates"
+    window.window.close()
+
+
 def test_pyside_finalize_preserves_transcribed_audio_for_deepseek_job(tmp_path: Path, monkeypatch) -> None:
     model = build_interview_redesign_model(
         rubric_path=_write_test_rubric(tmp_path),

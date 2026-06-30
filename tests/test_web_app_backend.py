@@ -79,6 +79,7 @@ def test_save_offer_settings_normalizes_and_persists_existing_shape(tmp_path, mo
                 "full_time_template": " full.docx ",
                 "part_time_template": " part.docx ",
                 "offer_output_dir": " offers ",
+                "interview_notes_dir": r" \Dropbox\LPL PMD Office Shared\Staff\Candidates ",
                 "ignored": "drop me",
             }
         }
@@ -89,9 +90,11 @@ def test_save_offer_settings_normalizes_and_persists_existing_shape(tmp_path, mo
             "full_time_template": "full.docx",
             "part_time_template": "part.docx",
             "offer_output_dir": "offers",
+            "interview_notes_dir": r"\Dropbox\LPL PMD Office Shared\Staff\Candidates",
         }
     }
     assert load_offer_settings()["Palmdale"]["offer_output_dir"] == "offers"
+    assert load_offer_settings()["Palmdale"]["interview_notes_dir"] == r"\Dropbox\LPL PMD Office Shared\Staff\Candidates"
 
 
 def test_save_offer_settings_rejects_invalid_shape_without_value_echo(tmp_path, monkeypatch):
@@ -101,6 +104,75 @@ def test_save_offer_settings_rejects_invalid_shape_without_value_echo(tmp_path, 
         save_offer_settings({"Palmdale": "private path"})
 
     assert "private path" not in str(exc_info.value)
+
+
+def test_finalize_web_draft_writes_report_to_school_interview_notes_dir(tmp_path, monkeypatch):
+    dropbox_root = tmp_path / "Dropbox"
+    base_dir = dropbox_root / "App" / "interviews"
+    settings_path = tmp_path / "school_offer_settings.json"
+    settings_path.write_text(
+        json.dumps(
+            {
+                "Palmdale": {
+                    "interview_notes_dir": r"\Dropbox\LPL PMD Office Shared\Staff\Candidates",
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    rubric_path = tmp_path / "rubric.json"
+    rubric_path.write_text(
+        json.dumps({"traits": [], "tracks": {"preschool": {"label": "Preschool", "max_weighted_total": 10}}}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(web_app_backend, "SCHOOL_OFFER_SETTINGS_PATH", settings_path)
+    monkeypatch.setattr(web_app_backend, "DEFAULT_RUBRIC_PATH", rubric_path)
+    monkeypatch.setattr(web_app_backend, "QUESTIONS_OVERRIDE_PATH", tmp_path / "question_overrides.json")
+    monkeypatch.setattr(web_app_backend, "INTERVIEW_HISTORY_PATH", tmp_path / "interview_history.json")
+    monkeypatch.setattr(
+        web_app_backend.ScoringEngine,
+        "evaluate",
+        staticmethod(
+            lambda _rubric, _track, _inputs: {
+                "rows": [],
+                "weighted_total": 0,
+                "max_weighted_total": 10,
+                "percent_of_max": 0.0,
+                "critical_eq_1": False,
+                "disqualifier_present": False,
+                "locked_rule": None,
+                "outcome": "No Hire",
+            }
+        ),
+    )
+
+    class FakeExporter:
+        def __init__(self, output_dir: Path):
+            self.output_dir = Path(output_dir)
+
+        def export(self, _rubric, payload, _scoring):
+            self.output_dir.mkdir(parents=True, exist_ok=True)
+            path = self.output_dir / f"{payload['candidate']['name']} - Interview.docx"
+            path.write_text("docx", encoding="utf-8")
+            return path
+
+    monkeypatch.setattr(web_app_backend, "DocxExporter", FakeExporter)
+
+    result = finalize_web_draft(
+        {
+            "candidate": {
+                "candidate_name": "Web Candidate",
+                "interview_date": "2026-06-17",
+                "school": "Palmdale",
+                "track": "preschool",
+            },
+            "trait_inputs": {},
+        },
+        base_dir=base_dir,
+    )
+
+    expected_dir = dropbox_root / "LPL PMD Office Shared" / "Staff" / "Candidates"
+    assert Path(result["report_path"]).parent == expected_dir
 
 
 def test_update_history_offer_status_updates_existing_history_row(tmp_path, monkeypatch):

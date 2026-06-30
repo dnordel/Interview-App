@@ -907,7 +907,7 @@ function renderOnboarding() {
 function settingsTable(rows) {
   return `
     <table class="table">
-      <thead><tr><th>School</th><th>Full time template</th><th>Part time template</th><th>Output</th></tr></thead>
+      <thead><tr><th>School</th><th>Full time template</th><th>Part time template</th><th>Offer output</th><th>Interview notes</th></tr></thead>
       <tbody>
         ${rows
           .map(
@@ -917,6 +917,7 @@ function settingsTable(rows) {
                 <td>${escapeHtml(value.full_time_template || "")}</td>
                 <td>${escapeHtml(value.part_time_template || "")}</td>
                 <td>${escapeHtml(value.offer_output_dir || "")}</td>
+                <td>${escapeHtml(value.interview_notes_dir || "")}</td>
               </tr>
             `,
           )
@@ -957,7 +958,9 @@ function renderSettings() {
 }
 
 function editableOfferSettingsHtml(rows) {
-  const effectiveRows = rows.length ? rows : [["", { full_time_template: "", part_time_template: "", offer_output_dir: "" }]];
+  const effectiveRows = rows.length
+    ? rows
+    : [["", { full_time_template: "", part_time_template: "", offer_output_dir: "", interview_notes_dir: "" }]];
   return `
     <div class="settings-editor">
       ${effectiveRows
@@ -980,6 +983,10 @@ function editableOfferSettingsHtml(rows) {
                 <label>Offer output folder</label>
                 <input class="input" data-offer-field="offer_output_dir" value="${escapeHtml(value.offer_output_dir || "")}" />
               </div>
+              <div class="field">
+                <label>Interview notes folder</label>
+                <input class="input" data-offer-field="interview_notes_dir" value="${escapeHtml(value.interview_notes_dir || "")}" />
+              </div>
             </section>
           `,
         )
@@ -999,7 +1006,7 @@ function bindOfferSettingsControls() {
       next = `New School ${index}`;
       index += 1;
     }
-    state.offerSettings[next] = { full_time_template: "", part_time_template: "", offer_output_dir: "" };
+    state.offerSettings[next] = { full_time_template: "", part_time_template: "", offer_output_dir: "", interview_notes_dir: "" };
     renderSettings();
   });
   document.querySelector("#saveOfferSettings")?.addEventListener("click", saveOfferSettings);
@@ -1016,6 +1023,7 @@ function updateOfferSettingsFromEditor() {
       full_time_template: row.querySelector("[data-offer-field='full_time_template']")?.value.trim() || "",
       part_time_template: row.querySelector("[data-offer-field='part_time_template']")?.value.trim() || "",
       offer_output_dir: row.querySelector("[data-offer-field='offer_output_dir']")?.value.trim() || "",
+      interview_notes_dir: row.querySelector("[data-offer-field='interview_notes_dir']")?.value.trim() || "",
     };
   });
   state.offerSettings = updated;

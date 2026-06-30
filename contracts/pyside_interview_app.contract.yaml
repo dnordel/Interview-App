@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.16.2
+  version: 1.17.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, compact home draft actions beside the
@@ -391,10 +391,11 @@ classes:
     exceptions:
     - ReportingValidationError
     - OSError
-    side_effects: Writes interview-notes DOCX, integration export, finalized interview
-      history row, and detached DeepSeek job/progress files when history persistence
-      has a path; includes any PySide recording/transcript payload in the queued
-      DeepSeek job.
+    side_effects: Writes interview-notes DOCX to the resolved per-school Dropbox
+      candidate folder when configured, writes integration export, finalized interview
+      history row, and detached DeepSeek job/progress files under the base output
+      root when history persistence has a path; includes any PySide recording/transcript
+      payload in the queued DeepSeek job.
   - name: _transcript_metadata
     description: Build complete/partial transcript metadata from PySide flow transcript
       and recording state for finalize/history payloads.
@@ -454,6 +455,10 @@ classes:
       type: InterviewRedesignModel
     window:
       type: QMainWindow
+    school_offer_store:
+      type: SchoolOfferSettingsStore
+    school_folder_settings_table:
+      type: QTableWidget | None
   methods:
   - name: show
     description: Show the redesigned PySide6 main window.
@@ -463,6 +468,37 @@ classes:
       type: None
     exceptions: []
     side_effects: Displays the QMainWindow.
+  - name: _school_folder_settings_rows
+    description: Build editable school/folder rows for PySide Admin school folder
+      settings from defaults plus persisted per-school settings.
+    locked: false
+    inputs: {}
+    returns:
+      type: list[tuple[str, str]]
+    exceptions: []
+    side_effects: Reads user_artifacts/school_offer_settings.json.
+  - name: _add_school_folder_settings_tab
+    description: Add the PySide Admin School Folders tab with editable per-school
+      interview-notes folder cells and save action.
+    locked: false
+    inputs:
+      tabs:
+        type: QTabWidget
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Creates and stores the school folder settings table widget.
+  - name: _save_school_folder_settings
+    description: Persist edited PySide Admin school interview-notes folders while
+      preserving existing offer template/output settings.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Writes user_artifacts/school_offer_settings.json unless validation
+      rejects parent-directory path segments.
   - name: _start_pyside_interview_recording
     description: Start optional continuous PySide interview recording using the shared
       local recorder, or record a non-blocking warning when recording dependencies

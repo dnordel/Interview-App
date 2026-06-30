@@ -93,6 +93,7 @@ from ui_composition import CustomQuestionScreenUI, TraitScreenUI
 from scoring_reporting import is_supported_document_path, missing_required_docs
 from scoring_reporting import DocxExporter, DraftManager, ReportingValidationError, ScoringEngine
 from scoring_reporting import OfferInput, OfferLetterService, POSITION_OPTIONS, build_offer_filename
+from data_store import resolve_interview_notes_output_dir
 from onboarding_operations import JsonStore
 from onboarding_operations import evaluate_onboarding_reminder_health
 from onboarding_operations import TASK_STATUS_COLORS, TASK_STATUS_LABELS
@@ -1374,10 +1375,12 @@ class InterviewApp(tk.Tk):
         if not school_name:
             raise ValueError("School is required.")
         current = self.school_offer_store.load()
+        existing = current.get(school_name, {})
         current[school_name] = {
             "full_time_template": config.get("full_time_template", "").strip(),
             "part_time_template": config.get("part_time_template", "").strip(),
             "offer_output_dir": config.get("offer_output_dir", "").strip(),
+            "interview_notes_dir": config.get("interview_notes_dir", existing.get("interview_notes_dir", "")).strip(),
         }
         self.school_offer_store.save(current)
         self.school_offer_settings = current
@@ -1389,6 +1392,7 @@ class InterviewApp(tk.Tk):
             "full_time_template": "",
             "part_time_template": "",
             "offer_output_dir": "",
+            "interview_notes_dir": "",
         })
 
     def save_school_email_template_config(self, school: str, config: dict[str, str]) -> None:
@@ -2560,7 +2564,13 @@ class InterviewApp(tk.Tk):
         payload["flow_transcript"] = flow_tx
         self.state.referral_packet["transcript_path"] = ""
 
-        exporter = DocxExporter(Path(self.settings["base_dir"]) / "Indeed Interview Notes")
+        exporter = DocxExporter(
+            resolve_interview_notes_output_dir(
+                Path(self.settings["base_dir"]),
+                payload.get("candidate", {}).get("school", ""),
+                self.school_offer_store.load(),
+            )
+        )
         out_path = exporter.export(self._rubric_with_question_overrides(), payload, scoring)
         generated_notes_path = Path(out_path).as_posix().strip()
         self.state.referral_packet["interview_notes_path"] = generated_notes_path

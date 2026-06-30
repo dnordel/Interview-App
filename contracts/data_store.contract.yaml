@@ -2,10 +2,40 @@ module:
   name: data_store
   language: python
   path: src/data_store.py
-  version: 1.2.0
+  version: 1.3.0
   description: JSON-backed stores and loaders for interview runtime and onboarding
     settings.
-functions: []
+functions:
+- name: default_school_offer_settings
+  description: Return default per-school offer settings with portable interview-notes
+    folder fragments for known schools.
+  locked: false
+  inputs: {}
+  returns:
+    type: dict[str, dict[str, str]]
+  exceptions: []
+  side_effects: none
+- name: resolve_interview_notes_output_dir
+  description: Resolve the interview notes output directory for a school by applying
+    editable per-school settings to the current computer's Dropbox root, falling
+    back to base_dir/Indeed Interview Notes when no school folder is configured.
+  locked: false
+  inputs:
+    base_dir:
+      type: Path
+      required: true
+    school:
+      type: str
+      required: true
+    settings:
+      type: dict[str, dict[str, str]] | None
+      required: false
+      default: null
+  returns:
+    type: Path
+  exceptions:
+  - ValueError
+  side_effects: none
 classes:
 - name: RubricLoader
   description: Loads and validates rubric configuration and exposes track-filtered
@@ -326,7 +356,8 @@ classes:
     returns:
       type: bool
 - name: SchoolOfferSettingsStore
-  description: Stores per-school offer template settings.
+  description: Stores per-school offer template settings and interview-note output
+    folder settings.
   locked: false
   attributes: {}
   methods:
@@ -357,6 +388,9 @@ classes:
         required: true
     returns:
       type: None
-data_structures: []
+data_structures:
+- name: DEFAULT_SCHOOL_INTERVIEW_NOTES_DIRS
+  description: Portable default per-school interview notes folder fragments, rooted
+    at the current computer's Dropbox folder during resolution.
 dependencies:
 - module: platform_services

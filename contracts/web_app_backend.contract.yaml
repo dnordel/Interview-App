@@ -285,6 +285,7 @@ data_structures:
         full_time_template: string
         part_time_template: string
         offer_output_dir: string
+        interview_notes_dir: string
 - name: web_backend_history_update_result
   fields:
     history: list[dict]

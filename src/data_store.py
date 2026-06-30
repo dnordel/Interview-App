@@ -4,6 +4,7 @@ import json
 import re
 from datetime import datetime
 from pathlib import Path
+from pathlib import PureWindowsPath
 from typing import Any, Optional
 
 from platform_services import (
@@ -14,6 +15,85 @@ from platform_services import (
     validate_disqualifier_config,
     validate_rubric_config,
 )
+
+DEFAULT_SCHOOL_INTERVIEW_NOTES_DIRS: dict[str, str] = {
+    "Hawthorne": r"\LPL HAW Office Shared Docs\Staff\Candidates",
+    "Long Beach": r"\Dropbox\LPL NLB Office Shared\Staff\Candidates",
+    "North Long Beach": r"\Dropbox\LPL NLB Office Shared\Staff\Candidates",
+    "Palmdale": r"\Dropbox\LPL PMD Office Shared\Staff\Candidates",
+}
+
+
+def default_school_offer_settings() -> dict[str, dict[str, str]]:
+    return {
+        school: {
+            "full_time_template": "",
+            "part_time_template": "",
+            "offer_output_dir": "",
+            "interview_notes_dir": notes_dir,
+        }
+        for school, notes_dir in DEFAULT_SCHOOL_INTERVIEW_NOTES_DIRS.items()
+    }
+
+
+def resolve_interview_notes_output_dir(
+    base_dir: Path,
+    school: str,
+    settings: dict[str, dict[str, str]] | None = None,
+) -> Path:
+    school_name = str(school or "").strip()
+    configured = _interview_notes_dir_for_school(school_name, settings or {})
+    if not configured:
+        return Path(base_dir) / "Indeed Interview Notes"
+
+    configured_path = PureWindowsPath(configured)
+    if configured_path.drive:
+        _reject_unsafe_path_parts(configured_path.parts)
+        return Path(configured).expanduser()
+
+    parts = _portable_dropbox_path_parts(configured)
+    if not parts:
+        return Path(base_dir) / "Indeed Interview Notes"
+    dropbox_root = _find_dropbox_root(Path(base_dir))
+    return dropbox_root.joinpath(*parts)
+
+
+def _interview_notes_dir_for_school(
+    school: str,
+    settings: dict[str, dict[str, str]],
+) -> str:
+    cfg = settings.get(school, {}) if isinstance(settings, dict) else {}
+    if isinstance(cfg, dict):
+        configured = str(cfg.get("interview_notes_dir", "")).strip()
+        if configured:
+            return configured
+    return DEFAULT_SCHOOL_INTERVIEW_NOTES_DIRS.get(school, "")
+
+
+def _find_dropbox_root(base_dir: Path) -> Path:
+    resolved = Path(base_dir).expanduser().resolve()
+    for candidate in (resolved, *resolved.parents):
+        if "dropbox" in candidate.name.casefold():
+            return candidate
+    return resolved
+
+
+def _portable_dropbox_path_parts(path_text: str) -> list[str]:
+    text = str(path_text or "").strip()
+    parts = [
+        part.strip()
+        for part in re.split(r"[\\/]+", text)
+        if part.strip() and part.strip() != "."
+    ]
+    if parts and parts[0].casefold() == "dropbox":
+        parts = parts[1:]
+    _reject_unsafe_path_parts(parts)
+    return parts
+
+
+def _reject_unsafe_path_parts(parts: tuple[str, ...] | list[str]) -> None:
+    if any(str(part).strip() == ".." for part in parts):
+        raise ValueError("Interview notes folder cannot contain parent-directory segments.")
 
 class RubricLoader:
     """Loads rubric.json and validates required structure."""
@@ -458,7 +538,7 @@ class InterviewHistoryStore:
 
 
 class SchoolOfferSettingsStore:
-    """Per-school templates and output folder for offer generation."""
+    """Per-school templates and output folders for offer and interview-note generation."""
 
     def __init__(self, path: Path):
         self.path = Path(path)
@@ -481,6 +561,7 @@ class SchoolOfferSettingsStore:
                 "full_time_template": str(cfg.get("full_time_template", "")).strip(),
                 "part_time_template": str(cfg.get("part_time_template", "")).strip(),
                 "offer_output_dir": str(cfg.get("offer_output_dir", "")).strip(),
+                "interview_notes_dir": str(cfg.get("interview_notes_dir", "")).strip(),
             }
         return output
 

@@ -2,7 +2,7 @@ module:
   name: interview_runtime
   language: python
   path: src/interview_runtime.py
-  version: 0.26.1
+  version: 0.27.0
   description: Flattened public interface for interview state, session management,
     audio/transcription runtime, transcript summary seam, controllers, history, and
     finalize pipeline; only active legacy adapters remain in the compatibility module
@@ -2277,7 +2277,8 @@ classes:
   methods:
   - name: export_report
     description: Export merged interview notes and store the canonical interview notes
-      path.
+      path, using app._interview_notes_output_dir() when a caller provides that
+      hook and otherwise falling back to base_dir/Indeed Interview Notes.
     locked: false
     inputs:
       app:

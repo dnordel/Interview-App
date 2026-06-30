@@ -11,7 +11,12 @@ from typing import Any
 from urllib.parse import unquote, urlparse
 from uuid import uuid4
 
-from data_store import InterviewHistoryStore, QuestionOverridesStore, SchoolOfferSettingsStore
+from data_store import (
+    InterviewHistoryStore,
+    QuestionOverridesStore,
+    SchoolOfferSettingsStore,
+    resolve_interview_notes_output_dir,
+)
 from platform_services import (
     DEFAULT_BASE_DIR,
     DEFAULT_RUBRIC_PATH,
@@ -123,7 +128,11 @@ def finalize_web_draft(payload: dict[str, Any], *, base_dir: Path = DEFAULT_BASE
     try:
         scoring = ScoringEngine.evaluate(rubric, track, normalized["trait_inputs"])
         report_payload = _build_report_payload(normalized, rubric)
-        output_dir = Path(base_dir) / "Indeed Interview Notes"
+        output_dir = resolve_interview_notes_output_dir(
+            Path(base_dir),
+            normalized["candidate"].get("school", ""),
+            load_offer_settings(),
+        )
         out_path = DocxExporter(output_dir).export(rubric, report_payload, scoring)
         _require_child_path(out_path, output_dir)
         report_payload["referral_packet"]["interview_notes_path"] = str(out_path)
@@ -489,6 +498,7 @@ def _normalize_offer_settings(payload: dict[str, Any]) -> dict[str, dict[str, st
             "full_time_template": _clean_text(cfg.get("full_time_template")),
             "part_time_template": _clean_text(cfg.get("part_time_template")),
             "offer_output_dir": _clean_text(cfg.get("offer_output_dir")),
+            "interview_notes_dir": _clean_text(cfg.get("interview_notes_dir")),
         }
     return output
 

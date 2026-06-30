@@ -7,6 +7,7 @@ from data_store import (
     QuestionOverridesStore,
     SchoolEmailTemplateStore,
     SchoolOfferSettingsStore,
+    resolve_interview_notes_output_dir,
 )
 from onboarding_operations import DEFAULT_EXPECTED_INTERVAL_HOURS
 from onboarding_operations import scheduler_expected_interval_hours, scheduler_opt_in
@@ -148,11 +149,40 @@ def test_school_offer_settings_store_save_and_load_round_trip(tmp_path: Path):
             "full_time_template": "full.docx",
             "part_time_template": "part.docx",
             "offer_output_dir": "offers",
+            "interview_notes_dir": "notes",
         }
     }
     store.save(payload)
 
     assert store.load() == payload
+
+
+def test_resolve_interview_notes_output_dir_uses_school_setting_under_current_dropbox_root(tmp_path: Path):
+    dropbox_root = tmp_path / "Dropbox (Test)"
+    base_dir = dropbox_root / "App" / "user_artifacts" / "interviews"
+    settings = {
+        "Hawthorne": {
+            "interview_notes_dir": r"\LPL HAW Office Shared Docs\Staff\Candidates",
+        }
+    }
+
+    resolved = resolve_interview_notes_output_dir(base_dir, "Hawthorne", settings)
+
+    assert resolved == dropbox_root / "LPL HAW Office Shared Docs" / "Staff" / "Candidates"
+
+
+def test_resolve_interview_notes_output_dir_drops_portable_dropbox_prefix(tmp_path: Path):
+    dropbox_root = tmp_path / "Dropbox"
+    base_dir = dropbox_root / "App" / "interviews"
+    settings = {
+        "North Long Beach": {
+            "interview_notes_dir": r"\Dropbox\LPL NLB Office Shared\Staff\Candidates",
+        }
+    }
+
+    resolved = resolve_interview_notes_output_dir(base_dir, "North Long Beach", settings)
+
+    assert resolved == dropbox_root / "LPL NLB Office Shared" / "Staff" / "Candidates"
 
 
 

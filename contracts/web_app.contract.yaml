@@ -129,7 +129,7 @@ data_structures:
     rubric: dict
     overrides: dict
     history: list[dict]
-    offerSettings: dict
+    offerSettings: dict[string, web_app_school_offer_settings]
     signalDefinition: dict | null
     flowIndex: integer
     candidate: web_app_candidate_profile
@@ -147,7 +147,15 @@ data_structures:
     rubric: dict
     overrides: dict
     history: list[dict]
-    offerSettings: dict
+    offerSettings: dict[string, web_app_school_offer_settings]
+- name: web_app_school_offer_settings
+  description: Editable per-school settings shown in the web migration settings
+    screen.
+  fields:
+    full_time_template: string
+    part_time_template: string
+    offer_output_dir: string
+    interview_notes_dir: string
 - name: web_app_flow_item
   description: One configured interview flow item.
   fields:

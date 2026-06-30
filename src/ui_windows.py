@@ -8,6 +8,7 @@ import tkinter as tk
 from tkinter import END, BooleanVar, IntVar, StringVar, filedialog, messagebox, ttk
 
 from platform_services import DEFAULT_BASE_DIR, MAX_FONT_SIZE, MIN_FONT_SIZE, now_stamp
+from data_store import default_school_offer_settings
 from scoring_reporting import (
     insert_token_into_focused_widget,
     placeholder_picker_options,
@@ -49,6 +50,7 @@ class SettingsWindow(tk.Toplevel):
         apply_professional_ops_theme(self, font_size=int(self.app.settings.get("font_size", 10)))
 
         self.path_var = StringVar(value=self.app.settings["base_dir"])
+        self.school_notes_dir_vars = self._build_school_notes_dir_vars()
         self.size_var = IntVar(value=self.app.settings["font_size"])
         mode = str(self.app.settings.get("question_audio_mode") or QUESTION_AUDIO_MODE_TIMESTAMP_SLICING)
         self.audio_mode_var = StringVar(value=mode)
@@ -434,7 +436,23 @@ class SettingsWindow(tk.Toplevel):
         entry.pack(fill="x", pady=(4, 4))
         ttk.Button(parent, text="Browse...", command=self._browse).pack(anchor="w")
         self._build_field_error(parent, "base_dir")
-        self._tab_focus_targets[self._TAB_STORAGE] = [entry]
+        focus_targets: list[tk.Misc] = [entry]
+
+        notes_frame = ttk.LabelFrame(parent, text="Interview notes folders by school", padding=10)
+        notes_frame.pack(fill="x", pady=(12, 0))
+        self._wrapped_label(
+            notes_frame,
+            text="Use paths under the local Dropbox root. Leading \\Dropbox is portable across computers.",
+            foreground="#475569",
+        ).pack(anchor="w", pady=(0, 6))
+        for school, var in getattr(self, "school_notes_dir_vars", {}).items():
+            row = ttk.Frame(notes_frame)
+            row.pack(fill="x", pady=(4, 0))
+            ttk.Label(row, text=f"{school}:", width=18).pack(side="left")
+            notes_entry = ttk.Entry(row, textvariable=var)
+            notes_entry.pack(side="left", fill="x", expand=True)
+            focus_targets.append(notes_entry)
+        self._tab_focus_targets[self._TAB_STORAGE] = focus_targets
 
     def _build_security_tab(self, parent: ttk.Frame) -> None:
         self._build_tab_header(
@@ -536,6 +554,38 @@ class SettingsWindow(tk.Toplevel):
         d = filedialog.askdirectory(title="Select Base Output Folder", initialdir=initial)
         if d:
             self.path_var.set(d)
+
+    def _build_school_notes_dir_vars(self) -> dict[str, StringVar]:
+        settings = default_school_offer_settings()
+        store = getattr(self.app, "school_offer_store", None)
+        if store is not None:
+            for school, cfg in store.load().items():
+                settings.setdefault(str(school), {
+                    "full_time_template": "",
+                    "part_time_template": "",
+                    "offer_output_dir": "",
+                    "interview_notes_dir": "",
+                })
+                settings[str(school)].update(cfg)
+        return {
+            school: StringVar(value=str(cfg.get("interview_notes_dir", "")).strip())
+            for school, cfg in sorted(settings.items())
+        }
+
+    def _save_school_notes_dirs(self) -> None:
+        store = getattr(self.app, "school_offer_store", None)
+        if store is None:
+            return
+        current = store.load()
+        for school, var in getattr(self, "school_notes_dir_vars", {}).items():
+            cfg = dict(current.get(school, {}))
+            cfg.setdefault("full_time_template", "")
+            cfg.setdefault("part_time_template", "")
+            cfg.setdefault("offer_output_dir", "")
+            cfg["interview_notes_dir"] = var.get().strip()
+            current[school] = cfg
+        store.save(current)
+        self.app.school_offer_settings = current
 
     def _confirm_restore_recommended_whisper_defaults(self) -> None:
         should_reset = messagebox.askyesno(
@@ -644,6 +694,14 @@ class SettingsWindow(tk.Toplevel):
                 "Director referral endpoint must start with http:// or https://.",
                 "Use <https://...> (or <http://...>) for the endpoint URL.",
             )
+        for school, var in getattr(self, "school_notes_dir_vars", {}).items():
+            if self._path_has_parent_segment(var.get()):
+                add_error(
+                    self._TAB_STORAGE,
+                    f"interview_notes_dir_{school}",
+                    f"{school} notes folder cannot contain '..'.",
+                    "Choose a Dropbox folder path without parent-directory segments.",
+                )
         prompt_templates = self._deepseek_prompt_template_values()
         required_placeholders = {
             "answer_summary_user": "{payload_json}",
@@ -694,6 +752,10 @@ class SettingsWindow(tk.Toplevel):
                         "Keep the data placeholder so candidate evidence reaches the model.",
                     )
         return errors
+
+    @staticmethod
+    def _path_has_parent_segment(value: str) -> bool:
+        return any(part.strip() == ".." for part in str(value or "").replace("/", "\\").split("\\"))
 
     def _apply_validation_messages(self, errors: dict[str, list[dict[str, str]]]) -> tuple[list[str], str | None]:
         invalid_tabs: list[str] = []
@@ -771,6 +833,7 @@ class SettingsWindow(tk.Toplevel):
         self.app.settings["whisper_vad_filter"] = bool(self.whisper_vad_filter_var.get())
         self.app.settings["whisper_beam_size"] = whisper_beam_size
         self.app.settings["whisper_temperature"] = whisper_temperature
+        self._save_school_notes_dirs()
         self.app.apply_font_size(int(self.size_var.get()))
         self.app.app_settings_store.save(self.app.settings)
         self._log_telemetry("settings_saved")
