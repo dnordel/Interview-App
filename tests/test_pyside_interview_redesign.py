@@ -1418,6 +1418,75 @@ def test_pyside_existing_notes_can_be_regenerated(tmp_path: Path, monkeypatch) -
     app.processEvents()
 
 
+def test_pyside_regenerate_prompt_uses_history_candidate_name(tmp_path: Path, monkeypatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    history_path = tmp_path / "interview_history.json"
+    history_path.write_text(
+        json.dumps(
+            [
+                {
+                    "history_id": "hist-1",
+                    "candidate_name": "Latoya Nugent",
+                    "deepseek_processing_status": "complete",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    calls: list[str] = []
+
+    class _FakeMessageBox:
+        AcceptRole = object()
+        ActionRole = object()
+        Cancel = object()
+
+        def __init__(self, _parent):
+            self._clicked = None
+
+        def setWindowTitle(self, title: str) -> None:
+            calls.append(f"title:{title}")
+
+        def setText(self, text: str) -> None:
+            calls.append(f"text:{text}")
+
+        def setInformativeText(self, text: str) -> None:
+            calls.append(f"info:{text}")
+
+        def addButton(self, *args):
+            button = object()
+            if args and args[0] == "Document Only":
+                self._clicked = button
+            return button
+
+        def setDefaultButton(self, _button) -> None:
+            calls.append("default")
+
+        def exec(self) -> None:
+            calls.append("exec")
+
+        def clickedButton(self):
+            return self._clicked
+
+    monkeypatch.setattr(window.QtWidgets, "QMessageBox", _FakeMessageBox)
+
+    mode = window._choose_pyside_notes_regeneration_mode(window.model.home.history_rows[0])
+
+    assert mode == "document_only"
+    assert "text:Regenerate interview notes for Latoya Nugent?" in calls
+    assert "exec" in calls
+    window.window.close()
+    app.processEvents()
+
+
 def test_pyside_open_notes_opens_existing_document_without_regenerate_prompt(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")

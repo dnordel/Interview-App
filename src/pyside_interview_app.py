@@ -2521,7 +2521,7 @@ class PySideInterviewWindow:
     def _choose_pyside_notes_regeneration_mode(self, row: PySideHistoryRow) -> str | None:
         dialog = self.QtWidgets.QMessageBox(self.window)
         dialog.setWindowTitle("Regenerate Notes")
-        dialog.setText(f"Regenerate interview notes for {row.candidate_name or 'this interview'}?")
+        dialog.setText(f"Regenerate interview notes for {row.candidate or 'this interview'}?")
         dialog.setInformativeText(
             "Choose full DeepSeek rerun when prompts changed.\n"
             "Choose document-only when layout or document formatting changed."
