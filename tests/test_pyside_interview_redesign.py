@@ -114,6 +114,83 @@ def test_redesign_model_prioritizes_guided_interview_workflow(tmp_path: Path) ->
     assert "Disqualifier observed" in scored.quick_actions
 
 
+def test_pyside_model_accepts_revision_probe_and_gateway_fields(tmp_path: Path) -> None:
+    rubric_path = tmp_path / "rubric.json"
+    overrides_path = tmp_path / "question_overrides.json"
+    history_path = tmp_path / "interview_history.json"
+
+    rubric_path.write_text(
+        json.dumps(
+            {
+                "metadata": {"version": "test"},
+                "scoring": {},
+                "tracks": {
+                    "behavior_support_specialist": {
+                        "label": "Behavior Support Specialist",
+                        "max_weighted_total": 5,
+                        "gateway_requirements": ["Meets schedule requirements"],
+                    }
+                },
+                "absolute_disqualifiers": ["Unsafe handling"],
+                "interviewer_guidance": {},
+                "traits": [
+                    {
+                        "id": "bss_trait_1",
+                        "name": "Behavior Support",
+                        "priority": "Critical",
+                        "weight": 1,
+                        "applicable_tracks": ["behavior_support_specialist"],
+                        "primary_question": "Tell me about behavior support.",
+                        "follow_up_probes": ["What did you try first?", "What changed after that?"],
+                        "descriptors": {
+                            "1": "Serious concern. Unsafe or blaming.",
+                            "2": "Weak. Thin or adult-centered.",
+                            "3": "Mixed. Safe but basic.",
+                            "4": "Strong. Practical and child-centered.",
+                            "5": "Excellent. Reflective, specific, and preventive.",
+                        },
+                        "sample_answers": {
+                            "1": "Low",
+                            "2": "Weak",
+                            "3": "Mixed",
+                            "4": "Strong",
+                            "5": "Excellent",
+                        },
+                    }
+                ],
+                "final_record_fields": ["Gateway Requirements Status"],
+                "canonical_text": "canonical",
+            }
+        ),
+        encoding="utf-8",
+    )
+    overrides_path.write_text(
+        json.dumps(
+            {
+                "track_trait_order": {},
+                "trait_question_overrides": {},
+                "custom_questions": {},
+                "track_question_flow": {
+                    "behavior_support_specialist": [{"type": "trait", "id": "bss_trait_1"}]
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    history_path.write_text("[]", encoding="utf-8")
+
+    model = build_interview_redesign_model(
+        rubric_path=rubric_path,
+        overrides_path=overrides_path,
+        history_path=history_path,
+        school_options=["Palmdale"],
+    )
+
+    scored = model.flows["behavior_support_specialist"].items[0]
+    assert scored.followups == ["What did you try first?", "What changed after that?"]
+    assert scored.score_cards[0].description == "Serious concern. Unsafe or blaming."
+
+
 def test_pyside_model_loads_legacy_history_into_history_rows(tmp_path: Path) -> None:
     canonical_dir = tmp_path / "user_artifacts"
     canonical_dir.mkdir()

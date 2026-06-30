@@ -1449,6 +1449,12 @@ def validate_rubric_config(payload: dict[str, Any]) -> None:
     _expect_type(payload["scoring"], dict, "scoring")
     _expect_type(payload["tracks"], dict, "tracks")
     _expect_type(payload["absolute_disqualifiers"], list, "absolute_disqualifiers")
+    if "gateway_requirements" in payload["scoring"]:
+        _expect_str_list(payload["scoring"]["gateway_requirements"], "scoring.gateway_requirements")
+    for track_key, track in payload["tracks"].items():
+        _expect_type(track, dict, f"tracks.{track_key}")
+        if "gateway_requirements" in track:
+            _expect_str_list(track["gateway_requirements"], f"tracks.{track_key}.gateway_requirements")
 
     traits = payload["traits"]
     _expect_type(traits, list, "traits")
@@ -1478,6 +1484,8 @@ def validate_rubric_config(payload: dict[str, Any]) -> None:
         _expect_type(trait["descriptors"], dict, f"traits[{index}].descriptors")
         _expect_type(trait["sample_answers"], dict, f"traits[{index}].sample_answers")
         _expect_str_list(trait["applicable_tracks"], f"traits[{index}].applicable_tracks")
+        if "follow_up_probes" in trait:
+            _expect_str_list(trait["follow_up_probes"], f"traits[{index}].follow_up_probes")
 
         weight = trait["weight"]
         if not isinstance(weight, (int, float)):

@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.14.0
+  version: 1.15.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, interview notes regeneration actions, user-closable
@@ -841,10 +841,13 @@ data_structures:
   description: Ordered question flow for one role track.
 - name: FlowQuestion
   type: dataclass
-  description: Render-ready intro, qualification, custom, or scored interview question data.
+  description: Render-ready intro, qualification, custom, or scored interview question data; scored
+    trait followups may come from followups, follow_up_prompts, or follow_up_probes
+    rubric fields.
 - name: ScoreCard
   type: dataclass
-  description: One selectable score value and plain-language descriptor.
+  description: One selectable score value and full plain-language rubric descriptor
+    shown beside the PySide rating selection.
 - name: PySideReviewSummary
   type: dataclass
   description: Score, determination, missing scores, strongest evidence, concerns, and recommended next action for PySide review.

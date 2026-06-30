@@ -767,7 +767,7 @@ def _score_cards(trait: dict[str, Any]) -> list[ScoreCard]:
         description = str(descriptors.get(score, "")).strip()
         if not description:
             description = f"Score {score}"
-        cards.append(ScoreCard(label=score, description=description.split(".")[0].strip()))
+        cards.append(ScoreCard(label=score, description=description))
     return cards
 
 
@@ -781,7 +781,12 @@ def _flow_question_for_trait(
 ) -> FlowQuestion:
     trait_id = str(trait.get("id", "")).strip()
     prompt = store.get_trait_question_override(trait_id) or str(trait.get("primary_question", "")).strip()
-    raw_followups = trait.get("followups", []) or trait.get("follow_up_prompts", []) or []
+    raw_followups = (
+        trait.get("followups", [])
+        or trait.get("follow_up_prompts", [])
+        or trait.get("follow_up_probes", [])
+        or []
+    )
     followups = [str(item).strip() for item in raw_followups if str(item).strip()]
     return FlowQuestion(
         kind="trait",

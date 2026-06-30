@@ -45,6 +45,7 @@
     - `weight` (number)
     - `applicable_tracks` (string[]; includes `all` and/or track ids)
     - `primary_question` (string)
+    - `follow_up_probes` (string[], optional): scored-question probes shown in the PySide follow-up list.
     - `descriptors` (object with keys `"1".."5"`)
     - `sample_answers` (object with keys `"1".."5"`)
     - `score_1_auto_no_hire` (boolean)

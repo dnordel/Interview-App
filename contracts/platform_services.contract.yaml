@@ -2,7 +2,7 @@ module:
   name: platform_services
   language: python
   path: src/platform_services.py
-  version: 0.10.1
+  version: 0.10.2
   description: Flattened public interface for shared content, logging, config, persistence,
     path, runtime, document, cleanup, and UX metrics helpers; only active legacy adapters
     remain in the compatibility module inventory.
@@ -510,7 +510,9 @@ functions:
   - ConfigValidationError
   side_effects: Reads filesystem.
 - name: validate_rubric_config
-  description: Enforce required rubric keys, field types, and trait ranges.
+  description: Enforce required rubric keys, field types, trait ranges, and optional
+    revision fields such as gateway_requirements and follow_up_probes without rejecting
+    unrelated extra keys.
   locked: false
   inputs:
     payload:

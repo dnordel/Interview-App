@@ -51,6 +51,55 @@ def test_validate_rubric_config_rejects_invalid_weight():
         validate_rubric_config(payload)
 
 
+def test_validate_rubric_config_accepts_revision_optional_fields():
+    payload = {
+        "metadata": {},
+        "scoring": {"gateway_requirements": ["No open disqualifier"]},
+        "tracks": {"bss": {"label": "BSS", "gateway_requirements": ["Meets schedule requirements"]}},
+        "absolute_disqualifiers": [],
+        "traits": [
+            {
+                "id": "trait_1",
+                "name": "Trait",
+                "priority": "Critical",
+                "weight": 1,
+                "primary_question": "Question",
+                "follow_up_probes": ["What happened next?"],
+                "descriptors": {str(score): f"Descriptor {score}" for score in range(1, 6)},
+                "sample_answers": {str(score): f"Sample {score}" for score in range(1, 6)},
+                "applicable_tracks": ["bss"],
+            }
+        ],
+    }
+
+    validate_rubric_config(payload)
+
+
+def test_validate_rubric_config_rejects_invalid_revision_optional_fields():
+    payload = {
+        "metadata": {},
+        "scoring": {},
+        "tracks": {"bss": {"gateway_requirements": "yes"}},
+        "absolute_disqualifiers": [],
+        "traits": [
+            {
+                "id": "trait_1",
+                "name": "Trait",
+                "priority": "Critical",
+                "weight": 1,
+                "primary_question": "Question",
+                "follow_up_probes": ["valid"],
+                "descriptors": {},
+                "sample_answers": {},
+                "applicable_tracks": ["bss"],
+            }
+        ],
+    }
+
+    with pytest.raises(ConfigValidationError, match="gateway_requirements"):
+        validate_rubric_config(payload)
+
+
 def test_validate_disqualifier_config_requires_trait_id():
     with pytest.raises(ConfigValidationError, match="trait_id"):
         validate_disqualifier_config({"questions": [{}]})
