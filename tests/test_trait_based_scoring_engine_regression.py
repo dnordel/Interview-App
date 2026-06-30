@@ -135,9 +135,62 @@ def test_yaml_config_scores_and_decides_without_key_errors(scoring_engine_class)
 
     assert result["totals"]["core"] == 3
     assert result["totals"]["extended"] == 2
-    assert result["totals"]["final"] == pytest.approx(5)
-    assert result["decision"] == "borderline"
+    assert result["totals"]["raw_signal_total"] == pytest.approx(5)
+    assert result["totals"]["weighted_trait_score_1_to_5"] == pytest.approx(4)
+    assert result["totals"]["weighted_trait_percent"] == pytest.approx(80)
+    assert result["decision"] == "hire"
     assert result["traits"][0]["suggested_raw_score"] == 4
+    assert result["traits"][0]["trait_score_1_to_5"] == 4
+    assert result["traits"][0]["final_score"] == 4
+
+
+def test_session_score_uses_weighted_average_not_raw_signal_sum(scoring_engine_class):
+    config = _sample_config()
+    config["decision_engine"]["thresholds"] = {"hire_percent_min": 80, "borderline_percent_min": 65}
+    signal_dictionary = {
+        "signals": [
+            {"id": "STRONG", "label": "Strong", "default_weight": 8},
+            {"id": "LOW", "label": "Low", "default_weight": -4},
+            {"id": "EXTRA", "label": "Extra", "default_weight": 2},
+        ]
+    }
+    traits = [
+        {
+            "trait_id": "T1",
+            "trait_multiplier": 3,
+            "applicable_tracks": ["preschool"],
+            "core_signals": [{"ref": "STRONG"}],
+            "extended_signal_groups": [],
+        },
+        {
+            "trait_id": "T2",
+            "trait_multiplier": 1,
+            "applicable_tracks": ["preschool"],
+            "core_signals": [{"ref": "LOW"}, {"ref": "EXTRA"}],
+            "extended_signal_groups": [],
+        },
+        {
+            "trait_id": "BSS1",
+            "trait_multiplier": 10,
+            "applicable_tracks": ["behavior_support"],
+            "core_signals": [{"ref": "LOW"}],
+            "extended_signal_groups": [],
+        },
+    ]
+
+    engine = scoring_engine_class(config, signal_dictionary)
+    result = engine.score_session(
+        traits,
+        {"T1": ["STRONG"], "T2": ["LOW", "EXTRA"], "BSS1": ["LOW"]},
+        track="preschool",
+    )
+
+    assert [trait["trait_id"] for trait in result["traits"]] == ["T1", "T2"]
+    assert result["totals"]["raw_signal_total"] == pytest.approx(6)
+    assert result["totals"]["weighted_trait_score_1_to_5"] == pytest.approx(4.25)
+    assert result["totals"]["weighted_trait_percent"] == pytest.approx(85.0)
+    assert result["totals"]["trait_weight_sum"] == pytest.approx(4)
+    assert result["decision"] == "hire"
 
 
 def test_make_decision_uses_decision_engine_only(scoring_engine_class):

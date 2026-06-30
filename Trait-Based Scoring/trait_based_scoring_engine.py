@@ -426,7 +426,10 @@ class ScoringEngine:
             "extended_score": extended_sum,
             "net_signal_score": net_signal_score,
             "suggested_raw_score": suggested_raw_score,
-            "final_score": net_signal_score,
+            "trait_score_1_to_5": suggested_raw_score,
+            "trait_multiplier": trait.get("trait_multiplier", 1),
+            "priority": trait.get("priority"),
+            "final_score": suggested_raw_score,
             "critical": critical_flag,
             "auto_no_hire_present": bool(auto_no_hire_signals),
             "auto_no_hire_signal_ids": [signal["ref"] for signal in auto_no_hire_signals],
@@ -436,32 +439,83 @@ class ScoringEngine:
             "selected_signals": selected_signals,
         }
 
-    def score_session(self, traits: list[dict[str, Any]], selections: dict[str, list[str]]) -> dict[str, Any]:
+    @staticmethod
+    def _valid_multiplier(value: Any) -> int | float:
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            return value
+        return 1
+
+    @staticmethod
+    def filter_traits_by_track(traits: list[dict[str, Any]], track: str | None) -> list[dict[str, Any]]:
+        if not track:
+            return traits
+        filtered = []
+        for trait in traits:
+            tracks = trait.get("applicable_tracks", ["all"])
+            if not isinstance(tracks, list):
+                tracks = ["all"]
+            if "all" in tracks or track in tracks:
+                filtered.append(trait)
+        return filtered
+
+    def _session_score_mode(self) -> str:
+        mode = str(self.config.get("scoring", {}).get("session_score_mode", "") or "").strip()
+        if mode in {"raw_signal_sum", "weighted_average_of_trait_scores"}:
+            return mode
+        return "weighted_average_of_trait_scores"
+
+    def _overall_percent(self, overall_score_1_to_5: int | float) -> float:
+        method = str(self.config.get("scoring", {}).get("overall_percent_method", "") or "").strip()
+        if method == "normalized_1_to_5_range":
+            return ((overall_score_1_to_5 - 1) / 4) * 100 if overall_score_1_to_5 else 0
+        return (overall_score_1_to_5 / 5) * 100 if overall_score_1_to_5 else 0
+
+    def score_session(
+        self,
+        traits: list[dict[str, Any]],
+        selections: dict[str, list[str]],
+        track: str | None = None,
+    ) -> dict[str, Any]:
         trait_results = []
         total_core = 0
         total_extended = 0
-        total_final = 0
+        raw_signal_total = 0
+        weighted_score_sum = 0
+        weight_sum = 0
         any_critical = False
 
-        for trait in traits:
+        for trait in self.filter_traits_by_track(traits, track):
             trait_id = trait["trait_id"]
             selected_refs = selections.get(trait_id, [])
             result = self.score_trait(trait, selected_refs)
             trait_results.append(result)
             total_core += result["core_score"]
             total_extended += result["extended_score"]
-            total_final += result["net_signal_score"]
+            raw_signal_total += result["net_signal_score"]
+            multiplier = self._valid_multiplier(trait.get("trait_multiplier", 1))
+            weighted_score_sum += result["suggested_raw_score"] * multiplier
+            weight_sum += multiplier
             if result["critical"]:
                 any_critical = True
 
+        overall_score_1_to_5 = weighted_score_sum / weight_sum if weight_sum else 0
+        overall_percent = self._overall_percent(overall_score_1_to_5)
+        if self._session_score_mode() == "raw_signal_sum":
+            decision_score = raw_signal_total
+        else:
+            decision_score = overall_percent
+
         auto_no_hire_present = any(bool(result.get("auto_no_hire_present")) for result in trait_results)
-        summary = self.build_decision_summary(total_final, auto_no_hire_present)
+        summary = self.build_decision_summary(decision_score, auto_no_hire_present)
         return {
             "traits": trait_results,
             "totals": {
                 "core": total_core,
                 "extended": total_extended,
-                "final": total_final,
+                "raw_signal_total": raw_signal_total,
+                "weighted_trait_score_1_to_5": overall_score_1_to_5,
+                "weighted_trait_percent": overall_percent,
+                "trait_weight_sum": weight_sum,
             },
             "decision": summary["decision"],
             "any_critical_selected": any_critical,
@@ -476,14 +530,23 @@ class ScoringEngine:
             "override_rationale": summary["override_rationale"],
         }
 
-    def make_decision(self, final_score: int | float, critical_flag: bool) -> str:
-        if critical_flag and self.config["decision_engine"]["override_rules"].get("auto_reject_if_auto_no_hire_signal", False):
+    def make_decision(
+        self,
+        decision_score: int | float | None = None,
+        auto_no_hire_present: bool = False,
+        **legacy_kwargs: Any,
+    ) -> str:
+        if decision_score is None:
+            decision_score = legacy_kwargs.get("final_score", 0)
+        if "critical_flag" in legacy_kwargs:
+            auto_no_hire_present = bool(legacy_kwargs["critical_flag"])
+        if auto_no_hire_present and self.config["decision_engine"]["override_rules"].get("auto_reject_if_auto_no_hire_signal", False):
             return "no_hire"
 
         thresholds = self.config["decision_engine"]["thresholds"]
-        if final_score >= thresholds.get("hire", thresholds.get("hire_percent_min", 80)):
+        if decision_score >= thresholds.get("hire", thresholds.get("hire_percent_min", 80)):
             return "hire"
-        if final_score >= thresholds.get("borderline", thresholds.get("borderline_percent_min", 65)):
+        if decision_score >= thresholds.get("borderline", thresholds.get("borderline_percent_min", 65)):
             return "borderline"
         return "no_hire"
 
@@ -503,8 +566,17 @@ class ScoringEngine:
         print(f"FINAL: {result['final_score']}")
         print(f"CRITICAL: {result['critical']}")
 
-    def build_decision_summary(self, final_score: int | float, critical_flag: bool) -> dict[str, Any]:
-        if critical_flag and self.config["decision_engine"]["override_rules"].get("auto_reject_if_auto_no_hire_signal", False):
+    def build_decision_summary(
+        self,
+        decision_score: int | float | None = None,
+        auto_no_hire_present: bool = False,
+        **legacy_kwargs: Any,
+    ) -> dict[str, Any]:
+        if decision_score is None:
+            decision_score = legacy_kwargs.get("final_score", 0)
+        if "critical_flag" in legacy_kwargs:
+            auto_no_hire_present = bool(legacy_kwargs["critical_flag"])
+        if auto_no_hire_present and self.config["decision_engine"]["override_rules"].get("auto_reject_if_auto_no_hire_signal", False):
             rationale = "Contract override: selected automatic no-hire signal triggers immediate no_hire"
             return {
                 "decision": "no_hire",
@@ -514,7 +586,7 @@ class ScoringEngine:
             }
 
         return {
-            "decision": self.make_decision(final_score, False),
+            "decision": self.make_decision(decision_score, False),
             "triggered_critical": False,
             "locked_rule": None,
             "override_rationale": None,

@@ -2,7 +2,7 @@ module:
   name: scoring_reporting
   language: python
   path: src/scoring_reporting.py
-  version: 0.18.11
+  version: 0.18.12
   description: Flattened public interface for scoring, reporting, trait signals, exports,
     referrals, email safety, offers, and templates, including DeepSeek-only advisory
     signal scoring; only active legacy adapters remain in the compatibility module
@@ -1274,7 +1274,8 @@ functions:
   side_effects: none
 - name: invoke_scoring_engine
   description: Evaluate normalized trait state with the caller-resolved trait runtime
-    bundle and contract path.
+    bundle and contract path, passing the resolved interview track into the trait
+    engine for applicable-trait filtering.
   locked: false
   inputs:
     rubric:

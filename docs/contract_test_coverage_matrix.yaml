@@ -15,7 +15,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-06-30T19:15:48.421540+00:00'
+generated_at_utc: '2026-06-30T19:45:56.388824+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -12155,6 +12155,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._overall_percent
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
   symbol: trait_based_scoring_engine.ScoringEngine._path
   kind: method
   tests:
@@ -12209,6 +12218,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._session_score_mode
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
   symbol: trait_based_scoring_engine.ScoringEngine._signal_is_auto_no_hire
   kind: method
   tests:
@@ -12236,6 +12254,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._valid_multiplier
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
   symbol: trait_based_scoring_engine.ScoringEngine.build_decision_summary
   kind: method
   tests:
@@ -12255,6 +12282,15 @@ entries:
     - return_type
 - contract: contracts/trait_based_scoring_engine.contract.yaml
   symbol: trait_based_scoring_engine.ScoringEngine.debug_trait
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine.filter_traits_by_track
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py

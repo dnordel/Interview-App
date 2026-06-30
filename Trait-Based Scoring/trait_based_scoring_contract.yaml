@@ -38,14 +38,17 @@ ui:
 scoring:
 
   method: "weighted"
+  session_score_mode: "weighted_average_of_trait_scores"
+  overall_percent_method: "raw_1_to_5_over_5"
 
   usage: "deepseek_advisory_only"
 
   formula: |
     net_signal_score = sum(base_weight of observed DeepSeek model signals)
     suggested_raw_score = conversion_table(net_signal_score)
-    final_raw_score = interviewer-confirmed raw score
-    weighted_trait_score = final_raw_score * trait_multiplier
+    trait_score_1_to_5 = suggested_raw_score
+    overall_score_1_to_5 = sum(trait_score_1_to_5 * trait_multiplier) / sum(trait_multiplier)
+    weighted_trait_percent = (overall_score_1_to_5 / 5) * 100
 
   signal_score_to_raw_score:
     - min: 7
@@ -154,8 +157,10 @@ output:
     totals:
       core_score: number
       extended_score: number
-      final_score: number
-      normalized_score: number
+      raw_signal_total: number
+      weighted_trait_score_1_to_5: number
+      weighted_trait_percent: number
+      trait_weight_sum: number
 
     decision:
       recommendation: string

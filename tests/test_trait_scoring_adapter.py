@@ -84,10 +84,13 @@ TRAIT_RUNTIME_DEFINITIONS = [
 
 
 class _FakeTraitEngine:
+    last_track = None
+
     def __init__(self, _config, _signal_dictionary) -> None:
         pass
 
-    def score_session(self, trait_definitions, selections):
+    def score_session(self, trait_definitions, selections, track=None):
+        _FakeTraitEngine.last_track = track
         traits = []
         weighted_total = 0
         for index, trait_definition in enumerate(trait_definitions, start=1):
@@ -325,6 +328,7 @@ class TestTraitScoringAdapter(unittest.TestCase):
         )
 
         with patch("scoring_reporting._load_trait_engine_class", return_value=_FakeTraitEngine):
+            _FakeTraitEngine.last_track = None
             engine_output = invoke_scoring_engine(
                 build_rubric(),
                 "general",
@@ -335,6 +339,7 @@ class TestTraitScoringAdapter(unittest.TestCase):
 
         self.assertEqual(engine_output["weighted_total"], 160)
         self.assertEqual(len(engine_output["rows"]), 3)
+        self.assertEqual(_FakeTraitEngine.last_track, "general")
 
     def test_normalize_app_trait_state_maps_legacy_runtime_trait_ids_to_canonical_ids(self):
         normalized_state = normalize_app_trait_state({
@@ -514,7 +519,7 @@ class ScoringEngine:
         signal_dictionary = json.loads(signal_dictionary_path.read_text(encoding="utf-8"))
         return config, signal_dictionary, traits, resolved_paths
 
-    def score_session(self, trait_definitions, selections):
+    def score_session(self, trait_definitions, selections, track=None):
         return {
             "traits": [
                 {

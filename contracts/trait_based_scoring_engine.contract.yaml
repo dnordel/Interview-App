@@ -2,7 +2,7 @@ module:
   name: trait_based_scoring_engine
   language: python
   path: Trait-Based Scoring/trait_based_scoring_engine.py
-  version: 1.5.0
+  version: 1.6.0
   description: Trait scoring engine with contract-relative runtime bundle loading,
     weighted DeepSeek-only advisory signal scoring, and preflight path validation.
 functions: []
@@ -400,7 +400,8 @@ classes:
     side_effects: none
   - name: score_trait
     description: Score a single trait by summing observed model signal weights, deriving
-      suggested_raw_score, and returning automatic no-hire metadata.
+      suggested_raw_score, exposing it as trait_score_1_to_5/final_score, and returning
+      automatic no-hire metadata.
     locked: false
     inputs:
       trait:
@@ -413,9 +414,57 @@ classes:
       type: dict
     exceptions: []
     side_effects: none
+  - name: _valid_multiplier
+    description: Normalize invalid or boolean trait multipliers to 1 for weighted
+      session scoring.
+    locked: false
+    inputs:
+      value:
+        type: Any
+        required: true
+    returns:
+      type: int | float
+    exceptions: []
+    side_effects: none
+  - name: filter_traits_by_track
+    description: Return traits whose applicable_tracks include all or the requested
+      interview track; no track preserves the full input list.
+    locked: false
+    inputs:
+      traits:
+        type: list[dict[str, Any]]
+        required: true
+      track:
+        type: str | None
+        required: true
+    returns:
+      type: list[dict[str, Any]]
+    exceptions: []
+    side_effects: none
+  - name: _session_score_mode
+    description: Resolve supported session scoring mode, defaulting to weighted_average_of_trait_scores.
+    locked: false
+    inputs: {}
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _overall_percent
+    description: Convert a weighted 1-5 trait score into a percent using configured
+      raw_1_to_5_over_5 or normalized_1_to_5_range scaling.
+    locked: false
+    inputs:
+      overall_score_1_to_5:
+        type: int | float
+        required: true
+    returns:
+      type: float
+    exceptions: []
+    side_effects: none
   - name: score_session
-    description: Score all configured traits as DeepSeek advisory signal evidence,
-      including net totals, suggested raw scores, and automatic no-hire metadata.
+    description: Score applicable traits as DeepSeek advisory signal evidence, aggregate
+      weighted 1-5 trait scores into a percent decision score, retain raw signal totals
+      for debugging, and return automatic no-hire metadata.
     locked: false
     inputs:
       traits:
@@ -424,6 +473,9 @@ classes:
       selections:
         type: dict[str, list[str]]
         required: true
+      track:
+        type: str | None
+        required: false
     returns:
       type: dict[str, Any]
     exceptions: []
@@ -433,12 +485,15 @@ classes:
       no-hire override handling.
     locked: false
     inputs:
-      final_score:
-        type: int | float
-        required: true
-      critical_flag:
+      decision_score:
+        type: int | float | None
+        required: false
+      auto_no_hire_present:
         type: bool
-        required: true
+        required: false
+      legacy_kwargs:
+        type: Any
+        required: false
     returns:
       type: str
     exceptions: []
@@ -462,12 +517,15 @@ classes:
       explicit decision metadata for session scoring output.
     locked: false
     inputs:
-      final_score:
-        type: int | float
-        required: true
-      critical_flag:
+      decision_score:
+        type: int | float | None
+        required: false
+      auto_no_hire_present:
         type: bool
-        required: true
+        required: false
+      legacy_kwargs:
+        type: Any
+        required: false
     returns:
       type: dict[str, Any]
     exceptions: []

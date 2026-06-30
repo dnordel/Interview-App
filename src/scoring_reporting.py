@@ -3238,7 +3238,8 @@ def invoke_scoring_engine(
 
     engine = _build_trait_engine(runtime_bundle, runtime_contract_path)
     selections = _build_trait_selections(trait_definitions, normalized_state)
-    session_result = engine.score_session(trait_definitions, selections)
+    resolved_track_key = ScoringEngine._resolve_track_key_for_scoring(rubric, track_key)
+    session_result = engine.score_session(trait_definitions, selections, track=resolved_track_key)
     return _build_compatibility_engine_output(
         rubric=rubric,
         track_key=track_key,
