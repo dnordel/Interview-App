@@ -1490,6 +1490,21 @@ def test_deepseek_progress_write_does_not_abort_on_persistent_replace_permission
     assert not progress_path.exists()
 
 
+def test_deepseek_progress_write_persists_task_status_list(tmp_path) -> None:
+    progress_path = tmp_path / "deepseek.progress.json"
+    job = {"progress_path": str(progress_path)}
+
+    deepseek_finalize_worker._write_progress(job, "Waiting for DeepSeek queue")
+    deepseek_finalize_worker._write_progress(job, "Starting DeepSeek processing")
+
+    payload = json.loads(progress_path.read_text(encoding="utf-8"))
+    tasks = payload["tasks"]
+
+    assert {"name": "Waiting for DeepSeek queue", "status": "Finished"} in tasks
+    assert {"name": "Starting DeepSeek processing", "status": "Processing"} in tasks
+    assert {"name": "Updating interview notes document", "status": "Queued"} in tasks
+
+
 def test_deepseek_finalize_worker_marks_failed_when_no_deepseek_outputs_generate(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
     history_path = tmp_path / "history.json"
     store = InterviewHistoryStore(history_path)

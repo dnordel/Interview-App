@@ -82,8 +82,8 @@ services:
     - web_app_backend
   pyside_interview_redesign_service:
     description: PySide6 workflow-first desktop redesign shell for interviews, candidates,
-      offers, onboarding, admin studio, user-closable finalize progress, live history
-      refresh, and single-surface parity documentation for desktop Tk contracts while
+      offers, onboarding, admin studio, user-closable finalize progress with task/status
+      rows, live history refresh, and single-surface parity documentation for desktop Tk contracts while
       reusing local rubric, question flow, history JSON, and Tk-owned finalize/document/DeepSeek
       runtime contracts.
     modules:
@@ -105,7 +105,8 @@ services:
     description: Detached local DeepSeek worker that refreshes generated interview
       notes and history status after finalize returns to the GUI. Workers use a
       per-deepseek_jobs lock file so local DeepSeek/Ollama finalize work is serialized
-      per interview base directory.
+      per interview base directory and write sanitized task/status progress JSON for
+      GUI polling.
     modules:
     - deepseek_finalize_worker
   shared_content_security_service:

@@ -2,7 +2,7 @@ module:
   name: interview_runtime
   language: python
   path: src/interview_runtime.py
-  version: 0.25.1
+  version: 0.26.0
   description: Flattened public interface for interview state, session management,
     audio/transcription runtime, transcript summary seam, controllers, history, and
     finalize pipeline; only active legacy adapters remain in the compatibility module
@@ -802,9 +802,62 @@ functions:
   side_effects: Applies candidate transcript text to flow payloads, may invoke local
     DeepSeek when requested and enabled, and clears the legacy referral transcript
     path for new finalize output.
+- name: finalize_progress_status_label
+  description: Normalize internal progress states to the four operator-facing finalize
+    statuses Processing, Finished, Timed-out, or Queued.
+  locked: false
+  inputs:
+    status:
+      type: Any
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: build_finalize_progress_tasks
+  description: Merge queued, existing, and current finalize progress steps into an
+    ordered task/status list, marking prior active tasks Finished and future tasks
+    Queued.
+  locked: false
+  inputs:
+    step:
+      type: Any
+      required: true
+    status:
+      type: Any
+      required: false
+      default: processing
+    existing_tasks:
+      type: Any
+      required: false
+      default: null
+    queued_steps:
+      type: Any
+      required: false
+      default: null
+  returns:
+    type: list[dict[str, str]]
+  exceptions: []
+  side_effects: none
+- name: format_finalize_progress_tasks
+  description: Format finalize task/status rows for compact two-column popup display
+    where task names appear left and the normalized status appears on the right.
+  locked: false
+  inputs:
+    tasks:
+      type: Any
+      required: true
+    fallback:
+      type: str
+      required: false
+      default: ''
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
 - name: _write_deepseek_launch_progress
   description: Seed sanitized detached DeepSeek progress JSON before starting the
-    worker process so GUI polling has an immediate operator-facing status.
+    worker process so GUI polling has an immediate operator-facing task/status list.
   locked: false
   inputs:
     progress_path:
@@ -822,7 +875,7 @@ functions:
   exceptions:
   - OSError
   side_effects: Writes or replaces a local progress JSON file containing only status,
-    step, and timestamp metadata.
+    step, task/status rows, and timestamp metadata.
 - name: enqueue_deepseek_finalize_job
   description: Persist a detached DeepSeek finalize job and launch the worker process
     so interview notes can be refreshed after the GUI finalize flow returns or exits;

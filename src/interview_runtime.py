@@ -3599,12 +3599,113 @@ def _python_executable_for_worker() -> str:
     return "python"
 
 
+FINALIZE_PROGRESS_STATUS_LABELS = {
+    "processing": "Processing",
+    "running": "Processing",
+    "queued": "Queued",
+    "pending": "Queued",
+    "complete": "Finished",
+    "completed": "Finished",
+    "finished": "Finished",
+    "generated": "Finished",
+    "failed": "Timed-out",
+    "timeout": "Timed-out",
+    "timed-out": "Timed-out",
+    "timed_out": "Timed-out",
+}
+
+
+DEFAULT_DEEPSEEK_PROGRESS_TASKS = (
+    "Launching local DeepSeek worker",
+    "Waiting for DeepSeek queue",
+    "Checking local Ollama service",
+    "Starting local Ollama service",
+    "Local Ollama service ready",
+    "Starting DeepSeek processing",
+    "Analyzing traits",
+    "Scoring traits",
+    "Calculating final score",
+    "Summarizing answers",
+    "Generating Executive Summary",
+    "Updating interview notes document",
+    "Complete",
+)
+
+
+def finalize_progress_status_label(status: Any) -> str:
+    normalized = str(status or "").strip().lower()
+    return FINALIZE_PROGRESS_STATUS_LABELS.get(normalized, "Queued")
+
+
+def build_finalize_progress_tasks(
+    step: Any,
+    status: Any = "processing",
+    *,
+    existing_tasks: Any = None,
+    queued_steps: Any = None,
+) -> list[dict[str, str]]:
+    tasks: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for item in existing_tasks or []:
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("name") or item.get("step") or "").strip()
+        if not name or name in seen:
+            continue
+        tasks.append({"name": name, "status": finalize_progress_status_label(item.get("status"))})
+        seen.add(name)
+    for name_value in queued_steps or []:
+        name = str(name_value or "").strip()
+        if name and name not in seen:
+            tasks.append({"name": name, "status": "Queued"})
+            seen.add(name)
+
+    current_step = str(step or "").strip()
+    current_status = finalize_progress_status_label(status)
+    if current_step:
+        found = False
+        for item in tasks:
+            if item["name"] == current_step:
+                item["status"] = current_status
+                found = True
+            elif item["status"] == "Processing" and current_status == "Processing":
+                item["status"] = "Finished"
+        if not found:
+            tasks.append({"name": current_step, "status": current_status})
+    if current_status == "Finished":
+        for item in tasks:
+            if item["status"] == "Processing":
+                item["status"] = "Finished"
+    return tasks
+
+
+def format_finalize_progress_tasks(tasks: Any, *, fallback: str = "") -> str:
+    rows = [item for item in tasks or [] if isinstance(item, dict) and str(item.get("name") or "").strip()]
+    if not rows:
+        return str(fallback or "").strip()
+    width = min(max(len(str(item.get("name") or "").strip()) for item in rows), 34)
+    lines: list[str] = []
+    for item in rows:
+        name = str(item.get("name") or "").strip()
+        status = finalize_progress_status_label(item.get("status"))
+        if len(name) > width:
+            name = f"{name[: max(width - 1, 1)]}..."
+        lines.append(f"{name:<{width + 3}}{status:>10}")
+    return "\n".join(lines)
+
+
 def _write_deepseek_launch_progress(progress_path: Path, step: str, status: str = "processing") -> None:
+    tasks = build_finalize_progress_tasks(
+        step,
+        status,
+        queued_steps=DEFAULT_DEEPSEEK_PROGRESS_TASKS,
+    )
     atomic_write_json(
         progress_path,
         {
             "status": status,
             "step": str(step or "").strip(),
+            "tasks": tasks,
             "updated_at": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
         },
         indent=2,

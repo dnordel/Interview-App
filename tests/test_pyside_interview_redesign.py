@@ -1180,7 +1180,8 @@ def test_pyside_finalize_progress_window_is_user_closable_and_non_canceling(tmp_
     progress_label = window.pyside_finalize_progress_label
 
     assert progress_dialog is not None
-    assert progress_label.text() == "Stopping recording"
+    assert "Stopping recording" in progress_label.text()
+    assert "Processing" in progress_label.text()
     assert progress_dialog.windowTitle() == "Finalizing Interview"
 
     progress_dialog.close()
@@ -1214,6 +1215,7 @@ def test_pyside_progress_window_polls_deepseek_progress_json(tmp_path: Path) -> 
 
     assert window.pyside_finalize_deepseek_progress_path == progress_path
     assert "Updating interview notes document" in window.pyside_finalize_progress_label.text()
+    assert "Processing" in window.pyside_finalize_progress_label.text()
 
     progress_path.write_text(json.dumps({"step": "Summarizing Q3: Trait 1", "status": "processing"}), encoding="utf-8")
     window._refresh_pyside_finalize_progress()
@@ -1226,6 +1228,39 @@ def test_pyside_progress_window_polls_deepseek_progress_json(tmp_path: Path) -> 
     app.processEvents()
 
     assert "Complete" in window.pyside_finalize_progress_label.text()
+    window._close_pyside_finalize_progress()
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_progress_window_renders_task_status_list(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    window._show_pyside_finalize_progress("Queueing DeepSeek processing")
+    window._pyside_finalize_progress_tasks = [
+        {"name": "Stopping recording", "status": "Finished"},
+        {"name": "Queueing DeepSeek processing", "status": "Processing"},
+        {"name": "Waiting for DeepSeek queue", "status": "Queued"},
+    ]
+
+    window._refresh_pyside_finalize_progress()
+    app.processEvents()
+
+    progress_text = window.pyside_finalize_progress_label.text()
+    assert "Stopping recording" in progress_text
+    assert "Finished" in progress_text
+    assert "Queueing DeepSeek processing" in progress_text
+    assert "Processing" in progress_text
+    assert "Waiting for DeepSeek queue" in progress_text
+    assert "Queued" in progress_text
     window._close_pyside_finalize_progress()
     window.window.close()
     app.processEvents()

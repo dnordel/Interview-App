@@ -2,12 +2,12 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.15.2
+  version: 1.16.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, compact home draft actions beside the
     start action, interview notes regeneration actions, user-closable
-    finalize progress, live history refresh, and single-surface parity documentation
+    finalize progress with task/status rows, live history refresh, and single-surface parity documentation
     for desktop Tk contracts while preserving Tk-owned finalize, history, document,
     and DeepSeek runtime contracts.
 functions:
@@ -564,8 +564,9 @@ classes:
       the review status label, refreshes visible history tables, and starts optional
       detached DeepSeek progress polling.
   - name: _show_pyside_finalize_progress
-    description: Show a user-closable non-modal PySide finalize progress dialog without
-      exposing candidate transcript or notes text.
+    description: Show a user-closable non-modal PySide finalize progress dialog with
+      sanitized task/status rows and without exposing candidate transcript or notes
+      text.
     locked: false
     inputs:
       step:
@@ -574,10 +575,11 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Creates or updates a QDialog and indeterminate progress bar.
+    side_effects: Creates or updates a QDialog, indeterminate progress bar, and task/status
+      label content.
   - name: _report_pyside_finalize_progress
     description: Queue or store one sanitized operator-facing finalize progress step
-      for the PySide progress dialog.
+      for the PySide progress dialog task list.
     locked: false
     inputs:
       step:
@@ -586,10 +588,10 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Updates in-memory progress state.
+    side_effects: Updates in-memory progress step and task/status state.
   - name: _refresh_pyside_finalize_progress
-    description: Drain queued PySide finalize progress updates and render the latest
-      step when the progress dialog is still open.
+    description: Drain queued PySide finalize progress updates and render task/status
+      rows when the progress dialog is still open.
     locked: false
     inputs: {}
     returns:
@@ -603,6 +605,15 @@ classes:
     inputs: {}
     returns:
       type: tuple[str, str]
+    exceptions: []
+    side_effects: Reads a local progress JSON file path produced by finalize.
+  - name: _read_pyside_deepseek_progress_tasks
+    description: Read local detached DeepSeek progress JSON task rows and normalize
+      them for the PySide finalize task/status display.
+    locked: false
+    inputs: {}
+    returns:
+      type: list[dict[str, str]]
     exceptions: []
     side_effects: Reads a local progress JSON file path produced by finalize.
   - name: _watch_pyside_deepseek_finalize_progress

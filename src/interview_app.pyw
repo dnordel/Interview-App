@@ -121,7 +121,9 @@ from ui_composition import (
 )
 from ui_mode_switch import switch_to_ui_mode
 from interview_runtime import (
+    build_finalize_progress_tasks,
     build_transcription_log_hint,
+    format_finalize_progress_tasks,
     format_runtime_init_error_message,
     format_transcription_health_summary,
     redact_paths,
@@ -258,6 +260,7 @@ class InterviewApp(tk.Tk):
         self.finalize_status_label: ttk.Label | None = None
         self._finalize_progress_queue: queue.Queue[str] | None = None
         self._finalize_progress_step = ""
+        self._finalize_progress_tasks: list[dict[str, str]] = []
         self.finalize_deepseek_progress_path: Path | None = None
         self._finalize_progress_after_id: str | None = None
         self._finalize_worker_running = False
@@ -2816,13 +2819,14 @@ class InterviewApp(tk.Tk):
         win.protocol("WM_DELETE_WINDOW", lambda: None)
         self._finalize_progress_queue = queue.Queue()
         self._finalize_progress_step = "Preparing finalize"
+        self._finalize_progress_tasks = build_finalize_progress_tasks("Preparing finalize")
         self.finalize_deepseek_progress_path = None
 
         container = ttk.Frame(win, padding=14)
         container.pack(fill="both", expand=True)
 
         log_hint = self.__dict__.get("_app_log_path") or get_configured_log_path()
-        status_text = self._finalize_progress_step
+        status_text = format_finalize_progress_tasks(self._finalize_progress_tasks, fallback=self._finalize_progress_step)
         if log_hint:
             status_text += f"\nStatus logs: {log_hint}"
         status_label = ttk.Label(
@@ -2847,6 +2851,10 @@ class InterviewApp(tk.Tk):
         normalized = str(step or "").strip()
         if not normalized:
             return
+        self._finalize_progress_tasks = build_finalize_progress_tasks(
+            normalized,
+            existing_tasks=self.__dict__.get("_finalize_progress_tasks", []),
+        )
         progress_queue = self.__dict__.get("_finalize_progress_queue")
         if progress_queue is None:
             self._finalize_progress_step = normalized
@@ -2867,6 +2875,24 @@ class InterviewApp(tk.Tk):
         if not isinstance(payload, dict):
             return "", ""
         return str(payload.get("step") or "").strip(), str(payload.get("status") or "").strip().lower()
+
+    def _read_deepseek_progress_tasks(self) -> list[dict[str, str]]:
+        path = self.finalize_deepseek_progress_path
+        if path is None or not path.exists():
+            return []
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return []
+        if not isinstance(payload, dict):
+            return []
+        if not isinstance(payload.get("tasks"), list):
+            return build_finalize_progress_tasks(payload.get("step"), payload.get("status"))
+        return build_finalize_progress_tasks(
+            payload.get("step"),
+            payload.get("status"),
+            existing_tasks=payload.get("tasks"),
+        )
 
     def _watch_deepseek_finalize_progress(self, progress_path: str | Path | None) -> None:
         if progress_path:
@@ -2932,17 +2958,30 @@ class InterviewApp(tk.Tk):
             while True:
                 try:
                     self._finalize_progress_step = progress_queue.get_nowait()
+                    self._finalize_progress_tasks = build_finalize_progress_tasks(
+                        self._finalize_progress_step,
+                        existing_tasks=self.__dict__.get("_finalize_progress_tasks", []),
+                    )
                 except queue.Empty:
                     break
         deepseek_step, _status = self._read_deepseek_progress_step()
         if deepseek_step:
             self._finalize_progress_step = deepseek_step
+            self._finalize_progress_tasks = self._read_deepseek_progress_tasks()
         if self._finalize_progress_step:
-            label.config(text=self._finalize_progress_step)
+            task_text = format_finalize_progress_tasks(
+                self.__dict__.get("_finalize_progress_tasks", []),
+                fallback=self._finalize_progress_step,
+            )
+            label.config(text=task_text)
             return
         pending = self._pending_transcription_count()
         if pending > 0:
-            label.config(text=f"Transcribing... {pending} question(s) remaining.")
+            self._finalize_progress_tasks = build_finalize_progress_tasks(
+                f"Transcribing... {pending} question(s) remaining.",
+                existing_tasks=self.__dict__.get("_finalize_progress_tasks", []),
+            )
+            label.config(text=format_finalize_progress_tasks(self._finalize_progress_tasks))
             return
         label.config(text="Preparing final report.")
 

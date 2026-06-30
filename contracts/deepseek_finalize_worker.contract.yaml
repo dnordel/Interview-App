@@ -2,7 +2,7 @@ module:
   name: deepseek_finalize_worker
   language: python
   path: src/deepseek_finalize_worker.py
-  version: 1.8.0
+  version: 1.9.0
   description: Detached local DeepSeek finalize worker that refreshes interview notes
     documents and history status after the GUI finalize flow returns, keeping DeepSeek
     signal scoring advisory and human raw scores final. Workers serialize processing
@@ -10,7 +10,8 @@ module:
     at a time, writes sanitized progress JSON for GUI polling, and checkpoints
     completed DeepSeek stages back into the job file so retry can resume after
     the last completed stage; document-only reruns reuse saved DeepSeek output
-    and rebuild only the DOCX.
+    and rebuild only the DOCX. Progress JSON includes an ordered task/status list
+    with operator-facing statuses Processing, Finished, Timed-out, or Queued.
 functions:
 - name: _utc_timestamp
   description: Return current UTC timestamp in persisted Z-suffixed ISO format.
@@ -62,9 +63,9 @@ functions:
   side_effects: Writes interview history JSON when a row matches.
 - name: _write_progress
   description: Write sanitized detached DeepSeek progress state for the GUI progress
-    popup, using only step/status/timestamp metadata and no transcript content,
-    through the shared atomic JSON writer so transient Windows/Dropbox replace
-    denials are retried.
+    popup, using only step/status/task-list/timestamp metadata and no transcript
+    content, through the shared atomic JSON writer so transient Windows/Dropbox
+    replace denials are retried.
   locked: false
   inputs:
     job:
@@ -81,8 +82,9 @@ functions:
     type: None
   exceptions: []
   side_effects: Writes or replaces a local progress JSON file when progress_path is
-    present in the job; persistent OS write failures are treated as non-fatal so
-    DeepSeek processing can continue.
+    present in the job, preserving prior task rows and marking future rows queued;
+    persistent OS write failures are treated as non-fatal so DeepSeek processing can
+    continue.
 - name: _local_ollama_api_ready
   description: Return whether the configured local Ollama HTTP API is responding,
     treating non-local DeepSeek endpoints as externally managed and ready.

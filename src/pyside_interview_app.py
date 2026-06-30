@@ -20,9 +20,11 @@ from data_store import InterviewHistoryStore, QuestionOverridesStore, RubricLoad
 from interview_runtime import (
     DEFAULT_WINDOWS_MIC_DEVICE,
     FinalizeGateways,
+    build_finalize_progress_tasks,
     build_finalize_context,
     build_flow_time_windows,
     enqueue_deepseek_finalize_job,
+    format_finalize_progress_tasks,
     load_candidate_segments,
     map_segments_to_flow_indices,
     regenerate_interview_notes_job,
@@ -1287,6 +1289,7 @@ class PySideInterviewWindow:
         self.recording_warning = ""
         self._pyside_finalize_running = False
         self._pyside_finalize_progress_step = ""
+        self._pyside_finalize_progress_tasks: list[dict[str, str]] = []
         self.pyside_finalize_progress_dialog: Any | None = None
         self.pyside_finalize_progress_label: Any | None = None
         self.pyside_finalize_progress_bar: Any | None = None
@@ -2325,15 +2328,21 @@ class PySideInterviewWindow:
     def _show_pyside_finalize_progress(self, step: str) -> None:
         normalized = str(step or "").strip() or "Preparing finalize"
         self._pyside_finalize_progress_step = normalized
+        self._pyside_finalize_progress_tasks = build_finalize_progress_tasks(
+            normalized,
+            existing_tasks=getattr(self, "_pyside_finalize_progress_tasks", []),
+        )
         if self.pyside_finalize_progress_dialog is not None:
             self._refresh_pyside_finalize_progress()
             return
         dialog = self.QtWidgets.QDialog(self.window)
         dialog.setWindowTitle("Finalizing Interview")
         dialog.setModal(False)
-        dialog.resize(480, 140)
+        dialog.resize(560, 280)
         layout = self.QtWidgets.QVBoxLayout(dialog)
-        label = self._label(normalized)
+        label = self._label(
+            format_finalize_progress_tasks(self._pyside_finalize_progress_tasks, fallback=normalized)
+        )
         label.setObjectName("PySideFinalizeProgressLabel")
         layout.addWidget(label)
         bar = self.QtWidgets.QProgressBar()
@@ -2380,6 +2389,10 @@ class PySideInterviewWindow:
         normalized = str(step or "").strip()
         if not normalized:
             return
+        self._pyside_finalize_progress_tasks = build_finalize_progress_tasks(
+            normalized,
+            existing_tasks=getattr(self, "_pyside_finalize_progress_tasks", []),
+        )
         progress_queue = self._pyside_finalize_progress_queue
         if progress_queue is None:
             self._pyside_finalize_progress_step = normalized
@@ -2395,14 +2408,24 @@ class PySideInterviewWindow:
             while True:
                 try:
                     self._pyside_finalize_progress_step = progress_queue.get_nowait()
+                    self._pyside_finalize_progress_tasks = build_finalize_progress_tasks(
+                        self._pyside_finalize_progress_step,
+                        existing_tasks=getattr(self, "_pyside_finalize_progress_tasks", []),
+                    )
                 except queue.Empty:
                     break
         deepseek_step, _status = self._read_pyside_deepseek_progress_step()
         if deepseek_step:
             self._pyside_finalize_progress_step = deepseek_step
+            self._pyside_finalize_progress_tasks = self._read_pyside_deepseek_progress_tasks()
         label = self.pyside_finalize_progress_label
         if label is not None and self._pyside_finalize_progress_step:
-            label.setText(self._pyside_finalize_progress_step)
+            label.setText(
+                format_finalize_progress_tasks(
+                    getattr(self, "_pyside_finalize_progress_tasks", []),
+                    fallback=self._pyside_finalize_progress_step,
+                )
+            )
 
     def _read_pyside_deepseek_progress_step(self) -> tuple[str, str]:
         path = self.pyside_finalize_deepseek_progress_path
@@ -2415,6 +2438,24 @@ class PySideInterviewWindow:
         if not isinstance(payload, dict):
             return "", ""
         return str(payload.get("step") or "").strip(), str(payload.get("status") or "").strip().lower()
+
+    def _read_pyside_deepseek_progress_tasks(self) -> list[dict[str, str]]:
+        path = self.pyside_finalize_deepseek_progress_path
+        if path is None or not path.exists():
+            return []
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return []
+        if not isinstance(payload, dict):
+            return []
+        if not isinstance(payload.get("tasks"), list):
+            return build_finalize_progress_tasks(payload.get("step"), payload.get("status"))
+        return build_finalize_progress_tasks(
+            payload.get("step"),
+            payload.get("status"),
+            existing_tasks=payload.get("tasks"),
+        )
 
     def _watch_pyside_deepseek_finalize_progress(self, progress_path: str | Path | None) -> None:
         if progress_path:

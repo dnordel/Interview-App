@@ -64,7 +64,30 @@ class TestFinalizeHistoryPersistence(unittest.TestCase):
 
             InterviewApp._refresh_finalize_processing_state(app)
 
-            self.assertEqual(label.text, "Summarizing Q3: Trait 1")
+            self.assertIn("Summarizing Q3: Trait 1", label.text)
+            self.assertIn("Processing", label.text)
+
+    def test_finalize_progress_refresh_renders_task_status_list(self):
+        app = InterviewApp.__new__(InterviewApp)
+        label = _LabelStub()
+        app.finalize_status_label = label
+        app._finalize_progress_queue = None
+        app._finalize_progress_step = "Queueing DeepSeek processing"
+        app._finalize_progress_tasks = [
+            {"name": "Stopping recording", "status": "Finished"},
+            {"name": "Queueing DeepSeek processing", "status": "Processing"},
+            {"name": "Waiting for DeepSeek queue", "status": "Queued"},
+        ]
+        app.finalize_deepseek_progress_path = None
+
+        InterviewApp._refresh_finalize_processing_state(app)
+
+        self.assertIn("Stopping recording", label.text)
+        self.assertIn("Finished", label.text)
+        self.assertIn("Queueing DeepSeek processing", label.text)
+        self.assertIn("Processing", label.text)
+        self.assertIn("Waiting for DeepSeek queue", label.text)
+        self.assertIn("Queued", label.text)
 
     def test_finalize_history_interview_notes_path_uses_generated_docx(self):
         with tempfile.TemporaryDirectory() as td:

@@ -330,6 +330,8 @@ module_metadata:
     - Acts as the single PySide desktop parity surface for Tk-bearing desktop contracts.
     - Finalize progress is user-closable and does not cancel background transcription,
       finalize, or DeepSeek work.
+    - Finalize progress renders sanitized task rows with right-side statuses limited
+      to Processing, Finished, Timed-out, or Queued.
     - Home and Candidates history tables refresh after finalize and show Processing
       in the Notes column until detached DeepSeek work completes or fails.
   scoring_reporting:

@@ -21,7 +21,9 @@ if str(SRC) not in sys.path:
 
 from data_store import InterviewHistoryStore
 from interview_runtime import (
+    DEFAULT_DEEPSEEK_PROGRESS_TASKS,
     _attach_deepseek_role_context_to_flow,
+    build_finalize_progress_tasks,
     build_deepseek_summary_config,
     generate_deepseek_interview_summaries,
     generate_deepseek_trait_signal_suggestions,
@@ -68,13 +70,27 @@ def _write_progress(job: dict[str, Any], step: str, status: str = "processing") 
     progress_path = str(job.get("progress_path", "")).strip()
     if not progress_path:
         return
+    existing_tasks: list[dict[str, Any]] = []
+    progress_file = Path(progress_path)
+    try:
+        existing_payload = json.loads(progress_file.read_text(encoding="utf-8"))
+        if isinstance(existing_payload, dict) and isinstance(existing_payload.get("tasks"), list):
+            existing_tasks = existing_payload["tasks"]
+    except (OSError, json.JSONDecodeError):
+        existing_tasks = []
     payload = {
         "status": status,
         "step": str(step or "").strip(),
+        "tasks": build_finalize_progress_tasks(
+            step,
+            status,
+            existing_tasks=existing_tasks,
+            queued_steps=job.get("progress_tasks") or DEFAULT_DEEPSEEK_PROGRESS_TASKS,
+        ),
         "updated_at": _utc_timestamp(),
     }
     try:
-        atomic_write_json(Path(progress_path), payload, indent=2, ensure_ascii=False)
+        atomic_write_json(progress_file, payload, indent=2, ensure_ascii=False)
     except OSError:
         return
 
