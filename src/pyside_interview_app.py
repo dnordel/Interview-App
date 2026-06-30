@@ -641,6 +641,45 @@ def _history_text(row: dict[str, Any], *keys: str, default: str = "") -> str:
     return default
 
 
+def _coerce_history_percent(value: Any) -> float | None:
+    text = str(value or "").strip().rstrip("%").strip()
+    if not text:
+        return None
+    try:
+        percent = float(text)
+    except ValueError:
+        return None
+    if 0 <= percent <= 100:
+        return percent
+    return None
+
+
+def _history_has_no_hire_override(row: dict[str, Any]) -> bool:
+    override_keys = ("auto_no_hire_present", "disqualifier_present", "critical_eq_1", "critical_lt_3")
+    if any(bool(row.get(key)) for key in override_keys):
+        return True
+    locked_rule = str(row.get("locked_rule") or row.get("override_rationale") or "").strip().lower()
+    return any(term in locked_rule for term in ("no hire", "disqualifier", "critical"))
+
+
+def _history_status_from_score(row: dict[str, Any], score: Any, status: Any) -> str:
+    status_text = str(status or "").strip()
+    normalized = _normalize_history_search(status_text)
+    if normalized in {"incomplete", "processing"}:
+        return status_text
+    if normalized == "no hire" and _history_has_no_hire_override(row):
+        return status_text or "No Hire"
+
+    percent = _coerce_history_percent(score)
+    if percent is None:
+        return status_text
+    if percent >= 80:
+        return "Hire"
+    if percent >= 65:
+        return "Borderline"
+    return "No Hire"
+
+
 def _history_offer_action(offer_status: str) -> str:
     status = str(offer_status or "not_generated").strip().lower() or "not_generated"
     if status == "not_generated":
@@ -661,6 +700,12 @@ def _build_pyside_history_rows(history_path: Path) -> list[PySideHistoryRow]:
     for row in rows:
         row_key = store.build_row_key(row)
         offer_status = _history_text(row, "offer_status", default="not_generated").strip().lower() or "not_generated"
+        score = _history_text(row, "score", "percent_of_max", "overall_score", "interview_score", default="")
+        status = _history_status_from_score(
+            row,
+            score,
+            _history_text(row, "status", "interview_status", "outcome", "determination", default=""),
+        )
         history_rows.append(
             PySideHistoryRow(
                 row_key=row_key,
@@ -668,8 +713,8 @@ def _build_pyside_history_rows(history_path: Path) -> list[PySideHistoryRow]:
                 candidate=_history_text(row, "candidate_name", "candidate", "name", default="Unknown candidate"),
                 school=_history_text(row, "school", default=""),
                 position=_history_text(row, "position", "candidate_position", "role", "track", default=""),
-                score=_history_text(row, "score", "percent_of_max", "overall_score", "interview_score", default=""),
-                status=_history_text(row, "status", "interview_status", "outcome", "determination", default=""),
+                score=score,
+                status=status,
                 offer_status=offer_status,
                 offer_action=_history_offer_action(offer_status),
                 notes_path=_history_text(row, "interview_notes_path", "saved_report_path", "notes_path", default=""),
@@ -934,6 +979,12 @@ def build_pyside_candidate_board(history_rows: Sequence[dict[str, Any] | PySideH
             offer_action = _history_text(row, "next_action", "recommended_next_action", default="")
             if not offer_action:
                 offer_action = _history_offer_action(offer_status)
+            score = _history_text(row, "score", "percent_of_max", "overall_score", "interview_score", default="")
+            status = _history_status_from_score(
+                row,
+                score,
+                _history_text(row, "status", "interview_status", "outcome", "determination", default=""),
+            )
             shared_history_rows.append(
                 PySideHistoryRow(
                     row_key=_history_text(row, "history_id", "row_key", default=""),
@@ -941,8 +992,8 @@ def build_pyside_candidate_board(history_rows: Sequence[dict[str, Any] | PySideH
                     candidate=candidate,
                     school=_history_text(row, "school", default=""),
                     position=_history_text(row, "position", "candidate_position", "role", "track", default=""),
-                    score=_history_text(row, "score", "percent_of_max", "overall_score", "interview_score", default=""),
-                    status=_history_text(row, "status", "interview_status", "outcome", "determination", default=""),
+                    score=score,
+                    status=status,
                     offer_status=offer_status or "not_generated",
                     offer_action=offer_action,
                     notes_path=_history_text(row, "interview_notes_path", "saved_report_path", "notes_path", default=""),
@@ -954,8 +1005,8 @@ def build_pyside_candidate_board(history_rows: Sequence[dict[str, Any] | PySideH
             row_data = {
                 "school": _history_text(row, "school", default=""),
                 "role": _history_text(row, "role", "track", "position", default=""),
-                "score": _history_text(row, "score", "percent_of_max", "overall_score", default=""),
-                "status": _history_text(row, "status", "interview_status", "outcome", default=""),
+                "score": score,
+                "status": status,
                 "next_action": offer_action,
             }
         if candidate in by_candidate:

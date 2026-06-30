@@ -1459,6 +1459,25 @@ def test_pyside_candidate_board_groups_history_by_candidate() -> None:
     assert board.rows[0]["next_action"] == "Generate Offer"
 
 
+def test_pyside_candidate_board_recomputes_stale_history_status_from_score() -> None:
+    rows = [
+        {
+            "candidate_name": "Tatiana",
+            "school": "Palmdale",
+            "track": "Preschool",
+            "determination": "No Hire",
+            "interview_score": 70.0,
+            "offer_status": "not_generated",
+        },
+    ]
+
+    board = build_pyside_candidate_board(rows)
+
+    assert board.rows[0]["score"] == "70.0"
+    assert board.rows[0]["status"] == "Borderline"
+    assert board.history_rows[0].status == "Borderline"
+
+
 def test_pyside_candidates_page_uses_history_table_layout_and_actions(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")

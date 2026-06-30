@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.13.0
+  version: 1.14.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, interview notes regeneration actions, user-closable
@@ -53,7 +53,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: build_pyside_candidate_board
-  description: Build PySide candidate list rows, shared history-grid rows, and hiring status summary from interview history rows.
+  description: Build PySide candidate list rows, shared history-grid rows, and hiring status summary from interview history rows. Numeric history scores are canonical for display thresholds unless an explicit no-hire override, incomplete state, or processing state is present; 80% and above displays Hire, 65% through below 80% displays Borderline, and below 65% displays No Hire.
   locked: false
   inputs:
     history_rows:
@@ -61,6 +61,45 @@ functions:
       required: true
   returns:
     type: PySideCandidateBoard
+  exceptions: []
+  side_effects: none
+- name: _coerce_history_percent
+  description: Parse a history score value or percent string into a display-safe 0 through 100 numeric percent for PySide history status thresholding; invalid or out-of-range values return None.
+  locked: false
+  inputs:
+    value:
+      type: Any
+      required: true
+  returns:
+    type: float | None
+  exceptions: []
+  side_effects: none
+- name: _history_has_no_hire_override
+  description: Return whether a persisted history row contains explicit automatic no-hire, disqualifier, critical-score, locked-rule, or override-rationale metadata that should preserve a No Hire status even when numeric score is 65% or higher.
+  locked: false
+  inputs:
+    row:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+- name: _history_status_from_score
+  description: Derive PySide history display status from score thresholds, preserving incomplete and processing statuses plus explicit no-hire override metadata; 80% and above returns Hire, 65% through below 80% returns Borderline, and below 65% returns No Hire.
+  locked: false
+  inputs:
+    row:
+      type: dict[str, Any]
+      required: true
+    score:
+      type: Any
+      required: true
+    status:
+      type: Any
+      required: true
+  returns:
+    type: str
   exceptions: []
   side_effects: none
 - name: build_pyside_admin_studio_model
@@ -794,7 +833,9 @@ data_structures:
     interview date, candidate, school, position, score, status, offer status/action,
     notes path, report path, and detached DeepSeek processing state/warning for the
     searchable, filterable, sortable, outcome-colored, content-sized PySide history
-    grid and offer workflow.
+    grid and offer workflow. Status must follow score display thresholds when a
+    numeric score is present unless explicit no-hire override metadata or an
+    incomplete/processing state is present.
 - name: TrackFlow
   type: dataclass
   description: Ordered question flow for one role track.
