@@ -289,7 +289,7 @@ modules:
     depends_on:
     - interview_runtime
   onboarding_app:
-    path: src/onboarding_app.pyw
+    path: src/onboarding_app.py
     depends_on:
     - onboarding_operations
     - platform_services

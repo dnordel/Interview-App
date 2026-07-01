@@ -234,7 +234,7 @@ module_inventory:
   contract: contracts/onboarding_action_sections.contract.yaml
 - module: onboarding_app
   import_path: onboarding_app
-  path: src/onboarding_app.pyw
+  path: src/onboarding_app.py
   runtime_adapter: true
   contract: contracts/onboarding_app.contract.yaml
 - module: onboarding_dashboard_actions

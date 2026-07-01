@@ -1,9 +1,10 @@
 module:
   name: onboarding_app
   language: python
-  path: src/onboarding_app.pyw
-  version: 1.0.1
-  description: Contract for onboarding_app module.
+  path: src/onboarding_app.py
+  version: 1.0.2
+  description: Contract for importable onboarding_app module. Windows launchers
+    use src/onboarding_app.pyw as a thin wrapper around this module.
 functions:
 - name: _load_launch_context
   description: _load_launch_context function in onboarding_app.
