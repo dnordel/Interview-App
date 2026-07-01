@@ -594,6 +594,7 @@ class ScoringEngine:
                     "auto_no_hire_reasons": list(deepseek_advisory.get("auto_no_hire_reasons", []) or []),
                     "auto_no_hire_quotes": list(deepseek_advisory.get("auto_no_hire_quotes", []) or []),
                     "model_trait_score": model_trait_score,
+                    "model_signal_analysis_summary": str(state.get("model_signal_analysis_summary") or "").strip(),
                     "selected_signal_ids": selected_signal_ids,
                     "model_signal_suggestions": model_signal_suggestions,
                     "model_signal_override": trait_signal_override_state(state),

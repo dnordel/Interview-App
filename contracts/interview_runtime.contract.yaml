@@ -2,7 +2,7 @@ module:
   name: interview_runtime
   language: python
   path: src/interview_runtime.py
-  version: 0.27.0
+  version: 0.28.0
   description: Flattened public interface for interview state, session management,
     audio/transcription runtime, transcript summary seam, controllers, history, and
     finalize pipeline; only active legacy adapters remain in the compatibility module
@@ -552,10 +552,11 @@ functions:
     executive summary prompt; per-question answer prompts may override the global
     answer prompt by question id, trait id, or flow index. Executive-summary
     prompts include transcript, candidate, answer-summary, selected job title,
-    matching role context, and optional scoring context. Prompts are evidence-first,
+    matching role context, optional scoring context split into scored and skipped
+    questions, and short AI signal/advisory analysis summaries. Prompts are evidence-first,
     role-aware, reject generic/invented claims, preserve usable question/prompt
-    labels for answer summaries, require non-scored answers to leave rubric
-    alignment empty, request and require an explicit
+    labels for answer summaries, require non-scored and skipped answers to leave rubric
+    alignment empty, prevent skipped questions from counting as concerns, request and require an explicit
     executive_summary_sections JSON object matching
     the director-scan template order of recommendation, overall fit,
     role-specific match, score pattern, paired strengths/concerns, four follow-up
@@ -603,13 +604,15 @@ functions:
 - name: generate_deepseek_trait_signal_suggestions
   description: >-
     Generate degraded, failed, or DeepSeek-backed model trait observation
-    suggestions and advisory 1-5 raw trait scores keyed by trait id without
+    suggestions, short signal/advisory analysis summaries, and advisory 1-5 raw trait scores keyed by trait id without
     changing human raw scores or compatibility selected_signal_ids; each trait is
     requested independently with configurable per-trait prompt overrides for
-    question-and-answer-first signal suggestions and advisory raw scoring, with
+    question-and-answer-first signal suggestions and advisory raw scoring using only
+    the current trait/rubric/runtime payload for each model call, with
     preschool employee readiness and emotional intelligence emphasized over
     rubric-wording matches for the signal suggestion prompt. Role context from
-    transcript items is included when available. Local Ollama calls use the configured timeout and
+    transcript items is included when available, and skipped trait items are not sent
+    for DeepSeek signal/scoring calls. Local Ollama calls use the configured timeout and
     invalid JSON responses are retried once with a repair prompt; responses are
     validated against required top-level keys, unsupported generated evidence quotes
     are removed, confidence values and risk_flag_evidence values are preserved, and failed traits remain advisory
@@ -642,9 +645,9 @@ functions:
       default: null
   returns:
     type: dict[str, Any]
-    description: Contains model_signal_suggestions_by_trait, model_suggestion_status,
-      model_suggestion_warnings, model_trait_scores_by_trait including
-      risk_flag_evidence when supplied, model_scoring_status,
+    description: Contains model_signal_suggestions_by_trait, model_signal_analysis_by_trait,
+      model_suggestion_status, model_suggestion_warnings, model_trait_scores_by_trait including
+      analysis_summary and risk_flag_evidence when supplied, model_scoring_status,
       and model_scoring_warnings. A trait_suggestions item with an empty suggestions
       list is a generated empty advisory result, not a failed generation.
   exceptions: []

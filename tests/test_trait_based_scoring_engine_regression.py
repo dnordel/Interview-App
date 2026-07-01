@@ -193,6 +193,47 @@ def test_session_score_uses_weighted_average_not_raw_signal_sum(scoring_engine_c
     assert result["decision"] == "hire"
 
 
+def test_score_session_excludes_skipped_traits_from_advisory_average(scoring_engine_class):
+    config = _sample_config()
+    config["decision_engine"]["thresholds"] = {"hire_percent_min": 80, "borderline_percent_min": 65}
+    signal_dictionary = {
+        "signals": [
+            {"id": "STRONG", "label": "Strong", "default_weight": 8},
+            {"id": "LOW", "label": "Low", "default_weight": -4},
+        ]
+    }
+    traits = [
+        {
+            "trait_id": "T1",
+            "trait_multiplier": 2,
+            "core_signals": [{"ref": "STRONG"}],
+            "extended_signal_groups": [],
+        },
+        {
+            "trait_id": "T2",
+            "trait_multiplier": 10,
+            "core_signals": [{"ref": "LOW"}],
+            "extended_signal_groups": [],
+        },
+    ]
+
+    engine = scoring_engine_class(config, signal_dictionary)
+    result = engine.score_session(
+        traits,
+        {
+            "T1": ["STRONG"],
+            "T2": {"skipped": True, "selected_signal_ids": ["LOW"]},
+        },
+    )
+
+    assert [trait["trait_id"] for trait in result["traits"]] == ["T1"]
+    assert result["totals"]["skipped_traits_count"] == 1
+    assert result["totals"]["trait_weight_sum"] == pytest.approx(2)
+    assert result["totals"]["raw_signal_total"] == pytest.approx(8)
+    assert result["totals"]["weighted_trait_percent"] == pytest.approx(100)
+    assert result["decision"] == "hire"
+
+
 def test_make_decision_uses_decision_engine_only(scoring_engine_class):
     config, signal_dictionary, _traits, _resolved_paths = scoring_engine_class.load_runtime_bundle(
         Path("Trait-Based Scoring/trait_based_scoring_contract.yaml")

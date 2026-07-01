@@ -446,6 +446,23 @@ class ScoringEngine:
         return 1
 
     @staticmethod
+    def _selection_state(value: Any) -> dict[str, Any]:
+        if isinstance(value, dict):
+            refs = value.get("selected_signal_ids", value.get("signal_ids", value.get("selected_refs", [])))
+            if not isinstance(refs, list):
+                refs = []
+            return {
+                "skipped": bool(value.get("skipped", False)),
+                "selected_refs": [str(ref) for ref in refs if str(ref or "").strip()],
+            }
+        if isinstance(value, list):
+            return {
+                "skipped": False,
+                "selected_refs": [str(ref) for ref in value if str(ref or "").strip()],
+            }
+        return {"skipped": False, "selected_refs": []}
+
+    @staticmethod
     def filter_traits_by_track(traits: list[dict[str, Any]], track: str | None) -> list[dict[str, Any]]:
         if not track:
             return traits
@@ -482,11 +499,16 @@ class ScoringEngine:
         raw_signal_total = 0
         weighted_score_sum = 0
         weight_sum = 0
+        skipped_traits_count = 0
         any_critical = False
 
         for trait in self.filter_traits_by_track(traits, track):
             trait_id = trait["trait_id"]
-            selected_refs = selections.get(trait_id, [])
+            selection_state = self._selection_state(selections.get(trait_id, []))
+            if selection_state["skipped"]:
+                skipped_traits_count += 1
+                continue
+            selected_refs = selection_state["selected_refs"]
             result = self.score_trait(trait, selected_refs)
             trait_results.append(result)
             total_core += result["core_score"]
@@ -516,6 +538,7 @@ class ScoringEngine:
                 "weighted_trait_score_1_to_5": overall_score_1_to_5,
                 "weighted_trait_percent": overall_percent,
                 "trait_weight_sum": weight_sum,
+                "skipped_traits_count": skipped_traits_count,
             },
             "decision": summary["decision"],
             "any_critical_selected": any_critical,

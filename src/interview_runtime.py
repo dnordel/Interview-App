@@ -1109,6 +1109,7 @@ DEFAULT_DEEPSEEK_PROMPT_TEMPLATES: dict[str, str] = {
         "}\n"
         "Rules: each answer summary is one sentence; question_label must be the exact input question or prompt text, never a generic label like Non-scored question; "
         "evidence_quotes must be exact short phrases from candidate_transcript; "
+        "if skipped is true, summarize only available evidence and do not treat missing or thin evidence as a candidate weakness; "
         "rubric_alignment names observed preschool-teacher behavior for scored trait answers and must be empty for non-scored answers; risks_or_gaps names missing or "
         "weak evidence, or empty string if none. Data: {payload_json}"
     ),
@@ -1124,6 +1125,7 @@ DEFAULT_DEEPSEEK_PROMPT_TEMPLATES: dict[str, str] = {
         "CANDIDATE NAME:\n{candidate_name}\n\n"
         "INTERVIEW TRANSCRIPT:\n{transcript_text}\n\n"
         "QUESTION SCORES / RATINGS:\n{scoring_json}\n\n"
+        "AI ANALYSIS SUMMARIES:\n{ai_analysis_summaries_json}\n\n"
         "DEEPSEEK ANSWER SUMMARIES:\n{answer_summaries_json}\n\n"
         "OPTIONAL ROLE CONTEXT OR RUBRIC:\n"
         "Tailor summary to role. For preschool/lead/infant-toddler roles emphasize child-centeredness, "
@@ -1140,6 +1142,8 @@ DEFAULT_DEEPSEEK_PROMPT_TEMPLATES: dict[str, str] = {
         "Suggested Follow-Up Questions: exactly 4 numbered questions.\n"
         "Final Hiring Notes: 1 to 2 practical closing sentences.\n\n"
         "Important Writing Rules: be specific and evidence-based; do not overstate confidence; "
+        "Use only scored_questions in QUESTION SCORES / RATINGS for Key Strengths and Key Concerns or Risks; "
+        "mention skipped_questions only as not evaluated, never as weakness or risk evidence; "
         "do not include long quotes; do not mention AI; do not produce a full question-by-question report.\n\n"
         "Return exactly this JSON shape. JSON output template:\n"
         "{\n"
@@ -1178,6 +1182,7 @@ DEFAULT_DEEPSEEK_PROMPT_TEMPLATES: dict[str, str] = {
         '  "trait_suggestions": [\n'
         "    {\n"
         '      "trait_id": "trait id from input",\n'
+        '      "analysis_summary": "one short neutral summary of signal evidence",\n'
         '      "suggestions": [\n'
         "        {\n"
         '          "signal_id": "valid signal_id from input",\n'
@@ -1198,7 +1203,7 @@ DEFAULT_DEEPSEEK_PROMPT_TEMPLATES: dict[str, str] = {
         "wording; rationale must connect evidence to the signal label and preschool role expectations; include "
         "automatic no-hire signal IDs only when directly supported by the transcript; do not guess from silence, "
         "but map concrete paraphrased evidence to the closest valid signal even when wording differs from rubric; "
-        "confidence 0 to 1. Data: {payload_json}"
+        "confidence 0 to 1. If skipped is true, return no suggestions and say skipped/not evaluated in analysis_summary. Data: {payload_json}"
     ),
     "trait_scoring_system": (
         "You are a strict JSON scoring API. Score preschool teacher interview trait answers "
@@ -1217,6 +1222,7 @@ DEFAULT_DEEPSEEK_PROMPT_TEMPLATES: dict[str, str] = {
         '      "trait_id": "trait id from input",\n'
         '      "raw_score": 1,\n'
         '      "evidence_quote": "exact short candidate wording",\n'
+        '      "analysis_summary": "one short neutral summary of advisory scoring evidence",\n'
         '      "rationale": "descriptor match",\n'
         '      "risks_or_gaps": "missing evidence or disqualifier risk if present",\n'
         '      "risk_flag_evidence": "evidence explaining any risk flag, or empty string if no risk flag"\n'
@@ -1224,6 +1230,7 @@ DEFAULT_DEEPSEEK_PROMPT_TEMPLATES: dict[str, str] = {
         "  ]\n"
         "}\n"
         "Rules: choose 1, 2, 3, 4, or 5 only; 5 is best; evidence_quote must be exact short candidate wording; "
+        "analysis_summary must be short and safe to pass to the executive summary generator; "
         "rationale must cite descriptor match; risks_or_gaps names missing evidence or disqualifier risk if present; "
         "risk_flag_evidence must explain why a risk flag should display when raw_score is 1 or 2 or risks_or_gaps is non-empty. "
         "Return no keys except trait_scores. Data: {payload_json}"
@@ -1484,6 +1491,8 @@ def _summary_transcript_items(flow_transcript: list[dict[str, Any]]) -> list[dic
                 "question": str(item.get("question") or item.get("prompt") or "").strip(),
                 "prompt": str(item.get("prompt") or item.get("question") or "").strip(),
                 "candidate_transcript": transcript,
+                "skipped": bool(item.get("skipped", False)),
+                "scored": str(item.get("type") or item.get("question_type") or "").strip() == "trait",
             }
         )
     return items
@@ -1617,6 +1626,7 @@ def _deepseek_executive_summary_messages(
                     "candidate_json": json.dumps(candidate_context, ensure_ascii=False),
                     "transcript_text": _format_deepseek_transcript_for_prompt(transcript_items or []),
                     "scoring_json": _format_deepseek_scoring_for_prompt(scoring),
+                    "ai_analysis_summaries_json": _deepseek_ai_analysis_summaries_for_prompt(scoring),
                     "answer_summaries_json": json.dumps(answer_summaries, ensure_ascii=False),
                     "role_context_or_rubric": candidate_context.get("role_context") or "No role-specific context available.",
                 },
@@ -1646,23 +1656,62 @@ def _format_deepseek_scoring_for_prompt(scoring: dict[str, Any] | None) -> str:
         "weighted_total": scoring.get("weighted_total"),
         "max_weighted_total": scoring.get("max_weighted_total"),
     }
-    rows: list[dict[str, Any]] = []
+    scored_questions: list[dict[str, Any]] = []
+    skipped_questions: list[dict[str, Any]] = []
+    ai_analysis_summaries: list[dict[str, Any]] = []
     for row in scoring.get("rows", []) or []:
         if not isinstance(row, dict):
             continue
-        rows.append(
+        trait_label = row.get("name") or row.get("trait_name") or row.get("trait_id") or row.get("id")
+        trait_id = row.get("trait_id") or row.get("id")
+        if row.get("skipped", False) or row.get("raw_score") is None:
+            skipped_questions.append({"trait": trait_label, "trait_id": trait_id, "status": "skipped_not_evaluated"})
+            continue
+        model_trait_score = row.get("model_trait_score") if isinstance(row.get("model_trait_score"), dict) else {}
+        signal_analysis = str(row.get("model_signal_analysis_summary") or "").strip()
+        advisory_analysis = str(model_trait_score.get("analysis_summary") or "").strip()
+        scored_questions.append(
             {
-                "trait": row.get("name") or row.get("trait_id") or row.get("id"),
+                "trait": trait_label,
+                "trait_id": trait_id,
                 "interviewer_raw_score": row.get("raw_score"),
-                "interviewer_weighted_score": row.get("calculated_score"),
+                "interviewer_weighted_score": row.get("calculated_score") or row.get("weighted_score"),
                 "deepseek_raw_score": row.get("deepseek_raw_score"),
                 "deepseek_weighted_score": row.get("deepseek_calculated_score"),
-                "deepseek_rationale": (row.get("model_trait_score") or {}).get("rationale")
-                if isinstance(row.get("model_trait_score"), dict)
-                else None,
+                "deepseek_rationale": model_trait_score.get("rationale"),
+                "signal_analysis_summary": signal_analysis,
+                "advisory_analysis_summary": advisory_analysis,
             }
         )
-    return json.dumps({"summary": summary, "rows": rows}, ensure_ascii=False)
+        if signal_analysis or advisory_analysis:
+            ai_analysis_summaries.append(
+                {
+                    "trait": trait_label,
+                    "trait_id": trait_id,
+                    "signal_analysis_summary": signal_analysis,
+                    "advisory_analysis_summary": advisory_analysis,
+                }
+            )
+    return json.dumps(
+        {
+            "summary": summary,
+            "scored_questions": scored_questions,
+            "skipped_questions": skipped_questions,
+            "ai_analysis_summaries": ai_analysis_summaries,
+            "instructions": "Use only scored_questions for key_strengths and key_concerns_or_risks. Skipped questions are not negative evidence.",
+        },
+        ensure_ascii=False,
+    )
+
+
+def _deepseek_ai_analysis_summaries_for_prompt(scoring: dict[str, Any] | None) -> str:
+    if not isinstance(scoring, dict):
+        return "[]"
+    try:
+        payload = json.loads(_format_deepseek_scoring_for_prompt(scoring))
+    except (TypeError, json.JSONDecodeError):
+        return "[]"
+    return json.dumps(payload.get("ai_analysis_summaries", []), ensure_ascii=False)
 
 
 def _request_deepseek_chat_completion(config: DeepSeekSummaryConfig, messages: list[dict[str, str]]) -> dict[str, Any]:
@@ -2243,9 +2292,9 @@ def _trait_suggestion_items(
     for idx, item in enumerate(flow_transcript, start=1):
         if not isinstance(item, dict) or str(item.get("type") or "").strip() != "trait":
             continue
-        trait_id = canonical_trait_id(item.get("id"))
+        trait_id = canonical_trait_id(item.get("trait_id") or item.get("id"))
         transcript = _normalize_transcript_text(item.get("candidate_transcript"))
-        if not trait_id or not transcript:
+        if not trait_id or not transcript or bool(item.get("skipped", False)):
             continue
         try:
             signal_definition = load_trait_signal_ui_definition(trait_id)
@@ -2282,6 +2331,7 @@ def _trait_suggestion_items(
                 "title": str(item.get("title") or "").strip(),
                 "question": str(item.get("question") or "").strip(),
                 "candidate_transcript": transcript,
+                "skipped": bool(item.get("skipped", False)),
                 "job_title": str(item.get("job_title") or item.get("track") or "").strip(),
                 "role_context": _role_context_for_track(item.get("job_title") or item.get("track")),
                 "valid_signals": signals,
@@ -2402,6 +2452,7 @@ def _role_context_from_trait_items(items: list[dict[str, Any]]) -> str:
 def _blank_deepseek_trait_suggestions(status: str, warning: str) -> dict[str, Any]:
     return {
         "model_signal_suggestions_by_trait": {},
+        "model_signal_analysis_by_trait": {},
         "model_suggestion_status": status,
         "model_suggestion_warnings": [warning] if warning else [],
         "model_trait_scores_by_trait": {},
@@ -2419,6 +2470,7 @@ def _normalize_deepseek_trait_suggestion_payload(
     if "trait_suggestions" not in parsed or not isinstance(parsed.get("trait_suggestions"), list):
         raise ValueError("DeepSeek trait suggestion response missing required fields.")
     output: dict[str, list[dict[str, Any]]] = {}
+    analysis_by_trait: dict[str, str] = {}
     for item in parsed.get("trait_suggestions", []) or []:
         if not isinstance(item, dict):
             continue
@@ -2435,8 +2487,12 @@ def _normalize_deepseek_trait_suggestion_payload(
             ]
         if trait_id:
             output[trait_id] = suggestions
+            analysis_summary = _clamp_deepseek_text(item.get("analysis_summary"), "rationale")
+            if analysis_summary:
+                analysis_by_trait[trait_id] = analysis_summary
     return {
         "model_signal_suggestions_by_trait": output,
+        "model_signal_analysis_by_trait": analysis_by_trait,
         "model_suggestion_status": "generated" if output else "failed",
         "model_suggestion_warnings": [] if output else ["DeepSeek trait suggestion response was empty."],
     }
@@ -2469,6 +2525,7 @@ def _normalize_deepseek_trait_score_payload(
         normalized_score = {
             "raw_score": raw_score,
             "evidence_quote": evidence_quote,
+            "analysis_summary": _clamp_deepseek_text(item.get("analysis_summary"), "rationale"),
             "rationale": _clamp_deepseek_text(item.get("rationale"), "rationale"),
             "risks_or_gaps": _clamp_deepseek_text(item.get("risks_or_gaps"), "risks_or_gaps"),
             "risk_flag_evidence": _clamp_deepseek_text(item.get("risk_flag_evidence"), "rationale"),
@@ -2526,6 +2583,16 @@ def generate_deepseek_trait_signal_suggestions(
             "Local DeepSeek trait suggestions are disabled.",
         )
     items, valid_ids_by_trait = _trait_suggestion_items(flow_transcript, rubric)
+    items = [
+        item
+        for item in items
+        if not bool(trait_state.get(str(item.get("trait_id") or "").strip(), {}).get("skipped", False))
+    ]
+    valid_ids_by_trait = {
+        str(item.get("trait_id") or "").strip(): valid_ids_by_trait.get(str(item.get("trait_id") or "").strip(), [])
+        for item in items
+        if str(item.get("trait_id") or "").strip()
+    }
     if not items:
         return _blank_deepseek_trait_suggestions(
             "no_transcript",
@@ -2533,6 +2600,7 @@ def generate_deepseek_trait_signal_suggestions(
         )
 
     suggestions_by_trait: dict[str, list[dict[str, Any]]] = {}
+    signal_analysis_by_trait: dict[str, str] = {}
     suggestion_warnings: list[str] = []
     transcript_by_trait = {
         str(item.get("trait_id") or "").strip(): str(item.get("candidate_transcript") or "")
@@ -2561,6 +2629,7 @@ def generate_deepseek_trait_signal_suggestions(
                 job_title=_job_title_from_trait_items([item]),
             )
             suggestions_by_trait.update(result["model_signal_suggestions_by_trait"])
+            signal_analysis_by_trait.update(result.get("model_signal_analysis_by_trait", {}))
         except Exception as exc:
             logger.warning("DeepSeek trait suggestion generation failed: %s", type(exc).__name__)
             suggestion_warnings.append(f"DeepSeek trait suggestions failed: {type(exc).__name__}")
@@ -2568,6 +2637,8 @@ def generate_deepseek_trait_signal_suggestions(
     for trait_id, suggestions in suggestions_by_trait.items():
         state = trait_state.setdefault(trait_id, {})
         write_canonical_model_signal_suggestions(state, suggestions)
+        if signal_analysis_by_trait.get(trait_id):
+            state["model_signal_analysis_summary"] = signal_analysis_by_trait[trait_id]
 
     scores_by_trait: dict[str, dict[str, Any]] = {}
     scoring_warnings: list[str] = []
@@ -2605,6 +2676,7 @@ def generate_deepseek_trait_signal_suggestions(
         scoring_warnings.append("DeepSeek trait scoring response was empty.")
     return {
         "model_signal_suggestions_by_trait": suggestions_by_trait,
+        "model_signal_analysis_by_trait": signal_analysis_by_trait,
         "model_suggestion_status": suggestion_status,
         "model_suggestion_warnings": suggestion_warnings,
         "model_trait_scores_by_trait": scores_by_trait,

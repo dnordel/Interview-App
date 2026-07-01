@@ -1,4 +1,4 @@
-last_updated: '2026-06-30'
+last_updated: '2026-07-01'
 sections:
 - name: interview_app
   tests:
@@ -15,7 +15,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-06-30T22:53:43.541044+00:00'
+generated_at_utc: '2026-07-01T17:46:49.035035+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -12372,6 +12372,15 @@ entries:
     - return_type
 - contract: contracts/trait_based_scoring_engine.contract.yaml
   symbol: trait_based_scoring_engine.ScoringEngine._require_value
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/trait_based_scoring_engine.contract.yaml
+  symbol: trait_based_scoring_engine.ScoringEngine._selection_state
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py

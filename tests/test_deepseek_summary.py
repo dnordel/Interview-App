@@ -512,6 +512,72 @@ def test_generate_deepseek_interview_summaries_feeds_scoring_into_executive_prom
     assert "Limited safety example." in executive_payloads[0]
 
 
+def test_generate_deepseek_interview_summaries_executive_prompt_uses_scored_rows_and_ai_analysis() -> None:
+    config = DeepSeekSummaryConfig(enabled=True, api_key="secret-key")
+    executive_payloads: list[str] = []
+
+    def _completion(_config, messages):
+        if "executive summary section" in messages[0]["content"]:
+            executive_payloads.append(messages[1]["content"])
+            return {"choices": [{"message": {"content": '{"executive_summary_sections":{"overall_fit":"Scored rows only."},"executive_summary":"Scored rows only.","interview_highlights":[]}'}}]}
+        return {
+            "choices": [
+                {
+                    "message": {
+                        "content": (
+                            '{"answer_summaries":[{"flow_index":1,"summary":"Uses calm routines.",'
+                            '"evidence_quotes":["calm routines"],"rubric_alignment":"Routine support.",'
+                            '"risks_or_gaps":""}]}'
+                        )
+                    }
+                }
+            ]
+        }
+
+    result = generate_deepseek_interview_summaries(
+        [{"flow_index": 1, "question": "How?", "candidate_transcript": "I use calm routines."}],
+        {"name": "Ada", "track": "Preschool Teacher"},
+        scoring={
+            "outcome": "Hire",
+            "rows": [
+                {
+                    "trait_id": "trait_1",
+                    "name": "Warmth",
+                    "raw_score": 5,
+                    "model_signal_analysis_summary": "Signal review found warm child language.",
+                    "model_trait_score": {
+                        "raw_score": 5,
+                        "rationale": "Strong descriptor match.",
+                        "analysis_summary": "Advisory score found strong routine evidence.",
+                    },
+                },
+                {
+                    "trait_id": "trait_2",
+                    "name": "Skipped Safety",
+                    "raw_score": None,
+                    "skipped": True,
+                    "model_trait_score": {
+                        "raw_score": 2,
+                        "rationale": "Missing safety detail.",
+                        "analysis_summary": "Should not influence strengths or risks.",
+                    },
+                },
+            ],
+        },
+        config=config,
+        chat_completion=_completion,
+    )
+
+    assert result["executive_summary"] == "Scored rows only."
+    assert executive_payloads
+    payload = executive_payloads[0]
+    assert "Signal review found warm child language." in payload
+    assert "Advisory score found strong routine evidence." in payload
+    assert "Skipped Safety" in payload
+    assert "Should not influence strengths or risks." not in payload
+    assert "Use only scored_questions" in payload
+
+
 def test_generate_deepseek_interview_summaries_chunks_answer_calls() -> None:
     config = DeepSeekSummaryConfig(enabled=True, api_key="secret-key")
     answer_payloads: list[str] = []
@@ -1948,6 +2014,7 @@ def test_generate_deepseek_trait_signal_suggestions_filters_and_persists(monkeyp
             content = (
                 '{"trait_scores":[{"trait_id":"trait_1","raw_score":4,'
                 '"evidence_quote":"clear visual routine","rationale":"Specific routine example.",'
+                '"analysis_summary":"Advisory score finds solid routine evidence.",'
                 '"risks_or_gaps":""}]}'
             )
         else:
@@ -2007,6 +2074,7 @@ def test_generate_deepseek_trait_signal_suggestions_filters_and_persists(monkeyp
         {"signal_id": "S_ONE", "confidence": 0.8, "rationale": "Specific example.", "evidence_quote": "clear visual routine"}
     ]
     assert trait_state["trait_1"]["deepseek_raw_score"] == 4
+    assert trait_state["trait_1"]["model_trait_score"]["analysis_summary"] == "Advisory score finds solid routine evidence."
     suggestion_system_prompt = calls[0][0]["content"]
     suggestion_user_prompt = calls[0][1]["content"]
     assert "Treat rubric wording as reference context, not a grading rubric" in suggestion_system_prompt
@@ -2019,6 +2087,64 @@ def test_generate_deepseek_trait_signal_suggestions_filters_and_persists(monkeyp
     assert '"descriptors": {"5": "Best evidence", "1": "Weak evidence"}' in scoring_prompt_payload
     assert '"interviewer_raw_score"' not in scoring_prompt_payload
     assert "trait_based_scoring_json" in scoring_prompt_payload
+
+
+def test_generate_deepseek_trait_signal_suggestions_uses_only_current_trait_engine_payload(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        interview_runtime,
+        "load_trait_signal_ui_definition",
+        lambda _trait_id: {
+            "valid_signal_ids": ["S_ONE"],
+            "core_signals": [{"signal_id": "S_ONE", "label": "One"}],
+            "extended_groups": [],
+        },
+    )
+    monkeypatch.setattr(
+        interview_runtime,
+        "_trait_based_scoring_json_context",
+        lambda: {
+            "trait_1": {"trait_id": "trait_1", "engine_marker": "CURRENT_TRAIT_ONLY"},
+            "trait_2": {"trait_id": "trait_2", "engine_marker": "UNRELATED_TRAIT"},
+        },
+    )
+    calls: list[list[dict[str, str]]] = []
+
+    def _completion(_config, messages):
+        calls.append(messages)
+        if "Score preschool teacher" in messages[0]["content"]:
+            content = (
+                '{"trait_scores":[{"trait_id":"trait_1","raw_score":4,'
+                '"evidence_quote":"visual routine","rationale":"Matches.",'
+                '"analysis_summary":"Advisory score looked only at trait 1.",'
+                '"risks_or_gaps":""}]}'
+            )
+        else:
+            content = (
+                '{"trait_suggestions":[{"trait_id":"trait_1",'
+                '"analysis_summary":"Signal review looked only at trait 1.",'
+                '"suggestions":[{"signal_id":"S_ONE","confidence":0.8,'
+                '"evidence_quote":"visual routine","rationale":"Specific example."}]}]}'
+            )
+        return {"choices": [{"message": {"content": content}}]}
+
+    trait_state: dict[str, dict[str, object]] = {"trait_1": {}}
+    result = generate_deepseek_trait_signal_suggestions(
+        [{"type": "trait", "id": "trait_1", "question": "How?", "candidate_transcript": "I use a visual routine."}],
+        trait_state,
+        config=DeepSeekSummaryConfig(enabled=True, api_key="secret-key"),
+        chat_completion=_completion,
+        rubric={"traits": [{"id": "trait_1", "name": "Routines"}, {"id": "trait_2", "name": "Unrelated"}]},
+    )
+
+    assert result["model_suggestion_status"] == "generated"
+    assert result["model_signal_analysis_by_trait"] == {"trait_1": "Signal review looked only at trait 1."}
+    assert trait_state["trait_1"]["model_signal_analysis_summary"] == "Signal review looked only at trait 1."
+    assert trait_state["trait_1"]["model_trait_score"]["analysis_summary"] == "Advisory score looked only at trait 1."
+    combined_prompt_text = "\n".join(message["content"] for call in calls for message in call)
+    assert "CURRENT_TRAIT_ONLY" in combined_prompt_text
+    assert "UNRELATED_TRAIT" not in combined_prompt_text
 
 
 def test_generate_deepseek_trait_scores_preserve_risk_flag_evidence(monkeypatch: pytest.MonkeyPatch) -> None:
