@@ -2,7 +2,7 @@ module:
   name: deepseek_finalize_worker
   language: python
   path: src/deepseek_finalize_worker.py
-  version: 1.9.0
+  version: 1.9.1
   description: Detached local DeepSeek finalize worker that refreshes interview notes
     documents and history status after the GUI finalize flow returns, keeping DeepSeek
     signal scoring advisory and human raw scores final. Workers serialize processing
@@ -174,7 +174,9 @@ functions:
   side_effects: Reads a local lock file.
 - name: _lock_is_stale
   description: Return whether a DeepSeek lock may be recovered because its owner is
-    gone or it exceeded the stale timeout.
+    gone or it exceeded the stale timeout, treating fresh unreadable lock metadata
+    as active so concurrent workers do not delete a lock while another process is
+    still writing it.
   locked: false
   inputs:
     lock_path:

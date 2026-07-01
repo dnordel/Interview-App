@@ -204,12 +204,19 @@ def _load_lock_metadata(lock_path: Path) -> dict[str, Any]:
 
 def _lock_is_stale(lock_path: Path, *, now: float | None = None, stale_seconds: float = _LOCK_STALE_SECONDS) -> bool:
     metadata = _load_lock_metadata(lock_path)
+    current_time = time.time() if now is None else now
+    if not metadata:
+        try:
+            age_seconds = current_time - lock_path.stat().st_mtime
+        except OSError:
+            return True
+        return age_seconds >= stale_seconds
     try:
         pid = int(metadata.get("pid", 0))
     except (TypeError, ValueError):
         pid = 0
     created_at = float(metadata.get("created_at_epoch", 0) or 0)
-    age_seconds = (time.time() if now is None else now) - created_at if created_at else stale_seconds + 1
+    age_seconds = current_time - created_at if created_at else stale_seconds + 1
     return age_seconds >= stale_seconds or not _process_is_alive(pid)
 
 

@@ -1564,6 +1564,13 @@ def test_deepseek_progress_write_does_not_abort_on_persistent_replace_permission
     assert not progress_path.exists()
 
 
+def test_deepseek_lock_treats_fresh_unreadable_metadata_as_active(tmp_path) -> None:
+    lock_path = tmp_path / "deepseek-finalize.lock"
+    lock_path.write_text("{", encoding="utf-8")
+
+    assert deepseek_finalize_worker._lock_is_stale(lock_path, now=lock_path.stat().st_mtime + 1) is False
+
+
 def test_deepseek_progress_write_persists_task_status_list(tmp_path) -> None:
     progress_path = tmp_path / "deepseek.progress.json"
     job = {"progress_path": str(progress_path)}
