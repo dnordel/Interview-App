@@ -28,6 +28,10 @@ from interview_runtime import (
 )
 
 
+def _disable_local_deepseek_runtime(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(deepseek_finalize_worker, "_ensure_local_deepseek_runtime", lambda *_args, **_kwargs: None)
+
+
 def test_request_deepseek_chat_completion_uses_native_ollama_json(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[dict[str, object]] = []
 
@@ -1205,6 +1209,7 @@ def test_deepseek_finalize_worker_starts_local_ollama_and_reports_specific_steps
 
 
 def test_deepseek_finalize_worker_updates_history_status(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _disable_local_deepseek_runtime(monkeypatch)
     history_path = tmp_path / "history.json"
     store = InterviewHistoryStore(history_path)
     store.append(
@@ -1262,6 +1267,7 @@ def test_deepseek_finalize_worker_uses_regenerated_notes_path_when_report_is_loc
     tmp_path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    _disable_local_deepseek_runtime(monkeypatch)
     history_path = tmp_path / "history.json"
     store = InterviewHistoryStore(history_path)
     store.append(
@@ -1394,6 +1400,7 @@ def test_deepseek_finalize_worker_document_only_rerun_skips_deepseek_generation(
 
 
 def test_deepseek_finalize_worker_passes_final_scoring_to_summary_generation(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _disable_local_deepseek_runtime(monkeypatch)
     call_order: list[str] = []
     summary_scoring: list[dict] = []
 
@@ -1448,6 +1455,7 @@ def test_deepseek_finalize_worker_fails_without_export_when_deepseek_outputs_are
     tmp_path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    _disable_local_deepseek_runtime(monkeypatch)
     history_path = tmp_path / "history.json"
     store = InterviewHistoryStore(history_path)
     store.append(
@@ -1614,6 +1622,7 @@ def test_finalize_progress_tasks_mark_ordered_prior_queued_steps_finished() -> N
 
 
 def test_deepseek_finalize_worker_marks_failed_when_no_deepseek_outputs_generate(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _disable_local_deepseek_runtime(monkeypatch)
     history_path = tmp_path / "history.json"
     store = InterviewHistoryStore(history_path)
     store.append(
@@ -1678,6 +1687,7 @@ def test_deepseek_finalize_worker_exports_partial_when_trait_advisory_has_no_tra
     tmp_path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    _disable_local_deepseek_runtime(monkeypatch)
     history_path = tmp_path / "history.json"
     store = InterviewHistoryStore(history_path)
     store.append(
@@ -1743,6 +1753,7 @@ def test_deepseek_finalize_worker_exports_partial_when_trait_suggestions_are_par
     tmp_path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    _disable_local_deepseek_runtime(monkeypatch)
     history_path = tmp_path / "history.json"
     store = InterviewHistoryStore(history_path)
     store.append(
