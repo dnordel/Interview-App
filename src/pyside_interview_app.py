@@ -2852,12 +2852,41 @@ class PySideInterviewWindow:
         table.setHorizontalHeaderLabels(headers)
         table.verticalHeader().setVisible(True)
         table.setAlternatingRowColors(True)
+        table.setWordWrap(True)
+        table.setTextElideMode(self.QtCore.Qt.TextElideMode.ElideNone)
+        table.verticalHeader().setSectionResizeMode(self.QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
         table.horizontalHeader().setStretchLastSection(True)
+        table.setStyleSheet(
+            """
+            QTableWidget {
+                background: #ffffff;
+                alternate-background-color: #f8fafc;
+                color: #172033;
+                selection-background-color: #2563eb;
+                selection-color: #ffffff;
+            }
+            QTableWidget::item {
+                color: #172033;
+                padding: 6px;
+            }
+            QTableWidget::item:selected {
+                background: #2563eb;
+                color: #ffffff;
+            }
+            QHeaderView::section {
+                background: #f8fafc;
+                color: #172033;
+                padding: 6px;
+                border: 1px solid #e5e7eb;
+            }
+            """
+        )
         self._admin_tables[key] = table
         self._admin_table_editable_columns[key] = set(editable_columns)
         for row_index, row in enumerate(rows):
             for column, value in enumerate(row):
                 table.setItem(row_index, column, self._admin_item(str(value), editable=False))
+        table.resizeRowsToContents()
         return table
 
     def _admin_item(self, value: str, *, editable: bool) -> Any:
@@ -2888,8 +2917,12 @@ class PySideInterviewWindow:
                         continue
                     if enabled and column in editable_columns:
                         item.setFlags(item.flags() | self.QtCore.Qt.ItemFlag.ItemIsEditable)
+                        item.setData(self.QtCore.Qt.ItemDataRole.BackgroundRole, self.QtGui.QBrush(self.QtGui.QColor("#fff7cc")))
                     else:
                         item.setFlags(item.flags() & ~self.QtCore.Qt.ItemFlag.ItemIsEditable)
+                        item.setData(self.QtCore.Qt.ItemDataRole.BackgroundRole, None)
+            table.resizeRowsToContents()
+        self.admin_edit_button.setText("Editing" if enabled else "Edit")
         self.admin_edit_button.setEnabled(not enabled)
         self.admin_review_button.setEnabled(enabled)
         self.admin_discard_button.setEnabled(enabled)
@@ -2902,6 +2935,8 @@ class PySideInterviewWindow:
             status = f"{status}    Validation: blocked"
         else:
             status = f"{status}    Validation: ready"
+        if self.admin_edit_mode:
+            status = f"Edit mode    {status}"
         self.admin_status_label.setText(status)
 
     def _capture_admin_table_edits(self) -> None:

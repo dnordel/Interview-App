@@ -2,12 +2,13 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.18.0
+  version: 1.18.1
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, compact home draft actions beside the
-    start action, guided review-then-apply Admin Studio backed by admin_studio,
-    interview notes regeneration actions, user-closable
+    start action, guided review-then-apply Admin Studio backed by admin_studio
+    with readable wrapped admin tables and visible edit mode, interview notes
+    regeneration actions, user-closable
     finalize progress with immediate ordered task/status rows in a compact scrollable
     dialog, live history refresh, and single-surface parity documentation
     for desktop Tk contracts while preserving Tk-owned finalize, history, document,
@@ -473,7 +474,8 @@ classes:
     side_effects: none
   - name: _set_admin_editing_enabled
     description: Toggle Admin Studio tables between read-only mode and explicit edit
-      mode.
+      mode, including visible edit-state button text, editable-cell highlighting,
+      and readable table wrapping.
     locked: false
     inputs:
       enabled:

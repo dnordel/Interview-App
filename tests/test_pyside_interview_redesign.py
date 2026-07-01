@@ -1923,6 +1923,10 @@ def test_pyside_admin_studio_uses_guided_readonly_sections_until_edit(tmp_path: 
 
     assert section_list is not None
     assert [section_list.item(index).text() for index in range(section_list.count())][:2] == ["Questions & Flow", "Rubrics"]
+    assert questions_table.wordWrap() is True
+    assert questions_table.textElideMode() == qt_core.Qt.TextElideMode.ElideNone
+    assert "alternate-background-color: #f8fafc" in questions_table.styleSheet()
+    assert "selection-color: #ffffff" in questions_table.styleSheet()
     assert questions_table.item(0, 4).text() == "Why Launch Pad Learning?"
     assert not (questions_table.item(0, 4).flags() & qt_core.Qt.ItemFlag.ItemIsEditable)
     assert rubrics_table.rowCount() == 1
@@ -1930,6 +1934,8 @@ def test_pyside_admin_studio_uses_guided_readonly_sections_until_edit(tmp_path: 
     assert rubrics_table.item(0, 1).text() == "Empathy"
     assert not (rubrics_table.item(0, 0).flags() & qt_core.Qt.ItemFlag.ItemIsEditable)
     window.admin_edit_button.click()
+    assert window.admin_edit_button.text() == "Editing"
+    assert "Edit mode" in window.admin_status_label.text()
     assert questions_table.item(0, 4).flags() & qt_core.Qt.ItemFlag.ItemIsEditable
     assert rubrics_table.item(0, 1).flags() & qt_core.Qt.ItemFlag.ItemIsEditable
     window.window.close()
