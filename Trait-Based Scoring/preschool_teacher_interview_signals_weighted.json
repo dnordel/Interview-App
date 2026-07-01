@@ -15,7 +15,8 @@
       "Revised to add subtle, realistic weak-signal patterns candidates may reveal in interviews without directly admitting misconduct.",
       "Preserves trait/question-level organization and existing signal IDs wherever the meaning remains substantially the same.",
       "Adds preschool-specific coverage for supervision, ratios, family communication, inclusion, and role readiness.",
-      "Keeps base_weight naming to preserve the uploaded file structure and runtime compatibility; base_weight functions as the default signal weight."
+      "Keeps base_weight naming to preserve the uploaded file structure and runtime compatibility; base_weight functions as the default signal weight.",
+      "Assistant Director / Enrollment Specialist weighted trait definitions appended from uploaded JSON source."
     ]
   },
   "signal_weight_scale": {
@@ -6240,6 +6241,1905 @@
         "What systems help you remember documentation or follow-through?",
         "What required duty would be most challenging for you?"
       ]
+    },
+    {
+      "trait_id": "ades_trait_1",
+      "trait_name": "Operational Judgment and Prioritization",
+      "priority": "Critical",
+      "trait_multiplier": 3,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "question": "It is 9:00 AM. A tour family arrives early, a classroom is out of ratio, a parent is upset about a billing issue, and a state-program document is due today. What do you do first, second, and third?",
+      "score_1_auto_no_hire": true,
+      "core_signals": [
+        {
+          "id": "ADES_T1_STRONG_EVIDENCE",
+          "label": "Strong evidence for Operational Judgment and Prioritization",
+          "maps_to": [
+            "S_ADES_STRONG_EVIDENCE"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Calmly sequences the situation with child supervision and licensing first, clear acknowledgment of families, practical delegation or temporary coverage, documented follow-up, deadline protection, and appropriate Director escalation.",
+          "auto_detect_tags": [
+            "strong_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T1_ACCEPTABLE_EVIDENCE",
+          "label": "Acceptable evidence for Operational Judgment and Prioritization",
+          "maps_to": [
+            "S_ADES_ACCEPTABLE_EVIDENCE"
+          ],
+          "base_weight": 1,
+          "signal_category": "positive",
+          "evidence_hint": "Gives a generally reasonable order of action but lacks depth, structure, or clear follow-through. May mention ratio and documents but not explain how they would manage competing demands.",
+          "auto_detect_tags": [
+            "acceptable_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T1_UNDERDEVELOPED_EVIDENCE",
+          "label": "Underdeveloped evidence for Operational Judgment and Prioritization",
+          "maps_to": [
+            "S_ADES_UNDERDEVELOPED_EVIDENCE"
+          ],
+          "base_weight": -1,
+          "signal_category": "neutral_or_mixed",
+          "evidence_hint": "Shows weak sequencing or reactive judgment. Recognizes that several things matter but does not clearly identify what must happen first or how to prevent something from being missed.",
+          "auto_detect_tags": [
+            "underdeveloped_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T1_SERIOUS_CONCERN",
+          "label": "Serious concern for Operational Judgment and Prioritization",
+          "maps_to": [
+            "S_ADES_SERIOUS_CONCERN"
+          ],
+          "base_weight": -3,
+          "signal_category": "red_flag",
+          "evidence_hint": "Shows serious concern by failing to prioritize child supervision, ratio, licensing, or immediate safety. May focus first on the loudest adult issue or paperwork while leaving the classroom concern unresolved.",
+          "auto_detect_tags": [
+            "serious_concern"
+          ],
+          "is_critical": true
+        },
+        {
+          "id": "ADES_T1_AUTO_NO_HIRE",
+          "label": "Automatic no-hire concern for Operational Judgment and Prioritization",
+          "maps_to": [
+            "S_ADES_AUTO_NO_HIRE"
+          ],
+          "base_weight": "AUTO_NO_HIRE",
+          "signal_category": "automatic_no_hire",
+          "evidence_hint": "Shows serious concern by failing to prioritize child supervision, ratio, licensing, or immediate safety. May focus first on the loudest adult issue or paperwork while leaving the classroom concern unresolved.",
+          "auto_detect_tags": [
+            "auto_no_hire"
+          ],
+          "auto_no_hire": true,
+          "is_critical": true
+        }
+      ],
+      "extended_signals": [
+        {
+          "id": "ADES_T1_EXCELLENT_SAMPLE_ALIGNMENT",
+          "label": "Aligns with excellent sample answer for Operational Judgment and Prioritization",
+          "maps_to": [
+            "S_ADES_EXCELLENT_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Calmly sequences the situation with child supervision and licensing first, clear acknowledgment of families, practical delegation or temporary coverage, documented follow-up, deadline protection, and appropriate Director escalation.",
+          "auto_detect_tags": [
+            "excellent_sample_alignment"
+          ]
+        },
+        {
+          "id": "ADES_T1_WEAK_SAMPLE_ALIGNMENT",
+          "label": "Aligns with weak sample answer for Operational Judgment and Prioritization",
+          "maps_to": [
+            "S_ADES_WEAK_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Shows weak sequencing or reactive judgment. Recognizes that several things matter but does not clearly identify what must happen first or how to prevent something from being missed.",
+          "auto_detect_tags": [
+            "weak_sample_alignment"
+          ],
+          "is_critical": true
+        }
+      ],
+      "suggested_follow_up_probes": [
+        "What cannot wait?",
+        "What can be acknowledged but delayed?",
+        "How would you keep the tour family and upset parent informed?",
+        "When would you involve the Director?",
+        "How would you make sure the state-program deadline is still met?"
+      ]
+    },
+    {
+      "trait_id": "ades_trait_2",
+      "trait_name": "Enrollment Ownership and Family Follow-Up",
+      "priority": "Critical",
+      "trait_multiplier": 3,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "question": "A family tours the school, seems interested, but does not enroll immediately. Walk me through how you would follow up over the next week.",
+      "score_1_auto_no_hire": true,
+      "core_signals": [
+        {
+          "id": "ADES_T2_STRONG_EVIDENCE",
+          "label": "Strong evidence for Enrollment Ownership and Family Follow-Up",
+          "maps_to": [
+            "S_ADES_STRONG_EVIDENCE"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Takes ownership of the enrollment pipeline by documenting needs, sending timely warm follow-up, identifying barriers, clarifying next steps, tracking status, following up consistently, and avoiding pressure or unauthorized promises.",
+          "auto_detect_tags": [
+            "strong_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T2_ACCEPTABLE_EVIDENCE",
+          "label": "Acceptable evidence for Enrollment Ownership and Family Follow-Up",
+          "maps_to": [
+            "S_ADES_ACCEPTABLE_EVIDENCE"
+          ],
+          "base_weight": 1,
+          "signal_category": "positive",
+          "evidence_hint": "Describes polite basic follow-up but lacks a clear tracking method, timing plan, or strategy for understanding family needs and barriers.",
+          "auto_detect_tags": [
+            "acceptable_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T2_UNDERDEVELOPED_EVIDENCE",
+          "label": "Underdeveloped evidence for Enrollment Ownership and Family Follow-Up",
+          "maps_to": [
+            "S_ADES_UNDERDEVELOPED_EVIDENCE"
+          ],
+          "base_weight": -1,
+          "signal_category": "neutral_or_mixed",
+          "evidence_hint": "Follow-up is too passive, too pushy, inconsistent, or mostly focused on filling a spot rather than helping the family make an informed decision.",
+          "auto_detect_tags": [
+            "underdeveloped_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T2_SERIOUS_CONCERN",
+          "label": "Serious concern for Enrollment Ownership and Family Follow-Up",
+          "maps_to": [
+            "S_ADES_SERIOUS_CONCERN"
+          ],
+          "base_weight": -3,
+          "signal_category": "red_flag",
+          "evidence_hint": "Shows serious concern by dismissing follow-up, pressuring families, misrepresenting availability, or promising terms outside authority.",
+          "auto_detect_tags": [
+            "serious_concern"
+          ],
+          "is_critical": true
+        },
+        {
+          "id": "ADES_T2_AUTO_NO_HIRE",
+          "label": "Automatic no-hire concern for Enrollment Ownership and Family Follow-Up",
+          "maps_to": [
+            "S_ADES_AUTO_NO_HIRE"
+          ],
+          "base_weight": "AUTO_NO_HIRE",
+          "signal_category": "automatic_no_hire",
+          "evidence_hint": "Shows serious concern by dismissing follow-up, pressuring families, misrepresenting availability, or promising terms outside authority.",
+          "auto_detect_tags": [
+            "auto_no_hire"
+          ],
+          "auto_no_hire": true,
+          "is_critical": true
+        }
+      ],
+      "extended_signals": [
+        {
+          "id": "ADES_T2_EXCELLENT_SAMPLE_ALIGNMENT",
+          "label": "Aligns with excellent sample answer for Enrollment Ownership and Family Follow-Up",
+          "maps_to": [
+            "S_ADES_EXCELLENT_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Takes ownership of the enrollment pipeline by documenting needs, sending timely warm follow-up, identifying barriers, clarifying next steps, tracking status, following up consistently, and avoiding pressure or unauthorized promises.",
+          "auto_detect_tags": [
+            "excellent_sample_alignment"
+          ]
+        },
+        {
+          "id": "ADES_T2_WEAK_SAMPLE_ALIGNMENT",
+          "label": "Aligns with weak sample answer for Enrollment Ownership and Family Follow-Up",
+          "maps_to": [
+            "S_ADES_WEAK_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Follow-up is too passive, too pushy, inconsistent, or mostly focused on filling a spot rather than helping the family make an informed decision.",
+          "auto_detect_tags": [
+            "weak_sample_alignment"
+          ],
+          "is_critical": true
+        }
+      ],
+      "suggested_follow_up_probes": [
+        "What would you document after the tour?",
+        "What would your same-day follow-up say?",
+        "How would you identify barriers without being pushy?",
+        "How would you track the family in the enrollment pipeline?",
+        "What would you avoid promising?"
+      ]
+    },
+    {
+      "trait_id": "ades_trait_3",
+      "trait_name": "Compliance Accuracy and Documentation Discipline",
+      "priority": "Critical",
+      "trait_multiplier": 3,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "question": "Tell me about a time you caught an error in records, billing, attendance, paperwork, or data entry. What did you do?",
+      "score_1_auto_no_hire": true,
+      "core_signals": [
+        {
+          "id": "ADES_T3_STRONG_EVIDENCE",
+          "label": "Strong evidence for Compliance Accuracy and Documentation Discipline",
+          "maps_to": [
+            "S_ADES_STRONG_EVIDENCE"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Connects documentation accuracy to licensing, funding, billing, attendance, child safety, family trust, and compliance. Corrects transparently, informs the right person, checks related records, and improves the process.",
+          "auto_detect_tags": [
+            "strong_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T3_ACCEPTABLE_EVIDENCE",
+          "label": "Acceptable evidence for Compliance Accuracy and Documentation Discipline",
+          "maps_to": [
+            "S_ADES_ACCEPTABLE_EVIDENCE"
+          ],
+          "base_weight": 1,
+          "signal_category": "positive",
+          "evidence_hint": "Understands that accuracy matters and would correct errors, but the answer is basic and lacks verification, escalation, or prevention steps.",
+          "auto_detect_tags": [
+            "acceptable_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T3_UNDERDEVELOPED_EVIDENCE",
+          "label": "Underdeveloped evidence for Compliance Accuracy and Documentation Discipline",
+          "maps_to": [
+            "S_ADES_UNDERDEVELOPED_EVIDENCE"
+          ],
+          "base_weight": -1,
+          "signal_category": "neutral_or_mixed",
+          "evidence_hint": "Minimizes accuracy or gives a vague correction process. May rely on others to catch issues or treat errors as routine without accountability.",
+          "auto_detect_tags": [
+            "underdeveloped_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T3_SERIOUS_CONCERN",
+          "label": "Serious concern for Compliance Accuracy and Documentation Discipline",
+          "maps_to": [
+            "S_ADES_SERIOUS_CONCERN"
+          ],
+          "base_weight": -3,
+          "signal_category": "red_flag",
+          "evidence_hint": "Shows serious concern by treating required documentation casually, hiding or silently changing errors, or not understanding why records matter in a preschool setting.",
+          "auto_detect_tags": [
+            "serious_concern"
+          ],
+          "is_critical": true
+        },
+        {
+          "id": "ADES_T3_AUTO_NO_HIRE",
+          "label": "Automatic no-hire concern for Compliance Accuracy and Documentation Discipline",
+          "maps_to": [
+            "S_ADES_AUTO_NO_HIRE"
+          ],
+          "base_weight": "AUTO_NO_HIRE",
+          "signal_category": "automatic_no_hire",
+          "evidence_hint": "Shows serious concern by treating required documentation casually, hiding or silently changing errors, or not understanding why records matter in a preschool setting.",
+          "auto_detect_tags": [
+            "auto_no_hire"
+          ],
+          "auto_no_hire": true,
+          "is_critical": true
+        }
+      ],
+      "extended_signals": [
+        {
+          "id": "ADES_T3_EXCELLENT_SAMPLE_ALIGNMENT",
+          "label": "Aligns with excellent sample answer for Compliance Accuracy and Documentation Discipline",
+          "maps_to": [
+            "S_ADES_EXCELLENT_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Connects documentation accuracy to licensing, funding, billing, attendance, child safety, family trust, and compliance. Corrects transparently, informs the right person, checks related records, and improves the process.",
+          "auto_detect_tags": [
+            "excellent_sample_alignment"
+          ]
+        },
+        {
+          "id": "ADES_T3_WEAK_SAMPLE_ALIGNMENT",
+          "label": "Aligns with weak sample answer for Compliance Accuracy and Documentation Discipline",
+          "maps_to": [
+            "S_ADES_WEAK_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Minimizes accuracy or gives a vague correction process. May rely on others to catch issues or treat errors as routine without accountability.",
+          "auto_detect_tags": [
+            "weak_sample_alignment"
+          ],
+          "is_critical": true
+        }
+      ],
+      "suggested_follow_up_probes": [
+        "How did you catch the error?",
+        "How did you correct it?",
+        "Who needed to be informed?",
+        "How did you check whether related records were affected?",
+        "What did you do to prevent the same error from happening again?"
+      ]
+    },
+    {
+      "trait_id": "ades_trait_4",
+      "trait_name": "Confidentiality and Professional Judgment",
+      "priority": "Critical",
+      "trait_multiplier": 3,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "question": "Tell me about a time you handled sensitive information about a family, child, employee, customer, or client. How did you protect it?",
+      "score_1_auto_no_hire": true,
+      "core_signals": [
+        {
+          "id": "ADES_T4_STRONG_EVIDENCE",
+          "label": "Strong evidence for Confidentiality and Professional Judgment",
+          "maps_to": [
+            "S_ADES_STRONG_EVIDENCE"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Shows strong need-to-know judgment for family, child, billing, subsidy, health, and staff information. Avoids gossip, uses private channels, stores records appropriately, and escalates through proper channels.",
+          "auto_detect_tags": [
+            "strong_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T4_ACCEPTABLE_EVIDENCE",
+          "label": "Acceptable evidence for Confidentiality and Professional Judgment",
+          "maps_to": [
+            "S_ADES_ACCEPTABLE_EVIDENCE"
+          ],
+          "base_weight": 1,
+          "signal_category": "positive",
+          "evidence_hint": "Generally understands privacy and says they would not share sensitive information, but the answer is basic and lacks specific examples.",
+          "auto_detect_tags": [
+            "acceptable_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T4_UNDERDEVELOPED_EVIDENCE",
+          "label": "Underdeveloped evidence for Confidentiality and Professional Judgment",
+          "maps_to": [
+            "S_ADES_UNDERDEVELOPED_EVIDENCE"
+          ],
+          "base_weight": -1,
+          "signal_category": "neutral_or_mixed",
+          "evidence_hint": "Shows unclear confidentiality boundaries. May share more context than needed with staff or discuss sensitive information in semi-public areas.",
+          "auto_detect_tags": [
+            "underdeveloped_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T4_SERIOUS_CONCERN",
+          "label": "Serious concern for Confidentiality and Professional Judgment",
+          "maps_to": [
+            "S_ADES_SERIOUS_CONCERN"
+          ],
+          "base_weight": -3,
+          "signal_category": "red_flag",
+          "evidence_hint": "Shows serious concern by treating confidential information as casual conversation, sharing private details unnecessarily, or misunderstanding need-to-know boundaries.",
+          "auto_detect_tags": [
+            "serious_concern"
+          ],
+          "is_critical": true
+        },
+        {
+          "id": "ADES_T4_AUTO_NO_HIRE",
+          "label": "Automatic no-hire concern for Confidentiality and Professional Judgment",
+          "maps_to": [
+            "S_ADES_AUTO_NO_HIRE"
+          ],
+          "base_weight": "AUTO_NO_HIRE",
+          "signal_category": "automatic_no_hire",
+          "evidence_hint": "Shows serious concern by treating confidential information as casual conversation, sharing private details unnecessarily, or misunderstanding need-to-know boundaries.",
+          "auto_detect_tags": [
+            "auto_no_hire"
+          ],
+          "auto_no_hire": true,
+          "is_critical": true
+        }
+      ],
+      "extended_signals": [
+        {
+          "id": "ADES_T4_EXCELLENT_SAMPLE_ALIGNMENT",
+          "label": "Aligns with excellent sample answer for Confidentiality and Professional Judgment",
+          "maps_to": [
+            "S_ADES_EXCELLENT_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Shows strong need-to-know judgment for family, child, billing, subsidy, health, and staff information. Avoids gossip, uses private channels, stores records appropriately, and escalates through proper channels.",
+          "auto_detect_tags": [
+            "excellent_sample_alignment"
+          ]
+        },
+        {
+          "id": "ADES_T4_WEAK_SAMPLE_ALIGNMENT",
+          "label": "Aligns with weak sample answer for Confidentiality and Professional Judgment",
+          "maps_to": [
+            "S_ADES_WEAK_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Shows unclear confidentiality boundaries. May share more context than needed with staff or discuss sensitive information in semi-public areas.",
+          "auto_detect_tags": [
+            "weak_sample_alignment"
+          ],
+          "is_critical": true
+        }
+      ],
+      "suggested_follow_up_probes": [
+        "Who needed to know?",
+        "Who did not need to know?",
+        "How would you respond if a staff member asked casually?",
+        "What should not be discussed at the front desk?",
+        "How would you store or communicate sensitive information?"
+      ]
+    },
+    {
+      "trait_id": "ades_trait_5",
+      "trait_name": "Warm but Firm Parent Communication",
+      "priority": "Critical",
+      "trait_multiplier": 3,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "question": "A parent is upset and says, “No one told me I needed this paperwork, and now you are saying my child cannot start tomorrow?” How would you respond?",
+      "score_1_auto_no_hire": true,
+      "core_signals": [
+        {
+          "id": "ADES_T5_STRONG_EVIDENCE",
+          "label": "Strong evidence for Warm but Firm Parent Communication",
+          "maps_to": [
+            "S_ADES_STRONG_EVIDENCE"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Validates frustration, reviews the file calmly, explains requirements clearly, offers practical help, avoids blame, protects confidentiality, and does not waive requirements or promise exceptions outside authority.",
+          "auto_detect_tags": [
+            "strong_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T5_ACCEPTABLE_EVIDENCE",
+          "label": "Acceptable evidence for Warm but Firm Parent Communication",
+          "maps_to": [
+            "S_ADES_ACCEPTABLE_EVIDENCE"
+          ],
+          "base_weight": 1,
+          "signal_category": "positive",
+          "evidence_hint": "Gives an acceptable policy-based response, but may be more procedural than relational or may lack practical next steps.",
+          "auto_detect_tags": [
+            "acceptable_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T5_UNDERDEVELOPED_EVIDENCE",
+          "label": "Underdeveloped evidence for Warm but Firm Parent Communication",
+          "maps_to": [
+            "S_ADES_UNDERDEVELOPED_EVIDENCE"
+          ],
+          "base_weight": -1,
+          "signal_category": "neutral_or_mixed",
+          "evidence_hint": "Sounds defensive, blunt, overly apologetic, vague, or likely to create confusion about whether the child can start.",
+          "auto_detect_tags": [
+            "underdeveloped_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T5_SERIOUS_CONCERN",
+          "label": "Serious concern for Warm but Firm Parent Communication",
+          "maps_to": [
+            "S_ADES_SERIOUS_CONCERN"
+          ],
+          "base_weight": -3,
+          "signal_category": "red_flag",
+          "evidence_hint": "Shows serious concern by blaming the parent, arguing, promising an unauthorized exception, ignoring required documents, or escalating the conflict.",
+          "auto_detect_tags": [
+            "serious_concern"
+          ],
+          "is_critical": true
+        },
+        {
+          "id": "ADES_T5_AUTO_NO_HIRE",
+          "label": "Automatic no-hire concern for Warm but Firm Parent Communication",
+          "maps_to": [
+            "S_ADES_AUTO_NO_HIRE"
+          ],
+          "base_weight": "AUTO_NO_HIRE",
+          "signal_category": "automatic_no_hire",
+          "evidence_hint": "Shows serious concern by blaming the parent, arguing, promising an unauthorized exception, ignoring required documents, or escalating the conflict.",
+          "auto_detect_tags": [
+            "auto_no_hire"
+          ],
+          "auto_no_hire": true,
+          "is_critical": true
+        }
+      ],
+      "extended_signals": [
+        {
+          "id": "ADES_T5_EXCELLENT_SAMPLE_ALIGNMENT",
+          "label": "Aligns with excellent sample answer for Warm but Firm Parent Communication",
+          "maps_to": [
+            "S_ADES_EXCELLENT_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Validates frustration, reviews the file calmly, explains requirements clearly, offers practical help, avoids blame, protects confidentiality, and does not waive requirements or promise exceptions outside authority.",
+          "auto_detect_tags": [
+            "excellent_sample_alignment"
+          ]
+        },
+        {
+          "id": "ADES_T5_WEAK_SAMPLE_ALIGNMENT",
+          "label": "Aligns with weak sample answer for Warm but Firm Parent Communication",
+          "maps_to": [
+            "S_ADES_WEAK_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Sounds defensive, blunt, overly apologetic, vague, or likely to create confusion about whether the child can start.",
+          "auto_detect_tags": [
+            "weak_sample_alignment"
+          ],
+          "is_critical": true
+        }
+      ],
+      "suggested_follow_up_probes": [
+        "What would you say first?",
+        "How would you validate without waiving requirements?",
+        "What would you review before answering?",
+        "When would you involve the Director?",
+        "What would you avoid saying?"
+      ]
+    },
+    {
+      "trait_id": "ades_trait_6",
+      "trait_name": "Staff Support Without Overstepping",
+      "priority": "Critical",
+      "trait_multiplier": 3,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "question": "A teacher is speaking sharply to children during transitions, and the Director is not immediately available. What do you do in the moment, and what do you do afterward?",
+      "score_1_auto_no_hire": true,
+      "core_signals": [
+        {
+          "id": "ADES_T6_STRONG_EVIDENCE",
+          "label": "Strong evidence for Staff Support Without Overstepping",
+          "maps_to": [
+            "S_ADES_STRONG_EVIDENCE"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Intervenes calmly to protect children, models appropriate tone, supports the transition, avoids public shaming, reports facts to the Director, and reinforces school expectations without overstepping.",
+          "auto_detect_tags": [
+            "strong_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T6_ACCEPTABLE_EVIDENCE",
+          "label": "Acceptable evidence for Staff Support Without Overstepping",
+          "maps_to": [
+            "S_ADES_ACCEPTABLE_EVIDENCE"
+          ],
+          "base_weight": 1,
+          "signal_category": "positive",
+          "evidence_hint": "Recognizes the concern and would involve the Director, but may be unsure how to act in the moment beyond a basic reminder.",
+          "auto_detect_tags": [
+            "acceptable_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T6_UNDERDEVELOPED_EVIDENCE",
+          "label": "Underdeveloped evidence for Staff Support Without Overstepping",
+          "maps_to": [
+            "S_ADES_UNDERDEVELOPED_EVIDENCE"
+          ],
+          "base_weight": -1,
+          "signal_category": "neutral_or_mixed",
+          "evidence_hint": "Is too passive or too confrontational. May avoid the issue, correct the teacher publicly, or focus more on adult discomfort than children’s experience.",
+          "auto_detect_tags": [
+            "underdeveloped_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T6_SERIOUS_CONCERN",
+          "label": "Serious concern for Staff Support Without Overstepping",
+          "maps_to": [
+            "S_ADES_SERIOUS_CONCERN"
+          ],
+          "base_weight": -3,
+          "signal_category": "red_flag",
+          "evidence_hint": "Shows serious concern by ignoring harsh teacher behavior, humiliating the teacher, escalating the situation, or acting as if the Assistant Director role gives full independent authority.",
+          "auto_detect_tags": [
+            "serious_concern"
+          ],
+          "is_critical": true
+        },
+        {
+          "id": "ADES_T6_AUTO_NO_HIRE",
+          "label": "Automatic no-hire concern for Staff Support Without Overstepping",
+          "maps_to": [
+            "S_ADES_AUTO_NO_HIRE"
+          ],
+          "base_weight": "AUTO_NO_HIRE",
+          "signal_category": "automatic_no_hire",
+          "evidence_hint": "Shows serious concern by ignoring harsh teacher behavior, humiliating the teacher, escalating the situation, or acting as if the Assistant Director role gives full independent authority.",
+          "auto_detect_tags": [
+            "auto_no_hire"
+          ],
+          "auto_no_hire": true,
+          "is_critical": true
+        }
+      ],
+      "extended_signals": [
+        {
+          "id": "ADES_T6_EXCELLENT_SAMPLE_ALIGNMENT",
+          "label": "Aligns with excellent sample answer for Staff Support Without Overstepping",
+          "maps_to": [
+            "S_ADES_EXCELLENT_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Intervenes calmly to protect children, models appropriate tone, supports the transition, avoids public shaming, reports facts to the Director, and reinforces school expectations without overstepping.",
+          "auto_detect_tags": [
+            "excellent_sample_alignment"
+          ]
+        },
+        {
+          "id": "ADES_T6_WEAK_SAMPLE_ALIGNMENT",
+          "label": "Aligns with weak sample answer for Staff Support Without Overstepping",
+          "maps_to": [
+            "S_ADES_WEAK_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Is too passive or too confrontational. May avoid the issue, correct the teacher publicly, or focus more on adult discomfort than children’s experience.",
+          "auto_detect_tags": [
+            "weak_sample_alignment"
+          ],
+          "is_critical": true
+        }
+      ],
+      "suggested_follow_up_probes": [
+        "How would you protect children emotionally without embarrassing the teacher?",
+        "What would you say or do in the moment?",
+        "What would you avoid doing?",
+        "What would you tell the Director?",
+        "How would you support the teacher without creating your own authority structure?"
+      ]
+    },
+    {
+      "trait_id": "ades_trait_7",
+      "trait_name": "Director Support and Escalation Judgment",
+      "priority": "Critical",
+      "trait_multiplier": 3,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "question": "What kinds of decisions would you handle independently in this role, and what kinds of decisions would you bring to the Director first?",
+      "score_1_auto_no_hire": true,
+      "core_signals": [
+        {
+          "id": "ADES_T7_STRONG_EVIDENCE",
+          "label": "Strong evidence for Director Support and Escalation Judgment",
+          "maps_to": [
+            "S_ADES_STRONG_EVIDENCE"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Clearly distinguishes routine independent tasks from issues requiring Director involvement, including licensing, safety, serious parent concerns, staff discipline, unusual billing decisions, enrollment exceptions, confidentiality issues, and child supervision concerns.",
+          "auto_detect_tags": [
+            "strong_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T7_ACCEPTABLE_EVIDENCE",
+          "label": "Acceptable evidence for Director Support and Escalation Judgment",
+          "maps_to": [
+            "S_ADES_ACCEPTABLE_EVIDENCE"
+          ],
+          "base_weight": 1,
+          "signal_category": "positive",
+          "evidence_hint": "Gives a generally reasonable distinction between routine and serious matters but lacks specific examples.",
+          "auto_detect_tags": [
+            "acceptable_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T7_UNDERDEVELOPED_EVIDENCE",
+          "label": "Underdeveloped evidence for Director Support and Escalation Judgment",
+          "maps_to": [
+            "S_ADES_UNDERDEVELOPED_EVIDENCE"
+          ],
+          "base_weight": -1,
+          "signal_category": "neutral_or_mixed",
+          "evidence_hint": "Shows unclear boundaries. May over-escalate routine items, under-escalate serious items, or show uncertainty about authority.",
+          "auto_detect_tags": [
+            "underdeveloped_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T7_SERIOUS_CONCERN",
+          "label": "Serious concern for Director Support and Escalation Judgment",
+          "maps_to": [
+            "S_ADES_SERIOUS_CONCERN"
+          ],
+          "base_weight": -3,
+          "signal_category": "red_flag",
+          "evidence_hint": "Shows serious concern by either wanting full Director authority without approval or being unable to handle routine operational tasks independently.",
+          "auto_detect_tags": [
+            "serious_concern"
+          ],
+          "is_critical": true
+        },
+        {
+          "id": "ADES_T7_AUTO_NO_HIRE",
+          "label": "Automatic no-hire concern for Director Support and Escalation Judgment",
+          "maps_to": [
+            "S_ADES_AUTO_NO_HIRE"
+          ],
+          "base_weight": "AUTO_NO_HIRE",
+          "signal_category": "automatic_no_hire",
+          "evidence_hint": "Shows serious concern by either wanting full Director authority without approval or being unable to handle routine operational tasks independently.",
+          "auto_detect_tags": [
+            "auto_no_hire"
+          ],
+          "auto_no_hire": true,
+          "is_critical": true
+        }
+      ],
+      "extended_signals": [
+        {
+          "id": "ADES_T7_EXCELLENT_SAMPLE_ALIGNMENT",
+          "label": "Aligns with excellent sample answer for Director Support and Escalation Judgment",
+          "maps_to": [
+            "S_ADES_EXCELLENT_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Clearly distinguishes routine independent tasks from issues requiring Director involvement, including licensing, safety, serious parent concerns, staff discipline, unusual billing decisions, enrollment exceptions, confidentiality issues, and child supervision concerns.",
+          "auto_detect_tags": [
+            "excellent_sample_alignment"
+          ]
+        },
+        {
+          "id": "ADES_T7_WEAK_SAMPLE_ALIGNMENT",
+          "label": "Aligns with weak sample answer for Director Support and Escalation Judgment",
+          "maps_to": [
+            "S_ADES_WEAK_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Shows unclear boundaries. May over-escalate routine items, under-escalate serious items, or show uncertainty about authority.",
+          "auto_detect_tags": [
+            "weak_sample_alignment"
+          ],
+          "is_critical": true
+        }
+      ],
+      "suggested_follow_up_probes": [
+        "What parent concerns would you escalate?",
+        "What staff concerns would you escalate?",
+        "What enrollment or billing issues would need approval?",
+        "How would you avoid overstepping?",
+        "How would you avoid bringing every small issue to the Director?"
+      ]
+    },
+    {
+      "trait_id": "ades_trait_8",
+      "trait_name": "Organization, Follow-Through, and Pipeline Tracking",
+      "priority": "High",
+      "trait_multiplier": 2,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "question": "How would you track multiple enrollment files, missing documents, parent follow-ups, attendance records, and deadlines without letting things fall through the cracks?",
+      "score_1_auto_no_hire": false,
+      "core_signals": [
+        {
+          "id": "ADES_T8_STRONG_EVIDENCE",
+          "label": "Strong evidence for Organization, Follow-Through, and Pipeline Tracking",
+          "maps_to": [
+            "S_ADES_STRONG_EVIDENCE"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Describes a clear operating system for pipeline stages, missing documents, deadlines, follow-up dates, file status, attendance or billing flags, daily review, escalation notes, and handoff visibility.",
+          "auto_detect_tags": [
+            "strong_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T8_ACCEPTABLE_EVIDENCE",
+          "label": "Acceptable evidence for Organization, Follow-Through, and Pipeline Tracking",
+          "maps_to": [
+            "S_ADES_ACCEPTABLE_EVIDENCE"
+          ],
+          "base_weight": 1,
+          "signal_category": "positive",
+          "evidence_hint": "Uses basic tools such as lists, calendars, or spreadsheets, but the system is not fully developed or role-specific.",
+          "auto_detect_tags": [
+            "acceptable_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T8_UNDERDEVELOPED_EVIDENCE",
+          "label": "Underdeveloped evidence for Organization, Follow-Through, and Pipeline Tracking",
+          "maps_to": [
+            "S_ADES_UNDERDEVELOPED_EVIDENCE"
+          ],
+          "base_weight": -1,
+          "signal_category": "neutral_or_mixed",
+          "evidence_hint": "Has a vague or inconsistent organization method. May mention lists but lacks prioritization, review rhythm, or accountability.",
+          "auto_detect_tags": [
+            "underdeveloped_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T8_SERIOUS_CONCERN",
+          "label": "Serious concern for Organization, Follow-Through, and Pipeline Tracking",
+          "maps_to": [
+            "S_ADES_SERIOUS_CONCERN"
+          ],
+          "base_weight": -3,
+          "signal_category": "red_flag",
+          "evidence_hint": "Shows serious concern by relying on memory, informal reminders, or last-minute reactions for important enrollment, documentation, attendance, or compliance tasks.",
+          "auto_detect_tags": [
+            "serious_concern"
+          ],
+          "is_critical": false
+        }
+      ],
+      "extended_signals": [
+        {
+          "id": "ADES_T8_EXCELLENT_SAMPLE_ALIGNMENT",
+          "label": "Aligns with excellent sample answer for Organization, Follow-Through, and Pipeline Tracking",
+          "maps_to": [
+            "S_ADES_EXCELLENT_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Describes a clear operating system for pipeline stages, missing documents, deadlines, follow-up dates, file status, attendance or billing flags, daily review, escalation notes, and handoff visibility.",
+          "auto_detect_tags": [
+            "excellent_sample_alignment"
+          ]
+        },
+        {
+          "id": "ADES_T8_WEAK_SAMPLE_ALIGNMENT",
+          "label": "Aligns with weak sample answer for Organization, Follow-Through, and Pipeline Tracking",
+          "maps_to": [
+            "S_ADES_WEAK_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Has a vague or inconsistent organization method. May mention lists but lacks prioritization, review rhythm, or accountability.",
+          "auto_detect_tags": [
+            "weak_sample_alignment"
+          ],
+          "is_critical": false
+        }
+      ],
+      "suggested_follow_up_probes": [
+        "What tools would you use?",
+        "How often would you review your list?",
+        "How would you flag urgent items?",
+        "How would you make sure someone else can understand your notes?",
+        "What would you do at the end of each day?"
+      ]
+    },
+    {
+      "trait_id": "ades_trait_9",
+      "trait_name": "Classroom Support and Child-Centered Presence",
+      "priority": "High",
+      "trait_multiplier": 2,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "question": "You step into a classroom where the teacher is overwhelmed, children are moving around the room, and the next transition is about to start. What do you do?",
+      "score_1_auto_no_hire": true,
+      "core_signals": [
+        {
+          "id": "ADES_T9_STRONG_EVIDENCE",
+          "label": "Strong evidence for Classroom Support and Child-Centered Presence",
+          "maps_to": [
+            "S_ADES_STRONG_EVIDENCE"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Quickly assesses safety, joins the transition calmly, supports children at their level, models warm structure, helps the teacher regain momentum, and communicates relevant facts to the Director afterward.",
+          "auto_detect_tags": [
+            "strong_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T9_ACCEPTABLE_EVIDENCE",
+          "label": "Acceptable evidence for Classroom Support and Child-Centered Presence",
+          "maps_to": [
+            "S_ADES_ACCEPTABLE_EVIDENCE"
+          ],
+          "base_weight": 1,
+          "signal_category": "positive",
+          "evidence_hint": "Provides basic classroom support and understands the need to help the teacher, but lacks specific child-centered strategies.",
+          "auto_detect_tags": [
+            "acceptable_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T9_UNDERDEVELOPED_EVIDENCE",
+          "label": "Underdeveloped evidence for Classroom Support and Child-Centered Presence",
+          "maps_to": [
+            "S_ADES_UNDERDEVELOPED_EVIDENCE"
+          ],
+          "base_weight": -1,
+          "signal_category": "neutral_or_mixed",
+          "evidence_hint": "Shows limited classroom judgment. May give vague help, focus on compliance, or overlook children’s developmental needs during transitions.",
+          "auto_detect_tags": [
+            "underdeveloped_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T9_SERIOUS_CONCERN",
+          "label": "Serious concern for Classroom Support and Child-Centered Presence",
+          "maps_to": [
+            "S_ADES_SERIOUS_CONCERN"
+          ],
+          "base_weight": -3,
+          "signal_category": "red_flag",
+          "evidence_hint": "Shows serious concern by using harsh control, ignoring children’s emotional state, taking over in a way that undermines the teacher, or focusing only on order without supervision and safety.",
+          "auto_detect_tags": [
+            "serious_concern"
+          ],
+          "is_critical": false
+        },
+        {
+          "id": "ADES_T9_AUTO_NO_HIRE",
+          "label": "Automatic no-hire concern for Classroom Support and Child-Centered Presence",
+          "maps_to": [
+            "S_ADES_AUTO_NO_HIRE"
+          ],
+          "base_weight": "AUTO_NO_HIRE",
+          "signal_category": "automatic_no_hire",
+          "evidence_hint": "Shows serious concern by using harsh control, ignoring children’s emotional state, taking over in a way that undermines the teacher, or focusing only on order without supervision and safety.",
+          "auto_detect_tags": [
+            "auto_no_hire"
+          ],
+          "auto_no_hire": true,
+          "is_critical": true
+        }
+      ],
+      "extended_signals": [
+        {
+          "id": "ADES_T9_EXCELLENT_SAMPLE_ALIGNMENT",
+          "label": "Aligns with excellent sample answer for Classroom Support and Child-Centered Presence",
+          "maps_to": [
+            "S_ADES_EXCELLENT_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Quickly assesses safety, joins the transition calmly, supports children at their level, models warm structure, helps the teacher regain momentum, and communicates relevant facts to the Director afterward.",
+          "auto_detect_tags": [
+            "excellent_sample_alignment"
+          ]
+        },
+        {
+          "id": "ADES_T9_WEAK_SAMPLE_ALIGNMENT",
+          "label": "Aligns with weak sample answer for Classroom Support and Child-Centered Presence",
+          "maps_to": [
+            "S_ADES_WEAK_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Shows limited classroom judgment. May give vague help, focus on compliance, or overlook children’s developmental needs during transitions.",
+          "auto_detect_tags": [
+            "weak_sample_alignment"
+          ],
+          "is_critical": false
+        }
+      ],
+      "suggested_follow_up_probes": [
+        "What would you do first?",
+        "What would you say to the children?",
+        "How would you support the teacher without taking over unnecessarily?",
+        "How would you keep expectations developmentally appropriate?",
+        "What would you tell the Director afterward?"
+      ]
+    },
+    {
+      "trait_id": "ades_trait_10",
+      "trait_name": "Child Supervision, Ratio, and Safety Awareness",
+      "priority": "Critical",
+      "trait_multiplier": 3,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "question": "A teacher tells you she needs to step out for a few minutes and asks you to watch the class from the doorway while you keep working on paperwork. What do you do?",
+      "score_1_auto_no_hire": true,
+      "core_signals": [
+        {
+          "id": "ADES_T10_STRONG_EVIDENCE",
+          "label": "Strong evidence for Child Supervision, Ratio, and Safety Awareness",
+          "maps_to": [
+            "S_ADES_STRONG_EVIDENCE"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Clearly prioritizes active supervision and licensing, stops other tasks, positions themselves appropriately, ensures qualified coverage, escalates if coverage is not available, and treats ratio as non-negotiable.",
+          "auto_detect_tags": [
+            "strong_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T10_ACCEPTABLE_EVIDENCE",
+          "label": "Acceptable evidence for Child Supervision, Ratio, and Safety Awareness",
+          "maps_to": [
+            "S_ADES_ACCEPTABLE_EVIDENCE"
+          ],
+          "base_weight": 1,
+          "signal_category": "positive",
+          "evidence_hint": "Gives a generally safe answer that they would stop paperwork and supervise, but lacks detail about ratio, positioning, or escalation.",
+          "auto_detect_tags": [
+            "acceptable_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T10_UNDERDEVELOPED_EVIDENCE",
+          "label": "Underdeveloped evidence for Child Supervision, Ratio, and Safety Awareness",
+          "maps_to": [
+            "S_ADES_UNDERDEVELOPED_EVIDENCE"
+          ],
+          "base_weight": -1,
+          "signal_category": "neutral_or_mixed",
+          "evidence_hint": "Recognizes supervision matters but gives an incomplete answer, such as watching from nearby or multitasking without understanding active supervision.",
+          "auto_detect_tags": [
+            "underdeveloped_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T10_SERIOUS_CONCERN",
+          "label": "Serious concern for Child Supervision, Ratio, and Safety Awareness",
+          "maps_to": [
+            "S_ADES_SERIOUS_CONCERN"
+          ],
+          "base_weight": -3,
+          "signal_category": "red_flag",
+          "evidence_hint": "Shows serious concern by accepting passive or distracted supervision, treating ratio casually, or continuing paperwork while responsible for children.",
+          "auto_detect_tags": [
+            "serious_concern"
+          ],
+          "is_critical": true
+        },
+        {
+          "id": "ADES_T10_AUTO_NO_HIRE",
+          "label": "Automatic no-hire concern for Child Supervision, Ratio, and Safety Awareness",
+          "maps_to": [
+            "S_ADES_AUTO_NO_HIRE"
+          ],
+          "base_weight": "AUTO_NO_HIRE",
+          "signal_category": "automatic_no_hire",
+          "evidence_hint": "Shows serious concern by accepting passive or distracted supervision, treating ratio casually, or continuing paperwork while responsible for children.",
+          "auto_detect_tags": [
+            "auto_no_hire"
+          ],
+          "auto_no_hire": true,
+          "is_critical": true
+        }
+      ],
+      "extended_signals": [
+        {
+          "id": "ADES_T10_EXCELLENT_SAMPLE_ALIGNMENT",
+          "label": "Aligns with excellent sample answer for Child Supervision, Ratio, and Safety Awareness",
+          "maps_to": [
+            "S_ADES_EXCELLENT_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Clearly prioritizes active supervision and licensing, stops other tasks, positions themselves appropriately, ensures qualified coverage, escalates if coverage is not available, and treats ratio as non-negotiable.",
+          "auto_detect_tags": [
+            "excellent_sample_alignment"
+          ]
+        },
+        {
+          "id": "ADES_T10_WEAK_SAMPLE_ALIGNMENT",
+          "label": "Aligns with weak sample answer for Child Supervision, Ratio, and Safety Awareness",
+          "maps_to": [
+            "S_ADES_WEAK_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Recognizes supervision matters but gives an incomplete answer, such as watching from nearby or multitasking without understanding active supervision.",
+          "auto_detect_tags": [
+            "weak_sample_alignment"
+          ],
+          "is_critical": true
+        }
+      ],
+      "suggested_follow_up_probes": [
+        "What does active supervision mean?",
+        "Can paperwork continue while supervising children?",
+        "What would you do if no one is available to cover?",
+        "What would you document or report?",
+        "How do ratio and supervision affect licensing?"
+      ]
+    },
+    {
+      "trait_id": "ades_trait_11",
+      "trait_name": "Systems and Data Accuracy",
+      "priority": "High",
+      "trait_multiplier": 2,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "question": "What systems, spreadsheets, childcare management tools, databases, or office software have you used, and how do you make sure your entries are accurate?",
+      "score_1_auto_no_hire": false,
+      "core_signals": [
+        {
+          "id": "ADES_T11_STRONG_EVIDENCE",
+          "label": "Strong evidence for Systems and Data Accuracy",
+          "maps_to": [
+            "S_ADES_STRONG_EVIDENCE"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Shows strong systems discipline, including source-document verification, reconciliation between systems, consistent naming, status tracking, error correction, and willingness to learn childcare-specific tools.",
+          "auto_detect_tags": [
+            "strong_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T11_ACCEPTABLE_EVIDENCE",
+          "label": "Acceptable evidence for Systems and Data Accuracy",
+          "maps_to": [
+            "S_ADES_ACCEPTABLE_EVIDENCE"
+          ],
+          "base_weight": 1,
+          "signal_category": "positive",
+          "evidence_hint": "Has basic software comfort and understands the need to double-check entries but lacks a strong system.",
+          "auto_detect_tags": [
+            "acceptable_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T11_UNDERDEVELOPED_EVIDENCE",
+          "label": "Underdeveloped evidence for Systems and Data Accuracy",
+          "maps_to": [
+            "S_ADES_UNDERDEVELOPED_EVIDENCE"
+          ],
+          "base_weight": -1,
+          "signal_category": "neutral_or_mixed",
+          "evidence_hint": "Has limited systems comfort or relies heavily on others to check work. Accuracy process is vague.",
+          "auto_detect_tags": [
+            "underdeveloped_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T11_SERIOUS_CONCERN",
+          "label": "Serious concern for Systems and Data Accuracy",
+          "maps_to": [
+            "S_ADES_SERIOUS_CONCERN"
+          ],
+          "base_weight": -3,
+          "signal_category": "red_flag",
+          "evidence_hint": "Shows serious concern by being careless with systems, resistant to software, or unaware that inaccurate entries can affect billing, attendance, compliance, or family trust.",
+          "auto_detect_tags": [
+            "serious_concern"
+          ],
+          "is_critical": false
+        }
+      ],
+      "extended_signals": [
+        {
+          "id": "ADES_T11_EXCELLENT_SAMPLE_ALIGNMENT",
+          "label": "Aligns with excellent sample answer for Systems and Data Accuracy",
+          "maps_to": [
+            "S_ADES_EXCELLENT_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Shows strong systems discipline, including source-document verification, reconciliation between systems, consistent naming, status tracking, error correction, and willingness to learn childcare-specific tools.",
+          "auto_detect_tags": [
+            "excellent_sample_alignment"
+          ]
+        },
+        {
+          "id": "ADES_T11_WEAK_SAMPLE_ALIGNMENT",
+          "label": "Aligns with weak sample answer for Systems and Data Accuracy",
+          "maps_to": [
+            "S_ADES_WEAK_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Has limited systems comfort or relies heavily on others to check work. Accuracy process is vague.",
+          "auto_detect_tags": [
+            "weak_sample_alignment"
+          ],
+          "is_critical": false
+        }
+      ],
+      "suggested_follow_up_probes": [
+        "How do you check your work?",
+        "What would you do if two systems do not match?",
+        "How comfortable are you learning new software?",
+        "How do you avoid duplicate or outdated records?",
+        "What types of records have you maintained?"
+      ]
+    },
+    {
+      "trait_id": "ades_trait_12",
+      "trait_name": "Billing, Attendance, and Record Accuracy",
+      "priority": "High",
+      "trait_multiplier": 2,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "question": "A billing record, attendance sheet, and parent statement do not match. What steps would you take before giving the parent an answer?",
+      "score_1_auto_no_hire": true,
+      "core_signals": [
+        {
+          "id": "ADES_T12_STRONG_EVIDENCE",
+          "label": "Strong evidence for Billing, Attendance, and Record Accuracy",
+          "maps_to": [
+            "S_ADES_STRONG_EVIDENCE"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Uses a careful reconciliation process across billing, attendance, enrollment schedule, parent communication, and source documents before responding. Documents findings and escalates exceptions appropriately.",
+          "auto_detect_tags": [
+            "strong_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T12_ACCEPTABLE_EVIDENCE",
+          "label": "Acceptable evidence for Billing, Attendance, and Record Accuracy",
+          "maps_to": [
+            "S_ADES_ACCEPTABLE_EVIDENCE"
+          ],
+          "base_weight": 1,
+          "signal_category": "positive",
+          "evidence_hint": "Would check records before answering, but the process is basic and lacks documentation or escalation detail.",
+          "auto_detect_tags": [
+            "acceptable_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T12_UNDERDEVELOPED_EVIDENCE",
+          "label": "Underdeveloped evidence for Billing, Attendance, and Record Accuracy",
+          "maps_to": [
+            "S_ADES_UNDERDEVELOPED_EVIDENCE"
+          ],
+          "base_weight": -1,
+          "signal_category": "neutral_or_mixed",
+          "evidence_hint": "Recognizes there is a mismatch but gives a vague or reactive process. May rely too quickly on one source without verification.",
+          "auto_detect_tags": [
+            "underdeveloped_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T12_SERIOUS_CONCERN",
+          "label": "Serious concern for Billing, Attendance, and Record Accuracy",
+          "maps_to": [
+            "S_ADES_SERIOUS_CONCERN"
+          ],
+          "base_weight": -3,
+          "signal_category": "red_flag",
+          "evidence_hint": "Shows serious concern by guessing, giving an answer before verifying, changing records casually, or blaming the parent or staff.",
+          "auto_detect_tags": [
+            "serious_concern"
+          ],
+          "is_critical": false
+        },
+        {
+          "id": "ADES_T12_AUTO_NO_HIRE",
+          "label": "Automatic no-hire concern for Billing, Attendance, and Record Accuracy",
+          "maps_to": [
+            "S_ADES_AUTO_NO_HIRE"
+          ],
+          "base_weight": "AUTO_NO_HIRE",
+          "signal_category": "automatic_no_hire",
+          "evidence_hint": "Shows serious concern by guessing, giving an answer before verifying, changing records casually, or blaming the parent or staff.",
+          "auto_detect_tags": [
+            "auto_no_hire"
+          ],
+          "auto_no_hire": true,
+          "is_critical": true
+        }
+      ],
+      "extended_signals": [
+        {
+          "id": "ADES_T12_EXCELLENT_SAMPLE_ALIGNMENT",
+          "label": "Aligns with excellent sample answer for Billing, Attendance, and Record Accuracy",
+          "maps_to": [
+            "S_ADES_EXCELLENT_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Uses a careful reconciliation process across billing, attendance, enrollment schedule, parent communication, and source documents before responding. Documents findings and escalates exceptions appropriately.",
+          "auto_detect_tags": [
+            "excellent_sample_alignment"
+          ]
+        },
+        {
+          "id": "ADES_T12_WEAK_SAMPLE_ALIGNMENT",
+          "label": "Aligns with weak sample answer for Billing, Attendance, and Record Accuracy",
+          "maps_to": [
+            "S_ADES_WEAK_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Recognizes there is a mismatch but gives a vague or reactive process. May rely too quickly on one source without verification.",
+          "auto_detect_tags": [
+            "weak_sample_alignment"
+          ],
+          "is_critical": false
+        }
+      ],
+      "suggested_follow_up_probes": [
+        "What source records would you check?",
+        "What would you avoid saying before verifying?",
+        "When would you involve the Director or billing lead?",
+        "How would you communicate with the parent?",
+        "How would you document the outcome?"
+      ]
+    },
+    {
+      "trait_id": "ades_trait_13",
+      "trait_name": "Team Credibility and Relationship Building",
+      "priority": "High",
+      "trait_multiplier": 2,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "question": "This role supports teachers, families, and the Director. How would you build trust with each group during your first month?",
+      "score_1_auto_no_hire": false,
+      "core_signals": [
+        {
+          "id": "ADES_T13_STRONG_EVIDENCE",
+          "label": "Strong evidence for Team Credibility and Relationship Building",
+          "maps_to": [
+            "S_ADES_STRONG_EVIDENCE"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Builds credibility through reliability, confidentiality, accurate information, calm help during busy moments, respect for teachers, warm family communication, and alignment with the Director’s leadership.",
+          "auto_detect_tags": [
+            "strong_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T13_ACCEPTABLE_EVIDENCE",
+          "label": "Acceptable evidence for Team Credibility and Relationship Building",
+          "maps_to": [
+            "S_ADES_ACCEPTABLE_EVIDENCE"
+          ],
+          "base_weight": 1,
+          "signal_category": "positive",
+          "evidence_hint": "Understands that trust matters and gives basic examples, but lacks a clear plan for families, teachers, and the Director.",
+          "auto_detect_tags": [
+            "acceptable_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T13_UNDERDEVELOPED_EVIDENCE",
+          "label": "Underdeveloped evidence for Team Credibility and Relationship Building",
+          "maps_to": [
+            "S_ADES_UNDERDEVELOPED_EVIDENCE"
+          ],
+          "base_weight": -1,
+          "signal_category": "neutral_or_mixed",
+          "evidence_hint": "Gives a shallow or one-sided trust-building answer. May focus mainly on being liked or being in charge.",
+          "auto_detect_tags": [
+            "underdeveloped_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T13_SERIOUS_CONCERN",
+          "label": "Serious concern for Team Credibility and Relationship Building",
+          "maps_to": [
+            "S_ADES_SERIOUS_CONCERN"
+          ],
+          "base_weight": -3,
+          "signal_category": "red_flag",
+          "evidence_hint": "Shows serious concern by relying on title, authority, popularity, or personal style rather than consistent professional behavior.",
+          "auto_detect_tags": [
+            "serious_concern"
+          ],
+          "is_critical": false
+        }
+      ],
+      "extended_signals": [
+        {
+          "id": "ADES_T13_EXCELLENT_SAMPLE_ALIGNMENT",
+          "label": "Aligns with excellent sample answer for Team Credibility and Relationship Building",
+          "maps_to": [
+            "S_ADES_EXCELLENT_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Builds credibility through reliability, confidentiality, accurate information, calm help during busy moments, respect for teachers, warm family communication, and alignment with the Director’s leadership.",
+          "auto_detect_tags": [
+            "excellent_sample_alignment"
+          ]
+        },
+        {
+          "id": "ADES_T13_WEAK_SAMPLE_ALIGNMENT",
+          "label": "Aligns with weak sample answer for Team Credibility and Relationship Building",
+          "maps_to": [
+            "S_ADES_WEAK_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Gives a shallow or one-sided trust-building answer. May focus mainly on being liked or being in charge.",
+          "auto_detect_tags": [
+            "weak_sample_alignment"
+          ],
+          "is_critical": false
+        }
+      ],
+      "suggested_follow_up_probes": [
+        "How would you avoid looking like you are taking over?",
+        "How would you earn teacher trust?",
+        "How would you earn family trust?",
+        "How would you support the Director’s priorities?",
+        "What would you do if staff were slow to trust you?"
+      ]
+    },
+    {
+      "trait_id": "ades_trait_14",
+      "trait_name": "Coachability and Learning Agility",
+      "priority": "High",
+      "trait_multiplier": 2,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "question": "Tell me about a time you received feedback about your communication, organization, accuracy, or work performance. What did you do with it?",
+      "score_1_auto_no_hire": true,
+      "core_signals": [
+        {
+          "id": "ADES_T14_STRONG_EVIDENCE",
+          "label": "Strong evidence for Coachability and Learning Agility",
+          "maps_to": [
+            "S_ADES_STRONG_EVIDENCE"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Shows strong learning agility by seeking clarification, changing behavior, following up, applying feedback to systems or relationships, and using training to become more independent.",
+          "auto_detect_tags": [
+            "strong_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T14_ACCEPTABLE_EVIDENCE",
+          "label": "Acceptable evidence for Coachability and Learning Agility",
+          "maps_to": [
+            "S_ADES_ACCEPTABLE_EVIDENCE"
+          ],
+          "base_weight": 1,
+          "signal_category": "positive",
+          "evidence_hint": "Is generally open to feedback but gives a limited example or unclear behavior change.",
+          "auto_detect_tags": [
+            "acceptable_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T14_UNDERDEVELOPED_EVIDENCE",
+          "label": "Underdeveloped evidence for Coachability and Learning Agility",
+          "maps_to": [
+            "S_ADES_UNDERDEVELOPED_EVIDENCE"
+          ],
+          "base_weight": -1,
+          "signal_category": "neutral_or_mixed",
+          "evidence_hint": "Accepts feedback only superficially or conditionally. May focus more on how feedback was delivered than on what they learned.",
+          "auto_detect_tags": [
+            "underdeveloped_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T14_SERIOUS_CONCERN",
+          "label": "Serious concern for Coachability and Learning Agility",
+          "maps_to": [
+            "S_ADES_SERIOUS_CONCERN"
+          ],
+          "base_weight": -3,
+          "signal_category": "red_flag",
+          "evidence_hint": "Shows serious concern by rejecting feedback, blaming the person giving it, claiming not to need training, or showing resistance to supervision.",
+          "auto_detect_tags": [
+            "serious_concern"
+          ],
+          "is_critical": false
+        },
+        {
+          "id": "ADES_T14_AUTO_NO_HIRE",
+          "label": "Automatic no-hire concern for Coachability and Learning Agility",
+          "maps_to": [
+            "S_ADES_AUTO_NO_HIRE"
+          ],
+          "base_weight": "AUTO_NO_HIRE",
+          "signal_category": "automatic_no_hire",
+          "evidence_hint": "Shows serious concern by rejecting feedback, blaming the person giving it, claiming not to need training, or showing resistance to supervision.",
+          "auto_detect_tags": [
+            "auto_no_hire"
+          ],
+          "auto_no_hire": true,
+          "is_critical": true
+        }
+      ],
+      "extended_signals": [
+        {
+          "id": "ADES_T14_EXCELLENT_SAMPLE_ALIGNMENT",
+          "label": "Aligns with excellent sample answer for Coachability and Learning Agility",
+          "maps_to": [
+            "S_ADES_EXCELLENT_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Shows strong learning agility by seeking clarification, changing behavior, following up, applying feedback to systems or relationships, and using training to become more independent.",
+          "auto_detect_tags": [
+            "excellent_sample_alignment"
+          ]
+        },
+        {
+          "id": "ADES_T14_WEAK_SAMPLE_ALIGNMENT",
+          "label": "Aligns with weak sample answer for Coachability and Learning Agility",
+          "maps_to": [
+            "S_ADES_WEAK_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Accepts feedback only superficially or conditionally. May focus more on how feedback was delivered than on what they learned.",
+          "auto_detect_tags": [
+            "weak_sample_alignment"
+          ],
+          "is_critical": false
+        }
+      ],
+      "suggested_follow_up_probes": [
+        "What was hard about the feedback?",
+        "What did you change afterward?",
+        "How did you know the change worked?",
+        "How do you prefer to be trained?",
+        "How would you learn a system or process you have not used before?"
+      ]
+    },
+    {
+      "trait_id": "ades_trait_15",
+      "trait_name": "Cultural and Linguistic Responsiveness",
+      "priority": "Medium",
+      "trait_multiplier": 1,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "question": "Our families may have different languages, cultures, schedules, funding sources, and levels of familiarity with preschool paperwork. How would you make families feel respected while still completing required enrollment steps?",
+      "score_1_auto_no_hire": false,
+      "core_signals": [
+        {
+          "id": "ADES_T15_STRONG_EVIDENCE",
+          "label": "Strong evidence for Cultural and Linguistic Responsiveness",
+          "maps_to": [
+            "S_ADES_STRONG_EVIDENCE"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Combines warmth, consistency, and equity by avoiding assumptions, using clear language, offering practical help, respecting language needs, explaining requirements without judgment, and keeping documentation standards consistent.",
+          "auto_detect_tags": [
+            "strong_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T15_ACCEPTABLE_EVIDENCE",
+          "label": "Acceptable evidence for Cultural and Linguistic Responsiveness",
+          "maps_to": [
+            "S_ADES_ACCEPTABLE_EVIDENCE"
+          ],
+          "base_weight": 1,
+          "signal_category": "positive",
+          "evidence_hint": "Gives a respectful but general answer about treating families equally and helping with forms.",
+          "auto_detect_tags": [
+            "acceptable_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T15_UNDERDEVELOPED_EVIDENCE",
+          "label": "Underdeveloped evidence for Cultural and Linguistic Responsiveness",
+          "maps_to": [
+            "S_ADES_UNDERDEVELOPED_EVIDENCE"
+          ],
+          "base_weight": -1,
+          "signal_category": "neutral_or_mixed",
+          "evidence_hint": "Shows limited responsiveness. May be polite but expects families to adapt without much explanation or support.",
+          "auto_detect_tags": [
+            "underdeveloped_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T15_SERIOUS_CONCERN",
+          "label": "Serious concern for Cultural and Linguistic Responsiveness",
+          "maps_to": [
+            "S_ADES_SERIOUS_CONCERN"
+          ],
+          "base_weight": -3,
+          "signal_category": "red_flag",
+          "evidence_hint": "Shows serious concern by making assumptions about families, sounding judgmental about language, paperwork, income, or subsidy needs, or treating families as difficult because they need support.",
+          "auto_detect_tags": [
+            "serious_concern"
+          ],
+          "is_critical": false
+        }
+      ],
+      "extended_signals": [
+        {
+          "id": "ADES_T15_EXCELLENT_SAMPLE_ALIGNMENT",
+          "label": "Aligns with excellent sample answer for Cultural and Linguistic Responsiveness",
+          "maps_to": [
+            "S_ADES_EXCELLENT_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Combines warmth, consistency, and equity by avoiding assumptions, using clear language, offering practical help, respecting language needs, explaining requirements without judgment, and keeping documentation standards consistent.",
+          "auto_detect_tags": [
+            "excellent_sample_alignment"
+          ]
+        },
+        {
+          "id": "ADES_T15_WEAK_SAMPLE_ALIGNMENT",
+          "label": "Aligns with weak sample answer for Cultural and Linguistic Responsiveness",
+          "maps_to": [
+            "S_ADES_WEAK_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Shows limited responsiveness. May be polite but expects families to adapt without much explanation or support.",
+          "auto_detect_tags": [
+            "weak_sample_alignment"
+          ],
+          "is_critical": false
+        }
+      ],
+      "suggested_follow_up_probes": [
+        "How would you support a family that is confused by paperwork?",
+        "How would you avoid assumptions?",
+        "How would you handle language barriers?",
+        "How would you explain state-program or subsidy requirements respectfully?",
+        "How would you keep the process consistent for all families?"
+      ]
+    },
+    {
+      "trait_id": "ades_trait_16",
+      "trait_name": "Professional Written Communication",
+      "priority": "High",
+      "trait_multiplier": 2,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "question": "Please describe, in your own words, how you would write a short email to a parent who is missing documents from an enrollment file.",
+      "score_1_auto_no_hire": false,
+      "core_signals": [
+        {
+          "id": "ADES_T16_STRONG_EVIDENCE",
+          "label": "Strong evidence for Professional Written Communication",
+          "maps_to": [
+            "S_ADES_STRONG_EVIDENCE"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Communicates with warmth, accuracy, clear formatting, appropriate confidentiality, practical help, and a specific call to action without blame or unnecessary detail.",
+          "auto_detect_tags": [
+            "strong_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T16_ACCEPTABLE_EVIDENCE",
+          "label": "Acceptable evidence for Professional Written Communication",
+          "maps_to": [
+            "S_ADES_ACCEPTABLE_EVIDENCE"
+          ],
+          "base_weight": 1,
+          "signal_category": "positive",
+          "evidence_hint": "Provides a basic professional message but may lack warmth, precision, deadline clarity, or helpful formatting.",
+          "auto_detect_tags": [
+            "acceptable_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T16_UNDERDEVELOPED_EVIDENCE",
+          "label": "Underdeveloped evidence for Professional Written Communication",
+          "maps_to": [
+            "S_ADES_UNDERDEVELOPED_EVIDENCE"
+          ],
+          "base_weight": -1,
+          "signal_category": "neutral_or_mixed",
+          "evidence_hint": "Writing approach is vague, blunt, too informal, or missing clear next steps.",
+          "auto_detect_tags": [
+            "underdeveloped_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T16_SERIOUS_CONCERN",
+          "label": "Serious concern for Professional Written Communication",
+          "maps_to": [
+            "S_ADES_SERIOUS_CONCERN"
+          ],
+          "base_weight": -3,
+          "signal_category": "red_flag",
+          "evidence_hint": "Shows serious concern by using blaming, careless, unclear, overly casual, or confidentiality-risking written communication.",
+          "auto_detect_tags": [
+            "serious_concern"
+          ],
+          "is_critical": false
+        }
+      ],
+      "extended_signals": [
+        {
+          "id": "ADES_T16_EXCELLENT_SAMPLE_ALIGNMENT",
+          "label": "Aligns with excellent sample answer for Professional Written Communication",
+          "maps_to": [
+            "S_ADES_EXCELLENT_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Communicates with warmth, accuracy, clear formatting, appropriate confidentiality, practical help, and a specific call to action without blame or unnecessary detail.",
+          "auto_detect_tags": [
+            "excellent_sample_alignment"
+          ]
+        },
+        {
+          "id": "ADES_T16_WEAK_SAMPLE_ALIGNMENT",
+          "label": "Aligns with weak sample answer for Professional Written Communication",
+          "maps_to": [
+            "S_ADES_WEAK_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Writing approach is vague, blunt, too informal, or missing clear next steps.",
+          "auto_detect_tags": [
+            "weak_sample_alignment"
+          ],
+          "is_critical": false
+        }
+      ],
+      "suggested_follow_up_probes": [
+        "What tone would you use?",
+        "What details would you include?",
+        "How would you avoid sounding accusatory?",
+        "How would you make the next step clear?",
+        "How would you protect confidential information?"
+      ]
+    },
+    {
+      "trait_id": "ades_trait_17",
+      "trait_name": "Reliability and Role Readiness",
+      "priority": "Medium",
+      "trait_multiplier": 1,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "question": "This role can shift between office work, family communication, paperwork deadlines, and classroom support. What makes you ready for that kind of role?",
+      "score_1_auto_no_hire": false,
+      "core_signals": [
+        {
+          "id": "ADES_T17_STRONG_EVIDENCE",
+          "label": "Strong evidence for Reliability and Role Readiness",
+          "maps_to": [
+            "S_ADES_STRONG_EVIDENCE"
+          ],
+          "base_weight": 3,
+          "signal_category": "positive",
+          "evidence_hint": "Shows strong role fit by understanding the enrollment-first focus, office accuracy, family communication, Director support, classroom backup, confidentiality, and the need to stay calm and reliable during shifting priorities.",
+          "auto_detect_tags": [
+            "strong_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T17_ACCEPTABLE_EVIDENCE",
+          "label": "Acceptable evidence for Reliability and Role Readiness",
+          "maps_to": [
+            "S_ADES_ACCEPTABLE_EVIDENCE"
+          ],
+          "base_weight": 1,
+          "signal_category": "positive",
+          "evidence_hint": "Appears generally trainable and willing but gives a broad answer without strong evidence of readiness.",
+          "auto_detect_tags": [
+            "acceptable_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T17_UNDERDEVELOPED_EVIDENCE",
+          "label": "Underdeveloped evidence for Reliability and Role Readiness",
+          "maps_to": [
+            "S_ADES_UNDERDEVELOPED_EVIDENCE"
+          ],
+          "base_weight": -1,
+          "signal_category": "neutral_or_mixed",
+          "evidence_hint": "Shows partial fit but significant gaps in readiness, flexibility, or understanding of the hybrid nature of the role.",
+          "auto_detect_tags": [
+            "underdeveloped_evidence"
+          ]
+        },
+        {
+          "id": "ADES_T17_SERIOUS_CONCERN",
+          "label": "Serious concern for Reliability and Role Readiness",
+          "maps_to": [
+            "S_ADES_SERIOUS_CONCERN"
+          ],
+          "base_weight": -3,
+          "signal_category": "red_flag",
+          "evidence_hint": "Shows serious concern by misunderstanding the role, resisting classroom support or office detail, or presenting unreliable work habits.",
+          "auto_detect_tags": [
+            "serious_concern"
+          ],
+          "is_critical": false
+        }
+      ],
+      "extended_signals": [
+        {
+          "id": "ADES_T17_EXCELLENT_SAMPLE_ALIGNMENT",
+          "label": "Aligns with excellent sample answer for Reliability and Role Readiness",
+          "maps_to": [
+            "S_ADES_EXCELLENT_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": 2,
+          "signal_category": "positive",
+          "evidence_hint": "Shows strong role fit by understanding the enrollment-first focus, office accuracy, family communication, Director support, classroom backup, confidentiality, and the need to stay calm and reliable during shifting priorities.",
+          "auto_detect_tags": [
+            "excellent_sample_alignment"
+          ]
+        },
+        {
+          "id": "ADES_T17_WEAK_SAMPLE_ALIGNMENT",
+          "label": "Aligns with weak sample answer for Reliability and Role Readiness",
+          "maps_to": [
+            "S_ADES_WEAK_SAMPLE_ALIGNMENT"
+          ],
+          "base_weight": -2,
+          "signal_category": "red_flag",
+          "evidence_hint": "Shows partial fit but significant gaps in readiness, flexibility, or understanding of the hybrid nature of the role.",
+          "auto_detect_tags": [
+            "weak_sample_alignment"
+          ],
+          "is_critical": false
+        }
+      ],
+      "suggested_follow_up_probes": [
+        "What part of the role would be easiest for you?",
+        "What part would require the most training?",
+        "How do you handle interruptions?",
+        "How do you stay dependable during busy days?",
+        "What would your previous supervisor say you can be counted on for?"
+      ]
     }
   ],
   "global_red_flags": [
@@ -7020,6 +8920,147 @@
         "Tell me about a time a supervisor or specialist gave you feedback about how you worked with a child. What did you do with that feedback?"
       ],
       "source_note": "The attached guide lists Total Weighted Score as /34, but under this JSON's WeightedScore = RawScore * Weight formula, the 13 listed traits total 150 maximum weighted points."
+    },
+    "assistant_director_enrollment_specialist": {
+      "label": "Assistant Director / Enrollment Specialist",
+      "max_weighted_total": 200,
+      "thresholds": {
+        "hire_percent_min": 80,
+        "hire_points_min": 160,
+        "borderline_percent_min": 65,
+        "borderline_percent_max": 79,
+        "borderline_points_min": 130,
+        "borderline_points_max": 159,
+        "no_hire_percent_below": 65,
+        "no_hire_points_below": 130,
+        "hire_requires": [
+          "No disqualifiers",
+          "No Critical trait scored below 3",
+          "No trait marked score_1_auto_no_hire scored 1",
+          "Candidate demonstrates safe readiness for enrollment follow-up, family communication, documentation accuracy, confidentiality, compliance awareness, classroom support, and Director escalation"
+        ],
+        "borderline_requires": [
+          "No disqualifiers",
+          "No Critical trait scored 1",
+          "No trait marked score_1_auto_no_hire scored 1",
+          "Candidate appears trainable with a clear support plan, Director oversight, and limited independent responsibility at first"
+        ],
+        "no_hire_if": [
+          "Any disqualifier is present",
+          "Any trait marked score_1_auto_no_hire is scored 1",
+          "Any Critical trait is scored 1",
+          "Candidate cannot prioritize child supervision, ratio, licensing, confidentiality, required documentation, or safe parent communication",
+          "Candidate misunderstands the role as either only clerical or as having full Director authority"
+        ]
+      },
+      "gateway_requirements": [
+        "Able to work full-time, in person, during required preschool operating hours",
+        "Able to obtain required childcare background clearances before working with children",
+        "Meets or can verify required education, experience, and ECE unit qualifications for the role",
+        "Comfortable supporting enrollment, family communication, documentation, billing support, attendance records, and compliance paperwork",
+        "Comfortable stepping into classrooms for ratio, transitions, meals, supervision, and child safety support when needed",
+        "Able to use email, calendars, spreadsheets, childcare management systems, digital files, and basic office technology",
+        "Understands that enrollment files, licensing paperwork, subsidy records, attendance, billing, and CACFP or state program documents require accuracy and timely follow-up",
+        "Understands that the role supports the Director and school operations but does not replace the Director's authority"
+      ],
+      "recommended_question_set_30_minute": [
+        {
+          "question_id": "ades_q1",
+          "question": "It is 9:00 AM. A tour family arrives early, a classroom is out of ratio, a parent is upset about a billing issue, and a state-program document is due today. What do you do first, second, and third?",
+          "traits_scored": [
+            "ades_trait_1",
+            "ades_trait_7",
+            "ades_trait_8",
+            "ades_trait_10"
+          ]
+        },
+        {
+          "question_id": "ades_q2",
+          "question": "A family tours the school, seems interested, but does not enroll immediately. Walk me through how you would follow up over the next week.",
+          "traits_scored": [
+            "ades_trait_2",
+            "ades_trait_8",
+            "ades_trait_13",
+            "ades_trait_16"
+          ]
+        },
+        {
+          "question_id": "ades_q3",
+          "question": "Tell me about a time you caught an error in records, billing, attendance, paperwork, or data entry. What did you do?",
+          "traits_scored": [
+            "ades_trait_3",
+            "ades_trait_11",
+            "ades_trait_12",
+            "ades_trait_17"
+          ]
+        },
+        {
+          "question_id": "ades_q4",
+          "question": "Tell me about a time you handled sensitive information about a family, child, employee, customer, or client. How did you protect it?",
+          "traits_scored": [
+            "ades_trait_4",
+            "ades_trait_7",
+            "ades_trait_13"
+          ]
+        },
+        {
+          "question_id": "ades_q5",
+          "question": "A parent is upset and says, “No one told me I needed this paperwork, and now you are saying my child cannot start tomorrow?” How would you respond?",
+          "traits_scored": [
+            "ades_trait_5",
+            "ades_trait_3",
+            "ades_trait_16"
+          ]
+        },
+        {
+          "question_id": "ades_q6",
+          "question": "A teacher is speaking sharply to children during transitions, and the Director is not immediately available. What do you do in the moment, and what do you do afterward?",
+          "traits_scored": [
+            "ades_trait_6",
+            "ades_trait_7",
+            "ades_trait_9",
+            "ades_trait_13"
+          ]
+        },
+        {
+          "question_id": "ades_q7",
+          "question": "You step into a classroom where the teacher is overwhelmed, children are moving around the room, and the next transition is about to start. What do you do?",
+          "traits_scored": [
+            "ades_trait_9",
+            "ades_trait_10",
+            "ades_trait_1"
+          ]
+        },
+        {
+          "question_id": "ades_q8",
+          "question": "What kinds of decisions would you handle independently in this role, and what kinds of decisions would you bring to the Director first?",
+          "traits_scored": [
+            "ades_trait_7",
+            "ades_trait_1",
+            "ades_trait_17"
+          ]
+        },
+        {
+          "question_id": "ades_q9",
+          "question": "How would you track multiple enrollment files, missing documents, parent follow-ups, attendance records, and deadlines without letting things fall through the cracks?",
+          "traits_scored": [
+            "ades_trait_8",
+            "ades_trait_11",
+            "ades_trait_12"
+          ]
+        },
+        {
+          "question_id": "ades_q10",
+          "question": "Please describe, in your own words, how you would write a short email to a parent who is missing documents from an enrollment file.",
+          "traits_scored": [
+            "ades_trait_16",
+            "ades_trait_5",
+            "ades_trait_3",
+            "ades_trait_15"
+          ]
+        }
+      ],
+      "source_note": "Each trait receives a RawScore from 1 to 5. WeightedScore = RawScore * Weight. Critical traits have weight 3, High traits have weight 2, and Medium traits have weight 1. The sum of all trait weights is 40, so the maximum weighted total is 5 * 40 = 200."
     }
   },
   "gateway_requirements": [

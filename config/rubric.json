@@ -7,9 +7,10 @@
       "Single Canonical Output",
       "Added Behavior Support Specialist / Early Childhood Teacher track",
       "Behavior Support Specialist track based on attached interview guide",
-      "Revised score anchors and sample answers to make low scores realistic and observable in actual preschool interviews"
+      "Revised score anchors and sample answers to make low scores realistic and observable in actual preschool interviews",
+      "Added Assistant Director / Enrollment Specialist track from weighted JSON source"
     ],
-    "version": "1.3"
+    "version": "1.4"
   },
   "scoring": {
     "raw_score_range": [
@@ -116,6 +117,147 @@
         "Tell me about a time a supervisor or specialist gave you feedback about how you worked with a child. What did you do with that feedback?"
       ],
       "source_note": "The attached guide lists Total Weighted Score as /34, but under this JSON's WeightedScore = RawScore * Weight formula, the 13 listed traits total 150 maximum weighted points."
+    },
+    "assistant_director_enrollment_specialist": {
+      "label": "Assistant Director / Enrollment Specialist",
+      "max_weighted_total": 200,
+      "thresholds": {
+        "hire_percent_min": 80,
+        "hire_points_min": 160,
+        "borderline_percent_min": 65,
+        "borderline_percent_max": 79,
+        "borderline_points_min": 130,
+        "borderline_points_max": 159,
+        "no_hire_percent_below": 65,
+        "no_hire_points_below": 130,
+        "hire_requires": [
+          "No disqualifiers",
+          "No Critical trait scored below 3",
+          "No trait marked score_1_auto_no_hire scored 1",
+          "Candidate demonstrates safe readiness for enrollment follow-up, family communication, documentation accuracy, confidentiality, compliance awareness, classroom support, and Director escalation"
+        ],
+        "borderline_requires": [
+          "No disqualifiers",
+          "No Critical trait scored 1",
+          "No trait marked score_1_auto_no_hire scored 1",
+          "Candidate appears trainable with a clear support plan, Director oversight, and limited independent responsibility at first"
+        ],
+        "no_hire_if": [
+          "Any disqualifier is present",
+          "Any trait marked score_1_auto_no_hire is scored 1",
+          "Any Critical trait is scored 1",
+          "Candidate cannot prioritize child supervision, ratio, licensing, confidentiality, required documentation, or safe parent communication",
+          "Candidate misunderstands the role as either only clerical or as having full Director authority"
+        ]
+      },
+      "gateway_requirements": [
+        "Able to work full-time, in person, during required preschool operating hours",
+        "Able to obtain required childcare background clearances before working with children",
+        "Meets or can verify required education, experience, and ECE unit qualifications for the role",
+        "Comfortable supporting enrollment, family communication, documentation, billing support, attendance records, and compliance paperwork",
+        "Comfortable stepping into classrooms for ratio, transitions, meals, supervision, and child safety support when needed",
+        "Able to use email, calendars, spreadsheets, childcare management systems, digital files, and basic office technology",
+        "Understands that enrollment files, licensing paperwork, subsidy records, attendance, billing, and CACFP or state program documents require accuracy and timely follow-up",
+        "Understands that the role supports the Director and school operations but does not replace the Director's authority"
+      ],
+      "recommended_question_set_30_minute": [
+        {
+          "question_id": "ades_q1",
+          "question": "It is 9:00 AM. A tour family arrives early, a classroom is out of ratio, a parent is upset about a billing issue, and a state-program document is due today. What do you do first, second, and third?",
+          "traits_scored": [
+            "ades_trait_1",
+            "ades_trait_7",
+            "ades_trait_8",
+            "ades_trait_10"
+          ]
+        },
+        {
+          "question_id": "ades_q2",
+          "question": "A family tours the school, seems interested, but does not enroll immediately. Walk me through how you would follow up over the next week.",
+          "traits_scored": [
+            "ades_trait_2",
+            "ades_trait_8",
+            "ades_trait_13",
+            "ades_trait_16"
+          ]
+        },
+        {
+          "question_id": "ades_q3",
+          "question": "Tell me about a time you caught an error in records, billing, attendance, paperwork, or data entry. What did you do?",
+          "traits_scored": [
+            "ades_trait_3",
+            "ades_trait_11",
+            "ades_trait_12",
+            "ades_trait_17"
+          ]
+        },
+        {
+          "question_id": "ades_q4",
+          "question": "Tell me about a time you handled sensitive information about a family, child, employee, customer, or client. How did you protect it?",
+          "traits_scored": [
+            "ades_trait_4",
+            "ades_trait_7",
+            "ades_trait_13"
+          ]
+        },
+        {
+          "question_id": "ades_q5",
+          "question": "A parent is upset and says, “No one told me I needed this paperwork, and now you are saying my child cannot start tomorrow?” How would you respond?",
+          "traits_scored": [
+            "ades_trait_5",
+            "ades_trait_3",
+            "ades_trait_16"
+          ]
+        },
+        {
+          "question_id": "ades_q6",
+          "question": "A teacher is speaking sharply to children during transitions, and the Director is not immediately available. What do you do in the moment, and what do you do afterward?",
+          "traits_scored": [
+            "ades_trait_6",
+            "ades_trait_7",
+            "ades_trait_9",
+            "ades_trait_13"
+          ]
+        },
+        {
+          "question_id": "ades_q7",
+          "question": "You step into a classroom where the teacher is overwhelmed, children are moving around the room, and the next transition is about to start. What do you do?",
+          "traits_scored": [
+            "ades_trait_9",
+            "ades_trait_10",
+            "ades_trait_1"
+          ]
+        },
+        {
+          "question_id": "ades_q8",
+          "question": "What kinds of decisions would you handle independently in this role, and what kinds of decisions would you bring to the Director first?",
+          "traits_scored": [
+            "ades_trait_7",
+            "ades_trait_1",
+            "ades_trait_17"
+          ]
+        },
+        {
+          "question_id": "ades_q9",
+          "question": "How would you track multiple enrollment files, missing documents, parent follow-ups, attendance records, and deadlines without letting things fall through the cracks?",
+          "traits_scored": [
+            "ades_trait_8",
+            "ades_trait_11",
+            "ades_trait_12"
+          ]
+        },
+        {
+          "question_id": "ades_q10",
+          "question": "Please describe, in your own words, how you would write a short email to a parent who is missing documents from an enrollment file.",
+          "traits_scored": [
+            "ades_trait_16",
+            "ades_trait_5",
+            "ades_trait_3",
+            "ades_trait_15"
+          ]
+        }
+      ],
+      "source_note": "Each trait receives a RawScore from 1 to 5. WeightedScore = RawScore * Weight. Critical traits have weight 3, High traits have weight 2, and Medium traits have weight 1. The sum of all trait weights is 40, so the maximum weighted total is 5 * 40 = 200."
     }
   },
   "absolute_disqualifiers": [
@@ -858,6 +1000,550 @@
         "3": "I would make sure everyone knows the plan and remind teachers to follow it.",
         "2": "I would explain the plan to the teachers. After that, it is hard to control whether everyone remembers it.",
         "1": "I would tell the teachers what to do, but it is really up to them to follow through."
+      },
+      "score_1_auto_no_hire": false
+    },
+    {
+      "id": "ades_trait_1",
+      "name": "Operational Judgment and Prioritization",
+      "priority": "Critical",
+      "weight": 3,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "primary_question": "It is 9:00 AM. A tour family arrives early, a classroom is out of ratio, a parent is upset about a billing issue, and a state-program document is due today. What do you do first, second, and third?",
+      "follow_up_probes": [
+        "What cannot wait?",
+        "What can be acknowledged but delayed?",
+        "How would you keep the tour family and upset parent informed?",
+        "When would you involve the Director?",
+        "How would you make sure the state-program deadline is still met?"
+      ],
+      "descriptors": {
+        "1": "Shows serious concern by failing to prioritize child supervision, ratio, licensing, or immediate safety. May focus first on the loudest adult issue or paperwork while leaving the classroom concern unresolved.",
+        "2": "Shows weak sequencing or reactive judgment. Recognizes that several things matter but does not clearly identify what must happen first or how to prevent something from being missed.",
+        "3": "Gives a generally reasonable order of action but lacks depth, structure, or clear follow-through. May mention ratio and documents but not explain how they would manage competing demands.",
+        "4": "Prioritizes ratio and child safety first, communicates professionally with adults, protects the deadline, and involves the Director appropriately. Answer is safe and practical but may be less detailed than a 5.",
+        "5": "Calmly sequences the situation with child supervision and licensing first, clear acknowledgment of families, practical delegation or temporary coverage, documented follow-up, deadline protection, and appropriate Director escalation."
+      },
+      "sample_answers": {
+        "1": "I would probably finish the state paperwork first since it is due today. The teacher may have to wait a few minutes, and then I would help the parent and tour family.",
+        "2": "I would try to calm the upset parent first because that affects the school’s reputation. Then I would check on the classroom and see if the teacher still needs help.",
+        "3": "I would greet the tour family, check on the teacher, and make sure the paperwork gets done before the end of the day. I would try to handle everything as quickly as possible.",
+        "4": "I would address the ratio issue first by stepping in or finding coverage. Then I would acknowledge the tour family and the upset parent, let them know I will help them shortly, and make sure the state document is completed or escalated to the Director if I cannot get to it in time.",
+        "5": "First I would stabilize the classroom ratio because supervision and licensing cannot wait. I would step in if qualified or immediately find qualified coverage and alert the Director if coverage is not available. I would warmly acknowledge the tour family and upset parent so they know I see them, but I would not let the front desk delay child safety. Once coverage is stable, I would decide whether the tour can proceed, review the billing issue calmly, and block time for the state-program document. I would document what is still pending and update the Director before the deadline is at risk."
+      },
+      "score_1_auto_no_hire": true
+    },
+    {
+      "id": "ades_trait_2",
+      "name": "Enrollment Ownership and Family Follow-Up",
+      "priority": "Critical",
+      "weight": 3,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "primary_question": "A family tours the school, seems interested, but does not enroll immediately. Walk me through how you would follow up over the next week.",
+      "follow_up_probes": [
+        "What would you document after the tour?",
+        "What would your same-day follow-up say?",
+        "How would you identify barriers without being pushy?",
+        "How would you track the family in the enrollment pipeline?",
+        "What would you avoid promising?"
+      ],
+      "descriptors": {
+        "1": "Shows serious concern by dismissing follow-up, pressuring families, misrepresenting availability, or promising terms outside authority.",
+        "2": "Follow-up is too passive, too pushy, inconsistent, or mostly focused on filling a spot rather than helping the family make an informed decision.",
+        "3": "Describes polite basic follow-up but lacks a clear tracking method, timing plan, or strategy for understanding family needs and barriers.",
+        "4": "Shows strong family-centered follow-up with timely communication, notes, next steps, and respectful persistence. May be slightly less systematic than a 5.",
+        "5": "Takes ownership of the enrollment pipeline by documenting needs, sending timely warm follow-up, identifying barriers, clarifying next steps, tracking status, following up consistently, and avoiding pressure or unauthorized promises."
+      },
+      "sample_answers": {
+        "1": "If they really want the spot, they will call back. I do not like chasing families because it can seem desperate.",
+        "2": "I would call and remind them that spots fill fast, so they need to decide soon if they want to enroll.",
+        "3": "I would send them an email thanking them for touring and ask if they are still interested. If they do not respond, I might call later in the week.",
+        "4": "I would make notes after the tour, send a thank-you message that same day, include the next steps, and follow up later in the week. I would track where they are in the process and ask if they need help with paperwork or have questions.",
+        "5": "Right after the tour, I would document the child’s age, schedule needs, start date, funding questions, family concerns, and next step. I would send a same-day thank-you message with the forms or documents needed and invite them to ask questions. If I did not hear back, I would follow up in a few days in a helpful way, such as asking whether they need help with paperwork, schedule, tuition, or subsidy questions. I would track the family in the pipeline so they do not fall through the cracks, but I would not pressure them or promise a spot, rate, or start date that has not been approved."
+      },
+      "score_1_auto_no_hire": true
+    },
+    {
+      "id": "ades_trait_3",
+      "name": "Compliance Accuracy and Documentation Discipline",
+      "priority": "Critical",
+      "weight": 3,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "primary_question": "Tell me about a time you caught an error in records, billing, attendance, paperwork, or data entry. What did you do?",
+      "follow_up_probes": [
+        "How did you catch the error?",
+        "How did you correct it?",
+        "Who needed to be informed?",
+        "How did you check whether related records were affected?",
+        "What did you do to prevent the same error from happening again?"
+      ],
+      "descriptors": {
+        "1": "Shows serious concern by treating required documentation casually, hiding or silently changing errors, or not understanding why records matter in a preschool setting.",
+        "2": "Minimizes accuracy or gives a vague correction process. May rely on others to catch issues or treat errors as routine without accountability.",
+        "3": "Understands that accuracy matters and would correct errors, but the answer is basic and lacks verification, escalation, or prevention steps.",
+        "4": "Shows careful documentation habits, corrects errors using source records, communicates appropriately, and checks related files or reports.",
+        "5": "Connects documentation accuracy to licensing, funding, billing, attendance, child safety, family trust, and compliance. Corrects transparently, informs the right person, checks related records, and improves the process."
+      },
+      "sample_answers": {
+        "1": "Small paperwork mistakes happen. I would probably just fix it and move on unless someone asked about it.",
+        "2": "If I noticed something wrong, I would correct it. If it was a bigger issue, I would wait for the Director to tell me what to do.",
+        "3": "I have caught small mistakes before. I fixed them and tried to double-check my work after that.",
+        "4": "I once found that a record did not match a report. I checked the source document, corrected the entry, told my supervisor, and reviewed the rest of the file to make sure there were no other errors.",
+        "5": "I once noticed that a child’s start date was different in two systems. I checked the source document, told my supervisor because it affected billing and attendance, corrected the record, and checked related reports. I also added a second-check step before marking files complete. In childcare, paperwork is not just paperwork. It can affect licensing, funding, emergency information, billing, and family trust."
+      },
+      "score_1_auto_no_hire": true
+    },
+    {
+      "id": "ades_trait_4",
+      "name": "Confidentiality and Professional Judgment",
+      "priority": "Critical",
+      "weight": 3,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "primary_question": "Tell me about a time you handled sensitive information about a family, child, employee, customer, or client. How did you protect it?",
+      "follow_up_probes": [
+        "Who needed to know?",
+        "Who did not need to know?",
+        "How would you respond if a staff member asked casually?",
+        "What should not be discussed at the front desk?",
+        "How would you store or communicate sensitive information?"
+      ],
+      "descriptors": {
+        "1": "Shows serious concern by treating confidential information as casual conversation, sharing private details unnecessarily, or misunderstanding need-to-know boundaries.",
+        "2": "Shows unclear confidentiality boundaries. May share more context than needed with staff or discuss sensitive information in semi-public areas.",
+        "3": "Generally understands privacy and says they would not share sensitive information, but the answer is basic and lacks specific examples.",
+        "4": "Understands confidentiality well and gives a safe answer about private communication, appropriate storage, and limited access.",
+        "5": "Shows strong need-to-know judgment for family, child, billing, subsidy, health, and staff information. Avoids gossip, uses private channels, stores records appropriately, and escalates through proper channels."
+      },
+      "sample_answers": {
+        "1": "Staff usually know what is going on anyway. Sometimes it helps to tell people the background so everyone understands the family.",
+        "2": "I would try to be private, but teachers may need to know what is happening with a family so they can be more understanding.",
+        "3": "I would keep the information private and not share it with people who do not need to know.",
+        "4": "I would keep private information in the right file or system and only discuss it with people who need to know. I would not talk about family, billing, child, or staff issues casually.",
+        "5": "I only discuss sensitive information with people who need it to do their job. I would not discuss billing, subsidy, health, family situations, child records, or staff concerns at the front desk, in a hallway, or with curious staff. If a teacher asked about something they did not need to know, I would say, “I cannot discuss that, but if there is something that affects classroom care, the Director will share what is appropriate.” I would store records in the proper file or system and escalate concerns privately."
+      },
+      "score_1_auto_no_hire": true
+    },
+    {
+      "id": "ades_trait_5",
+      "name": "Warm but Firm Parent Communication",
+      "priority": "Critical",
+      "weight": 3,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "primary_question": "A parent is upset and says, “No one told me I needed this paperwork, and now you are saying my child cannot start tomorrow?” How would you respond?",
+      "follow_up_probes": [
+        "What would you say first?",
+        "How would you validate without waiving requirements?",
+        "What would you review before answering?",
+        "When would you involve the Director?",
+        "What would you avoid saying?"
+      ],
+      "descriptors": {
+        "1": "Shows serious concern by blaming the parent, arguing, promising an unauthorized exception, ignoring required documents, or escalating the conflict.",
+        "2": "Sounds defensive, blunt, overly apologetic, vague, or likely to create confusion about whether the child can start.",
+        "3": "Gives an acceptable policy-based response, but may be more procedural than relational or may lack practical next steps.",
+        "4": "Communicates warmly and clearly while holding the requirement. Offers help and knows when to involve the Director.",
+        "5": "Validates frustration, reviews the file calmly, explains requirements clearly, offers practical help, avoids blame, protects confidentiality, and does not waive requirements or promise exceptions outside authority."
+      },
+      "sample_answers": {
+        "1": "I would tell them we gave them the paperwork and it is their responsibility. We cannot keep repeating ourselves if parents do not read everything.",
+        "2": "I would say I am sorry, but that is the rule. I would tell them they need to bring the paperwork or the child cannot start.",
+        "3": "I would explain that the paperwork is required before the child starts and tell them what forms are missing.",
+        "4": "I would acknowledge that it is frustrating, review the file with them, explain what is missing, and help them complete what they can. If there is any question about an exception or start date, I would check with the Director.",
+        "5": "I would say, “I understand why that is frustrating, especially when you were planning for tomorrow. Let me review the file with you so I can give you accurate information.” Then I would identify exactly what is missing, explain why it is required for enrollment or licensing, and offer practical help, such as resending the form, showing them where to sign, or explaining what needs a doctor or agency signature. I would not blame them, but I also would not say the child can start if the required documents are not complete unless the Director confirms that is allowed."
+      },
+      "score_1_auto_no_hire": true
+    },
+    {
+      "id": "ades_trait_6",
+      "name": "Staff Support Without Overstepping",
+      "priority": "Critical",
+      "weight": 3,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "primary_question": "A teacher is speaking sharply to children during transitions, and the Director is not immediately available. What do you do in the moment, and what do you do afterward?",
+      "follow_up_probes": [
+        "How would you protect children emotionally without embarrassing the teacher?",
+        "What would you say or do in the moment?",
+        "What would you avoid doing?",
+        "What would you tell the Director?",
+        "How would you support the teacher without creating your own authority structure?"
+      ],
+      "descriptors": {
+        "1": "Shows serious concern by ignoring harsh teacher behavior, humiliating the teacher, escalating the situation, or acting as if the Assistant Director role gives full independent authority.",
+        "2": "Is too passive or too confrontational. May avoid the issue, correct the teacher publicly, or focus more on adult discomfort than children’s experience.",
+        "3": "Recognizes the concern and would involve the Director, but may be unsure how to act in the moment beyond a basic reminder.",
+        "4": "Shows good judgment and respectful intervention. Protects children and follows up with the Director, but may be less specific about modeling or documentation.",
+        "5": "Intervenes calmly to protect children, models appropriate tone, supports the transition, avoids public shaming, reports facts to the Director, and reinforces school expectations without overstepping."
+      },
+      "sample_answers": {
+        "1": "I would tell the teacher in front of everyone that she cannot talk that way. If the Director is not there, teachers need to know I am in charge.",
+        "2": "I would probably wait for the Director unless it got really bad because I would not want the teacher to think I was correcting her.",
+        "3": "I would remind the teacher to use a calm voice and then tell the Director later.",
+        "4": "I would step in calmly to help the transition and model the tone we want. I would avoid embarrassing the teacher and then tell the Director what I observed.",
+        "5": "In the moment, I would protect the children without escalating the adult. I might step in and say to the children, “Let’s take a breath and walk to the carpet,” while modeling a calm voice and helping the transition. I would not correct the teacher sharply in front of children or families unless there was immediate safety risk. Afterward, I would tell the Director factually what I observed, not as gossip, and ask how they want it handled. If I am asked to support the teacher, I would focus on modeling and the Director’s expectations."
+      },
+      "score_1_auto_no_hire": true
+    },
+    {
+      "id": "ades_trait_7",
+      "name": "Director Support and Escalation Judgment",
+      "priority": "Critical",
+      "weight": 3,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "primary_question": "What kinds of decisions would you handle independently in this role, and what kinds of decisions would you bring to the Director first?",
+      "follow_up_probes": [
+        "What parent concerns would you escalate?",
+        "What staff concerns would you escalate?",
+        "What enrollment or billing issues would need approval?",
+        "How would you avoid overstepping?",
+        "How would you avoid bringing every small issue to the Director?"
+      ],
+      "descriptors": {
+        "1": "Shows serious concern by either wanting full Director authority without approval or being unable to handle routine operational tasks independently.",
+        "2": "Shows unclear boundaries. May over-escalate routine items, under-escalate serious items, or show uncertainty about authority.",
+        "3": "Gives a generally reasonable distinction between routine and serious matters but lacks specific examples.",
+        "4": "Understands the support role well and gives safe examples of what to handle, document, and escalate.",
+        "5": "Clearly distinguishes routine independent tasks from issues requiring Director involvement, including licensing, safety, serious parent concerns, staff discipline, unusual billing decisions, enrollment exceptions, confidentiality issues, and child supervision concerns."
+      },
+      "sample_answers": {
+        "1": "If the Director is not there, I would make the decision. Parents and teachers need someone to give them an answer right away.",
+        "2": "I would probably ask the Director about most things because I would not want to make the wrong call.",
+        "3": "I could handle basic parent questions and paperwork, but bigger problems should go to the Director.",
+        "4": "I would handle routine follow-ups, document collection, tour scheduling, basic parent questions, and file tracking. I would escalate safety issues, angry parent concerns, staff performance issues, licensing questions, and anything involving exceptions.",
+        "5": "I would independently handle routine enrollment follow-up, missing document reminders, tour scheduling, basic attendance questions, and organizing files. I would escalate immediately for child safety, ratio problems I cannot solve, suspected licensing concerns, serious parent complaints, staff conduct concerns, confidentiality issues, billing exceptions, start-date exceptions, subsidy or state-program problems, and anything that could affect compliance or the school’s authority. I would bring the Director facts and options, not just the problem."
+      },
+      "score_1_auto_no_hire": true
+    },
+    {
+      "id": "ades_trait_8",
+      "name": "Organization, Follow-Through, and Pipeline Tracking",
+      "priority": "High",
+      "weight": 2,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "primary_question": "How would you track multiple enrollment files, missing documents, parent follow-ups, attendance records, and deadlines without letting things fall through the cracks?",
+      "follow_up_probes": [
+        "What tools would you use?",
+        "How often would you review your list?",
+        "How would you flag urgent items?",
+        "How would you make sure someone else can understand your notes?",
+        "What would you do at the end of each day?"
+      ],
+      "descriptors": {
+        "1": "Shows serious concern by relying on memory, informal reminders, or last-minute reactions for important enrollment, documentation, attendance, or compliance tasks.",
+        "2": "Has a vague or inconsistent organization method. May mention lists but lacks prioritization, review rhythm, or accountability.",
+        "3": "Uses basic tools such as lists, calendars, or spreadsheets, but the system is not fully developed or role-specific.",
+        "4": "Describes a reliable tracking process with lists, deadlines, status notes, reminders, and daily review.",
+        "5": "Describes a clear operating system for pipeline stages, missing documents, deadlines, follow-up dates, file status, attendance or billing flags, daily review, escalation notes, and handoff visibility."
+      },
+      "sample_answers": {
+        "1": "I usually remember what needs to be done. If something is important, it stays in my head until I finish it.",
+        "2": "I would keep a list somewhere and check it when I have time. I am pretty organized once I get used to the job.",
+        "3": "I would use a calendar and maybe a spreadsheet to track families, missing forms, and deadlines.",
+        "4": "I would keep a tracker with each family or file, what is missing, the due date, the last contact, and the next follow-up. I would check it daily and use reminders for urgent items.",
+        "5": "I would keep a shared or approved tracker with pipeline stages, missing documents, due dates, follow-up dates, notes, and status. I would flag items that affect start dates, funding, licensing, billing, or attendance. At the end of each day, I would review what was completed, what is waiting on families or agencies, what needs Director escalation, and what must happen first the next morning. My notes would be clear enough for the Director or another office staff member to understand if I am out."
+      },
+      "score_1_auto_no_hire": false
+    },
+    {
+      "id": "ades_trait_9",
+      "name": "Classroom Support and Child-Centered Presence",
+      "priority": "High",
+      "weight": 2,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "primary_question": "You step into a classroom where the teacher is overwhelmed, children are moving around the room, and the next transition is about to start. What do you do?",
+      "follow_up_probes": [
+        "What would you do first?",
+        "What would you say to the children?",
+        "How would you support the teacher without taking over unnecessarily?",
+        "How would you keep expectations developmentally appropriate?",
+        "What would you tell the Director afterward?"
+      ],
+      "descriptors": {
+        "1": "Shows serious concern by using harsh control, ignoring children’s emotional state, taking over in a way that undermines the teacher, or focusing only on order without supervision and safety.",
+        "2": "Shows limited classroom judgment. May give vague help, focus on compliance, or overlook children’s developmental needs during transitions.",
+        "3": "Provides basic classroom support and understands the need to help the teacher, but lacks specific child-centered strategies.",
+        "4": "Uses calm presence, clear directions, developmentally appropriate support, and respectful teamwork to help stabilize the classroom.",
+        "5": "Quickly assesses safety, joins the transition calmly, supports children at their level, models warm structure, helps the teacher regain momentum, and communicates relevant facts to the Director afterward."
+      },
+      "sample_answers": {
+        "1": "I would get everyone quiet first. The teacher needs to know that when I come in, the children should listen right away.",
+        "2": "I would tell the children to sit down and listen to the teacher. Sometimes they just need another adult to be firm.",
+        "3": "I would help the teacher by getting some children to the carpet or helping with the transition.",
+        "4": "I would calmly join the transition, help guide children to where they need to go, and use simple directions. I would support the teacher without embarrassing her or taking over unless safety required it.",
+        "5": "First I would scan for safety and supervision. Then I would calmly join the group, get low with the children if needed, and give one simple direction at a time, such as, “Blocks in the bin, then carpet.” I would use a warm tone and help the teacher regain the transition rather than making it about me. Afterward, I would share factual notes with the Director if the teacher seemed consistently overwhelmed or if there was a safety or ratio concern."
+      },
+      "score_1_auto_no_hire": true
+    },
+    {
+      "id": "ades_trait_10",
+      "name": "Child Supervision, Ratio, and Safety Awareness",
+      "priority": "Critical",
+      "weight": 3,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "primary_question": "A teacher tells you she needs to step out for a few minutes and asks you to watch the class from the doorway while you keep working on paperwork. What do you do?",
+      "follow_up_probes": [
+        "What does active supervision mean?",
+        "Can paperwork continue while supervising children?",
+        "What would you do if no one is available to cover?",
+        "What would you document or report?",
+        "How do ratio and supervision affect licensing?"
+      ],
+      "descriptors": {
+        "1": "Shows serious concern by accepting passive or distracted supervision, treating ratio casually, or continuing paperwork while responsible for children.",
+        "2": "Recognizes supervision matters but gives an incomplete answer, such as watching from nearby or multitasking without understanding active supervision.",
+        "3": "Gives a generally safe answer that they would stop paperwork and supervise, but lacks detail about ratio, positioning, or escalation.",
+        "4": "Understands active supervision, ratio, and coverage expectations and explains how they would respond safely.",
+        "5": "Clearly prioritizes active supervision and licensing, stops other tasks, positions themselves appropriately, ensures qualified coverage, escalates if coverage is not available, and treats ratio as non-negotiable."
+      },
+      "sample_answers": {
+        "1": "If it is just a few minutes, I could keep an eye on them from the doorway while finishing the paperwork.",
+        "2": "I would watch them and try to finish quickly. If the class looked calm, I think it would be okay for a short time.",
+        "3": "I would stop the paperwork and watch the class until the teacher came back.",
+        "4": "I would not supervise from the doorway while doing paperwork. I would stop what I am doing, enter the classroom, make sure ratio is covered, and actively supervise. If I cannot cover, I would find another qualified person or call the Director.",
+        "5": "I would not agree to doorway supervision while multitasking. If I am responsible for children, I need to be actively supervising, positioned where I can see and respond, and counted in ratio only if I am qualified and actually present. I would stop the paperwork, step into the room, and make sure coverage is safe. If coverage is not available, I would immediately involve the Director or another qualified staff member. Paperwork can wait. Supervision and licensing cannot."
+      },
+      "score_1_auto_no_hire": true
+    },
+    {
+      "id": "ades_trait_11",
+      "name": "Systems and Data Accuracy",
+      "priority": "High",
+      "weight": 2,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "primary_question": "What systems, spreadsheets, childcare management tools, databases, or office software have you used, and how do you make sure your entries are accurate?",
+      "follow_up_probes": [
+        "How do you check your work?",
+        "What would you do if two systems do not match?",
+        "How comfortable are you learning new software?",
+        "How do you avoid duplicate or outdated records?",
+        "What types of records have you maintained?"
+      ],
+      "descriptors": {
+        "1": "Shows serious concern by being careless with systems, resistant to software, or unaware that inaccurate entries can affect billing, attendance, compliance, or family trust.",
+        "2": "Has limited systems comfort or relies heavily on others to check work. Accuracy process is vague.",
+        "3": "Has basic software comfort and understands the need to double-check entries but lacks a strong system.",
+        "4": "Uses software, spreadsheets, or databases competently and describes practical accuracy checks.",
+        "5": "Shows strong systems discipline, including source-document verification, reconciliation between systems, consistent naming, status tracking, error correction, and willingness to learn childcare-specific tools."
+      },
+      "sample_answers": {
+        "1": "I am not really a spreadsheet person. I can enter things if someone shows me, but I prefer paper because systems can be confusing.",
+        "2": "I have used basic systems. I usually enter the information and ask someone to check it if it seems important.",
+        "3": "I have used spreadsheets, email, and some databases. I try to double-check names, dates, and numbers before saving.",
+        "4": "I am comfortable with spreadsheets, calendars, email, and databases. I check entries against the source document, review dates and spelling, and correct errors as soon as I find them.",
+        "5": "I have used spreadsheets, databases, calendars, shared files, and customer or student management systems. I verify entries against source documents, use consistent naming, check for duplicates, reconcile reports when two systems do not match, and document corrections. If I am learning a new childcare system, I would take notes, ask questions early, and build a checklist for high-risk entries like start dates, schedules, attendance, billing, and missing documents."
+      },
+      "score_1_auto_no_hire": false
+    },
+    {
+      "id": "ades_trait_12",
+      "name": "Billing, Attendance, and Record Accuracy",
+      "priority": "High",
+      "weight": 2,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "primary_question": "A billing record, attendance sheet, and parent statement do not match. What steps would you take before giving the parent an answer?",
+      "follow_up_probes": [
+        "What source records would you check?",
+        "What would you avoid saying before verifying?",
+        "When would you involve the Director or billing lead?",
+        "How would you communicate with the parent?",
+        "How would you document the outcome?"
+      ],
+      "descriptors": {
+        "1": "Shows serious concern by guessing, giving an answer before verifying, changing records casually, or blaming the parent or staff.",
+        "2": "Recognizes there is a mismatch but gives a vague or reactive process. May rely too quickly on one source without verification.",
+        "3": "Would check records before answering, but the process is basic and lacks documentation or escalation detail.",
+        "4": "Checks multiple source records, avoids premature answers, communicates professionally, and escalates unusual issues.",
+        "5": "Uses a careful reconciliation process across billing, attendance, enrollment schedule, parent communication, and source documents before responding. Documents findings and escalates exceptions appropriately."
+      },
+      "sample_answers": {
+        "1": "I would probably go with what the billing system says because that should be the official amount.",
+        "2": "I would look at the records and try to figure out which one seems right before calling the parent back.",
+        "3": "I would check the billing record and attendance sheet before giving the parent an answer.",
+        "4": "I would tell the parent I want to verify before answering. I would check attendance, billing, the child’s schedule, and any notes, then involve the Director or billing person if something still does not match.",
+        "5": "I would not guess or give a quick answer. I would tell the parent I want to review the records carefully and follow up. I would compare the attendance record, billing entry, enrollment schedule, parent statement, and any communication notes or agency records if relevant. If I found an error, I would document the correction and notify the right person. If it involved an exception, credit, subsidy, or unclear policy issue, I would bring it to the Director or billing lead before responding."
+      },
+      "score_1_auto_no_hire": true
+    },
+    {
+      "id": "ades_trait_13",
+      "name": "Team Credibility and Relationship Building",
+      "priority": "High",
+      "weight": 2,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "primary_question": "This role supports teachers, families, and the Director. How would you build trust with each group during your first month?",
+      "follow_up_probes": [
+        "How would you avoid looking like you are taking over?",
+        "How would you earn teacher trust?",
+        "How would you earn family trust?",
+        "How would you support the Director’s priorities?",
+        "What would you do if staff were slow to trust you?"
+      ],
+      "descriptors": {
+        "1": "Shows serious concern by relying on title, authority, popularity, or personal style rather than consistent professional behavior.",
+        "2": "Gives a shallow or one-sided trust-building answer. May focus mainly on being liked or being in charge.",
+        "3": "Understands that trust matters and gives basic examples, but lacks a clear plan for families, teachers, and the Director.",
+        "4": "Shows practical trust-building through consistency, follow-through, respectful communication, and support for the Director’s expectations.",
+        "5": "Builds credibility through reliability, confidentiality, accurate information, calm help during busy moments, respect for teachers, warm family communication, and alignment with the Director’s leadership."
+      },
+      "sample_answers": {
+        "1": "I think people trust me because I am friendly and confident. Staff usually listen when they know you have a leadership role.",
+        "2": "I would be nice to everyone and let them know I am there to help. I think trust comes naturally if you have a good personality.",
+        "3": "I would get to know the teachers and families, answer questions, and help where needed.",
+        "4": "I would build trust by doing what I say I will do, communicating clearly, helping teachers without judging them, and making sure I support the Director’s expectations consistently.",
+        "5": "With teachers, I would build trust by helping during real pressure points, respecting their classroom role, and not gossiping or correcting them unnecessarily. With families, I would be warm, accurate, and consistent, especially with enrollment and paperwork. With the Director, I would bring organized updates, protect confidentiality, follow through on tasks, and escalate issues early. I think credibility comes from being calm, useful, accurate, and consistent over time."
+      },
+      "score_1_auto_no_hire": false
+    },
+    {
+      "id": "ades_trait_14",
+      "name": "Coachability and Learning Agility",
+      "priority": "High",
+      "weight": 2,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "primary_question": "Tell me about a time you received feedback about your communication, organization, accuracy, or work performance. What did you do with it?",
+      "follow_up_probes": [
+        "What was hard about the feedback?",
+        "What did you change afterward?",
+        "How did you know the change worked?",
+        "How do you prefer to be trained?",
+        "How would you learn a system or process you have not used before?"
+      ],
+      "descriptors": {
+        "1": "Shows serious concern by rejecting feedback, blaming the person giving it, claiming not to need training, or showing resistance to supervision.",
+        "2": "Accepts feedback only superficially or conditionally. May focus more on how feedback was delivered than on what they learned.",
+        "3": "Is generally open to feedback but gives a limited example or unclear behavior change.",
+        "4": "Gives a real example of receiving feedback, making a change, and improving performance.",
+        "5": "Shows strong learning agility by seeking clarification, changing behavior, following up, applying feedback to systems or relationships, and using training to become more independent."
+      },
+      "sample_answers": {
+        "1": "I honestly do not get much feedback because I am very experienced. If feedback is unfair, I do not think it is helpful to focus on it.",
+        "2": "I accept feedback as long as it is given respectfully. I have had supervisors who did not explain things well, so that can be hard.",
+        "3": "I am open to feedback. If someone tells me to do something differently, I try to adjust.",
+        "4": "A supervisor once told me my notes were not detailed enough for someone else to follow. I started adding dates, next steps, and clearer status notes, and it helped the team.",
+        "5": "I once received feedback that I was completing tasks but not making the status clear enough for the rest of the team. It was uncomfortable, but I understood the impact. I asked what information would be most useful, changed my tracker to include status, next step, owner, and due date, and checked back after a week. It helped me become more independent because my supervisor did not have to keep asking where things stood."
+      },
+      "score_1_auto_no_hire": true
+    },
+    {
+      "id": "ades_trait_15",
+      "name": "Cultural and Linguistic Responsiveness",
+      "priority": "Medium",
+      "weight": 1,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "primary_question": "Our families may have different languages, cultures, schedules, funding sources, and levels of familiarity with preschool paperwork. How would you make families feel respected while still completing required enrollment steps?",
+      "follow_up_probes": [
+        "How would you support a family that is confused by paperwork?",
+        "How would you avoid assumptions?",
+        "How would you handle language barriers?",
+        "How would you explain state-program or subsidy requirements respectfully?",
+        "How would you keep the process consistent for all families?"
+      ],
+      "descriptors": {
+        "1": "Shows serious concern by making assumptions about families, sounding judgmental about language, paperwork, income, or subsidy needs, or treating families as difficult because they need support.",
+        "2": "Shows limited responsiveness. May be polite but expects families to adapt without much explanation or support.",
+        "3": "Gives a respectful but general answer about treating families equally and helping with forms.",
+        "4": "Shows culturally respectful communication, patience with paperwork, and awareness that families may need different kinds of support.",
+        "5": "Combines warmth, consistency, and equity by avoiding assumptions, using clear language, offering practical help, respecting language needs, explaining requirements without judgment, and keeping documentation standards consistent."
+      },
+      "sample_answers": {
+        "1": "Parents need to understand that the paperwork is required. We can help, but they also need to take responsibility and read what we give them.",
+        "2": "I would be patient, but the requirements are the requirements. I would explain that everyone has to complete the same forms.",
+        "3": "I would treat every family with respect and help them understand what forms they need to complete.",
+        "4": "I would explain the requirements clearly, avoid making assumptions, and help families understand what is needed. If there is a language barrier, I would use approved translated materials or get appropriate help.",
+        "5": "I would assume families want to do the right thing but may not know our process, especially with subsidy, state-program, health, or enrollment forms. I would use plain language, approved translated materials when available, and check for understanding without embarrassing anyone. I would avoid assumptions about income, language, family structure, or education level. At the same time, I would keep the requirements consistent and document what was provided, what is missing, and when we followed up."
+      },
+      "score_1_auto_no_hire": false
+    },
+    {
+      "id": "ades_trait_16",
+      "name": "Professional Written Communication",
+      "priority": "High",
+      "weight": 2,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "primary_question": "Please describe, in your own words, how you would write a short email to a parent who is missing documents from an enrollment file.",
+      "follow_up_probes": [
+        "What tone would you use?",
+        "What details would you include?",
+        "How would you avoid sounding accusatory?",
+        "How would you make the next step clear?",
+        "How would you protect confidential information?"
+      ],
+      "descriptors": {
+        "1": "Shows serious concern by using blaming, careless, unclear, overly casual, or confidentiality-risking written communication.",
+        "2": "Writing approach is vague, blunt, too informal, or missing clear next steps.",
+        "3": "Provides a basic professional message but may lack warmth, precision, deadline clarity, or helpful formatting.",
+        "4": "Writes clearly and professionally with a warm tone, specific missing items, deadline, and next step.",
+        "5": "Communicates with warmth, accuracy, clear formatting, appropriate confidentiality, practical help, and a specific call to action without blame or unnecessary detail."
+      },
+      "sample_answers": {
+        "1": "I would write, “You still have not turned in the required forms, and your child cannot start until we get them.”",
+        "2": "I would tell them we are missing paperwork and ask them to bring it in as soon as possible.",
+        "3": "I would say that we are missing some documents from the enrollment file and list what they need to bring.",
+        "4": "I would write a polite email thanking them and listing the missing documents, the due date, and who to contact with questions.",
+        "5": "I would write something like, “Good morning, thank you for working with us on your child’s enrollment file. We are still missing the following items: the physician report and signed emergency form. To keep the planned start date, please return these by Thursday at 5:00 PM. If you need another copy or have questions about either form, I am happy to help.” I would avoid blame, keep it concise, and only include information appropriate for email."
+      },
+      "score_1_auto_no_hire": false
+    },
+    {
+      "id": "ades_trait_17",
+      "name": "Reliability and Role Readiness",
+      "priority": "Medium",
+      "weight": 1,
+      "applicable_tracks": [
+        "assistant_director_enrollment_specialist"
+      ],
+      "primary_question": "This role can shift between office work, family communication, paperwork deadlines, and classroom support. What makes you ready for that kind of role?",
+      "follow_up_probes": [
+        "What part of the role would be easiest for you?",
+        "What part would require the most training?",
+        "How do you handle interruptions?",
+        "How do you stay dependable during busy days?",
+        "What would your previous supervisor say you can be counted on for?"
+      ],
+      "descriptors": {
+        "1": "Shows serious concern by misunderstanding the role, resisting classroom support or office detail, or presenting unreliable work habits.",
+        "2": "Shows partial fit but significant gaps in readiness, flexibility, or understanding of the hybrid nature of the role.",
+        "3": "Appears generally trainable and willing but gives a broad answer without strong evidence of readiness.",
+        "4": "Shows solid readiness for a hybrid office and school operations role, including flexibility, follow-through, and willingness to learn.",
+        "5": "Shows strong role fit by understanding the enrollment-first focus, office accuracy, family communication, Director support, classroom backup, confidentiality, and the need to stay calm and reliable during shifting priorities."
+      },
+      "sample_answers": {
+        "1": "I am mainly interested in leadership. I would rather not be pulled into classrooms unless absolutely necessary because office work and management are really the role.",
+        "2": "I like working with families, but I would need a lot of training on paperwork and classroom support. I can be flexible if needed.",
+        "3": "I am organized and good with people, and I am willing to learn the parts I do not know yet.",
+        "4": "I think I am ready because I have handled customer communication, records, deadlines, and busy environments. I understand this role also needs flexibility to support classrooms and the Director when needed.",
+        "5": "I understand this is not just a front desk role and not a full Director role. The main focus is enrollment, family follow-up, files, attendance, billing support, and compliance paperwork, but I also need to be ready to step into classrooms safely when ratio, transitions, meals, or supervision require it. I am comfortable with shifting priorities, keeping written trackers, protecting confidential information, and knowing when to handle routine tasks independently versus when to escalate to the Director."
       },
       "score_1_auto_no_hire": false
     }

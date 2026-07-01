@@ -85,11 +85,15 @@ def test_next_trait_id_uses_next_numeric_rubric_slot() -> None:
     assert next_trait_id(rubric) == 'trait_8'
 
 
-def test_bss_trait_ids_build_runtime_definitions_without_crashing(tmp_path: Path) -> None:
+def test_prefixed_trait_ids_build_runtime_definitions_without_crashing(tmp_path: Path) -> None:
     service = QuestionRuntimeDefinitionService(tmp_path)
 
     definition = service.load_definition('bss_trait_1')
+    assistant_definition = service.load_definition('ades_trait_2')
 
     assert runtime_trait_id_for_rubric_trait('bss_trait_1') == 'BSS_T1'
     assert build_runtime_trait_id('bss_trait_1', trait_name='Student Support') == 'BSS_T1_Student_Support'
     assert definition['trait_id'] == 'BSS_T1'
+    assert runtime_trait_id_for_rubric_trait('ades_trait_2') == 'ADES_T2'
+    assert build_runtime_trait_id('ades_trait_2', trait_name='Enrollment Ownership') == 'ADES_T2_Enrollment_Ownership'
+    assert assistant_definition['trait_id'] == 'ADES_T2'

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from ui_composition import (
     GROUP_ID_PATTERN,
+    PREFIXED_TRAIT_ID_ALIAS_PATTERN,
+    RUNTIME_TRAIT_ID_PATTERN,
     SIGNAL_ID_PATTERN,
     TRAIT_FILE_PATTERN,
     TRAIT_ID_ALIAS_PATTERN,
@@ -24,6 +26,8 @@ from ui_composition import (
 
 __all__ = [
     "GROUP_ID_PATTERN",
+    "PREFIXED_TRAIT_ID_ALIAS_PATTERN",
+    "RUNTIME_TRAIT_ID_PATTERN",
     "SIGNAL_ID_PATTERN",
     "TRAIT_FILE_PATTERN",
     "TRAIT_ID_ALIAS_PATTERN",

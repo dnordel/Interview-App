@@ -282,6 +282,7 @@ def test_load_runtime_bundle_uses_weighted_signal_source(scoring_engine_class):
 
     expected_trait_ids = {f"trait_{index}" for index in range(1, 16)}
     expected_trait_ids.update({f"bss_trait_{index}" for index in range(1, 14)})
+    expected_trait_ids.update({f"ades_trait_{index}" for index in range(1, 18)})
 
     assert config["_weighted_signal_source"] == str(resolved_paths["weighted_signals"])
     assert {trait["trait_id"] for trait in traits} == expected_trait_ids
@@ -297,6 +298,7 @@ def test_loads_all_configured_traits_and_resolves_all_signal_refs(runtime_bundle
 
     expected_trait_ids = {f"trait_{index}" for index in range(1, 16)}
     expected_trait_ids.update({f"bss_trait_{index}" for index in range(1, 14)})
+    expected_trait_ids.update({f"ades_trait_{index}" for index in range(1, 18)})
     assert len(traits) == len(expected_trait_ids)
     assert {trait["trait_id"] for trait in traits} == expected_trait_ids
 

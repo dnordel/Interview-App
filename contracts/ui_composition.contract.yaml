@@ -344,8 +344,8 @@ functions:
   - ValueError
   side_effects: none
 - name: runtime_trait_id_for_rubric_trait
-  description: Convert a rubric trait id in trait_<number> or bss_trait_<number> form
-    into its runtime trait-id prefix.
+  description: Convert a rubric trait id in trait_<number> or <prefix>_trait_<number>
+    form into its runtime trait-id prefix.
   locked: false
   inputs:
     trait_id:
@@ -1738,8 +1738,12 @@ data_structures:
   description: Glob pattern used to locate runtime trait JSON files.
 - name: TRAIT_ID_ALIAS_PATTERN
   description: Regex for rubric trait_<number> ids.
+- name: PREFIXED_TRAIT_ID_ALIAS_PATTERN
+  description: Regex for rubric <prefix>_trait_<number> ids.
 - name: BSS_TRAIT_ID_ALIAS_PATTERN
-  description: Regex for rubric bss_trait_<number> ids.
+  description: Compatibility alias for prefixed rubric trait ids.
+- name: RUNTIME_TRAIT_ID_PATTERN
+  description: Regex for runtime T<number> and PREFIX_T<number> ids.
 - name: SIGNAL_ID_PATTERN
   description: Regex for runtime signal refs.
 - name: GROUP_ID_PATTERN

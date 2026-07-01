@@ -69,7 +69,7 @@ functions:
       - ValueError
     side_effects: none
   - name: runtime_trait_id_for_rubric_trait
-    description: Convert a rubric trait id in trait_<number> or bss_trait_<number> form into its runtime trait-id prefix.
+    description: Convert a rubric trait id in trait_<number> or <prefix>_trait_<number> form into its runtime trait-id prefix.
     locked: false
     inputs:
       trait_id:
@@ -327,6 +327,10 @@ classes:
         returns:
           type: RuntimeSignalDefinition
 data_structures:
+  - name: PREFIXED_TRAIT_ID_ALIAS_PATTERN
+    description: Regex for rubric <prefix>_trait_<number> ids.
+  - name: RUNTIME_TRAIT_ID_PATTERN
+    description: Regex for runtime T<number> and PREFIX_T<number> ids.
   - name: RuntimeSignalDefinition
     description: Persisted runtime signal-definition payload for a trait.
     fields:

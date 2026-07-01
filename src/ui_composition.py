@@ -62,7 +62,9 @@ RowCallback = Callable[[HistoryRow], None]
 SortCallback = Callable[[str, bool], None]
 TRAIT_FILE_PATTERN = "T*.json"
 TRAIT_ID_ALIAS_PATTERN = re.compile(r"trait_(\d+)", re.IGNORECASE)
-BSS_TRAIT_ID_ALIAS_PATTERN = re.compile(r"bss_trait_(\d+)", re.IGNORECASE)
+PREFIXED_TRAIT_ID_ALIAS_PATTERN = re.compile(r"([A-Za-z][A-Za-z0-9]*)_trait_(\d+)", re.IGNORECASE)
+BSS_TRAIT_ID_ALIAS_PATTERN = PREFIXED_TRAIT_ID_ALIAS_PATTERN
+RUNTIME_TRAIT_ID_PATTERN = re.compile(r"(?:[A-Z][A-Z0-9]*_)?T\d+(?:_[A-Za-z0-9_]+)?")
 SIGNAL_ID_PATTERN = re.compile(r"^[A-Za-z0-9_]+$")
 GROUP_ID_PATTERN = re.compile(r"^[A-Za-z0-9_]+$")
 
@@ -2288,14 +2290,13 @@ def runtime_trait_id_for_rubric_trait(trait_id: str) -> str:
     match = TRAIT_ID_ALIAS_PATTERN.fullmatch(candidate)
     if match:
         return f"T{int(match.group(1))}"
-    bss_match = BSS_TRAIT_ID_ALIAS_PATTERN.fullmatch(candidate)
-    if bss_match:
-        return f"BSS_T{int(bss_match.group(1))}"
-    if candidate.startswith("T"):
+    prefixed_match = PREFIXED_TRAIT_ID_ALIAS_PATTERN.fullmatch(candidate)
+    if prefixed_match:
+        prefix = prefixed_match.group(1).upper()
+        return f"{prefix}_T{int(prefixed_match.group(2))}"
+    if RUNTIME_TRAIT_ID_PATTERN.fullmatch(candidate):
         return candidate
-    if candidate.startswith("BSS_T"):
-        return candidate
-    raise ValueError("Trait id must use the 'trait_<number>' or 'bss_trait_<number>' format.")
+    raise ValueError("Trait id must use the 'trait_<number>' or '<prefix>_trait_<number>' format.")
 
 
 def build_runtime_trait_id(trait_id: str, *, trait_name: str, existing_runtime_trait_id: Any = "") -> str:
