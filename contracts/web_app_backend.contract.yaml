@@ -2,7 +2,7 @@ module:
   name: web_app_backend
   language: python
   path: src/web_app_backend.py
-  version: 0.10.1
+  version: 0.10.2
   description: Opt-in local HTTP backend for the web migration shell. It exposes
     repository-local configuration bootstrap data, serves the web app static files,
     and saves browser draft payloads through the existing DraftManager while Tk
@@ -125,8 +125,10 @@ functions:
   - WebAppBackendError
   - OSError
   side_effects: Reads rubric and question overrides, writes one DOCX report under
-    base_dir/Indeed Interview Notes, writes one JSON export under base_dir/integration_exports,
-    and appends one row to user_artifacts/interview_history.json.
+    the configured school interview-notes directory for the default app base or
+    explicit offer settings, otherwise under base_dir/Indeed Interview Notes;
+    writes one JSON export under base_dir/integration_exports, and appends one
+    row to user_artifacts/interview_history.json.
 - name: normalize_web_draft_payload
   description: Convert browser draft payload field names into the desktop draft
     shape expected by session hydration and reporting.

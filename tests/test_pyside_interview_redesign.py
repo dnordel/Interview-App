@@ -14,7 +14,6 @@ from onboarding_operations import Employee, EmployeeTask
 from pyside_interview_app import (
     PySideInterviewSession,
     build_interview_redesign_model,
-    build_pyside_admin_studio_model,
     build_pyside_candidate_board,
     build_pyside_onboarding_board,
     latest_pyside_draft_path,
@@ -1012,7 +1011,7 @@ def test_pyside_finalize_writes_interview_notes_to_school_dropbox_folder(tmp_pat
     assert report_path.exists()
 
 
-def test_pyside_admin_school_folder_settings_are_editable_and_persisted(tmp_path: Path, monkeypatch) -> None:
+def test_pyside_admin_school_folder_settings_review_confirm_persists(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
     app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
@@ -1021,22 +1020,35 @@ def test_pyside_admin_school_folder_settings_are_editable_and_persisted(tmp_path
         json.dumps({"Palmdale": {"offer_output_dir": "offers", "interview_notes_dir": "old"}}),
         encoding="utf-8",
     )
+    rubric_path = _write_test_rubric(tmp_path)
+    overrides_path = _write_test_overrides(tmp_path)
+    prompts_path = tmp_path / "deepseek_prompts.json"
+    prompts_path.write_text(json.dumps({"answer_summary_user": "Summarize."}), encoding="utf-8")
     monkeypatch.setattr(pyside_interview_app, "SCHOOL_OFFER_SETTINGS_PATH", settings_path)
+    monkeypatch.setattr(pyside_interview_app, "DEFAULT_RUBRIC_PATH", rubric_path)
+    monkeypatch.setattr(pyside_interview_app, "QUESTIONS_OVERRIDE_PATH", overrides_path)
+    monkeypatch.setattr(pyside_interview_app, "DEEPSEEK_PROMPTS_CONFIG_PATH", prompts_path)
     model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
+        rubric_path=rubric_path,
+        overrides_path=overrides_path,
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
 
     window = pyside_interview_app.PySideInterviewWindow(model)
     table = window.school_folder_settings_table
+    assert table.editTriggers() == qt_widgets.QAbstractItemView.EditTrigger.NoEditTriggers
+    window.admin_edit_button.click()
+    assert table.editTriggers() != qt_widgets.QAbstractItemView.EditTrigger.NoEditTriggers
     palmdale_row = next(
         row for row in range(table.rowCount()) if table.item(row, 0).text() == "Palmdale"
     )
     table.item(palmdale_row, 1).setText(r"\Dropbox\LPL PMD Office Shared\Staff\Candidates")
 
-    window._save_school_folder_settings()
+    monkeypatch.setattr(window.QtWidgets.QMessageBox, "question", lambda *_args, **_kwargs: window.QtWidgets.QMessageBox.StandardButton.Yes)
+    monkeypatch.setattr(window.QtWidgets.QMessageBox, "warning", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(window.QtWidgets.QMessageBox, "information", lambda *_args, **_kwargs: None)
+    window._review_admin_changes()
 
     saved = json.loads(settings_path.read_text(encoding="utf-8"))
     assert saved["Palmdale"]["offer_output_dir"] == "offers"
@@ -1883,43 +1895,43 @@ def test_pyside_history_delete_requires_confirmation(tmp_path: Path, monkeypatch
     app.processEvents()
 
 
-def test_pyside_admin_studio_model_separates_advanced_config(tmp_path: Path) -> None:
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=tmp_path / "missing-history.json",
-        school_options=["Palmdale"],
-    )
-
-    admin = build_pyside_admin_studio_model(model)
-
-    assert admin.sections == ["Role Tracks", "Questions", "Rubrics", "Signals", "Templates", "Storage", "Security"]
-    assert admin.track_count == 1
-    assert admin.question_count == 2
-    assert admin.advanced_json_hidden is True
-    assert "Review validation warnings before saving rubric or scoring changes." in admin.validation_warnings
-
-
-def test_pyside_admin_tabs_show_editable_trait_rows_and_selected_color(tmp_path: Path) -> None:
+def test_pyside_admin_studio_uses_guided_readonly_sections_until_edit(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
     qt_core = pytest.importorskip("PySide6.QtCore")
     app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    rubric_path = _write_test_rubric(tmp_path)
+    overrides_path = _write_test_overrides(tmp_path)
+    settings_path = tmp_path / "school_offer_settings.json"
+    settings_path.write_text(json.dumps({}), encoding="utf-8")
+    prompts_path = tmp_path / "deepseek_prompts.json"
+    prompts_path.write_text(json.dumps({"answer_summary_user": "Summarize."}), encoding="utf-8")
+    monkeypatch.setattr(pyside_interview_app, "DEFAULT_RUBRIC_PATH", rubric_path)
+    monkeypatch.setattr(pyside_interview_app, "QUESTIONS_OVERRIDE_PATH", overrides_path)
+    monkeypatch.setattr(pyside_interview_app, "SCHOOL_OFFER_SETTINGS_PATH", settings_path)
+    monkeypatch.setattr(pyside_interview_app, "DEEPSEEK_PROMPTS_CONFIG_PATH", prompts_path)
     model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
+        rubric_path=rubric_path,
+        overrides_path=overrides_path,
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
     window = pyside_interview_app.PySideInterviewWindow(model)
-    tabs = window.admin_tabs
-    rubrics_table = tabs.widget(2).findChild(qt_widgets.QTableWidget)
+    section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
+    questions_table = window.window.findChild(qt_widgets.QTableWidget, "AdminStudioQuestionsTable")
+    rubrics_table = window.window.findChild(qt_widgets.QTableWidget, "AdminStudioRubricsTable")
 
-    assert "QTabBar::tab:selected" in tabs.styleSheet()
+    assert section_list is not None
+    assert [section_list.item(index).text() for index in range(section_list.count())][:2] == ["Questions & Flow", "Rubrics"]
+    assert questions_table.item(0, 4).text() == "Why Launch Pad Learning?"
+    assert not (questions_table.item(0, 4).flags() & qt_core.Qt.ItemFlag.ItemIsEditable)
     assert rubrics_table.rowCount() == 1
     assert rubrics_table.item(0, 0).text() == "trait_1"
     assert rubrics_table.item(0, 1).text() == "Empathy"
-    assert rubrics_table.item(0, 0).flags() & qt_core.Qt.ItemFlag.ItemIsEditable
+    assert not (rubrics_table.item(0, 0).flags() & qt_core.Qt.ItemFlag.ItemIsEditable)
+    window.admin_edit_button.click()
+    assert questions_table.item(0, 4).flags() & qt_core.Qt.ItemFlag.ItemIsEditable
+    assert rubrics_table.item(0, 1).flags() & qt_core.Qt.ItemFlag.ItemIsEditable
     window.window.close()
     app.processEvents()
 

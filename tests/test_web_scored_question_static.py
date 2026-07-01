@@ -64,7 +64,10 @@ def test_scored_question_web_contracts_are_registered():
     assert contract["module"]["name"] == "web_scored_question"
     assert system["modules"]["web_scored_question"]["path"] == "web/scored-question/"
     assert system["modules"]["config_rubric_json"]["path"] == "config/rubric.json"
-    assert system["modules"]["trait_based_scoring_json"]["path"] == "Trait-Based Scoring/*.json"
+    assert (
+        system["modules"]["trait_based_scoring_json"]["path"]
+        == "Trait-Based Scoring/preschool_teacher_interview_signals_weighted.json"
+    )
     modules = {
         module_name
         for service in architecture["services"].values()

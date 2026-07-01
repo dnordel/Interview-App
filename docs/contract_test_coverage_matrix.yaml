@@ -15,7 +15,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-06-30T19:45:56.388824+00:00'
+generated_at_utc: '2026-06-30T22:53:43.541044+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -32,6 +32,123 @@ security_test_mapping:
   - tests/test_interview_root_contracts.py
   - tests/test_shared_module_contract_interfaces.py
 entries:
+- contract: contracts/admin_studio.contract.yaml
+  symbol: admin_studio.AdminStudio.apply_draft
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/admin_studio.contract.yaml
+  symbol: admin_studio.AdminStudio.create_draft
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/admin_studio.contract.yaml
+  symbol: admin_studio.AdminStudio.load
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/admin_studio.contract.yaml
+  symbol: admin_studio.AdminStudio.summary
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/admin_studio.contract.yaml
+  symbol: admin_studio.AdminStudioDraft.change_summary
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/admin_studio.contract.yaml
+  symbol: admin_studio.AdminStudioDraft.changed_payloads
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/admin_studio.contract.yaml
+  symbol: admin_studio.AdminStudioDraft.discard
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/admin_studio.contract.yaml
+  symbol: admin_studio.AdminStudioDraft.from_payloads
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/admin_studio.contract.yaml
+  symbol: admin_studio.AdminStudioDraft.update_prompt
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/admin_studio.contract.yaml
+  symbol: admin_studio.AdminStudioDraft.update_question_text
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/admin_studio.contract.yaml
+  symbol: admin_studio.AdminStudioDraft.update_school_settings
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/admin_studio.contract.yaml
+  symbol: admin_studio.AdminStudioDraft.update_trait
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/admin_studio.contract.yaml
+  symbol: admin_studio.AdminStudioDraft.validate
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
 - contract: contracts/app_content.contract.yaml
   symbol: app_content.compose_intro_script
   kind: function
@@ -779,6 +896,24 @@ entries:
 - contract: contracts/data_store.contract.yaml
   symbol: data_store.SchoolOfferSettingsStore.save
   kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/data_store.contract.yaml
+  symbol: data_store.default_school_offer_settings
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/data_store.contract.yaml
+  symbol: data_store.resolve_interview_notes_output_dir
+  kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
     focus:
@@ -9084,6 +9219,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._admin_studio_paths
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._choose_pyside_notes_regeneration_mode
   kind: method
   tests:
@@ -9130,6 +9274,15 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._delete_latest_draft
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._discard_admin_changes
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -9283,6 +9436,24 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._retry_history_deepseek
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._review_admin_changes
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._set_admin_editing_enabled
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -9445,15 +9616,6 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.build_interview_redesign_model
-  kind: function
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.build_pyside_admin_studio_model
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -14816,6 +14978,16 @@ entries:
     - return_type
     - security_validation
 - contract: contracts/ui_windows.contract.yaml
+  symbol: ui_windows.SettingsWindow._build_school_notes_dir_vars
+  kind: method
+  tests:
+  - path: tests/test_ui_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/ui_windows.contract.yaml
   symbol: ui_windows.SettingsWindow._build_security_tab
   kind: method
   tests:
@@ -14986,6 +15158,16 @@ entries:
     - return_type
     - security_validation
 - contract: contracts/ui_windows.contract.yaml
+  symbol: ui_windows.SettingsWindow._path_has_parent_segment
+  kind: method
+  tests:
+  - path: tests/test_ui_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/ui_windows.contract.yaml
   symbol: ui_windows.SettingsWindow._restore_recommended_whisper_defaults
   kind: method
   tests:
@@ -15007,6 +15189,16 @@ entries:
     - security_validation
 - contract: contracts/ui_windows.contract.yaml
   symbol: ui_windows.SettingsWindow._save
+  kind: method
+  tests:
+  - path: tests/test_ui_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/ui_windows.contract.yaml
+  symbol: ui_windows.SettingsWindow._save_school_notes_dirs
   kind: method
   tests:
   - path: tests/test_ui_contract_interfaces.py

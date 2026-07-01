@@ -4185,12 +4185,20 @@ class FinalizeGateways:
     def export_report(self, app: Any, context: FinalizeContext) -> str:
         exporter_fallback = _resolve_finalize_gateway_symbol("DocxExporter", DocxExporter)
         exporter_cls = _app_module_symbol(app, "DocxExporter", exporter_fallback)
-        output_dir_resolver = getattr(app, "_interview_notes_output_dir", None)
-        output_dir = (
-            Path(output_dir_resolver())
-            if callable(output_dir_resolver)
-            else Path(app.settings["base_dir"]) / "Indeed Interview Notes"
-        )
+        output_dir_resolver = app.__dict__.get("_interview_notes_output_dir")
+        if output_dir_resolver is None:
+            output_dir_resolver = getattr(type(app), "_interview_notes_output_dir", None)
+            output_dir = (
+                Path(output_dir_resolver(app))
+                if callable(output_dir_resolver)
+                else Path(app.settings["base_dir"]) / "Indeed Interview Notes"
+            )
+        else:
+            output_dir = (
+                Path(output_dir_resolver())
+                if callable(output_dir_resolver)
+                else Path(app.settings["base_dir"]) / "Indeed Interview Notes"
+            )
         exporter = exporter_cls(output_dir)
         out_path = exporter.export(app._rubric_with_question_overrides(), context.payload, context.scoring)
         normalized_path = Path(out_path).as_posix().strip()

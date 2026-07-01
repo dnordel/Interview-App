@@ -46,9 +46,14 @@ modules:
     - interview_app_views
     - tk_theme
     - ui_mode_switch
+  question_settings_service:
+    path: src/question_settings_service.py
+    depends_on:
+    - ui_composition
   pyside_interview_app:
     path: src/pyside_interview_app.py
     depends_on:
+    - admin_studio
     - data_store
     - interview_runtime
     - onboarding_operations
@@ -56,6 +61,17 @@ modules:
     - scoring_reporting
     - ui_mode_switch
     - PySide6
+  admin_studio:
+    path: src/admin_studio.py
+    depends_on:
+    - data_store
+    - interview_runtime
+    - platform_services
+    - question_settings_service
+    - config_rubric_json
+    - question_overrides_json
+    - deepseek_prompts_json
+    - school_offer_settings_json
   ui_mode_switch:
     path: src/ui_mode_switch.py
     depends_on: []
@@ -98,7 +114,7 @@ modules:
     path: user_artifacts/school_offer_settings.json
     depends_on: []
   trait_based_scoring_json:
-    path: Trait-Based Scoring/*.json
+    path: Trait-Based Scoring/preschool_teacher_interview_signals_weighted.json
     depends_on: []
   app_logging:
     path: src/app_logging.py
@@ -328,6 +344,8 @@ module_metadata:
   pyside_interview_app:
     constraints:
     - Acts as the single PySide desktop parity surface for Tk-bearing desktop contracts.
+    - Delegates Admin Studio draft editing, validation, backups, and confirmed JSON
+      persistence to admin_studio.
     - Finalize progress is user-closable and does not cancel background transcription,
       finalize, or DeepSeek work.
     - Finalize progress renders sanitized task rows with right-side statuses limited

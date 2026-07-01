@@ -15,6 +15,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Sequence
 
+from admin_studio import AdminStudio, AdminStudioPaths
 from docx import Document
 from data_store import (
     InterviewHistoryStore,
@@ -26,6 +27,7 @@ from data_store import (
 )
 from interview_runtime import (
     DEFAULT_WINDOWS_MIC_DEVICE,
+    DEEPSEEK_PROMPTS_CONFIG_PATH,
     DEFAULT_DEEPSEEK_PROGRESS_TASKS,
     FinalizeGateways,
     build_finalize_progress_tasks,
@@ -179,16 +181,6 @@ class PySideCandidateBoard:
     total_candidates: int
     rows: list[dict[str, str]]
     history_rows: list[PySideHistoryRow] = field(default_factory=list)
-
-
-@dataclass(frozen=True)
-class PySideAdminStudioModel:
-    sections: list[str]
-    track_count: int
-    question_count: int
-    advanced_json_hidden: bool
-    validation_warnings: list[str]
-    rows: dict[str, list[dict[str, str]]]
 
 
 @dataclass
@@ -1055,66 +1047,6 @@ def build_pyside_candidate_board(history_rows: Sequence[dict[str, Any] | PySideH
         total_candidates=len(by_candidate),
         rows=list(by_candidate.values()),
         history_rows=shared_history_rows,
-    )
-
-
-def build_pyside_admin_studio_model(model: InterviewRedesignModel) -> PySideAdminStudioModel:
-    sections = ["Role Tracks", "Questions", "Rubrics", "Signals", "Templates", "Storage", "Security"]
-    question_rows: list[dict[str, str]] = []
-    for flow in model.flows.values():
-        for item in flow.items:
-            question_rows.append(
-                {
-                    "track": flow.label,
-                    "type": item.kind,
-                    "id": item.question_id,
-                    "title": item.title,
-                }
-            )
-    trait_rows: list[dict[str, str]] = []
-    for trait in model.rubric.get("traits", []) or []:
-        if not isinstance(trait, dict):
-            continue
-        trait_rows.append(
-            {
-                "key": str(trait.get("id", "")),
-                "label": str(trait.get("name", "")),
-                "type": str(trait.get("priority", "")),
-                "detail": str(trait.get("primary_question", "")),
-            }
-        )
-    signal_rows = [
-        {"key": f"disqualifier_{index}", "label": str(item), "type": "Disqualifier", "detail": ""}
-        for index, item in enumerate(model.rubric.get("absolute_disqualifiers", []) or [], start=1)
-    ]
-    rows = {
-        "Role Tracks": [
-            {
-                "key": key,
-                "label": label,
-                "type": "Track",
-                "detail": str(len(model.flows.get(key, TrackFlow(key, label, [])).items)),
-            }
-            for key, label in model.track_labels.items()
-        ],
-        "Questions": question_rows,
-        "Rubrics": trait_rows,
-        "Signals": signal_rows,
-        "Templates": [{"key": "offer", "label": "Configure in Offer Wizard", "type": "Template", "detail": ""}],
-        "Storage": [{"key": "drafts", "label": str(DEFAULT_BASE_DIR / "pyside_drafts"), "type": "Path", "detail": ""}],
-        "Security": [{"key": "privacy", "label": "Candidate/interview records stay local", "type": "Policy", "detail": ""}],
-    }
-    return PySideAdminStudioModel(
-        sections=sections,
-        track_count=len(model.track_labels),
-        question_count=len(question_rows),
-        advanced_json_hidden=True,
-        validation_warnings=[
-            "Review validation warnings before saving rubric or scoring changes.",
-            "Keep raw JSON import/export behind Advanced.",
-            "Do not expose candidate notes or file paths in logs.",
-        ],
-        rows=rows,
     )
 
 
@@ -2786,134 +2718,279 @@ class PySideInterviewWindow:
     def _admin_page(self) -> Any:
         page, layout = self._page()
         layout.addWidget(self._label("Admin Studio", "Title"))
-        admin = build_pyside_admin_studio_model(self.model)
-        summary, summary_layout = self._surface()
-        summary_layout.addWidget(
-            self._label(
-                f"Tracks: {admin.track_count}    Questions: {admin.question_count}    Advanced JSON hidden: {'Yes' if admin.advanced_json_hidden else 'No'}"
-            )
-        )
-        for warning in admin.validation_warnings:
-            summary_layout.addWidget(self._label(warning))
-        layout.addWidget(summary)
-        tabs = self.QtWidgets.QTabWidget()
-        tabs.setObjectName("AdminStudioTabs")
-        tabs.setStyleSheet(
-            """
-            QTabBar::tab:selected {
-                background: #2563eb;
-                color: #ffffff;
-                border: 1px solid #2563eb;
-            }
-            QTabBar::tab:!selected {
-                background: #eef2f7;
-                color: #111827;
-                border: 1px solid #d9dee7;
-            }
-            """
-        )
-        self.admin_tabs = tabs
-        for title in admin.sections:
-            tab, tab_layout = self._page()
-            tab_layout.addWidget(self._label(f"{title} editor", "SectionTitle"))
-            tab_layout.addWidget(self._label("Advanced configuration is separated from live interview workflow."))
-            rows = admin.rows.get(title, [])
-            table = self.QtWidgets.QTableWidget(len(rows), 4)
-            table.setHorizontalHeaderLabels(["Key", "Label", "Type", "Detail"])
-            table.setEditTriggers(
-                self.QtWidgets.QAbstractItemView.EditTrigger.DoubleClicked
-                | self.QtWidgets.QAbstractItemView.EditTrigger.EditKeyPressed
-                | self.QtWidgets.QAbstractItemView.EditTrigger.AnyKeyPressed
-            )
-            for row_index, row in enumerate(rows):
-                values = [
-                    row.get("key", row.get("id", "")),
-                    row.get("label", row.get("title", "")),
-                    row.get("type", ""),
-                    row.get("detail", row.get("questions", row.get("track", ""))),
-                ]
-                for column, value in enumerate(values):
-                    item = self.QtWidgets.QTableWidgetItem(value)
-                    item.setFlags(item.flags() | self.QtCore.Qt.ItemFlag.ItemIsEditable)
-                    table.setItem(row_index, column, item)
-            table.horizontalHeader().setStretchLastSection(True)
-            tab_layout.addWidget(table, 1)
-            tabs.addTab(tab, title)
-        self._add_school_folder_settings_tab(tabs)
-        layout.addWidget(tabs, 1)
+        self.admin_studio = AdminStudio.load(self._admin_studio_paths())
+        self.admin_draft = self.admin_studio.create_draft()
+        self.admin_edit_mode = False
+        self._admin_tables: dict[str, Any] = {}
+        self._admin_table_editable_columns: dict[str, set[int]] = {}
+
+        toolbar = self.QtWidgets.QHBoxLayout()
+        self.admin_status_label = self._label("", "AdminStudioStatus")
+        toolbar.addWidget(self.admin_status_label, 1)
+        self.admin_edit_button = self.QtWidgets.QPushButton("Edit")
+        self.admin_edit_button.setObjectName("AdminStudioEditButton")
+        self.admin_edit_button.clicked.connect(lambda: self._set_admin_editing_enabled(True))
+        self.admin_review_button = self._primary_button("Review changes")
+        self.admin_review_button.setObjectName("AdminStudioReviewButton")
+        self.admin_review_button.clicked.connect(self._review_admin_changes)
+        self.admin_discard_button = self.QtWidgets.QPushButton("Discard")
+        self.admin_discard_button.setObjectName("AdminStudioDiscardButton")
+        self.admin_discard_button.clicked.connect(self._discard_admin_changes)
+        toolbar.addWidget(self.admin_edit_button)
+        toolbar.addWidget(self.admin_review_button)
+        toolbar.addWidget(self.admin_discard_button)
+        layout.addLayout(toolbar)
+
+        workspace = self.QtWidgets.QSplitter()
+        workspace.setObjectName("AdminStudioWorkspace")
+        self.admin_section_list = self.QtWidgets.QListWidget()
+        self.admin_section_list.setObjectName("AdminStudioSectionList")
+        self.admin_section_list.setFixedWidth(230)
+        self.admin_stack = self.QtWidgets.QStackedWidget()
+        self.admin_stack.setObjectName("AdminStudioEditorStack")
+        for section in self.admin_studio.summary(self.admin_draft).sections:
+            self.admin_section_list.addItem(section.title)
+            self.admin_stack.addWidget(self._admin_section_page(section.key, section.title, section.description))
+        self.admin_section_list.currentRowChanged.connect(self.admin_stack.setCurrentIndex)
+        workspace.addWidget(self.admin_section_list)
+        workspace.addWidget(self.admin_stack)
+        workspace.setStretchFactor(1, 1)
+        layout.addWidget(workspace, 1)
+        self.admin_section_list.setCurrentRow(0)
+        self._set_admin_editing_enabled(False)
+        self._sync_admin_status()
         return page
 
-    def _school_folder_settings_rows(self) -> list[tuple[str, str]]:
-        settings = default_school_offer_settings()
-        for school, cfg in self.school_offer_store.load().items():
-            settings.setdefault(
-                str(school),
-                {
-                    "full_time_template": "",
-                    "part_time_template": "",
-                    "offer_output_dir": "",
-                    "interview_notes_dir": "",
-                },
-            )
-            settings[str(school)].update(cfg)
-        return [
-            (school, str(cfg.get("interview_notes_dir", "")).strip())
-            for school, cfg in sorted(settings.items())
-        ]
+    def _admin_studio_paths(self) -> AdminStudioPaths:
+        return AdminStudioPaths(
+            rubric_path=DEFAULT_RUBRIC_PATH,
+            overrides_path=QUESTIONS_OVERRIDE_PATH,
+            school_settings_path=SCHOOL_OFFER_SETTINGS_PATH,
+            prompts_path=DEEPSEEK_PROMPTS_CONFIG_PATH,
+        )
 
-    def _add_school_folder_settings_tab(self, tabs: Any) -> None:
+    def _admin_section_page(self, key: str, title: str, description: str) -> Any:
         tab, tab_layout = self._page()
-        tab_layout.addWidget(self._label("School candidate folders", "SectionTitle"))
-        table = self.QtWidgets.QTableWidget(0, 2)
+        tab_layout.addWidget(self._label(title, "SectionTitle"))
+        tab_layout.addWidget(self._label(description))
+        if key == "questions":
+            table = self._admin_questions_table()
+            tab_layout.addWidget(table, 1)
+            return tab
+        if key == "rubrics":
+            table = self._admin_rubrics_table()
+            tab_layout.addWidget(table, 1)
+            return tab
+        if key == "templates":
+            table = self._admin_school_settings_table()
+            tab_layout.addWidget(table, 1)
+            return tab
+        if key == "prompts":
+            table = self._admin_prompts_table()
+            tab_layout.addWidget(table, 1)
+            return tab
+        rows = self._admin_readonly_rows(key)
+        table = self._admin_table(key, ["Key", "Value"], rows, set())
+        tab_layout.addWidget(table, 1)
+        return tab
+
+    def _admin_questions_table(self) -> Any:
+        rows: list[list[str]] = []
+        for track_key, flow in self.model.flows.items():
+            for item in flow.items:
+                rows.append([track_key, flow.label, item.question_id, item.kind, item.prompt])
+        return self._admin_table("questions", ["Track Key", "Track", "Question ID", "Type", "Question"], rows, {4})
+
+    def _admin_rubrics_table(self) -> Any:
+        rows: list[list[str]] = []
+        for trait in self.admin_draft.rubric.get("traits", []) or []:
+            if not isinstance(trait, dict):
+                continue
+            rows.append(
+                [
+                    str(trait.get("id", "")),
+                    str(trait.get("name", "")),
+                    str(trait.get("priority", "")),
+                    str(trait.get("weight", "")),
+                    str(trait.get("primary_question", "")),
+                ]
+            )
+        return self._admin_table("rubrics", ["Trait ID", "Name", "Priority", "Weight", "Question"], rows, {1, 2, 3, 4})
+
+    def _admin_school_settings_table(self) -> Any:
+        rows: list[list[str]] = []
+        settings = default_school_offer_settings()
+        for school, cfg in self.admin_draft.school_settings.items():
+            settings.setdefault(str(school), {})
+            settings[str(school)].update(cfg)
+        for school, cfg in sorted(settings.items()):
+            rows.append([school, str(cfg.get("interview_notes_dir", "")).strip()])
+        table = self._admin_table("school_folders", ["School", "Interview notes folder"], rows, {1})
         table.setObjectName("PySideSchoolFolderSettingsTable")
-        table.setHorizontalHeaderLabels(["School", "Interview notes folder"])
-        table.setEditTriggers(
+        self.school_folder_settings_table = table
+        return table
+
+    def _admin_prompts_table(self) -> Any:
+        rows = [[str(key), str(value)] for key, value in sorted(self.admin_draft.prompts.items()) if isinstance(value, str)]
+        return self._admin_table("prompts", ["Prompt Key", "Template"], rows, {1})
+
+    def _admin_readonly_rows(self, key: str) -> list[list[str]]:
+        if key == "signals":
+            return [[str(trait.get("id", "")), str(trait.get("name", ""))] for trait in self.admin_draft.rubric.get("traits", []) if isinstance(trait, dict)]
+        if key == "advanced":
+            return [
+                ["rubric.json", str(DEFAULT_RUBRIC_PATH)],
+                ["question_overrides.json", str(QUESTIONS_OVERRIDE_PATH)],
+                ["school_offer_settings.json", str(SCHOOL_OFFER_SETTINGS_PATH)],
+                ["deepseek_prompts.json", str(DEEPSEEK_PROMPTS_CONFIG_PATH)],
+            ]
+        return []
+
+    def _admin_table(self, key: str, headers: list[str], rows: list[list[str]], editable_columns: set[int]) -> Any:
+        table = self.QtWidgets.QTableWidget(len(rows), len(headers))
+        table.setObjectName(f"AdminStudio{''.join(part.title() for part in key.split('_'))}Table")
+        table.setHorizontalHeaderLabels(headers)
+        table.verticalHeader().setVisible(True)
+        table.setAlternatingRowColors(True)
+        table.horizontalHeader().setStretchLastSection(True)
+        self._admin_tables[key] = table
+        self._admin_table_editable_columns[key] = set(editable_columns)
+        for row_index, row in enumerate(rows):
+            for column, value in enumerate(row):
+                table.setItem(row_index, column, self._admin_item(str(value), editable=False))
+        return table
+
+    def _admin_item(self, value: str, *, editable: bool) -> Any:
+        item = self.QtWidgets.QTableWidgetItem(value)
+        item.setData(self.QtCore.Qt.ItemDataRole.UserRole, value)
+        if editable:
+            item.setFlags(item.flags() | self.QtCore.Qt.ItemFlag.ItemIsEditable)
+        else:
+            item.setFlags(item.flags() & ~self.QtCore.Qt.ItemFlag.ItemIsEditable)
+        return item
+
+    def _set_admin_editing_enabled(self, enabled: bool) -> None:
+        self.admin_edit_mode = enabled
+        triggers = (
             self.QtWidgets.QAbstractItemView.EditTrigger.DoubleClicked
             | self.QtWidgets.QAbstractItemView.EditTrigger.EditKeyPressed
             | self.QtWidgets.QAbstractItemView.EditTrigger.AnyKeyPressed
+            if enabled
+            else self.QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers
         )
-        for row_index, (school, notes_dir) in enumerate(self._school_folder_settings_rows()):
-            table.insertRow(row_index)
-            school_item = self.QtWidgets.QTableWidgetItem(school)
-            notes_item = self.QtWidgets.QTableWidgetItem(notes_dir)
-            school_item.setFlags(school_item.flags() | self.QtCore.Qt.ItemFlag.ItemIsEditable)
-            notes_item.setFlags(notes_item.flags() | self.QtCore.Qt.ItemFlag.ItemIsEditable)
-            table.setItem(row_index, 0, school_item)
-            table.setItem(row_index, 1, notes_item)
-        table.horizontalHeader().setStretchLastSection(True)
-        tab_layout.addWidget(table, 1)
-        save_button = self.QtWidgets.QPushButton("Save school folders")
-        save_button.clicked.connect(self._save_school_folder_settings)
-        tab_layout.addWidget(save_button)
-        self.school_folder_settings_table = table
-        tabs.addTab(tab, "School Folders")
+        for key, table in self._admin_tables.items():
+            editable_columns = self._admin_table_editable_columns.get(key, set())
+            table.setEditTriggers(triggers)
+            for row_index in range(table.rowCount()):
+                for column in range(table.columnCount()):
+                    item = table.item(row_index, column)
+                    if item is None:
+                        continue
+                    if enabled and column in editable_columns:
+                        item.setFlags(item.flags() | self.QtCore.Qt.ItemFlag.ItemIsEditable)
+                    else:
+                        item.setFlags(item.flags() & ~self.QtCore.Qt.ItemFlag.ItemIsEditable)
+        self.admin_edit_button.setEnabled(not enabled)
+        self.admin_review_button.setEnabled(enabled)
+        self.admin_discard_button.setEnabled(enabled)
+        self._sync_admin_status()
 
-    def _save_school_folder_settings(self) -> None:
-        table = getattr(self, "school_folder_settings_table", None)
-        if table is None:
-            return
-        current = self.school_offer_store.load()
-        for row_index in range(table.rowCount()):
-            school_item = table.item(row_index, 0)
-            notes_item = table.item(row_index, 1)
-            school = school_item.text().strip() if school_item is not None else ""
-            if not school:
-                continue
-            notes_dir = notes_item.text().strip() if notes_item is not None else ""
-            if any(part.strip() == ".." for part in notes_dir.replace("/", "\\").split("\\")):
-                self.QtWidgets.QMessageBox.critical(
-                    self.window,
-                    "School folders",
-                    "Interview notes folders cannot contain '..'.",
+    def _sync_admin_status(self) -> None:
+        summary = self.admin_studio.summary(self.admin_draft)
+        status = f"Tracks: {summary.track_count}    Questions: {summary.question_count}    Unsaved files: {summary.dirty_count}"
+        if summary.validation_errors:
+            status = f"{status}    Validation: blocked"
+        else:
+            status = f"{status}    Validation: ready"
+        self.admin_status_label.setText(status)
+
+    def _capture_admin_table_edits(self) -> None:
+        questions = self._admin_tables.get("questions")
+        if questions is not None:
+            for row_index in range(questions.rowCount()):
+                question_item = questions.item(row_index, 4)
+                if question_item.text() == question_item.data(self.QtCore.Qt.ItemDataRole.UserRole):
+                    continue
+                self.admin_draft.update_question_text(
+                    questions.item(row_index, 0).text().strip(),
+                    questions.item(row_index, 3).text().strip(),
+                    questions.item(row_index, 2).text().strip(),
+                    question_item.text().strip(),
                 )
-                return
-            cfg = dict(current.get(school, {}))
-            cfg.setdefault("full_time_template", "")
-            cfg.setdefault("part_time_template", "")
-            cfg.setdefault("offer_output_dir", "")
-            cfg["interview_notes_dir"] = notes_dir
-            current[school] = cfg
-        self.school_offer_store.save(current)
+        rubrics = self._admin_tables.get("rubrics")
+        if rubrics is not None:
+            baseline_traits = {
+                str(trait.get("id")): trait
+                for trait in self.admin_draft.rubric.get("traits", []) or []
+                if isinstance(trait, dict)
+            }
+            for row_index in range(rubrics.rowCount()):
+                trait_id = rubrics.item(row_index, 0).text().strip()
+                updates = {
+                    "name": rubrics.item(row_index, 1).text().strip(),
+                    "priority": rubrics.item(row_index, 2).text().strip(),
+                    "weight": rubrics.item(row_index, 3).text().strip(),
+                    "primary_question": rubrics.item(row_index, 4).text().strip(),
+                }
+                existing = baseline_traits.get(trait_id, {})
+                if all(str(existing.get(key, "")).strip() == str(value).strip() for key, value in updates.items()):
+                    continue
+                self.admin_draft.update_trait(trait_id, updates)
+        folders = self.school_folder_settings_table
+        if folders is not None:
+            for row_index in range(folders.rowCount()):
+                notes_item = folders.item(row_index, 1)
+                if notes_item.text() == notes_item.data(self.QtCore.Qt.ItemDataRole.UserRole):
+                    continue
+                school = folders.item(row_index, 0).text().strip()
+                notes_dir = notes_item.text().strip()
+                self.admin_draft.update_school_settings(school, {"interview_notes_dir": notes_dir})
+        prompts = self._admin_tables.get("prompts")
+        if prompts is not None:
+            for row_index in range(prompts.rowCount()):
+                prompt_item = prompts.item(row_index, 1)
+                if prompt_item.text() == prompt_item.data(self.QtCore.Qt.ItemDataRole.UserRole):
+                    continue
+                self.admin_draft.update_prompt(prompts.item(row_index, 0).text().strip(), prompt_item.text())
+        self._sync_admin_status()
+
+    def _review_admin_changes(self) -> None:
+        try:
+            self._capture_admin_table_edits()
+        except Exception as exc:
+            self.QtWidgets.QMessageBox.warning(self.window, "Admin Studio", f"Admin changes are invalid: {exc}")
+            return
+        validation_errors = self.admin_draft.validate()
+        if validation_errors:
+            self.QtWidgets.QMessageBox.warning(self.window, "Admin Studio", "\n".join(validation_errors))
+            return
+        summary = self.admin_draft.change_summary()
+        if not summary.changed_files:
+            self.admin_status_label.setText("No admin changes to apply.")
+            return
+        message = "Apply these admin changes?\n\n" + "\n".join(summary.lines[:12])
+        result = self.QtWidgets.QMessageBox.question(
+            self.window,
+            "Review Admin Changes",
+            message,
+            self.QtWidgets.QMessageBox.StandardButton.Yes | self.QtWidgets.QMessageBox.StandardButton.No,
+            self.QtWidgets.QMessageBox.StandardButton.No,
+        )
+        if result != self.QtWidgets.QMessageBox.StandardButton.Yes:
+            return
+        applied = self.admin_studio.apply_draft(self.admin_draft, confirm=True)
+        if not applied.applied:
+            self.QtWidgets.QMessageBox.warning(self.window, "Admin Studio", "\n".join(applied.validation_errors or ["Admin changes were not applied."]))
+            return
+        self.admin_draft = self.admin_studio.create_draft()
+        self._set_admin_editing_enabled(False)
+        self._sync_admin_status()
+        self.admin_status_label.setText("Admin changes applied.")
+
+    def _discard_admin_changes(self) -> None:
+        self.admin_draft = self.admin_draft.discard()
+        self._set_admin_editing_enabled(False)
+        self._sync_admin_status()
 
     def _onboarding_page(self) -> Any:
         page, layout = self._page()

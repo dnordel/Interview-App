@@ -1,0 +1,180 @@
+module:
+  name: admin_studio
+  language: python
+  path: src/admin_studio.py
+  version: 1.0.0
+  description: Single admin boundary for local configuration review, draft editing,
+    dirty tracking, validation, backup creation, and review-then-apply persistence
+    for PySide Admin Studio.
+functions: []
+classes:
+- name: AdminStudioPaths
+  type: dataclass
+  description: Files and backup location used by Admin Studio.
+  locked: false
+  attributes:
+    rubric_path:
+      type: Path
+    overrides_path:
+      type: Path
+    school_settings_path:
+      type: Path
+    prompts_path:
+      type: Path
+    backup_dir:
+      type: Path | None
+- name: AdminSection
+  type: dataclass
+  description: One guided Admin Studio section shown in the UI.
+  locked: false
+- name: AdminStudioSummary
+  type: dataclass
+  description: Section list, counts, dirty count, and validation state for the current
+    admin draft.
+  locked: false
+- name: AdminChangeSummary
+  type: dataclass
+  description: Changed filenames and human-readable before/after admin edit lines.
+  locked: false
+- name: AdminApplyResult
+  type: dataclass
+  description: Result of a review-then-apply attempt, including changed files, backups,
+    and validation errors.
+  locked: false
+- name: AdminStudioDraft
+  description: In-memory editable admin configuration draft. No file writes occur
+    from draft mutation methods.
+  locked: false
+  methods:
+  - name: from_payloads
+    inputs:
+      rubric:
+        type: dict[str, Any]
+        required: true
+      overrides:
+        type: dict[str, Any]
+        required: true
+      school_settings:
+        type: dict[str, dict[str, str]]
+        required: true
+      prompts:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: AdminStudioDraft
+  - name: changed_payloads
+    inputs: {}
+    returns:
+      type: dict[str, tuple[Any, Any]]
+  - name: change_summary
+    inputs: {}
+    returns:
+      type: AdminChangeSummary
+  - name: discard
+    inputs: {}
+    returns:
+      type: AdminStudioDraft
+  - name: update_trait
+    inputs:
+      trait_id:
+        type: str
+        required: true
+      updates:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: None
+    exceptions:
+    - ValueError
+  - name: update_question_text
+    description: Draft a custom question text edit or trait question override without
+      writing files.
+    inputs:
+      track_key:
+        type: str
+        required: true
+      question_type:
+        type: str
+        required: true
+      question_id:
+        type: str
+        required: true
+      text:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions:
+    - ValueError
+  - name: update_school_settings
+    inputs:
+      school:
+        type: str
+        required: true
+      updates:
+        type: dict[str, str]
+        required: true
+    returns:
+      type: None
+    exceptions:
+    - ValueError
+  - name: update_prompt
+    inputs:
+      key:
+        type: str
+        required: true
+      value:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions:
+    - ValueError
+  - name: validate
+    inputs: {}
+    returns:
+      type: list[str]
+- name: AdminStudio
+  description: Loads local admin config, creates drafts, summarizes draft state,
+    validates and applies confirmed changes with backups.
+  locked: false
+  methods:
+  - name: load
+    inputs:
+      paths:
+        type: AdminStudioPaths | None
+        required: false
+        default: None
+    returns:
+      type: AdminStudio
+    side_effects: Reads rubric, question override, school settings, and prompt JSON.
+  - name: create_draft
+    inputs: {}
+    returns:
+      type: AdminStudioDraft
+  - name: summary
+    inputs:
+      draft:
+        type: AdminStudioDraft | None
+        required: false
+        default: None
+    returns:
+      type: AdminStudioSummary
+  - name: apply_draft
+    inputs:
+      draft:
+        type: AdminStudioDraft
+        required: true
+      confirm:
+        type: bool
+        required: true
+    returns:
+      type: AdminApplyResult
+    side_effects: When confirm is true and validation passes, writes changed JSON
+      files after creating backups.
+data_structures: []
+dependencies:
+- data_store
+- interview_runtime
+- platform_services
+- question_settings_service

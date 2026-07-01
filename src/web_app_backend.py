@@ -41,6 +41,7 @@ from scoring_reporting import (
 MAX_REQUEST_BYTES = 2 * 1024 * 1024
 MAX_RECORDING_REQUEST_BYTES = 25 * 1024 * 1024
 WEB_APP_DIR = REPO_ROOT / "web" / "app"
+DEFAULT_SCHOOL_OFFER_SETTINGS_PATH = SCHOOL_OFFER_SETTINGS_PATH
 RECORDING_MIME_EXTENSIONS = {
     "audio/webm": ".webm",
     "audio/wav": ".wav",
@@ -128,10 +129,21 @@ def finalize_web_draft(payload: dict[str, Any], *, base_dir: Path = DEFAULT_BASE
     try:
         scoring = ScoringEngine.evaluate(rubric, track, normalized["trait_inputs"])
         report_payload = _build_report_payload(normalized, rubric)
+        offer_settings = (
+            load_offer_settings()
+            if Path(base_dir).resolve() == Path(DEFAULT_BASE_DIR).resolve()
+            or Path(SCHOOL_OFFER_SETTINGS_PATH) != Path(DEFAULT_SCHOOL_OFFER_SETTINGS_PATH)
+            else {}
+        )
+        output_school = (
+            normalized["candidate"].get("school", "")
+            if offer_settings or Path(base_dir).resolve() == Path(DEFAULT_BASE_DIR).resolve()
+            else ""
+        )
         output_dir = resolve_interview_notes_output_dir(
             Path(base_dir),
-            normalized["candidate"].get("school", ""),
-            load_offer_settings(),
+            output_school,
+            offer_settings,
         )
         out_path = DocxExporter(output_dir).export(rubric, report_payload, scoring)
         _require_child_path(out_path, output_dir)
