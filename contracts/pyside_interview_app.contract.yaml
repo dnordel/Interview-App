@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.18.1
+  version: 1.19.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, compact home draft actions beside the
@@ -10,7 +10,7 @@ module:
     with readable wrapped admin tables and visible edit mode, interview notes
     regeneration actions, user-closable
     finalize progress with immediate ordered task/status rows in a compact scrollable
-    dialog, live history refresh, and single-surface parity documentation
+    dialog, successful-completion auto-close, live history refresh, and single-surface parity documentation
     for desktop Tk contracts while preserving Tk-owned finalize, history, document,
     and DeepSeek runtime contracts.
 functions:
@@ -661,8 +661,8 @@ classes:
     side_effects: Reads a local progress JSON file path produced by finalize.
   - name: _watch_pyside_deepseek_finalize_progress
     description: Poll detached DeepSeek progress JSON while the PySide progress dialog
-      remains open, refresh visible status, and reload history when processing completes
-      or fails.
+      remains open, refresh visible status, reload history when processing completes
+      or fails, and schedule dialog auto-close after successful completion.
     locked: false
     inputs:
       progress_path:
@@ -681,6 +681,16 @@ classes:
       type: None
     exceptions: []
     side_effects: Closes QDialog and clears progress widget references.
+  - name: _schedule_close_pyside_finalize_progress
+    description: Schedule the PySide finalize progress dialog to close shortly after
+      successful finalize or DeepSeek completion while leaving failure states visible
+      for review.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Starts a one-shot Qt timer that closes the progress dialog.
   - name: _exit_live_interview
     description: Persist current PySide draft state and return to the interview home tab.
     locked: false

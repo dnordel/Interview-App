@@ -9246,6 +9246,14 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._schedule_close_pyside_finalize_progress
+  kind: method
+  tests:
+  - path: tests/test_pyside_interview_redesign.py
+    focus:
+    - behavior
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._create_history_table
   kind: method
   tests:

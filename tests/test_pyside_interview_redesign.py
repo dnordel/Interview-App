@@ -1223,7 +1223,9 @@ def test_pyside_finalize_returns_while_recording_transcription_finishes(tmp_path
 
     window.recording_session = SlowRecordingSession()
     finalized: list[bool] = []
+    scheduled_closes: list[bool] = []
     monkeypatch.setattr(window.session, "finalize_interview", lambda **_kwargs: finalized.append(True) or {"out_path": "done.docx"})
+    monkeypatch.setattr(window, "_schedule_close_pyside_finalize_progress", lambda: scheduled_closes.append(True))
 
     window._generate_interview_notes_from_session()
 
@@ -1238,6 +1240,7 @@ def test_pyside_finalize_returns_while_recording_transcription_finishes(tmp_path
 
     assert finalized == [True]
     assert "Interview finalized: done.docx" in window.review_status_label.text()
+    assert scheduled_closes == [True]
     window.window.close()
     app.processEvents()
 
@@ -1270,6 +1273,37 @@ def test_pyside_finalize_progress_window_is_user_closable_and_non_canceling(tmp_
     assert window._pyside_finalize_running is False
     window._report_pyside_finalize_progress("Building interview notes")
     assert window._pyside_finalize_progress_step == "Building interview notes"
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_finalize_progress_scheduled_close_uses_one_shot_timer(tmp_path: Path, monkeypatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    window._show_pyside_finalize_progress("Interview finalized")
+    single_shots: list[int] = []
+
+    class ImmediateTimer:
+        @staticmethod
+        def singleShot(delay_ms, callback):
+            single_shots.append(delay_ms)
+            callback()
+
+    monkeypatch.setattr(window.QtCore, "QTimer", ImmediateTimer)
+
+    window._schedule_close_pyside_finalize_progress()
+    app.processEvents()
+
+    assert single_shots == [2500]
+    assert window.pyside_finalize_progress_dialog is None
     window.window.close()
     app.processEvents()
 
@@ -1307,6 +1341,42 @@ def test_pyside_progress_window_polls_deepseek_progress_json(tmp_path: Path) -> 
     app.processEvents()
 
     assert "Complete" in window.pyside_finalize_progress_label.text()
+    window._close_pyside_finalize_progress()
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_progress_window_auto_closes_after_deepseek_complete(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    progress_path = tmp_path / "deepseek.progress.json"
+    scheduled_closes: list[bool] = []
+    window._schedule_close_pyside_finalize_progress = lambda: scheduled_closes.append(True)
+
+    window._show_pyside_finalize_progress("Queueing DeepSeek processing")
+    progress_path.write_text(json.dumps({"step": "Complete", "status": "complete"}), encoding="utf-8")
+    window._watch_pyside_deepseek_finalize_progress(progress_path)
+    app.processEvents()
+
+    assert scheduled_closes == [True]
+    assert "Complete" in window.pyside_finalize_progress_label.text()
+
+    scheduled_closes.clear()
+    window._show_pyside_finalize_progress("Queueing DeepSeek processing")
+    progress_path.write_text(json.dumps({"step": "DeepSeek failed", "status": "failed"}), encoding="utf-8")
+    window._watch_pyside_deepseek_finalize_progress(progress_path)
+    app.processEvents()
+
+    assert scheduled_closes == []
+    assert window.pyside_finalize_progress_dialog is not None
     window._close_pyside_finalize_progress()
     window.window.close()
     app.processEvents()

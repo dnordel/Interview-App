@@ -2302,6 +2302,7 @@ class PySideInterviewWindow:
         else:
             self._report_pyside_finalize_progress("Interview finalized")
             self._refresh_pyside_finalize_progress()
+            self._schedule_close_pyside_finalize_progress()
 
     def _show_pyside_finalize_progress(self, step: str) -> None:
         normalized = str(step or "").strip() or "Preparing finalize"
@@ -2381,6 +2382,11 @@ class PySideInterviewWindow:
         self._clear_pyside_finalize_progress_dialog()
         self._pyside_finalize_progress_queue = None
         self.pyside_finalize_deepseek_progress_path = None
+
+    def _schedule_close_pyside_finalize_progress(self) -> None:
+        if self.pyside_finalize_progress_dialog is None:
+            return
+        self.QtCore.QTimer.singleShot(2500, self._close_pyside_finalize_progress)
 
     def _report_pyside_finalize_progress(self, step: str) -> None:
         normalized = str(step or "").strip()
@@ -2470,6 +2476,8 @@ class PySideInterviewWindow:
                 timer.deleteLater()
                 self._pyside_deepseek_progress_timer = None
             self._reload_history_model()
+            if status == "complete":
+                self._schedule_close_pyside_finalize_progress()
             return
         if self.pyside_finalize_progress_dialog is None:
             return
