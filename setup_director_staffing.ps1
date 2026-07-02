@@ -155,12 +155,14 @@ function Ensure-DirectorVenv([string]$PyExe) {
 
 function Ensure-DirectorDeps([string]$VenvPy) {
   $req = Join-Path $AppDir "requirements-director.txt"
+  $srcDir = Join-Path $AppDir "src"
   if (-not (Test-Path $req)) { throw "Missing director requirements: $req" }
+  if (-not (Test-Path $srcDir)) { throw "Missing source directory: $srcDir" }
   $pipEc = Run-Proc -File $VenvPy -Args @("-m","pip","install","--upgrade","pip")
   if ($pipEc -ne 0) { throw "pip upgrade failed (exit code $pipEc)." }
   $installEc = Run-Proc -File $VenvPy -Args @("-m","pip","install","-r",$req)
   if ($installEc -ne 0) { throw "Director package install failed (exit code $installEc)." }
-  $probeEc = Run-Proc -File $VenvPy -Args @("-c","import PySide6, staffing_store, staffing_service")
+  $probeEc = Run-Proc -File $VenvPy -Args @("-c","import PySide6, staffing_store, staffing_service") -WorkingDir $srcDir
   if ($probeEc -ne 0) { throw "Director staffing package check failed (exit code $probeEc)." }
 }
 

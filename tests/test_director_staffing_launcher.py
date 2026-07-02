@@ -84,6 +84,8 @@ def test_director_setup_skips_interview_runtime_dependencies() -> None:
     assert "Launching staffing dashboard" in script_text
     assert "staffing_dashboard_app.py" in script_text
     assert "requirements-director.txt" in script_text
+    assert '$srcDir = Join-Path $AppDir "src"' in script_text
+    assert 'Args @("-c","import PySide6, staffing_store, staffing_service") -WorkingDir $srcDir' in script_text
     assert "PySide6==6.8.1.1" in req_text
 
     forbidden = [

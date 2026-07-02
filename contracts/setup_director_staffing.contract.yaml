@@ -92,7 +92,7 @@ functions:
   - Exception
   side_effects: may create or recreate the director staffing virtual environment
 - name: Ensure-DirectorDeps
-  description: Install and verify only the director staffing package set from requirements-director.txt.
+  description: Install and verify only the director staffing package set from requirements-director.txt, probing repo staffing modules from the src working directory.
   locked: false
   inputs:
     VenvPy:
