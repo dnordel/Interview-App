@@ -15,6 +15,7 @@ STAFFING_NOTIFICATION_EVENTS = {
     "mark_coming": "staffing.assignment.coming",
     "mark_filled": "staffing.assignment.filled",
     "mark_replacing": "staffing.assignment.replace",
+    "clear_replacement": "staffing.assignment.need_now",
     "mark_not_needed": "staffing.assignment.not_needed",
     "update_permit_status": "staffing.permit.updated",
 }
@@ -56,6 +57,8 @@ class StaffingService:
     def mark_coming(self, assignment_id: int, *, person_name: str, start_date: str) -> StaffingTransitionResult:
         now = self.clock()
         start_date = _valid_date(start_date, "Start date")
+        if date.fromisoformat(start_date) < _parse_timestamp(now).date():
+            raise ValueError("Start date cannot be in the past.")
         with self.store.connect() as conn:
             assignment = self.store.assignment_context(conn, assignment_id)
             if assignment.status != "need_now":
@@ -149,6 +152,24 @@ class StaffingService:
         self._emit_assignment_event("mark_replacing", updated)
         return _result(updated)
 
+    def clear_replacement(self, assignment_id: int) -> StaffingTransitionResult:
+        now = self.clock()
+        with self.store.connect() as conn:
+            assignment = self.store.assignment_context(conn, assignment_id)
+            if assignment.status != "replace":
+                raise ValueError("Invalid transition.")
+            conn.execute(
+                """
+                UPDATE assignments
+                SET status = 'need_now', person_id = NULL, start_date = NULL, updated_at = ?
+                WHERE id = ?
+                """,
+                (now, assignment_id),
+            )
+            updated = self.store.assignment_context(conn, assignment_id)
+        self._emit_assignment_event("clear_replacement", updated)
+        return _result(updated)
+
     def mark_not_needed(self, assignment_id: int, *, confirmed: bool = False) -> StaffingTransitionResult:
         now = self.clock()
         with self.store.connect() as conn:
@@ -213,6 +234,11 @@ class StaffingService:
                     permit_status=assignment.permit_status,
                     start_date=assignment.start_date,
                     days_open=days_open,
+                    classroom_capacity=assignment.classroom_capacity,
+                    ratio_group=assignment.ratio_group,
+                    slot_group=assignment.slot_group,
+                    notes=assignment.notes,
+                    display_order=assignment.display_order,
                 )
             )
         closed_days = self.store.closed_days_to_fill()
@@ -299,6 +325,7 @@ def _payload(assignment: StaffingAssignment) -> dict[str, str]:
         "classroom": assignment.classroom,
         "position_name": assignment.position_name,
         "position_type": assignment.position_type,
+        "slot_group": assignment.slot_group,
         "assignment_status": assignment.status,
         "person_name": assignment.person_name,
         "start_date": assignment.start_date,

@@ -34,6 +34,7 @@ class StaffingStore:
                     school_id INTEGER NOT NULL REFERENCES schools(id),
                     name TEXT NOT NULL,
                     program TEXT NOT NULL DEFAULT '',
+                    ratio_group TEXT NOT NULL DEFAULT '',
                     licensed_capacity INTEGER,
                     display_order INTEGER NOT NULL DEFAULT 0,
                     active INTEGER NOT NULL DEFAULT 1,
@@ -61,6 +62,8 @@ class StaffingStore:
                     current_opened_date TEXT,
                     current_filled_date TEXT,
                     start_date TEXT,
+                    slot_group TEXT NOT NULL DEFAULT '',
+                    notes TEXT NOT NULL DEFAULT '',
                     display_order INTEGER NOT NULL DEFAULT 0,
                     active INTEGER NOT NULL DEFAULT 1,
                     created_at TEXT NOT NULL,
@@ -87,6 +90,14 @@ class StaffingStore:
                     WHERE filled_date IS NULL AND closed_reason IS NULL;
                 """
             )
+            self._ensure_column(conn, "classrooms", "ratio_group", "TEXT NOT NULL DEFAULT ''")
+            self._ensure_column(conn, "assignments", "slot_group", "TEXT NOT NULL DEFAULT ''")
+            self._ensure_column(conn, "assignments", "notes", "TEXT NOT NULL DEFAULT ''")
+
+    def _ensure_column(self, conn: sqlite3.Connection, table: str, column: str, definition: str) -> None:
+        existing = {str(row["name"]) for row in conn.execute(f"PRAGMA table_info({table})").fetchall()}
+        if column not in existing:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
 
     def seed_assignment(
         self,
@@ -130,14 +141,16 @@ class StaffingStore:
         schools = _seed_schools(data)
         with self.connect() as conn:
             for school in schools:
-                school_id = self._ensure_school(conn, school["name"])
+                school_id = self._ensure_school(conn, school["name"], display_order=school["display_order"])
                 for classroom in school["classrooms"]:
                     classroom_id = self._ensure_classroom(
                         conn,
                         school_id,
                         classroom["name"],
                         program=classroom["program"],
+                        ratio_group=classroom["ratio_group"],
                         licensed_capacity=classroom["licensed_capacity"],
+                        display_order=classroom["display_order"],
                     )
                     for position in classroom["positions"]:
                         self._upsert_seed_assignment(conn, classroom_id, position)
@@ -194,7 +207,9 @@ class StaffingStore:
         row = conn.execute(
             """
             SELECT a.*, c.name AS classroom, s.name AS school, p.name AS person_name,
-                   p.permit_status AS permit_status
+                   p.permit_status AS permit_status,
+                   c.licensed_capacity AS classroom_capacity,
+                   c.ratio_group AS ratio_group
             FROM assignments a
             JOIN classrooms c ON c.id = a.classroom_id
             JOIN schools s ON s.id = c.school_id
@@ -219,6 +234,11 @@ class StaffingStore:
             updated_at=str(row["updated_at"] or ""),
             current_opened_date=str(row["current_opened_date"] or ""),
             current_filled_date=str(row["current_filled_date"] or ""),
+            classroom_capacity=int(row["classroom_capacity"]) if row["classroom_capacity"] is not None else None,
+            ratio_group=str(row["ratio_group"] or ""),
+            slot_group=str(row["slot_group"] or ""),
+            notes=str(row["notes"] or ""),
+            display_order=int(row["display_order"] or 0),
         )
 
     def person_context(self, conn: sqlite3.Connection, person_id: int) -> StaffingPerson:
@@ -235,8 +255,9 @@ class StaffingStore:
     def ensure_person(self, conn: sqlite3.Connection, name: str, role: str, permit_status: str, now: str) -> int:
         return self._ensure_person(conn, name, role, permit_status, now)
 
-    def _ensure_school(self, conn: sqlite3.Connection, name: str) -> int:
+    def _ensure_school(self, conn: sqlite3.Connection, name: str, *, display_order: int = 0) -> int:
         conn.execute("INSERT OR IGNORE INTO schools (name) VALUES (?)", (name,))
+        conn.execute("UPDATE schools SET display_order = ? WHERE name = ?", (display_order, name))
         return int(conn.execute("SELECT id FROM schools WHERE name = ?", (name,)).fetchone()["id"])
 
     def _ensure_classroom(
@@ -246,22 +267,24 @@ class StaffingStore:
         name: str,
         *,
         program: str = "",
+        ratio_group: str = "",
         licensed_capacity: int | None = None,
+        display_order: int = 0,
     ) -> int:
         conn.execute(
             """
-            INSERT OR IGNORE INTO classrooms (school_id, name, program, licensed_capacity)
-            VALUES (?, ?, ?, ?)
+            INSERT OR IGNORE INTO classrooms (school_id, name, program, ratio_group, licensed_capacity, display_order)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (school_id, name, program, licensed_capacity),
+            (school_id, name, program, ratio_group, licensed_capacity, display_order),
         )
         conn.execute(
             """
             UPDATE classrooms
-            SET program = ?, licensed_capacity = ?
+            SET program = ?, ratio_group = ?, licensed_capacity = ?, display_order = ?
             WHERE school_id = ? AND name = ?
             """,
-            (program, licensed_capacity, school_id, name),
+            (program, ratio_group, licensed_capacity, display_order, school_id, name),
         )
         return int(
             conn.execute(
@@ -309,8 +332,9 @@ class StaffingStore:
                 """
                 INSERT INTO assignments (
                     classroom_id, person_id, position_name, position_type, status,
-                    current_opened_date, current_filled_date, start_date, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    current_opened_date, current_filled_date, start_date, slot_group, notes,
+                    display_order, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     classroom_id,
@@ -321,6 +345,9 @@ class StaffingStore:
                     opened_date,
                     filled_date,
                     position["start_date"],
+                    position["slot_group"],
+                    position["notes"],
+                    position["display_order"],
                     now,
                     now,
                 ),
@@ -332,7 +359,8 @@ class StaffingStore:
                 """
                 UPDATE assignments
                 SET person_id = ?, position_type = ?, status = ?, current_opened_date = ?,
-                    current_filled_date = ?, start_date = ?, updated_at = ?
+                    current_filled_date = ?, start_date = ?, slot_group = ?, notes = ?,
+                    display_order = ?, updated_at = ?
                 WHERE id = ?
                 """,
                 (
@@ -342,6 +370,9 @@ class StaffingStore:
                     opened_date,
                     filled_date,
                     position["start_date"],
+                    position["slot_group"],
+                    position["notes"],
+                    position["display_order"],
                     now,
                     assignment_id,
                 ),
@@ -398,7 +429,7 @@ def _seed_schools(data: Any) -> list[dict[str, Any]]:
         for classroom_raw in classrooms_raw:
             if not isinstance(classroom_raw, dict):
                 raise ValueError("Classroom entry must be an object.")
-            positions_raw = classroom_raw.get("positions", [])
+            positions_raw = classroom_raw.get("slots", classroom_raw.get("positions", []))
             if not isinstance(positions_raw, list):
                 raise ValueError("Positions must be a list.")
             positions = [_seed_position(position) for position in positions_raw]
@@ -409,15 +440,42 @@ def _seed_schools(data: Any) -> list[dict[str, Any]]:
                 {
                     "name": _required_text(str(classroom_raw.get("name", "")), "Classroom"),
                     "program": str(classroom_raw.get("program", "") or "").strip(),
+                    "ratio_group": str(classroom_raw.get("ratio_group", "") or "").strip(),
                     "licensed_capacity": capacity,
+                    "display_order": int(classroom_raw.get("display_order", len(classrooms)) or 0),
                     "positions": positions,
                 }
             )
-        schools.append({"name": _required_text(str(school_raw.get("name", "")), "School"), "classrooms": classrooms})
+        support_rows_raw = school_raw.get("support_rows", [])
+        if not isinstance(support_rows_raw, list):
+            raise ValueError("Support rows must be a list.")
+        for support_raw in support_rows_raw:
+            if not isinstance(support_raw, dict):
+                raise ValueError("Support row entry must be an object.")
+            positions_raw = support_raw.get("slots", support_raw.get("positions", []))
+            if not isinstance(positions_raw, list):
+                raise ValueError("Positions must be a list.")
+            classrooms.append(
+                {
+                    "name": _required_text(str(support_raw.get("name", "")), "Support row"),
+                    "program": "Support",
+                    "ratio_group": "Support",
+                    "licensed_capacity": None,
+                    "display_order": int(support_raw.get("display_order", 900 + len(classrooms)) or 0),
+                    "positions": [_seed_position(position, default_slot_group="support") for position in positions_raw],
+                }
+            )
+        schools.append(
+            {
+                "name": _required_text(str(school_raw.get("name", "")), "School"),
+                "display_order": int(school_raw.get("display_order", len(schools)) or 0),
+                "classrooms": classrooms,
+            }
+        )
     return schools
 
 
-def _seed_position(position_raw: Any) -> dict[str, Any]:
+def _seed_position(position_raw: Any, *, default_slot_group: str = "") -> dict[str, Any]:
     if not isinstance(position_raw, dict):
         raise ValueError("Position entry must be an object.")
     status = str(position_raw.get("status", "dont_need_now") or "dont_need_now").strip()
@@ -434,6 +492,9 @@ def _seed_position(position_raw: Any) -> dict[str, Any]:
         "position_type": _required_text(str(position_raw.get("position_type", "")), "Position type"),
         "status": status,
         "start_date": str(position_raw.get("start_date", "") or "").strip(),
+        "slot_group": str(position_raw.get("slot_group", default_slot_group) or default_slot_group).strip(),
+        "notes": str(position_raw.get("notes", "") or "").strip(),
+        "display_order": int(position_raw.get("display_order", 0) or 0),
         "person": {
             "name": str(person_raw.get("name", "") or "").strip(),
             "permit_status": permit_status,

@@ -41,7 +41,7 @@ from interview_runtime import (
     resolve_deepseek_regeneration_job_path,
     resolve_default_windows_system_device,
 )
-from notification_service import NOTIFICATION_RULES_PATH, SUPPORTED_NOTIFICATION_EVENTS
+from notification_service import NOTIFICATION_RULES_PATH, SUPPORTED_NOTIFICATION_EVENTS, notification_service_from_onboarding
 from onboarding_operations import JsonStore, build_dashboard_today_summary, filtered_tasks, task_status
 from platform_services import (
     DEFAULT_RUBRIC_PATH,
@@ -717,6 +717,54 @@ def _history_offer_action(offer_status: str) -> str:
     return "Review Offer"
 
 
+def _staffing_school_summary(rows: list[Any]) -> str:
+    counts = {"filled": 0, "need_now": 0, "coming": 0, "replace": 0, "dont_need_now": 0}
+    classrooms = set()
+    for row in rows:
+        counts[str(row.status)] = counts.get(str(row.status), 0) + 1
+        classrooms.add(str(row.classroom))
+    return (
+        f"Classrooms: {len(classrooms)}    Filled: {counts['filled']}    Need Now: {counts['need_now']}    "
+        f"Coming: {counts['coming']}    Replace: {counts['replace']}    Don't Need: {counts['dont_need_now']}"
+    )
+
+
+def _staffing_ratio_summary(rows: list[Any]) -> str:
+    ratios = []
+    for row in rows:
+        ratio = str(getattr(row, "ratio_group", "") or "").strip()
+        if ratio and ratio not in ratios:
+            ratios.append(ratio)
+    return "    ".join(ratios)
+
+
+def _staffing_status_color(status: str) -> str:
+    return {
+        "replace": "#FF0000",
+        "need_now": "#FEF08A",
+        "coming": "#A02B93",
+        "filled": "#BBF7D0",
+        "dont_need_now": "#5BC0DE",
+    }.get(str(status), "#FFFFFF")
+
+
+def _staffing_permit_color(status: str) -> str:
+    return {
+        "no_permit_or_application": "#DCFCE7",
+        "permit_in_process": "#86EFAC",
+        "teacher_permit_approved": "#22C55E",
+        "no_units_needed": "#FCE7F3",
+        "unknown": "#E5E7EB",
+    }.get(str(status), "#FFFFFF")
+
+
+def _staffing_slot_label(row: Any) -> str:
+    slot_group = str(getattr(row, "slot_group", "") or "").strip()
+    if slot_group:
+        return slot_group.title()
+    return str(getattr(row, "position_type", "") or "").strip()
+
+
 def _build_pyside_history_rows(history_path: Path) -> list[PySideHistoryRow]:
     store = InterviewHistoryStore(Path(history_path))
     rows = store.load()
@@ -1266,6 +1314,7 @@ class PySideInterviewWindow:
         self.staffing_status_label: Any | None = None
         self.staffing_metrics_label: Any | None = None
         self.staffing_table: Any | None = None
+        self.staffing_tabs: Any | None = None
         self.history_search_text = ""
         self.history_school_filter_text = ""
         self.history_outcome_filter_text = ""
@@ -2517,10 +2566,26 @@ class PySideInterviewWindow:
     def _open_history_offer(self, row: PySideHistoryRow) -> None:
         if not row.row_key:
             return
+        if row.offer_status == "generated":
+            self._advance_pyside_offer_status(row, "approved", "Offer marked approved.")
+            return
+        if row.offer_status == "approved":
+            self._advance_pyside_offer_status(row, "accepted", "Offer marked accepted.")
+            return
+        if row.offer_status == "accepted":
+            self._advance_pyside_offer_status(row, "welcome_email_sent", "Welcome email marked sent.")
+            self.sidebar.setCurrentRow(4)
+            self.stack.setCurrentIndex(4)
+            return
         self.selected_history_offer_row = row
         self._render_offer_page()
         self.sidebar.setCurrentRow(2)
         self.stack.setCurrentIndex(2)
+
+    def _advance_pyside_offer_status(self, row: PySideHistoryRow, status: str, message: str) -> None:
+        if self._update_pyside_offer_status(row.row_key, status, "", row):
+            self._reload_history_model()
+            self.window.statusBar().showMessage(message, 3500)
 
     def _open_session_offer(self) -> None:
         self.selected_history_offer_row = None
@@ -2709,10 +2774,11 @@ class PySideInterviewWindow:
         try:
             if self.selected_history_offer_row is not None:
                 output_path = self._render_offer_document_from_fields()
-                updated = self.history_store.update_offer_state(
+                updated = self._update_pyside_offer_status(
                     self.selected_history_offer_row.row_key,
                     "generated",
                     str(output_path),
+                    self.selected_history_offer_row,
                 )
                 if not updated:
                     raise ValueError("History row could not be updated.")
@@ -2732,6 +2798,34 @@ class PySideInterviewWindow:
             self.offer_status_label.setText(f"Offer not generated: {exc}")
             return
         self.offer_status_label.setText(f"Offer generated: {output_path}")
+
+    def _update_pyside_offer_status(self, row_key: str, status: str, offer_path: str = "", row: PySideHistoryRow | None = None) -> bool:
+        updated = self.history_store.update_offer_state(row_key, status, offer_path)
+        if not updated:
+            return False
+        if row is not None:
+            self._emit_pyside_offer_notification(row, status)
+        return True
+
+    def _emit_pyside_offer_notification(self, row: PySideHistoryRow, status: str) -> None:
+        event_type = {
+            "generated": "offer.generated",
+            "approved": "offer.approved",
+            "accepted": "offer.accepted",
+            "welcome_email_sent": "offer.welcome_email_sent",
+        }.get(str(status or "").strip().lower())
+        if not event_type:
+            return
+        payload = {
+            "candidate_name": row.candidate,
+            "school": row.school,
+            "position": row.position,
+            "offer_status": str(status or "").strip().lower(),
+        }
+        try:
+            self._notification_service().emit_event(event_type, payload, f"{row.row_key}:{event_type}")
+        except Exception:
+            return
 
     def _admin_page(self) -> Any:
         page, layout = self._page()
@@ -3137,14 +3231,14 @@ class PySideInterviewWindow:
 
         assignments, assignments_layout = self._surface()
         assignments_layout.addWidget(self._label("Classroom Positions", "SectionTitle"))
-        table = self.QtWidgets.QTableWidget(0, 8)
-        table.setObjectName("PySideStaffingAssignments")
-        table.setHorizontalHeaderLabels(
-            ["School", "Classroom", "Type", "Position", "Person", "Status", "Days Open", "Action"]
-        )
-        table.horizontalHeader().setStretchLastSection(True)
-        self.staffing_table = table
-        assignments_layout.addWidget(table, 1)
+        self.staffing_school_selector = self.QtWidgets.QComboBox()
+        self.staffing_school_selector.setObjectName("PySideStaffingSchoolSelector")
+        self.staffing_school_selector.currentIndexChanged.connect(self._select_staffing_school_index)
+        assignments_layout.addWidget(self.staffing_school_selector)
+        tabs = self.QtWidgets.QTabWidget()
+        tabs.setObjectName("PySideStaffingSchoolTabs")
+        self.staffing_tabs = tabs
+        assignments_layout.addWidget(tabs, 1)
         layout.addWidget(assignments, 1)
         self._refresh_staffing_dashboard()
         return page
@@ -3153,7 +3247,7 @@ class PySideInterviewWindow:
         self.staffing_store.initialize()
         if STAFFING_SEED_PATH.exists() and not self.staffing_store.list_assignments():
             self.staffing_store.import_seed_file(STAFFING_SEED_PATH)
-        service = StaffingService(self.staffing_store)
+        service = StaffingService(self.staffing_store, notification_service=self._notification_service())
         metrics = service.staffing_metrics(today=date.today())
         if self.staffing_metrics_label is not None:
             self.staffing_metrics_label.setText(
@@ -3161,11 +3255,131 @@ class PySideInterviewWindow:
                 f"Average days to fill: {metrics.avg_days_to_fill:.1f}    "
                 f"Open > 7 days: {metrics.open_over_7_days}"
             )
-        table = self.staffing_table
-        if table is None:
+        tabs = self.staffing_tabs
+        if tabs is None:
             return
-        table.setRowCount(len(metrics.rows))
-        for row_index, row in enumerate(metrics.rows):
+        current_school = tabs.tabText(tabs.currentIndex()) if tabs.count() else ""
+        while tabs.count():
+            widget = tabs.widget(0)
+            for table in widget.findChildren(self.QtWidgets.QTableWidget, "PySideStaffingAssignments"):
+                table.setObjectName("")
+            tabs.removeTab(0)
+            widget.deleteLater()
+        rows_by_school: dict[str, list[Any]] = {}
+        for row in metrics.rows:
+            rows_by_school.setdefault(row.school or "Unassigned", []).append(row)
+        self.staffing_table = None
+        for school, rows in rows_by_school.items():
+            tab = self.QtWidgets.QWidget()
+            tab_layout = self.QtWidgets.QVBoxLayout(tab)
+            summary = self._label(_staffing_school_summary(rows))
+            summary.setObjectName("PySideStaffingSummary")
+            tab_layout.addWidget(summary)
+            tab_layout.addWidget(self._staffing_color_key())
+            ratio_summary = _staffing_ratio_summary(rows)
+            if ratio_summary:
+                tab_layout.addWidget(self._label(ratio_summary))
+            tab_layout.addWidget(self._staffing_workbook_board(rows), 2)
+            table = self._staffing_assignments_table(rows)
+            if self.staffing_table is None:
+                self.staffing_table = table
+            tab_layout.addWidget(table, 1)
+            tabs.addTab(tab, school)
+        selector = getattr(self, "staffing_school_selector", None)
+        if selector is not None:
+            selector.blockSignals(True)
+            selector.clear()
+            for index in range(tabs.count()):
+                selector.addItem(tabs.tabText(index))
+            selector.setCurrentIndex(max(0, tabs.currentIndex()))
+            selector.blockSignals(False)
+        if current_school:
+            for index in range(tabs.count()):
+                if tabs.tabText(index) == current_school:
+                    tabs.setCurrentIndex(index)
+                    if selector is not None:
+                        selector.setCurrentIndex(index)
+                    break
+
+    def _select_staffing_school_index(self, index: int) -> None:
+        tabs = getattr(self, "staffing_tabs", None)
+        if tabs is not None and 0 <= index < tabs.count():
+            tabs.setCurrentIndex(index)
+
+    def _staffing_color_key(self) -> Any:
+        frame, layout = self._surface()
+        layout.addWidget(self._label("Color Code Key", "SectionTitle"))
+        key = self.QtWidgets.QGridLayout()
+        entries = [
+            ("Don't need now due to low enrollment / ratios", _staffing_status_color("dont_need_now")),
+            ("Replace - employee gave notice they will be leaving", _staffing_status_color("replace")),
+            ("Need Now - Job Opening", _staffing_status_color("need_now")),
+            ("Coming (offer accepted)", _staffing_status_color("coming")),
+            ("No Permit or Application Yet", _staffing_permit_color("no_permit_or_application")),
+            ("Permit in Process (application and fingerprints submitted)", _staffing_permit_color("permit_in_process")),
+            ("Teacher Permit Approved", _staffing_permit_color("teacher_permit_approved")),
+            ("No units needed", _staffing_permit_color("no_units_needed")),
+        ]
+        for index, (label, color) in enumerate(entries):
+            item = self._label(label)
+            item.setStyleSheet(f"background-color: {color}; padding: 5px;")
+            key.addWidget(item, index // 2, index % 2)
+        layout.addLayout(key)
+        return frame
+
+    def _staffing_workbook_board(self, rows: list[Any]) -> Any:
+        table = self.QtWidgets.QTableWidget(0, 8)
+        table.setObjectName("PySideStaffingWorkbookBoard")
+        table.setHorizontalHeaderLabels(["Ratio", "Classroom", "Role", "Person", "Status", "Capacity", "Notes", "Action"])
+        grouped: dict[tuple[str, str], list[Any]] = {}
+        for row in rows:
+            grouped.setdefault((row.ratio_group or "", row.classroom), []).append(row)
+        board_rows: list[tuple[str, str, Any | None]] = []
+        current_ratio = object()
+        for (ratio, classroom), assignments in grouped.items():
+            if ratio and ratio != current_ratio:
+                board_rows.append((ratio, "", None))
+                current_ratio = ratio
+            for assignment in assignments:
+                board_rows.append((ratio, classroom, assignment))
+        table.setRowCount(len(board_rows))
+        for row_index, (ratio, classroom, assignment) in enumerate(board_rows):
+            if assignment is None:
+                item = self.QtWidgets.QTableWidgetItem(ratio)
+                item.setBackground(self.QtGui.QColor("#b7d0ec"))
+                table.setItem(row_index, 0, item)
+                continue
+            values = [
+                "",
+                classroom,
+                _staffing_slot_label(assignment),
+                assignment.person_name or "OPEN POSITION",
+                assignment.status,
+                "" if assignment.classroom_capacity is None else str(assignment.classroom_capacity),
+                assignment.notes,
+            ]
+            for column, value in enumerate(values):
+                item = self.QtWidgets.QTableWidgetItem(value)
+                if column == 3:
+                    color = _staffing_permit_color(assignment.permit_status) if assignment.permit_status else _staffing_status_color(assignment.status)
+                    item.setBackground(self.QtGui.QColor(color))
+                if column == 4:
+                    item.setBackground(self.QtGui.QColor(_staffing_status_color(assignment.status)))
+                table.setItem(row_index, column, item)
+            table.setCellWidget(row_index, 7, self._staffing_action_button(assignment.assignment_id, assignment.status))
+        table.resizeColumnsToContents()
+        table.horizontalHeader().setStretchLastSection(True)
+        return table
+
+    def _staffing_assignments_table(self, rows: list[Any]) -> Any:
+        table = self.QtWidgets.QTableWidget(0, 10)
+        table.setObjectName("PySideStaffingAssignments")
+        table.setHorizontalHeaderLabels(
+            ["School", "Classroom", "Type", "Position", "Person", "Status", "Start", "Days Open", "Permit", "Action"]
+        )
+        table.horizontalHeader().setStretchLastSection(True)
+        table.setRowCount(len(rows))
+        for row_index, row in enumerate(rows):
             values = [
                 row.school,
                 row.classroom,
@@ -3173,32 +3387,56 @@ class PySideInterviewWindow:
                 row.position_name,
                 row.person_name,
                 row.status,
+                row.start_date,
                 "" if row.days_open is None else str(row.days_open),
+                row.permit_status,
             ]
             for column, value in enumerate(values):
-                table.setItem(row_index, column, self.QtWidgets.QTableWidgetItem(value))
-            table.setCellWidget(row_index, 7, self._staffing_action_button(row.assignment_id, row.status))
+                item = self.QtWidgets.QTableWidgetItem(value)
+                if column == 5:
+                    item.setBackground(self.QtGui.QColor(_staffing_status_color(row.status)))
+                if column == 8 and row.permit_status:
+                    item.setBackground(self.QtGui.QColor(_staffing_permit_color(row.permit_status)))
+                table.setItem(row_index, column, item)
+            table.setCellWidget(row_index, 9, self._staffing_action_button(row.assignment_id, row.status))
         table.resizeColumnsToContents()
+        return table
 
     def _staffing_action_button(self, assignment_id: int, status: str) -> Any:
+        menu_actions: list[tuple[str, Any]] = []
         if status == "dont_need_now":
             label = "Open"
             callback = lambda _checked=False, item=assignment_id: self._open_staffing_position(item)
+            menu_actions.append(("Mark Not Needed", lambda item=assignment_id: self._mark_staffing_not_needed(item)))
         elif status in {"need_now", "replace"}:
             label = "Mark Coming"
             callback = lambda _checked=False, item=assignment_id: self._mark_staffing_coming(item)
+            if status == "replace":
+                menu_actions.append(("Clear Replacement", lambda item=assignment_id: self._clear_staffing_replacement(item)))
+            menu_actions.append(("Mark Not Needed", lambda item=assignment_id: self._mark_staffing_not_needed(item)))
         elif status == "coming":
             label = "Mark Filled"
             callback = lambda _checked=False, item=assignment_id: self._mark_staffing_filled(item)
+            menu_actions.append(("Revert Coming", lambda item=assignment_id: self._revert_staffing_coming(item)))
+            menu_actions.append(("Mark Not Needed", lambda item=assignment_id: self._mark_staffing_not_needed(item)))
         elif status == "filled":
             label = "Replace"
             callback = lambda _checked=False, item=assignment_id: self._mark_staffing_replacing(item)
+            menu_actions.append(("Update Permit", lambda item=assignment_id: self._update_staffing_permit(item)))
+            menu_actions.append(("Mark Not Needed", lambda item=assignment_id: self._mark_staffing_not_needed(item)))
         else:
             label = "Review"
             callback = lambda _checked=False: None
-        button = self.QtWidgets.QPushButton(label)
+        button = self.QtWidgets.QToolButton()
+        button.setText(label)
         button.setProperty("staffing_assignment_id", assignment_id)
         button.clicked.connect(callback)
+        if menu_actions:
+            menu = self.QtWidgets.QMenu(button)
+            for action_label, action_callback in menu_actions:
+                menu.addAction(action_label, action_callback)
+            button.setMenu(menu)
+            button.setPopupMode(self.QtWidgets.QToolButton.ToolButtonPopupMode.DelayedPopup)
         return button
 
     def _open_staffing_position(self, assignment_id: int) -> None:
@@ -3206,6 +3444,45 @@ class PySideInterviewWindow:
 
     def _mark_staffing_filled(self, assignment_id: int) -> None:
         self._run_staffing_action(lambda service: service.mark_filled(assignment_id), "Position filled.")
+
+    def _revert_staffing_coming(self, assignment_id: int) -> None:
+        self._run_staffing_action(lambda service: service.revert_coming(assignment_id), "Incoming person reverted.")
+
+    def _clear_staffing_replacement(self, assignment_id: int) -> None:
+        self._run_staffing_action(lambda service: service.clear_replacement(assignment_id), "Replacement cleared.")
+
+    def _mark_staffing_not_needed(self, assignment_id: int) -> None:
+        confirmed = self.QtWidgets.QMessageBox.question(
+            self.window,
+            "Staffing",
+            "Mark this position not needed?",
+            self.QtWidgets.QMessageBox.StandardButton.Yes | self.QtWidgets.QMessageBox.StandardButton.No,
+            self.QtWidgets.QMessageBox.StandardButton.No,
+        )
+        if confirmed != self.QtWidgets.QMessageBox.StandardButton.Yes:
+            return
+        self._run_staffing_action(lambda service: service.mark_not_needed(assignment_id, confirmed=True), "Position marked not needed.")
+
+    def _update_staffing_permit(self, assignment_id: int) -> None:
+        assignment = self.staffing_store.get_assignment(assignment_id)
+        if assignment.person_id is None:
+            if self.staffing_status_label is not None:
+                self.staffing_status_label.setText("No person assigned to update.")
+            return
+        permit_status, accepted = self.QtWidgets.QInputDialog.getItem(
+            self.window,
+            "Staffing",
+            "Permit status",
+            ["unknown", "no_permit_or_application", "permit_in_process", "teacher_permit_approved", "no_units_needed"],
+            0,
+            False,
+        )
+        if not accepted:
+            return
+        self._run_staffing_action(
+            lambda service: service.update_permit_status(assignment.person_id or 0, permit_status),
+            "Permit status updated.",
+        )
 
     def _mark_staffing_coming(self, assignment_id: int) -> None:
         person_name, accepted = self.QtWidgets.QInputDialog.getText(self.window, "Staffing", "Incoming person name")
@@ -3233,14 +3510,22 @@ class PySideInterviewWindow:
 
     def _run_staffing_action(self, action: Any, success_message: str) -> None:
         try:
-            action(StaffingService(self.staffing_store))
-        except Exception:
+            action(StaffingService(self.staffing_store, notification_service=self._notification_service()))
+        except Exception as exc:
             if self.staffing_status_label is not None:
-                self.staffing_status_label.setText("Staffing action failed. Check required fields and transition state.")
+                self.staffing_status_label.setText(str(exc) or "Staffing action failed.")
             return
         if self.staffing_status_label is not None:
             self.staffing_status_label.setText(success_message)
         self._refresh_staffing_dashboard()
+
+    def _notification_service(self) -> Any:
+        service = getattr(self, "notification_service", None)
+        if service is not None:
+            return service
+        service = notification_service_from_onboarding(root_dir=Path.cwd())
+        self.notification_service = service
+        return service
 
     def _candidates_page(self) -> Any:
         page, layout = self._page()

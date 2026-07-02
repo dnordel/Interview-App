@@ -67,6 +67,7 @@ def test_open_position_commits_then_emits_need_now_notification(store: StaffingS
                 "classroom": "Tranquility",
                 "position_name": "Teacher 2",
                 "position_type": "Teacher",
+                "slot_group": "",
                 "assignment_status": "need_now",
                 "person_name": "",
                 "start_date": "",
@@ -96,6 +97,44 @@ def test_successful_staffing_transitions_emit_matching_events(store: StaffingSto
         "staffing.assignment.not_needed",
     ]
     assert notifications.events[-1][1]["assignment_status"] == "dont_need_now"
+
+
+def test_clear_replacement_moves_replace_to_need_now_and_emits_need_now(store: StaffingStore) -> None:
+    assignment_id = store.seed_assignment(
+        school="Hawthorne",
+        classroom="Tranquility",
+        position_name="Teacher 2",
+        position_type="Teacher",
+        status="filled",
+        person_name="Jane Doe",
+    )
+    notifications = _Notifications()
+    service = StaffingService(store, notification_service=notifications, clock=_Clock())
+    service.mark_replacing(assignment_id, notice_given="2026-07-10", final_working_day="2026-07-24")
+
+    result = service.clear_replacement(assignment_id)
+
+    assignment = store.get_assignment(assignment_id)
+    assert result.status == "need_now"
+    assert assignment.status == "need_now"
+    assert assignment.person_id is None
+    assert store.active_history_count(assignment_id) == 1
+    assert notifications.events[-1][0] == "staffing.assignment.need_now"
+    assert notifications.events[-1][1]["assignment_status"] == "need_now"
+
+
+def test_mark_coming_rejects_past_start_date_without_notification(store: StaffingStore) -> None:
+    assignment_id = store.seed_assignment(school="Hawthorne", classroom="Tranquility", position_name="Teacher 2", position_type="Teacher")
+    notifications = _Notifications()
+    service = StaffingService(store, notification_service=notifications, clock=_Clock())
+    service.open_position(assignment_id)
+    notifications.events.clear()
+
+    with pytest.raises(ValueError, match="Start date cannot be in the past"):
+        service.mark_coming(assignment_id, person_name="Jane Doe", start_date="2026-06-30")
+
+    assert store.get_assignment(assignment_id).status == "need_now"
+    assert notifications.events == []
 
 
 def test_permit_update_emits_person_scoped_event_key(store: StaffingStore) -> None:
@@ -160,6 +199,21 @@ def test_missing_history_blocks_mark_filled_without_notification(store: Staffing
         service.mark_filled(assignment_id)
 
     assert notifications.events == []
+
+
+def test_failed_mark_filled_rolls_back_assignment_status(store: StaffingStore) -> None:
+    assignment_id = store.seed_assignment(school="Hawthorne", classroom="Tranquility", position_name="Teacher 2", position_type="Teacher")
+    notifications = _Notifications()
+    service = StaffingService(store, notification_service=notifications, clock=_Clock())
+    service.open_position(assignment_id)
+    service.mark_coming(assignment_id, person_name="Jane Doe", start_date="2026-07-03")
+    with store.connect() as conn:
+        conn.execute("DELETE FROM assignment_history WHERE assignment_id = ?", (assignment_id,))
+
+    with pytest.raises(ValueError, match="Invalid assignment history state"):
+        service.mark_filled(assignment_id)
+
+    assert store.get_assignment(assignment_id).status == "coming"
 
 
 def test_notification_failure_does_not_roll_back_staffing_transaction(store: StaffingStore) -> None:

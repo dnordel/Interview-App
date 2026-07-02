@@ -46,7 +46,7 @@ Add these modules:
 | `src/staffing_models.py` | Dataclasses/enums for school, classroom, assignment, person, history, metrics, and transition commands. |
 | `src/staffing_store.py` | SQLite schema, migrations, indexes, CRUD, transaction helpers, and query methods. |
 | `src/staffing_service.py` | Business state machine, validation, duplicate-history prevention, and metrics calculations. |
-| `src/staffing_dashboard_view.py` | PySide6 widgets/model classes for school tabs, classroom list, expanded detail panel, action dialogs, and color rendering. |
+| PySide staffing view in `src/pyside_interview_app.py` | PySide6 widgets/model classes for school tabs, classroom/position tables, action dialogs, and color rendering. A separate `src/staffing_dashboard_view.py` module is no longer required for this implementation unless the PySide file needs later extraction. |
 | `src/notification_models.py` | Shared notification dataclasses for rules, recipients, events, and send results. |
 | `src/notification_store.py` | SQLite-backed notification rules, recipients, inactive defaults, and sanitized send audit. |
 | `src/notification_service.py` | Exact-match event emitter, template rendering, idempotency, validation, and SMTP delivery via onboarding settings. |
@@ -63,7 +63,7 @@ Add contracts:
 - `contracts/staffing_models.contract.yaml`
 - `contracts/staffing_store.contract.yaml`
 - `contracts/staffing_service.contract.yaml`
-- `contracts/staffing_dashboard_view.contract.yaml`
+- PySide staffing view contract coverage in `contracts/pyside_interview_app.contract.yaml`
 - `contracts/notification_models.contract.yaml`
 - `contracts/notification_store.contract.yaml`
 - `contracts/notification_service.contract.yaml`
@@ -347,25 +347,22 @@ Primary surface is PySide6.
 
 - Add `Staffing` entry to existing PySide main window.
 - Show one tab per active school.
-- Within each school tab, use split layout:
-  - left/main list: classrooms ordered like spreadsheet;
-  - top or right KPI strip: total open, average fill time, open over 7 days.
+- Within each school tab, show a workbook-style board:
+  - compact KPI summary;
+  - explicit school selector above the tabs for directors to switch schools even when tab styling is subtle;
+  - color-code key matching the Excel tracker;
+  - ratio band labels, classroom rows, teacher/aide/support slots, capacity, notes, and action controls.
 
 ### Classroom Rows
 
-Collapsed row:
+Workbook row:
 
 - Classroom name.
 - Program and licensed capacity.
-- Compact summary bar counts: Filled, Need Now, Coming, Replace, Don't Need.
-- Row background/accent uses highest-priority status.
-
-Expanded row:
-
-- Only one classroom expanded per school tab.
-- Show white detail panel/card with position rows.
-- Hide collapsed summary bar for expanded classroom.
-- Keep row height stable enough to avoid overlap/flicker.
+- Ratio group such as `3 to 1 (infant units needed)`, `4 to 1`, or `8 to 1`.
+- Teacher, aide, and support slots ordered like the workbook.
+- `OPEN POSITION` for visible workbook `?` cells.
+- Row/cell colors from staffing status or permit status.
 
 ### Position Rows
 
@@ -416,6 +413,14 @@ Add deterministic seed/import helper in `staffing_store.py` or a small script un
 
 Recommended first seed format: `config/staffing_seed.json`.
 
+Current seed is generated from the school workbooks:
+
+- `HAW Staffing Needs.xlsx` -> `Hawthorne`
+- `NLB Staffing Needs.xlsx` -> `North Long Beach`
+- `PMD Staffing Needs.xlsx` -> `Palmdale`
+
+The committed seed includes every non-empty teacher, aide, and support-staff cell parsed from those workbooks.
+
 Shape:
 
 ```json
@@ -423,26 +428,36 @@ Shape:
   "schools": [
     {
       "name": "Hawthorne",
+      "display_order": 1,
       "classrooms": [
         {
           "name": "Tranquility",
           "program": "Infant",
+          "ratio_group": "3 to 1 (infant units needed)",
           "licensed_capacity": 12,
-          "positions": [
-            {"position_name": "Teacher 1", "position_type": "Teacher", "status": "filled", "person": {"name": "Angie", "permit_status": "no_permit_or_application"}},
-            {"position_name": "Teacher 2", "position_type": "Teacher", "status": "need_now"},
-            {"position_name": "Teacher 3", "position_type": "Teacher", "status": "filled", "person": {"name": "Denise A", "permit_status": "teacher_permit_approved"}}
+          "display_order": 1,
+          "slots": [
+            {"slot_group": "teacher", "position_name": "Teacher 1", "position_type": "Teacher", "status": "filled", "person": {"name": "Angie", "permit_status": "teacher_permit_approved"}},
+            {"slot_group": "teacher", "position_name": "Teacher 2", "position_type": "Teacher", "status": "need_now", "notes": "?"}
+          ]
+        }
+      ],
+      "support_rows": [
+        {
+          "name": "Infant Floater",
+          "slots": [
+            {"slot_group": "support", "position_name": "Infant Floater", "position_type": "Support", "status": "filled", "person": {"name": "Amy"}, "notes": "Full time"}
           ]
         }
       ]
-    }
-  ]
 }
 ```
 
 Import requirements:
 
 - Idempotent by school/classroom/position name.
+- Supports legacy `positions` and workbook-style `slots`.
+- Supports `support_rows` as school-scoped non-classroom staffing rows.
 - Never duplicate active history.
 - Refuse unknown statuses/permit statuses.
 - Normalize blank names to `NULL`, not empty strings.
@@ -499,8 +514,8 @@ Add focused tests before or alongside implementation.
 ### PySide Tests
 
 - Staffing entry point exists in PySide shell.
-- One classroom expands at a time.
-- Collapsed summary bar hidden when expanded.
+- School tabs are generated from seed/store data, not hardcoded.
+- Workbook board renders actual visible names, support rows, capacity, ratio bands, and color key.
 - Status colors map by enum, not free text.
 - Action dialogs call service commands, not direct store writes.
 - Service errors surface visibly and do not mutate UI state optimistically.

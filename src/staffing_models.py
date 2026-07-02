@@ -28,6 +28,11 @@ class StaffingAssignment:
     updated_at: str = ""
     current_opened_date: str = ""
     current_filled_date: str = ""
+    classroom_capacity: int | None = None
+    ratio_group: str = ""
+    slot_group: str = ""
+    notes: str = ""
+    display_order: int = 0
 
 
 @dataclass(frozen=True)
@@ -58,6 +63,11 @@ class StaffingMetricRow:
     permit_status: str = ""
     start_date: str = ""
     days_open: int | None = None
+    classroom_capacity: int | None = None
+    ratio_group: str = ""
+    slot_group: str = ""
+    notes: str = ""
+    display_order: int = 0
 
 
 @dataclass(frozen=True)

@@ -2,8 +2,8 @@ module:
   name: staffing_store
   language: python
   path: src/staffing_store.py
-  version: 0.2.0
-  description: SQLite persistence for staffing schools, classrooms, people, assignments, assignment history, and deterministic seed imports.
+  version: 0.3.0
+  description: SQLite persistence for staffing schools, classrooms, people, assignments, workbook display metadata, assignment history, and deterministic seed imports.
 functions: []
 classes:
 - name: StaffingStore
@@ -19,7 +19,7 @@ classes:
     inputs: {}
     returns:
       type: None
-    side_effects: Creates staffing tables and indexes when missing.
+    side_effects: Creates staffing tables/indexes when missing and migrates workbook display metadata columns for existing databases.
   - name: seed_assignment
     inputs:
       school:
@@ -60,7 +60,7 @@ classes:
       type: dict[str, int]
     exceptions:
     - ValueError
-    side_effects: Reads and validates a local staffing seed JSON file, then idempotently upserts schools, classrooms, people, assignments, and active history rows.
+    side_effects: Reads and validates a local staffing seed JSON file, then idempotently upserts schools, classrooms, support rows, people, assignment slots, workbook metadata, and active history rows. Supports legacy positions and workbook slots.
   - name: list_assignments
     inputs: {}
     returns:

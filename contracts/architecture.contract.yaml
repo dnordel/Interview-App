@@ -55,7 +55,7 @@ services:
     - notification_store
     - notification_service
   staffing_dashboard_service:
-    description: Local SQLite staffing assignment state machine, assignment history,
+    description: Local SQLite staffing assignment state machine, workbook-style school/classroom/slot display metadata, assignment history,
       permit updates, metrics, seed import, and post-commit checkpoint notification hooks.
     modules:
     - staffing_models

@@ -2,30 +2,1156 @@
   "schools": [
     {
       "name": "Hawthorne",
+      "display_order": 1,
       "classrooms": [
         {
           "name": "Tranquility",
-          "program": "Infant",
+          "program": "",
+          "ratio_group": "3 to 1 (infant units needed)",
           "licensed_capacity": 12,
-          "positions": [
+          "display_order": 1,
+          "slots": [
             {
+              "slot_group": "teacher",
               "position_name": "Teacher 1",
               "position_type": "Teacher",
+              "display_order": 1,
               "status": "filled",
               "person": {
                 "name": "Angie",
+                "permit_status": "no_permit_or_application"
+              }
+            },
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 2",
+              "position_type": "Teacher",
+              "display_order": 2,
+              "status": "need_now",
+              "notes": "?"
+            },
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 3",
+              "position_type": "Teacher",
+              "display_order": 3,
+              "status": "filled",
+              "person": {
+                "name": "Denise A",
                 "permit_status": "teacher_permit_approved"
               }
             },
             {
-              "position_name": "Teacher 2",
+              "slot_group": "teacher",
+              "position_name": "Teacher 4",
               "position_type": "Teacher",
-              "status": "need_now"
+              "display_order": 4,
+              "status": "filled",
+              "person": {
+                "name": "Ariel",
+                "permit_status": "teacher_permit_approved"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Harmony 1",
+          "program": "",
+          "ratio_group": "",
+          "licensed_capacity": 8,
+          "display_order": 2,
+          "slots": [
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 1",
+              "position_type": "Teacher",
+              "display_order": 1,
+              "status": "need_now",
+              "notes": "?"
             },
             {
+              "slot_group": "teacher",
+              "position_name": "Teacher 2",
+              "position_type": "Teacher",
+              "display_order": 2,
+              "status": "filled",
+              "person": {
+                "name": "Imgard",
+                "permit_status": "teacher_permit_approved"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Harmony 2",
+          "program": "",
+          "ratio_group": "4 to 1",
+          "licensed_capacity": 12,
+          "display_order": 3,
+          "slots": [
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 1",
+              "position_type": "Teacher",
+              "display_order": 1,
+              "status": "filled",
+              "person": {
+                "name": "Ikeriah",
+                "permit_status": "no_permit_or_application"
+              }
+            },
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 2",
+              "position_type": "Teacher",
+              "display_order": 2,
+              "status": "filled",
+              "person": {
+                "name": "Aileen",
+                "permit_status": "teacher_permit_approved"
+              }
+            },
+            {
+              "slot_group": "teacher",
               "position_name": "Teacher 3",
               "position_type": "Teacher",
-              "status": "dont_need_now"
+              "display_order": 3,
+              "status": "filled",
+              "person": {
+                "name": "Astrid",
+                "permit_status": "teacher_permit_approved"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Quest",
+          "program": "",
+          "ratio_group": "",
+          "licensed_capacity": 16,
+          "display_order": 4,
+          "slots": [
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 1",
+              "position_type": "Teacher",
+              "display_order": 1,
+              "status": "filled",
+              "notes": "No Permit or Application Yet"
+            },
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 2",
+              "position_type": "Teacher",
+              "display_order": 2,
+              "status": "filled",
+              "person": {
+                "name": "Cathy",
+                "permit_status": "no_permit_or_application"
+              }
+            },
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 3",
+              "position_type": "Teacher",
+              "display_order": 3,
+              "status": "need_now",
+              "notes": "?"
+            },
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 4",
+              "position_type": "Teacher",
+              "display_order": 4,
+              "status": "filled",
+              "person": {
+                "name": "Sandra",
+                "permit_status": "no_permit_or_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unity 1",
+          "program": "",
+          "ratio_group": "8 to 1",
+          "licensed_capacity": 21,
+          "display_order": 5,
+          "slots": [
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 1",
+              "position_type": "Teacher",
+              "display_order": 1,
+              "status": "filled",
+              "person": {
+                "name": "Stephanie",
+                "permit_status": "no_permit_or_application"
+              }
+            },
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 2",
+              "position_type": "Teacher",
+              "display_order": 2,
+              "status": "filled",
+              "person": {
+                "name": "Marely",
+                "permit_status": "no_permit_or_application"
+              }
+            },
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 3",
+              "position_type": "Teacher",
+              "display_order": 3,
+              "status": "filled",
+              "person": {
+                "name": "Krystal",
+                "permit_status": "teacher_permit_approved"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unity 2",
+          "program": "",
+          "ratio_group": "",
+          "licensed_capacity": 10,
+          "display_order": 6,
+          "slots": [
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 1",
+              "position_type": "Teacher",
+              "display_order": 1,
+              "status": "filled",
+              "person": {
+                "name": "La Tease",
+                "permit_status": "teacher_permit_approved"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Destiny 1",
+          "program": "",
+          "ratio_group": "",
+          "licensed_capacity": 21,
+          "display_order": 7,
+          "slots": [
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 1",
+              "position_type": "Teacher",
+              "display_order": 1,
+              "status": "filled",
+              "person": {
+                "name": "Holland",
+                "permit_status": "teacher_permit_approved"
+              }
+            },
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 2",
+              "position_type": "Teacher",
+              "display_order": 2,
+              "status": "filled",
+              "person": {
+                "name": "Claudia",
+                "permit_status": "no_permit_or_application"
+              }
+            },
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 3",
+              "position_type": "Teacher",
+              "display_order": 3,
+              "status": "filled",
+              "person": {
+                "name": "Evelyn",
+                "permit_status": "teacher_permit_approved"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Destiny 2",
+          "program": "",
+          "ratio_group": "",
+          "licensed_capacity": 8,
+          "display_order": 8,
+          "slots": [
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 1",
+              "position_type": "Teacher",
+              "display_order": 1,
+              "status": "filled",
+              "person": {
+                "name": "Veronica",
+                "permit_status": "teacher_permit_approved"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Destiny 3",
+          "program": "",
+          "ratio_group": "",
+          "licensed_capacity": 8,
+          "display_order": 9,
+          "slots": [
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 1",
+              "position_type": "Teacher",
+              "display_order": 1,
+              "status": "filled",
+              "person": {
+                "name": "Joyce",
+                "permit_status": "teacher_permit_approved"
+              }
+            }
+          ]
+        }
+      ],
+      "support_rows": [
+        {
+          "name": "Infant Floater",
+          "display_order": 90,
+          "slots": [
+            {
+              "slot_group": "support",
+              "position_name": "Infant Floater",
+              "position_type": "Support",
+              "status": "filled",
+              "person": {
+                "name": "Amy",
+                "permit_status": "teacher_permit_approved"
+              },
+              "notes": "Full time"
+            }
+          ]
+        },
+        {
+          "name": "Floater",
+          "display_order": 91,
+          "slots": [
+            {
+              "slot_group": "support",
+              "position_name": "Floater",
+              "position_type": "Support",
+              "status": "need_now",
+              "notes": "?; Full time"
+            }
+          ]
+        },
+        {
+          "name": "Chef",
+          "display_order": 92,
+          "slots": [
+            {
+              "slot_group": "support",
+              "position_name": "Chef",
+              "position_type": "Support",
+              "status": "filled",
+              "person": {
+                "name": "Kirk",
+                "permit_status": "unknown"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Office",
+          "display_order": 93,
+          "slots": [
+            {
+              "slot_group": "support",
+              "position_name": "Office",
+              "position_type": "Support",
+              "status": "filled",
+              "person": {
+                "name": "Violet",
+                "permit_status": "unknown"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Custodian",
+          "display_order": 94,
+          "slots": [
+            {
+              "slot_group": "support",
+              "position_name": "Custodian",
+              "position_type": "Support",
+              "status": "filled",
+              "person": {
+                "name": "Antonio",
+                "permit_status": "no_units_needed"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "North Long Beach",
+      "display_order": 2,
+      "classrooms": [
+        {
+          "name": "Tranquility",
+          "program": "",
+          "ratio_group": "3 to 1 (infant units needed)",
+          "licensed_capacity": 16,
+          "display_order": 1,
+          "slots": [
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 1",
+              "position_type": "Teacher",
+              "display_order": 1,
+              "status": "filled",
+              "person": {
+                "name": "Naomi*",
+                "permit_status": "permit_in_process"
+              }
+            },
+            {
+              "slot_group": "aide",
+              "position_name": "Aide 1",
+              "position_type": "Aide",
+              "display_order": 2,
+              "status": "filled",
+              "person": {
+                "name": "Ruby",
+                "permit_status": "no_permit_or_application"
+              }
+            },
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 2",
+              "position_type": "Teacher",
+              "display_order": 3,
+              "status": "filled",
+              "person": {
+                "name": "Vanessa",
+                "permit_status": "teacher_permit_approved"
+              }
+            },
+            {
+              "slot_group": "aide",
+              "position_name": "Aide 2",
+              "position_type": "Aide",
+              "display_order": 4,
+              "status": "filled",
+              "person": {
+                "name": "Sotheara",
+                "permit_status": "teacher_permit_approved"
+              }
+            },
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 3",
+              "position_type": "Teacher",
+              "display_order": 5,
+              "status": "filled",
+              "person": {
+                "name": "Janine*",
+                "permit_status": "no_permit_or_application"
+              }
+            },
+            {
+              "slot_group": "aide",
+              "position_name": "Aide 3",
+              "position_type": "Aide",
+              "display_order": 6,
+              "status": "dont_need_now",
+              "notes": "?"
+            }
+          ]
+        },
+        {
+          "name": "Harmony",
+          "program": "",
+          "ratio_group": "4 to 1",
+          "licensed_capacity": 24,
+          "display_order": 2,
+          "slots": [
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 1",
+              "position_type": "Teacher",
+              "display_order": 1,
+              "status": "filled",
+              "person": {
+                "name": "Princess*",
+                "permit_status": "permit_in_process"
+              }
+            },
+            {
+              "slot_group": "aide",
+              "position_name": "Aide 1",
+              "position_type": "Aide",
+              "display_order": 2,
+              "status": "filled",
+              "person": {
+                "name": "Daija*",
+                "permit_status": "permit_in_process"
+              }
+            },
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 2",
+              "position_type": "Teacher",
+              "display_order": 3,
+              "status": "filled",
+              "person": {
+                "name": "Lucy",
+                "permit_status": "teacher_permit_approved"
+              }
+            },
+            {
+              "slot_group": "aide",
+              "position_name": "Aide 2",
+              "position_type": "Aide",
+              "display_order": 4,
+              "status": "filled",
+              "person": {
+                "name": "Diana",
+                "permit_status": "teacher_permit_approved"
+              }
+            },
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 3",
+              "position_type": "Teacher",
+              "display_order": 5,
+              "status": "dont_need_now",
+              "notes": "?"
+            },
+            {
+              "slot_group": "aide",
+              "position_name": "Aide 3",
+              "position_type": "Aide",
+              "display_order": 6,
+              "status": "dont_need_now",
+              "notes": "?"
+            }
+          ]
+        },
+        {
+          "name": "Quest",
+          "program": "",
+          "ratio_group": "8 to 1",
+          "licensed_capacity": 24,
+          "display_order": 3,
+          "slots": [
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 1",
+              "position_type": "Teacher",
+              "display_order": 1,
+              "status": "filled",
+              "person": {
+                "name": "Maria",
+                "permit_status": "permit_in_process"
+              }
+            },
+            {
+              "slot_group": "aide",
+              "position_name": "Aide 1",
+              "position_type": "Aide",
+              "display_order": 2,
+              "status": "filled",
+              "person": {
+                "name": "Claudia",
+                "permit_status": "teacher_permit_approved"
+              }
+            },
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 2",
+              "position_type": "Teacher",
+              "display_order": 3,
+              "status": "filled",
+              "person": {
+                "name": "Berenice*",
+                "permit_status": "permit_in_process"
+              }
+            },
+            {
+              "slot_group": "aide",
+              "position_name": "Aide 2",
+              "position_type": "Aide",
+              "display_order": 4,
+              "status": "filled",
+              "person": {
+                "name": "Janet",
+                "permit_status": "teacher_permit_approved"
+              }
+            },
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 3",
+              "position_type": "Teacher",
+              "display_order": 5,
+              "status": "filled",
+              "person": {
+                "name": "Zoe*",
+                "permit_status": "permit_in_process"
+              }
+            },
+            {
+              "slot_group": "aide",
+              "position_name": "Aide 3",
+              "position_type": "Aide",
+              "display_order": 6,
+              "status": "dont_need_now",
+              "notes": "?"
+            }
+          ]
+        },
+        {
+          "name": "Unity",
+          "program": "",
+          "ratio_group": "",
+          "licensed_capacity": 24,
+          "display_order": 4,
+          "slots": [
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 1",
+              "position_type": "Teacher",
+              "display_order": 1,
+              "status": "filled",
+              "person": {
+                "name": "Lily",
+                "permit_status": "teacher_permit_approved"
+              }
+            },
+            {
+              "slot_group": "aide",
+              "position_name": "Aide 1",
+              "position_type": "Aide",
+              "display_order": 2,
+              "status": "filled",
+              "person": {
+                "name": "Tierra",
+                "permit_status": "teacher_permit_approved"
+              }
+            },
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 2",
+              "position_type": "Teacher",
+              "display_order": 3,
+              "status": "filled",
+              "person": {
+                "name": "Sunntrar",
+                "permit_status": "no_permit_or_application"
+              }
+            },
+            {
+              "slot_group": "aide",
+              "position_name": "Aide 2",
+              "position_type": "Aide",
+              "display_order": 4,
+              "status": "dont_need_now",
+              "notes": "?"
+            }
+          ]
+        },
+        {
+          "name": "Destiny - 4YO",
+          "program": "",
+          "ratio_group": "",
+          "licensed_capacity": 24,
+          "display_order": 5,
+          "slots": [
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 1",
+              "position_type": "Teacher",
+              "display_order": 1,
+              "status": "filled",
+              "person": {
+                "name": "Tati",
+                "permit_status": "teacher_permit_approved"
+              }
+            },
+            {
+              "slot_group": "aide",
+              "position_name": "Aide 1",
+              "position_type": "Aide",
+              "display_order": 2,
+              "status": "filled",
+              "person": {
+                "name": "Leland",
+                "permit_status": "no_permit_or_application"
+              }
+            },
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 2",
+              "position_type": "Teacher",
+              "display_order": 3,
+              "status": "filled",
+              "person": {
+                "name": "Ana",
+                "permit_status": "teacher_permit_approved"
+              }
+            },
+            {
+              "slot_group": "aide",
+              "position_name": "Aide 2",
+              "position_type": "Aide",
+              "display_order": 4,
+              "status": "dont_need_now",
+              "notes": "?"
+            }
+          ]
+        }
+      ],
+      "support_rows": [
+        {
+          "name": "Infant Floater",
+          "display_order": 90,
+          "slots": [
+            {
+              "slot_group": "support",
+              "position_name": "Infant Floater",
+              "position_type": "Support",
+              "status": "filled",
+              "person": {
+                "name": "Marquela",
+                "permit_status": "no_permit_or_application"
+              },
+              "notes": "Full time"
+            }
+          ]
+        },
+        {
+          "name": "Floater",
+          "display_order": 91,
+          "slots": [
+            {
+              "slot_group": "support",
+              "position_name": "Floater",
+              "position_type": "Support",
+              "status": "filled",
+              "person": {
+                "name": "Vivian*",
+                "permit_status": "permit_in_process"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Chef",
+          "display_order": 92,
+          "slots": [
+            {
+              "slot_group": "support",
+              "position_name": "Chef",
+              "position_type": "Support",
+              "status": "filled",
+              "person": {
+                "name": "Dimetrius",
+                "permit_status": "no_units_needed"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Office",
+          "display_order": 93,
+          "slots": [
+            {
+              "slot_group": "support",
+              "position_name": "Office",
+              "position_type": "Support",
+              "status": "filled",
+              "person": {
+                "name": "Miriam*",
+                "permit_status": "permit_in_process"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Palmdale",
+      "display_order": 3,
+      "classrooms": [
+        {
+          "name": "Tranquility",
+          "program": "",
+          "ratio_group": "3 to 1 (infant units needed)",
+          "licensed_capacity": 18,
+          "display_order": 1,
+          "slots": [
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 1",
+              "position_type": "Teacher",
+              "display_order": 1,
+              "status": "filled",
+              "person": {
+                "name": "Cindy",
+                "permit_status": "no_permit_or_application"
+              }
+            },
+            {
+              "slot_group": "aide",
+              "position_name": "Aide 1",
+              "position_type": "Aide",
+              "display_order": 2,
+              "status": "need_now",
+              "notes": "?"
+            },
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 2",
+              "position_type": "Teacher",
+              "display_order": 3,
+              "status": "filled",
+              "person": {
+                "name": "Madalynn",
+                "permit_status": "no_permit_or_application"
+              }
+            },
+            {
+              "slot_group": "aide",
+              "position_name": "Aide 2",
+              "position_type": "Aide",
+              "display_order": 4,
+              "status": "dont_need_now",
+              "notes": "?"
+            },
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 3",
+              "position_type": "Teacher",
+              "display_order": 5,
+              "status": "filled",
+              "person": {
+                "name": "Sandy",
+                "permit_status": "no_permit_or_application"
+              }
+            },
+            {
+              "slot_group": "aide",
+              "position_name": "Aide 3",
+              "position_type": "Aide",
+              "display_order": 6,
+              "status": "dont_need_now",
+              "notes": "?"
+            }
+          ]
+        },
+        {
+          "name": "Harmony",
+          "program": "",
+          "ratio_group": "4 to 1",
+          "licensed_capacity": 24,
+          "display_order": 2,
+          "slots": [
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 1",
+              "position_type": "Teacher",
+              "display_order": 1,
+              "status": "filled",
+              "person": {
+                "name": "Madisan",
+                "permit_status": "no_permit_or_application"
+              }
+            },
+            {
+              "slot_group": "aide",
+              "position_name": "Aide 1",
+              "position_type": "Aide",
+              "display_order": 2,
+              "status": "coming",
+              "person": {
+                "name": "Koryn",
+                "permit_status": "unknown"
+              }
+            },
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 2",
+              "position_type": "Teacher",
+              "display_order": 3,
+              "status": "filled",
+              "person": {
+                "name": "Anette",
+                "permit_status": "no_permit_or_application"
+              }
+            },
+            {
+              "slot_group": "aide",
+              "position_name": "Aide 2",
+              "position_type": "Aide",
+              "display_order": 4,
+              "status": "need_now",
+              "notes": "?"
+            },
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 3",
+              "position_type": "Teacher",
+              "display_order": 5,
+              "status": "filled",
+              "person": {
+                "name": "Isabella",
+                "permit_status": "no_permit_or_application"
+              }
+            },
+            {
+              "slot_group": "aide",
+              "position_name": "Aide 3",
+              "position_type": "Aide",
+              "display_order": 6,
+              "status": "dont_need_now",
+              "notes": "?"
+            }
+          ]
+        },
+        {
+          "name": "Quest",
+          "program": "",
+          "ratio_group": "",
+          "licensed_capacity": 24,
+          "display_order": 3,
+          "slots": [
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 1",
+              "position_type": "Teacher",
+              "display_order": 1,
+              "status": "filled",
+              "person": {
+                "name": "Hailey",
+                "permit_status": "no_permit_or_application"
+              }
+            },
+            {
+              "slot_group": "aide",
+              "position_name": "Aide 1",
+              "position_type": "Aide",
+              "display_order": 2,
+              "status": "need_now",
+              "notes": "?"
+            },
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 2",
+              "position_type": "Teacher",
+              "display_order": 3,
+              "status": "coming",
+              "person": {
+                "name": "Elizabeth",
+                "permit_status": "unknown"
+              }
+            },
+            {
+              "slot_group": "aide",
+              "position_name": "Aide 2",
+              "position_type": "Aide",
+              "display_order": 4,
+              "status": "need_now",
+              "notes": "?"
+            },
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 3",
+              "position_type": "Teacher",
+              "display_order": 5,
+              "status": "dont_need_now",
+              "notes": "?"
+            },
+            {
+              "slot_group": "aide",
+              "position_name": "Aide 3",
+              "position_type": "Aide",
+              "display_order": 6,
+              "status": "dont_need_now",
+              "notes": "?"
+            }
+          ]
+        },
+        {
+          "name": "Unity",
+          "program": "",
+          "ratio_group": "8 to 1",
+          "licensed_capacity": 24,
+          "display_order": 4,
+          "slots": [
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 1",
+              "position_type": "Teacher",
+              "display_order": 1,
+              "status": "filled",
+              "person": {
+                "name": "Leonela",
+                "permit_status": "no_permit_or_application"
+              }
+            },
+            {
+              "slot_group": "aide",
+              "position_name": "Aide 1",
+              "position_type": "Aide",
+              "display_order": 2,
+              "status": "need_now",
+              "notes": "?"
+            },
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 2",
+              "position_type": "Teacher",
+              "display_order": 3,
+              "status": "filled",
+              "person": {
+                "name": "Andrea",
+                "permit_status": "no_permit_or_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Destiny",
+          "program": "",
+          "ratio_group": "",
+          "licensed_capacity": 24,
+          "display_order": 5,
+          "slots": [
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 1",
+              "position_type": "Teacher",
+              "display_order": 1,
+              "status": "filled",
+              "person": {
+                "name": "Ileana",
+                "permit_status": "no_permit_or_application"
+              }
+            },
+            {
+              "slot_group": "aide",
+              "position_name": "Aide 1",
+              "position_type": "Aide",
+              "display_order": 2,
+              "status": "need_now",
+              "notes": "?"
+            },
+            {
+              "slot_group": "teacher",
+              "position_name": "Teacher 2",
+              "position_type": "Teacher",
+              "display_order": 3,
+              "status": "filled",
+              "person": {
+                "name": "Brittany",
+                "permit_status": "no_permit_or_application"
+              }
+            }
+          ]
+        }
+      ],
+      "support_rows": [
+        {
+          "name": "Infant Floater",
+          "display_order": 90,
+          "slots": [
+            {
+              "slot_group": "support",
+              "position_name": "Infant Floater",
+              "position_type": "Support",
+              "status": "need_now",
+              "notes": "?; Full Time; Krissi (on leave)"
+            }
+          ]
+        },
+        {
+          "name": "Floater",
+          "display_order": 91,
+          "slots": [
+            {
+              "slot_group": "support",
+              "position_name": "Floater",
+              "position_type": "Support",
+              "status": "need_now",
+              "notes": "?; Full Time"
+            }
+          ]
+        },
+        {
+          "name": "Chef",
+          "display_order": 92,
+          "slots": [
+            {
+              "slot_group": "support",
+              "position_name": "Chef",
+              "position_type": "Support",
+              "status": "filled",
+              "person": {
+                "name": "Claudia",
+                "permit_status": "no_units_needed"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Office",
+          "display_order": 93,
+          "slots": [
+            {
+              "slot_group": "support",
+              "position_name": "Office",
+              "position_type": "Support",
+              "status": "filled",
+              "person": {
+                "name": "Rebecca",
+                "permit_status": "no_units_needed"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Director",
+          "display_order": 94,
+          "slots": [
+            {
+              "slot_group": "support",
+              "position_name": "Director",
+              "position_type": "Support",
+              "status": "filled",
+              "person": {
+                "name": "Telma",
+                "permit_status": "unknown"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Swim Instructor",
+          "display_order": 95,
+          "slots": [
+            {
+              "slot_group": "support",
+              "position_name": "Swim Instructor",
+              "position_type": "Support",
+              "status": "filled",
+              "person": {
+                "name": "Ebony",
+                "permit_status": "no_units_needed"
+              }
             }
           ]
         }

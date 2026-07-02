@@ -2,8 +2,8 @@ module:
   name: staffing_service
   language: python
   path: src/staffing_service.py
-  version: 0.2.0
-  description: Staffing assignment state machine, staffing dashboard metrics, and post-commit notification emission for successful transactions.
+  version: 0.4.0
+  description: Staffing assignment state machine, staffing dashboard metrics with workbook display metadata, and post-commit notification emission for successful transactions.
 functions: []
 classes:
 - name: StaffingService
@@ -72,6 +72,16 @@ classes:
     exceptions:
     - ValueError
     side_effects: Marks current person inactive, opens replacement history, then may emit staffing.assignment.replace notification.
+  - name: clear_replacement
+    inputs:
+      assignment_id:
+        type: int
+        required: true
+    returns:
+      type: StaffingTransitionResult
+    exceptions:
+    - ValueError
+    side_effects: Clears replacing assignment person/start fields, keeps active replacement history open, and may emit staffing.assignment.need_now notification.
   - name: mark_not_needed
     inputs:
       assignment_id:
@@ -107,7 +117,7 @@ classes:
     returns:
       type: StaffingMetrics
     exceptions: []
-    side_effects: Reads assignment and filled-history rows from StaffingStore to compute dashboard metrics.
+    side_effects: Reads assignment, workbook display metadata, and filled-history rows from StaffingStore to compute dashboard metrics.
 data_structures:
 - name: STAFFING_NOTIFICATION_EVENTS
   type: dict[str, str]
