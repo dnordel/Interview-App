@@ -20,7 +20,7 @@ $ErrorActionPreference = "Stop"
 
 $AppDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $AppDir
-$LocalDeepSeekModel = "deepseek-r1:8b"
+$LocalDeepSeekModel = "deepseek-r1:14b"
 if ($env:DEEPSEEK_SUMMARY_MODEL -and $env:DEEPSEEK_SUMMARY_MODEL.Trim()) {
   $LocalDeepSeekModel = $env:DEEPSEEK_SUMMARY_MODEL.Trim()
 }

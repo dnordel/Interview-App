@@ -65,7 +65,7 @@ def test_request_deepseek_chat_completion_uses_native_ollama_json(monkeypatch: p
     assert calls[0]["url"] == "http://127.0.0.1:11434/api/generate"
     assert calls[0]["body"]["format"] == "json"
     assert calls[0]["body"]["stream"] is False
-    assert calls[0]["body"]["model"] == "deepseek-r1:8b"
+    assert calls[0]["body"]["model"] == "deepseek-r1:14b"
     assert calls[0]["body"]["options"]["num_predict"] == 4096
     assert calls[0]["timeout"] == 7
     assert response["choices"][0]["message"]["content"] == '{"ok":true}'
@@ -87,7 +87,7 @@ def test_default_tk_settings_enable_local_deepseek_summary() -> None:
     assert config.enabled is True
     assert config.api_key == "ollama"
     assert config.base_url == "http://127.0.0.1:11434/v1"
-    assert config.model == "deepseek-r1:8b"
+    assert config.model == "deepseek-r1:14b"
 
 
 def test_deepseek_summary_config_defaults_to_local_ollama_when_disabled() -> None:
@@ -96,7 +96,7 @@ def test_deepseek_summary_config_defaults_to_local_ollama_when_disabled() -> Non
     assert config.enabled is False
     assert config.api_key == "ollama"
     assert config.base_url == "http://127.0.0.1:11434/v1"
-    assert config.model == "deepseek-r1:8b"
+    assert config.model == "deepseek-r1:14b"
 
 
 def test_deepseek_summary_config_enables_local_ollama_without_hosted_api_key() -> None:
@@ -105,7 +105,7 @@ def test_deepseek_summary_config_enables_local_ollama_without_hosted_api_key() -
     assert config.enabled is True
     assert config.api_key == "ollama"
     assert config.base_url == "http://127.0.0.1:11434/v1"
-    assert config.model == "deepseek-r1:8b"
+    assert config.model == "deepseek-r1:14b"
 
 
 def test_deepseek_summary_config_allows_long_local_timeout() -> None:
@@ -1064,6 +1064,7 @@ def test_regenerate_interview_notes_job_full_mode_resets_deepseek_checkpoints(
                     "DEEPSEEK_API_KEY": "",
                     "DEEPSEEK_API_BASE_URL": "",
                     "DEEPSEEK_SUMMARY_MODEL": "",
+                    "DEEPSEEK_SUMMARY_TIMEOUT_SECONDS": "120",
                     "DEEPSEEK_PROMPT_TEMPLATES": {"executive_summary_user": "old prompt"},
                 },
             }
@@ -1087,8 +1088,8 @@ def test_regenerate_interview_notes_job_full_mode_resets_deepseek_checkpoints(
     assert job["deepseek_settings"]["DEEPSEEK_SUMMARY_ENABLED"] == "1"
     assert job["deepseek_settings"]["DEEPSEEK_API_KEY"] == "ollama"
     assert job["deepseek_settings"]["DEEPSEEK_API_BASE_URL"] == "http://127.0.0.1:11434/v1"
-    assert job["deepseek_settings"]["DEEPSEEK_SUMMARY_MODEL"] == "deepseek-r1:8b"
-    assert job["deepseek_settings"]["DEEPSEEK_SUMMARY_TIMEOUT_SECONDS"] == "120"
+    assert job["deepseek_settings"]["DEEPSEEK_SUMMARY_MODEL"] == "deepseek-r1:14b"
+    assert job["deepseek_settings"]["DEEPSEEK_SUMMARY_TIMEOUT_SECONDS"] == "600"
     assert job["deepseek_settings"]["DEEPSEEK_PROMPT_TEMPLATES"] == {"executive_summary_user": "new prompt"}
 
 
@@ -1194,7 +1195,7 @@ def test_deepseek_finalize_worker_starts_local_ollama_and_reports_specific_steps
         enabled=True,
         api_key="ollama",
         base_url="http://127.0.0.1:11434/v1",
-        model="deepseek-r1:8b",
+        model="deepseek-r1:14b",
         timeout_seconds=3,
         prompt_templates={},
     )
@@ -2100,11 +2101,14 @@ def test_generate_deepseek_trait_signal_suggestions_filters_and_persists(monkeyp
     assert "start from question and answer content, not numeric rubric descriptors" in suggestion_user_prompt
     assert "preschool role expectations" in suggestion_user_prompt
     scoring_prompt_payload = calls[1][1]["content"]
+    scoring_guard_prompt = calls[1][2]["content"]
     assert "rubric.json descriptors" in calls[1][0]["content"]
     assert '"raw_score_range": [1, 5]' in scoring_prompt_payload
     assert '"descriptors": {"5": "Best evidence", "1": "Weak evidence"}' in scoring_prompt_payload
     assert '"interviewer_raw_score"' not in scoring_prompt_payload
     assert "trait_based_scoring_json" in scoring_prompt_payload
+    assert "Required current trait_id: trait_1" in scoring_guard_prompt
+    assert "Do not return placeholder values" in scoring_guard_prompt
 
 
 def test_generate_deepseek_trait_signal_suggestions_uses_only_current_trait_engine_payload(
@@ -2351,6 +2355,64 @@ def test_generate_deepseek_trait_signal_suggestions_retries_invalid_json_until_v
     assert suggestion_attempts == 2
     assert result["model_suggestion_status"] == "generated"
     assert result["model_scoring_status"] == "generated"
+
+
+def test_generate_deepseek_trait_signal_suggestions_retries_trait_score_for_wrong_trait(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        interview_runtime,
+        "_trait_suggestion_items",
+        lambda _flow, _rubric=None: (
+            [
+                {
+                    "trait_id": "bss_trait_6",
+                    "flow_index": 8,
+                    "title": "Non-Diagnostic Professional Boundaries",
+                    "question": "What would you say?",
+                    "candidate_transcript": "That is beyond my realm to answer.",
+                    "valid_signals": [{"signal_id": "S_MODEL", "label": "Maintains boundaries"}],
+                    "rubric": {},
+                    "trait_based_scoring_json": {},
+                }
+            ],
+            {"bss_trait_6": ["S_MODEL"]},
+        ),
+    )
+    scoring_attempts = 0
+
+    def fake_completion(_config, messages):
+        nonlocal scoring_attempts
+        if "trait_scores" in messages[1]["content"]:
+            scoring_attempts += 1
+            if scoring_attempts == 1:
+                content = (
+                    '{"trait_scores":[{"trait_id":"from input","raw_score":1,'
+                    '"evidence_quote":"exact short candidate wording","rationale":"template echo",'
+                    '"risks_or_gaps":""}]}'
+                )
+            else:
+                content = (
+                    '{"trait_scores":[{"trait_id":"bss_trait_6","raw_score":5,'
+                    '"evidence_quote":"beyond my realm","rationale":"Maintains professional boundaries.",'
+                    '"risks_or_gaps":""}]}'
+                )
+        else:
+            content = '{"trait_suggestions":[{"trait_id":"bss_trait_6","suggestions":[]}]}'
+        return {"choices": [{"message": {"content": content}}]}
+
+    trait_state: dict[str, dict[str, object]] = {"bss_trait_6": {}}
+    result = generate_deepseek_trait_signal_suggestions(
+        [{"type": "trait", "id": "bss_trait_6", "candidate_transcript": "That is beyond my realm to answer."}],
+        trait_state,
+        config=DeepSeekSummaryConfig(enabled=True, api_key="secret-key"),
+        chat_completion=fake_completion,
+    )
+
+    assert scoring_attempts == 2
+    assert result["model_scoring_status"] == "generated"
+    assert result["model_trait_scores_by_trait"]["bss_trait_6"]["raw_score"] == 5
+    assert trait_state["bss_trait_6"]["deepseek_raw_score"] == 5
 
 
 def test_generate_deepseek_trait_signal_suggestions_uses_configured_prompt_templates(monkeypatch: pytest.MonkeyPatch) -> None:

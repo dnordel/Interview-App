@@ -507,8 +507,8 @@ class _PySideFinalizeAdapter:
             "deepseek_summary_enabled": True,
             "deepseek_api_key": "ollama",
             "deepseek_api_base_url": "http://127.0.0.1:11434/v1",
-            "deepseek_summary_model": "deepseek-r1:8b",
-            "deepseek_summary_timeout_seconds": 120,
+            "deepseek_summary_model": "deepseek-r1:14b",
+            "deepseek_summary_timeout_seconds": 600,
             "deepseek_prompt_templates": {},
         }
         self.school_offer_store = SchoolOfferSettingsStore(SCHOOL_OFFER_SETTINGS_PATH)

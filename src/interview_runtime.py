@@ -1015,14 +1015,14 @@ class DeepSeekSummaryConfig:
     enabled: bool
     api_key: str
     base_url: str = "http://127.0.0.1:11434/v1"
-    model: str = "deepseek-r1:8b"
+    model: str = "deepseek-r1:14b"
     timeout_seconds: float = 600.0
     prompt_templates: dict[str, Any] = field(default_factory=dict)
     debug_log_dir: Path | None = None
 
 
 _LOCAL_DEEPSEEK_BASE_URL = "http://127.0.0.1:11434/v1"
-_LOCAL_DEEPSEEK_MODEL = "deepseek-r1:8b"
+_LOCAL_DEEPSEEK_MODEL = "deepseek-r1:14b"
 _LOCAL_DEEPSEEK_API_KEY = "ollama"
 _LOCAL_DEEPSEEK_HOSTS = {"127.0.0.1", "localhost", "::1"}
 DEFAULT_DEEPSEEK_TIMEOUT_SECONDS = 600.0
@@ -2402,6 +2402,7 @@ def _deepseek_trait_scoring_messages(
     }
     templates = normalize_deepseek_prompt_templates(prompt_templates)
     item = items[0] if items else {}
+    required_trait_id = str(item.get("trait_id") or "").strip()
     system_template = _resolve_deepseek_question_prompt(
         templates,
         "trait_scoring_system_by_question",
@@ -2431,6 +2432,14 @@ def _deepseek_trait_scoring_messages(
                     "job_title": payload["job_title"] or "Unspecified role",
                     "role_context_or_rubric": payload["role_context"] or "No role-specific context available.",
                 },
+            ),
+        },
+        {
+            "role": "user",
+            "content": (
+                f"Required current trait_id: {required_trait_id}. "
+                "Return exactly one score for this trait_id. "
+                "Do not return placeholder values such as 'from input' or 'exact short candidate wording'."
             ),
         },
     ]
@@ -2534,10 +2543,12 @@ def _normalize_deepseek_trait_score_payload(
         if confidence is not None:
             normalized_score["confidence"] = confidence
         output[trait_id] = normalized_score
+    if not output:
+        raise ValueError("DeepSeek trait scoring response did not include the requested trait.")
     return {
         "model_trait_scores_by_trait": output,
-        "model_scoring_status": "generated" if output else "failed",
-        "model_scoring_warnings": [] if output else ["DeepSeek trait scoring response was empty."],
+        "model_scoring_status": "generated",
+        "model_scoring_warnings": [],
     }
 
 
@@ -4070,10 +4081,11 @@ def _local_deepseek_settings_source(settings: dict[str, Any] | None = None) -> d
     source["DEEPSEEK_API_BASE_URL"] = str(source.get("DEEPSEEK_API_BASE_URL") or _LOCAL_DEEPSEEK_BASE_URL)
     source["DEEPSEEK_SUMMARY_MODEL"] = str(source.get("DEEPSEEK_SUMMARY_MODEL") or _LOCAL_DEEPSEEK_MODEL)
     try:
-        timeout = float(source.get("DEEPSEEK_SUMMARY_TIMEOUT_SECONDS") or 120)
+        timeout = float(source.get("DEEPSEEK_SUMMARY_TIMEOUT_SECONDS") or DEFAULT_DEEPSEEK_TIMEOUT_SECONDS)
     except (TypeError, ValueError):
-        timeout = 120.0
-    source["DEEPSEEK_SUMMARY_TIMEOUT_SECONDS"] = str(int(min(max(timeout, 1.0), 120.0)))
+        timeout = DEFAULT_DEEPSEEK_TIMEOUT_SECONDS
+    timeout = max(timeout, DEFAULT_DEEPSEEK_TIMEOUT_SECONDS)
+    source["DEEPSEEK_SUMMARY_TIMEOUT_SECONDS"] = str(int(min(timeout, MAX_DEEPSEEK_TIMEOUT_SECONDS)))
     source["DEEPSEEK_PROMPT_TEMPLATES"] = load_deepseek_prompt_templates()
     return source
 
