@@ -2521,6 +2521,134 @@ def test_pyside_staffing_open_action_refreshes_dashboard(tmp_path: Path, monkeyp
     app.processEvents()
 
 
+def test_pyside_director_staffing_mode_uses_same_staffing_page_only(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    seed_path = tmp_path / "staffing_seed.json"
+    seed_path.write_text(
+        json.dumps(
+            {
+                "schools": [
+                    {
+                        "name": "Hawthorne",
+                        "classrooms": [
+                            {
+                                "name": "Tranquility",
+                                "positions": [
+                                    {"position_name": "Teacher 1", "position_type": "Teacher", "status": "dont_need_now"}
+                                ],
+                            }
+                        ],
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", tmp_path / "staffing.sqlite3")
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", seed_path)
+    full_model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.json",
+        school_options=["Hawthorne"],
+    )
+
+    director_model = pyside_interview_app.build_director_staffing_model(full_model)
+    window = pyside_interview_app.PySideInterviewWindow(director_model)
+    table = window.window.findChild(qt_widgets.QTableWidget, "PySideStaffingWorkbookBoard")
+    button = _staffing_button_for_position(table, "Teacher 1")
+
+    assert director_model.navigation == ["Staffing"]
+    assert window.window.windowTitle() == "Director Staffing Dashboard"
+    assert window.sidebar.isHidden()
+    assert window.stack.count() == 1
+    assert table is not None
+    assert button.text() == "Open"
+    button.click()
+    app.processEvents()
+    table = window.window.findChild(qt_widgets.QTableWidget, "PySideStaffingWorkbookBoard")
+    assert table.item(_staffing_row_for_position(table, "Teacher 1"), 3).text() == "need_now"
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_director_staffing_mode_filters_to_assigned_school(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    seed_path = tmp_path / "staffing_seed.json"
+    seed_path.write_text(
+        json.dumps(
+            {
+                "schools": [
+                    {
+                        "name": "Hawthorne",
+                        "classrooms": [
+                            {
+                                "name": "Tranquility",
+                                "positions": [
+                                    {"position_name": "Hawthorne Teacher", "position_type": "Teacher", "status": "need_now"}
+                                ],
+                            }
+                        ],
+                    },
+                    {
+                        "name": "Palmdale",
+                        "classrooms": [
+                            {
+                                "name": "Harmony",
+                                "positions": [
+                                    {"position_name": "Palmdale Teacher", "position_type": "Teacher", "status": "need_now"},
+                                    {"position_name": "Palmdale Aide", "position_type": "Aide", "status": "filled", "person": {"name": "Koryn"}},
+                                ],
+                            }
+                        ],
+                    },
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", tmp_path / "staffing.sqlite3")
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", seed_path)
+    full_model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.json",
+        school_options=["Hawthorne", "Palmdale"],
+    )
+
+    director_model = pyside_interview_app.build_director_staffing_model(full_model, school="Palmdale")
+    window = pyside_interview_app.PySideInterviewWindow(director_model)
+    tabs = window.window.findChild(qt_widgets.QTabWidget, "PySideStaffingSchoolTabs")
+    selector = window.window.findChild(qt_widgets.QComboBox, "PySideStaffingSchoolSelector")
+    table = tabs.widget(0).findChild(qt_widgets.QTableWidget, "PySideStaffingWorkbookBoard")
+    labels = [label.text() for label in window.stack.widget(0).findChildren(qt_widgets.QLabel)]
+    board_text = {
+        table.item(row, column).text()
+        for row in range(table.rowCount())
+        for column in range(table.columnCount())
+        if table.item(row, column) is not None
+    }
+
+    assert director_model.director_staffing_school == "Palmdale"
+    assert [tabs.tabText(index) for index in range(tabs.count())] == ["Palmdale"]
+    assert [selector.itemText(index) for index in range(selector.count())] == ["Palmdale"]
+    assert "Harmony" in board_text
+    assert "OPEN POSITION" in board_text
+    assert "Koryn" in board_text
+    assert "Tranquility" not in board_text
+    assert any("Open positions: 1" in text for text in labels)
+    window.window.close()
+    app.processEvents()
+
+
 def test_pyside_staffing_action_button_exposes_secondary_actions(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")

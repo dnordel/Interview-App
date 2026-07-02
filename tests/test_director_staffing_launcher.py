@@ -1,155 +1,81 @@
 from __future__ import annotations
 
-import ast
-import re
+import importlib.util
+import json
 from pathlib import Path
-
-import yaml
 
 
 ROOT = Path(".")
-BAT = ROOT / "..START DIRECTOR STAFFING DASHBOARD.bat"
-SCRIPT = ROOT / "setup_director_staffing.ps1"
-CONTRACT = ROOT / "contracts" / "setup_director_staffing.contract.yaml"
-APP = ROOT / "src" / "staffing_dashboard_app.py"
-APP_CONTRACT = ROOT / "contracts" / "staffing_dashboard_app.contract.yaml"
-DIRECTOR_REQUIREMENTS = ROOT / "requirements-director.txt"
 
 
-FUNCTION_PATTERN = re.compile(r"(?ms)^function\s+([A-Za-z0-9_-]+)\s*(?:\((.*?)\))?\s*\{(.*?)^}\s*$")
-PARAM_PATTERN = re.compile(r"\$([A-Za-z_][A-Za-z0-9_]*)")
-POWERSHELL_LITERALS = {"false", "null", "true"}
+def test_director_bat_runs_full_pyside_setup_in_staffing_only_mode() -> None:
+    assert not (ROOT / "..START DIRECTOR STAFFING DASHBOARD.bat").exists()
+    generator = _load_launcher_generator()
+    seed = json.loads((ROOT / "config" / "staffing_seed.json").read_text(encoding="utf-8"))
+    for school in [school["name"] for school in seed["schools"]]:
+        path = ROOT / generator.director_launcher_filename(school)
+        text = path.read_text(encoding="utf-8")
+
+        assert "setup_and_run.ps1" in text
+        assert "-UiMode pyside" in text
+        assert "-DirectorStaffingMode" in text
+        assert f'-DirectorSchool "{school}"' in text
+        assert text.splitlines() == generator.director_launcher_body(school).splitlines()
+        assert "setup_director_staffing.ps1" not in text
+        assert 'cd /d "%~dp0"' in text
 
 
-def _script_functions() -> dict[str, tuple[str | None, str]]:
-    script_text = SCRIPT.read_text(encoding="utf-8")
-    functions: dict[str, tuple[str | None, str]] = {}
-    for name, inline_params, body in FUNCTION_PATTERN.findall(script_text):
-        functions.setdefault(name, (inline_params or None, body))
-    return functions
+def test_director_launchers_match_staffing_seed_schools() -> None:
+    generator = _load_launcher_generator()
+    seed = json.loads((ROOT / "config" / "staffing_seed.json").read_text(encoding="utf-8"))
+    expected_schools = [school["name"] for school in seed["schools"]]
+    expected_paths = {school: ROOT / generator.director_launcher_filename(school) for school in expected_schools}
+
+    for school in expected_schools:
+        assert expected_paths[school].exists()
 
 
-def _param_names(function_definition: tuple[str | None, str]) -> list[str]:
-    inline_params, function_body = function_definition
-    param_source = inline_params
-    if param_source is None:
-        param_start = function_body.find("param(")
-        if param_start == -1:
-            return []
-        body_start = param_start + len("param(")
-        depth = 1
-        for idx in range(body_start, len(function_body)):
-            char = function_body[idx]
-            if char == "(":
-                depth += 1
-            elif char == ")":
-                depth -= 1
-                if depth == 0:
-                    param_source = function_body[body_start:idx]
-                    break
-        if param_source is None:
-            return []
-
-    param_source = re.sub(r"=\s*\$[A-Za-z_][A-Za-z0-9_]*", "", param_source)
-    return [
-        name
-        for name in PARAM_PATTERN.findall(param_source)
-        if name.lower() not in POWERSHELL_LITERALS
-    ]
-
-
-def test_director_bat_runs_light_staffing_setup() -> None:
-    text = BAT.read_text(encoding="utf-8")
-
-    assert "setup_director_staffing.ps1" in text
-    assert "setup_and_run.ps1" not in text
-    assert 'cd /d "%~dp0"' in text
-
-
-def test_director_setup_contract_signatures_match_script() -> None:
-    contract = yaml.safe_load(CONTRACT.read_text(encoding="utf-8"))
-    functions = _script_functions()
-
-    for item in contract["functions"]:
-        assert item["name"] in functions
-        assert _param_names(functions[item["name"]]) == list(item["inputs"].keys())
-
-
-def test_director_setup_skips_interview_runtime_dependencies() -> None:
-    script_text = SCRIPT.read_text(encoding="utf-8")
-    req_text = DIRECTOR_REQUIREMENTS.read_text(encoding="utf-8")
-
-    assert "Checking Python 3.11 install" in script_text
-    assert "Checking director staffing packages" in script_text
-    assert "Launching staffing dashboard" in script_text
-    assert "staffing_dashboard_app.py" in script_text
-    assert "requirements-director.txt" in script_text
-    assert '$srcDir = Join-Path $AppDir "src"' in script_text
-    assert 'Args @("-c","import PySide6, staffing_store, staffing_service") -WorkingDir $srcDir' in script_text
-    assert "PySide6==6.8.1.1" in req_text
-
-    forbidden = [
-        "VB-CABLE",
-        "Ensure-LocalDeepSeek",
-        "Ensure-Ollama",
-        "Ollama",
-        "deepseek-r1",
-        "faster-whisper",
-        "transformers",
-        "requirements.txt",
-        "ffmpeg",
-    ]
-    for token in forbidden:
-        assert token not in script_text
-    assert "transformers" not in req_text
-    assert "faster-whisper" not in req_text
-
-
-def test_staffing_dashboard_app_is_staffing_only_entrypoint() -> None:
-    source = APP.read_text(encoding="utf-8")
-    tree = ast.parse(source)
-    imported_modules = {
-        alias.name.split(".")[0]
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Import)
-        for alias in node.names
-    }
-    imported_modules.update(
-        node.module.split(".")[0]
-        for node in ast.walk(tree)
-        if isinstance(node, ast.ImportFrom) and node.module
+def test_generate_director_staffing_launchers_from_seed(tmp_path: Path) -> None:
+    generator = _load_launcher_generator()
+    seed_path = tmp_path / "staffing_seed.json"
+    seed_path.write_text(
+        json.dumps({"schools": [{"name": "Alpha School"}, {"name": "Beta/School"}]}),
+        encoding="utf-8",
     )
 
-    forbidden = {
-        "admin_studio",
-        "data_store",
-        "interview_runtime",
-        "scoring_reporting",
-        "transformers",
-        "deepseek_finalize_worker",
-        "interview_audio_recorder",
-        "docx",
-    }
-    assert forbidden.isdisjoint(imported_modules)
-    assert {"staffing_service", "staffing_store", "PySide6"}.issubset(imported_modules)
+    output_paths = generator.generate_director_launchers(root=tmp_path, seed_path=seed_path)
+
+    assert [path.name for path in output_paths] == [
+        "..START DIRECTOR STAFFING - Alpha School.bat",
+        "..START DIRECTOR STAFFING - Beta School.bat",
+    ]
+    assert '-DirectorSchool "Alpha School"' in output_paths[0].read_text(encoding="utf-8")
+    assert '-DirectorSchool "Beta/School"' in output_paths[1].read_text(encoding="utf-8")
 
 
-def test_staffing_dashboard_app_uses_dropbox_user_artifacts_db() -> None:
-    source = APP.read_text(encoding="utf-8")
+def test_director_entrypoint_uses_full_app_modules_not_separate_gui() -> None:
+    assert not (ROOT / "src" / "staffing_dashboard_app.py").exists()
+    assert not (ROOT / "contracts" / "staffing_dashboard_app.contract.yaml").exists()
+    assert not (ROOT / "setup_director_staffing.ps1").exists()
+    assert not (ROOT / "contracts" / "setup_director_staffing.contract.yaml").exists()
+    assert not (ROOT / "requirements-director.txt").exists()
 
-    assert 'USER_ARTIFACTS_DIR = REPO_ROOT / "user_artifacts"' in source
-    assert 'DEFAULT_BASE_DIR = USER_ARTIFACTS_DIR / "interviews"' in source
-    assert 'STAFFING_DB_PATH = DEFAULT_BASE_DIR / "staffing_dashboard.sqlite3"' in source
-    assert 'DEFAULT_BASE_DIR = REPO_ROOT / "interviews"' not in source
+
+def test_setup_and_run_passes_director_staffing_mode_to_pyside() -> None:
+    script_text = Path("setup_and_run.ps1").read_text(encoding="utf-8")
+
+    assert "[switch]$DirectorStaffingMode" in script_text
+    assert "[string]$DirectorSchool = \"\"" in script_text
+    assert "$Cfg.App.PreferredUiMode = \"pyside\"" in script_text
+    assert '$wrapperArgs += "--director-staffing"' in script_text
+    assert '$wrapperArgs += @("--director-school", $DirectorSchool.Trim())' in script_text
 
 
-def test_staffing_dashboard_app_contract_mentions_director_entrypoint() -> None:
-    contract = yaml.safe_load(APP_CONTRACT.read_text(encoding="utf-8"))
-    system = yaml.safe_load((ROOT / "contracts" / "system.contract.yaml").read_text(encoding="utf-8"))
-    architecture = yaml.safe_load((ROOT / "contracts" / "architecture.contract.yaml").read_text(encoding="utf-8"))
-
-    assert contract["module"]["path"] == "src/staffing_dashboard_app.py"
-    assert "director" in contract["module"]["description"].lower()
-    assert "staffing_dashboard_app" in system["modules"]
-    assert "director_staffing_launcher" in system["modules"]
-    assert "director_staffing_dashboard_service" in architecture["services"]
+def _load_launcher_generator():
+    path = ROOT / "tools" / "generate_director_staffing_launchers.py"
+    spec = importlib.util.spec_from_file_location("generate_director_staffing_launchers", path)
+    assert spec is not None
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module

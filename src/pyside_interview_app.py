@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import queue
@@ -71,6 +72,7 @@ from ui_mode_switch import switch_to_ui_mode
 
 APP_TITLE = "Interview Assistant"
 NAVIGATION = ["Interviews", "Candidates", "Offers", "Staffing", "Onboarding", "Admin"]
+DIRECTOR_STAFFING_NAVIGATION = ["Staffing"]
 SETUP_STEPS = ["Candidate", "Interview Plan", "Ready"]
 STAFFING_DB_PATH = DEFAULT_BASE_DIR / "staffing_dashboard.sqlite3"
 STAFFING_SEED_PATH = CONFIG_DIR / "staffing_seed.json"
@@ -175,6 +177,7 @@ class InterviewRedesignModel:
     flows: dict[str, TrackFlow]
     rubric: dict[str, Any]
     history_path: Path
+    director_staffing_school: str = ""
 
 
 @dataclass(frozen=True)
@@ -1058,6 +1061,20 @@ def build_interview_redesign_model(
     )
 
 
+def build_director_staffing_model(
+    model: InterviewRedesignModel | None = None,
+    *,
+    school: str = "",
+) -> InterviewRedesignModel:
+    base_model = model or build_interview_redesign_model()
+    return replace(
+        base_model,
+        app_title="Director Staffing Dashboard",
+        navigation=list(DIRECTOR_STAFFING_NAVIGATION),
+        director_staffing_school=str(school or "").strip(),
+    )
+
+
 def build_pyside_onboarding_board(
     *,
     employees: list[Any],
@@ -1367,6 +1384,8 @@ class PySideInterviewWindow:
         self.QtGui = QtGui
         self.QtWidgets = QtWidgets
         self.model = model
+        self.director_staffing_mode = list(model.navigation) == DIRECTOR_STAFFING_NAVIGATION
+        self.director_staffing_school = str(getattr(model, "director_staffing_school", "") or "").strip()
         self.session_track_key = next(iter(model.flows), "")
         self.session_index = 0
         self.session_answers: dict[str, dict[str, Any]] = {}
@@ -1418,17 +1437,26 @@ class PySideInterviewWindow:
         content = QtWidgets.QWidget()
         content_layout = QtWidgets.QVBoxLayout(content)
         content_layout.setContentsMargins(0, 0, 0, 0)
-        content_layout.addLayout(self._ui_switch_row())
+        if not self.director_staffing_mode:
+            content_layout.addLayout(self._ui_switch_row())
         content_layout.addWidget(self.stack, 1)
+        if self.director_staffing_mode:
+            self.sidebar.hide()
         layout.addWidget(content, 1)
         self.window.setCentralWidget(root)
 
-        self.stack.addWidget(self._interviews_page())
-        self.stack.addWidget(self._candidates_page())
-        self.stack.addWidget(self._offer_page())
-        self.stack.addWidget(self._staffing_page())
-        self.stack.addWidget(self._onboarding_page())
-        self.stack.addWidget(self._admin_page())
+        page_builders = {
+            "Interviews": self._interviews_page,
+            "Candidates": self._candidates_page,
+            "Offers": self._offer_page,
+            "Staffing": self._staffing_page,
+            "Onboarding": self._onboarding_page,
+            "Admin": self._admin_page,
+        }
+        for name in model.navigation:
+            builder = page_builders.get(name)
+            if builder is not None:
+                self.stack.addWidget(builder())
         self.sidebar.setCurrentRow(0)
 
     def show(self) -> None:
@@ -3593,7 +3621,7 @@ class PySideInterviewWindow:
             if len(existing_assignments) < seed_assignment_count:
                 self.staffing_store.import_seed_file(STAFFING_SEED_PATH)
         service = StaffingService(self.staffing_store, notification_service=self._notification_service())
-        metrics = service.staffing_metrics(today=date.today())
+        metrics = service.staffing_metrics(today=date.today(), school=self.director_staffing_school)
         if self.staffing_metrics_label is not None:
             self.staffing_metrics_label.setText(
                 f"Open positions: {metrics.open_count}    "
@@ -4013,17 +4041,36 @@ class PySideInterviewWindow:
         return page
 
 
-def launch_pyside_interview_app(model: InterviewRedesignModel | None = None) -> int:
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Launch the PySide interview assistant.")
+    parser.add_argument("--director-staffing", action="store_true", help="Open only the Staffing dashboard for directors.")
+    parser.add_argument("--director-school", default="", help="Limit director Staffing dashboard to one school.")
+    return parser.parse_args(list(argv) if argv is not None else None)
+
+
+def launch_pyside_interview_app(
+    model: InterviewRedesignModel | None = None,
+    *,
+    director_staffing: bool = False,
+    director_school: str = "",
+) -> int:
     _QtCore, _QtGui, QtWidgets = _import_qt()
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv)
     _apply_styles(app)
-    window = PySideInterviewWindow(model or build_interview_redesign_model())
+    active_model = model or build_interview_redesign_model()
+    if director_staffing:
+        active_model = build_director_staffing_model(active_model, school=director_school)
+    window = PySideInterviewWindow(active_model)
     window.show()
     return app.exec()
 
 
-def main() -> int:
-    return launch_pyside_interview_app()
+def main(argv: Sequence[str] | None = None) -> int:
+    args = parse_args(argv)
+    return launch_pyside_interview_app(
+        director_staffing=bool(args.director_staffing),
+        director_school=str(args.director_school or ""),
+    )
 
 
 if __name__ == "__main__":

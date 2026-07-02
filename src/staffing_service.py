@@ -408,10 +408,13 @@ class StaffingService:
             self._emit_person_event(updated.person_id, updated)
         return _result(updated)
 
-    def staffing_metrics(self, *, today: date) -> StaffingMetrics:
+    def staffing_metrics(self, *, today: date, school: str = "") -> StaffingMetrics:
         self.flush_pending_operations()
         rows: list[StaffingMetricRow] = []
+        school_filter = str(school or "").strip()
         for assignment in self.store.list_assignments():
+            if school_filter and assignment.school != school_filter:
+                continue
             days_open = None
             if assignment.status in {"need_now", "replace"} and assignment.current_opened_date:
                 days_open = max(0, (today - _parse_timestamp(assignment.current_opened_date).date()).days)
@@ -437,6 +440,8 @@ class StaffingService:
                 )
             )
         rows = self._project_pending_metric_rows(rows)
+        if school_filter:
+            rows = [row for row in rows if row.school == school_filter]
         open_count = 0
         open_over_7_days = 0
         projected_rows: list[StaffingMetricRow] = []
@@ -450,7 +455,7 @@ class StaffingService:
             else:
                 days_open = None
             projected_rows.append(replace(row, days_open=days_open))
-        closed_days = self.store.closed_days_to_fill()
+        closed_days = self.store.closed_days_to_fill(school=school_filter)
         avg_days = round(sum(closed_days) / len(closed_days), 1) if closed_days else 0.0
         return StaffingMetrics(
             open_count=open_count,

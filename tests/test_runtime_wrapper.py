@@ -18,6 +18,37 @@ def test_runtime_wrapper_forwards_to_platform_services() -> None:
     assert runtime_wrapper.traceback_origin is platform_services.traceback_origin
 
 
+def test_runtime_wrapper_forwards_target_args(tmp_path: Path) -> None:
+    target = tmp_path / "target.py"
+    output = tmp_path / "argv.json"
+    target.write_text(
+        "import json, sys\n"
+        f"open({str(output)!r}, 'w', encoding='utf-8').write(json.dumps(sys.argv))\n",
+        encoding="utf-8",
+    )
+
+    exit_code = runtime_wrapper.main(
+        [
+            "--target",
+            str(target),
+            "--app-root",
+            str(tmp_path),
+            "--director-staffing",
+        ]
+    )
+
+    assert exit_code == 0
+    assert json.loads(output.read_text(encoding="utf-8")) == [str(target.resolve()), "--director-staffing"]
+
+
+def test_runtime_wrapper_treats_zero_system_exit_as_success(tmp_path: Path) -> None:
+    target = tmp_path / "target.py"
+    target.write_text("raise SystemExit(0)\n", encoding="utf-8")
+
+    assert runtime_wrapper.main(["--target", str(target), "--app-root", str(tmp_path)]) == 0
+    assert not list(tmp_path.glob("logs/diagnostics/runtime_wrapper_main_*.json"))
+
+
 def test_write_wrapper_crash_report_captures_origin(tmp_path) -> None:
     try:
         _explode()

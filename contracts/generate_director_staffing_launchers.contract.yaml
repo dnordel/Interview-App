@@ -1,0 +1,78 @@
+module:
+  name: generate_director_staffing_launchers
+  language: python
+  path: tools/generate_director_staffing_launchers.py
+  version: 1.0.0
+  description: Generates one director staffing Windows launcher per school in config/staffing_seed.json, with each launcher using the full setup_and_run PySide path and passing its school as the director filter.
+functions:
+- name: load_staffing_schools
+  description: Read staffing_seed.json and return ordered school names.
+  locked: false
+  inputs:
+    seed_path:
+      type: Path
+      required: false
+      default: DEFAULT_SEED_PATH
+  returns:
+    type: list[str]
+  exceptions:
+  - OSError
+  - JSONDecodeError
+  - ValueError
+  side_effects: reads staffing seed JSON
+- name: director_launcher_filename
+  description: Build a Windows-safe director launcher filename for one school.
+  locked: false
+  inputs:
+    school:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions:
+  - ValueError
+  side_effects: none
+- name: director_launcher_body
+  description: Build the .bat launcher body for one school-specific director staffing dashboard.
+  locked: false
+  inputs:
+    school:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: generate_director_launchers
+  description: Create or update school-specific director staffing launcher .bat files under the repository root.
+  locked: false
+  inputs:
+    root:
+      type: Path
+      required: false
+      default: ROOT
+    seed_path:
+      type: Path
+      required: false
+      default: DEFAULT_SEED_PATH
+  returns:
+    type: list[Path]
+  exceptions:
+  - OSError
+  - JSONDecodeError
+  - ValueError
+  side_effects: writes one .bat file per staffing seed school
+- name: main
+  description: CLI entry point for regenerating director staffing launchers from the current staffing seed.
+  locked: false
+  inputs: {}
+  returns:
+    type: int
+  exceptions:
+  - OSError
+  - JSONDecodeError
+  - ValueError
+  side_effects: writes one .bat file per staffing seed school
+classes: []
+data_structures: []
+dependencies: []

@@ -2,10 +2,11 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.25.0
+  version: 1.26.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, workbook-style staffing dashboard tabs, explicit school selector, actions, and metrics,
+    director staffing-only launch mode that hides non-staffing navigation, filters to an assigned school when supplied, and reuses the same Staffing page,
     compact home draft actions beside the start action, guided review-then-apply Admin Studio backed by admin_studio
     with readable wrapped admin tables, visible edit mode, dirty-cell affordances,
     unsaved-change discard confirmation, validation-blocked apply, interview notes
@@ -40,6 +41,23 @@ functions:
   exceptions:
   - ValueError
   side_effects: Reads local rubric, question override, user_artifacts history JSON, and root-level legacy history JSON when the canonical history path is used; may normalize question flow through QuestionOverridesStore.
+- name: build_director_staffing_model
+  description: Return a director staffing-only PySide model that keeps full app data/contracts but exposes only the Staffing navigation surface and optional assigned school filter.
+  locked: false
+  inputs:
+    model:
+      type: InterviewRedesignModel | None
+      required: false
+      default: null
+    school:
+      type: str
+      required: false
+      default: ''
+  returns:
+    type: InterviewRedesignModel
+  exceptions:
+  - ValueError
+  side_effects: May read local app config/history when no model is supplied.
 - name: build_pyside_onboarding_board
   description: Build PySide onboarding dashboard counts and employee next-task rows from existing onboarding state.
   locked: false
@@ -167,22 +185,47 @@ functions:
   exceptions: []
   side_effects: none
 - name: launch_pyside_interview_app
-  description: Launch the PySide6 redesigned desktop shell using the supplied model or current repository configuration.
+  description: Launch the PySide6 redesigned desktop shell using the supplied model or current repository configuration, optionally in director staffing-only mode.
   locked: false
   inputs:
     model:
       type: InterviewRedesignModel | None
       required: false
       default: null
+    director_staffing:
+      type: bool
+      required: false
+      default: false
+    director_school:
+      type: str
+      required: false
+      default: ''
   returns:
     type: int
   exceptions:
   - PySide6UnavailableError
   side_effects: Creates a QApplication and opens the redesigned desktop window.
+- name: parse_args
+  description: Parse PySide app CLI arguments including director staffing-only mode and optional director school filter.
+  locked: false
+  inputs:
+    argv:
+      type: Sequence[str] | None
+      required: false
+      default: null
+  returns:
+    type: argparse.Namespace
+  exceptions:
+  - SystemExit
+  side_effects: none
 - name: main
   description: Command-line entry point for the PySide6 redesigned interview assistant.
   locked: false
-  inputs: {}
+  inputs:
+    argv:
+      type: Sequence[str] | None
+      required: false
+      default: null
   returns:
     type: int
   exceptions:
@@ -1268,7 +1311,8 @@ data_structures:
   type: dataclass
   description: Headless UI model for navigation, setup readiness, interview flows,
     home dashboard/history data, rubric data, and the history JSON path used for
-    offer-status persistence.
+    offer-status persistence; director_staffing_school optionally filters the Staffing
+    page to one assigned school in director mode.
 - name: PySideHistoryRow
   type: dataclass
   description: Render-ready finalized interview history row with stable row key,

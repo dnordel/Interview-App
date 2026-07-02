@@ -305,7 +305,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: parse_args
-  description: Parse runtime wrapper CLI arguments.
+  description: Parse runtime wrapper CLI arguments and preserve unknown target arguments for the launched script.
   locked: false
   inputs:
     argv:
@@ -318,7 +318,7 @@ functions:
   - SystemExit
   side_effects: none
 - name: main
-  description: Execute a target script with runtime logging and crash-report guards.
+  description: Execute a target script with runtime logging and crash-report guards, forwarding target arguments through sys.argv and treating SystemExit(0) as a normal target exit.
   locked: false
   inputs:
     argv:
@@ -330,8 +330,8 @@ functions:
   exceptions:
   - FileNotFoundError
   - BaseException
-  side_effects: Writes logs and crash-report artifacts, installs exception hooks,
-    and may execute target script.
+  side_effects: Writes logs and crash-report artifacts for nonzero target failures, installs exception hooks,
+    mutates sys.argv during target execution, and may execute target script.
 - name: _resolve_app_root
   description: Resolve app root for runtime wrapper logs from CLI input and target
     path.

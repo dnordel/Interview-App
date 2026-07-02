@@ -44,16 +44,20 @@ modules:
     - notification_service
     - staffing_models
     - staffing_store
-  staffing_dashboard_app:
-    path: src/staffing_dashboard_app.py
+  director_staffing_launcher:
+    path: tools/generate_director_staffing_launchers.py
     depends_on:
+    - pyside_interview_app
+    - setup_and_run
     - staffing_service
     - staffing_store
-    - PySide6
-  director_staffing_launcher:
-    path: setup_director_staffing.ps1
+    - config_staffing_seed_json
+  setup_and_run:
+    path: setup_and_run.ps1
     depends_on:
-    - staffing_dashboard_app
+    - runtime_wrapper
+    - pyside_interview_app
+    - interview_app
   staffing_store:
     path: src/staffing_store.py
     depends_on:
@@ -140,6 +144,9 @@ modules:
     depends_on: []
   question_overrides_json:
     path: config/question_overrides.json
+    depends_on: []
+  config_staffing_seed_json:
+    path: config/staffing_seed.json
     depends_on: []
   deepseek_prompts_json:
     path: config/deepseek_prompts.json

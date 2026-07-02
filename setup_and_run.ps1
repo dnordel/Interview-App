@@ -1,6 +1,8 @@
 #requires -version 5.1
 param(
   [switch]$DebugMode,
+  [switch]$DirectorStaffingMode,
+  [string]$DirectorSchool = "",
   [ValidateSet("tk", "pyside")]
   [string]$UiMode = ""
 )
@@ -193,7 +195,10 @@ function Ensure-ConfigShape($cfg) {
   if ($cfg.App.PSObject.Properties.Name -notcontains "PreferredUiMode") {
     $cfg.App | Add-Member -NotePropertyName PreferredUiMode -NotePropertyValue $DefaultUiMode -Force
   }
-  if ($UiMode) {
+  if ($DirectorStaffingMode) {
+    $Cfg.App.PreferredUiMode = "pyside"
+  }
+  elseif ($UiMode) {
     $cfg.App.PreferredUiMode = $UiMode
   }
   elseif ($env:INTERVIEW_APP_UI_MODE -in @("tk", "pyside")) {
@@ -1505,6 +1510,12 @@ $form.Add_Shown({
     $workDir = Split-Path -Parent $appFull
     $debugFlag = if ($DebugMode) { "--debug" } else { "" }
     $wrapperArgs = @("--target", $appFull, "--app-root", $AppDir)
+    if ($DirectorStaffingMode) {
+      $wrapperArgs += "--director-staffing"
+      if ($DirectorSchool.Trim()) {
+        $wrapperArgs += @("--director-school", $DirectorSchool.Trim())
+      }
+    }
     if ($debugFlag) {
       $wrapperArgs += $debugFlag
     }

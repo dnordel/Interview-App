@@ -156,10 +156,14 @@ classes:
       today:
         type: date
         required: true
+      school:
+        type: str
+        required: false
+        default: ''
     returns:
       type: StaffingMetrics
     exceptions: []
-    side_effects: Attempts to replay pending operations when unlocked, reads assignment, workbook display metadata, pending queue records, and filled-history rows from StaffingStore to compute dashboard metrics with queued changes projected for immediate UI feedback.
+    side_effects: Attempts to replay pending operations when unlocked, reads assignment, workbook display metadata, pending queue records, and filled-history rows from StaffingStore to compute dashboard metrics with queued changes projected for immediate UI feedback; when school is provided, returns metrics and rows only for that school.
   - name: flush_pending_operations
     inputs: {}
     returns:

@@ -308,14 +308,23 @@ class StaffingStore:
             ).fetchall()
             return [self.assignment_context(conn, int(row["id"])) for row in rows]
 
-    def closed_days_to_fill(self) -> list[int]:
+    def closed_days_to_fill(self, *, school: str = "") -> list[int]:
         with self.connect() as conn:
+            params: tuple[Any, ...] = ()
+            school_filter = ""
+            if str(school or "").strip():
+                school_filter = "AND s.name = ?"
+                params = (str(school).strip(),)
             rows = conn.execute(
-                """
-                SELECT days_to_fill FROM assignment_history
-                WHERE closed_reason = 'filled' AND days_to_fill IS NOT NULL
-                ORDER BY id
-                """
+                f"""
+                SELECT h.days_to_fill FROM assignment_history h
+                JOIN classrooms c ON c.id = h.classroom_id
+                JOIN schools s ON s.id = c.school_id
+                WHERE h.closed_reason = 'filled' AND h.days_to_fill IS NOT NULL
+                {school_filter}
+                ORDER BY h.id
+                """,
+                params,
             ).fetchall()
             return [int(row["days_to_fill"]) for row in rows]
 

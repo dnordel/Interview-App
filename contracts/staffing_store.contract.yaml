@@ -118,11 +118,15 @@ classes:
     exceptions: []
     side_effects: Reads staffing SQLite database.
   - name: closed_days_to_fill
-    inputs: {}
+    inputs:
+      school:
+        type: str
+        required: false
+        default: ''
     returns:
       type: list[int]
     exceptions: []
-    side_effects: Reads closed filled assignment history rows from staffing SQLite database.
+    side_effects: Reads closed filled assignment history rows from staffing SQLite database; when school is provided, returns only history rows for that school.
   - name: get_assignment
     inputs:
       assignment_id:

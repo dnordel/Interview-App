@@ -1190,7 +1190,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--target", required=True, help="Path to the target Python script to execute")
     parser.add_argument("--app-root", default="", help="Optional repository/app root for logs")
     parser.add_argument("--debug", action="store_true", help="Enable deep call tracing")
-    return parser.parse_args(argv)
+    args, target_args = parser.parse_known_args(argv)
+    args.target_args = target_args
+    return args
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1212,8 +1214,25 @@ def main(argv: list[str] | None = None) -> int:
     logger = logging.getLogger("runtime_wrapper")
     logger.info("runtime_wrapper_start", extra={"target": str(target_path), "debug": debug_enabled})
 
+    previous_argv = sys.argv[:]
+    sys.argv = [str(target_path), *list(getattr(args, "target_args", []))]
     try:
         runpy.run_path(str(target_path), run_name="__main__")
+    except SystemExit as exc:
+        code = exc.code if isinstance(exc.code, int) else 0 if exc.code is None else 1
+        if code == 0:
+            logger.info("runtime_wrapper_exit")
+            return 0
+        report_path = write_wrapper_crash_report(
+            app_root=app_root,
+            source="runtime_wrapper_main",
+            exc_type=type(exc),
+            exc_value=exc,
+            exc_traceback=exc.__traceback__,
+        )
+        logger.error("runtime_wrapper_fatal_exception", exc_info=(type(exc), exc, exc.__traceback__))
+        logger.error("runtime_wrapper_crash_report", extra={"path": str(report_path) if report_path else ""})
+        raise
     except BaseException as exc:  # noqa: BLE001
         report_path = write_wrapper_crash_report(
             app_root=app_root,
@@ -1225,6 +1244,8 @@ def main(argv: list[str] | None = None) -> int:
         logger.error("runtime_wrapper_fatal_exception", exc_info=(type(exc), exc, exc.__traceback__))
         logger.error("runtime_wrapper_crash_report", extra={"path": str(report_path) if report_path else ""})
         raise
+    finally:
+        sys.argv = previous_argv
 
     logger.info("runtime_wrapper_exit")
     return 0
