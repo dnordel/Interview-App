@@ -2839,6 +2839,7 @@ class PySideInterviewWindow:
         self.admin_edit_mode = False
         self._admin_tables: dict[str, Any] = {}
         self._admin_table_editable_columns: dict[str, set[int]] = {}
+        self._admin_syncing_table_edits = False
 
         toolbar = self.QtWidgets.QHBoxLayout()
         self.admin_status_label = self._label("", "AdminStudioStatus")
@@ -2984,7 +2985,7 @@ class PySideInterviewWindow:
         for event_type in SUPPORTED_NOTIFICATION_EVENTS:
             rule = by_event.get(event_type)
             if rule is None:
-                rows.append([event_type, event_type, "true", "", "", ""])
+                rows.append([event_type, event_type, "false", "", "", ""])
                 continue
             recipients = ", ".join(recipient.email for recipient in rule.recipients if recipient.active)
             rows.append([
@@ -3052,17 +3053,34 @@ class PySideInterviewWindow:
         for row_index, row in enumerate(rows):
             for column, value in enumerate(row):
                 table.setItem(row_index, column, self._admin_item(str(value), editable=False))
+        table.itemChanged.connect(self._mark_admin_cell_dirty)
         table.resizeRowsToContents()
         return table
 
     def _admin_item(self, value: str, *, editable: bool) -> Any:
         item = self.QtWidgets.QTableWidgetItem(value)
         item.setData(self.QtCore.Qt.ItemDataRole.UserRole, value)
+        item.setToolTip("")
         if editable:
             item.setFlags(item.flags() | self.QtCore.Qt.ItemFlag.ItemIsEditable)
         else:
             item.setFlags(item.flags() & ~self.QtCore.Qt.ItemFlag.ItemIsEditable)
         return item
+
+    def _mark_admin_cell_dirty(self, item: Any) -> None:
+        if getattr(self, "_admin_syncing_table_edits", False):
+            return
+        baseline = str(item.data(self.QtCore.Qt.ItemDataRole.UserRole) or "")
+        current = item.text()
+        is_editable = bool(item.flags() & self.QtCore.Qt.ItemFlag.ItemIsEditable)
+        if self.admin_edit_mode and is_editable and current != baseline:
+            item.setData(self.QtCore.Qt.ItemDataRole.BackgroundRole, self.QtGui.QBrush(self.QtGui.QColor("#ffe8a3")))
+            item.setToolTip("Unsaved change. Review changes to apply or discard to revert.")
+            self.admin_status_label.setText("Unsaved table edits. Review changes or discard.")
+            return
+        if self.admin_edit_mode and is_editable:
+            item.setData(self.QtCore.Qt.ItemDataRole.BackgroundRole, self.QtGui.QBrush(self.QtGui.QColor("#fff7cc")))
+            item.setToolTip("Editable. Double-click or type to change, then review changes.")
 
     def _set_admin_editing_enabled(self, enabled: bool) -> None:
         self.admin_edit_mode = enabled
@@ -3084,14 +3102,16 @@ class PySideInterviewWindow:
                     if enabled and column in editable_columns:
                         item.setFlags(item.flags() | self.QtCore.Qt.ItemFlag.ItemIsEditable)
                         item.setData(self.QtCore.Qt.ItemDataRole.BackgroundRole, self.QtGui.QBrush(self.QtGui.QColor("#fff7cc")))
+                        item.setToolTip("Editable. Double-click or type to change, then review changes.")
                     else:
                         item.setFlags(item.flags() & ~self.QtCore.Qt.ItemFlag.ItemIsEditable)
                         item.setData(self.QtCore.Qt.ItemDataRole.BackgroundRole, None)
+                        item.setToolTip("")
             table.resizeRowsToContents()
         selector = getattr(self, "admin_deepseek_model_selector", None)
         if selector is not None:
             selector.setEnabled(enabled)
-        self.admin_edit_button.setText("Editing" if enabled else "Edit")
+        self.admin_edit_button.setText("Editing active" if enabled else "Start editing")
         self.admin_edit_button.setEnabled(not enabled)
         self.admin_review_button.setEnabled(enabled)
         self.admin_discard_button.setEnabled(enabled)
@@ -3107,6 +3127,15 @@ class PySideInterviewWindow:
         if self.admin_edit_mode:
             status = f"Edit mode    {status}"
         self.admin_status_label.setText(status)
+
+    def _has_admin_table_edits(self) -> bool:
+        for table in self._admin_tables.values():
+            for row_index in range(table.rowCount()):
+                for column in range(table.columnCount()):
+                    item = table.item(row_index, column)
+                    if item is not None and item.text() != str(item.data(self.QtCore.Qt.ItemDataRole.UserRole) or ""):
+                        return True
+        return False
 
     def _capture_admin_table_edits(self) -> None:
         questions = self._admin_tables.get("questions")
@@ -3192,7 +3221,16 @@ class PySideInterviewWindow:
         if not summary.changed_files:
             self.admin_status_label.setText("No admin changes to apply.")
             return
-        message = "Apply these admin changes?\n\n" + "\n".join(summary.lines[:12])
+        file_lines = "\n".join(f"- {filename}" for filename in summary.changed_files)
+        change_lines = "\n".join(summary.lines[:12]) or "Admin settings changed."
+        message = (
+            "Apply these admin changes?\n\n"
+            "Changed files:\n"
+            f"{file_lines}\n\n"
+            "Review:\n"
+            f"{change_lines}\n\n"
+            "Backups will be created before writing."
+        )
         result = self.QtWidgets.QMessageBox.question(
             self.window,
             "Review Admin Changes",
@@ -3206,13 +3244,25 @@ class PySideInterviewWindow:
         if not applied.applied:
             self.QtWidgets.QMessageBox.warning(self.window, "Admin Studio", "\n".join(applied.validation_errors or ["Admin changes were not applied."]))
             return
+        self._commit_admin_table_baselines()
         self.admin_draft = self.admin_studio.create_draft()
         self._set_admin_editing_enabled(False)
         self._sync_admin_status()
         self.admin_status_label.setText("Admin changes applied.")
 
     def _discard_admin_changes(self) -> None:
+        if self.admin_draft.is_dirty or self._has_admin_table_edits():
+            result = self.QtWidgets.QMessageBox.question(
+                self.window,
+                "Discard Admin Changes",
+                "Discard unsaved Admin Studio edits and restore the last saved settings?",
+                self.QtWidgets.QMessageBox.StandardButton.Yes | self.QtWidgets.QMessageBox.StandardButton.No,
+                self.QtWidgets.QMessageBox.StandardButton.No,
+            )
+            if result != self.QtWidgets.QMessageBox.StandardButton.Yes:
+                return
         self.admin_draft = self.admin_draft.discard()
+        self._revert_admin_table_edits()
         selector = getattr(self, "admin_deepseek_model_selector", None)
         if selector is not None:
             selected = str(self.admin_draft.app_settings.get("deepseek_summary_model", "") or DEFAULT_DEEPSEEK_MODEL).strip()
@@ -3220,6 +3270,35 @@ class PySideInterviewWindow:
             selector.setCurrentIndex(index if index >= 0 else selector.findData(DEFAULT_DEEPSEEK_MODEL))
         self._set_admin_editing_enabled(False)
         self._sync_admin_status()
+
+    def _revert_admin_table_edits(self) -> None:
+        self._admin_syncing_table_edits = True
+        try:
+            for table in self._admin_tables.values():
+                for row_index in range(table.rowCount()):
+                    for column in range(table.columnCount()):
+                        item = table.item(row_index, column)
+                        if item is None:
+                            continue
+                        baseline = str(item.data(self.QtCore.Qt.ItemDataRole.UserRole) or "")
+                        item.setText(baseline)
+                        item.setData(self.QtCore.Qt.ItemDataRole.BackgroundRole, None)
+                        item.setToolTip("")
+        finally:
+            self._admin_syncing_table_edits = False
+
+    def _commit_admin_table_baselines(self) -> None:
+        self._admin_syncing_table_edits = True
+        try:
+            for table in self._admin_tables.values():
+                for row_index in range(table.rowCount()):
+                    for column in range(table.columnCount()):
+                        item = table.item(row_index, column)
+                        if item is None:
+                            continue
+                        item.setData(self.QtCore.Qt.ItemDataRole.UserRole, item.text())
+        finally:
+            self._admin_syncing_table_edits = False
 
     def _onboarding_page(self) -> Any:
         page, layout = self._page()

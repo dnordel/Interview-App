@@ -15,7 +15,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-02T16:09:54.978620+00:00'
+generated_at_utc: '2026-07-02T21:39:24.140886+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -105,7 +105,7 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/admin_studio.contract.yaml
-  symbol: admin_studio.AdminStudioDraft.update_notification_rule
+  symbol: admin_studio.AdminStudioDraft.update_deepseek_model
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -114,14 +114,14 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/admin_studio.contract.yaml
-  symbol: admin_studio.AdminStudioDraft.update_deepseek_model
+  symbol: admin_studio.AdminStudioDraft.update_notification_rule
   kind: method
   tests:
-  - path: tests/test_admin_studio.py
+  - path: tests/test_contract_coverage_matrix.py
     focus:
     - behavior
-    - validation
-    - persistence
+    - parameter_validation
+    - return_type
 - contract: contracts/admin_studio.contract.yaml
   symbol: admin_studio.AdminStudioDraft.update_prompt
   kind: method
@@ -9381,6 +9381,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._commit_admin_table_baselines
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._create_history_table
   kind: method
   tests:
@@ -9462,7 +9471,25 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._has_admin_table_edits
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._history_notes_action_state
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._mark_admin_cell_dirty
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -9652,6 +9679,15 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._retry_history_deepseek
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._revert_admin_table_edits
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py

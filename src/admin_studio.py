@@ -6,6 +6,7 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
+from string import Formatter
 from typing import Any
 
 from data_store import InterviewAppSettingsStore, QuestionOverridesStore, SchoolOfferSettingsStore
@@ -217,7 +218,7 @@ class AdminStudioDraft:
             for email in recipients_text.split(",")
             if email.strip()
         ]
-        active_text = str(updates.get("active", "true")).strip().lower()
+        active = _parse_notification_active(updates.get("active", current.active if current else "true"))
         replacement = NotificationRule(
             id=current.id if current else None,
             event_type=event_type,
@@ -225,7 +226,7 @@ class AdminStudioDraft:
             subject_template=str(updates.get("subject_template", current.subject_template if current else "")).strip(),
             body_template=str(updates.get("body_template", current.body_template if current else "")).strip(),
             recipients=recipients if recipients_text else (current.recipients if current else []),
-            active=active_text not in {"0", "false", "no", "off"},
+            active=active,
             created_at=current.created_at if current else "",
             updated_at=current.updated_at if current else "",
         )
@@ -258,6 +259,19 @@ class AdminStudioDraft:
                 break
             if not rule.label.strip():
                 errors.append("Notification label is required.")
+                break
+            if rule.active and not rule.subject_template.strip():
+                errors.append(f"Active notification rule '{rule.event_type}' requires a subject template.")
+                break
+            if rule.active and not rule.body_template.strip():
+                errors.append(f"Active notification rule '{rule.event_type}' requires a body template.")
+                break
+            if rule.active and not [recipient for recipient in rule.recipients if recipient.active]:
+                errors.append(f"Active notification rule '{rule.event_type}' requires at least one active recipient.")
+                break
+            template_errors = _notification_template_errors(rule)
+            if template_errors:
+                errors.extend(template_errors)
                 break
             for recipient in rule.recipients:
                 if not is_valid_email_address(recipient.email):
@@ -413,6 +427,30 @@ def _read_json_object(path: Path) -> dict[str, Any]:
     except (OSError, json.JSONDecodeError):
         return {}
     return data if isinstance(data, dict) else {}
+
+
+def _parse_notification_active(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    text = str(value or "").strip().lower()
+    if text in {"1", "true", "yes", "on", "active"}:
+        return True
+    if text in {"0", "false", "no", "off", "inactive"}:
+        return False
+    raise ValueError("Notification Active must be true or false.")
+
+
+def _notification_template_errors(rule: NotificationRule) -> list[str]:
+    errors: list[str] = []
+    for field_name, template in (
+        ("subject", rule.subject_template),
+        ("body", rule.body_template),
+    ):
+        try:
+            list(Formatter().parse(template))
+        except ValueError:
+            errors.append(f"Notification {field_name} template for '{rule.event_type}' has invalid placeholders.")
+    return errors
 
 
 def _trait_change_lines(before: dict[str, Any], after: dict[str, Any]) -> list[str]:

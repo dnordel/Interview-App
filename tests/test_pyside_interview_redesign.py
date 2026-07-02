@@ -1024,10 +1024,15 @@ def test_pyside_admin_school_folder_settings_review_confirm_persists(tmp_path: P
     overrides_path = _write_test_overrides(tmp_path)
     prompts_path = tmp_path / "deepseek_prompts.json"
     prompts_path.write_text(json.dumps({"answer_summary_user": "Summarize."}), encoding="utf-8")
+    app_settings_path = tmp_path / "interview_app_settings.json"
+    app_settings_path.write_text(json.dumps({"deepseek_summary_model": "deepseek-r1:14b"}), encoding="utf-8")
+    notification_rules_path = tmp_path / "notification_rules.sqlite3"
     monkeypatch.setattr(pyside_interview_app, "SCHOOL_OFFER_SETTINGS_PATH", settings_path)
     monkeypatch.setattr(pyside_interview_app, "DEFAULT_RUBRIC_PATH", rubric_path)
     monkeypatch.setattr(pyside_interview_app, "QUESTIONS_OVERRIDE_PATH", overrides_path)
     monkeypatch.setattr(pyside_interview_app, "DEEPSEEK_PROMPTS_CONFIG_PATH", prompts_path)
+    monkeypatch.setattr(pyside_interview_app, "INTERVIEW_APP_SETTINGS_PATH", app_settings_path)
+    monkeypatch.setattr(pyside_interview_app, "NOTIFICATION_RULES_PATH", notification_rules_path)
     model = build_interview_redesign_model(
         rubric_path=rubric_path,
         overrides_path=overrides_path,
@@ -1978,11 +1983,13 @@ def test_pyside_admin_studio_uses_guided_readonly_sections_until_edit(tmp_path: 
     prompts_path.write_text(json.dumps({"answer_summary_user": "Summarize."}), encoding="utf-8")
     app_settings_path = tmp_path / "interview_app_settings.json"
     app_settings_path.write_text(json.dumps({"deepseek_summary_model": "deepseek-r1:14b"}), encoding="utf-8")
+    notification_rules_path = tmp_path / "notification_rules.sqlite3"
     monkeypatch.setattr(pyside_interview_app, "DEFAULT_RUBRIC_PATH", rubric_path)
     monkeypatch.setattr(pyside_interview_app, "QUESTIONS_OVERRIDE_PATH", overrides_path)
     monkeypatch.setattr(pyside_interview_app, "SCHOOL_OFFER_SETTINGS_PATH", settings_path)
     monkeypatch.setattr(pyside_interview_app, "DEEPSEEK_PROMPTS_CONFIG_PATH", prompts_path)
     monkeypatch.setattr(pyside_interview_app, "INTERVIEW_APP_SETTINGS_PATH", app_settings_path)
+    monkeypatch.setattr(pyside_interview_app, "NOTIFICATION_RULES_PATH", notification_rules_path)
     model = build_interview_redesign_model(
         rubric_path=rubric_path,
         overrides_path=overrides_path,
@@ -2016,11 +2023,60 @@ def test_pyside_admin_studio_uses_guided_readonly_sections_until_edit(tmp_path: 
     assert model_selector.currentData() == "deepseek-r1:14b"
     assert model_selector.isEnabled() is False
     window.admin_edit_button.click()
-    assert window.admin_edit_button.text() == "Editing"
+    assert window.admin_edit_button.text() == "Editing active"
     assert "Edit mode" in window.admin_status_label.text()
     assert questions_table.item(0, 4).flags() & qt_core.Qt.ItemFlag.ItemIsEditable
+    assert "Editable" in questions_table.item(0, 4).toolTip()
     assert rubrics_table.item(0, 1).flags() & qt_core.Qt.ItemFlag.ItemIsEditable
     assert model_selector.isEnabled() is True
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_admin_discard_requires_confirmation_and_reverts_table_edits(tmp_path: Path, monkeypatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    rubric_path = _write_test_rubric(tmp_path)
+    overrides_path = _write_test_overrides(tmp_path)
+    settings_path = tmp_path / "school_offer_settings.json"
+    settings_path.write_text(json.dumps({}), encoding="utf-8")
+    prompts_path = tmp_path / "deepseek_prompts.json"
+    prompts_path.write_text(json.dumps({"answer_summary_user": "Summarize."}), encoding="utf-8")
+    app_settings_path = tmp_path / "interview_app_settings.json"
+    app_settings_path.write_text(json.dumps({"deepseek_summary_model": "deepseek-r1:14b"}), encoding="utf-8")
+    notification_rules_path = tmp_path / "notification_rules.sqlite3"
+    monkeypatch.setattr(pyside_interview_app, "DEFAULT_RUBRIC_PATH", rubric_path)
+    monkeypatch.setattr(pyside_interview_app, "QUESTIONS_OVERRIDE_PATH", overrides_path)
+    monkeypatch.setattr(pyside_interview_app, "SCHOOL_OFFER_SETTINGS_PATH", settings_path)
+    monkeypatch.setattr(pyside_interview_app, "DEEPSEEK_PROMPTS_CONFIG_PATH", prompts_path)
+    monkeypatch.setattr(pyside_interview_app, "INTERVIEW_APP_SETTINGS_PATH", app_settings_path)
+    monkeypatch.setattr(pyside_interview_app, "NOTIFICATION_RULES_PATH", notification_rules_path)
+    model = build_interview_redesign_model(
+        rubric_path=rubric_path,
+        overrides_path=overrides_path,
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    questions_table = window.window.findChild(qt_widgets.QTableWidget, "AdminStudioQuestionsTable")
+    window.admin_edit_button.click()
+    questions_table.item(0, 4).setText("Changed question?")
+    assert "Unsaved" in questions_table.item(0, 4).toolTip()
+
+    answers = iter([
+        window.QtWidgets.QMessageBox.StandardButton.No,
+        window.QtWidgets.QMessageBox.StandardButton.Yes,
+    ])
+    monkeypatch.setattr(window.QtWidgets.QMessageBox, "question", lambda *_args, **_kwargs: next(answers))
+
+    window._discard_admin_changes()
+    assert questions_table.item(0, 4).text() == "Changed question?"
+    assert window.admin_edit_mode is True
+
+    window._discard_admin_changes()
+    assert questions_table.item(0, 4).text() == "Why Launch Pad Learning?"
+    assert window.admin_edit_mode is False
     window.window.close()
     app.processEvents()
 

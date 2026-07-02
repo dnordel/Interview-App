@@ -195,6 +195,59 @@ def test_admin_studio_rejects_invalid_notification_recipient(tmp_path: Path) -> 
     assert "Invalid notification recipient email." in draft.validate()
 
 
+def test_admin_studio_rejects_ambiguous_notification_active_value(tmp_path: Path) -> None:
+    studio = AdminStudio.load(_write_admin_files(tmp_path))
+    draft = studio.create_draft()
+
+    with pytest.raises(ValueError, match="Notification Active must be true or false."):
+        draft.update_notification_rule(
+            "offer.accepted",
+            {
+                "label": "Offer accepted",
+                "active": "tru",
+                "subject_template": "Accepted",
+                "body_template": "Accepted",
+                "recipients": "director@example.org",
+            },
+        )
+
+
+def test_admin_studio_requires_complete_active_notification_rule(tmp_path: Path) -> None:
+    studio = AdminStudio.load(_write_admin_files(tmp_path))
+    draft = studio.create_draft()
+
+    draft.update_notification_rule(
+        "offer.accepted",
+        {
+            "label": "Offer accepted",
+            "active": "true",
+            "subject_template": "",
+            "body_template": "Accepted",
+            "recipients": "director@example.org",
+        },
+    )
+
+    assert "Active notification rule 'offer.accepted' requires a subject template." in draft.validate()
+
+
+def test_admin_studio_rejects_malformed_notification_template(tmp_path: Path) -> None:
+    studio = AdminStudio.load(_write_admin_files(tmp_path))
+    draft = studio.create_draft()
+
+    draft.update_notification_rule(
+        "offer.accepted",
+        {
+            "label": "Offer accepted",
+            "active": "true",
+            "subject_template": "Accepted {candidate_name",
+            "body_template": "Accepted",
+            "recipients": "director@example.org",
+        },
+    )
+
+    assert "Notification subject template for 'offer.accepted' has invalid placeholders." in draft.validate()
+
+
 def test_admin_studio_persists_allowed_deepseek_model_choice(tmp_path: Path) -> None:
     paths = _write_admin_files(tmp_path)
     studio = AdminStudio.load(paths)
