@@ -2,8 +2,8 @@ module:
   name: staffing_store
   language: python
   path: src/staffing_store.py
-  version: 0.3.0
-  description: SQLite persistence for staffing schools, classrooms, people, assignments, workbook display metadata, assignment history, and deterministic seed imports.
+  version: 0.3.1
+  description: SQLite persistence for staffing schools, classrooms, people including optional units, assignments, workbook display metadata, assignment history, required staffing indexes, and deterministic seed imports.
 functions: []
 classes:
 - name: StaffingStore

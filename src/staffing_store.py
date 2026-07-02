@@ -46,6 +46,7 @@ class StaffingStore:
                     normalized_name TEXT NOT NULL,
                     role TEXT NOT NULL DEFAULT '',
                     permit_status TEXT NOT NULL DEFAULT 'unknown',
+                    units REAL,
                     notice_given TEXT,
                     final_working_day TEXT,
                     active INTEGER NOT NULL DEFAULT 1,
@@ -84,12 +85,16 @@ class StaffingStore:
                 CREATE INDEX IF NOT EXISTS idx_assignments_classroom_id ON assignments(classroom_id);
                 CREATE INDEX IF NOT EXISTS idx_assignments_person_id ON assignments(person_id);
                 CREATE INDEX IF NOT EXISTS idx_assignments_status ON assignments(status);
+                CREATE INDEX IF NOT EXISTS idx_assignments_opened_date ON assignments(current_opened_date);
                 CREATE INDEX IF NOT EXISTS idx_history_assignment_id ON assignment_history(assignment_id);
+                CREATE INDEX IF NOT EXISTS idx_history_classroom_id ON assignment_history(classroom_id);
+                CREATE INDEX IF NOT EXISTS idx_history_opened_date ON assignment_history(opened_date);
                 CREATE UNIQUE INDEX IF NOT EXISTS idx_history_one_active
                     ON assignment_history(assignment_id)
                     WHERE filled_date IS NULL AND closed_reason IS NULL;
                 """
             )
+            self._ensure_column(conn, "people", "units", "REAL")
             self._ensure_column(conn, "classrooms", "ratio_group", "TEXT NOT NULL DEFAULT ''")
             self._ensure_column(conn, "assignments", "slot_group", "TEXT NOT NULL DEFAULT ''")
             self._ensure_column(conn, "assignments", "notes", "TEXT NOT NULL DEFAULT ''")
