@@ -2678,6 +2678,73 @@ def test_pyside_staffing_dashboard_refreshes_partial_seed_and_hides_color_key(
     app.processEvents()
 
 
+def test_pyside_staffing_dashboard_visual_render_uses_real_seed_from_any_cwd(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    repo_root = Path(__file__).resolve().parents[1]
+    seed_path = repo_root / "config" / "staffing_seed.json"
+    seed_data = json.loads(seed_path.read_text(encoding="utf-8"))
+    expected_schools = [school["name"] for school in seed_data["schools"]]
+    expected_assignment_count = sum(
+        len(classroom.get("slots", classroom.get("positions", [])))
+        for school in seed_data["schools"]
+        for classroom in school.get("classrooms", [])
+    ) + sum(
+        len(row.get("slots", row.get("positions", [])))
+        for school in seed_data["schools"]
+        for row in school.get("support_rows", [])
+    )
+    db_path = tmp_path / "staffing.sqlite3"
+    partial_store = pyside_interview_app.StaffingStore(db_path)
+    partial_store.initialize()
+    partial_store.seed_assignment(
+        school="Hawthorne",
+        classroom="Tranquility",
+        position_name="Teacher 1",
+        position_type="Teacher",
+        status="filled",
+        person_name="Angie",
+    )
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", db_path)
+    monkeypatch.chdir(repo_root / "src")
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.json",
+        school_options=["Hawthorne"],
+    )
+
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    window.window.resize(1600, 1100)
+    window.window.show()
+    app.processEvents()
+    tabs = window.window.findChild(qt_widgets.QTabWidget, "PySideStaffingSchoolTabs")
+    selector = window.window.findChild(qt_widgets.QComboBox, "PySideStaffingSchoolSelector")
+    labels = [label.text() for label in window.stack.widget(3).findChildren(qt_widgets.QLabel)]
+    rendered = window.stack.widget(3).grab()
+    screenshot_path = tmp_path / "staffing_dashboard_visual.png"
+    assert rendered.save(str(screenshot_path))
+
+    assert [tabs.tabText(index) for index in range(tabs.count())] == expected_schools
+    assert [selector.itemText(index) for index in range(selector.count())] == expected_schools
+    assert len(partial_store.list_assignments()) == expected_assignment_count
+    assert "Color Code Key" not in labels
+    assert rendered.width() >= 600
+    assert rendered.height() >= 400
+    image = rendered.toImage()
+    sample_points = [
+        image.pixelColor(x, y).name()
+        for x in range(0, image.width(), max(1, image.width() // 8))
+        for y in range(0, image.height(), max(1, image.height() // 8))
+    ]
+    assert len(set(sample_points)) > 3
+    window.window.close()
+    app.processEvents()
+
+
 def test_pyside_staffing_action_surfaces_exact_service_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")

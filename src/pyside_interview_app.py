@@ -45,6 +45,7 @@ from interview_runtime import (
 from notification_service import NOTIFICATION_RULES_PATH, SUPPORTED_NOTIFICATION_EVENTS, notification_service_from_onboarding
 from onboarding_operations import JsonStore, build_dashboard_today_summary, filtered_tasks, task_status
 from platform_services import (
+    CONFIG_DIR,
     DEFAULT_RUBRIC_PATH,
     DEFAULT_SCHOOL_OPTIONS,
     DEFAULT_BASE_DIR,
@@ -67,7 +68,7 @@ APP_TITLE = "Interview Assistant"
 NAVIGATION = ["Interviews", "Candidates", "Offers", "Staffing", "Onboarding", "Admin"]
 SETUP_STEPS = ["Candidate", "Interview Plan", "Ready"]
 STAFFING_DB_PATH = DEFAULT_BASE_DIR / "staffing_dashboard.sqlite3"
-STAFFING_SEED_PATH = Path("config") / "staffing_seed.json"
+STAFFING_SEED_PATH = CONFIG_DIR / "staffing_seed.json"
 QUICK_ACTIONS = [
     "Needs follow-up",
     "Candidate gave no example",

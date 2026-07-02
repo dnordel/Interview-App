@@ -711,7 +711,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: May create or read user_artifacts/staffing_dashboard.sqlite3, may import config/staffing_seed.json, and updates visible school selector, school-tabbed staffing board/table widgets.
+    side_effects: May create or read user_artifacts/staffing_dashboard.sqlite3, may import config/staffing_seed.json via the repo config directory independent of launch cwd, and updates visible school selector, school-tabbed staffing board/table widgets.
   - name: _select_staffing_school_index
     description: Synchronize the visible Staffing school tab to the selected school index from the explicit school selector.
     locked: false
