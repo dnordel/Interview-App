@@ -3,11 +3,13 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import replace
 from datetime import date, datetime, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from notification_service import NotificationService
 from staffing_models import PERMIT_STATUSES, StaffingAssignment, StaffingMetricRow, StaffingMetrics, StaffingTransitionResult
 from staffing_store import StaffingStore
+
+if TYPE_CHECKING:
+    from notification_service import NotificationService
 
 
 STAFFING_NOTIFICATION_EVENTS = {

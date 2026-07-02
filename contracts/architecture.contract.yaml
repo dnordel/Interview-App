@@ -61,6 +61,13 @@ services:
     - staffing_models
     - staffing_store
     - staffing_service
+  director_staffing_dashboard_service:
+    description: Director-facing Windows launch and PySide staffing-only dashboard that reuses staffing persistence and transitions while skipping interview audio, document/reporting, transformer, and local AI setup.
+    modules:
+    - director_staffing_launcher
+    - staffing_dashboard_app
+    - staffing_service
+    - staffing_store
   ui_composition_service:
     description: Tkinter windows, routed shells, top-level desktop UI switching,
       validation feedback surfaces, and keyboard telemetry.

@@ -1,0 +1,158 @@
+module:
+  name: setup_director_staffing
+  language: powershell
+  path: setup_director_staffing.ps1
+  version: 1.0.0
+  description: Director-facing Windows launcher bootstrap that shows visible setup progress, ensures Python 3.11, provisions a separate per-user staffing virtual environment from requirements-director.txt, skips interview audio and local AI setup, and launches the staffing dashboard app directly.
+functions:
+- name: Write-Log
+  description: Append director launcher diagnostics to the setup log file.
+  locked: false
+  inputs:
+    msg:
+      type: string
+      required: true
+  returns:
+    type: void
+  exceptions: []
+  side_effects: writes launcher log entries
+- name: Get-ConfigBaseDir
+  description: Ensure the director staffing per-user configuration directory exists under LOCALAPPDATA and return it.
+  locked: false
+  inputs: {}
+  returns:
+    type: string
+  exceptions: []
+  side_effects: may create the per-user configuration directory
+- name: Test-Python311Exe
+  description: Verify that a candidate interpreter exists and reports Python 3.11.
+  locked: false
+  inputs:
+    pythonExe:
+      type: string
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: executes the candidate Python interpreter
+- name: Find-Python311
+  description: Search launcher, common install directories, and PATH for a usable Python 3.11 interpreter.
+  locked: false
+  inputs: {}
+  returns:
+    type: string | null
+  exceptions: []
+  side_effects: executes local interpreter probes and writes launcher log entries
+- name: Ensure-Python311
+  description: Reuse an existing Python 3.11 interpreter or perform a per-user install when none is available.
+  locked: false
+  inputs: {}
+  returns:
+    type: string
+  exceptions:
+  - Exception
+  side_effects: may download and install Python 3.11 and write launcher log entries
+- name: Run-Proc
+  description: Execute a child process, capture stdout and stderr, and append both streams to the setup log.
+  locked: false
+  inputs:
+    File:
+      type: string
+      required: true
+    Args:
+      type: string[]
+      required: false
+      default: []
+    WorkingDir:
+      type: string
+      required: false
+      default: $AppDir
+  returns:
+    type: int
+  exceptions: []
+  side_effects: starts a child process and writes captured output to the setup log
+- name: Get-VenvPython
+  description: Build the path to the director staffing virtual environment Python executable.
+  locked: false
+  inputs: {}
+  returns:
+    type: string
+  exceptions: []
+  side_effects: none
+- name: Ensure-DirectorVenv
+  description: Create or reuse the separate per-user director staffing virtual environment.
+  locked: false
+  inputs:
+    PyExe:
+      type: string
+      required: true
+  returns:
+    type: string
+  exceptions:
+  - Exception
+  side_effects: may create or recreate the director staffing virtual environment
+- name: Ensure-DirectorDeps
+  description: Install and verify only the director staffing package set from requirements-director.txt.
+  locked: false
+  inputs:
+    VenvPy:
+      type: string
+      required: true
+  returns:
+    type: void
+  exceptions:
+  - Exception
+  side_effects: executes pip in the director staffing virtual environment and writes launcher log entries
+- name: Find-StaffingAppFile
+  description: Resolve the staffing dashboard Python entrypoint from the repository src folder.
+  locked: false
+  inputs: {}
+  returns:
+    type: string
+  exceptions:
+  - Exception
+  side_effects: reads local filesystem metadata
+- name: Start-PythonGuiApp
+  description: Launch the director staffing dashboard through python or pythonw with redirected runtime output.
+  locked: false
+  inputs:
+    PythonExe:
+      type: string
+      required: true
+    ScriptPath:
+      type: string
+      required: true
+    WorkingDir:
+      type: string
+      required: true
+    LogFile:
+      type: string | null
+      required: false
+      default: null
+    ShowConsole:
+      type: switch
+      required: false
+      default: false
+  returns:
+    type: System.Diagnostics.Process
+  exceptions:
+  - Exception
+  side_effects: starts a child Python process and may write redirected runtime logs
+- name: Set-Progress
+  description: Update the director setup progress UI, append visible setup details, and mirror status text into the launcher log.
+  locked: false
+  inputs:
+    pct:
+      type: int
+      required: true
+    text:
+      type: string
+      required: true
+  returns:
+    type: void
+  exceptions: []
+  side_effects: updates Windows Forms controls and writes launcher log entries
+classes: []
+data_structures: []
+dependencies:
+- module: staffing_dashboard_app

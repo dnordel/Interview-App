@@ -15,7 +15,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-02T22:15:40.384943+00:00'
+generated_at_utc: '2026-07-02T22:34:17.337285+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -12451,6 +12451,204 @@ entries:
     - return_type
 - contract: contracts/setup_and_run.contract.yaml
   symbol: setup_and_run.Write-Log
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_director_staffing.contract.yaml
+  symbol: setup_director_staffing.Ensure-DirectorDeps
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_director_staffing.contract.yaml
+  symbol: setup_director_staffing.Ensure-DirectorVenv
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_director_staffing.contract.yaml
+  symbol: setup_director_staffing.Ensure-Python311
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_director_staffing.contract.yaml
+  symbol: setup_director_staffing.Find-Python311
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_director_staffing.contract.yaml
+  symbol: setup_director_staffing.Find-StaffingAppFile
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_director_staffing.contract.yaml
+  symbol: setup_director_staffing.Get-ConfigBaseDir
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_director_staffing.contract.yaml
+  symbol: setup_director_staffing.Get-VenvPython
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_director_staffing.contract.yaml
+  symbol: setup_director_staffing.Run-Proc
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_director_staffing.contract.yaml
+  symbol: setup_director_staffing.Set-Progress
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_director_staffing.contract.yaml
+  symbol: setup_director_staffing.Start-PythonGuiApp
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_director_staffing.contract.yaml
+  symbol: setup_director_staffing.Test-Python311Exe
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_director_staffing.contract.yaml
+  symbol: setup_director_staffing.Write-Log
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_app.contract.yaml
+  symbol: staffing_dashboard_app.StaffingDashboardWindow.refresh
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_app.contract.yaml
+  symbol: staffing_dashboard_app.StaffingDashboardWindow.show
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_app.contract.yaml
+  symbol: staffing_dashboard_app.apply_styles
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_app.contract.yaml
+  symbol: staffing_dashboard_app.launch_staffing_dashboard_app
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_app.contract.yaml
+  symbol: staffing_dashboard_app.main
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_app.contract.yaml
+  symbol: staffing_dashboard_app.permit_color
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_app.contract.yaml
+  symbol: staffing_dashboard_app.school_summary
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_app.contract.yaml
+  symbol: staffing_dashboard_app.seed_assignment_count
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_app.contract.yaml
+  symbol: staffing_dashboard_app.slot_label
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_app.contract.yaml
+  symbol: staffing_dashboard_app.staffing_status_color
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
