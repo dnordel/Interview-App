@@ -2585,8 +2585,95 @@ def test_pyside_staffing_dashboard_renders_workbook_layout_tabs_and_actual_names
         if board.item(row, column) is not None
     }
     assert {"Tranquility", "Angie", "OPEN POSITION", "12", "Infant Floater", "Amy", "Full time"} <= board_text
-    assert any("Need Now - Job Opening" in text for text in labels)
+    assert "need_now" in board_text
     assert any("3 to 1 (infant units needed)" in text for text in labels)
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_staffing_dashboard_refreshes_partial_seed_and_hides_color_key(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    seed_path = tmp_path / "staffing_seed.json"
+    seed_path.write_text(
+        json.dumps(
+            {
+                "schools": [
+                    {
+                        "name": "Hawthorne",
+                        "classrooms": [
+                            {
+                                "name": "Tranquility",
+                                "slots": [
+                                    {"slot_group": "teacher", "position_name": "Teacher 1", "position_type": "Teacher", "status": "filled", "person": {"name": "Angie"}},
+                                    {"slot_group": "teacher", "position_name": "Teacher 2", "position_type": "Teacher", "status": "need_now"},
+                                ],
+                            },
+                            {
+                                "name": "Harmony",
+                                "slots": [
+                                    {"slot_group": "teacher", "position_name": "Teacher 1", "position_type": "Teacher", "status": "filled", "person": {"name": "Brenda"}}
+                                ],
+                            },
+                        ],
+                    },
+                    {
+                        "name": "Palmdale",
+                        "classrooms": [
+                            {
+                                "name": "Unity",
+                                "slots": [
+                                    {"slot_group": "teacher", "position_name": "Teacher 1", "position_type": "Teacher", "status": "filled", "person": {"name": "Cora"}}
+                                ],
+                            }
+                        ],
+                    },
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    db_path = tmp_path / "staffing.sqlite3"
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", db_path)
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", seed_path)
+
+    partial_store = pyside_interview_app.StaffingStore(db_path)
+    partial_store.initialize()
+    partial_store.seed_assignment(
+        school="Hawthorne",
+        classroom="Tranquility",
+        position_name="Teacher 1",
+        position_type="Teacher",
+        status="filled",
+        person_name="Angie",
+    )
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.json",
+        school_options=["Hawthorne"],
+    )
+
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    tabs = window.window.findChild(qt_widgets.QTabWidget, "PySideStaffingSchoolTabs")
+    selector = window.window.findChild(qt_widgets.QComboBox, "PySideStaffingSchoolSelector")
+    labels = [label.text() for label in window.stack.widget(3).findChildren(qt_widgets.QLabel)]
+    hawthorne_board = tabs.widget(0).findChild(qt_widgets.QTableWidget, "PySideStaffingWorkbookBoard")
+
+    assert [tabs.tabText(index) for index in range(tabs.count())] == ["Hawthorne", "Palmdale"]
+    assert [selector.itemText(index) for index in range(selector.count())] == ["Hawthorne", "Palmdale"]
+    board_text = {
+        hawthorne_board.item(row, column).text()
+        for row in range(hawthorne_board.rowCount())
+        for column in range(hawthorne_board.columnCount())
+        if hawthorne_board.item(row, column) is not None
+    }
+    assert {"Tranquility", "Harmony", "Angie", "Brenda", "OPEN POSITION"} <= board_text
+    assert "Color Code Key" not in labels
+    assert "Need Now - Job Opening" not in labels
     window.window.close()
     app.processEvents()
 

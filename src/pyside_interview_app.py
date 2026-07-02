@@ -3284,8 +3284,19 @@ class PySideInterviewWindow:
 
     def _refresh_staffing_dashboard(self) -> None:
         self.staffing_store.initialize()
-        if STAFFING_SEED_PATH.exists() and not self.staffing_store.list_assignments():
+        existing_assignments = self.staffing_store.list_assignments()
+        if STAFFING_SEED_PATH.exists() and not existing_assignments:
             self.staffing_store.import_seed_file(STAFFING_SEED_PATH)
+        elif STAFFING_SEED_PATH.exists():
+            seed_data = json.loads(STAFFING_SEED_PATH.read_text(encoding="utf-8"))
+            seed_assignment_count = 0
+            for school in seed_data.get("schools", []):
+                for classroom in school.get("classrooms", []):
+                    seed_assignment_count += len(classroom.get("slots", classroom.get("positions", [])))
+                for support_row in school.get("support_rows", []):
+                    seed_assignment_count += len(support_row.get("slots", support_row.get("positions", [])))
+            if len(existing_assignments) < seed_assignment_count:
+                self.staffing_store.import_seed_file(STAFFING_SEED_PATH)
         service = StaffingService(self.staffing_store, notification_service=self._notification_service())
         metrics = service.staffing_metrics(today=date.today())
         if self.staffing_metrics_label is not None:
@@ -3314,7 +3325,6 @@ class PySideInterviewWindow:
             summary = self._label(_staffing_school_summary(rows))
             summary.setObjectName("PySideStaffingSummary")
             tab_layout.addWidget(summary)
-            tab_layout.addWidget(self._staffing_color_key())
             ratio_summary = _staffing_ratio_summary(rows)
             if ratio_summary:
                 tab_layout.addWidget(self._label(ratio_summary))

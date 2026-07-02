@@ -705,7 +705,7 @@ classes:
     exceptions: []
     side_effects: Writes PySide draft JSON and changes visible tab.
   - name: _refresh_staffing_dashboard
-    description: Initialize local staffing storage, import seed data only when the staffing DB is empty, compute metrics, and refresh the PySide staffing metric label, school selector, school-tabbed workbook boards, and action tables.
+    description: Initialize local staffing storage, import seed data when the staffing DB is empty or clearly missing seed assignments, compute metrics, and refresh the PySide staffing metric label, school selector, school-tabbed workbook boards, and action tables.
     locked: false
     inputs: {}
     returns:
