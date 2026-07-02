@@ -56,7 +56,7 @@ services:
     - notification_service
   staffing_dashboard_service:
     description: Local SQLite staffing assignment state machine, assignment history,
-      permit updates, and post-commit checkpoint notification hooks.
+      permit updates, metrics, seed import, and post-commit checkpoint notification hooks.
     modules:
     - staffing_models
     - staffing_store
@@ -96,7 +96,7 @@ services:
     - web_app_backend
   pyside_interview_redesign_service:
     description: PySide6 workflow-first desktop redesign shell for interviews, candidates,
-      offers, onboarding, guided Admin Studio, user-closable finalize progress with
+      offers, staffing, onboarding, guided Admin Studio, user-closable finalize progress with
       task/status rows, live history refresh, and single-surface parity documentation
       for desktop Tk contracts while reusing local rubric, question flow, history
       JSON, and Tk-owned finalize/document/DeepSeek runtime contracts. Admin Studio
@@ -106,6 +106,8 @@ services:
     - admin_studio
     - pyside_interview_app
     - notification_service
+    - staffing_service
+    - staffing_store
   shared_platform_service:
     description: Shared content/configuration loading, logging, persistence helpers,
       and runtime wrappers.

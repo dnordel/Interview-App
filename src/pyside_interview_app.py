@@ -56,12 +56,16 @@ from platform_services import (
 from scoring_reporting import OfferInput, OfferLetterService, ScoringEngine, build_offer_filename
 from scoring_reporting import build_integration_payload, serialize_integration_payload
 from scoring_reporting import CANONICAL_DEGREE_TYPES, CandidateQualification, validate_candidate_qualification
+from staffing_service import StaffingService
+from staffing_store import StaffingStore
 from ui_mode_switch import switch_to_ui_mode
 
 
 APP_TITLE = "Interview Assistant"
-NAVIGATION = ["Interviews", "Candidates", "Offers", "Onboarding", "Admin"]
+NAVIGATION = ["Interviews", "Candidates", "Offers", "Staffing", "Onboarding", "Admin"]
 SETUP_STEPS = ["Candidate", "Interview Plan", "Ready"]
+STAFFING_DB_PATH = DEFAULT_BASE_DIR / "staffing_dashboard.sqlite3"
+STAFFING_SEED_PATH = Path("config") / "staffing_seed.json"
 QUICK_ACTIONS = [
     "Needs follow-up",
     "Candidate gave no example",
@@ -1258,6 +1262,10 @@ class PySideInterviewWindow:
         self.selected_history_offer_row: PySideHistoryRow | None = None
         self.history_store = InterviewHistoryStore(model.history_path)
         self.school_offer_store = SchoolOfferSettingsStore(SCHOOL_OFFER_SETTINGS_PATH)
+        self.staffing_store = StaffingStore(STAFFING_DB_PATH)
+        self.staffing_status_label: Any | None = None
+        self.staffing_metrics_label: Any | None = None
+        self.staffing_table: Any | None = None
         self.history_search_text = ""
         self.history_school_filter_text = ""
         self.history_outcome_filter_text = ""
@@ -1305,6 +1313,7 @@ class PySideInterviewWindow:
         self.stack.addWidget(self._interviews_page())
         self.stack.addWidget(self._candidates_page())
         self.stack.addWidget(self._offer_page())
+        self.stack.addWidget(self._staffing_page())
         self.stack.addWidget(self._onboarding_page())
         self.stack.addWidget(self._admin_page())
         self.sidebar.setCurrentRow(0)
@@ -3113,6 +3122,125 @@ class PySideInterviewWindow:
         tasks_layout.addWidget(table)
         layout.addWidget(tasks, 1)
         return page
+
+    def _staffing_page(self) -> Any:
+        page, layout = self._page()
+        layout.addWidget(self._label("Staffing", "Title"))
+        self.staffing_status_label = self._label("")
+        layout.addWidget(self.staffing_status_label)
+
+        metrics, metrics_layout = self._surface()
+        metrics_layout.addWidget(self._label("Dashboard Metrics", "SectionTitle"))
+        self.staffing_metrics_label = self._label("")
+        metrics_layout.addWidget(self.staffing_metrics_label)
+        layout.addWidget(metrics)
+
+        assignments, assignments_layout = self._surface()
+        assignments_layout.addWidget(self._label("Classroom Positions", "SectionTitle"))
+        table = self.QtWidgets.QTableWidget(0, 8)
+        table.setObjectName("PySideStaffingAssignments")
+        table.setHorizontalHeaderLabels(
+            ["School", "Classroom", "Type", "Position", "Person", "Status", "Days Open", "Action"]
+        )
+        table.horizontalHeader().setStretchLastSection(True)
+        self.staffing_table = table
+        assignments_layout.addWidget(table, 1)
+        layout.addWidget(assignments, 1)
+        self._refresh_staffing_dashboard()
+        return page
+
+    def _refresh_staffing_dashboard(self) -> None:
+        self.staffing_store.initialize()
+        if STAFFING_SEED_PATH.exists() and not self.staffing_store.list_assignments():
+            self.staffing_store.import_seed_file(STAFFING_SEED_PATH)
+        service = StaffingService(self.staffing_store)
+        metrics = service.staffing_metrics(today=date.today())
+        if self.staffing_metrics_label is not None:
+            self.staffing_metrics_label.setText(
+                f"Open positions: {metrics.open_count}    "
+                f"Average days to fill: {metrics.avg_days_to_fill:.1f}    "
+                f"Open > 7 days: {metrics.open_over_7_days}"
+            )
+        table = self.staffing_table
+        if table is None:
+            return
+        table.setRowCount(len(metrics.rows))
+        for row_index, row in enumerate(metrics.rows):
+            values = [
+                row.school,
+                row.classroom,
+                row.position_type,
+                row.position_name,
+                row.person_name,
+                row.status,
+                "" if row.days_open is None else str(row.days_open),
+            ]
+            for column, value in enumerate(values):
+                table.setItem(row_index, column, self.QtWidgets.QTableWidgetItem(value))
+            table.setCellWidget(row_index, 7, self._staffing_action_button(row.assignment_id, row.status))
+        table.resizeColumnsToContents()
+
+    def _staffing_action_button(self, assignment_id: int, status: str) -> Any:
+        if status == "dont_need_now":
+            label = "Open"
+            callback = lambda _checked=False, item=assignment_id: self._open_staffing_position(item)
+        elif status in {"need_now", "replace"}:
+            label = "Mark Coming"
+            callback = lambda _checked=False, item=assignment_id: self._mark_staffing_coming(item)
+        elif status == "coming":
+            label = "Mark Filled"
+            callback = lambda _checked=False, item=assignment_id: self._mark_staffing_filled(item)
+        elif status == "filled":
+            label = "Replace"
+            callback = lambda _checked=False, item=assignment_id: self._mark_staffing_replacing(item)
+        else:
+            label = "Review"
+            callback = lambda _checked=False: None
+        button = self.QtWidgets.QPushButton(label)
+        button.setProperty("staffing_assignment_id", assignment_id)
+        button.clicked.connect(callback)
+        return button
+
+    def _open_staffing_position(self, assignment_id: int) -> None:
+        self._run_staffing_action(lambda service: service.open_position(assignment_id), "Position opened.")
+
+    def _mark_staffing_filled(self, assignment_id: int) -> None:
+        self._run_staffing_action(lambda service: service.mark_filled(assignment_id), "Position filled.")
+
+    def _mark_staffing_coming(self, assignment_id: int) -> None:
+        person_name, accepted = self.QtWidgets.QInputDialog.getText(self.window, "Staffing", "Incoming person name")
+        if not accepted:
+            return
+        start_date, accepted = self.QtWidgets.QInputDialog.getText(self.window, "Staffing", "Start date (YYYY-MM-DD)")
+        if not accepted:
+            return
+        self._run_staffing_action(
+            lambda service: service.mark_coming(assignment_id, person_name=person_name, start_date=start_date),
+            "Incoming person saved.",
+        )
+
+    def _mark_staffing_replacing(self, assignment_id: int) -> None:
+        notice_given, accepted = self.QtWidgets.QInputDialog.getText(self.window, "Staffing", "Notice date (YYYY-MM-DD)")
+        if not accepted:
+            return
+        final_day, accepted = self.QtWidgets.QInputDialog.getText(self.window, "Staffing", "Final working day (YYYY-MM-DD)")
+        if not accepted:
+            return
+        self._run_staffing_action(
+            lambda service: service.mark_replacing(assignment_id, notice_given=notice_given, final_working_day=final_day),
+            "Replacement need opened.",
+        )
+
+    def _run_staffing_action(self, action: Any, success_message: str) -> None:
+        try:
+            action(StaffingService(self.staffing_store))
+        except Exception:
+            if self.staffing_status_label is not None:
+                self.staffing_status_label.setText("Staffing action failed. Check required fields and transition state.")
+            return
+        if self.staffing_status_label is not None:
+            self.staffing_status_label.setText(success_message)
+        self._refresh_staffing_dashboard()
 
     def _candidates_page(self) -> Any:
         page, layout = self._page()

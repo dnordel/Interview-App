@@ -88,6 +88,8 @@ modules:
     - onboarding_operations
     - platform_services
     - scoring_reporting
+    - staffing_service
+    - staffing_store
     - ui_mode_switch
     - PySide6
   admin_studio:

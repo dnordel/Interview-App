@@ -97,7 +97,7 @@ def test_redesign_model_prioritizes_guided_interview_workflow(tmp_path: Path) ->
     )
 
     assert model.app_title == "Interview Assistant"
-    assert model.navigation == ["Interviews", "Candidates", "Offers", "Onboarding", "Admin"]
+    assert model.navigation == ["Interviews", "Candidates", "Offers", "Staffing", "Onboarding", "Admin"]
     assert model.home.primary_action == "Start a New Interview"
     assert model.home.admin_visible_on_home is False
     assert model.home.recent_interviews[0].next_action == "Generate Offer"
@@ -2233,6 +2233,106 @@ def _docx_text(path: Path) -> str:
         for row in table.rows:
             chunks.extend(cell.text for cell in row.cells)
     return "\n".join(chunks)
+
+
+def test_pyside_staffing_dashboard_imports_seed_and_shows_metrics(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    seed_path = tmp_path / "staffing_seed.json"
+    seed_path.write_text(
+        json.dumps(
+            {
+                "schools": [
+                    {
+                        "name": "Hawthorne",
+                        "classrooms": [
+                            {
+                                "name": "Tranquility",
+                                "positions": [
+                                    {"position_name": "Teacher 1", "position_type": "Teacher", "status": "dont_need_now"},
+                                    {"position_name": "Teacher 2", "position_type": "Teacher", "status": "need_now"},
+                                ],
+                            }
+                        ],
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", tmp_path / "staffing.sqlite3")
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", seed_path)
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.json",
+        school_options=["Hawthorne"],
+    )
+
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    labels = [label.text() for label in window.stack.widget(3).findChildren(qt_widgets.QLabel)]
+    table = window.window.findChild(qt_widgets.QTableWidget, "PySideStaffingAssignments")
+
+    assert any("Open positions: 1" in text for text in labels)
+    assert table is not None
+    assert table.rowCount() == 2
+    assert table.horizontalHeaderItem(6).text() == "Days Open"
+    assert table.horizontalHeaderItem(7).text() == "Action"
+    assert table.item(1, 0).text() == "Hawthorne"
+    assert table.item(1, 3).text() == "Teacher 2"
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_staffing_open_action_refreshes_dashboard(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    seed_path = tmp_path / "staffing_seed.json"
+    seed_path.write_text(
+        json.dumps(
+            {
+                "schools": [
+                    {
+                        "name": "Hawthorne",
+                        "classrooms": [
+                            {
+                                "name": "Tranquility",
+                                "positions": [
+                                    {"position_name": "Teacher 1", "position_type": "Teacher", "status": "dont_need_now"}
+                                ],
+                            }
+                        ],
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", tmp_path / "staffing.sqlite3")
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", seed_path)
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.json",
+        school_options=["Hawthorne"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    table = window.window.findChild(qt_widgets.QTableWidget, "PySideStaffingAssignments")
+    button = table.cellWidget(0, 7)
+
+    assert button.text() == "Open"
+    button.click()
+    app.processEvents()
+
+    table = window.window.findChild(qt_widgets.QTableWidget, "PySideStaffingAssignments")
+    labels = [label.text() for label in window.stack.widget(3).findChildren(qt_widgets.QLabel)]
+    assert table.item(0, 5).text() == "need_now"
+    assert table.cellWidget(0, 7).text() == "Mark Coming"
+    assert any("Open positions: 1" in text for text in labels)
+    window.window.close()
+    app.processEvents()
 
 
 def _write_test_overrides(tmp_path: Path) -> Path:

@@ -2,11 +2,11 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.19.0
+  version: 1.20.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
-    content-sized history table behavior, compact home draft actions beside the
-    start action, guided review-then-apply Admin Studio backed by admin_studio
+    content-sized history table behavior, staffing dashboard actions and metrics,
+    compact home draft actions beside the start action, guided review-then-apply Admin Studio backed by admin_studio
     with readable wrapped admin tables and visible edit mode, interview notes
     regeneration actions, user-closable
     finalize progress with immediate ordered task/status rows in a compact scrollable
@@ -15,7 +15,7 @@ module:
     and DeepSeek runtime contracts.
 functions:
 - name: build_interview_redesign_model
-  description: Build workflow-first home, setup, live interview, review, offer, onboarding, and admin view data from rubric, intro script, question flow, and merged canonical plus legacy history JSON.
+  description: Build workflow-first home, setup, live interview, review, offer, staffing, onboarding, and admin view data from rubric, intro script, question flow, and merged canonical plus legacy history JSON.
   locked: false
   inputs:
     rubric_path:
@@ -700,6 +700,86 @@ classes:
       type: None
     exceptions: []
     side_effects: Writes PySide draft JSON and changes visible tab.
+  - name: _refresh_staffing_dashboard
+    description: Initialize local staffing storage, import seed data only when the staffing DB is empty, compute metrics, and refresh the PySide staffing metric label and assignments table.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: May create or read user_artifacts/staffing_dashboard.sqlite3, may import config/staffing_seed.json, and updates visible staffing widgets.
+  - name: _staffing_action_button
+    description: Build one PySide action button for a staffing assignment status, wired to the service-backed transition handler for that row.
+    locked: false
+    inputs:
+      assignment_id:
+        type: int
+        required: true
+      status:
+        type: str
+        required: true
+    returns:
+      type: QPushButton
+    exceptions: []
+    side_effects: Creates a PySide button and connects its clicked signal.
+  - name: _open_staffing_position
+    description: Open a staffing position through StaffingService and refresh the Staffing dashboard.
+    locked: false
+    inputs:
+      assignment_id:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates staffing SQLite rows and visible PySide staffing dashboard widgets.
+  - name: _mark_staffing_filled
+    description: Mark a coming staffing position filled through StaffingService and refresh the Staffing dashboard.
+    locked: false
+    inputs:
+      assignment_id:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates staffing SQLite rows and visible PySide staffing dashboard widgets.
+  - name: _mark_staffing_coming
+    description: Prompt for incoming person and start date, mark a staffing position coming through StaffingService, and refresh the Staffing dashboard.
+    locked: false
+    inputs:
+      assignment_id:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Shows PySide input dialogs, updates staffing SQLite rows, and refreshes visible PySide staffing dashboard widgets.
+  - name: _mark_staffing_replacing
+    description: Prompt for notice dates, mark a filled staffing position as replacing through StaffingService, and refresh the Staffing dashboard.
+    locked: false
+    inputs:
+      assignment_id:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Shows PySide input dialogs, updates staffing SQLite rows, and refreshes visible PySide staffing dashboard widgets.
+  - name: _run_staffing_action
+    description: Run a StaffingService transition, surface failures without leaking secrets, and refresh staffing widgets on success.
+    locked: false
+    inputs:
+      action:
+        type: Any
+        required: true
+      success_message:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates staffing SQLite rows through the supplied action and updates visible PySide status/metric/table widgets.
   - name: _refresh_home_draft_panel
     description: Refresh the compact PySide home draft label and adjacent Continue/Delete Saved Draft button enabled states from the latest existing draft.
     locked: false
@@ -941,5 +1021,7 @@ dependencies:
 - module: onboarding_operations
 - module: platform_services
 - module: scoring_reporting
+- module: staffing_service
+- module: staffing_store
 - module: ui_mode_switch
 - module: PySide6

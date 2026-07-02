@@ -26,6 +26,8 @@ class StaffingAssignment:
     start_date: str = ""
     permit_status: str = ""
     updated_at: str = ""
+    current_opened_date: str = ""
+    current_filled_date: str = ""
 
 
 @dataclass(frozen=True)
@@ -42,3 +44,25 @@ class StaffingTransitionResult:
     status: str
     person_id: int | None = None
     updated_at: str = ""
+
+
+@dataclass(frozen=True)
+class StaffingMetricRow:
+    assignment_id: int
+    school: str
+    classroom: str
+    position_name: str
+    position_type: str
+    status: str
+    person_name: str = ""
+    permit_status: str = ""
+    start_date: str = ""
+    days_open: int | None = None
+
+
+@dataclass(frozen=True)
+class StaffingMetrics:
+    open_count: int
+    avg_days_to_fill: float
+    open_over_7_days: int
+    rows: list[StaffingMetricRow]

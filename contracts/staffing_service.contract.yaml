@@ -2,8 +2,8 @@ module:
   name: staffing_service
   language: python
   path: src/staffing_service.py
-  version: 0.1.0
-  description: Staffing assignment state machine with post-commit notification emission for successful transactions.
+  version: 0.2.0
+  description: Staffing assignment state machine, staffing dashboard metrics, and post-commit notification emission for successful transactions.
 functions: []
 classes:
 - name: StaffingService
@@ -99,6 +99,15 @@ classes:
     exceptions:
     - ValueError
     side_effects: Updates person permit status, then may emit staffing.permit.updated notification.
+  - name: staffing_metrics
+    inputs:
+      today:
+        type: date
+        required: true
+    returns:
+      type: StaffingMetrics
+    exceptions: []
+    side_effects: Reads assignment and filled-history rows from StaffingStore to compute dashboard metrics.
 data_structures:
 - name: STAFFING_NOTIFICATION_EVENTS
   type: dict[str, str]

@@ -6,7 +6,7 @@ from datetime import date, datetime, timezone
 from typing import Any
 
 from notification_service import NotificationService
-from staffing_models import PERMIT_STATUSES, StaffingAssignment, StaffingTransitionResult
+from staffing_models import PERMIT_STATUSES, StaffingAssignment, StaffingMetricRow, StaffingMetrics, StaffingTransitionResult
 from staffing_store import StaffingStore
 
 
@@ -189,6 +189,40 @@ class StaffingService:
             assignment = replace(self._assignment_for_person(conn, person.id, now), updated_at=now)
         self._emit_person_event(person.id, assignment)
         return _result(assignment)
+
+    def staffing_metrics(self, *, today: date) -> StaffingMetrics:
+        rows: list[StaffingMetricRow] = []
+        open_count = 0
+        open_over_7_days = 0
+        for assignment in self.store.list_assignments():
+            days_open = None
+            if assignment.status in {"need_now", "replace"} and assignment.current_opened_date:
+                days_open = max(0, (today - _parse_timestamp(assignment.current_opened_date).date()).days)
+                open_count += 1
+                if days_open > 7:
+                    open_over_7_days += 1
+            rows.append(
+                StaffingMetricRow(
+                    assignment_id=assignment.id,
+                    school=assignment.school,
+                    classroom=assignment.classroom,
+                    position_name=assignment.position_name,
+                    position_type=assignment.position_type,
+                    status=assignment.status,
+                    person_name=assignment.person_name,
+                    permit_status=assignment.permit_status,
+                    start_date=assignment.start_date,
+                    days_open=days_open,
+                )
+            )
+        closed_days = self.store.closed_days_to_fill()
+        avg_days = round(sum(closed_days) / len(closed_days), 1) if closed_days else 0.0
+        return StaffingMetrics(
+            open_count=open_count,
+            avg_days_to_fill=avg_days,
+            open_over_7_days=open_over_7_days,
+            rows=rows,
+        )
 
     def _create_history(self, conn: Any, assignment_id: int, now: str) -> None:
         row = conn.execute("SELECT classroom_id, position_name FROM assignments WHERE id = ?", (assignment_id,)).fetchone()

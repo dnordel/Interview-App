@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
 import sqlite3
 from pathlib import Path
+from typing import Any
 
 from staffing_models import ASSIGNMENT_STATUSES, PERMIT_STATUSES, StaffingAssignment, StaffingPerson
 
@@ -123,6 +125,55 @@ class StaffingStore:
             )
             return int(cursor.lastrowid)
 
+    def import_seed_file(self, seed_path: Path) -> dict[str, int]:
+        data = json.loads(Path(seed_path).read_text(encoding="utf-8"))
+        schools = _seed_schools(data)
+        with self.connect() as conn:
+            for school in schools:
+                school_id = self._ensure_school(conn, school["name"])
+                for classroom in school["classrooms"]:
+                    classroom_id = self._ensure_classroom(
+                        conn,
+                        school_id,
+                        classroom["name"],
+                        program=classroom["program"],
+                        licensed_capacity=classroom["licensed_capacity"],
+                    )
+                    for position in classroom["positions"]:
+                        self._upsert_seed_assignment(conn, classroom_id, position)
+        return {
+            "schools": len(schools),
+            "classrooms": sum(len(school["classrooms"]) for school in schools),
+            "assignments": sum(
+                len(classroom["positions"]) for school in schools for classroom in school["classrooms"]
+            ),
+        }
+
+    def list_assignments(self) -> list[StaffingAssignment]:
+        with self.connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT a.id
+                FROM assignments a
+                JOIN classrooms c ON c.id = a.classroom_id
+                JOIN schools s ON s.id = c.school_id
+                WHERE a.active = 1 AND c.active = 1 AND s.active = 1
+                ORDER BY s.display_order, s.name, c.display_order, c.name, a.display_order, a.id
+                """
+            ).fetchall()
+            return [self.assignment_context(conn, int(row["id"])) for row in rows]
+
+    def closed_days_to_fill(self) -> list[int]:
+        with self.connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT days_to_fill FROM assignment_history
+                WHERE closed_reason = 'filled' AND days_to_fill IS NOT NULL
+                ORDER BY id
+                """
+            ).fetchall()
+            return [int(row["days_to_fill"]) for row in rows]
+
     def get_assignment(self, assignment_id: int) -> StaffingAssignment:
         with self.connect() as conn:
             return self.assignment_context(conn, assignment_id)
@@ -166,6 +217,8 @@ class StaffingStore:
             start_date=str(row["start_date"] or ""),
             permit_status=str(row["permit_status"] or ""),
             updated_at=str(row["updated_at"] or ""),
+            current_opened_date=str(row["current_opened_date"] or ""),
+            current_filled_date=str(row["current_filled_date"] or ""),
         )
 
     def person_context(self, conn: sqlite3.Connection, person_id: int) -> StaffingPerson:
@@ -186,8 +239,30 @@ class StaffingStore:
         conn.execute("INSERT OR IGNORE INTO schools (name) VALUES (?)", (name,))
         return int(conn.execute("SELECT id FROM schools WHERE name = ?", (name,)).fetchone()["id"])
 
-    def _ensure_classroom(self, conn: sqlite3.Connection, school_id: int, name: str) -> int:
-        conn.execute("INSERT OR IGNORE INTO classrooms (school_id, name) VALUES (?, ?)", (school_id, name))
+    def _ensure_classroom(
+        self,
+        conn: sqlite3.Connection,
+        school_id: int,
+        name: str,
+        *,
+        program: str = "",
+        licensed_capacity: int | None = None,
+    ) -> int:
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO classrooms (school_id, name, program, licensed_capacity)
+            VALUES (?, ?, ?, ?)
+            """,
+            (school_id, name, program, licensed_capacity),
+        )
+        conn.execute(
+            """
+            UPDATE classrooms
+            SET program = ?, licensed_capacity = ?
+            WHERE school_id = ? AND name = ?
+            """,
+            (program, licensed_capacity, school_id, name),
+        )
         return int(
             conn.execute(
                 "SELECT id FROM classrooms WHERE school_id = ? AND name = ?",
@@ -213,9 +288,154 @@ class StaffingStore:
         )
         return int(cursor.lastrowid)
 
+    def _upsert_seed_assignment(self, conn: sqlite3.Connection, classroom_id: int, position: dict[str, Any]) -> int:
+        now = "1970-01-01T00:00:00Z"
+        person = position["person"]
+        person_id = None
+        if person["name"]:
+            person_id = self._ensure_person(conn, person["name"], position["position_type"], person["permit_status"], now)
+        row = conn.execute(
+            """
+            SELECT id FROM assignments
+            WHERE classroom_id = ? AND position_name = ? AND active = 1
+            ORDER BY id LIMIT 1
+            """,
+            (classroom_id, position["position_name"]),
+        ).fetchone()
+        opened_date = now if position["status"] in {"need_now", "replace"} else None
+        filled_date = now if position["status"] == "filled" else None
+        if row is None:
+            cursor = conn.execute(
+                """
+                INSERT INTO assignments (
+                    classroom_id, person_id, position_name, position_type, status,
+                    current_opened_date, current_filled_date, start_date, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    classroom_id,
+                    person_id,
+                    position["position_name"],
+                    position["position_type"],
+                    position["status"],
+                    opened_date,
+                    filled_date,
+                    position["start_date"],
+                    now,
+                    now,
+                ),
+            )
+            assignment_id = int(cursor.lastrowid)
+        else:
+            assignment_id = int(row["id"])
+            conn.execute(
+                """
+                UPDATE assignments
+                SET person_id = ?, position_type = ?, status = ?, current_opened_date = ?,
+                    current_filled_date = ?, start_date = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (
+                    person_id,
+                    position["position_type"],
+                    position["status"],
+                    opened_date,
+                    filled_date,
+                    position["start_date"],
+                    now,
+                    assignment_id,
+                ),
+            )
+        if position["status"] in {"need_now", "replace"}:
+            active_count = int(
+                conn.execute(
+                    """
+                    SELECT COUNT(*) FROM assignment_history
+                    WHERE assignment_id = ? AND filled_date IS NULL AND closed_reason IS NULL
+                    """,
+                    (assignment_id,),
+                ).fetchone()[0]
+            )
+            if active_count == 0:
+                conn.execute(
+                    """
+                    INSERT INTO assignment_history (
+                        assignment_id, classroom_id, position_name, opened_date, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (assignment_id, classroom_id, position["position_name"], now, now, now),
+                )
+        else:
+            conn.execute(
+                """
+                UPDATE assignment_history
+                SET closed_reason = 'seed_closed', updated_at = ?
+                WHERE assignment_id = ? AND filled_date IS NULL AND closed_reason IS NULL
+                """,
+                (now, assignment_id),
+            )
+        return assignment_id
+
 
 def _required_text(value: str, label: str) -> str:
     text = str(value or "").strip()
     if not text:
         raise ValueError(f"{label} is required.")
     return text
+
+
+def _seed_schools(data: Any) -> list[dict[str, Any]]:
+    if not isinstance(data, dict) or not isinstance(data.get("schools"), list):
+        raise ValueError("Seed file must contain schools list.")
+    schools: list[dict[str, Any]] = []
+    for school_raw in data["schools"]:
+        if not isinstance(school_raw, dict):
+            raise ValueError("School entry must be an object.")
+        classrooms_raw = school_raw.get("classrooms", [])
+        if not isinstance(classrooms_raw, list):
+            raise ValueError("Classrooms must be a list.")
+        classrooms: list[dict[str, Any]] = []
+        for classroom_raw in classrooms_raw:
+            if not isinstance(classroom_raw, dict):
+                raise ValueError("Classroom entry must be an object.")
+            positions_raw = classroom_raw.get("positions", [])
+            if not isinstance(positions_raw, list):
+                raise ValueError("Positions must be a list.")
+            positions = [_seed_position(position) for position in positions_raw]
+            capacity = classroom_raw.get("licensed_capacity")
+            if capacity is not None:
+                capacity = int(capacity)
+            classrooms.append(
+                {
+                    "name": _required_text(str(classroom_raw.get("name", "")), "Classroom"),
+                    "program": str(classroom_raw.get("program", "") or "").strip(),
+                    "licensed_capacity": capacity,
+                    "positions": positions,
+                }
+            )
+        schools.append({"name": _required_text(str(school_raw.get("name", "")), "School"), "classrooms": classrooms})
+    return schools
+
+
+def _seed_position(position_raw: Any) -> dict[str, Any]:
+    if not isinstance(position_raw, dict):
+        raise ValueError("Position entry must be an object.")
+    status = str(position_raw.get("status", "dont_need_now") or "dont_need_now").strip()
+    if status not in ASSIGNMENT_STATUSES:
+        raise ValueError("Unknown assignment status.")
+    person_raw = position_raw.get("person") or {}
+    if not isinstance(person_raw, dict):
+        raise ValueError("Person entry must be an object.")
+    permit_status = str(person_raw.get("permit_status", "unknown") or "unknown").strip()
+    if permit_status not in PERMIT_STATUSES:
+        raise ValueError("Unknown permit status.")
+    return {
+        "position_name": _required_text(str(position_raw.get("position_name", "")), "Position name"),
+        "position_type": _required_text(str(position_raw.get("position_type", "")), "Position type"),
+        "status": status,
+        "start_date": str(position_raw.get("start_date", "") or "").strip(),
+        "person": {
+            "name": str(person_raw.get("name", "") or "").strip(),
+            "permit_status": permit_status,
+        },
+    }

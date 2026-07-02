@@ -1,0 +1,35 @@
+{
+  "schools": [
+    {
+      "name": "Hawthorne",
+      "classrooms": [
+        {
+          "name": "Tranquility",
+          "program": "Infant",
+          "licensed_capacity": 12,
+          "positions": [
+            {
+              "position_name": "Teacher 1",
+              "position_type": "Teacher",
+              "status": "filled",
+              "person": {
+                "name": "Angie",
+                "permit_status": "teacher_permit_approved"
+              }
+            },
+            {
+              "position_name": "Teacher 2",
+              "position_type": "Teacher",
+              "status": "need_now"
+            },
+            {
+              "position_name": "Teacher 3",
+              "position_type": "Teacher",
+              "status": "dont_need_now"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

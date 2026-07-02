@@ -2,8 +2,8 @@ module:
   name: staffing_store
   language: python
   path: src/staffing_store.py
-  version: 0.1.0
-  description: SQLite persistence for staffing schools, classrooms, people, assignments, and assignment history.
+  version: 0.2.0
+  description: SQLite persistence for staffing schools, classrooms, people, assignments, assignment history, and deterministic seed imports.
 functions: []
 classes:
 - name: StaffingStore
@@ -51,6 +51,28 @@ classes:
     exceptions:
     - ValueError
     side_effects: Inserts or reuses school/classroom/person rows and inserts one assignment row.
+  - name: import_seed_file
+    inputs:
+      seed_path:
+        type: Path
+        required: true
+    returns:
+      type: dict[str, int]
+    exceptions:
+    - ValueError
+    side_effects: Reads and validates a local staffing seed JSON file, then idempotently upserts schools, classrooms, people, assignments, and active history rows.
+  - name: list_assignments
+    inputs: {}
+    returns:
+      type: list[StaffingAssignment]
+    exceptions: []
+    side_effects: Reads staffing SQLite database.
+  - name: closed_days_to_fill
+    inputs: {}
+    returns:
+      type: list[int]
+    exceptions: []
+    side_effects: Reads closed filled assignment history rows from staffing SQLite database.
   - name: get_assignment
     inputs:
       assignment_id:
