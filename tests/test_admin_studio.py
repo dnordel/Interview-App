@@ -31,6 +31,7 @@ def _write_admin_files(tmp_path: Path) -> AdminStudioPaths:
     overrides_path = tmp_path / "question_overrides.json"
     school_settings_path = tmp_path / "school_offer_settings.json"
     prompts_path = tmp_path / "deepseek_prompts.json"
+    app_settings_path = tmp_path / "interview_app_settings.json"
     notification_rules_path = tmp_path / "notification_rules.sqlite3"
     rubric_path.write_text(json.dumps(_rubric()), encoding="utf-8")
     overrides_path.write_text(
@@ -46,11 +47,13 @@ def _write_admin_files(tmp_path: Path) -> AdminStudioPaths:
     )
     school_settings_path.write_text(json.dumps({}), encoding="utf-8")
     prompts_path.write_text(json.dumps({"answer_summary_user": "Summarize answers."}), encoding="utf-8")
+    app_settings_path.write_text(json.dumps({"deepseek_summary_model": "deepseek-r1:14b"}), encoding="utf-8")
     return AdminStudioPaths(
         rubric_path=rubric_path,
         overrides_path=overrides_path,
         school_settings_path=school_settings_path,
         prompts_path=prompts_path,
+        app_settings_path=app_settings_path,
         notification_rules_path=notification_rules_path,
         backup_dir=tmp_path / "backups",
     )
@@ -190,3 +193,26 @@ def test_admin_studio_rejects_invalid_notification_recipient(tmp_path: Path) -> 
     )
 
     assert "Invalid notification recipient email." in draft.validate()
+
+
+def test_admin_studio_persists_allowed_deepseek_model_choice(tmp_path: Path) -> None:
+    paths = _write_admin_files(tmp_path)
+    studio = AdminStudio.load(paths)
+    draft = studio.create_draft()
+
+    draft.update_deepseek_model("deepseek-r1:8b")
+    result = studio.apply_draft(draft, confirm=True)
+
+    assert result.applied is True
+    assert "interview_app_settings.json" in result.changed_files
+    saved = json.loads(paths.app_settings_path.read_text(encoding="utf-8"))
+    assert saved["deepseek_summary_model"] == "deepseek-r1:8b"
+
+
+def test_admin_studio_rejects_unknown_deepseek_model_choice(tmp_path: Path) -> None:
+    studio = AdminStudio.load(_write_admin_files(tmp_path))
+    draft = studio.create_draft()
+
+    draft.update_deepseek_model("deepseek-r1:671b")
+
+    assert "DeepSeek model must be one of: deepseek-r1:1.5b, deepseek-r1:8b, deepseek-r1:14b." in draft.validate()

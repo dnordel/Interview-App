@@ -46,7 +46,7 @@ def build_default_settings() -> dict[str, Any]:
         "deepseek_summary_enabled": True,
         "deepseek_api_key": "ollama",
         "deepseek_api_base_url": "http://127.0.0.1:11434/v1",
-        "deepseek_summary_model": "deepseek-r1:14b",
+        "deepseek_summary_model": "deepseek-r1:8b",
         "deepseek_summary_timeout_seconds": 600,
         "deepseek_prompt_templates": load_deepseek_prompt_templates(),
         "director_referral_endpoint": default_referral_endpoint(),

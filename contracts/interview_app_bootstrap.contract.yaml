@@ -6,7 +6,7 @@ module:
   description: Contracts for bootstrap module.
 functions:
 - name: build_default_settings
-  description: Build default Tk app settings, including local Ollama deepseek-r1:14b summary
+  description: Build default Tk app settings, including local Ollama deepseek-r1:8b summary
     defaults for finalize-time executive summary, interview highlights, and answer
     summaries plus editable DeepSeek prompt templates and per-question prompt override
     maps loaded from config/deepseek_prompts.json.

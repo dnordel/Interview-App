@@ -2,7 +2,7 @@ module:
   name: admin_studio
   language: python
   path: src/admin_studio.py
-  version: 1.0.0
+  version: 1.1.0
   description: Single admin boundary for local configuration review, draft editing,
     dirty tracking, validation, backup creation, and review-then-apply persistence
     for PySide Admin Studio, including checkpoint notification rules.
@@ -20,6 +20,8 @@ classes:
     school_settings_path:
       type: Path
     prompts_path:
+      type: Path
+    app_settings_path:
       type: Path
     notification_rules_path:
       type: Path
@@ -62,6 +64,10 @@ classes:
       prompts:
         type: dict[str, Any]
         required: true
+      app_settings:
+        type: dict[str, Any]
+        required: false
+        default: None
     returns:
       type: AdminStudioDraft
   - name: changed_payloads
@@ -132,6 +138,15 @@ classes:
       type: None
     exceptions:
     - ValueError
+  - name: update_deepseek_model
+    description: Draft an allowed local Ollama DeepSeek model selection for app settings
+      without writing files.
+    inputs:
+      model:
+        type: str
+        required: true
+    returns:
+      type: None
   - name: update_notification_rule
     description: Draft one notification rule edit without writing the notification database.
     inputs:
@@ -163,8 +178,8 @@ classes:
     returns:
       type: AdminStudio
     side_effects: Reads rubric, question override, school settings, prompt JSON,
-      and notification rules; creates inactive default notification examples when
-      missing.
+      app settings, and notification rules; creates inactive default notification
+      examples when missing.
   - name: create_draft
     inputs: {}
     returns:
@@ -188,7 +203,7 @@ classes:
     returns:
       type: AdminApplyResult
     side_effects: When confirm is true and validation passes, writes changed JSON
-      files after creating backups.
+      files and notification rules after creating backups.
 data_structures: []
 dependencies:
 - data_store

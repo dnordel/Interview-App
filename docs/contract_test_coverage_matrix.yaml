@@ -114,6 +114,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/admin_studio.contract.yaml
+  symbol: admin_studio.AdminStudioDraft.update_deepseek_model
+  kind: method
+  tests:
+  - path: tests/test_admin_studio.py
+    focus:
+    - behavior
+    - validation
+    - persistence
+- contract: contracts/admin_studio.contract.yaml
   symbol: admin_studio.AdminStudioDraft.update_prompt
   kind: method
   tests:

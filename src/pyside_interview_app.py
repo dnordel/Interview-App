@@ -15,10 +15,11 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Sequence
 
-from admin_studio import AdminStudio, AdminStudioPaths
+from admin_studio import DEFAULT_DEEPSEEK_MODEL, DEEPSEEK_MODEL_CHOICES, AdminStudio, AdminStudioPaths
 from docx import Document
 from data_store import (
     InterviewHistoryStore,
+    InterviewAppSettingsStore,
     QuestionOverridesStore,
     RubricLoader,
     SchoolOfferSettingsStore,
@@ -48,6 +49,7 @@ from platform_services import (
     DEFAULT_SCHOOL_OPTIONS,
     DEFAULT_BASE_DIR,
     INTERVIEW_HISTORY_PATH,
+    INTERVIEW_APP_SETTINGS_PATH,
     QUESTIONS_OVERRIDE_PATH,
     SCHOOL_OFFER_SETTINGS_PATH,
     atomic_write_json,
@@ -507,10 +509,11 @@ class _PySideFinalizeAdapter:
             "deepseek_summary_enabled": True,
             "deepseek_api_key": "ollama",
             "deepseek_api_base_url": "http://127.0.0.1:11434/v1",
-            "deepseek_summary_model": "deepseek-r1:14b",
+            "deepseek_summary_model": DEFAULT_DEEPSEEK_MODEL,
             "deepseek_summary_timeout_seconds": 600,
             "deepseek_prompt_templates": {},
         }
+        self.settings.update(InterviewAppSettingsStore(INTERVIEW_APP_SETTINGS_PATH).load())
         self.school_offer_store = SchoolOfferSettingsStore(SCHOOL_OFFER_SETTINGS_PATH)
         self.history_store = InterviewHistoryStore(Path(history_path))
         self.state = SimpleNamespace(
@@ -2879,6 +2882,7 @@ class PySideInterviewWindow:
             overrides_path=QUESTIONS_OVERRIDE_PATH,
             school_settings_path=SCHOOL_OFFER_SETTINGS_PATH,
             prompts_path=DEEPSEEK_PROMPTS_CONFIG_PATH,
+            app_settings_path=INTERVIEW_APP_SETTINGS_PATH,
             notification_rules_path=NOTIFICATION_RULES_PATH,
         )
 
@@ -2901,6 +2905,9 @@ class PySideInterviewWindow:
         if key == "notifications":
             table = self._admin_notifications_table()
             tab_layout.addWidget(table, 1)
+            return tab
+        if key == "deepseek_model":
+            tab_layout.addWidget(self._admin_deepseek_model_selector(), 1)
             return tab
         if key == "prompts":
             table = self._admin_prompts_table()
@@ -2951,6 +2958,25 @@ class PySideInterviewWindow:
         rows = [[str(key), str(value)] for key, value in sorted(self.admin_draft.prompts.items()) if isinstance(value, str)]
         return self._admin_table("prompts", ["Prompt Key", "Template"], rows, {1})
 
+    def _admin_deepseek_model_selector(self) -> Any:
+        group = self.QtWidgets.QWidget()
+        layout = self.QtWidgets.QVBoxLayout(group)
+        self.admin_deepseek_model_selector = self.QtWidgets.QComboBox()
+        self.admin_deepseek_model_selector.setObjectName("AdminStudioDeepseekModelSelector")
+        labels = {
+            "deepseek-r1:1.5b": "Fastest - DeepSeek R1 1.5B",
+            "deepseek-r1:8b": "Balanced - DeepSeek R1 8B",
+            "deepseek-r1:14b": "Accurate - DeepSeek R1 14B",
+        }
+        for model in DEEPSEEK_MODEL_CHOICES:
+            self.admin_deepseek_model_selector.addItem(labels.get(model, model), model)
+        selected = str(self.admin_draft.app_settings.get("deepseek_summary_model", "") or DEFAULT_DEEPSEEK_MODEL).strip()
+        index = self.admin_deepseek_model_selector.findData(selected)
+        self.admin_deepseek_model_selector.setCurrentIndex(index if index >= 0 else self.admin_deepseek_model_selector.findData(DEFAULT_DEEPSEEK_MODEL))
+        layout.addWidget(self.admin_deepseek_model_selector)
+        layout.addStretch(1)
+        return group
+
     def _admin_notifications_table(self) -> Any:
         by_event = {rule.event_type: rule for rule in self.admin_draft.notification_rules}
         rows: list[list[str]] = []
@@ -2981,6 +3007,7 @@ class PySideInterviewWindow:
                 ["question_overrides.json", str(QUESTIONS_OVERRIDE_PATH)],
                 ["school_offer_settings.json", str(SCHOOL_OFFER_SETTINGS_PATH)],
                 ["deepseek_prompts.json", str(DEEPSEEK_PROMPTS_CONFIG_PATH)],
+                ["interview_app_settings.json", str(INTERVIEW_APP_SETTINGS_PATH)],
             ]
         return []
 
@@ -3060,6 +3087,9 @@ class PySideInterviewWindow:
                         item.setFlags(item.flags() & ~self.QtCore.Qt.ItemFlag.ItemIsEditable)
                         item.setData(self.QtCore.Qt.ItemDataRole.BackgroundRole, None)
             table.resizeRowsToContents()
+        selector = getattr(self, "admin_deepseek_model_selector", None)
+        if selector is not None:
+            selector.setEnabled(enabled)
         self.admin_edit_button.setText("Editing" if enabled else "Edit")
         self.admin_edit_button.setEnabled(not enabled)
         self.admin_review_button.setEnabled(enabled)
@@ -3125,6 +3155,10 @@ class PySideInterviewWindow:
                 if prompt_item.text() == prompt_item.data(self.QtCore.Qt.ItemDataRole.UserRole):
                     continue
                 self.admin_draft.update_prompt(prompts.item(row_index, 0).text().strip(), prompt_item.text())
+        selector = getattr(self, "admin_deepseek_model_selector", None)
+        if selector is not None:
+            selected_model = selector.currentData() or selector.currentText()
+            self.admin_draft.update_deepseek_model(str(selected_model))
         notifications = self._admin_tables.get("notifications")
         if notifications is not None:
             for row_index in range(notifications.rowCount()):
@@ -3178,6 +3212,11 @@ class PySideInterviewWindow:
 
     def _discard_admin_changes(self) -> None:
         self.admin_draft = self.admin_draft.discard()
+        selector = getattr(self, "admin_deepseek_model_selector", None)
+        if selector is not None:
+            selected = str(self.admin_draft.app_settings.get("deepseek_summary_model", "") or DEFAULT_DEEPSEEK_MODEL).strip()
+            index = selector.findData(selected)
+            selector.setCurrentIndex(index if index >= 0 else selector.findData(DEFAULT_DEEPSEEK_MODEL))
         self._set_admin_editing_enabled(False)
         self._sync_admin_status()
 

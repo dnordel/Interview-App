@@ -20,9 +20,23 @@ $ErrorActionPreference = "Stop"
 
 $AppDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $AppDir
-$LocalDeepSeekModel = "deepseek-r1:14b"
+$LocalDeepSeekModel = "deepseek-r1:8b"
+$AllowedLocalDeepSeekModels = @("deepseek-r1:1.5b", "deepseek-r1:8b", "deepseek-r1:14b")
 if ($env:DEEPSEEK_SUMMARY_MODEL -and $env:DEEPSEEK_SUMMARY_MODEL.Trim()) {
   $LocalDeepSeekModel = $env:DEEPSEEK_SUMMARY_MODEL.Trim()
+} else {
+  $appSettingsPath = Join-Path (Join-Path $AppDir "user_artifacts") "interview_app_settings.json"
+  if (Test-Path $appSettingsPath) {
+    try {
+      $appSettings = Get-Content -LiteralPath $appSettingsPath -Raw | ConvertFrom-Json
+      $selectedModel = [string]$appSettings.deepseek_summary_model
+      if ($selectedModel -and $AllowedLocalDeepSeekModels -contains $selectedModel) {
+        $LocalDeepSeekModel = $selectedModel
+      }
+    } catch {
+      # Keep repo default when app settings are missing or malformed.
+    }
+  }
 }
 $OllamaBaseUrl = "http://127.0.0.1:11434"
 $DefaultUiMode = "tk"

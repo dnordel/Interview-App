@@ -1976,10 +1976,13 @@ def test_pyside_admin_studio_uses_guided_readonly_sections_until_edit(tmp_path: 
     settings_path.write_text(json.dumps({}), encoding="utf-8")
     prompts_path = tmp_path / "deepseek_prompts.json"
     prompts_path.write_text(json.dumps({"answer_summary_user": "Summarize."}), encoding="utf-8")
+    app_settings_path = tmp_path / "interview_app_settings.json"
+    app_settings_path.write_text(json.dumps({"deepseek_summary_model": "deepseek-r1:14b"}), encoding="utf-8")
     monkeypatch.setattr(pyside_interview_app, "DEFAULT_RUBRIC_PATH", rubric_path)
     monkeypatch.setattr(pyside_interview_app, "QUESTIONS_OVERRIDE_PATH", overrides_path)
     monkeypatch.setattr(pyside_interview_app, "SCHOOL_OFFER_SETTINGS_PATH", settings_path)
     monkeypatch.setattr(pyside_interview_app, "DEEPSEEK_PROMPTS_CONFIG_PATH", prompts_path)
+    monkeypatch.setattr(pyside_interview_app, "INTERVIEW_APP_SETTINGS_PATH", app_settings_path)
     model = build_interview_redesign_model(
         rubric_path=rubric_path,
         overrides_path=overrides_path,
@@ -1990,6 +1993,7 @@ def test_pyside_admin_studio_uses_guided_readonly_sections_until_edit(tmp_path: 
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     questions_table = window.window.findChild(qt_widgets.QTableWidget, "AdminStudioQuestionsTable")
     rubrics_table = window.window.findChild(qt_widgets.QTableWidget, "AdminStudioRubricsTable")
+    model_selector = window.window.findChild(qt_widgets.QComboBox, "AdminStudioDeepseekModelSelector")
 
     assert section_list is not None
     assert [section_list.item(index).text() for index in range(section_list.count())][:2] == ["Questions & Flow", "Rubrics"]
@@ -2003,11 +2007,20 @@ def test_pyside_admin_studio_uses_guided_readonly_sections_until_edit(tmp_path: 
     assert rubrics_table.item(0, 0).text() == "trait_1"
     assert rubrics_table.item(0, 1).text() == "Empathy"
     assert not (rubrics_table.item(0, 0).flags() & qt_core.Qt.ItemFlag.ItemIsEditable)
+    assert model_selector is not None
+    assert [model_selector.itemData(index) for index in range(model_selector.count())] == [
+        "deepseek-r1:1.5b",
+        "deepseek-r1:8b",
+        "deepseek-r1:14b",
+    ]
+    assert model_selector.currentData() == "deepseek-r1:14b"
+    assert model_selector.isEnabled() is False
     window.admin_edit_button.click()
     assert window.admin_edit_button.text() == "Editing"
     assert "Edit mode" in window.admin_status_label.text()
     assert questions_table.item(0, 4).flags() & qt_core.Qt.ItemFlag.ItemIsEditable
     assert rubrics_table.item(0, 1).flags() & qt_core.Qt.ItemFlag.ItemIsEditable
+    assert model_selector.isEnabled() is True
     window.window.close()
     app.processEvents()
 

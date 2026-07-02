@@ -2,7 +2,7 @@ module:
   name: interview_runtime
   language: python
   path: src/interview_runtime.py
-  version: 0.29.0
+  version: 0.29.1
   description: Flattened public interface for interview state, session management,
     audio/transcription runtime, transcript summary seam, controllers, history, and
     finalize pipeline; only active legacy adapters remain in the compatibility module
@@ -257,7 +257,7 @@ functions:
   side_effects: May initialize cached transformers pipeline.
 - name: build_deepseek_summary_config
   description: Build local DeepSeek interview summary config from environment values,
-    defaulting to Ollama at 127.0.0.1 and the configured local 14b DeepSeek model while
+    defaulting to Ollama at 127.0.0.1 and the configured local 8b balanced DeepSeek model while
     rejecting non-local base URLs, resolving the model-output debug log directory,
     and loading prompt templates from config/deepseek_prompts.json when no explicit
     prompt map is supplied.

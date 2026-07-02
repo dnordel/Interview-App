@@ -2,7 +2,7 @@ module:
   name: setup_and_run
   language: powershell
   path: setup_and_run.ps1
-  version: 1.6.0
+  version: 1.6.1
   description: Windows launcher bootstrap that checks prerequisites, installs Python
     3.11 when needed, provisions a per-user virtual environment that can reuse system
     site packages under LOCALAPPDATA instead of the repository folder, installs
@@ -312,9 +312,10 @@ functions:
     writes diagnostics on failure or missing models
 - name: Ensure-DeepSeekModel
   description: Pull the configured DeepSeek model into Ollama when it is not already
-    installed locally, defaulting to the repo-selected local 14b model while honoring a
-    pre-set DEEPSEEK_SUMMARY_MODEL override for alternate local models, then retry
-    local registry checks to allow Ollama to refresh after pull completion.
+    installed locally, defaulting to the repo-selected local 8b balanced model while
+    honoring a pre-set DEEPSEEK_SUMMARY_MODEL override or an allowlisted Admin Studio
+    app-settings model selection, then retry local registry checks to allow Ollama
+    to refresh after pull completion.
   locked: false
   inputs:
     OllamaExe:

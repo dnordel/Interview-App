@@ -65,7 +65,7 @@ def test_request_deepseek_chat_completion_uses_native_ollama_json(monkeypatch: p
     assert calls[0]["url"] == "http://127.0.0.1:11434/api/generate"
     assert calls[0]["body"]["format"] == "json"
     assert calls[0]["body"]["stream"] is False
-    assert calls[0]["body"]["model"] == "deepseek-r1:14b"
+    assert calls[0]["body"]["model"] == "deepseek-r1:8b"
     assert calls[0]["body"]["options"]["num_predict"] == 4096
     assert calls[0]["timeout"] == 7
     assert response["choices"][0]["message"]["content"] == '{"ok":true}'
@@ -87,7 +87,7 @@ def test_default_tk_settings_enable_local_deepseek_summary() -> None:
     assert config.enabled is True
     assert config.api_key == "ollama"
     assert config.base_url == "http://127.0.0.1:11434/v1"
-    assert config.model == "deepseek-r1:14b"
+    assert config.model == "deepseek-r1:8b"
 
 
 def test_deepseek_summary_config_defaults_to_local_ollama_when_disabled() -> None:
@@ -96,7 +96,7 @@ def test_deepseek_summary_config_defaults_to_local_ollama_when_disabled() -> Non
     assert config.enabled is False
     assert config.api_key == "ollama"
     assert config.base_url == "http://127.0.0.1:11434/v1"
-    assert config.model == "deepseek-r1:14b"
+    assert config.model == "deepseek-r1:8b"
 
 
 def test_deepseek_summary_config_enables_local_ollama_without_hosted_api_key() -> None:
@@ -105,7 +105,7 @@ def test_deepseek_summary_config_enables_local_ollama_without_hosted_api_key() -
     assert config.enabled is True
     assert config.api_key == "ollama"
     assert config.base_url == "http://127.0.0.1:11434/v1"
-    assert config.model == "deepseek-r1:14b"
+    assert config.model == "deepseek-r1:8b"
 
 
 def test_deepseek_summary_config_allows_long_local_timeout() -> None:
@@ -1088,7 +1088,7 @@ def test_regenerate_interview_notes_job_full_mode_resets_deepseek_checkpoints(
     assert job["deepseek_settings"]["DEEPSEEK_SUMMARY_ENABLED"] == "1"
     assert job["deepseek_settings"]["DEEPSEEK_API_KEY"] == "ollama"
     assert job["deepseek_settings"]["DEEPSEEK_API_BASE_URL"] == "http://127.0.0.1:11434/v1"
-    assert job["deepseek_settings"]["DEEPSEEK_SUMMARY_MODEL"] == "deepseek-r1:14b"
+    assert job["deepseek_settings"]["DEEPSEEK_SUMMARY_MODEL"] == "deepseek-r1:8b"
     assert job["deepseek_settings"]["DEEPSEEK_SUMMARY_TIMEOUT_SECONDS"] == "600"
     assert job["deepseek_settings"]["DEEPSEEK_PROMPT_TEMPLATES"] == {"executive_summary_user": "new prompt"}
 

@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from data_store import QuestionOverridesStore, SchoolOfferSettingsStore
+from data_store import InterviewAppSettingsStore, QuestionOverridesStore, SchoolOfferSettingsStore
 from email_security import is_valid_email_address
 from interview_runtime import normalize_deepseek_prompt_templates
 from notification_models import NotificationRecipient, NotificationRule
@@ -16,6 +16,7 @@ from notification_service import NOTIFICATION_RULES_PATH
 from notification_store import NotificationStore
 from platform_services import (
     DEFAULT_RUBRIC_PATH,
+    INTERVIEW_APP_SETTINGS_PATH,
     QUESTIONS_OVERRIDE_PATH,
     SCHOOL_OFFER_SETTINGS_PATH,
     atomic_write_json,
@@ -24,6 +25,8 @@ from question_settings_service import QuestionSettingsService
 
 
 DEFAULT_PROMPTS_PATH = Path(__file__).resolve().parent.parent / "config" / "deepseek_prompts.json"
+DEEPSEEK_MODEL_CHOICES = ("deepseek-r1:1.5b", "deepseek-r1:8b", "deepseek-r1:14b")
+DEFAULT_DEEPSEEK_MODEL = "deepseek-r1:8b"
 
 
 @dataclass(frozen=True)
@@ -32,6 +35,7 @@ class AdminStudioPaths:
     overrides_path: Path = QUESTIONS_OVERRIDE_PATH
     school_settings_path: Path = SCHOOL_OFFER_SETTINGS_PATH
     prompts_path: Path = DEFAULT_PROMPTS_PATH
+    app_settings_path: Path = INTERVIEW_APP_SETTINGS_PATH
     notification_rules_path: Path = NOTIFICATION_RULES_PATH
     backup_dir: Path | None = None
 
@@ -73,11 +77,13 @@ class AdminStudioDraft:
     baseline_overrides: dict[str, Any]
     baseline_school_settings: dict[str, dict[str, str]]
     baseline_prompts: dict[str, Any]
+    baseline_app_settings: dict[str, Any]
     baseline_notification_rules: list[NotificationRule]
     rubric: dict[str, Any]
     overrides: dict[str, Any]
     school_settings: dict[str, dict[str, str]]
     prompts: dict[str, Any]
+    app_settings: dict[str, Any]
     notification_rules: list[NotificationRule]
 
     @classmethod
@@ -88,18 +94,22 @@ class AdminStudioDraft:
         overrides: dict[str, Any],
         school_settings: dict[str, dict[str, str]],
         prompts: dict[str, Any],
+        app_settings: dict[str, Any] | None = None,
         notification_rules: list[NotificationRule] | None = None,
     ) -> "AdminStudioDraft":
+        app_settings = app_settings or {}
         return cls(
             baseline_rubric=deepcopy(rubric),
             baseline_overrides=deepcopy(overrides),
             baseline_school_settings=deepcopy(school_settings),
             baseline_prompts=deepcopy(prompts),
+            baseline_app_settings=deepcopy(app_settings),
             baseline_notification_rules=deepcopy(notification_rules or []),
             rubric=deepcopy(rubric),
             overrides=deepcopy(overrides),
             school_settings=deepcopy(school_settings),
             prompts=deepcopy(prompts),
+            app_settings=deepcopy(app_settings),
             notification_rules=deepcopy(notification_rules or []),
         )
 
@@ -114,6 +124,7 @@ class AdminStudioDraft:
             "question_overrides.json": (self.baseline_overrides, self.overrides),
             "school_offer_settings.json": (self.baseline_school_settings, self.school_settings),
             "deepseek_prompts.json": (self.baseline_prompts, self.prompts),
+            "interview_app_settings.json": (self.baseline_app_settings, self.app_settings),
             "notification_rules.sqlite3": (
                 _notification_rule_snapshot(self.baseline_notification_rules),
                 _notification_rule_snapshot(self.notification_rules),
@@ -130,6 +141,7 @@ class AdminStudioDraft:
         lines.extend(_trait_change_lines(self.baseline_rubric, self.rubric))
         lines.extend(_school_change_lines(self.baseline_school_settings, self.school_settings))
         lines.extend(_prompt_change_lines(self.baseline_prompts, self.prompts))
+        lines.extend(_app_settings_change_lines(self.baseline_app_settings, self.app_settings))
         lines.extend(_notification_change_lines(self.baseline_notification_rules, self.notification_rules))
         if self.baseline_overrides != self.overrides:
             lines.append("Question flow or custom question settings changed.")
@@ -141,6 +153,7 @@ class AdminStudioDraft:
             overrides=self.baseline_overrides,
             school_settings=self.baseline_school_settings,
             prompts=self.baseline_prompts,
+            app_settings=self.baseline_app_settings,
             notification_rules=self.baseline_notification_rules,
         )
 
@@ -184,6 +197,10 @@ class AdminStudioDraft:
         if not key:
             raise ValueError("Prompt key is required.")
         self.prompts[key] = str(value)
+
+    def update_deepseek_model(self, model: str) -> None:
+        clean_model = str(model or "").strip()
+        self.app_settings["deepseek_summary_model"] = clean_model
 
     def update_notification_rule(self, event_type: str, updates: dict[str, str]) -> None:
         event_type = str(event_type or "").strip()
@@ -232,6 +249,9 @@ class AdminStudioDraft:
             if any(part.strip() == ".." for part in notes_dir.replace("/", "\\").split("\\")):
                 errors.append("Interview notes folder cannot contain '..'.")
                 break
+        selected_model = str(self.app_settings.get("deepseek_summary_model", "") or DEFAULT_DEEPSEEK_MODEL).strip()
+        if selected_model not in DEEPSEEK_MODEL_CHOICES:
+            errors.append(f"DeepSeek model must be one of: {', '.join(DEEPSEEK_MODEL_CHOICES)}.")
         for rule in self.notification_rules:
             if not rule.event_type.strip():
                 errors.append("Notification event type is required.")
@@ -255,6 +275,7 @@ class AdminStudio:
         overrides: dict[str, Any],
         school_settings: dict[str, dict[str, str]],
         prompts: dict[str, Any],
+        app_settings: dict[str, Any],
         notification_rules: list[NotificationRule],
     ) -> None:
         self.paths = _normalize_paths(paths)
@@ -262,6 +283,7 @@ class AdminStudio:
         self.overrides = deepcopy(overrides)
         self.school_settings = deepcopy(school_settings)
         self.prompts = deepcopy(prompts)
+        self.app_settings = deepcopy(app_settings)
         self.notification_rules = deepcopy(notification_rules)
 
     @classmethod
@@ -271,6 +293,7 @@ class AdminStudio:
         overrides_store = QuestionOverridesStore(paths.overrides_path)
         school_store = SchoolOfferSettingsStore(paths.school_settings_path)
         prompts = normalize_deepseek_prompt_templates(_read_json_object(paths.prompts_path))
+        app_settings = InterviewAppSettingsStore(paths.app_settings_path).load()
         notification_store = NotificationStore(paths.notification_rules_path)
         notification_store.ensure_default_rules()
         notification_rules = notification_store.list_rules()
@@ -280,6 +303,7 @@ class AdminStudio:
             overrides=overrides_store.data,
             school_settings=school_store.load(),
             prompts=prompts,
+            app_settings=app_settings,
             notification_rules=notification_rules,
         )
 
@@ -289,6 +313,7 @@ class AdminStudio:
             overrides=self.overrides,
             school_settings=self.school_settings,
             prompts=self.prompts,
+            app_settings=self.app_settings,
             notification_rules=self.notification_rules,
         )
 
@@ -303,8 +328,9 @@ class AdminStudio:
             AdminSection("signals", "Signal Hints", "Review runtime signal definitions.", len(traits)),
             AdminSection("templates", "Templates & Folders", "Edit school templates and output folders.", len(active.school_settings)),
             AdminSection("notifications", "Notifications", "Edit checkpoint email rules and recipients.", len(active.notification_rules)),
+            AdminSection("deepseek_model", "DeepSeek Model", "Choose local model speed and quality.", 1),
             AdminSection("prompts", "DeepSeek Prompts", "Edit local prompt templates.", len(active.prompts)),
-            AdminSection("advanced", "Advanced JSON", "Review source JSON files with safeguards.", 4),
+            AdminSection("advanced", "Advanced JSON", "Review source JSON files with safeguards.", 5),
         ]
         return AdminStudioSummary(
             sections=sections,
@@ -330,6 +356,8 @@ class AdminStudio:
             SchoolOfferSettingsStore(self.paths.school_settings_path).save(draft.school_settings)
         if "deepseek_prompts.json" in changed:
             atomic_write_json(self.paths.prompts_path, normalize_deepseek_prompt_templates(draft.prompts), indent=2, ensure_ascii=False)
+        if "interview_app_settings.json" in changed:
+            InterviewAppSettingsStore(self.paths.app_settings_path).save(draft.app_settings)
         if "notification_rules.sqlite3" in changed:
             store = NotificationStore(self.paths.notification_rules_path)
             for rule in draft.notification_rules:
@@ -338,6 +366,7 @@ class AdminStudio:
         self.overrides = deepcopy(draft.overrides)
         self.school_settings = deepcopy(draft.school_settings)
         self.prompts = deepcopy(draft.prompts)
+        self.app_settings = deepcopy(draft.app_settings)
         self.notification_rules = deepcopy(draft.notification_rules)
         return AdminApplyResult(applied=True, changed_files=list(changed), backup_paths=backup_paths)
 
@@ -350,6 +379,7 @@ class AdminStudio:
             "question_overrides.json": self.paths.overrides_path,
             "school_offer_settings.json": self.paths.school_settings_path,
             "deepseek_prompts.json": self.paths.prompts_path,
+            "interview_app_settings.json": self.paths.app_settings_path,
             "notification_rules.sqlite3": self.paths.notification_rules_path,
         }
         backups: list[Path] = []
@@ -371,6 +401,7 @@ def _normalize_paths(paths: AdminStudioPaths) -> AdminStudioPaths:
         overrides_path=Path(paths.overrides_path),
         school_settings_path=Path(paths.school_settings_path),
         prompts_path=Path(paths.prompts_path),
+        app_settings_path=Path(paths.app_settings_path),
         notification_rules_path=Path(paths.notification_rules_path),
         backup_dir=backup_dir,
     )
@@ -416,6 +447,14 @@ def _prompt_change_lines(before: dict[str, Any], after: dict[str, Any]) -> list[
         if before.get(key) != new:
             lines.append(f"{key} prompt changed.")
     return lines
+
+
+def _app_settings_change_lines(before: dict[str, Any], after: dict[str, Any]) -> list[str]:
+    old_model = str(before.get("deepseek_summary_model", "") or DEFAULT_DEEPSEEK_MODEL).strip()
+    new_model = str(after.get("deepseek_summary_model", "") or DEFAULT_DEEPSEEK_MODEL).strip()
+    if old_model != new_model:
+        return [f"DeepSeek model: {old_model} -> {new_model}"]
+    return []
 
 
 def _notification_rule_snapshot(rules: list[NotificationRule]) -> list[dict[str, Any]]:
