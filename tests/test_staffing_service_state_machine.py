@@ -49,3 +49,65 @@ def test_basic_staffing_flow_opens_coming_and_fills_position(tmp_path: Path) -> 
     assert assignment.current_filled_date == "2026-07-04T10:00:00Z"
     assert store.active_history_count(assignment_id) == 0
     assert store.closed_days_to_fill() == [3]
+
+
+def test_move_person_to_open_assignment_requires_confirmation_and_reopens_source(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    source_id = store.seed_assignment(
+        school="Hawthorne",
+        classroom="Tranquility",
+        position_name="Teacher 1",
+        position_type="Teacher",
+        status="filled",
+        person_name="Jane Doe",
+    )
+    target_id = store.seed_assignment(
+        school="Hawthorne",
+        classroom="Harmony",
+        position_name="Teacher 2",
+        position_type="Teacher",
+        status="need_now",
+    )
+    service = StaffingService(store, clock=_Clock(["2026-07-05T09:00:00Z"]))
+
+    result = service.move_person(source_id, target_id, confirmed=True)
+
+    source = store.get_assignment(source_id)
+    target = store.get_assignment(target_id)
+    assert result.assignment_id == target_id
+    assert source.status == "need_now"
+    assert source.person_id is None
+    assert source.current_opened_date == "2026-07-05T09:00:00Z"
+    assert target.status == "filled"
+    assert target.person_name == "Jane Doe"
+    assert store.active_history_count(source_id) == 1
+
+
+def test_update_assignment_details_edits_classroom_shift_and_permit(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    assignment_id = store.seed_assignment(
+        school="Hawthorne",
+        classroom="Tranquility",
+        position_name="Teacher 1",
+        position_type="Teacher",
+        status="filled",
+        person_name="Jane Doe",
+    )
+    service = StaffingService(store, clock=_Clock(["2026-07-05T10:00:00Z"]))
+
+    result = service.update_assignment_details(
+        assignment_id,
+        classroom="Harmony",
+        shift_start="08:30",
+        shift_end="17:00",
+        permit_status="teacher_permit_approved",
+    )
+
+    assignment = store.get_assignment(assignment_id)
+    assert result.assignment_id == assignment_id
+    assert assignment.classroom == "Harmony"
+    assert assignment.shift_start == "08:30"
+    assert assignment.shift_end == "17:00"
+    assert assignment.permit_status == "teacher_permit_approved"

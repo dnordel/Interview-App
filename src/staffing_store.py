@@ -63,6 +63,8 @@ class StaffingStore:
                     current_opened_date TEXT,
                     current_filled_date TEXT,
                     start_date TEXT,
+                    shift_start TEXT NOT NULL DEFAULT '',
+                    shift_end TEXT NOT NULL DEFAULT '',
                     slot_group TEXT NOT NULL DEFAULT '',
                     notes TEXT NOT NULL DEFAULT '',
                     display_order INTEGER NOT NULL DEFAULT 0,
@@ -98,6 +100,8 @@ class StaffingStore:
             self._ensure_column(conn, "classrooms", "ratio_group", "TEXT NOT NULL DEFAULT ''")
             self._ensure_column(conn, "assignments", "slot_group", "TEXT NOT NULL DEFAULT ''")
             self._ensure_column(conn, "assignments", "notes", "TEXT NOT NULL DEFAULT ''")
+            self._ensure_column(conn, "assignments", "shift_start", "TEXT NOT NULL DEFAULT ''")
+            self._ensure_column(conn, "assignments", "shift_end", "TEXT NOT NULL DEFAULT ''")
 
     def _ensure_column(self, conn: sqlite3.Connection, table: str, column: str, definition: str) -> None:
         existing = {str(row["name"]) for row in conn.execute(f"PRAGMA table_info({table})").fetchall()}
@@ -237,6 +241,8 @@ class StaffingStore:
             person_id=int(row["person_id"]) if row["person_id"] is not None else None,
             person_name=str(row["person_name"] or ""),
             start_date=str(row["start_date"] or ""),
+            shift_start=str(row["shift_start"] or ""),
+            shift_end=str(row["shift_end"] or ""),
             notice_given=str(row["notice_given"] or ""),
             final_working_day=str(row["final_working_day"] or ""),
             permit_status=str(row["permit_status"] or ""),

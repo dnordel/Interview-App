@@ -2405,14 +2405,14 @@ def test_pyside_staffing_dashboard_imports_seed_and_shows_metrics(tmp_path: Path
 
     window = pyside_interview_app.PySideInterviewWindow(model)
     labels = [label.text() for label in window.stack.widget(3).findChildren(qt_widgets.QLabel)]
-    table = window.window.findChild(qt_widgets.QTableWidget, "PySideStaffingAssignments")
+    table = window.window.findChild(qt_widgets.QTableWidget, "PySideStaffingWorkbookBoard")
 
     assert any("Open positions: 1" in text for text in labels)
     assert table is not None
     assert table.rowCount() == 2
-    assert table.horizontalHeaderItem(7).text() == "Days Open"
-    assert table.horizontalHeaderItem(9).text() == "Action"
-    assert table.item(1, 0).text() == "Hawthorne"
+    assert table.horizontalHeaderItem(4).text() == "Person"
+    assert table.horizontalHeaderItem(8).text() == "Action"
+    assert table.item(1, 1).text() == "Tranquility"
     assert table.item(1, 3).text() == "Teacher 2"
     window.window.close()
     app.processEvents()
@@ -2501,17 +2501,18 @@ def test_pyside_staffing_open_action_refreshes_dashboard(tmp_path: Path, monkeyp
         school_options=["Hawthorne"],
     )
     window = pyside_interview_app.PySideInterviewWindow(model)
-    table = window.window.findChild(qt_widgets.QTableWidget, "PySideStaffingAssignments")
-    button = table.cellWidget(0, 9)
+    table = window.window.findChild(qt_widgets.QTableWidget, "PySideStaffingWorkbookBoard")
+    button = _staffing_button_for_position(table, "Teacher 1")
 
     assert button.text() == "Open"
     button.click()
     app.processEvents()
 
-    table = window.window.findChild(qt_widgets.QTableWidget, "PySideStaffingAssignments")
+    table = window.window.findChild(qt_widgets.QTableWidget, "PySideStaffingWorkbookBoard")
     labels = [label.text() for label in window.stack.widget(3).findChildren(qt_widgets.QLabel)]
-    assert table.item(0, 5).text() == "need_now"
-    assert table.cellWidget(0, 9).text() == "Mark Coming"
+    row = _staffing_row_for_position(table, "Teacher 1")
+    assert table.item(row, 5).text() == "need_now"
+    assert table.cellWidget(row, 8).text() == "Mark Coming"
     assert any("Open positions: 1" in text for text in labels)
     window.window.close()
     app.processEvents()
@@ -2552,10 +2553,10 @@ def test_pyside_staffing_action_button_exposes_secondary_actions(tmp_path: Path,
         school_options=["Hawthorne"],
     )
     window = pyside_interview_app.PySideInterviewWindow(model)
-    table = window.window.findChild(qt_widgets.QTableWidget, "PySideStaffingAssignments")
+    table = window.window.findChild(qt_widgets.QTableWidget, "PySideStaffingWorkbookBoard")
 
-    coming_menu_labels = [action.text() for action in table.cellWidget(0, 9).menu().actions()]
-    replace_menu_labels = [action.text() for action in table.cellWidget(1, 9).menu().actions()]
+    coming_menu_labels = [action.text() for action in _staffing_button_for_position(table, "Teacher 1").menu().actions()]
+    replace_menu_labels = [action.text() for action in _staffing_button_for_position(table, "Teacher 2").menu().actions()]
 
     assert "Revert Coming" in coming_menu_labels
     assert "Mark Not Needed" in coming_menu_labels
@@ -2591,14 +2592,15 @@ def test_pyside_staffing_dashboard_groups_by_school_and_colors_statuses(tmp_path
     )
     window = pyside_interview_app.PySideInterviewWindow(model)
     tabs = window.window.findChild(qt_widgets.QTabWidget, "PySideStaffingSchoolTabs")
-    first_table = tabs.widget(0).findChild(qt_widgets.QTableWidget, "PySideStaffingAssignments")
-    second_table = tabs.widget(1).findChild(qt_widgets.QTableWidget, "PySideStaffingAssignments")
+    first_table = tabs.widget(0).findChild(qt_widgets.QTableWidget, "PySideStaffingWorkbookBoard")
+    second_table = tabs.widget(1).findChild(qt_widgets.QTableWidget, "PySideStaffingWorkbookBoard")
 
     assert [tabs.tabText(index) for index in range(tabs.count())] == ["Hawthorne", "Palmdale"]
     assert "Need Now: 1" in tabs.widget(0).findChild(qt_widgets.QLabel, "PySideStaffingSummary").text()
-    assert first_table.item(0, 5).background().color().isValid()
-    assert second_table.item(0, 8).text() == "teacher_permit_approved"
-    assert second_table.item(0, 8).background().color().isValid()
+    assert first_table.item(_staffing_row_for_position(first_table, "Teacher 1"), 5).background().color().isValid()
+    second_row = _staffing_row_for_position(second_table, "Teacher 1")
+    assert second_table.item(second_row, 4).text() == "Angie"
+    assert second_table.item(second_row, 4).background().color().isValid()
     window.window.close()
     app.processEvents()
 
@@ -2918,15 +2920,126 @@ def test_pyside_staffing_actions_use_notification_service(tmp_path: Path, monkey
         school_options=["Hawthorne"],
     )
     window = pyside_interview_app.PySideInterviewWindow(model)
-    table = window.window.findChild(qt_widgets.QTableWidget, "PySideStaffingAssignments")
+    table = window.window.findChild(qt_widgets.QTableWidget, "PySideStaffingWorkbookBoard")
 
-    table.cellWidget(0, 9).click()
+    _staffing_button_for_position(table, "Teacher 1").click()
     app.processEvents()
 
     assert notifications
     assert notifications[0][0] == "staffing.assignment.need_now"
     window.window.close()
     app.processEvents()
+
+
+def test_pyside_staffing_uses_single_draggable_colored_workbook_table(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    qt_core = pytest.importorskip("PySide6.QtCore")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    seed_path = tmp_path / "staffing_seed.json"
+    seed_path.write_text(
+        json.dumps(
+            {
+                "schools": [
+                    {"name": "Hawthorne", "classrooms": [{"name": "Tranquility", "positions": [{"position_name": "Teacher 1", "position_type": "Teacher", "status": "filled", "person": {"name": "Angie"}}]}]},
+                    {"name": "Palmdale", "classrooms": [{"name": "Harmony", "positions": [{"position_name": "Teacher 1", "position_type": "Teacher", "status": "need_now"}]}]},
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", tmp_path / "staffing.sqlite3")
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", seed_path)
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.json",
+        school_options=["Hawthorne", "Palmdale"],
+    )
+
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    tabs = window.window.findChild(qt_widgets.QTabWidget, "PySideStaffingSchoolTabs")
+    workbook_tables = window.window.findChildren(qt_widgets.QTableWidget, "PySideStaffingWorkbookBoard")
+    flat_tables = window.window.findChildren(qt_widgets.QTableWidget, "PySideStaffingAssignments")
+
+    assert len(workbook_tables) == 2
+    assert flat_tables == []
+    assert all(table.dragEnabled() for table in workbook_tables)
+    assert all(table.acceptDrops() for table in workbook_tables)
+    assert workbook_tables[0].dragDropMode() == qt_widgets.QAbstractItemView.DragDropMode.DragDrop
+    assert tabs.tabBar().tabTextColor(0) != tabs.tabBar().tabTextColor(1)
+    assert tabs.tabBar().tabTextColor(0).isValid()
+    assert workbook_tables[0].item(_staffing_row_for_position(workbook_tables[0], "Teacher 1"), 4).flags() & qt_core.Qt.ItemFlag.ItemIsDragEnabled
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_staffing_confirm_move_updates_source_and_target(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    seed_path = tmp_path / "staffing_seed.json"
+    seed_path.write_text(
+        json.dumps(
+            {
+                "schools": [
+                    {
+                        "name": "Hawthorne",
+                        "classrooms": [
+                            {
+                                "name": "Tranquility",
+                                "positions": [
+                                    {"position_name": "Teacher 1", "position_type": "Teacher", "status": "filled", "person": {"name": "Angie"}},
+                                    {"position_name": "Teacher 2", "position_type": "Teacher", "status": "need_now"},
+                                ],
+                            }
+                        ],
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", tmp_path / "staffing.sqlite3")
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", seed_path)
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.json",
+        school_options=["Hawthorne"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    yes = window.QtWidgets.QMessageBox.StandardButton.Yes
+    monkeypatch.setattr(window.QtWidgets.QMessageBox, "question", lambda *_args, **_kwargs: yes)
+    assignments = window.staffing_store.list_assignments()
+    source_id = next(row.id for row in assignments if row.position_name == "Teacher 1")
+    target_id = next(row.id for row in assignments if row.position_name == "Teacher 2")
+
+    assert window._confirm_staffing_move(source_id, target_id) is True
+
+    source = window.staffing_store.get_assignment(source_id)
+    target = window.staffing_store.get_assignment(target_id)
+    assert source.status == "need_now"
+    assert source.person_name == ""
+    assert target.status == "filled"
+    assert target.person_name == "Angie"
+    window.window.close()
+    app.processEvents()
+
+
+def _staffing_row_for_position(table, position_name: str) -> int:
+    for row in range(table.rowCount()):
+        item = table.item(row, 3)
+        if item is not None and item.text() == position_name:
+            return row
+    raise AssertionError(f"Missing staffing row: {position_name}")
+
+
+def _staffing_button_for_position(table, position_name: str):
+    row = _staffing_row_for_position(table, position_name)
+    button = table.cellWidget(row, 8)
+    assert button is not None
+    return button
 
 
 def _write_test_overrides(tmp_path: Path) -> Path:

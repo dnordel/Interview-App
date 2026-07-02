@@ -45,6 +45,8 @@ NOTIFICATION_TEMPLATE_FIELDS = (
     "interview_date",
     "history_id",
     "start_date",
+    "shift_start",
+    "shift_end",
     "notice_given",
     "final_working_day",
     "has_degree",

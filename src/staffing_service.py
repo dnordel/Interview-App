@@ -211,6 +211,95 @@ class StaffingService:
         self._emit_person_event(person.id, assignment)
         return _result(assignment)
 
+    def move_person(self, source_assignment_id: int, target_assignment_id: int, *, confirmed: bool = False) -> StaffingTransitionResult:
+        if not confirmed:
+            raise ValueError("Confirmation is required.")
+        if int(source_assignment_id) == int(target_assignment_id):
+            raise ValueError("Source and target positions must be different.")
+        now = self.clock()
+        with self.store.connect() as conn:
+            source = self.store.assignment_context(conn, source_assignment_id)
+            target = self.store.assignment_context(conn, target_assignment_id)
+            if source.person_id is None:
+                raise ValueError("Source position has no person to move.")
+            if target.person_id is not None:
+                raise ValueError("Target position already has a person.")
+            if source.status not in {"filled", "coming"}:
+                raise ValueError("Only filled or coming people can be moved.")
+            self._close_active_history(conn, target_assignment_id, now)
+            target_status = source.status
+            target_filled_date = now if target_status == "filled" else None
+            conn.execute(
+                """
+                UPDATE assignments
+                SET person_id = ?, status = ?, start_date = ?, current_filled_date = ?,
+                    updated_at = ?
+                WHERE id = ?
+                """,
+                (source.person_id, target_status, source.start_date, target_filled_date, now, target_assignment_id),
+            )
+            conn.execute(
+                """
+                UPDATE assignments
+                SET person_id = NULL, status = 'need_now', start_date = NULL,
+                    current_opened_date = ?, current_filled_date = NULL, updated_at = ?
+                WHERE id = ?
+                """,
+                (now, now, source_assignment_id),
+            )
+            self._create_history_if_missing(conn, source_assignment_id, now)
+            updated = self.store.assignment_context(conn, target_assignment_id)
+        return _result(updated)
+
+    def update_assignment_details(
+        self,
+        assignment_id: int,
+        *,
+        classroom: str,
+        shift_start: str = "",
+        shift_end: str = "",
+        permit_status: str | None = None,
+    ) -> StaffingTransitionResult:
+        now = self.clock()
+        classroom = str(classroom or "").strip()
+        if not classroom:
+            raise ValueError("Classroom is required.")
+        shift_start = _valid_time_or_blank(shift_start, "Shift start")
+        shift_end = _valid_time_or_blank(shift_end, "Shift end")
+        if permit_status is not None and permit_status not in PERMIT_STATUSES:
+            raise ValueError("Unknown permit status.")
+        with self.store.connect() as conn:
+            assignment = self.store.assignment_context(conn, assignment_id)
+            school_row = conn.execute(
+                """
+                SELECT s.id AS school_id FROM assignments a
+                JOIN classrooms c ON c.id = a.classroom_id
+                JOIN schools s ON s.id = c.school_id
+                WHERE a.id = ?
+                """,
+                (assignment_id,),
+            ).fetchone()
+            if school_row is None:
+                raise ValueError("Assignment not found.")
+            classroom_id = self.store._ensure_classroom(conn, int(school_row["school_id"]), classroom)
+            conn.execute(
+                """
+                UPDATE assignments
+                SET classroom_id = ?, shift_start = ?, shift_end = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (classroom_id, shift_start, shift_end, now, assignment_id),
+            )
+            if permit_status is not None and assignment.person_id is not None:
+                conn.execute(
+                    "UPDATE people SET permit_status = ?, updated_at = ? WHERE id = ?",
+                    (permit_status, now, assignment.person_id),
+                )
+            updated = self.store.assignment_context(conn, assignment_id)
+        if permit_status is not None and updated.person_id is not None:
+            self._emit_person_event(updated.person_id, updated)
+        return _result(updated)
+
     def staffing_metrics(self, *, today: date) -> StaffingMetrics:
         rows: list[StaffingMetricRow] = []
         open_count = 0
@@ -233,6 +322,8 @@ class StaffingService:
                     person_name=assignment.person_name,
                     permit_status=assignment.permit_status,
                     start_date=assignment.start_date,
+                    shift_start=assignment.shift_start,
+                    shift_end=assignment.shift_end,
                     days_open=days_open,
                     classroom_capacity=assignment.classroom_capacity,
                     ratio_group=assignment.ratio_group,
@@ -259,6 +350,29 @@ class StaffingService:
             ) VALUES (?, ?, ?, ?, ?, ?)
             """,
             (assignment_id, int(row["classroom_id"]), str(row["position_name"]), now, now, now),
+        )
+
+    def _create_history_if_missing(self, conn: Any, assignment_id: int, now: str) -> None:
+        count = int(
+            conn.execute(
+                """
+                SELECT COUNT(*) FROM assignment_history
+                WHERE assignment_id = ? AND filled_date IS NULL AND closed_reason IS NULL
+                """,
+                (assignment_id,),
+            ).fetchone()[0]
+        )
+        if count == 0:
+            self._create_history(conn, assignment_id, now)
+
+    def _close_active_history(self, conn: Any, assignment_id: int, now: str) -> None:
+        conn.execute(
+            """
+            UPDATE assignment_history
+            SET closed_reason = 'filled', filled_date = COALESCE(filled_date, ?), updated_at = ?
+            WHERE assignment_id = ? AND filled_date IS NULL AND closed_reason IS NULL
+            """,
+            (now, now, assignment_id),
         )
 
     def _require_active_history_count(self, conn: Any, assignment_id: int, expected: int) -> None:
@@ -295,6 +409,8 @@ class StaffingService:
                 status="",
                 person_id=person.id,
                 person_name=person.name,
+                shift_start="",
+                shift_end="",
                 notice_given="",
                 final_working_day="",
                 permit_status=person.permit_status,
@@ -331,6 +447,8 @@ def _payload(assignment: StaffingAssignment) -> dict[str, str]:
         "assignment_status": assignment.status,
         "person_name": assignment.person_name,
         "start_date": assignment.start_date,
+        "shift_start": assignment.shift_start,
+        "shift_end": assignment.shift_end,
         "notice_given": assignment.notice_given,
         "final_working_day": assignment.final_working_day,
         "permit_status": assignment.permit_status,
@@ -352,6 +470,17 @@ def _valid_date(value: str, label: str) -> str:
         date.fromisoformat(text)
     except ValueError as exc:
         raise ValueError(f"{label} must be an ISO date.") from exc
+    return text
+
+
+def _valid_time_or_blank(value: str, label: str) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    try:
+        datetime.strptime(text, "%H:%M")
+    except ValueError as exc:
+        raise ValueError(f"{label} must be HH:MM.") from exc
     return text
 
 

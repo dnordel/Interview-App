@@ -796,6 +796,25 @@ def _staffing_permit_color(status: str) -> str:
     }.get(str(status), "#FFFFFF")
 
 
+def _staffing_school_tab_color(index: int) -> str:
+    colors = ["#1d4ed8", "#047857", "#b45309", "#7c3aed", "#be123c", "#0f766e"]
+    return colors[int(index) % len(colors)]
+
+
+def _table_assignment_id(table: Any, row: int) -> int | None:
+    if row < 0:
+        return None
+    for column in range(table.columnCount()):
+        item = table.item(row, column)
+        if item is None:
+            continue
+        try:
+            return int(item.data(0x0100))
+        except (TypeError, ValueError):
+            continue
+    return None
+
+
 def _staffing_slot_label(row: Any) -> str:
     slot_group = str(getattr(row, "slot_group", "") or "").strip()
     if slot_group:
@@ -3580,7 +3599,7 @@ class PySideInterviewWindow:
         current_school = tabs.tabText(tabs.currentIndex()) if tabs.count() else ""
         while tabs.count():
             widget = tabs.widget(0)
-            for table in widget.findChildren(self.QtWidgets.QTableWidget, "PySideStaffingAssignments"):
+            for table in widget.findChildren(self.QtWidgets.QTableWidget):
                 table.setObjectName("")
             tabs.removeTab(0)
             widget.deleteLater()
@@ -3598,11 +3617,8 @@ class PySideInterviewWindow:
             if ratio_summary:
                 tab_layout.addWidget(self._label(ratio_summary))
             tab_layout.addWidget(self._staffing_workbook_board(rows), 2)
-            table = self._staffing_assignments_table(rows)
-            if self.staffing_table is None:
-                self.staffing_table = table
-            tab_layout.addWidget(table, 1)
             tabs.addTab(tab, school)
+            tabs.tabBar().setTabTextColor(tabs.count() - 1, self.QtGui.QColor(_staffing_school_tab_color(tabs.count() - 1)))
         selector = getattr(self, "staffing_school_selector", None)
         if selector is not None:
             selector.blockSignals(True)
@@ -3646,9 +3662,37 @@ class PySideInterviewWindow:
         return frame
 
     def _staffing_workbook_board(self, rows: list[Any]) -> Any:
-        table = self.QtWidgets.QTableWidget(0, 8)
+        window = self
+
+        class StaffingWorkbookTable(self.QtWidgets.QTableWidget):
+            def dropEvent(table_self, event: Any) -> None:  # noqa: N802
+                source = event.source()
+                if source is None or not hasattr(source, "currentRow"):
+                    event.ignore()
+                    return
+                target_row = table_self.rowAt(event.position().toPoint().y() if hasattr(event, "position") else event.pos().y())
+                source_row = source.currentRow()
+                if target_row < 0 or source_row < 0:
+                    event.ignore()
+                    return
+                source_id = _table_assignment_id(source, source_row)
+                target_id = _table_assignment_id(table_self, target_row)
+                if source_id is None or target_id is None:
+                    event.ignore()
+                    return
+                if window._confirm_staffing_move(source_id, target_id):
+                    event.accept()
+                    return
+                event.ignore()
+
+        table = StaffingWorkbookTable(0, 9)
         table.setObjectName("PySideStaffingWorkbookBoard")
-        table.setHorizontalHeaderLabels(["Ratio", "Classroom", "Role", "Person", "Status", "Capacity", "Notes", "Action"])
+        table.setHorizontalHeaderLabels(["Ratio", "Classroom", "Role", "Position", "Person", "Status", "Capacity", "Notes", "Action"])
+        table.setDragEnabled(True)
+        table.setAcceptDrops(True)
+        table.setDragDropMode(self.QtWidgets.QAbstractItemView.DragDropMode.DragDrop)
+        table.setSelectionBehavior(self.QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
+        table.setSelectionMode(self.QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
         grouped: dict[tuple[str, str], list[Any]] = {}
         for row in rows:
             grouped.setdefault((row.ratio_group or "", row.classroom), []).append(row)
@@ -3671,6 +3715,7 @@ class PySideInterviewWindow:
                 "",
                 classroom,
                 _staffing_slot_label(assignment),
+                assignment.position_name,
                 assignment.person_name or "OPEN POSITION",
                 assignment.status,
                 "" if assignment.classroom_capacity is None else str(assignment.classroom_capacity),
@@ -3678,46 +3723,18 @@ class PySideInterviewWindow:
             ]
             for column, value in enumerate(values):
                 item = self.QtWidgets.QTableWidgetItem(value)
-                if column == 3:
+                item.setData(self.QtCore.Qt.ItemDataRole.UserRole, assignment.assignment_id)
+                item.setFlags(item.flags() | self.QtCore.Qt.ItemFlag.ItemIsDragEnabled | self.QtCore.Qt.ItemFlag.ItemIsDropEnabled)
+                if column == 4:
                     color = _staffing_permit_color(assignment.permit_status) if assignment.permit_status else _staffing_status_color(assignment.status)
                     item.setBackground(self.QtGui.QColor(color))
-                if column == 4:
+                if column == 5:
                     item.setBackground(self.QtGui.QColor(_staffing_status_color(assignment.status)))
                 table.setItem(row_index, column, item)
-            table.setCellWidget(row_index, 7, self._staffing_action_button(assignment.assignment_id, assignment.status))
+            table.setCellWidget(row_index, 8, self._staffing_action_button(assignment.assignment_id, assignment.status))
+        table.cellClicked.connect(lambda row, column, widget=table: self._open_staffing_assignment_details_from_table(widget, row, column))
         table.resizeColumnsToContents()
         table.horizontalHeader().setStretchLastSection(True)
-        return table
-
-    def _staffing_assignments_table(self, rows: list[Any]) -> Any:
-        table = self.QtWidgets.QTableWidget(0, 10)
-        table.setObjectName("PySideStaffingAssignments")
-        table.setHorizontalHeaderLabels(
-            ["School", "Classroom", "Type", "Position", "Person", "Status", "Start", "Days Open", "Permit", "Action"]
-        )
-        table.horizontalHeader().setStretchLastSection(True)
-        table.setRowCount(len(rows))
-        for row_index, row in enumerate(rows):
-            values = [
-                row.school,
-                row.classroom,
-                row.position_type,
-                row.position_name,
-                row.person_name,
-                row.status,
-                row.start_date,
-                "" if row.days_open is None else str(row.days_open),
-                row.permit_status,
-            ]
-            for column, value in enumerate(values):
-                item = self.QtWidgets.QTableWidgetItem(value)
-                if column == 5:
-                    item.setBackground(self.QtGui.QColor(_staffing_status_color(row.status)))
-                if column == 8 and row.permit_status:
-                    item.setBackground(self.QtGui.QColor(_staffing_permit_color(row.permit_status)))
-                table.setItem(row_index, column, item)
-            table.setCellWidget(row_index, 9, self._staffing_action_button(row.assignment_id, row.status))
-        table.resizeColumnsToContents()
         return table
 
     def _staffing_action_button(self, assignment_id: int, status: str) -> Any:
@@ -3756,6 +3773,89 @@ class PySideInterviewWindow:
             button.setMenu(menu)
             button.setPopupMode(self.QtWidgets.QToolButton.ToolButtonPopupMode.DelayedPopup)
         return button
+
+    def _open_staffing_assignment_details_from_table(self, table: Any, row: int, column: int) -> None:
+        if column == 8:
+            return
+        assignment_id = _table_assignment_id(table, row)
+        if assignment_id is None:
+            return
+        self._open_staffing_assignment_details(assignment_id)
+
+    def _open_staffing_assignment_details(self, assignment_id: int) -> None:
+        try:
+            assignment = self.staffing_store.get_assignment(assignment_id)
+        except Exception as exc:
+            if self.staffing_status_label is not None:
+                self.staffing_status_label.setText(str(exc) or "Staffing assignment not found.")
+            return
+        dialog = self.QtWidgets.QDialog(self.window)
+        dialog.setWindowTitle("Position Details")
+        layout = self.QtWidgets.QVBoxLayout(dialog)
+        form = self.QtWidgets.QFormLayout()
+        classroom_field = self.QtWidgets.QLineEdit(assignment.classroom)
+        person_field = self.QtWidgets.QLineEdit(assignment.person_name)
+        person_field.setReadOnly(True)
+        position_field = self.QtWidgets.QLineEdit(assignment.position_name)
+        position_field.setReadOnly(True)
+        shift_start_field = self.QtWidgets.QLineEdit(assignment.shift_start)
+        shift_end_field = self.QtWidgets.QLineEdit(assignment.shift_end)
+        permit_field = self.QtWidgets.QComboBox()
+        permit_values = ["unknown", "no_permit_or_application", "permit_in_process", "teacher_permit_approved", "no_units_needed"]
+        permit_field.addItems(permit_values)
+        permit_field.setCurrentText(assignment.permit_status if assignment.permit_status in permit_values else "unknown")
+        form.addRow("Classroom", classroom_field)
+        form.addRow("Position", position_field)
+        form.addRow("Person", person_field)
+        form.addRow("Shift start", shift_start_field)
+        form.addRow("Shift end", shift_end_field)
+        form.addRow("Permit status", permit_field)
+        layout.addLayout(form)
+        buttons = self.QtWidgets.QDialogButtonBox(
+            self.QtWidgets.QDialogButtonBox.StandardButton.Ok | self.QtWidgets.QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        layout.addWidget(buttons)
+        if dialog.exec() != self.QtWidgets.QDialog.DialogCode.Accepted:
+            return
+        permit_status = permit_field.currentText() if assignment.person_id is not None else None
+        self._run_staffing_action(
+            lambda service: service.update_assignment_details(
+                assignment_id,
+                classroom=classroom_field.text(),
+                shift_start=shift_start_field.text(),
+                shift_end=shift_end_field.text(),
+                permit_status=permit_status,
+            ),
+            "Position details updated.",
+        )
+
+    def _confirm_staffing_move(self, source_assignment_id: int, target_assignment_id: int) -> bool:
+        if source_assignment_id == target_assignment_id:
+            return False
+        try:
+            source = self.staffing_store.get_assignment(source_assignment_id)
+            target = self.staffing_store.get_assignment(target_assignment_id)
+        except Exception as exc:
+            if self.staffing_status_label is not None:
+                self.staffing_status_label.setText(str(exc) or "Staffing move failed.")
+            return False
+        confirmed = self.QtWidgets.QMessageBox.question(
+            self.window,
+            "Move Teacher",
+            f"Move {source.person_name or 'this person'} from {source.classroom} {source.position_name} "
+            f"to {target.classroom} {target.position_name}?",
+            self.QtWidgets.QMessageBox.StandardButton.Yes | self.QtWidgets.QMessageBox.StandardButton.No,
+            self.QtWidgets.QMessageBox.StandardButton.No,
+        )
+        if confirmed != self.QtWidgets.QMessageBox.StandardButton.Yes:
+            return False
+        self._run_staffing_action(
+            lambda service: service.move_person(source_assignment_id, target_assignment_id, confirmed=True),
+            "Teacher moved.",
+        )
+        return self.staffing_status_label is None or self.staffing_status_label.text() == "Teacher moved."
 
     def _open_staffing_position(self, assignment_id: int) -> None:
         self._run_staffing_action(lambda service: service.open_position(assignment_id), "Position opened.")

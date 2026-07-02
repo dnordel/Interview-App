@@ -15,7 +15,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-02T22:01:12.475476+00:00'
+generated_at_utc: '2026-07-02T22:15:40.384943+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -9408,6 +9408,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._confirm_staffing_move
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._create_history_table
   kind: method
   tests:
@@ -9598,6 +9607,24 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._open_session_offer
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._open_staffing_assignment_details
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._open_staffing_assignment_details_from_table
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -9841,15 +9868,6 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._staffing_action_button
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._staffing_assignments_table
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -12486,6 +12504,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/staffing_service.contract.yaml
+  symbol: staffing_service.StaffingService.move_person
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_service.contract.yaml
   symbol: staffing_service.StaffingService.open_position
   kind: method
   tests:
@@ -12505,6 +12532,15 @@ entries:
     - return_type
 - contract: contracts/staffing_service.contract.yaml
   symbol: staffing_service.StaffingService.staffing_metrics
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_service.contract.yaml
+  symbol: staffing_service.StaffingService.update_assignment_details
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py

@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.24.0
+  version: 1.25.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, workbook-style staffing dashboard tabs, explicit school selector, actions, and metrics,
@@ -776,7 +776,7 @@ classes:
     exceptions: []
     side_effects: Creates PySide label widgets with workbook color swatches.
   - name: _staffing_workbook_board
-    description: Build one school-scoped workbook-style Staffing board showing ratio bands, classrooms, slot roles, actual names/open positions, status colors, capacity, notes, and action menu controls.
+    description: Build the single school-scoped workbook-style Staffing board showing ratio bands, classrooms, slot roles, position labels, actual names/open positions, status colors, capacity, notes, drag/drop-enabled rows, click-to-edit details, and action menu controls.
     locked: false
     inputs:
       rows:
@@ -786,17 +786,6 @@ classes:
       type: QTableWidget
     exceptions: []
     side_effects: Creates PySide table widgets for workbook-style staffing rows.
-  - name: _staffing_assignments_table
-    description: Build one school-scoped flat Staffing action table with status and permit colors, start date, days open, and action menu controls.
-    locked: false
-    inputs:
-      rows:
-        type: list[Any]
-        required: true
-    returns:
-      type: QTableWidget
-    exceptions: []
-    side_effects: Creates PySide table widgets for staffing rows.
   - name: _staffing_action_button
     description: Build one PySide action button for a staffing assignment status, wired to the service-backed transition handler for that row.
     locked: false
@@ -811,6 +800,48 @@ classes:
       type: QToolButton
     exceptions: []
     side_effects: Creates a PySide tool button/menu and connects its clicked signal.
+  - name: _open_staffing_assignment_details_from_table
+    description: Route a clicked workbook staffing row to the editable assignment/person detail popup unless the click is on the action column.
+    locked: false
+    inputs:
+      table:
+        type: QTableWidget
+        required: true
+      row:
+        type: int
+        required: true
+      column:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: May open the staffing assignment detail dialog.
+  - name: _open_staffing_assignment_details
+    description: Open editable PySide details for one staffing assignment/person, allowing classroom, shift start/end, and permit status updates through StaffingService.
+    locked: false
+    inputs:
+      assignment_id:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Shows modal dialog; may update staffing SQLite rows through StaffingService and refresh dashboard.
+  - name: _confirm_staffing_move
+    description: Confirm and execute a drag/drop teacher move from one staffing assignment to another through StaffingService.
+    locked: false
+    inputs:
+      source_assignment_id:
+        type: int
+        required: true
+      target_assignment_id:
+        type: int
+        required: true
+    returns:
+      type: bool
+    exceptions: []
+    side_effects: Shows confirmation dialog; may update staffing SQLite rows and refresh dashboard.
   - name: _open_staffing_position
     description: Open a staffing position through StaffingService and refresh the Staffing dashboard.
     locked: false

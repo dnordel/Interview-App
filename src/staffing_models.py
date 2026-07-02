@@ -24,6 +24,8 @@ class StaffingAssignment:
     person_id: int | None = None
     person_name: str = ""
     start_date: str = ""
+    shift_start: str = ""
+    shift_end: str = ""
     notice_given: str = ""
     final_working_day: str = ""
     permit_status: str = ""
@@ -64,6 +66,8 @@ class StaffingMetricRow:
     person_name: str = ""
     permit_status: str = ""
     start_date: str = ""
+    shift_start: str = ""
+    shift_end: str = ""
     days_open: int | None = None
     classroom_capacity: int | None = None
     ratio_group: str = ""
