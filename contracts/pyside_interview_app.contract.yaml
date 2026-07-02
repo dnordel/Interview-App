@@ -439,7 +439,8 @@ classes:
     compact notes/offer/delete action columns, Processing notes state during detached
     DeepSeek work, and live refresh after finalize; Open Notes opens the selected
     interview notes file and Generate Offer opens the PySide offer wizard from
-    either the selected history row or completed review screen.
+    either the selected history row or completed review screen; Admin Studio exposes
+    checkpoint notification rule rows for editable active flags, templates, and recipients.
   locked: false
   attributes:
     model:
@@ -936,6 +937,7 @@ dependencies:
 - module: admin_studio
 - module: data_store
 - module: interview_runtime
+- module: notification_service
 - module: onboarding_operations
 - module: platform_services
 - module: scoring_reporting

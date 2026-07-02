@@ -23,6 +23,34 @@ modules:
     depends_on:
     - platform_services
     - scoring_reporting
+  notification_service:
+    path: src/notification_service.py
+    depends_on:
+    - notification_models
+    - notification_store
+    - onboarding_operations
+    - platform_services
+  notification_store:
+    path: src/notification_store.py
+    depends_on:
+    - notification_models
+    - email_security
+  notification_models:
+    path: src/notification_models.py
+    depends_on: []
+  staffing_service:
+    path: src/staffing_service.py
+    depends_on:
+    - notification_service
+    - staffing_models
+    - staffing_store
+  staffing_store:
+    path: src/staffing_store.py
+    depends_on:
+    - staffing_models
+  staffing_models:
+    path: src/staffing_models.py
+    depends_on: []
   platform_services:
     path: src/platform_services.py
     depends_on:
@@ -56,6 +84,7 @@ modules:
     - admin_studio
     - data_store
     - interview_runtime
+    - notification_service
     - onboarding_operations
     - platform_services
     - scoring_reporting

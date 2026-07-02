@@ -1,0 +1,77 @@
+module:
+  name: notification_service
+  language: python
+  path: src/notification_service.py
+  version: 1.0.0
+  description: Generic checkpoint notification emitter that renders safe payload templates, auto-sends via onboarding SMTP settings, and records sanitized audit outcomes.
+functions:
+- name: emit_notification_event
+  locked: false
+  inputs:
+    event_type:
+      type: str
+      required: true
+    payload:
+      type: dict[str, str]
+      required: true
+    idempotency_key:
+      type: str
+      required: true
+    store_path:
+      type: Path
+      required: false
+      default: NOTIFICATION_RULES_PATH
+    email_settings:
+      type: EmailSettings | None
+      required: false
+      default: null
+  returns:
+    type: list[NotificationSendResult]
+  exceptions:
+  - ValueError
+  side_effects: Reads notification rules, may send email, writes notification audit.
+- name: notification_service_from_onboarding
+  locked: false
+  inputs:
+    root_dir:
+      type: Path
+      required: true
+    store_path:
+      type: Path
+      required: false
+      default: NOTIFICATION_RULES_PATH
+  returns:
+    type: NotificationService
+  side_effects: Reads onboarding settings and opens notification SQLite database.
+classes:
+- name: NotificationService
+  description: Emits exact-match notification events for active rules with idempotent send audit.
+  locked: false
+  methods:
+  - name: emit_event
+    inputs:
+      event_type:
+        type: str
+        required: true
+      payload:
+        type: dict[str, str]
+        required: true
+      idempotency_key:
+        type: str
+        required: true
+    returns:
+      type: list[NotificationSendResult]
+    exceptions:
+    - ValueError
+    side_effects: Reads rules, may send email, writes audit outcomes.
+data_structures:
+- name: SUPPORTED_NOTIFICATION_EVENTS
+  type: tuple[str, ...]
+- name: NOTIFICATION_RULES_PATH
+  type: Path
+dependencies:
+- notification_models
+- notification_store
+- onboarding_operations
+- platform_services
+- email_security

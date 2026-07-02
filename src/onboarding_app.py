@@ -13,6 +13,7 @@ from collections.abc import Callable
 from tkcalendar import DateEntry
 
 from onboarding_operations import EmailSettings, Employee, ReminderRunSummary, TaskTemplate, make_id, parse_date
+from notification_service import notification_service_from_onboarding
 from onboarding_operations import OnboardingReminderRunner
 from onboarding_operations import evaluate_onboarding_reminder_health
 from onboarding_operations import (
@@ -853,6 +854,7 @@ class OnboardingTrackerApp:
                 completed_at=task.completed_at,
             )
             self._log_kpi_completion_if_applicable(task)
+            self._emit_onboarding_task_completed(task)
         self.save_state()
         employee = self._employee_by_id(self.selected_employee_id)
         self.render_tasks_for_selected(employee)
@@ -875,6 +877,26 @@ class OnboardingTrackerApp:
             task_id=context["task_id"],
         )
         self._pending_kpi_completion = None
+
+    def _emit_onboarding_task_completed(self, task) -> None:
+        employee = self._employee_by_id(self.selected_employee_id)
+        if employee is None:
+            return
+        payload = {
+            "employee_name": employee.name,
+            "school": employee.school,
+            "task_title": task.title,
+            "task_id": task.id,
+            "completed_at": task.completed_at or "",
+        }
+        try:
+            notification_service_from_onboarding(root_dir=self.storage_dir).emit_event(
+                "onboarding.task.completed",
+                payload,
+                f"{employee.id}:{task.id}:onboarding.task.completed:{task.completed_at or ''}",
+            )
+        except Exception:
+            return
 
     def _employee_by_id(self, employee_id: str | None) -> Employee | None:
         if not employee_id:

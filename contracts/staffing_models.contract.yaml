@@ -1,0 +1,20 @@
+module:
+  name: staffing_models
+  language: python
+  path: src/staffing_models.py
+  version: 0.1.0
+  description: Dataclasses and enum constants for local staffing dashboard transactions.
+functions: []
+classes: []
+data_structures:
+- name: ASSIGNMENT_STATUSES
+  type: tuple[str, ...]
+- name: PERMIT_STATUSES
+  type: tuple[str, ...]
+- name: StaffingAssignment
+  type: dataclass
+- name: StaffingPerson
+  type: dataclass
+- name: StaffingTransitionResult
+  type: dataclass
+dependencies: []

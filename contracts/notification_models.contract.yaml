@@ -1,0 +1,70 @@
+module:
+  name: notification_models
+  language: python
+  path: src/notification_models.py
+  version: 1.0.0
+  description: Dataclasses for generic checkpoint notification events, rules, recipients, and send results.
+functions: []
+classes:
+- name: NotificationEvent
+  type: dataclass
+  locked: false
+  attributes:
+    event_type:
+      type: str
+    payload:
+      type: dict[str, str]
+    idempotency_key:
+      type: str
+- name: NotificationRecipient
+  type: dataclass
+  locked: false
+  attributes:
+    email:
+      type: str
+    name:
+      type: str
+    role_label:
+      type: str
+    active:
+      type: bool
+    id:
+      type: int | None
+- name: NotificationRule
+  type: dataclass
+  locked: false
+  attributes:
+    event_type:
+      type: str
+    label:
+      type: str
+    subject_template:
+      type: str
+    body_template:
+      type: str
+    recipients:
+      type: list[NotificationRecipient]
+    active:
+      type: bool
+    id:
+      type: int | None
+    created_at:
+      type: str
+    updated_at:
+      type: str
+- name: NotificationSendResult
+  type: dataclass
+  locked: false
+  attributes:
+    event_type:
+      type: str
+    rule_id:
+      type: int | None
+    status:
+      type: str
+    recipient_count:
+      type: int
+    error:
+      type: str
+data_structures: []
+dependencies: []

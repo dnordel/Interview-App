@@ -1,0 +1,122 @@
+module:
+  name: staffing_store
+  language: python
+  path: src/staffing_store.py
+  version: 0.1.0
+  description: SQLite persistence for staffing schools, classrooms, people, assignments, and assignment history.
+functions: []
+classes:
+- name: StaffingStore
+  description: Opens staffing SQLite connections, initializes schema, seeds test/bootstrap assignments, and reads assignment/person snapshots.
+  locked: false
+  methods:
+  - name: connect
+    inputs: {}
+    returns:
+      type: sqlite3.Connection
+    side_effects: Opens SQLite database and creates parent directory if needed.
+  - name: initialize
+    inputs: {}
+    returns:
+      type: None
+    side_effects: Creates staffing tables and indexes when missing.
+  - name: seed_assignment
+    inputs:
+      school:
+        type: str
+        required: true
+      classroom:
+        type: str
+        required: true
+      position_name:
+        type: str
+        required: true
+      position_type:
+        type: str
+        required: true
+      status:
+        type: str
+        required: false
+        default: dont_need_now
+      person_name:
+        type: str
+        required: false
+        default: ''
+      permit_status:
+        type: str
+        required: false
+        default: unknown
+    returns:
+      type: int
+    exceptions:
+    - ValueError
+    side_effects: Inserts or reuses school/classroom/person rows and inserts one assignment row.
+  - name: get_assignment
+    inputs:
+      assignment_id:
+        type: int
+        required: true
+    returns:
+      type: StaffingAssignment
+    exceptions:
+    - ValueError
+    side_effects: Reads staffing SQLite database.
+  - name: active_history_count
+    inputs:
+      assignment_id:
+        type: int
+        required: true
+    returns:
+      type: int
+    side_effects: Reads staffing SQLite database.
+  - name: assignment_context
+    inputs:
+      conn:
+        type: sqlite3.Connection
+        required: true
+      assignment_id:
+        type: int
+        required: true
+    returns:
+      type: StaffingAssignment
+    exceptions:
+    - ValueError
+    side_effects: Reads staffing SQLite database through supplied connection.
+  - name: person_context
+    inputs:
+      conn:
+        type: sqlite3.Connection
+        required: true
+      person_id:
+        type: int
+        required: true
+    returns:
+      type: StaffingPerson
+    exceptions:
+    - ValueError
+    side_effects: Reads staffing SQLite database through supplied connection.
+  - name: ensure_person
+    inputs:
+      conn:
+        type: sqlite3.Connection
+        required: true
+      name:
+        type: str
+        required: true
+      role:
+        type: str
+        required: true
+      permit_status:
+        type: str
+        required: true
+      now:
+        type: str
+        required: true
+    returns:
+      type: int
+    exceptions:
+    - ValueError
+    side_effects: Reuses active person by normalized name or inserts person row.
+data_structures: []
+dependencies:
+- staffing_models

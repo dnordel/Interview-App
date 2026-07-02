@@ -4,6 +4,8 @@ from pathlib import Path
 import pytest
 
 from admin_studio import AdminStudio, AdminStudioPaths
+from notification_models import NotificationRecipient, NotificationRule
+from notification_store import NotificationStore
 
 
 def _rubric() -> dict:
@@ -29,6 +31,7 @@ def _write_admin_files(tmp_path: Path) -> AdminStudioPaths:
     overrides_path = tmp_path / "question_overrides.json"
     school_settings_path = tmp_path / "school_offer_settings.json"
     prompts_path = tmp_path / "deepseek_prompts.json"
+    notification_rules_path = tmp_path / "notification_rules.sqlite3"
     rubric_path.write_text(json.dumps(_rubric()), encoding="utf-8")
     overrides_path.write_text(
         json.dumps(
@@ -48,6 +51,7 @@ def _write_admin_files(tmp_path: Path) -> AdminStudioPaths:
         overrides_path=overrides_path,
         school_settings_path=school_settings_path,
         prompts_path=prompts_path,
+        notification_rules_path=notification_rules_path,
         backup_dir=tmp_path / "backups",
     )
 
@@ -136,3 +140,53 @@ def test_admin_studio_discard_restores_clean_draft(tmp_path: Path) -> None:
     assert clean.is_dirty is False
     assert clean.change_summary().lines == []
     assert clean.prompts["answer_summary_user"] == "Summarize answers."
+
+
+def test_admin_studio_manages_notification_rules_in_draft_then_applies(tmp_path: Path) -> None:
+    paths = _write_admin_files(tmp_path)
+    NotificationStore(paths.notification_rules_path).save_rule(
+        NotificationRule(
+            event_type="offer.accepted",
+            label="Offer accepted",
+            subject_template="Accepted: {candidate_name}",
+            body_template="{candidate_name} accepted.",
+            recipients=[NotificationRecipient(email="director@example.org")],
+        )
+    )
+    studio = AdminStudio.load(paths)
+    draft = studio.create_draft()
+
+    draft.update_notification_rule(
+        "offer.accepted",
+        {
+            "label": "Offer accepted",
+            "subject_template": "Accepted offer: {candidate_name}",
+            "body_template": "{candidate_name} accepted {position}.",
+            "recipients": "director@example.org, office@example.org",
+            "active": "true",
+        },
+    )
+    result = studio.apply_draft(draft, confirm=True)
+
+    rules = NotificationStore(paths.notification_rules_path).list_rules("offer.accepted")
+    assert result.applied is True
+    assert "notification_rules.sqlite3" in result.changed_files
+    assert rules[0].subject_template == "Accepted offer: {candidate_name}"
+    assert [recipient.email for recipient in rules[0].recipients] == ["director@example.org", "office@example.org"]
+
+
+def test_admin_studio_rejects_invalid_notification_recipient(tmp_path: Path) -> None:
+    studio = AdminStudio.load(_write_admin_files(tmp_path))
+    draft = studio.create_draft()
+
+    draft.update_notification_rule(
+        "offer.accepted",
+        {
+            "label": "Offer accepted",
+            "subject_template": "Accepted",
+            "body_template": "Accepted",
+            "recipients": "bad-email",
+        },
+    )
+
+    assert "Invalid notification recipient email." in draft.validate()

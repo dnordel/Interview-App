@@ -5,7 +5,7 @@ module:
   version: 1.0.0
   description: Single admin boundary for local configuration review, draft editing,
     dirty tracking, validation, backup creation, and review-then-apply persistence
-    for PySide Admin Studio.
+    for PySide Admin Studio, including checkpoint notification rules.
 functions: []
 classes:
 - name: AdminStudioPaths
@@ -20,6 +20,8 @@ classes:
     school_settings_path:
       type: Path
     prompts_path:
+      type: Path
+    notification_rules_path:
       type: Path
     backup_dir:
       type: Path | None
@@ -130,6 +132,19 @@ classes:
       type: None
     exceptions:
     - ValueError
+  - name: update_notification_rule
+    description: Draft one notification rule edit without writing the notification database.
+    inputs:
+      event_type:
+        type: str
+        required: true
+      updates:
+        type: dict[str, str]
+        required: true
+    returns:
+      type: None
+    exceptions:
+    - ValueError
   - name: validate
     inputs: {}
     returns:
@@ -147,7 +162,9 @@ classes:
         default: None
     returns:
       type: AdminStudio
-    side_effects: Reads rubric, question override, school settings, and prompt JSON.
+    side_effects: Reads rubric, question override, school settings, prompt JSON,
+      and notification rules; creates inactive default notification examples when
+      missing.
   - name: create_draft
     inputs: {}
     returns:
@@ -178,3 +195,7 @@ dependencies:
 - interview_runtime
 - platform_services
 - question_settings_service
+- notification_models
+- notification_service
+- notification_store
+- email_security

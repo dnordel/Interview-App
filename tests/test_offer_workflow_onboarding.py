@@ -98,6 +98,69 @@ class TestOfferWorkflowOnboarding(unittest.TestCase):
         self.assertEqual(resolved["offer_email_to"], "global@example.org")
         self.assertEqual(resolved["director_referral_subject_template"], "Director")
 
+    def test_offer_status_update_emits_notification_event(self):
+        app = InterviewApp.__new__(InterviewApp)
+
+        class Store:
+            def build_row_key(self, row):
+                return "row-1"
+
+            def update_offer_state(self, row_key, status, offer_path=""):
+                return True
+
+        class Notifications:
+            def __init__(self):
+                self.events = []
+
+            def emit_event(self, event_type, payload, idempotency_key):
+                self.events.append((event_type, payload, idempotency_key))
+                return []
+
+        notifications = Notifications()
+        app.history_store = Store()
+        app.notification_service = notifications
+        app._refresh_history_tree = lambda: None
+
+        app._history_actions_service().update_history_offer_status(
+            {"candidate_name": "Jane Doe", "school": "Hawthorne", "position": "Teacher"},
+            "accepted",
+        )
+
+        self.assertEqual(notifications.events[0][0], "offer.accepted")
+        self.assertEqual(notifications.events[0][1]["candidate_name"], "Jane Doe")
+        self.assertEqual(notifications.events[0][2], "row-1:offer.accepted")
+
+    def test_failed_offer_status_update_does_not_emit_notification_event(self):
+        app = InterviewApp.__new__(InterviewApp)
+
+        class Store:
+            def build_row_key(self, row):
+                return "row-1"
+
+            def update_offer_state(self, row_key, status, offer_path=""):
+                return False
+
+        class Notifications:
+            def __init__(self):
+                self.events = []
+
+            def emit_event(self, event_type, payload, idempotency_key):
+                self.events.append((event_type, payload, idempotency_key))
+                return []
+
+        notifications = Notifications()
+        app.history_store = Store()
+        app.notification_service = notifications
+        app._refresh_history_tree = lambda: None
+
+        result = app._history_actions_service().update_history_offer_status(
+            {"candidate_name": "Jane Doe", "school": "Hawthorne", "position": "Teacher"},
+            "accepted",
+        )
+
+        self.assertFalse(result)
+        self.assertEqual(notifications.events, [])
+
 
 if __name__ == "__main__":
     unittest.main()

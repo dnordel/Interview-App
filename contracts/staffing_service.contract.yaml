@@ -1,0 +1,108 @@
+module:
+  name: staffing_service
+  language: python
+  path: src/staffing_service.py
+  version: 0.1.0
+  description: Staffing assignment state machine with post-commit notification emission for successful transactions.
+functions: []
+classes:
+- name: StaffingService
+  description: Applies staffing transactions through StaffingStore and emits checkpoint notifications after successful commits.
+  locked: false
+  methods:
+  - name: open_position
+    inputs:
+      assignment_id:
+        type: int
+        required: true
+    returns:
+      type: StaffingTransitionResult
+    exceptions:
+    - ValueError
+    side_effects: Updates assignment/history rows, then may emit staffing.assignment.need_now notification.
+  - name: mark_coming
+    inputs:
+      assignment_id:
+        type: int
+        required: true
+      person_name:
+        type: str
+        required: true
+      start_date:
+        type: str
+        required: true
+    returns:
+      type: StaffingTransitionResult
+    exceptions:
+    - ValueError
+    side_effects: Updates assignment/person rows, then may emit staffing.assignment.coming notification.
+  - name: revert_coming
+    inputs:
+      assignment_id:
+        type: int
+        required: true
+    returns:
+      type: StaffingTransitionResult
+    exceptions:
+    - ValueError
+    side_effects: Reverts coming assignment to need_now without emitting notification.
+  - name: mark_filled
+    inputs:
+      assignment_id:
+        type: int
+        required: true
+    returns:
+      type: StaffingTransitionResult
+    exceptions:
+    - ValueError
+    side_effects: Closes assignment history, then may emit staffing.assignment.filled notification.
+  - name: mark_replacing
+    inputs:
+      assignment_id:
+        type: int
+        required: true
+      notice_given:
+        type: str
+        required: true
+      final_working_day:
+        type: str
+        required: true
+    returns:
+      type: StaffingTransitionResult
+    exceptions:
+    - ValueError
+    side_effects: Marks current person inactive, opens replacement history, then may emit staffing.assignment.replace notification.
+  - name: mark_not_needed
+    inputs:
+      assignment_id:
+        type: int
+        required: true
+      confirmed:
+        type: bool
+        required: false
+        default: false
+    returns:
+      type: StaffingTransitionResult
+    exceptions:
+    - ValueError
+    side_effects: Cancels active history, clears assignment, then may emit staffing.assignment.not_needed notification.
+  - name: update_permit_status
+    inputs:
+      person_id:
+        type: int
+        required: true
+      permit_status:
+        type: str
+        required: true
+    returns:
+      type: StaffingTransitionResult
+    exceptions:
+    - ValueError
+    side_effects: Updates person permit status, then may emit staffing.permit.updated notification.
+data_structures:
+- name: STAFFING_NOTIFICATION_EVENTS
+  type: dict[str, str]
+dependencies:
+- notification_service
+- staffing_models
+- staffing_store

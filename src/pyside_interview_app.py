@@ -41,6 +41,7 @@ from interview_runtime import (
     resolve_deepseek_regeneration_job_path,
     resolve_default_windows_system_device,
 )
+from notification_service import NOTIFICATION_RULES_PATH, SUPPORTED_NOTIFICATION_EVENTS
 from onboarding_operations import JsonStore, build_dashboard_today_summary, filtered_tasks, task_status
 from platform_services import (
     DEFAULT_RUBRIC_PATH,
@@ -2775,6 +2776,7 @@ class PySideInterviewWindow:
             overrides_path=QUESTIONS_OVERRIDE_PATH,
             school_settings_path=SCHOOL_OFFER_SETTINGS_PATH,
             prompts_path=DEEPSEEK_PROMPTS_CONFIG_PATH,
+            notification_rules_path=NOTIFICATION_RULES_PATH,
         )
 
     def _admin_section_page(self, key: str, title: str, description: str) -> Any:
@@ -2791,6 +2793,10 @@ class PySideInterviewWindow:
             return tab
         if key == "templates":
             table = self._admin_school_settings_table()
+            tab_layout.addWidget(table, 1)
+            return tab
+        if key == "notifications":
+            table = self._admin_notifications_table()
             tab_layout.addWidget(table, 1)
             return tab
         if key == "prompts":
@@ -2841,6 +2847,27 @@ class PySideInterviewWindow:
     def _admin_prompts_table(self) -> Any:
         rows = [[str(key), str(value)] for key, value in sorted(self.admin_draft.prompts.items()) if isinstance(value, str)]
         return self._admin_table("prompts", ["Prompt Key", "Template"], rows, {1})
+
+    def _admin_notifications_table(self) -> Any:
+        by_event = {rule.event_type: rule for rule in self.admin_draft.notification_rules}
+        rows: list[list[str]] = []
+        for event_type in SUPPORTED_NOTIFICATION_EVENTS:
+            rule = by_event.get(event_type)
+            if rule is None:
+                rows.append([event_type, event_type, "true", "", "", ""])
+                continue
+            recipients = ", ".join(recipient.email for recipient in rule.recipients if recipient.active)
+            rows.append([
+                rule.event_type,
+                rule.label,
+                "true" if rule.active else "false",
+                rule.subject_template,
+                rule.body_template,
+                recipients,
+            ])
+        table = self._admin_table("notifications", ["Event", "Label", "Active", "Subject", "Body", "Recipients"], rows, {1, 2, 3, 4, 5})
+        self.admin_notifications_table = table
+        return table
 
     def _admin_readonly_rows(self, key: str) -> list[list[str]]:
         if key == "signals":
@@ -2995,6 +3022,22 @@ class PySideInterviewWindow:
                 if prompt_item.text() == prompt_item.data(self.QtCore.Qt.ItemDataRole.UserRole):
                     continue
                 self.admin_draft.update_prompt(prompts.item(row_index, 0).text().strip(), prompt_item.text())
+        notifications = self._admin_tables.get("notifications")
+        if notifications is not None:
+            for row_index in range(notifications.rowCount()):
+                event_item = notifications.item(row_index, 0)
+                if event_item is None:
+                    continue
+                self.admin_draft.update_notification_rule(
+                    event_item.text().strip(),
+                    {
+                        "label": notifications.item(row_index, 1).text() if notifications.item(row_index, 1) else "",
+                        "active": notifications.item(row_index, 2).text() if notifications.item(row_index, 2) else "true",
+                        "subject_template": notifications.item(row_index, 3).text() if notifications.item(row_index, 3) else "",
+                        "body_template": notifications.item(row_index, 4).text() if notifications.item(row_index, 4) else "",
+                        "recipients": notifications.item(row_index, 5).text() if notifications.item(row_index, 5) else "",
+                    },
+                )
         self._sync_admin_status()
 
     def _review_admin_changes(self) -> None:

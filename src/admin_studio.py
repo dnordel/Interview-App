@@ -9,7 +9,11 @@ from pathlib import Path
 from typing import Any
 
 from data_store import QuestionOverridesStore, SchoolOfferSettingsStore
+from email_security import is_valid_email_address
 from interview_runtime import normalize_deepseek_prompt_templates
+from notification_models import NotificationRecipient, NotificationRule
+from notification_service import NOTIFICATION_RULES_PATH
+from notification_store import NotificationStore
 from platform_services import (
     DEFAULT_RUBRIC_PATH,
     QUESTIONS_OVERRIDE_PATH,
@@ -28,6 +32,7 @@ class AdminStudioPaths:
     overrides_path: Path = QUESTIONS_OVERRIDE_PATH
     school_settings_path: Path = SCHOOL_OFFER_SETTINGS_PATH
     prompts_path: Path = DEFAULT_PROMPTS_PATH
+    notification_rules_path: Path = NOTIFICATION_RULES_PATH
     backup_dir: Path | None = None
 
 
@@ -68,10 +73,12 @@ class AdminStudioDraft:
     baseline_overrides: dict[str, Any]
     baseline_school_settings: dict[str, dict[str, str]]
     baseline_prompts: dict[str, Any]
+    baseline_notification_rules: list[NotificationRule]
     rubric: dict[str, Any]
     overrides: dict[str, Any]
     school_settings: dict[str, dict[str, str]]
     prompts: dict[str, Any]
+    notification_rules: list[NotificationRule]
 
     @classmethod
     def from_payloads(
@@ -81,16 +88,19 @@ class AdminStudioDraft:
         overrides: dict[str, Any],
         school_settings: dict[str, dict[str, str]],
         prompts: dict[str, Any],
+        notification_rules: list[NotificationRule] | None = None,
     ) -> "AdminStudioDraft":
         return cls(
             baseline_rubric=deepcopy(rubric),
             baseline_overrides=deepcopy(overrides),
             baseline_school_settings=deepcopy(school_settings),
             baseline_prompts=deepcopy(prompts),
+            baseline_notification_rules=deepcopy(notification_rules or []),
             rubric=deepcopy(rubric),
             overrides=deepcopy(overrides),
             school_settings=deepcopy(school_settings),
             prompts=deepcopy(prompts),
+            notification_rules=deepcopy(notification_rules or []),
         )
 
     @property
@@ -104,6 +114,10 @@ class AdminStudioDraft:
             "question_overrides.json": (self.baseline_overrides, self.overrides),
             "school_offer_settings.json": (self.baseline_school_settings, self.school_settings),
             "deepseek_prompts.json": (self.baseline_prompts, self.prompts),
+            "notification_rules.sqlite3": (
+                _notification_rule_snapshot(self.baseline_notification_rules),
+                _notification_rule_snapshot(self.notification_rules),
+            ),
         }
         for filename, (before, after) in pairs.items():
             if before != after:
@@ -116,6 +130,7 @@ class AdminStudioDraft:
         lines.extend(_trait_change_lines(self.baseline_rubric, self.rubric))
         lines.extend(_school_change_lines(self.baseline_school_settings, self.school_settings))
         lines.extend(_prompt_change_lines(self.baseline_prompts, self.prompts))
+        lines.extend(_notification_change_lines(self.baseline_notification_rules, self.notification_rules))
         if self.baseline_overrides != self.overrides:
             lines.append("Question flow or custom question settings changed.")
         return AdminChangeSummary(changed_files=list(changed), lines=lines)
@@ -126,6 +141,7 @@ class AdminStudioDraft:
             overrides=self.baseline_overrides,
             school_settings=self.baseline_school_settings,
             prompts=self.baseline_prompts,
+            notification_rules=self.baseline_notification_rules,
         )
 
     def update_trait(self, trait_id: str, updates: dict[str, Any]) -> None:
@@ -169,6 +185,39 @@ class AdminStudioDraft:
             raise ValueError("Prompt key is required.")
         self.prompts[key] = str(value)
 
+    def update_notification_rule(self, event_type: str, updates: dict[str, str]) -> None:
+        event_type = str(event_type or "").strip()
+        if not event_type:
+            raise ValueError("Notification event type is required.")
+        current: NotificationRule | None = None
+        for rule in self.notification_rules:
+            if rule.event_type == event_type:
+                current = rule
+                break
+        recipients_text = str(updates.get("recipients", "")).strip()
+        recipients = [
+            NotificationRecipient(email=email.strip())
+            for email in recipients_text.split(",")
+            if email.strip()
+        ]
+        active_text = str(updates.get("active", "true")).strip().lower()
+        replacement = NotificationRule(
+            id=current.id if current else None,
+            event_type=event_type,
+            label=str(updates.get("label", current.label if current else event_type)).strip(),
+            subject_template=str(updates.get("subject_template", current.subject_template if current else "")).strip(),
+            body_template=str(updates.get("body_template", current.body_template if current else "")).strip(),
+            recipients=recipients if recipients_text else (current.recipients if current else []),
+            active=active_text not in {"0", "false", "no", "off"},
+            created_at=current.created_at if current else "",
+            updated_at=current.updated_at if current else "",
+        )
+        self.notification_rules = [
+            rule for rule in self.notification_rules
+            if not (rule.event_type == event_type and rule.id == replacement.id)
+        ]
+        self.notification_rules.append(replacement)
+
     def validate(self) -> list[str]:
         errors: list[str] = []
         try:
@@ -183,6 +232,17 @@ class AdminStudioDraft:
             if any(part.strip() == ".." for part in notes_dir.replace("/", "\\").split("\\")):
                 errors.append("Interview notes folder cannot contain '..'.")
                 break
+        for rule in self.notification_rules:
+            if not rule.event_type.strip():
+                errors.append("Notification event type is required.")
+                break
+            if not rule.label.strip():
+                errors.append("Notification label is required.")
+                break
+            for recipient in rule.recipients:
+                if not is_valid_email_address(recipient.email):
+                    errors.append("Invalid notification recipient email.")
+                    return errors
         return errors
 
 
@@ -195,12 +255,14 @@ class AdminStudio:
         overrides: dict[str, Any],
         school_settings: dict[str, dict[str, str]],
         prompts: dict[str, Any],
+        notification_rules: list[NotificationRule],
     ) -> None:
         self.paths = _normalize_paths(paths)
         self.rubric = deepcopy(rubric)
         self.overrides = deepcopy(overrides)
         self.school_settings = deepcopy(school_settings)
         self.prompts = deepcopy(prompts)
+        self.notification_rules = deepcopy(notification_rules)
 
     @classmethod
     def load(cls, paths: AdminStudioPaths | None = None) -> "AdminStudio":
@@ -209,12 +271,16 @@ class AdminStudio:
         overrides_store = QuestionOverridesStore(paths.overrides_path)
         school_store = SchoolOfferSettingsStore(paths.school_settings_path)
         prompts = normalize_deepseek_prompt_templates(_read_json_object(paths.prompts_path))
+        notification_store = NotificationStore(paths.notification_rules_path)
+        notification_store.ensure_default_rules()
+        notification_rules = notification_store.list_rules()
         return cls(
             paths=paths,
             rubric=rubric,
             overrides=overrides_store.data,
             school_settings=school_store.load(),
             prompts=prompts,
+            notification_rules=notification_rules,
         )
 
     def create_draft(self) -> AdminStudioDraft:
@@ -223,6 +289,7 @@ class AdminStudio:
             overrides=self.overrides,
             school_settings=self.school_settings,
             prompts=self.prompts,
+            notification_rules=self.notification_rules,
         )
 
     def summary(self, draft: AdminStudioDraft | None = None) -> AdminStudioSummary:
@@ -235,6 +302,7 @@ class AdminStudio:
             AdminSection("rubrics", "Rubrics", "Edit scored traits and descriptors.", len(traits)),
             AdminSection("signals", "Signal Hints", "Review runtime signal definitions.", len(traits)),
             AdminSection("templates", "Templates & Folders", "Edit school templates and output folders.", len(active.school_settings)),
+            AdminSection("notifications", "Notifications", "Edit checkpoint email rules and recipients.", len(active.notification_rules)),
             AdminSection("prompts", "DeepSeek Prompts", "Edit local prompt templates.", len(active.prompts)),
             AdminSection("advanced", "Advanced JSON", "Review source JSON files with safeguards.", 4),
         ]
@@ -262,10 +330,15 @@ class AdminStudio:
             SchoolOfferSettingsStore(self.paths.school_settings_path).save(draft.school_settings)
         if "deepseek_prompts.json" in changed:
             atomic_write_json(self.paths.prompts_path, normalize_deepseek_prompt_templates(draft.prompts), indent=2, ensure_ascii=False)
+        if "notification_rules.sqlite3" in changed:
+            store = NotificationStore(self.paths.notification_rules_path)
+            for rule in draft.notification_rules:
+                store.save_rule(rule)
         self.rubric = deepcopy(draft.rubric)
         self.overrides = deepcopy(draft.overrides)
         self.school_settings = deepcopy(draft.school_settings)
         self.prompts = deepcopy(draft.prompts)
+        self.notification_rules = deepcopy(draft.notification_rules)
         return AdminApplyResult(applied=True, changed_files=list(changed), backup_paths=backup_paths)
 
     def _backup_changed_files(self, changed: dict[str, tuple[Any, Any]]) -> list[Path]:
@@ -277,6 +350,7 @@ class AdminStudio:
             "question_overrides.json": self.paths.overrides_path,
             "school_offer_settings.json": self.paths.school_settings_path,
             "deepseek_prompts.json": self.paths.prompts_path,
+            "notification_rules.sqlite3": self.paths.notification_rules_path,
         }
         backups: list[Path] = []
         for filename in changed:
@@ -297,6 +371,7 @@ def _normalize_paths(paths: AdminStudioPaths) -> AdminStudioPaths:
         overrides_path=Path(paths.overrides_path),
         school_settings_path=Path(paths.school_settings_path),
         prompts_path=Path(paths.prompts_path),
+        notification_rules_path=Path(paths.notification_rules_path),
         backup_dir=backup_dir,
     )
 
@@ -341,3 +416,32 @@ def _prompt_change_lines(before: dict[str, Any], after: dict[str, Any]) -> list[
         if before.get(key) != new:
             lines.append(f"{key} prompt changed.")
     return lines
+
+
+def _notification_rule_snapshot(rules: list[NotificationRule]) -> list[dict[str, Any]]:
+    return [
+        {
+            "id": rule.id,
+            "event_type": rule.event_type,
+            "label": rule.label,
+            "active": rule.active,
+            "subject_template": rule.subject_template,
+            "body_template": rule.body_template,
+            "recipients": [
+                {
+                    "email": recipient.email,
+                    "name": recipient.name,
+                    "role_label": recipient.role_label,
+                    "active": recipient.active,
+                }
+                for recipient in rule.recipients
+            ],
+        }
+        for rule in sorted(rules, key=lambda item: (item.event_type, item.id or 0, item.label))
+    ]
+
+
+def _notification_change_lines(before: list[NotificationRule], after: list[NotificationRule]) -> list[str]:
+    if _notification_rule_snapshot(before) == _notification_rule_snapshot(after):
+        return []
+    return ["Notification rules changed."]

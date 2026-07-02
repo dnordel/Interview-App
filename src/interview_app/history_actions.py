@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from tkinter import messagebox
+from pathlib import Path
 from typing import Any
 
 from interview_runtime import HistoryRowKey, OfferTransitionResult
+from notification_service import notification_service_from_onboarding
 
 
 class HistoryActionsService:
@@ -26,6 +28,7 @@ class HistoryActionsService:
             return False
         if not self.app.history_store.update_offer_state(row_key, status, offer_path):
             return False
+        self._emit_offer_notification(row, status, row_key)
         self.app._refresh_history_tree()
         return True
 
@@ -65,3 +68,26 @@ class HistoryActionsService:
 
     def _row_key(self, row: dict[str, Any]) -> HistoryRowKey:
         return str(self.app.history_store.build_row_key(row)).strip()
+
+    def _emit_offer_notification(self, row: dict[str, Any], status: str, row_key: str) -> None:
+        event_type = {
+            "generated": "offer.generated",
+            "approved": "offer.approved",
+            "accepted": "offer.accepted",
+            "welcome_email_sent": "offer.welcome_email_sent",
+        }.get(str(status or "").strip().lower())
+        if not event_type:
+            return
+        service = getattr(self.app, "notification_service", None)
+        if service is None:
+            service = notification_service_from_onboarding(root_dir=Path.cwd())
+        payload = {
+            "candidate_name": str(row.get("candidate_name") or row.get("candidate") or "").strip(),
+            "school": str(row.get("school") or "").strip(),
+            "position": str(row.get("position") or row.get("role") or "").strip(),
+            "offer_status": str(status or "").strip().lower(),
+        }
+        try:
+            service.emit_event(event_type, payload, f"{row_key}:{event_type}")
+        except Exception:
+            return
