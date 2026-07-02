@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from staffing_store import StaffingStore
+from staffing_store import StaffingEditLock, StaffingStore
 
 
 def test_import_seed_file_is_idempotent_and_lists_assignments(tmp_path: Path) -> None:
@@ -245,3 +245,31 @@ def test_staffing_schema_enforces_unique_school_classroom_and_active_history(tmp
                 """,
                 (assignment_id,),
             )
+
+
+def test_write_connection_refuses_second_editor_when_dropbox_lock_exists(tmp_path: Path) -> None:
+    db_path = tmp_path / "staffing.sqlite3"
+    first_store = StaffingStore(db_path)
+    second_store = StaffingStore(db_path)
+    first_store.initialize()
+
+    with first_store.write_connection("first-user"):
+        with pytest.raises(StaffingEditLock, match="Staffing database is being edited"):
+            with second_store.write_connection("second-user"):
+                pass
+
+
+def test_write_connection_removes_stale_dropbox_lock(tmp_path: Path) -> None:
+    db_path = tmp_path / "staffing.sqlite3"
+    store = StaffingStore(db_path)
+    store.initialize()
+    lock_path = db_path.with_suffix(db_path.suffix + ".editing.lock")
+    lock_path.write_text(
+        json.dumps({"owner": "old-user", "created_at": "2000-01-01T00:00:00Z"}),
+        encoding="utf-8",
+    )
+
+    with store.write_connection("new-user") as conn:
+        conn.execute("SELECT 1")
+
+    assert not lock_path.exists()

@@ -15,7 +15,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-02T22:34:17.337285+00:00'
+generated_at_utc: '2026-07-02T22:59:13.071475+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -9885,6 +9885,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._staffing_permit_combo
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._staffing_workbook_board
   kind: method
   tests:
@@ -9931,6 +9940,15 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._update_staffing_permit
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._update_staffing_permit_from_table
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -12666,6 +12684,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/staffing_service.contract.yaml
+  symbol: staffing_service.StaffingService.flush_pending_operations
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_service.contract.yaml
   symbol: staffing_service.StaffingService.mark_coming
   kind: method
   tests:
@@ -12792,6 +12819,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/staffing_store.contract.yaml
+  symbol: staffing_store.StaffingStore.enqueue_pending_operation
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_store.contract.yaml
   symbol: staffing_store.StaffingStore.ensure_person
   kind: method
   tests:
@@ -12837,6 +12873,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/staffing_store.contract.yaml
+  symbol: staffing_store.StaffingStore.peek_pending_operations
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_store.contract.yaml
   symbol: staffing_store.StaffingStore.person_context
   kind: method
   tests:
@@ -12846,7 +12891,34 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/staffing_store.contract.yaml
+  symbol: staffing_store.StaffingStore.pop_pending_operations
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_store.contract.yaml
+  symbol: staffing_store.StaffingStore.restore_pending_operations
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_store.contract.yaml
   symbol: staffing_store.StaffingStore.seed_assignment
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_store.contract.yaml
+  symbol: staffing_store.StaffingStore.write_connection
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py

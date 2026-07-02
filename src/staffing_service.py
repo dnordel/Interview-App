@@ -3,10 +3,11 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import replace
 from datetime import date, datetime, timezone
+import json
 from typing import TYPE_CHECKING, Any
 
 from staffing_models import PERMIT_STATUSES, StaffingAssignment, StaffingMetricRow, StaffingMetrics, StaffingTransitionResult
-from staffing_store import StaffingStore
+from staffing_store import StaffingEditLock, StaffingStore
 
 if TYPE_CHECKING:
     from notification_service import NotificationService
@@ -34,10 +35,115 @@ class StaffingService:
         self.store = store
         self.notification_service = notification_service
         self.clock = clock or _utc_now_iso
+        self._replaying_pending_operations = False
 
     def open_position(self, assignment_id: int) -> StaffingTransitionResult:
+        return self._run_or_queue(
+            "open_position",
+            {"assignment_id": int(assignment_id)},
+            lambda: self._open_position_impl(assignment_id),
+        )
+
+    def mark_coming(self, assignment_id: int, *, person_name: str, start_date: str) -> StaffingTransitionResult:
+        return self._run_or_queue(
+            "mark_coming",
+            {"assignment_id": int(assignment_id), "person_name": person_name, "start_date": start_date},
+            lambda: self._mark_coming_impl(assignment_id, person_name=person_name, start_date=start_date),
+        )
+
+    def revert_coming(self, assignment_id: int) -> StaffingTransitionResult:
+        return self._run_or_queue(
+            "revert_coming",
+            {"assignment_id": int(assignment_id)},
+            lambda: self._revert_coming_impl(assignment_id),
+        )
+
+    def mark_filled(self, assignment_id: int) -> StaffingTransitionResult:
+        return self._run_or_queue(
+            "mark_filled",
+            {"assignment_id": int(assignment_id)},
+            lambda: self._mark_filled_impl(assignment_id),
+        )
+
+    def mark_replacing(self, assignment_id: int, *, notice_given: str, final_working_day: str) -> StaffingTransitionResult:
+        return self._run_or_queue(
+            "mark_replacing",
+            {
+                "assignment_id": int(assignment_id),
+                "notice_given": notice_given,
+                "final_working_day": final_working_day,
+            },
+            lambda: self._mark_replacing_impl(
+                assignment_id,
+                notice_given=notice_given,
+                final_working_day=final_working_day,
+            ),
+        )
+
+    def clear_replacement(self, assignment_id: int) -> StaffingTransitionResult:
+        return self._run_or_queue(
+            "clear_replacement",
+            {"assignment_id": int(assignment_id)},
+            lambda: self._clear_replacement_impl(assignment_id),
+        )
+
+    def mark_not_needed(self, assignment_id: int, *, confirmed: bool = False) -> StaffingTransitionResult:
+        return self._run_or_queue(
+            "mark_not_needed",
+            {"assignment_id": int(assignment_id), "confirmed": bool(confirmed)},
+            lambda: self._mark_not_needed_impl(assignment_id, confirmed=confirmed),
+        )
+
+    def update_permit_status(self, person_id: int, permit_status: str) -> StaffingTransitionResult:
+        return self._run_or_queue(
+            "update_permit_status",
+            {"person_id": int(person_id), "permit_status": permit_status},
+            lambda: self._update_permit_status_impl(person_id, permit_status),
+            assignment_id=0,
+        )
+
+    def move_person(self, source_assignment_id: int, target_assignment_id: int, *, confirmed: bool = False) -> StaffingTransitionResult:
+        return self._run_or_queue(
+            "move_person",
+            {
+                "source_assignment_id": int(source_assignment_id),
+                "target_assignment_id": int(target_assignment_id),
+                "confirmed": bool(confirmed),
+            },
+            lambda: self._move_person_impl(source_assignment_id, target_assignment_id, confirmed=confirmed),
+            assignment_id=int(target_assignment_id),
+        )
+
+    def update_assignment_details(
+        self,
+        assignment_id: int,
+        *,
+        classroom: str,
+        shift_start: str = "",
+        shift_end: str = "",
+        permit_status: str | None = None,
+    ) -> StaffingTransitionResult:
+        return self._run_or_queue(
+            "update_assignment_details",
+            {
+                "assignment_id": int(assignment_id),
+                "classroom": classroom,
+                "shift_start": shift_start,
+                "shift_end": shift_end,
+                "permit_status": permit_status,
+            },
+            lambda: self._update_assignment_details_impl(
+                assignment_id,
+                classroom=classroom,
+                shift_start=shift_start,
+                shift_end=shift_end,
+                permit_status=permit_status,
+            ),
+        )
+
+    def _open_position_impl(self, assignment_id: int) -> StaffingTransitionResult:
         now = self.clock()
-        with self.store.connect() as conn:
+        with self.store.write_connection("open_position") as conn:
             assignment = self.store.assignment_context(conn, assignment_id)
             if assignment.status not in {"dont_need_now", "replace"}:
                 raise ValueError("Invalid transition.")
@@ -56,12 +162,12 @@ class StaffingService:
         self._emit_assignment_event("open_position", updated)
         return _result(updated)
 
-    def mark_coming(self, assignment_id: int, *, person_name: str, start_date: str) -> StaffingTransitionResult:
+    def _mark_coming_impl(self, assignment_id: int, *, person_name: str, start_date: str) -> StaffingTransitionResult:
         now = self.clock()
         start_date = _valid_date(start_date, "Start date")
         if date.fromisoformat(start_date) < _parse_timestamp(now).date():
             raise ValueError("Start date cannot be in the past.")
-        with self.store.connect() as conn:
+        with self.store.write_connection("mark_coming") as conn:
             assignment = self.store.assignment_context(conn, assignment_id)
             if assignment.status != "need_now":
                 raise ValueError("Invalid transition.")
@@ -78,9 +184,9 @@ class StaffingService:
         self._emit_assignment_event("mark_coming", updated)
         return _result(updated)
 
-    def revert_coming(self, assignment_id: int) -> StaffingTransitionResult:
+    def _revert_coming_impl(self, assignment_id: int) -> StaffingTransitionResult:
         now = self.clock()
-        with self.store.connect() as conn:
+        with self.store.write_connection("revert_coming") as conn:
             assignment = self.store.assignment_context(conn, assignment_id)
             if assignment.status != "coming":
                 raise ValueError("Invalid transition.")
@@ -95,9 +201,9 @@ class StaffingService:
             updated = self.store.assignment_context(conn, assignment_id)
         return _result(updated)
 
-    def mark_filled(self, assignment_id: int) -> StaffingTransitionResult:
+    def _mark_filled_impl(self, assignment_id: int) -> StaffingTransitionResult:
         now = self.clock()
-        with self.store.connect() as conn:
+        with self.store.write_connection("mark_filled") as conn:
             assignment = self.store.assignment_context(conn, assignment_id)
             if assignment.status != "coming" or assignment.person_id is None:
                 raise ValueError("Invalid transition.")
@@ -125,11 +231,11 @@ class StaffingService:
         self._emit_assignment_event("mark_filled", updated)
         return _result(updated)
 
-    def mark_replacing(self, assignment_id: int, *, notice_given: str, final_working_day: str) -> StaffingTransitionResult:
+    def _mark_replacing_impl(self, assignment_id: int, *, notice_given: str, final_working_day: str) -> StaffingTransitionResult:
         now = self.clock()
         notice_given = _valid_date(notice_given, "Notice given")
         final_working_day = _valid_date(final_working_day, "Final working day")
-        with self.store.connect() as conn:
+        with self.store.write_connection("mark_replacing") as conn:
             assignment = self.store.assignment_context(conn, assignment_id)
             if assignment.status != "filled" or assignment.person_id is None:
                 raise ValueError("Invalid transition.")
@@ -154,9 +260,9 @@ class StaffingService:
         self._emit_assignment_event("mark_replacing", updated)
         return _result(updated)
 
-    def clear_replacement(self, assignment_id: int) -> StaffingTransitionResult:
+    def _clear_replacement_impl(self, assignment_id: int) -> StaffingTransitionResult:
         now = self.clock()
-        with self.store.connect() as conn:
+        with self.store.write_connection("clear_replacement") as conn:
             assignment = self.store.assignment_context(conn, assignment_id)
             if assignment.status != "replace":
                 raise ValueError("Invalid transition.")
@@ -172,9 +278,9 @@ class StaffingService:
         self._emit_assignment_event("clear_replacement", updated)
         return _result(updated)
 
-    def mark_not_needed(self, assignment_id: int, *, confirmed: bool = False) -> StaffingTransitionResult:
+    def _mark_not_needed_impl(self, assignment_id: int, *, confirmed: bool = False) -> StaffingTransitionResult:
         now = self.clock()
-        with self.store.connect() as conn:
+        with self.store.write_connection("mark_not_needed") as conn:
             assignment = self.store.assignment_context(conn, assignment_id)
             if assignment.status in {"coming", "filled", "replace"} and not confirmed:
                 raise ValueError("Confirmation is required.")
@@ -199,11 +305,11 @@ class StaffingService:
         self._emit_assignment_event("mark_not_needed", updated)
         return _result(updated)
 
-    def update_permit_status(self, person_id: int, permit_status: str) -> StaffingTransitionResult:
+    def _update_permit_status_impl(self, person_id: int, permit_status: str) -> StaffingTransitionResult:
         now = self.clock()
         if permit_status not in PERMIT_STATUSES:
             raise ValueError("Unknown permit status.")
-        with self.store.connect() as conn:
+        with self.store.write_connection("update_permit_status") as conn:
             person = self.store.person_context(conn, person_id)
             conn.execute(
                 "UPDATE people SET permit_status = ?, updated_at = ? WHERE id = ?",
@@ -213,13 +319,13 @@ class StaffingService:
         self._emit_person_event(person.id, assignment)
         return _result(assignment)
 
-    def move_person(self, source_assignment_id: int, target_assignment_id: int, *, confirmed: bool = False) -> StaffingTransitionResult:
+    def _move_person_impl(self, source_assignment_id: int, target_assignment_id: int, *, confirmed: bool = False) -> StaffingTransitionResult:
         if not confirmed:
             raise ValueError("Confirmation is required.")
         if int(source_assignment_id) == int(target_assignment_id):
             raise ValueError("Source and target positions must be different.")
         now = self.clock()
-        with self.store.connect() as conn:
+        with self.store.write_connection("move_person") as conn:
             source = self.store.assignment_context(conn, source_assignment_id)
             target = self.store.assignment_context(conn, target_assignment_id)
             if source.person_id is None:
@@ -253,7 +359,7 @@ class StaffingService:
             updated = self.store.assignment_context(conn, target_assignment_id)
         return _result(updated)
 
-    def update_assignment_details(
+    def _update_assignment_details_impl(
         self,
         assignment_id: int,
         *,
@@ -270,7 +376,7 @@ class StaffingService:
         shift_end = _valid_time_or_blank(shift_end, "Shift end")
         if permit_status is not None and permit_status not in PERMIT_STATUSES:
             raise ValueError("Unknown permit status.")
-        with self.store.connect() as conn:
+        with self.store.write_connection("update_assignment_details") as conn:
             assignment = self.store.assignment_context(conn, assignment_id)
             school_row = conn.execute(
                 """
@@ -303,16 +409,12 @@ class StaffingService:
         return _result(updated)
 
     def staffing_metrics(self, *, today: date) -> StaffingMetrics:
+        self.flush_pending_operations()
         rows: list[StaffingMetricRow] = []
-        open_count = 0
-        open_over_7_days = 0
         for assignment in self.store.list_assignments():
             days_open = None
             if assignment.status in {"need_now", "replace"} and assignment.current_opened_date:
                 days_open = max(0, (today - _parse_timestamp(assignment.current_opened_date).date()).days)
-                open_count += 1
-                if days_open > 7:
-                    open_over_7_days += 1
             rows.append(
                 StaffingMetricRow(
                     assignment_id=assignment.id,
@@ -334,13 +436,27 @@ class StaffingService:
                     display_order=assignment.display_order,
                 )
             )
+        rows = self._project_pending_metric_rows(rows)
+        open_count = 0
+        open_over_7_days = 0
+        projected_rows: list[StaffingMetricRow] = []
+        for row in rows:
+            days_open = row.days_open
+            if row.status in {"need_now", "replace"}:
+                days_open = 0 if days_open is None else days_open
+                open_count += 1
+                if days_open > 7:
+                    open_over_7_days += 1
+            else:
+                days_open = None
+            projected_rows.append(replace(row, days_open=days_open))
         closed_days = self.store.closed_days_to_fill()
         avg_days = round(sum(closed_days) / len(closed_days), 1) if closed_days else 0.0
         return StaffingMetrics(
             open_count=open_count,
             avg_days_to_fill=avg_days,
             open_over_7_days=open_over_7_days,
-            rows=rows,
+            rows=projected_rows,
         )
 
     def _create_history(self, conn: Any, assignment_id: int, now: str) -> None:
@@ -389,6 +505,143 @@ class StaffingService:
         )
         if count != expected:
             raise ValueError("Invalid assignment history state.")
+
+    def flush_pending_operations(self) -> int:
+        if self._replaying_pending_operations:
+            return 0
+        records = self.store.pop_pending_operations()
+        if not records:
+            return 0
+        applied = 0
+        self._replaying_pending_operations = True
+        try:
+            for index, record in enumerate(records):
+                try:
+                    self._apply_pending_operation(record)
+                except StaffingEditLock:
+                    self.store.restore_pending_operations(records[index:])
+                    return applied
+                except (TypeError, ValueError, KeyError):
+                    continue
+                applied += 1
+        finally:
+            self._replaying_pending_operations = False
+        return applied
+
+    def _run_or_queue(
+        self,
+        operation: str,
+        payload: dict[str, Any],
+        action: Callable[[], StaffingTransitionResult],
+        *,
+        assignment_id: int | None = None,
+    ) -> StaffingTransitionResult:
+        if not self._replaying_pending_operations:
+            self.flush_pending_operations()
+        try:
+            return action()
+        except StaffingEditLock:
+            self.store.enqueue_pending_operation(operation, payload)
+            queued_assignment_id = assignment_id
+            if queued_assignment_id is None:
+                queued_assignment_id = int(payload.get("assignment_id", 0) or 0)
+            return StaffingTransitionResult(
+                assignment_id=queued_assignment_id,
+                status="queued",
+                person_id=None,
+                updated_at=self.clock(),
+            )
+
+    def _apply_pending_operation(self, record: dict[str, Any]) -> None:
+        operation = str(record.get("operation", ""))
+        payload = record.get("payload", {})
+        if not isinstance(payload, dict):
+            raise ValueError("Invalid pending staffing operation.")
+        if operation == "open_position":
+            self._open_position_impl(int(payload["assignment_id"]))
+        elif operation == "mark_coming":
+            self._mark_coming_impl(
+                int(payload["assignment_id"]),
+                person_name=str(payload["person_name"]),
+                start_date=str(payload["start_date"]),
+            )
+        elif operation == "revert_coming":
+            self._revert_coming_impl(int(payload["assignment_id"]))
+        elif operation == "mark_filled":
+            self._mark_filled_impl(int(payload["assignment_id"]))
+        elif operation == "mark_replacing":
+            self._mark_replacing_impl(
+                int(payload["assignment_id"]),
+                notice_given=str(payload["notice_given"]),
+                final_working_day=str(payload["final_working_day"]),
+            )
+        elif operation == "clear_replacement":
+            self._clear_replacement_impl(int(payload["assignment_id"]))
+        elif operation == "mark_not_needed":
+            self._mark_not_needed_impl(int(payload["assignment_id"]), confirmed=bool(payload.get("confirmed", False)))
+        elif operation == "update_permit_status":
+            self._update_permit_status_impl(int(payload["person_id"]), str(payload["permit_status"]))
+        elif operation == "move_person":
+            self._move_person_impl(
+                int(payload["source_assignment_id"]),
+                int(payload["target_assignment_id"]),
+                confirmed=bool(payload.get("confirmed", False)),
+            )
+        elif operation == "update_assignment_details":
+            permit_status = payload.get("permit_status")
+            self._update_assignment_details_impl(
+                int(payload["assignment_id"]),
+                classroom=str(payload["classroom"]),
+                shift_start=str(payload.get("shift_start", "")),
+                shift_end=str(payload.get("shift_end", "")),
+                permit_status=str(permit_status) if permit_status is not None else None,
+            )
+        else:
+            raise ValueError("Unknown pending staffing operation.")
+
+    def _project_pending_metric_rows(self, rows: list[StaffingMetricRow]) -> list[StaffingMetricRow]:
+        projected = {row.assignment_id: row for row in rows}
+        try:
+            records = self.store.peek_pending_operations()
+        except (OSError, json.JSONDecodeError):
+            return rows
+        for record in records:
+            payload = record.get("payload", {})
+            if not isinstance(payload, dict):
+                continue
+            assignment_id = int(payload.get("assignment_id", payload.get("target_assignment_id", 0)) or 0)
+            row = projected.get(assignment_id)
+            if row is None:
+                continue
+            operation = str(record.get("operation", ""))
+            if operation == "open_position":
+                projected[assignment_id] = replace(row, status="need_now", person_name="", start_date="")
+            elif operation == "mark_coming":
+                projected[assignment_id] = replace(
+                    row,
+                    status="coming",
+                    person_name=str(payload.get("person_name", "")),
+                    start_date=str(payload.get("start_date", "")),
+                )
+            elif operation == "revert_coming":
+                projected[assignment_id] = replace(row, status="need_now", person_name="", start_date="")
+            elif operation == "mark_filled":
+                projected[assignment_id] = replace(row, status="filled")
+            elif operation == "mark_replacing":
+                projected[assignment_id] = replace(row, status="replace")
+            elif operation == "clear_replacement":
+                projected[assignment_id] = replace(row, status="need_now", person_name="", start_date="")
+            elif operation == "mark_not_needed":
+                projected[assignment_id] = replace(row, status="dont_need_now", person_name="", start_date="")
+            elif operation == "update_assignment_details":
+                projected[assignment_id] = replace(
+                    row,
+                    classroom=str(payload.get("classroom", row.classroom)),
+                    shift_start=str(payload.get("shift_start", row.shift_start)),
+                    shift_end=str(payload.get("shift_end", row.shift_end)),
+                    permit_status=str(payload.get("permit_status", row.permit_status) or row.permit_status),
+                )
+        return list(projected.values())
 
     def _assignment_for_person(self, conn: Any, person_id: int, fallback_updated_at: str) -> StaffingAssignment:
         row = conn.execute(

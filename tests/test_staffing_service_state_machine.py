@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from datetime import date
 
 from staffing_service import StaffingService
 from staffing_store import StaffingStore
@@ -111,3 +112,43 @@ def test_update_assignment_details_edits_classroom_shift_and_permit(tmp_path: Pa
     assert assignment.shift_start == "08:30"
     assert assignment.shift_end == "17:00"
     assert assignment.permit_status == "teacher_permit_approved"
+
+
+def test_locked_staffing_action_queues_and_replays_when_db_unlocks(tmp_path: Path) -> None:
+    db_path = tmp_path / "staffing.sqlite3"
+    lock_owner = StaffingStore(db_path)
+    store = StaffingStore(db_path)
+    store.initialize()
+    assignment_id = store.seed_assignment(
+        school="Hawthorne",
+        classroom="Tranquility",
+        position_name="Teacher 2",
+        position_type="Teacher",
+    )
+    service = StaffingService(
+        store,
+        clock=_Clock(
+            [
+                "2026-07-01T09:00:00Z",
+                "2026-07-01T09:01:00Z",
+                "2026-07-01T09:02:00Z",
+                "2026-07-01T09:03:00Z",
+            ]
+        ),
+    )
+
+    with lock_owner.write_connection("other-director"):
+        result = service.open_position(assignment_id)
+        metrics = service.staffing_metrics(today=date(2026, 7, 1))
+
+    assert result.status == "queued"
+    assert metrics.rows[0].status == "need_now"
+    assert metrics.open_count == 1
+    assert store.pending_operations_path.exists()
+    assert store.get_assignment(assignment_id).status == "dont_need_now"
+
+    applied = service.flush_pending_operations()
+
+    assert applied == 1
+    assert not store.pending_operations_path.exists()
+    assert store.get_assignment(assignment_id).status == "need_now"

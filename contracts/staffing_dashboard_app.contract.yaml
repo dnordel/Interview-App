@@ -120,7 +120,7 @@ classes:
     exceptions: []
     side_effects: Displays the QMainWindow.
   - name: refresh
-    description: Initialize staffing storage, import or top up seed data when needed, recompute metrics, and rebuild school tabs.
+    description: Initialize staffing storage, import or top up seed data when needed, replay/project pending queued operations through metrics, and rebuild school tabs.
     locked: false
     inputs: {}
     returns:
@@ -128,7 +128,7 @@ classes:
     exceptions:
     - OSError
     - ValueError
-    side_effects: May write staffing SQLite rows from seed and updates visible widgets.
+    side_effects: May write staffing SQLite rows from seed or pending operation replay, and updates visible widgets with queued changes projected immediately when the DB remains locked.
 data_structures: []
 dependencies:
 - module: staffing_service

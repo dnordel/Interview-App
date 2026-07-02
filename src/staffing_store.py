@@ -1,11 +1,20 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
+from datetime import datetime, timezone
 import json
+import os
 import sqlite3
 from pathlib import Path
 from typing import Any
 
 from staffing_models import ASSIGNMENT_STATUSES, PERMIT_STATUSES, StaffingAssignment, StaffingPerson
+
+EDIT_LOCK_STALE_SECONDS = 15 * 60
+
+
+class StaffingEditLock(RuntimeError):
+    pass
 
 
 class StaffingStore:
@@ -17,7 +26,23 @@ class StaffingStore:
         conn = sqlite3.connect(self.path)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA foreign_keys = ON")
+        conn.execute("PRAGMA busy_timeout = 5000")
         return conn
+
+    @contextmanager
+    def write_connection(self, owner: str = "") -> Any:
+        self._acquire_edit_lock(owner)
+        conn = self.connect()
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+            yield conn
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+            self._release_edit_lock()
 
     def initialize(self) -> None:
         with self.connect() as conn:
@@ -107,6 +132,104 @@ class StaffingStore:
         existing = {str(row["name"]) for row in conn.execute(f"PRAGMA table_info({table})").fetchall()}
         if column not in existing:
             conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+
+    @property
+    def edit_lock_path(self) -> Path:
+        return self.path.with_suffix(self.path.suffix + ".editing.lock")
+
+    @property
+    def pending_operations_path(self) -> Path:
+        return self.path.with_suffix(self.path.suffix + ".pending.jsonl")
+
+    def enqueue_pending_operation(self, operation: str, payload: dict[str, Any]) -> None:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        record = {
+            "operation": operation,
+            "payload": payload,
+            "queued_at": _utc_now_iso(),
+            "owner": _default_lock_owner(),
+        }
+        with self.pending_operations_path.open("a", encoding="utf-8") as file:
+            file.write(json.dumps(record, ensure_ascii=True, sort_keys=True) + "\n")
+
+    def pop_pending_operations(self) -> list[dict[str, Any]]:
+        pending_path = self.pending_operations_path
+        if not pending_path.exists():
+            return []
+        records: list[dict[str, Any]] = []
+        for line in pending_path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            record = json.loads(line)
+            if isinstance(record, dict):
+                records.append(record)
+        pending_path.unlink()
+        return records
+
+    def peek_pending_operations(self) -> list[dict[str, Any]]:
+        pending_path = self.pending_operations_path
+        if not pending_path.exists():
+            return []
+        records: list[dict[str, Any]] = []
+        for line in pending_path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            record = json.loads(line)
+            if isinstance(record, dict):
+                records.append(record)
+        return records
+
+    def restore_pending_operations(self, records: list[dict[str, Any]]) -> None:
+        for record in records:
+            operation = str(record.get("operation", ""))
+            payload = record.get("payload", {})
+            if isinstance(payload, dict):
+                self.enqueue_pending_operation(operation, payload)
+
+    def _acquire_edit_lock(self, owner: str) -> None:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        lock_path = self.edit_lock_path
+        payload = json.dumps(
+            {
+                "owner": owner or _default_lock_owner(),
+                "created_at": _utc_now_iso(),
+                "database": str(self.path),
+            },
+            ensure_ascii=True,
+        )
+        for _attempt in range(2):
+            try:
+                fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            except FileExistsError as exc:
+                if self._remove_stale_edit_lock(lock_path):
+                    continue
+                details = _read_lock_details(lock_path)
+                raise StaffingEditLock(f"Staffing database is being edited by {details}. Try again shortly.") from exc
+            with os.fdopen(fd, "w", encoding="utf-8") as file:
+                file.write(payload)
+            return
+        raise StaffingEditLock("Staffing database is being edited. Try again shortly.")
+
+    def _release_edit_lock(self) -> None:
+        try:
+            self.edit_lock_path.unlink()
+        except FileNotFoundError:
+            return
+
+    def _remove_stale_edit_lock(self, lock_path: Path) -> bool:
+        try:
+            data = json.loads(lock_path.read_text(encoding="utf-8"))
+            created_at = datetime.fromisoformat(str(data.get("created_at", "")).replace("Z", "+00:00"))
+        except (OSError, ValueError, TypeError, json.JSONDecodeError):
+            return False
+        age = datetime.now(timezone.utc) - created_at
+        if age.total_seconds() <= EDIT_LOCK_STALE_SECONDS:
+            return False
+        try:
+            lock_path.unlink()
+        except OSError:
+            return False
+        return True
 
     def seed_assignment(
         self,
@@ -428,6 +551,26 @@ def _required_text(value: str, label: str) -> str:
     if not text:
         raise ValueError(f"{label} is required.")
     return text
+
+
+def _default_lock_owner() -> str:
+    user = os.environ.get("USERNAME") or os.environ.get("USER") or "unknown-user"
+    computer = os.environ.get("COMPUTERNAME") or "unknown-computer"
+    return f"{user}@{computer}"
+
+
+def _read_lock_details(lock_path: Path) -> str:
+    try:
+        data = json.loads(lock_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return "another user"
+    owner = str(data.get("owner") or "another user")
+    created = str(data.get("created_at") or "unknown time")
+    return f"{owner} since {created}"
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def _seed_schools(data: Any) -> list[dict[str, Any]]:

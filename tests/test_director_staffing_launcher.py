@@ -132,6 +132,15 @@ def test_staffing_dashboard_app_is_staffing_only_entrypoint() -> None:
     assert {"staffing_service", "staffing_store", "PySide6"}.issubset(imported_modules)
 
 
+def test_staffing_dashboard_app_uses_dropbox_user_artifacts_db() -> None:
+    source = APP.read_text(encoding="utf-8")
+
+    assert 'USER_ARTIFACTS_DIR = REPO_ROOT / "user_artifacts"' in source
+    assert 'DEFAULT_BASE_DIR = USER_ARTIFACTS_DIR / "interviews"' in source
+    assert 'STAFFING_DB_PATH = DEFAULT_BASE_DIR / "staffing_dashboard.sqlite3"' in source
+    assert 'DEFAULT_BASE_DIR = REPO_ROOT / "interviews"' not in source
+
+
 def test_staffing_dashboard_app_contract_mentions_director_entrypoint() -> None:
     contract = yaml.safe_load(APP_CONTRACT.read_text(encoding="utf-8"))
     system = yaml.safe_load((ROOT / "contracts" / "system.contract.yaml").read_text(encoding="utf-8"))

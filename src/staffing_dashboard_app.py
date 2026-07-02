@@ -14,7 +14,8 @@ from staffing_store import StaffingStore
 
 APP_TITLE = "Director Staffing Dashboard"
 REPO_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_BASE_DIR = REPO_ROOT / "interviews"
+USER_ARTIFACTS_DIR = REPO_ROOT / "user_artifacts"
+DEFAULT_BASE_DIR = USER_ARTIFACTS_DIR / "interviews"
 STAFFING_DB_PATH = DEFAULT_BASE_DIR / "staffing_dashboard.sqlite3"
 STAFFING_SEED_PATH = REPO_ROOT / "config" / "staffing_seed.json"
 PERMIT_VALUES = [
@@ -143,33 +144,41 @@ class StaffingDashboardWindow:
                     break
 
     def _workbook_table(self, rows: list[Any]) -> QtWidgets.QTableWidget:
-        table = QtWidgets.QTableWidget(len(rows), 9)
+        table = QtWidgets.QTableWidget(len(rows), 8)
         table.setObjectName("DirectorStaffingWorkbookBoard")
-        table.setHorizontalHeaderLabels(["Ratio", "Classroom", "Role", "Position", "Person", "Status", "Capacity", "Notes", "Action"])
+        table.setHorizontalHeaderLabels(["Ratio", "Classroom", "Person", "Status", "Capacity", "Permit Status", "Details", "Action"])
         for row_index, row in enumerate(rows):
             values = [
                 row.ratio_group,
                 row.classroom,
-                slot_label(row),
-                row.position_name,
                 row.person_name or "OPEN POSITION",
                 row.status,
                 "" if row.classroom_capacity is None else str(row.classroom_capacity),
+                "",
                 row.notes,
             ]
             for column, value in enumerate(values):
                 item = QtWidgets.QTableWidgetItem(str(value or ""))
                 item.setData(QtCore.Qt.ItemDataRole.UserRole, row.assignment_id)
-                if column == 4:
+                if column == 2:
                     item.setBackground(QtGui.QColor(permit_color(row.permit_status) if row.permit_status else staffing_status_color(row.status)))
-                if column == 5:
+                if column == 3:
                     item.setBackground(QtGui.QColor(staffing_status_color(row.status)))
                 table.setItem(row_index, column, item)
-            table.setCellWidget(row_index, 8, self._action_button(row.assignment_id, row.status))
+            table.setCellWidget(row_index, 5, self._permit_combo(row.assignment_id, row.permit_status, bool(row.person_name)))
+            table.setCellWidget(row_index, 7, self._action_button(row.assignment_id, row.status))
         table.cellDoubleClicked.connect(lambda row, column, widget=table: self._open_details_from_table(widget, row, column))
         table.resizeColumnsToContents()
         table.horizontalHeader().setStretchLastSection(True)
         return table
+
+    def _permit_combo(self, assignment_id: int, permit_status: str, has_person: bool) -> QtWidgets.QComboBox:
+        combo = QtWidgets.QComboBox()
+        combo.addItems(PERMIT_VALUES)
+        combo.setCurrentText(permit_status if permit_status in PERMIT_VALUES else "unknown")
+        combo.setEnabled(has_person)
+        combo.currentTextChanged.connect(lambda value, item=assignment_id: self._update_permit_from_table(item, value))
+        return combo
 
     def _action_button(self, assignment_id: int, status: str) -> QtWidgets.QToolButton:
         button = QtWidgets.QToolButton()
@@ -202,7 +211,7 @@ class StaffingDashboardWindow:
         return button
 
     def _open_details_from_table(self, table: QtWidgets.QTableWidget, row: int, column: int) -> None:
-        if column == 8:
+        if column in {5, 7}:
             return
         item = table.item(row, 0) or table.item(row, 1) or table.item(row, 3)
         assignment_id = item.data(QtCore.Qt.ItemDataRole.UserRole) if item else None
@@ -286,13 +295,33 @@ class StaffingDashboardWindow:
         if accepted:
             self._run(lambda service: service.update_permit_status(assignment.person_id or 0, permit_status), "Permit status updated.")
 
+    def _update_permit_from_table(self, assignment_id: int, permit_status: str) -> None:
+        assignment = self.store.get_assignment(assignment_id)
+        if assignment.person_id is None:
+            self.status_label.setText("No person assigned to update.")
+            return
+        self._run(
+            lambda service: service.update_assignment_details(
+                assignment_id,
+                classroom=assignment.classroom,
+                shift_start=assignment.shift_start,
+                shift_end=assignment.shift_end,
+                permit_status=permit_status,
+            ),
+            "Permit status updated.",
+        )
+
     def _run(self, action: Any, success_message: str) -> None:
         try:
-            action(StaffingService(self.store))
+            result = action(StaffingService(self.store))
         except Exception as exc:
             self.status_label.setText(str(exc) or "Staffing action failed.")
             return
-        self.status_label.setText(success_message)
+        if getattr(result, "status", "") == "queued":
+            self.status_label.setText("DB busy. Change saved to queue and will apply when unlocked.")
+            QtCore.QTimer.singleShot(5000, self.refresh)
+        else:
+            self.status_label.setText(success_message)
         self.refresh()
 
     def _select_school_index(self, index: int) -> None:

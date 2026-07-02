@@ -74,6 +74,13 @@ NAVIGATION = ["Interviews", "Candidates", "Offers", "Staffing", "Onboarding", "A
 SETUP_STEPS = ["Candidate", "Interview Plan", "Ready"]
 STAFFING_DB_PATH = DEFAULT_BASE_DIR / "staffing_dashboard.sqlite3"
 STAFFING_SEED_PATH = CONFIG_DIR / "staffing_seed.json"
+STAFFING_PERMIT_VALUES = [
+    "unknown",
+    "no_permit_or_application",
+    "permit_in_process",
+    "teacher_permit_approved",
+    "no_units_needed",
+]
 QUICK_ACTIONS = [
     "Needs follow-up",
     "Candidate gave no example",
@@ -3685,9 +3692,9 @@ class PySideInterviewWindow:
                     return
                 event.ignore()
 
-        table = StaffingWorkbookTable(0, 9)
+        table = StaffingWorkbookTable(0, 8)
         table.setObjectName("PySideStaffingWorkbookBoard")
-        table.setHorizontalHeaderLabels(["Ratio", "Classroom", "Role", "Position", "Person", "Status", "Capacity", "Notes", "Action"])
+        table.setHorizontalHeaderLabels(["Ratio", "Classroom", "Person", "Status", "Capacity", "Permit Status", "Details", "Action"])
         table.setDragEnabled(True)
         table.setAcceptDrops(True)
         table.setDragDropMode(self.QtWidgets.QAbstractItemView.DragDropMode.DragDrop)
@@ -3714,28 +3721,41 @@ class PySideInterviewWindow:
             values = [
                 "",
                 classroom,
-                _staffing_slot_label(assignment),
-                assignment.position_name,
                 assignment.person_name or "OPEN POSITION",
                 assignment.status,
                 "" if assignment.classroom_capacity is None else str(assignment.classroom_capacity),
+                "",
                 assignment.notes,
             ]
             for column, value in enumerate(values):
                 item = self.QtWidgets.QTableWidgetItem(value)
                 item.setData(self.QtCore.Qt.ItemDataRole.UserRole, assignment.assignment_id)
+                item.setToolTip(assignment.position_name)
                 item.setFlags(item.flags() | self.QtCore.Qt.ItemFlag.ItemIsDragEnabled | self.QtCore.Qt.ItemFlag.ItemIsDropEnabled)
-                if column == 4:
+                if column == 2:
                     color = _staffing_permit_color(assignment.permit_status) if assignment.permit_status else _staffing_status_color(assignment.status)
                     item.setBackground(self.QtGui.QColor(color))
-                if column == 5:
+                if column == 3:
                     item.setBackground(self.QtGui.QColor(_staffing_status_color(assignment.status)))
                 table.setItem(row_index, column, item)
-            table.setCellWidget(row_index, 8, self._staffing_action_button(assignment.assignment_id, assignment.status))
+            table.setCellWidget(
+                row_index,
+                5,
+                self._staffing_permit_combo(assignment.assignment_id, assignment.permit_status, bool(assignment.person_name)),
+            )
+            table.setCellWidget(row_index, 7, self._staffing_action_button(assignment.assignment_id, assignment.status))
         table.cellClicked.connect(lambda row, column, widget=table: self._open_staffing_assignment_details_from_table(widget, row, column))
         table.resizeColumnsToContents()
         table.horizontalHeader().setStretchLastSection(True)
         return table
+
+    def _staffing_permit_combo(self, assignment_id: int, permit_status: str, has_person: bool) -> Any:
+        combo = self.QtWidgets.QComboBox()
+        combo.addItems(STAFFING_PERMIT_VALUES)
+        combo.setCurrentText(permit_status if permit_status in STAFFING_PERMIT_VALUES else "unknown")
+        combo.setEnabled(has_person)
+        combo.currentTextChanged.connect(lambda value, item=assignment_id: self._update_staffing_permit_from_table(item, value))
+        return combo
 
     def _staffing_action_button(self, assignment_id: int, status: str) -> Any:
         menu_actions: list[tuple[str, Any]] = []
@@ -3775,7 +3795,7 @@ class PySideInterviewWindow:
         return button
 
     def _open_staffing_assignment_details_from_table(self, table: Any, row: int, column: int) -> None:
-        if column == 8:
+        if column in {5, 7}:
             return
         assignment_id = _table_assignment_id(table, row)
         if assignment_id is None:
@@ -3801,9 +3821,8 @@ class PySideInterviewWindow:
         shift_start_field = self.QtWidgets.QLineEdit(assignment.shift_start)
         shift_end_field = self.QtWidgets.QLineEdit(assignment.shift_end)
         permit_field = self.QtWidgets.QComboBox()
-        permit_values = ["unknown", "no_permit_or_application", "permit_in_process", "teacher_permit_approved", "no_units_needed"]
-        permit_field.addItems(permit_values)
-        permit_field.setCurrentText(assignment.permit_status if assignment.permit_status in permit_values else "unknown")
+        permit_field.addItems(STAFFING_PERMIT_VALUES)
+        permit_field.setCurrentText(assignment.permit_status if assignment.permit_status in STAFFING_PERMIT_VALUES else "unknown")
         form.addRow("Classroom", classroom_field)
         form.addRow("Position", position_field)
         form.addRow("Person", person_field)
@@ -3891,11 +3910,28 @@ class PySideInterviewWindow:
             self.window,
             "Staffing",
             "Permit status",
-            ["unknown", "no_permit_or_application", "permit_in_process", "teacher_permit_approved", "no_units_needed"],
+            STAFFING_PERMIT_VALUES,
             0,
             False,
         )
         if not accepted:
+            return
+        self._run_staffing_action(
+            lambda service: service.update_assignment_details(
+                assignment_id,
+                classroom=assignment.classroom,
+                shift_start=assignment.shift_start,
+                shift_end=assignment.shift_end,
+                permit_status=permit_status,
+            ),
+            "Permit status updated.",
+        )
+
+    def _update_staffing_permit_from_table(self, assignment_id: int, permit_status: str) -> None:
+        assignment = self.staffing_store.get_assignment(assignment_id)
+        if assignment.person_id is None:
+            if self.staffing_status_label is not None:
+                self.staffing_status_label.setText("No person assigned to update.")
             return
         self._run_staffing_action(
             lambda service: service.update_permit_status(assignment.person_id or 0, permit_status),
@@ -3928,13 +3964,17 @@ class PySideInterviewWindow:
 
     def _run_staffing_action(self, action: Any, success_message: str) -> None:
         try:
-            action(StaffingService(self.staffing_store, notification_service=self._notification_service()))
+            result = action(StaffingService(self.staffing_store, notification_service=self._notification_service()))
         except Exception as exc:
             if self.staffing_status_label is not None:
                 self.staffing_status_label.setText(str(exc) or "Staffing action failed.")
             return
         if self.staffing_status_label is not None:
-            self.staffing_status_label.setText(success_message)
+            if getattr(result, "status", "") == "queued":
+                self.staffing_status_label.setText("DB busy. Change saved to queue and will apply when unlocked.")
+                self.QtCore.QTimer.singleShot(5000, self._refresh_staffing_dashboard)
+            else:
+                self.staffing_status_label.setText(success_message)
         self._refresh_staffing_dashboard()
 
     def _notification_service(self) -> Any:

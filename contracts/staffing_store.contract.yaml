@@ -2,12 +2,16 @@ module:
   name: staffing_store
   language: python
   path: src/staffing_store.py
-  version: 0.4.0
-  description: SQLite persistence for staffing schools, classrooms, people including optional units, assignments with shift metadata, workbook display metadata, assignment history, required staffing indexes, and deterministic seed imports.
+  version: 0.5.0
+  description: SQLite persistence for staffing schools, classrooms, people including optional units, assignments with shift metadata, workbook display metadata, assignment history, Dropbox-visible edit locking, pending operation queueing, required staffing indexes, and deterministic seed imports.
 functions: []
 classes:
+- name: StaffingEditLock
+  description: Raised when another director holds the staffing edit lock.
+  locked: false
+  methods: []
 - name: StaffingStore
-  description: Opens staffing SQLite connections, initializes schema, seeds test/bootstrap assignments, and reads assignment/person snapshots.
+  description: Opens staffing SQLite connections, initializes schema, manages Dropbox-visible edit locks and pending operation queue files, seeds test/bootstrap assignments, and reads assignment/person snapshots.
   locked: false
   methods:
   - name: connect
@@ -15,11 +19,57 @@ classes:
     returns:
       type: sqlite3.Connection
     side_effects: Opens SQLite database and creates parent directory if needed.
+  - name: write_connection
+    inputs:
+      owner:
+        type: str
+        required: false
+        default: ''
+    returns:
+      type: contextmanager[sqlite3.Connection]
+    exceptions:
+    - StaffingEditLock
+    side_effects: Creates a Dropbox-visible edit lock file, opens SQLite, starts BEGIN IMMEDIATE, commits or rolls back, closes the connection, and removes the edit lock.
   - name: initialize
     inputs: {}
     returns:
       type: None
     side_effects: Creates staffing tables/indexes when missing and migrates workbook display and shift metadata columns for existing databases.
+  - name: enqueue_pending_operation
+    inputs:
+      operation:
+        type: str
+        required: true
+      payload:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: None
+    side_effects: Appends a queued staffing operation JSON record beside the Dropbox-hosted staffing database.
+  - name: pop_pending_operations
+    inputs: {}
+    returns:
+      type: list[dict[str, Any]]
+    exceptions:
+    - OSError
+    - JSONDecodeError
+    side_effects: Reads pending operation records and removes the queue file when present.
+  - name: peek_pending_operations
+    inputs: {}
+    returns:
+      type: list[dict[str, Any]]
+    exceptions:
+    - OSError
+    - JSONDecodeError
+    side_effects: Reads pending operation records without removing the queue file.
+  - name: restore_pending_operations
+    inputs:
+      records:
+        type: list[dict[str, Any]]
+        required: true
+    returns:
+      type: None
+    side_effects: Re-appends pending operation records after replay is interrupted.
   - name: seed_assignment
     inputs:
       school:

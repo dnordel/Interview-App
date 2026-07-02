@@ -776,7 +776,7 @@ classes:
     exceptions: []
     side_effects: Creates PySide label widgets with workbook color swatches.
   - name: _staffing_workbook_board
-    description: Build the single school-scoped workbook-style Staffing board showing ratio bands, classrooms, slot roles, position labels, actual names/open positions, status colors, capacity, notes, drag/drop-enabled rows, click-to-edit details, and action menu controls.
+    description: Build the single school-scoped workbook-style Staffing board showing ratio bands, classrooms, actual names/open positions, status colors, capacity, editable permit-status dropdowns, details, drag/drop-enabled rows, click-to-edit details, and action menu controls without separate Role or Position columns.
     locked: false
     inputs:
       rows:
@@ -785,7 +785,24 @@ classes:
     returns:
       type: QTableWidget
     exceptions: []
-    side_effects: Creates PySide table widgets for workbook-style staffing rows.
+    side_effects: Creates PySide table widgets for workbook-style staffing rows and inline permit status dropdown widgets.
+  - name: _staffing_permit_combo
+    description: Build an inline permit-status dropdown for a staffed row.
+    locked: false
+    inputs:
+      assignment_id:
+        type: int
+        required: true
+      permit_status:
+        type: str
+        required: true
+      has_person:
+        type: bool
+        required: true
+    returns:
+      type: QComboBox
+    exceptions: []
+    side_effects: Creates a PySide combo box and connects changes to service-backed permit updates.
   - name: _staffing_action_button
     description: Build one PySide action button for a staffing assignment status, wired to the service-backed transition handler for that row.
     locked: false
@@ -801,7 +818,7 @@ classes:
     exceptions: []
     side_effects: Creates a PySide tool button/menu and connects its clicked signal.
   - name: _open_staffing_assignment_details_from_table
-    description: Route a clicked workbook staffing row to the editable assignment/person detail popup unless the click is on the action column.
+    description: Route a clicked workbook staffing row to the editable assignment/person detail popup unless the click is on the permit dropdown or action column.
     locked: false
     inputs:
       table:
@@ -930,8 +947,22 @@ classes:
       type: None
     exceptions: []
     side_effects: Shows PySide input dialog, updates people table, and refreshes visible widgets.
+  - name: _update_staffing_permit_from_table
+    description: Update assigned person's permit from the inline Staffing table dropdown through StaffingService.
+    locked: false
+    inputs:
+      assignment_id:
+        type: int
+        required: true
+      permit_status:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates people table through StaffingService, queues when locked, and refreshes visible widgets.
   - name: _run_staffing_action
-    description: Run a StaffingService transition with notification service attached, surface exact validation failures without leaking secrets, and refresh staffing widgets on success.
+    description: Run a StaffingService transition with notification service attached, surface exact validation failures without leaking secrets, queue locked-DB edits for later replay, and refresh staffing widgets on success or queued save.
     locked: false
     inputs:
       action:
@@ -943,7 +974,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Updates staffing SQLite rows through the supplied action and updates visible PySide status/metric/table widgets.
+    side_effects: Updates staffing SQLite rows through the supplied action or queues a pending operation when the DB is locked, updates visible PySide status/metric/table widgets immediately, and schedules a short retry refresh for queued operations.
   - name: _notification_service
     description: Return cached generic notification service backed by onboarding email settings.
     locked: false

@@ -2,8 +2,8 @@ module:
   name: staffing_service
   language: python
   path: src/staffing_service.py
-  version: 0.5.0
-  description: Staffing assignment state machine, staffing dashboard metrics with workbook display metadata, confirmed person moves, editable assignment details, and post-commit notification emission for successful transactions.
+  version: 0.6.0
+  description: Staffing assignment state machine, queued Dropbox edit handling, staffing dashboard metrics with pending-operation projection and workbook display metadata, confirmed person moves, editable assignment details, and post-commit notification emission for successful transactions.
 functions: []
 classes:
 - name: StaffingService
@@ -19,7 +19,7 @@ classes:
       type: StaffingTransitionResult
     exceptions:
     - ValueError
-    side_effects: Updates assignment/history rows, then may emit staffing.assignment.need_now notification.
+    side_effects: Updates assignment/history rows, then may emit staffing.assignment.need_now notification; if DB is locked, saves operation to pending queue and returns queued status.
   - name: mark_coming
     inputs:
       assignment_id:
@@ -35,7 +35,7 @@ classes:
       type: StaffingTransitionResult
     exceptions:
     - ValueError
-    side_effects: Updates assignment/person rows, then may emit staffing.assignment.coming notification.
+    side_effects: Updates assignment/person rows, then may emit staffing.assignment.coming notification; if DB is locked, saves operation to pending queue and returns queued status.
   - name: revert_coming
     inputs:
       assignment_id:
@@ -45,7 +45,7 @@ classes:
       type: StaffingTransitionResult
     exceptions:
     - ValueError
-    side_effects: Reverts coming assignment to need_now without emitting notification.
+    side_effects: Reverts coming assignment to need_now without emitting notification; if DB is locked, saves operation to pending queue and returns queued status.
   - name: mark_filled
     inputs:
       assignment_id:
@@ -55,7 +55,7 @@ classes:
       type: StaffingTransitionResult
     exceptions:
     - ValueError
-    side_effects: Closes assignment history, then may emit staffing.assignment.filled notification.
+    side_effects: Closes assignment history, then may emit staffing.assignment.filled notification; if DB is locked, saves operation to pending queue and returns queued status.
   - name: mark_replacing
     inputs:
       assignment_id:
@@ -71,7 +71,7 @@ classes:
       type: StaffingTransitionResult
     exceptions:
     - ValueError
-    side_effects: Marks current person inactive, opens replacement history, then may emit staffing.assignment.replace notification.
+    side_effects: Marks current person inactive, opens replacement history, then may emit staffing.assignment.replace notification; if DB is locked, saves operation to pending queue and returns queued status.
   - name: clear_replacement
     inputs:
       assignment_id:
@@ -81,7 +81,7 @@ classes:
       type: StaffingTransitionResult
     exceptions:
     - ValueError
-    side_effects: Clears replacing assignment person/start fields, keeps active replacement history open, and may emit staffing.assignment.need_now notification.
+    side_effects: Clears replacing assignment person/start fields, keeps active replacement history open, and may emit staffing.assignment.need_now notification; if DB is locked, saves operation to pending queue and returns queued status.
   - name: mark_not_needed
     inputs:
       assignment_id:
@@ -95,7 +95,7 @@ classes:
       type: StaffingTransitionResult
     exceptions:
     - ValueError
-    side_effects: Cancels active history, clears assignment, then may emit staffing.assignment.not_needed notification.
+    side_effects: Cancels active history, clears assignment, then may emit staffing.assignment.not_needed notification; if DB is locked, saves operation to pending queue and returns queued status.
   - name: update_permit_status
     inputs:
       person_id:
@@ -108,7 +108,7 @@ classes:
       type: StaffingTransitionResult
     exceptions:
     - ValueError
-    side_effects: Updates person permit status, then may emit staffing.permit.updated notification.
+    side_effects: Updates person permit status, then may emit staffing.permit.updated notification; if DB is locked, saves operation to pending queue and returns queued status.
   - name: move_person
     inputs:
       source_assignment_id:
@@ -125,7 +125,7 @@ classes:
       type: StaffingTransitionResult
     exceptions:
     - ValueError
-    side_effects: Moves a person from one assignment to an empty target assignment in one transaction, marks source need_now, opens source history, closes target active history, and requires explicit confirmation.
+    side_effects: Moves a person from one assignment to an empty target assignment in one transaction, marks source need_now, opens source history, closes target active history, and requires explicit confirmation; if DB is locked, saves operation to pending queue and returns queued status.
   - name: update_assignment_details
     inputs:
       assignment_id:
@@ -150,7 +150,7 @@ classes:
       type: StaffingTransitionResult
     exceptions:
     - ValueError
-    side_effects: Updates assignment classroom/shift fields and assigned person's permit status when present; may emit staffing.permit.updated notification.
+    side_effects: Updates assignment classroom/shift fields and assigned person's permit status when present; may emit staffing.permit.updated notification; if DB is locked, saves operation to pending queue and returns queued status.
   - name: staffing_metrics
     inputs:
       today:
@@ -159,7 +159,13 @@ classes:
     returns:
       type: StaffingMetrics
     exceptions: []
-    side_effects: Reads assignment, workbook display metadata, and filled-history rows from StaffingStore to compute dashboard metrics.
+    side_effects: Attempts to replay pending operations when unlocked, reads assignment, workbook display metadata, pending queue records, and filled-history rows from StaffingStore to compute dashboard metrics with queued changes projected for immediate UI feedback.
+  - name: flush_pending_operations
+    inputs: {}
+    returns:
+      type: int
+    exceptions: []
+    side_effects: Replays queued staffing operations when the DB edit lock is available; leaves remaining records queued if the DB is still locked.
 data_structures:
 - name: STAFFING_NOTIFICATION_EVENTS
   type: dict[str, str]

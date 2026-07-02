@@ -2410,10 +2410,13 @@ def test_pyside_staffing_dashboard_imports_seed_and_shows_metrics(tmp_path: Path
     assert any("Open positions: 1" in text for text in labels)
     assert table is not None
     assert table.rowCount() == 2
-    assert table.horizontalHeaderItem(4).text() == "Person"
-    assert table.horizontalHeaderItem(8).text() == "Action"
+    assert table.horizontalHeaderItem(2).text() == "Person"
+    assert table.horizontalHeaderItem(5).text() == "Permit Status"
+    assert table.horizontalHeaderItem(6).text() == "Details"
+    assert table.horizontalHeaderItem(7).text() == "Action"
     assert table.item(1, 1).text() == "Tranquility"
-    assert table.item(1, 3).text() == "Teacher 2"
+    assert table.item(1, 2).text() == "OPEN POSITION"
+    assert table.item(1, 3).text() == "need_now"
     window.window.close()
     app.processEvents()
 
@@ -2511,8 +2514,8 @@ def test_pyside_staffing_open_action_refreshes_dashboard(tmp_path: Path, monkeyp
     table = window.window.findChild(qt_widgets.QTableWidget, "PySideStaffingWorkbookBoard")
     labels = [label.text() for label in window.stack.widget(3).findChildren(qt_widgets.QLabel)]
     row = _staffing_row_for_position(table, "Teacher 1")
-    assert table.item(row, 5).text() == "need_now"
-    assert table.cellWidget(row, 8).text() == "Mark Coming"
+    assert table.item(row, 3).text() == "need_now"
+    assert table.cellWidget(row, 7).text() == "Mark Coming"
     assert any("Open positions: 1" in text for text in labels)
     window.window.close()
     app.processEvents()
@@ -2597,10 +2600,10 @@ def test_pyside_staffing_dashboard_groups_by_school_and_colors_statuses(tmp_path
 
     assert [tabs.tabText(index) for index in range(tabs.count())] == ["Hawthorne", "Palmdale"]
     assert "Need Now: 1" in tabs.widget(0).findChild(qt_widgets.QLabel, "PySideStaffingSummary").text()
-    assert first_table.item(_staffing_row_for_position(first_table, "Teacher 1"), 5).background().color().isValid()
+    assert first_table.item(_staffing_row_for_position(first_table, "Teacher 1"), 3).background().color().isValid()
     second_row = _staffing_row_for_position(second_table, "Teacher 1")
-    assert second_table.item(second_row, 4).text() == "Angie"
-    assert second_table.item(second_row, 4).background().color().isValid()
+    assert second_table.item(second_row, 2).text() == "Angie"
+    assert second_table.item(second_row, 2).background().color().isValid()
     window.window.close()
     app.processEvents()
 
@@ -2967,6 +2970,11 @@ def test_pyside_staffing_uses_single_draggable_colored_workbook_table(tmp_path: 
     assert all(table.dragEnabled() for table in workbook_tables)
     assert all(table.acceptDrops() for table in workbook_tables)
     assert workbook_tables[0].dragDropMode() == qt_widgets.QAbstractItemView.DragDropMode.DragDrop
+    assert [
+        workbook_tables[0].horizontalHeaderItem(index).text()
+        for index in range(workbook_tables[0].columnCount())
+    ] == ["Ratio", "Classroom", "Person", "Status", "Capacity", "Permit Status", "Details", "Action"]
+    assert isinstance(workbook_tables[0].cellWidget(_staffing_row_for_position(workbook_tables[0], "Teacher 1"), 5), qt_widgets.QComboBox)
     assert tabs.tabBar().tabTextColor(0) != tabs.tabBar().tabTextColor(1)
     assert tabs.tabBar().tabTextColor(0).isValid()
     assert workbook_tables[0].item(_staffing_row_for_position(workbook_tables[0], "Teacher 1"), 4).flags() & qt_core.Qt.ItemFlag.ItemIsDragEnabled
@@ -3029,15 +3037,16 @@ def test_pyside_staffing_confirm_move_updates_source_and_target(tmp_path: Path, 
 
 def _staffing_row_for_position(table, position_name: str) -> int:
     for row in range(table.rowCount()):
-        item = table.item(row, 3)
-        if item is not None and item.text() == position_name:
-            return row
+        for column in range(table.columnCount()):
+            item = table.item(row, column)
+            if item is not None and item.toolTip() == position_name:
+                return row
     raise AssertionError(f"Missing staffing row: {position_name}")
 
 
 def _staffing_button_for_position(table, position_name: str):
     row = _staffing_row_for_position(table, position_name)
-    button = table.cellWidget(row, 8)
+    button = table.cellWidget(row, 7)
     assert button is not None
     return button
 
