@@ -213,6 +213,8 @@ class StaffingStore:
             """
             SELECT a.*, c.name AS classroom, s.name AS school, p.name AS person_name,
                    p.permit_status AS permit_status,
+                   p.notice_given AS notice_given,
+                   p.final_working_day AS final_working_day,
                    c.licensed_capacity AS classroom_capacity,
                    c.ratio_group AS ratio_group
             FROM assignments a
@@ -235,6 +237,8 @@ class StaffingStore:
             person_id=int(row["person_id"]) if row["person_id"] is not None else None,
             person_name=str(row["person_name"] or ""),
             start_date=str(row["start_date"] or ""),
+            notice_given=str(row["notice_given"] or ""),
+            final_working_day=str(row["final_working_day"] or ""),
             permit_status=str(row["permit_status"] or ""),
             updated_at=str(row["updated_at"] or ""),
             current_opened_date=str(row["current_opened_date"] or ""),

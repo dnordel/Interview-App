@@ -2,8 +2,8 @@ module:
   name: notification_service
   language: python
   path: src/notification_service.py
-  version: 1.0.0
-  description: Generic checkpoint notification emitter that renders safe payload templates, auto-sends via onboarding SMTP settings, and records sanitized audit outcomes.
+  version: 1.1.0
+  description: Generic checkpoint notification emitter that renders safe dynamic payload templates, supports event-triggered and date-offset rules, auto-sends via onboarding SMTP settings, and records sanitized audit outcomes.
 functions:
 - name: emit_notification_event
   locked: false
@@ -63,9 +63,11 @@ classes:
       type: list[NotificationSendResult]
     exceptions:
     - ValueError
-    side_effects: Reads rules, may send email, writes audit outcomes.
+    side_effects: Reads rules, checks event or date-offset trigger timing, may send email, writes audit outcomes.
 data_structures:
 - name: SUPPORTED_NOTIFICATION_EVENTS
+  type: tuple[str, ...]
+- name: NOTIFICATION_TEMPLATE_FIELDS
   type: tuple[str, ...]
 - name: NOTIFICATION_RULES_PATH
   type: Path

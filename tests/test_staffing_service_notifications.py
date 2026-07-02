@@ -71,6 +71,8 @@ def test_open_position_commits_then_emits_need_now_notification(store: StaffingS
                 "assignment_status": "need_now",
                 "person_name": "",
                 "start_date": "",
+                "notice_given": "",
+                "final_working_day": "",
                 "permit_status": "",
             },
             "staffing:1:staffing.assignment.need_now:2026-07-01T10:00:00Z",

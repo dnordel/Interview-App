@@ -4,6 +4,7 @@ import sys
 import threading
 from datetime import date
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 import pyside_interview_app
@@ -19,6 +20,7 @@ from pyside_interview_app import (
     latest_pyside_draft_path,
     standard_window_control_flags,
 )
+from scoring_reporting import CandidateQualification
 
 
 def test_redesign_model_prioritizes_guided_interview_workflow(tmp_path: Path) -> None:
@@ -2001,6 +2003,7 @@ def test_pyside_admin_studio_uses_guided_readonly_sections_until_edit(tmp_path: 
     questions_table = window.window.findChild(qt_widgets.QTableWidget, "AdminStudioQuestionsTable")
     rubrics_table = window.window.findChild(qt_widgets.QTableWidget, "AdminStudioRubricsTable")
     model_selector = window.window.findChild(qt_widgets.QComboBox, "AdminStudioDeepseekModelSelector")
+    notification_template_button = window.window.findChild(qt_widgets.QPushButton, "AdminStudioNotificationTemplateButton")
 
     assert section_list is not None
     assert [section_list.item(index).text() for index in range(section_list.count())][:2] == ["Questions & Flow", "Rubrics"]
@@ -2022,6 +2025,8 @@ def test_pyside_admin_studio_uses_guided_readonly_sections_until_edit(tmp_path: 
     ]
     assert model_selector.currentData() == "deepseek-r1:14b"
     assert model_selector.isEnabled() is False
+    assert notification_template_button is not None
+    assert notification_template_button.isEnabled() is False
     window.admin_edit_button.click()
     assert window.admin_edit_button.text() == "Editing active"
     assert "Edit mode" in window.admin_status_label.text()
@@ -2029,6 +2034,7 @@ def test_pyside_admin_studio_uses_guided_readonly_sections_until_edit(tmp_path: 
     assert "Editable" in questions_table.item(0, 4).toolTip()
     assert rubrics_table.item(0, 1).flags() & qt_core.Qt.ItemFlag.ItemIsEditable
     assert model_selector.isEnabled() is True
+    assert notification_template_button.isEnabled() is True
     window.window.close()
     app.processEvents()
 
@@ -2208,6 +2214,54 @@ def test_pyside_history_offer_generation_updates_history_status(tmp_path: Path) 
     expected_name = f"{date.today().isoformat()} - Offer - Latoya_Nugent.docx"
     assert rows[0]["offer_letter_path"].endswith(expected_name)
     assert "Offer generated:" in window.offer_status_label.text()
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_rating_notification_emits_for_hire_and_borderline_only(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    notifications = []
+
+    class FakeNotifications:
+        def emit_event(self, event_type, payload, idempotency_key):
+            notifications.append((event_type, payload, idempotency_key))
+            return []
+
+    window.notification_service = FakeNotifications()
+    window.session = SimpleNamespace(
+        candidate_name="Jane Doe",
+        school="Palmdale",
+        position="Teacher",
+        interview_date="2026-07-02",
+        qualification=CandidateQualification(
+            has_degree=True,
+            degree_type="BA",
+            degree_in_ece=False,
+            ece_units_completed=18,
+            years_experience=4,
+        ),
+    )
+
+    window._emit_pyside_rating_notification({"scoring": {"outcome": "Hire", "percent_of_max_label": "85%"}, "history_id": "hist-1"})
+    window._emit_pyside_rating_notification({"scoring": {"outcome": "Borderline", "percent_of_max": 70}, "history_id": "hist-2"})
+    window._emit_pyside_rating_notification({"scoring": {"outcome": "No Hire", "percent_of_max": 50}, "history_id": "hist-3"})
+
+    assert [event[0] for event in notifications] == ["interview.rating.hire", "interview.rating.borderline"]
+    assert notifications[0][1]["candidate_name"] == "Jane Doe"
+    assert notifications[0][1]["score"] == "85%"
+    assert notifications[0][1]["degree_type"] == "BA"
+    assert notifications[0][1]["ece_units_completed"] == "18"
+    assert notifications[0][1]["years_experience"] == "4"
+    assert notifications[1][2] == "hist-2:interview.rating.borderline"
     window.window.close()
     app.processEvents()
 

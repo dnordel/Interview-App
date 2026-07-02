@@ -24,6 +24,8 @@ class StaffingAssignment:
     person_id: int | None = None
     person_name: str = ""
     start_date: str = ""
+    notice_given: str = ""
+    final_working_day: str = ""
     permit_status: str = ""
     updated_at: str = ""
     current_opened_date: str = ""

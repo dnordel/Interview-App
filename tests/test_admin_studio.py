@@ -178,6 +178,54 @@ def test_admin_studio_manages_notification_rules_in_draft_then_applies(tmp_path:
     assert [recipient.email for recipient in rules[0].recipients] == ["director@example.org", "office@example.org"]
 
 
+def test_admin_studio_creates_custom_date_offset_notification_rule(tmp_path: Path) -> None:
+    paths = _write_admin_files(tmp_path)
+    studio = AdminStudio.load(paths)
+    draft = studio.create_draft()
+
+    draft.update_notification_rule(
+        "staffing.assignment.coming",
+        {
+            "label": "Three days before start",
+            "subject_template": "Start soon: {person_name}",
+            "body_template": "{person_name} starts on {start_date}.",
+            "recipients": "director@example.org",
+            "active": "true",
+            "trigger_timing": "date_offset",
+            "date_field": "start_date",
+            "offset_days": "-3",
+        },
+    )
+    result = studio.apply_draft(draft, confirm=True)
+
+    [rule] = NotificationStore(paths.notification_rules_path).list_rules("staffing.assignment.coming")
+    assert result.applied is True
+    assert rule.trigger_timing == "date_offset"
+    assert rule.date_field == "start_date"
+    assert rule.offset_days == -3
+
+
+def test_admin_studio_deletes_notification_rule_from_draft_then_applies(tmp_path: Path) -> None:
+    paths = _write_admin_files(tmp_path)
+    saved = NotificationStore(paths.notification_rules_path).save_rule(
+        NotificationRule(
+            event_type="offer.accepted",
+            label="Offer accepted",
+            subject_template="Accepted",
+            body_template="Accepted",
+            recipients=[NotificationRecipient(email="director@example.org")],
+        )
+    )
+    studio = AdminStudio.load(paths)
+    draft = studio.create_draft()
+
+    draft.delete_notification_rule(saved.id or 0)
+    result = studio.apply_draft(draft, confirm=True)
+
+    assert result.applied is True
+    assert NotificationStore(paths.notification_rules_path).list_rules("offer.accepted") == []
+
+
 def test_admin_studio_rejects_invalid_notification_recipient(tmp_path: Path) -> None:
     studio = AdminStudio.load(_write_admin_files(tmp_path))
     draft = studio.create_draft()

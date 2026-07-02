@@ -2,7 +2,7 @@ module:
   name: admin_studio
   language: python
   path: src/admin_studio.py
-  version: 1.2.0
+  version: 1.3.0
   description: Single admin boundary for local configuration review, draft editing,
     dirty tracking, validation, backup creation, and review-then-apply persistence
     for PySide Admin Studio, including checkpoint notification rules.
@@ -152,8 +152,10 @@ classes:
     returns:
       type: None
   - name: update_notification_rule
-    description: Draft one notification rule edit without writing the notification database;
-      Active values must be explicit true/false variants so typos fail closed.
+    description: Draft one notification rule create/update without writing the notification database;
+      event types may be any system event string, date-offset rules carry date field
+      and offset-days metadata, and Active values must be explicit true/false variants
+      so typos fail closed.
     inputs:
       event_type:
         type: str
@@ -165,10 +167,20 @@ classes:
       type: None
     exceptions:
     - ValueError
+  - name: delete_notification_rule
+    description: Draft deletion of one notification rule by persisted rule id without
+      writing the notification database until confirmed apply.
+    inputs:
+      rule_id:
+        type: int
+        required: true
+    returns:
+      type: None
   - name: validate
     description: Validate prompt payloads, school folder paths, allowlisted DeepSeek
       model selection, notification recipients, complete active notification rows,
-      and notification template placeholder syntax before any apply writes.
+      notification trigger timing/date-offset fields, and notification template
+      placeholder syntax before any apply writes.
     inputs: {}
     returns:
       type: list[str]
@@ -211,7 +223,7 @@ classes:
     returns:
       type: AdminApplyResult
     side_effects: When confirm is true and validation passes, writes changed JSON
-      files and notification rules after creating backups.
+      files and creates/updates/deletes notification rules after creating backups.
 data_structures: []
 dependencies:
 - data_store

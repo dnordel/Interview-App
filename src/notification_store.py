@@ -23,7 +23,8 @@ class NotificationStore:
             if event_type is None:
                 rows = conn.execute(
                     """
-                    SELECT id, event_type, label, active, subject_template, body_template, created_at, updated_at
+                    SELECT id, event_type, label, active, subject_template, body_template,
+                           trigger_timing, date_field, offset_days, created_at, updated_at
                     FROM notification_rules
                     ORDER BY event_type, label, id
                     """
@@ -31,7 +32,8 @@ class NotificationStore:
             else:
                 rows = conn.execute(
                     """
-                    SELECT id, event_type, label, active, subject_template, body_template, created_at, updated_at
+                    SELECT id, event_type, label, active, subject_template, body_template,
+                           trigger_timing, date_field, offset_days, created_at, updated_at
                     FROM notification_rules
                     WHERE event_type = ?
                     ORDER BY label, id
@@ -69,6 +71,13 @@ class NotificationStore:
             raise ValueError("Notification event type is required.")
         if not label:
             raise ValueError("Notification label is required.")
+        trigger_timing = str(rule.trigger_timing or "event").strip() or "event"
+        date_field = str(rule.date_field or "").strip()
+        offset_days = int(rule.offset_days)
+        if trigger_timing not in {"event", "date_offset"}:
+            raise ValueError("Notification trigger timing must be event or date_offset.")
+        if trigger_timing == "date_offset" and not date_field:
+            raise ValueError("Date-offset notification requires a date field.")
         for recipient in rule.recipients:
             email = str(recipient.email or "").strip()
             if not is_valid_email_address(email):
@@ -81,8 +90,9 @@ class NotificationStore:
                     cursor = conn.execute(
                         """
                         INSERT INTO notification_rules
-                            (event_type, label, active, subject_template, body_template, created_at, updated_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                            (event_type, label, active, subject_template, body_template,
+                             trigger_timing, date_field, offset_days, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         (
                             event_type,
@@ -90,6 +100,9 @@ class NotificationStore:
                             1 if rule.active else 0,
                             str(rule.subject_template or ""),
                             str(rule.body_template or ""),
+                            trigger_timing,
+                            date_field,
+                            offset_days,
                             now,
                             now,
                         ),
@@ -100,7 +113,8 @@ class NotificationStore:
                     conn.execute(
                         """
                         UPDATE notification_rules
-                        SET event_type = ?, label = ?, active = ?, subject_template = ?, body_template = ?, updated_at = ?
+                        SET event_type = ?, label = ?, active = ?, subject_template = ?, body_template = ?,
+                            trigger_timing = ?, date_field = ?, offset_days = ?, updated_at = ?
                         WHERE id = ?
                         """,
                         (
@@ -109,6 +123,9 @@ class NotificationStore:
                             1 if rule.active else 0,
                             str(rule.subject_template or ""),
                             str(rule.body_template or ""),
+                            trigger_timing,
+                            date_field,
+                            offset_days,
                             now,
                             rule_id,
                         ),
@@ -138,7 +155,8 @@ class NotificationStore:
         with self._connect() as conn:
             row = conn.execute(
                 """
-                SELECT id, event_type, label, active, subject_template, body_template, created_at, updated_at
+                SELECT id, event_type, label, active, subject_template, body_template,
+                       trigger_timing, date_field, offset_days, created_at, updated_at
                 FROM notification_rules
                 WHERE id = ?
                 """,
@@ -147,6 +165,12 @@ class NotificationStore:
             if row is None:
                 raise ValueError("Notification rule not found.")
             return self._rule_from_row(conn, row)
+
+    def delete_rule(self, rule_id: int) -> None:
+        with self._connect() as conn:
+            with conn:
+                conn.execute("DELETE FROM notification_recipients WHERE rule_id = ?", (int(rule_id),))
+                conn.execute("DELETE FROM notification_rules WHERE id = ?", (int(rule_id),))
 
     def set_rule_active(self, rule_id: int, active: bool) -> None:
         with self._connect() as conn:
@@ -214,11 +238,17 @@ class NotificationStore:
                         active INTEGER NOT NULL DEFAULT 1,
                         subject_template TEXT NOT NULL DEFAULT '',
                         body_template TEXT NOT NULL DEFAULT '',
+                        trigger_timing TEXT NOT NULL DEFAULT 'event',
+                        date_field TEXT NOT NULL DEFAULT '',
+                        offset_days INTEGER NOT NULL DEFAULT 0,
                         created_at TEXT NOT NULL,
                         updated_at TEXT NOT NULL
                     )
                     """
                 )
+                _ensure_column(conn, "notification_rules", "trigger_timing", "TEXT NOT NULL DEFAULT 'event'")
+                _ensure_column(conn, "notification_rules", "date_field", "TEXT NOT NULL DEFAULT ''")
+                _ensure_column(conn, "notification_rules", "offset_days", "INTEGER NOT NULL DEFAULT 0")
                 conn.execute(
                     """
                     CREATE TABLE IF NOT EXISTS notification_recipients (
@@ -283,7 +313,16 @@ class NotificationStore:
             active=bool(row["active"]),
             subject_template=str(row["subject_template"]),
             body_template=str(row["body_template"]),
+            trigger_timing=str(row["trigger_timing"]),
+            date_field=str(row["date_field"]),
+            offset_days=int(row["offset_days"]),
             recipients=recipients,
             created_at=str(row["created_at"]),
             updated_at=str(row["updated_at"]),
         )
+
+
+def _ensure_column(conn: sqlite3.Connection, table: str, column: str, definition: str) -> None:
+    columns = {str(row["name"]) for row in conn.execute(f"PRAGMA table_info({table})").fetchall()}
+    if column not in columns:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")

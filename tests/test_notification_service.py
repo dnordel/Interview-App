@@ -36,6 +36,32 @@ def test_notification_rule_crud_supports_multiple_recipients(tmp_path: Path) -> 
     assert [recipient.email for recipient in rules[0].recipients] == ["hm@example.org", "director@example.org"]
 
 
+def test_notification_rule_crud_persists_date_offset_trigger_and_delete(tmp_path: Path) -> None:
+    store = NotificationStore(tmp_path / "notifications.sqlite3")
+
+    saved = store.save_rule(
+        NotificationRule(
+            event_type="staffing.assignment.coming",
+            label="Start date reminder",
+            subject_template="Start soon: {person_name}",
+            body_template="{person_name} starts on {start_date}.",
+            recipients=[NotificationRecipient(email="director@example.org")],
+            trigger_timing="date_offset",
+            date_field="start_date",
+            offset_days=-3,
+        )
+    )
+
+    [rule] = store.list_rules("staffing.assignment.coming")
+    assert rule.trigger_timing == "date_offset"
+    assert rule.date_field == "start_date"
+    assert rule.offset_days == -3
+
+    store.delete_rule(saved.id or 0)
+
+    assert store.list_rules("staffing.assignment.coming") == []
+
+
 def test_notification_service_sends_matching_rule_once_per_idempotency_key(tmp_path: Path) -> None:
     store = NotificationStore(tmp_path / "notifications.sqlite3")
     store.save_rule(
@@ -68,6 +94,44 @@ def test_notification_service_sends_matching_rule_once_per_idempotency_key(tmp_p
     assert first[0].status == "sent"
     assert second[0].status == "duplicate"
     assert sent == [(["director@example.org"], "Accepted: Jane Doe", "Jane Doe accepted Teacher.")]
+
+
+def test_notification_service_sends_date_offset_rule_only_on_due_date(tmp_path: Path) -> None:
+    store = NotificationStore(tmp_path / "notifications.sqlite3")
+    store.save_rule(
+        NotificationRule(
+            event_type="staffing.assignment.coming",
+            label="Start date reminder",
+            subject_template="Start soon: {person_name}",
+            body_template="{person_name} starts on {start_date}.",
+            recipients=[NotificationRecipient(email="director@example.org")],
+            trigger_timing="date_offset",
+            date_field="start_date",
+            offset_days=-3,
+        )
+    )
+    sent: list[tuple[list[str], str, str]] = []
+    service = NotificationService(
+        store=store,
+        email_settings=_settings(),
+        send_email=lambda settings, recipients, subject, body: sent.append((recipients, subject, body)),
+        current_date=lambda: __import__("datetime").date(2026, 7, 7),
+    )
+
+    early = service.emit_event(
+        "staffing.assignment.coming",
+        {"person_name": "Jane Doe", "start_date": "2026-07-11"},
+        "start-reminder",
+    )
+    due = service.emit_event(
+        "staffing.assignment.coming",
+        {"person_name": "Jane Doe", "start_date": "2026-07-10"},
+        "start-reminder-due",
+    )
+
+    assert early[0].status == "not_due"
+    assert due[0].status == "sent"
+    assert sent == [(["director@example.org"], "Start soon: Jane Doe", "Jane Doe starts on 2026-07-10.")]
 
 
 def test_notification_service_blocks_unknown_placeholders(tmp_path: Path) -> None:

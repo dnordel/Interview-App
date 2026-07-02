@@ -295,6 +295,8 @@ class StaffingService:
                 status="",
                 person_id=person.id,
                 person_name=person.name,
+                notice_given="",
+                final_working_day="",
                 permit_status=person.permit_status,
                 updated_at=fallback_updated_at,
             )
@@ -329,6 +331,8 @@ def _payload(assignment: StaffingAssignment) -> dict[str, str]:
         "assignment_status": assignment.status,
         "person_name": assignment.person_name,
         "start_date": assignment.start_date,
+        "notice_given": assignment.notice_given,
+        "final_working_day": assignment.final_working_day,
         "permit_status": assignment.permit_status,
     }
 

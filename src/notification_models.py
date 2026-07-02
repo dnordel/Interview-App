@@ -27,6 +27,9 @@ class NotificationRule:
     body_template: str
     recipients: list[NotificationRecipient] = field(default_factory=list)
     active: bool = True
+    trigger_timing: str = "event"
+    date_field: str = ""
+    offset_days: int = 0
     id: int | None = None
     created_at: str = ""
     updated_at: str = ""

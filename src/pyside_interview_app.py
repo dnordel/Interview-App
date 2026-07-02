@@ -42,7 +42,12 @@ from interview_runtime import (
     resolve_deepseek_regeneration_job_path,
     resolve_default_windows_system_device,
 )
-from notification_service import NOTIFICATION_RULES_PATH, SUPPORTED_NOTIFICATION_EVENTS, notification_service_from_onboarding
+from notification_service import (
+    NOTIFICATION_RULES_PATH,
+    NOTIFICATION_TEMPLATE_FIELDS,
+    SUPPORTED_NOTIFICATION_EVENTS,
+    notification_service_from_onboarding,
+)
 from onboarding_operations import JsonStore, build_dashboard_today_summary, filtered_tasks, task_status
 from platform_services import (
     CONFIG_DIR,
@@ -415,6 +420,7 @@ class PySideInterviewSession:
             "remaining_question_indices": transcript_metadata["remaining_question_indices"],
             "deepseek_job_path": str(deepseek_job_path) if deepseek_job_available else "",
             "deepseek_progress_path": str(deepseek_progress_path) if deepseek_job_available else "",
+            "history_id": history_id,
         }
 
     def _transcript_metadata(self) -> dict[str, Any]:
@@ -719,6 +725,34 @@ def _history_offer_action(offer_status: str) -> str:
     if status == "accepted":
         return "Open Onboarding"
     return "Review Offer"
+
+
+def _notification_text(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    return str(value)
+
+
+def _table_text(table: Any, row: int, column: int) -> str:
+    item = table.item(row, column)
+    return item.text().strip() if item is not None else ""
+
+
+def _qualification_notification_payload(qualification: Any) -> dict[str, str]:
+    payload = qualification.to_dict() if hasattr(qualification, "to_dict") else {}
+    if not isinstance(payload, dict):
+        payload = {}
+    return {
+        "has_degree": _notification_text(payload.get("has_degree")),
+        "degree_type": _notification_text(payload.get("degree_type")),
+        "degree_in_ece": _notification_text(payload.get("degree_in_ece")),
+        "ece_units_completed": _notification_text(payload.get("ece_units_completed")),
+        "total_units_completed": _notification_text(payload.get("total_units_completed")),
+        "infant_toddler_class_completed": _notification_text(payload.get("infant_toddler_class_completed")),
+        "years_experience": _notification_text(payload.get("years_experience")),
+    }
 
 
 def _staffing_school_summary(rows: list[Any]) -> str:
@@ -2359,6 +2393,7 @@ class PySideInterviewWindow:
         warning_text = str(message.get("warning") or "").strip()
         warning = f" {warning_text}" if warning_text else ""
         self.review_status_label.setText(f"Interview finalized: {output_path}{warning}")
+        self._emit_pyside_rating_notification(result)
         self._reload_history_model()
         if isinstance(result, dict) and result.get("deepseek_progress_path"):
             self._watch_pyside_deepseek_finalize_progress(result.get("deepseek_progress_path"))
@@ -2823,11 +2858,47 @@ class PySideInterviewWindow:
         payload = {
             "candidate_name": row.candidate,
             "school": row.school,
+            "director_name": "",
             "position": row.position,
             "offer_status": str(status or "").strip().lower(),
+            "start_date": self.offer_fields["start_date"].text().strip() if hasattr(self, "offer_fields") and "start_date" in self.offer_fields else "",
+            "notice_given": "",
+            "final_working_day": "",
         }
+        payload.update(_qualification_notification_payload(getattr(self.session, "qualification", None)))
         try:
             self._notification_service().emit_event(event_type, payload, f"{row.row_key}:{event_type}")
+        except Exception:
+            return
+
+    def _emit_pyside_rating_notification(self, result: dict[str, Any]) -> None:
+        scoring = result.get("scoring", {}) if isinstance(result, dict) else {}
+        if not isinstance(scoring, dict):
+            return
+        outcome = str(scoring.get("outcome", "") or "").strip()
+        event_type = {
+            "hire": "interview.rating.hire",
+            "borderline": "interview.rating.borderline",
+        }.get(outcome.lower())
+        if not event_type:
+            return
+        payload = {
+            "candidate_name": self.session.candidate_name,
+            "school": self.session.school,
+            "director_name": "",
+            "position": self.session.position,
+            "interview_date": self.session.interview_date,
+            "outcome": outcome,
+            "score": str(scoring.get("percent_of_max_label") or scoring.get("percent_of_max") or ""),
+            "history_id": str(result.get("history_id", "") or ""),
+            "start_date": "",
+            "notice_given": "",
+            "final_working_day": "",
+        }
+        payload.update(_qualification_notification_payload(getattr(self.session, "qualification", None)))
+        key = payload["history_id"] or f"{self.session.candidate_name}:{self.session.interview_date}:{event_type}"
+        try:
+            self._notification_service().emit_event(event_type, payload, f"{key}:{event_type}")
         except Exception:
             return
 
@@ -2905,6 +2976,14 @@ class PySideInterviewWindow:
             tab_layout.addWidget(table, 1)
             return tab
         if key == "notifications":
+            controls = self.QtWidgets.QHBoxLayout()
+            edit_button = self.QtWidgets.QPushButton("Create/Modify Template")
+            edit_button.setObjectName("AdminStudioNotificationTemplateButton")
+            edit_button.clicked.connect(self._open_notification_template_dialog)
+            self.admin_notification_template_button = edit_button
+            controls.addWidget(edit_button)
+            controls.addStretch(1)
+            tab_layout.addLayout(controls)
             table = self._admin_notifications_table()
             tab_layout.addWidget(table, 1)
             return tab
@@ -2982,23 +3061,116 @@ class PySideInterviewWindow:
     def _admin_notifications_table(self) -> Any:
         by_event = {rule.event_type: rule for rule in self.admin_draft.notification_rules}
         rows: list[list[str]] = []
-        for event_type in SUPPORTED_NOTIFICATION_EVENTS:
+        event_types = list(SUPPORTED_NOTIFICATION_EVENTS)
+        for rule in sorted(self.admin_draft.notification_rules, key=lambda item: (item.event_type, item.id or 0)):
+            if rule.event_type not in event_types:
+                event_types.append(rule.event_type)
+        for event_type in event_types:
             rule = by_event.get(event_type)
             if rule is None:
-                rows.append([event_type, event_type, "false", "", "", ""])
+                rows.append(["", event_type, event_type, "false", "event", "", "0", "", "", ""])
                 continue
             recipients = ", ".join(recipient.email for recipient in rule.recipients if recipient.active)
             rows.append([
+                str(rule.id or ""),
                 rule.event_type,
                 rule.label,
                 "true" if rule.active else "false",
+                rule.trigger_timing,
+                rule.date_field,
+                str(rule.offset_days),
                 rule.subject_template,
                 rule.body_template,
                 recipients,
             ])
-        table = self._admin_table("notifications", ["Event", "Label", "Active", "Subject", "Body", "Recipients"], rows, {1, 2, 3, 4, 5})
+        rows.append(["", "", "", "false", "event", "", "0", "", "", ""])
+        table = self._admin_table(
+            "notifications",
+            ["ID", "Event", "Label", "Active/Delete", "Timing", "Date Field", "Offset Days", "Subject", "Body", "Recipients"],
+            rows,
+            {1, 2, 3, 4, 5, 6, 7, 8, 9},
+        )
         self.admin_notifications_table = table
         return table
+
+    def _open_notification_template_dialog(self) -> None:
+        table = getattr(self, "admin_notifications_table", None)
+        if table is None:
+            return
+        row_index = table.currentRow()
+        if row_index < 0:
+            row_index = table.rowCount() - 1
+            table.selectRow(row_index)
+
+        dialog = self.QtWidgets.QDialog(self.window)
+        dialog.setWindowTitle("Notification Template")
+        layout = self.QtWidgets.QVBoxLayout(dialog)
+        form = self.QtWidgets.QFormLayout()
+
+        event_field = self.QtWidgets.QLineEdit(_table_text(table, row_index, 1))
+        label_field = self.QtWidgets.QLineEdit(_table_text(table, row_index, 2))
+        active_field = self.QtWidgets.QComboBox()
+        active_field.addItems(["true", "false", "delete"])
+        active_text = _table_text(table, row_index, 3).lower()
+        active_field.setCurrentText(active_text if active_text in {"true", "false", "delete"} else "false")
+        timing_field = self.QtWidgets.QComboBox()
+        timing_field.addItems(["event", "date_offset"])
+        timing_text = _table_text(table, row_index, 4)
+        timing_field.setCurrentText(timing_text if timing_text in {"event", "date_offset"} else "event")
+        date_field = self.QtWidgets.QLineEdit(_table_text(table, row_index, 5))
+        offset_field = self.QtWidgets.QSpinBox()
+        offset_field.setRange(-365, 365)
+        try:
+            offset_field.setValue(int(_table_text(table, row_index, 6) or "0"))
+        except ValueError:
+            offset_field.setValue(0)
+        subject_field = self.QtWidgets.QLineEdit(_table_text(table, row_index, 7))
+        body_field = self.QtWidgets.QPlainTextEdit(_table_text(table, row_index, 8))
+        body_field.setMinimumHeight(120)
+        recipients_field = self.QtWidgets.QLineEdit(_table_text(table, row_index, 9))
+
+        form.addRow("System event", event_field)
+        form.addRow("Label", label_field)
+        form.addRow("Active", active_field)
+        form.addRow("Timing", timing_field)
+        form.addRow("Date field", date_field)
+        form.addRow("Offset days", offset_field)
+        form.addRow("Subject", subject_field)
+        form.addRow("Body", body_field)
+        form.addRow("Recipients", recipients_field)
+        layout.addLayout(form)
+
+        fields_label = self._label("Available fields: " + ", ".join(f"{{{name}}}" for name in NOTIFICATION_TEMPLATE_FIELDS))
+        fields_label.setWordWrap(True)
+        layout.addWidget(fields_label)
+
+        buttons = self.QtWidgets.QDialogButtonBox(
+            self.QtWidgets.QDialogButtonBox.StandardButton.Ok | self.QtWidgets.QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        layout.addWidget(buttons)
+
+        if dialog.exec() != self.QtWidgets.QDialog.DialogCode.Accepted:
+            return
+        values = [
+            _table_text(table, row_index, 0),
+            event_field.text().strip(),
+            label_field.text().strip(),
+            active_field.currentText().strip(),
+            timing_field.currentText().strip(),
+            date_field.text().strip(),
+            str(offset_field.value()),
+            subject_field.text().strip(),
+            body_field.toPlainText().strip(),
+            recipients_field.text().strip(),
+        ]
+        for column, value in enumerate(values):
+            item = table.item(row_index, column)
+            if item is None:
+                item = self.QtWidgets.QTableWidgetItem("")
+                table.setItem(row_index, column, item)
+            item.setText(value)
 
     def _admin_readonly_rows(self, key: str) -> list[list[str]]:
         if key == "signals":
@@ -3111,6 +3283,9 @@ class PySideInterviewWindow:
         selector = getattr(self, "admin_deepseek_model_selector", None)
         if selector is not None:
             selector.setEnabled(enabled)
+        notification_button = getattr(self, "admin_notification_template_button", None)
+        if notification_button is not None:
+            notification_button.setEnabled(enabled)
         self.admin_edit_button.setText("Editing active" if enabled else "Start editing")
         self.admin_edit_button.setEnabled(not enabled)
         self.admin_review_button.setEnabled(enabled)
@@ -3192,17 +3367,31 @@ class PySideInterviewWindow:
         notifications = self._admin_tables.get("notifications")
         if notifications is not None:
             for row_index in range(notifications.rowCount()):
-                event_item = notifications.item(row_index, 0)
+                id_item = notifications.item(row_index, 0)
+                event_item = notifications.item(row_index, 1)
                 if event_item is None:
                     continue
+                event_type = event_item.text().strip()
+                active_text = notifications.item(row_index, 3).text() if notifications.item(row_index, 3) else "true"
+                rule_id = id_item.text().strip() if id_item else ""
+                if str(active_text or "").strip().lower() in {"delete", "remove"}:
+                    if rule_id:
+                        self.admin_draft.delete_notification_rule(int(rule_id))
+                    continue
+                if not event_type:
+                    continue
                 self.admin_draft.update_notification_rule(
-                    event_item.text().strip(),
+                    event_type,
                     {
-                        "label": notifications.item(row_index, 1).text() if notifications.item(row_index, 1) else "",
-                        "active": notifications.item(row_index, 2).text() if notifications.item(row_index, 2) else "true",
-                        "subject_template": notifications.item(row_index, 3).text() if notifications.item(row_index, 3) else "",
-                        "body_template": notifications.item(row_index, 4).text() if notifications.item(row_index, 4) else "",
-                        "recipients": notifications.item(row_index, 5).text() if notifications.item(row_index, 5) else "",
+                        "id": rule_id,
+                        "label": notifications.item(row_index, 2).text() if notifications.item(row_index, 2) else "",
+                        "active": active_text,
+                        "trigger_timing": notifications.item(row_index, 4).text() if notifications.item(row_index, 4) else "event",
+                        "date_field": notifications.item(row_index, 5).text() if notifications.item(row_index, 5) else "",
+                        "offset_days": notifications.item(row_index, 6).text() if notifications.item(row_index, 6) else "0",
+                        "subject_template": notifications.item(row_index, 7).text() if notifications.item(row_index, 7) else "",
+                        "body_template": notifications.item(row_index, 8).text() if notifications.item(row_index, 8) else "",
+                        "recipients": notifications.item(row_index, 9).text() if notifications.item(row_index, 9) else "",
                     },
                 )
         self._sync_admin_status()

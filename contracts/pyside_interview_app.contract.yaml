@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.23.0
+  version: 1.24.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, workbook-style staffing dashboard tabs, explicit school selector, actions, and metrics,
@@ -441,8 +441,9 @@ classes:
     DeepSeek work, and live refresh after finalize; Open Notes opens the selected
     interview notes file and Generate Offer opens the PySide offer wizard from
     either the selected history row or completed review screen; Admin Studio exposes
-    checkpoint notification rule rows for editable active flags, templates, recipients,
-    and an allowlisted local DeepSeek model selector.
+    checkpoint notification rule rows for editable custom event types, active/delete
+    flags, date-offset trigger fields, templates, recipients, and an allowlisted
+    local DeepSeek model selector.
     Staffing dashboard view ownership is inline in this PySide shell rather than a
     separate staffing_dashboard_view module.
   locked: false
@@ -459,6 +460,8 @@ classes:
       type: AdminStudio
     admin_draft:
       type: AdminStudioDraft
+    admin_notification_template_button:
+      type: QPushButton | None
   methods:
   - name: show
     description: Show the redesigned PySide6 main window.
@@ -1041,7 +1044,9 @@ classes:
     exceptions: []
     side_effects: Writes interview history JSON and may emit notification.
   - name: _emit_pyside_offer_notification
-    description: Emit generic offer notification event for a PySide history offer status.
+    description: Emit generic offer notification event for a PySide history offer status,
+      including dynamic candidate, qualification, school, position, start-date, and
+      status placeholder payload fields.
     locked: false
     inputs:
       row:
@@ -1049,6 +1054,31 @@ classes:
         required: true
       status:
         type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: May read notification settings and write notification audit/send email.
+  - name: _open_notification_template_dialog
+    description: Open a PySide pop-up for creating or modifying one Admin Studio
+      notification template row, including custom system event, active/delete state,
+      event/date-offset trigger controls, subject/body templates, recipients, and
+      visible supported placeholder fields.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Shows a modal dialog and writes accepted edits back to the visible
+      Admin Studio notification table for later review/apply.
+  - name: _emit_pyside_rating_notification
+    description: Emit generic interview rating notification events for Hire and Borderline
+      PySide finalize outcomes only, including dynamic candidate, qualification,
+      school, position, score, outcome, and history-id placeholder payload fields.
+    locked: false
+    inputs:
+      result:
+        type: dict[str, Any]
         required: true
     returns:
       type: None

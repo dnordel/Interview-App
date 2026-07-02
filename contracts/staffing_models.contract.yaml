@@ -2,7 +2,7 @@ module:
   name: staffing_models
   language: python
   path: src/staffing_models.py
-  version: 0.3.0
+  version: 0.4.0
   description: Dataclasses and enum constants for local staffing dashboard transactions, metrics, and workbook-style display metadata.
 functions: []
 classes: []
@@ -23,6 +23,8 @@ data_structures:
   - person_id
   - person_name
   - start_date
+  - notice_given
+  - final_working_day
   - permit_status
   - updated_at
   - current_opened_date

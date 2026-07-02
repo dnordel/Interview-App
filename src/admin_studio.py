@@ -28,6 +28,7 @@ from question_settings_service import QuestionSettingsService
 DEFAULT_PROMPTS_PATH = Path(__file__).resolve().parent.parent / "config" / "deepseek_prompts.json"
 DEEPSEEK_MODEL_CHOICES = ("deepseek-r1:1.5b", "deepseek-r1:8b", "deepseek-r1:14b")
 DEFAULT_DEEPSEEK_MODEL = "deepseek-r1:8b"
+NOTIFICATION_TRIGGER_TIMINGS = {"event", "date_offset"}
 
 
 @dataclass(frozen=True)
@@ -209,7 +210,11 @@ class AdminStudioDraft:
             raise ValueError("Notification event type is required.")
         current: NotificationRule | None = None
         for rule in self.notification_rules:
-            if rule.event_type == event_type:
+            update_id = str(updates.get("id", "")).strip()
+            if update_id and rule.id is not None and str(rule.id) == update_id:
+                current = rule
+                break
+            if not update_id and rule.event_type == event_type:
                 current = rule
                 break
         recipients_text = str(updates.get("recipients", "")).strip()
@@ -219,6 +224,11 @@ class AdminStudioDraft:
             if email.strip()
         ]
         active = _parse_notification_active(updates.get("active", current.active if current else "true"))
+        trigger_timing = str(updates.get("trigger_timing", current.trigger_timing if current else "event")).strip() or "event"
+        if trigger_timing not in NOTIFICATION_TRIGGER_TIMINGS:
+            raise ValueError("Notification trigger timing must be event or date_offset.")
+        date_field = str(updates.get("date_field", current.date_field if current else "")).strip()
+        offset_days = _parse_notification_offset_days(updates.get("offset_days", current.offset_days if current else "0"))
         replacement = NotificationRule(
             id=current.id if current else None,
             event_type=event_type,
@@ -227,6 +237,9 @@ class AdminStudioDraft:
             body_template=str(updates.get("body_template", current.body_template if current else "")).strip(),
             recipients=recipients if recipients_text else (current.recipients if current else []),
             active=active,
+            trigger_timing=trigger_timing,
+            date_field=date_field,
+            offset_days=offset_days,
             created_at=current.created_at if current else "",
             updated_at=current.updated_at if current else "",
         )
@@ -235,6 +248,9 @@ class AdminStudioDraft:
             if not (rule.event_type == event_type and rule.id == replacement.id)
         ]
         self.notification_rules.append(replacement)
+
+    def delete_notification_rule(self, rule_id: int) -> None:
+        self.notification_rules = [rule for rule in self.notification_rules if rule.id != int(rule_id)]
 
     def validate(self) -> list[str]:
         errors: list[str] = []
@@ -268,6 +284,12 @@ class AdminStudioDraft:
                 break
             if rule.active and not [recipient for recipient in rule.recipients if recipient.active]:
                 errors.append(f"Active notification rule '{rule.event_type}' requires at least one active recipient.")
+                break
+            if rule.trigger_timing not in NOTIFICATION_TRIGGER_TIMINGS:
+                errors.append(f"Notification rule '{rule.event_type}' trigger timing must be event or date_offset.")
+                break
+            if rule.trigger_timing == "date_offset" and not rule.date_field.strip():
+                errors.append(f"Date-offset notification rule '{rule.event_type}' requires a date field.")
                 break
             template_errors = _notification_template_errors(rule)
             if template_errors:
@@ -374,6 +396,10 @@ class AdminStudio:
             InterviewAppSettingsStore(self.paths.app_settings_path).save(draft.app_settings)
         if "notification_rules.sqlite3" in changed:
             store = NotificationStore(self.paths.notification_rules_path)
+            current_ids = {rule.id for rule in self.notification_rules if rule.id is not None}
+            draft_ids = {rule.id for rule in draft.notification_rules if rule.id is not None}
+            for rule_id in sorted(current_ids - draft_ids):
+                store.delete_rule(rule_id)
             for rule in draft.notification_rules:
                 store.save_rule(rule)
         self.rubric = deepcopy(draft.rubric)
@@ -440,6 +466,13 @@ def _parse_notification_active(value: Any) -> bool:
     raise ValueError("Notification Active must be true or false.")
 
 
+def _parse_notification_offset_days(value: Any) -> int:
+    try:
+        return int(str(value if value is not None else "0").strip() or "0")
+    except ValueError as exc:
+        raise ValueError("Notification offset days must be an integer.") from exc
+
+
 def _notification_template_errors(rule: NotificationRule) -> list[str]:
     errors: list[str] = []
     for field_name, template in (
@@ -504,6 +537,9 @@ def _notification_rule_snapshot(rules: list[NotificationRule]) -> list[dict[str,
             "active": rule.active,
             "subject_template": rule.subject_template,
             "body_template": rule.body_template,
+            "trigger_timing": rule.trigger_timing,
+            "date_field": rule.date_field,
+            "offset_days": rule.offset_days,
             "recipients": [
                 {
                     "email": recipient.email,

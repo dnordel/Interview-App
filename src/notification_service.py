@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Callable
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -24,9 +25,39 @@ SUPPORTED_NOTIFICATION_EVENTS = (
     "offer.approved",
     "offer.accepted",
     "offer.welcome_email_sent",
+    "interview.rating.hire",
+    "interview.rating.borderline",
     "onboarding.task.created",
     "onboarding.task.completed",
     "onboarding.task.overdue",
+)
+NOTIFICATION_TEMPLATE_FIELDS = (
+    "candidate_name",
+    "person_name",
+    "school",
+    "director_name",
+    "position",
+    "position_name",
+    "position_type",
+    "outcome",
+    "score",
+    "offer_status",
+    "interview_date",
+    "history_id",
+    "start_date",
+    "notice_given",
+    "final_working_day",
+    "has_degree",
+    "degree_type",
+    "degree_in_ece",
+    "ece_units_completed",
+    "total_units_completed",
+    "infant_toddler_class_completed",
+    "years_experience",
+    "permit_status",
+    "assignment_status",
+    "classroom",
+    "slot_group",
 )
 
 
@@ -37,10 +68,12 @@ class NotificationService:
         store: NotificationStore | None = None,
         email_settings: EmailSettings | None = None,
         send_email: Callable[[EmailSettings, list[str], str, str], Any] | None = None,
+        current_date: Callable[[], date] | None = None,
     ) -> None:
         self.store = store or NotificationStore(NOTIFICATION_RULES_PATH)
         self.email_settings = email_settings or EmailSettings()
         self.send_email = send_email or _send_email_message
+        self.current_date = current_date or date.today
 
     def emit_event(
         self,
@@ -71,6 +104,10 @@ class NotificationService:
         rule_id = int(rule.id) if rule.id is not None else None
         if rule_id is not None and self.store.has_send_attempt(rule_id, idempotency_key):
             return NotificationSendResult(event_type=event_type, rule_id=rule_id, status="duplicate")
+
+        trigger_status = self._trigger_block_status(rule, payload)
+        if trigger_status:
+            return NotificationSendResult(event_type=event_type, rule_id=rule_id, status=trigger_status)
 
         recipients = [recipient.email.strip() for recipient in rule.recipients if recipient.active]
         blocked_error = self._blocked_reason(rule, recipients, payload)
@@ -110,6 +147,24 @@ class NotificationService:
             status="sent",
         )
         return NotificationSendResult(event_type=event_type, rule_id=rule_id, status="sent", recipient_count=len(recipients))
+
+    def _trigger_block_status(self, rule: NotificationRule, payload: dict[str, str]) -> str:
+        timing = str(rule.trigger_timing or "event").strip()
+        if timing == "event":
+            return ""
+        if timing != "date_offset":
+            return "blocked"
+        field = str(rule.date_field or "").strip()
+        if not field:
+            return "blocked"
+        try:
+            basis_date = date.fromisoformat(str(payload.get(field, "")).strip())
+        except ValueError:
+            return "blocked"
+        due_date = basis_date + timedelta(days=int(rule.offset_days))
+        if due_date != self.current_date():
+            return "not_due"
+        return ""
 
     def _blocked_reason(self, rule: NotificationRule, recipients: list[str], payload: dict[str, str]) -> str:
         if not recipients:

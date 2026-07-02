@@ -15,7 +15,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-02T21:44:36.959589+00:00'
+generated_at_utc: '2026-07-02T22:01:12.475476+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -79,6 +79,15 @@ entries:
     - return_type
 - contract: contracts/admin_studio.contract.yaml
   symbol: admin_studio.AdminStudioDraft.changed_payloads
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/admin_studio.contract.yaml
+  symbol: admin_studio.AdminStudioDraft.delete_notification_rule
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -4786,6 +4795,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/notification_store.contract.yaml
+  symbol: notification_store.NotificationStore.delete_rule
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/notification_store.contract.yaml
   symbol: notification_store.NotificationStore.ensure_default_rules
   kind: method
   tests:
@@ -9444,6 +9462,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._emit_pyside_rating_notification
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._exit_live_interview
   kind: method
   tests:
@@ -9553,6 +9580,15 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._open_history_offer
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._open_notification_template_dialog
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
