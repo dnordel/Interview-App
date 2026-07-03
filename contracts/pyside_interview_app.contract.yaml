@@ -2,11 +2,11 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.27.0
+  version: 1.28.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
-    content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with school/classroom selectors, classroom list, metric cards, positions table, legacy workbook compatibility tabs, actions, and metrics,
-    director staffing-only launch mode that hides non-staffing navigation, filters to an assigned school when supplied, and reuses the same Staffing page,
+    content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, school/classroom selectors, classroom list, metric cards, positions table, right-side details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics,
+    director staffing-only launch mode that keeps the full mockup navigation rail visible, filters to an assigned school when supplied, and reuses the same Staffing page,
     compact home draft actions beside the start action, guided review-then-apply Admin Studio backed by admin_studio
     with readable wrapped admin tables, visible edit mode, dirty-cell affordances,
     unsaved-change discard confirmation, validation-blocked apply, interview notes
@@ -42,7 +42,7 @@ functions:
   - ValueError
   side_effects: Reads local rubric, question override, user_artifacts history JSON, and root-level legacy history JSON when the canonical history path is used; may normalize question flow through QuestionOverridesStore.
 - name: build_director_staffing_model
-  description: Return a director staffing-only PySide model that keeps full app data/contracts but exposes only the Staffing navigation surface and optional assigned school filter.
+  description: Return a director staffing-only PySide model that keeps full app data/contracts but exposes only the Staffing content surface, optional assigned school filter, and mockup-style full navigation rail display.
   locked: false
   inputs:
     model:
@@ -792,7 +792,7 @@ classes:
     exceptions: []
     side_effects: Writes PySide draft JSON and changes visible tab.
   - name: _refresh_staffing_dashboard
-    description: Initialize local staffing storage, import seed data when the staffing DB is empty or clearly missing seed assignments, compute metrics, and refresh the PySide staffing metric label, school/classroom selectors, classroom list, metric cards, positions table, and hidden legacy school-tabbed workbook boards.
+    description: Initialize local staffing storage, import seed data when the staffing DB is empty or clearly missing seed assignments, compute metrics, and refresh the hidden compatibility metric label, school/classroom selectors, classroom list, metric cards, positions table, and hidden legacy school-tabbed workbook boards.
     locked: false
     inputs: {}
     returns:
@@ -948,7 +948,7 @@ classes:
     exceptions: []
     side_effects: Creates a PySide tool button/menu and connects its clicked signal.
   - name: _open_staffing_assignment_details_from_table
-    description: Route a clicked workbook staffing row to the editable assignment/person detail popup unless the click is on the permit dropdown or action column.
+    description: Route a clicked staffing row to the right-side assignment/person detail drawer unless the click is on the permit dropdown or action column.
     locked: false
     inputs:
       table:
@@ -963,9 +963,9 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: May open the staffing assignment detail dialog.
+    side_effects: May open the staffing assignment detail drawer.
   - name: _open_staffing_assignment_details
-    description: Open editable PySide details for one staffing assignment/person, allowing classroom, shift start/end, and permit status updates through StaffingService.
+    description: Open the right-side PySide details drawer for one staffing assignment/person.
     locked: false
     inputs:
       assignment_id:
@@ -974,7 +974,26 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Shows modal dialog; may update staffing SQLite rows through StaffingService and refresh dashboard.
+    side_effects: Shows or refreshes the staffing assignment detail drawer.
+  - name: _staffing_detail_drawer
+    description: Build the initially hidden right-side staffing detail drawer frame.
+    locked: false
+    inputs: {}
+    returns:
+      type: QFrame
+    exceptions: []
+    side_effects: Creates PySide drawer frame and stores its layout reference.
+  - name: _show_staffing_detail_drawer
+    description: Populate and show the right-side staffing detail drawer for a person or open position, including context fields and relevant action buttons.
+    locked: false
+    inputs:
+      assignment:
+        type: Any
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Rebuilds PySide drawer labels/buttons and may wire buttons to StaffingService actions.
   - name: _confirm_staffing_move
     description: Confirm and execute a drag/drop teacher move from one staffing assignment to another through StaffingService.
     locked: false
@@ -1012,7 +1031,7 @@ classes:
     exceptions: []
     side_effects: Updates staffing SQLite rows and visible PySide staffing dashboard widgets.
   - name: _mark_staffing_coming
-    description: Prompt for incoming person and start date, mark a staffing position coming through StaffingService, and refresh the Staffing dashboard.
+    description: Show the guided Mark Coming dialog for incoming person, start date, role, permit status, and units; saving marks a staffing position coming through StaffingService and refreshes the Staffing dashboard.
     locked: false
     inputs:
       assignment_id:
@@ -1021,9 +1040,9 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Shows PySide input dialogs, updates staffing SQLite rows, and refreshes visible PySide staffing dashboard widgets.
+    side_effects: Shows a nonblocking PySide guided action dialog; saving updates staffing SQLite rows, optionally updates permit status, and refreshes visible PySide staffing dashboard widgets.
   - name: _mark_staffing_replacing
-    description: Prompt for notice dates, mark a filled staffing position as replacing through StaffingService, and refresh the Staffing dashboard.
+    description: Show the guided Replace Employee dialog for notice date, final working day, and optional reason; saving marks a filled staffing position as replacing through StaffingService and refreshes the Staffing dashboard.
     locked: false
     inputs:
       assignment_id:
@@ -1032,7 +1051,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Shows PySide input dialogs, updates staffing SQLite rows, and refreshes visible PySide staffing dashboard widgets.
+    side_effects: Shows a nonblocking PySide guided action dialog; saving updates staffing SQLite rows and refreshes visible PySide staffing dashboard widgets.
   - name: _revert_staffing_coming
     description: Revert a coming staffing assignment to need_now through StaffingService and refresh the Staffing dashboard.
     locked: false
@@ -1067,7 +1086,7 @@ classes:
     exceptions: []
     side_effects: Shows confirmation, updates staffing SQLite rows, and refreshes visible widgets.
   - name: _update_staffing_permit
-    description: Prompt for permit status and update assigned person's permit through StaffingService.
+    description: Show the guided Update Permit Status dialog for permit status, units, and effective date; saving updates assigned person's permit through StaffingService.
     locked: false
     inputs:
       assignment_id:
@@ -1076,7 +1095,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Shows PySide input dialog, updates people table, and refreshes visible widgets.
+    side_effects: Shows a nonblocking PySide guided action dialog, updates people table, and refreshes visible widgets.
   - name: _update_staffing_permit_from_table
     description: Update assigned person's permit from the inline Staffing table dropdown through StaffingService.
     locked: false

@@ -2564,7 +2564,23 @@ def test_pyside_director_staffing_mode_uses_same_staffing_page_only(
 
     assert director_model.navigation == ["Staffing"]
     assert window.window.windowTitle() == "Director Staffing Dashboard"
-    assert window.sidebar.isHidden()
+    brand = window.window.findChild(qt_widgets.QLabel, "PySideSidebarBrand")
+    classroom_list = window.window.findChild(qt_widgets.QListWidget, "PySideStaffingClassroomList")
+
+    assert not window.sidebar.isHidden()
+    assert brand is not None
+    assert brand.text() == "Launch Pad\nLearning"
+    assert window.sidebar.objectName() == "PySideSidebarNavigation"
+    assert [window.sidebar.item(index).text() for index in range(window.sidebar.count())] == [
+        "Dashboard",
+        "Classrooms",
+        "People",
+        "History",
+        "Reports",
+        "Settings",
+    ]
+    assert window.sidebar.currentRow() == 0
+    assert classroom_list.objectName() == "PySideStaffingClassroomList"
     assert window.stack.count() == 1
     assert table is not None
     assert button.text() == "Open"
@@ -3026,6 +3042,298 @@ def test_pyside_staffing_classroom_detail_matches_dashboard_mockup_shell(
     }
     assert {"Teacher 1", "Imgard M.", "Filled", "Teacher Permit Approved", "Aide 1", "OPEN POSITION", "Need Now"} <= table_text
     assert _staffing_button_for_position(table, "Aide 1").text() == "Mark Coming"
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_staffing_row_click_opens_mockup_detail_drawer(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    seed_path = tmp_path / "staffing_seed.json"
+    seed_path.write_text(
+        json.dumps(
+            {
+                "schools": [
+                    {
+                        "name": "Hawthorne",
+                        "classrooms": [
+                            {
+                                "name": "Quest",
+                                "slots": [
+                                    {
+                                        "position_name": "Teacher 1",
+                                        "position_type": "Teacher",
+                                        "status": "filled",
+                                        "person": {"name": "Sarah M.", "permit_status": "teacher_permit_approved"},
+                                        "start_date": "2025-01-15",
+                                    },
+                                    {
+                                        "position_name": "Teacher 3",
+                                        "position_type": "Teacher",
+                                        "status": "need_now",
+                                        "current_opened_date": "2025-05-14",
+                                    },
+                                ],
+                            }
+                        ],
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", tmp_path / "staffing.sqlite3")
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", seed_path)
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.json",
+        school_options=["Hawthorne"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    table = window.window.findChild(qt_widgets.QTableWidget, "PySideStaffingPositionsTable")
+    drawer = window.window.findChild(qt_widgets.QFrame, "PySideStaffingDetailDrawer")
+
+    table.cellClicked.emit(_staffing_row_for_position(table, "Teacher 3"), 0)
+    app.processEvents()
+
+    drawer_labels = [label.text() for label in drawer.findChildren(qt_widgets.QLabel)]
+    drawer_buttons = [button.text() for button in drawer.findChildren(qt_widgets.QPushButton)]
+    assert not drawer.isHidden()
+    assert "Position Details" in drawer_labels
+    assert "OPEN POSITION" in drawer_labels
+    assert "Teacher 3" in drawer_labels
+    assert "Need Now" in drawer_labels
+    assert {"Mark Coming", "Don't Need Now", "Close"} <= set(drawer_buttons)
+
+    table.cellClicked.emit(_staffing_row_for_position(table, "Teacher 1"), 0)
+    app.processEvents()
+
+    drawer_labels = [label.text() for label in drawer.findChildren(qt_widgets.QLabel)]
+    drawer_buttons = [button.text() for button in drawer.findChildren(qt_widgets.QPushButton)]
+    assert "Person Details" in drawer_labels
+    assert "Sarah M." in drawer_labels
+    assert "Teacher Permit Approved" in drawer_labels
+    assert {"Replace", "Edit", "Close"} <= set(drawer_buttons)
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_mark_coming_uses_guided_dialog_and_saves_position(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    seed_path = tmp_path / "staffing_seed.json"
+    seed_path.write_text(
+        json.dumps(
+            {
+                "schools": [
+                    {
+                        "name": "Hawthorne",
+                        "classrooms": [
+                            {
+                                "name": "Harmony 1",
+                                "slots": [
+                                    {
+                                        "position_name": "Aide 1",
+                                        "position_type": "Aide",
+                                        "status": "need_now",
+                                        "current_opened_date": "2026-07-01",
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", tmp_path / "staffing.sqlite3")
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", seed_path)
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.json",
+        school_options=["Hawthorne"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    assignment_id = next(row.id for row in window.staffing_store.list_assignments() if row.position_name == "Aide 1")
+    monkeypatch.setattr(
+        window.QtWidgets.QInputDialog,
+        "getText",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("legacy prompt")),
+    )
+
+    window._mark_staffing_coming(assignment_id)
+    app.processEvents()
+
+    dialog = window.window.findChild(qt_widgets.QDialog, "PySideStaffingMarkComingDialog")
+    assert dialog is not None
+    assert dialog.isVisible()
+    assert {
+        label.text() for label in dialog.findChildren(qt_widgets.QLabel) if label.text()
+    } >= {
+        "Mark Coming",
+        "Teacher Name *",
+        "Start Date *",
+        "Role *",
+        "Permit Status *",
+        "Units",
+    }
+    dialog.findChild(qt_widgets.QLineEdit, "PySideStaffingComingName").setText("Samantha Lee")
+    dialog.findChild(qt_widgets.QLineEdit, "PySideStaffingComingStartDate").setText("2026-08-01")
+    dialog.findChild(qt_widgets.QPushButton, "PySideStaffingComingSave").click()
+    app.processEvents()
+
+    updated = window.staffing_store.get_assignment(assignment_id)
+    assert updated.status == "coming"
+    assert updated.person_name == "Samantha Lee"
+    assert updated.start_date == "2026-08-01"
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_replace_employee_uses_guided_dialog_and_saves_replacement(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    seed_path = tmp_path / "staffing_seed.json"
+    seed_path.write_text(
+        json.dumps(
+            {
+                "schools": [
+                    {
+                        "name": "Palmdale",
+                        "classrooms": [
+                            {
+                                "name": "Destiny",
+                                "slots": [
+                                    {
+                                        "position_name": "Teacher 2",
+                                        "position_type": "Teacher",
+                                        "status": "filled",
+                                        "person": {"name": "Angie R.", "permit_status": "permit_in_process"},
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", tmp_path / "staffing.sqlite3")
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", seed_path)
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    assignment_id = next(row.id for row in window.staffing_store.list_assignments() if row.position_name == "Teacher 2")
+    monkeypatch.setattr(
+        window.QtWidgets.QInputDialog,
+        "getText",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("legacy prompt")),
+    )
+
+    window._mark_staffing_replacing(assignment_id)
+    app.processEvents()
+
+    dialog = window.window.findChild(qt_widgets.QDialog, "PySideStaffingReplaceDialog")
+    assert dialog is not None
+    assert dialog.isVisible()
+    assert {
+        label.text() for label in dialog.findChildren(qt_widgets.QLabel) if label.text()
+    } >= {"Replace Employee", "Current Employee", "Notice Given *", "Final Working Day *", "Reason (optional)"}
+    dialog.findChild(qt_widgets.QLineEdit, "PySideStaffingReplaceNotice").setText("2026-08-01")
+    dialog.findChild(qt_widgets.QLineEdit, "PySideStaffingReplaceFinalDay").setText("2026-08-15")
+    dialog.findChild(qt_widgets.QPushButton, "PySideStaffingReplaceSave").click()
+    app.processEvents()
+
+    updated = window.staffing_store.get_assignment(assignment_id)
+    assert updated.status == "replace"
+    assert updated.person_name == "Angie R."
+    assert updated.notice_given == "2026-08-01"
+    assert updated.final_working_day == "2026-08-15"
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_update_permit_uses_guided_dialog_and_saves_people_status(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    seed_path = tmp_path / "staffing_seed.json"
+    seed_path.write_text(
+        json.dumps(
+            {
+                "schools": [
+                    {
+                        "name": "Hawthorne",
+                        "classrooms": [
+                            {
+                                "name": "Tranquility",
+                                "slots": [
+                                    {
+                                        "position_name": "Teacher 3",
+                                        "position_type": "Teacher",
+                                        "status": "filled",
+                                        "person": {"name": "Denise A.", "permit_status": "permit_in_process"},
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", tmp_path / "staffing.sqlite3")
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", seed_path)
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.json",
+        school_options=["Hawthorne"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    assignment_id = next(row.id for row in window.staffing_store.list_assignments() if row.position_name == "Teacher 3")
+    monkeypatch.setattr(
+        window.QtWidgets.QInputDialog,
+        "getItem",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("legacy prompt")),
+    )
+
+    window._update_staffing_permit(assignment_id)
+    app.processEvents()
+
+    dialog = window.window.findChild(qt_widgets.QDialog, "PySideStaffingPermitDialog")
+    assert dialog is not None
+    assert dialog.isVisible()
+    assert {
+        label.text() for label in dialog.findChildren(qt_widgets.QLabel) if label.text()
+    } >= {"Update Permit Status", "Permit Status", "Units", "Effective Date"}
+    permit_combo = dialog.findChild(qt_widgets.QComboBox, "PySideStaffingPermitStatus")
+    permit_combo.setCurrentText("teacher_permit_approved")
+    dialog.findChild(qt_widgets.QPushButton, "PySideStaffingPermitSave").click()
+    app.processEvents()
+
+    updated = window.staffing_store.get_assignment(assignment_id)
+    assert updated.permit_status == "teacher_permit_approved"
     window.window.close()
     app.processEvents()
 
