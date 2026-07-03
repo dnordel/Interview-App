@@ -2,10 +2,10 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.26.0
+  version: 1.27.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
-    content-sized history table behavior, workbook-style staffing dashboard tabs, explicit school selector, actions, and metrics,
+    content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with school/classroom selectors, classroom list, metric cards, positions table, legacy workbook compatibility tabs, actions, and metrics,
     director staffing-only launch mode that hides non-staffing navigation, filters to an assigned school when supplied, and reuses the same Staffing page,
     compact home draft actions beside the start action, guided review-then-apply Admin Studio backed by admin_studio
     with readable wrapped admin tables, visible edit mode, dirty-cell affordances,
@@ -17,7 +17,7 @@ module:
     and DeepSeek runtime contracts.
 functions:
 - name: build_interview_redesign_model
-  description: Build workflow-first home, setup, live interview, review, offer, workbook-style staffing, onboarding, and admin view data from rubric, intro script, question flow, and merged canonical plus legacy history JSON.
+  description: Build workflow-first home, setup, live interview, review, offer, classroom-detail staffing, onboarding, and admin view data from rubric, intro script, question flow, and merged canonical plus legacy history JSON.
   locked: false
   inputs:
     rubric_path:
@@ -792,15 +792,15 @@ classes:
     exceptions: []
     side_effects: Writes PySide draft JSON and changes visible tab.
   - name: _refresh_staffing_dashboard
-    description: Initialize local staffing storage, import seed data when the staffing DB is empty or clearly missing seed assignments, compute metrics, and refresh the PySide staffing metric label, school selector, school-tabbed workbook boards, and action tables.
+    description: Initialize local staffing storage, import seed data when the staffing DB is empty or clearly missing seed assignments, compute metrics, and refresh the PySide staffing metric label, school/classroom selectors, classroom list, metric cards, positions table, and hidden legacy school-tabbed workbook boards.
     locked: false
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: May create or read user_artifacts/staffing_dashboard.sqlite3, may import config/staffing_seed.json via the repo config directory independent of launch cwd, and updates visible school selector, school-tabbed staffing board/table widgets.
+    side_effects: May create or read user_artifacts/staffing_dashboard.sqlite3, may import config/staffing_seed.json via the repo config directory independent of launch cwd, and updates visible school/classroom selectors, classroom list, classroom detail widgets, positions table, plus hidden legacy school-tabbed staffing board widgets.
   - name: _select_staffing_school_index
-    description: Synchronize the visible Staffing school tab to the selected school index from the explicit school selector.
+    description: Synchronize the hidden legacy Staffing school tab plus visible classroom selector/list/detail to the selected school index from the explicit school selector.
     locked: false
     inputs:
       index:
@@ -809,7 +809,94 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Changes the active PySide staffing school tab when index is valid.
+    side_effects: Changes the active PySide staffing school tab when index is valid and refreshes visible classroom choices/detail.
+  - name: _select_staffing_classroom_index
+    description: Synchronize the visible Staffing classroom selector and classroom list, then refresh the selected classroom detail surface.
+    locked: false
+    inputs:
+      index:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Changes visible classroom selector/list selection and refreshes detail widgets.
+  - name: _refresh_staffing_classroom_choices
+    description: Populate visible classroom selector and classroom list for the selected staffing school.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates PySide combo/list widgets and preserves current classroom when still present.
+  - name: _selected_staffing_school
+    description: Return currently selected staffing school from the visible selector, falling back to the first loaded school.
+    locked: false
+    inputs: {}
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _selected_staffing_classroom
+    description: Return currently selected staffing classroom from the visible selector, falling back to first row for the selected school.
+    locked: false
+    inputs: {}
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _selected_staffing_classroom_rows
+    description: Return staffing metric rows for the currently selected school/classroom detail view.
+    locked: false
+    inputs: {}
+    returns:
+      type: list[Any]
+    exceptions: []
+    side_effects: none
+  - name: _refresh_staffing_classroom_detail
+    description: Refresh selected classroom title, subtitle, priority badge, metric cards, and positions table.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates visible PySide classroom-detail widgets.
+  - name: _refresh_staffing_metric_cards
+    description: Rebuild the mockup-style selected-classroom metric cards for program, licensed capacity, total positions, filled, open, and average days to fill.
+    locked: false
+    inputs:
+      rows:
+        type: list[Any]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Deletes/recreates PySide metric card widgets.
+  - name: _staffing_metric_card
+    description: Build one mockup-style staffing metric card widget.
+    locked: false
+    inputs:
+      label:
+        type: str
+        required: true
+      value:
+        type: str
+        required: true
+    returns:
+      type: QFrame
+    exceptions: []
+    side_effects: Creates PySide labels in a surface frame.
+  - name: _refresh_staffing_positions_table
+    description: Rebuild selected-classroom positions table with position, person, status, start date, days open, permit status, and action columns.
+    locked: false
+    inputs:
+      rows:
+        type: list[Any]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates PySide table items and action button widgets.
   - name: _staffing_color_key
     description: Build the compact workbook color-code key for staffing status and permit meanings.
     locked: false

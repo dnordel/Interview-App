@@ -2921,6 +2921,115 @@ def test_pyside_staffing_dashboard_refreshes_partial_seed_and_hides_color_key(
     app.processEvents()
 
 
+def test_pyside_staffing_classroom_detail_matches_dashboard_mockup_shell(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    seed_path = tmp_path / "staffing_seed.json"
+    seed_path.write_text(
+        json.dumps(
+            {
+                "schools": [
+                    {
+                        "name": "Hawthorne",
+                        "classrooms": [
+                            {
+                                "name": "Harmony 1",
+                                "ratio_group": "Preschool",
+                                "licensed_capacity": 18,
+                                "slots": [
+                                    {
+                                        "slot_group": "teacher",
+                                        "position_name": "Teacher 1",
+                                        "position_type": "Teacher",
+                                        "status": "filled",
+                                        "person": {"name": "Imgard M.", "permit_status": "teacher_permit_approved"},
+                                        "start_date": "2025-03-03",
+                                    },
+                                    {
+                                        "slot_group": "teacher",
+                                        "position_name": "Teacher 2",
+                                        "position_type": "Teacher",
+                                        "status": "replace",
+                                        "person": {"name": "Angie R.", "permit_status": "permit_in_process"},
+                                        "start_date": "2025-05-01",
+                                    },
+                                    {
+                                        "slot_group": "teacher",
+                                        "position_name": "Teacher 3",
+                                        "position_type": "Teacher",
+                                        "status": "coming",
+                                        "person": {"name": "Denise A.", "permit_status": "teacher_permit_approved"},
+                                        "start_date": "2025-05-19",
+                                    },
+                                    {
+                                        "slot_group": "aide",
+                                        "position_name": "Aide 1",
+                                        "position_type": "Aide",
+                                        "status": "need_now",
+                                        "current_opened_date": "2025-05-14",
+                                    },
+                                ],
+                            },
+                            {
+                                "name": "Quest",
+                                "ratio_group": "Preschool",
+                                "licensed_capacity": 16,
+                                "slots": [
+                                    {"position_name": "Teacher 1", "position_type": "Teacher", "status": "filled", "person": {"name": "Sarah M."}}
+                                ],
+                            },
+                        ],
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", tmp_path / "staffing.sqlite3")
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", seed_path)
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.json",
+        school_options=["Hawthorne"],
+    )
+
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    page = window.stack.widget(3)
+    school_selector = page.findChild(qt_widgets.QComboBox, "PySideStaffingSchoolSelector")
+    classroom_selector = page.findChild(qt_widgets.QComboBox, "PySideStaffingClassroomSelector")
+    classroom_list = page.findChild(qt_widgets.QListWidget, "PySideStaffingClassroomList")
+    cards = page.findChildren(qt_widgets.QFrame, "PySideStaffingMetricCard")
+    table = page.findChild(qt_widgets.QTableWidget, "PySideStaffingPositionsTable")
+    title = page.findChild(qt_widgets.QLabel, "PySideStaffingClassroomTitle")
+    priority = page.findChild(qt_widgets.QLabel, "PySideStaffingPriorityBadge")
+
+    assert window.stack.widget(3).findChild(qt_widgets.QLabel, "Title").text() == "Classroom Detail"
+    assert school_selector.currentText() == "Hawthorne"
+    assert classroom_selector.currentText() == "Harmony 1"
+    assert [classroom_list.item(index).text() for index in range(classroom_list.count())] == ["Harmony 1", "Quest"]
+    assert title.text() == "Harmony 1"
+    assert priority.text() == "Need Now"
+    assert len(cards) == 6
+    assert [
+        table.horizontalHeaderItem(index).text()
+        for index in range(table.columnCount())
+    ] == ["Position", "Person", "Status", "Start Date", "Days Open", "Permit Status", "Action"]
+    table_text = {
+        table.item(row, column).text()
+        for row in range(table.rowCount())
+        for column in range(table.columnCount())
+        if table.item(row, column) is not None
+    }
+    assert {"Teacher 1", "Imgard M.", "Filled", "Teacher Permit Approved", "Aide 1", "OPEN POSITION", "Need Now"} <= table_text
+    assert _staffing_button_for_position(table, "Aide 1").text() == "Mark Coming"
+    window.window.close()
+    app.processEvents()
+
+
 def test_pyside_staffing_dashboard_visual_render_uses_real_seed_from_any_cwd(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -3174,7 +3283,7 @@ def _staffing_row_for_position(table, position_name: str) -> int:
 
 def _staffing_button_for_position(table, position_name: str):
     row = _staffing_row_for_position(table, position_name)
-    button = table.cellWidget(row, 7)
+    button = table.cellWidget(row, table.columnCount() - 1)
     assert button is not None
     return button
 
