@@ -317,3 +317,22 @@ def test_admin_studio_rejects_unknown_deepseek_model_choice(tmp_path: Path) -> N
     draft.update_deepseek_model("deepseek-r1:671b")
 
     assert "DeepSeek model must be one of: deepseek-r1:1.5b, deepseek-r1:8b, deepseek-r1:14b." in draft.validate()
+
+
+def test_admin_studio_summary_groups_sections_for_admin_console_navigation(tmp_path: Path) -> None:
+    studio = AdminStudio.load(_write_admin_files(tmp_path))
+
+    summary = studio.summary()
+
+    groups = [(section.group, section.title) for section in summary.sections]
+    assert groups == [
+        ("Configuration", "Questions & Flow"),
+        ("Configuration", "Rubrics"),
+        ("Configuration", "Signal Hints"),
+        ("Configuration", "Templates & Folders"),
+        ("Configuration", "Notifications"),
+        ("AI Settings", "DeepSeek Model"),
+        ("AI Settings", "DeepSeek Prompts"),
+        ("System", "Advanced JSON"),
+        ("System", "Validation"),
+    ]

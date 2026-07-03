@@ -44,6 +44,7 @@ class AdminStudioPaths:
 
 @dataclass(frozen=True)
 class AdminSection:
+    group: str
     key: str
     title: str
     description: str
@@ -359,14 +360,15 @@ class AdminStudio:
         traits = active.rubric.get("traits", []) if isinstance(active.rubric, dict) else []
         custom_count = sum(len(items or []) for items in (active.overrides.get("custom_questions", {}) or {}).values())
         sections = [
-            AdminSection("questions", "Questions & Flow", "Edit interview flow and custom questions.", len(traits) + custom_count),
-            AdminSection("rubrics", "Rubrics", "Edit scored traits and descriptors.", len(traits)),
-            AdminSection("signals", "Signal Hints", "Review runtime signal definitions.", len(traits)),
-            AdminSection("templates", "Templates & Folders", "Edit school templates and output folders.", len(active.school_settings)),
-            AdminSection("notifications", "Notifications", "Edit checkpoint email rules and recipients.", len(active.notification_rules)),
-            AdminSection("deepseek_model", "DeepSeek Model", "Choose local model speed and quality.", 1),
-            AdminSection("prompts", "DeepSeek Prompts", "Edit local prompt templates.", len(active.prompts)),
-            AdminSection("advanced", "Advanced JSON", "Review source JSON files with safeguards.", 5),
+            AdminSection("Configuration", "questions", "Questions & Flow", "Build track-based interview flow with editable question cards.", len(traits) + custom_count),
+            AdminSection("Configuration", "rubrics", "Rubrics", "Tune scored trait cards, weights, and descriptors.", len(traits)),
+            AdminSection("Configuration", "signals", "Signal Hints", "Search trait signal definitions by category.", len(traits)),
+            AdminSection("Configuration", "templates", "Templates & Folders", "Check school output folders and template health.", len(active.school_settings)),
+            AdminSection("Configuration", "notifications", "Notifications", "Manage checkpoint rule cards, recipients, and previews.", len(active.notification_rules)),
+            AdminSection("AI Settings", "deepseek_model", "DeepSeek Model", "Choose local model speed, quality, and hardware fit.", 1),
+            AdminSection("AI Settings", "prompts", "DeepSeek Prompts", "Edit prompt templates with variables, preview, and validation.", len(active.prompts)),
+            AdminSection("System", "advanced", "Advanced JSON", "Review source JSON health in a guarded read-only layout.", 5),
+            AdminSection("System", "validation", "Validation", "Review blocking issues and jump to affected settings.", len(active.validate())),
         ]
         return AdminStudioSummary(
             sections=sections,

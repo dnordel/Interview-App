@@ -2004,9 +2004,27 @@ def test_pyside_admin_studio_uses_guided_readonly_sections_until_edit(tmp_path: 
     rubrics_table = window.window.findChild(qt_widgets.QTableWidget, "AdminStudioRubricsTable")
     model_selector = window.window.findChild(qt_widgets.QComboBox, "AdminStudioDeepseekModelSelector")
     notification_template_button = window.window.findChild(qt_widgets.QPushButton, "AdminStudioNotificationTemplateButton")
+    concept_panels = window.window.findChildren(qt_widgets.QFrame, "AdminStudioConceptPanel")
 
     assert section_list is not None
-    assert [section_list.item(index).text() for index in range(section_list.count())][:2] == ["Questions & Flow", "Rubrics"]
+    assert [section_list.item(index).text() for index in range(section_list.count())] == [
+        "Configuration",
+        "Questions & Flow",
+        "Rubrics",
+        "Signal Hints",
+        "Templates & Folders",
+        "Notifications",
+        "AI Settings",
+        "DeepSeek Model",
+        "DeepSeek Prompts",
+        "System",
+        "Advanced JSON",
+        "Validation",
+    ]
+    assert not (section_list.item(0).flags() & qt_core.Qt.ItemFlag.ItemIsEnabled)
+    assert section_list.currentItem().text() == "Questions & Flow"
+    assert len(concept_panels) >= 8
+    assert "Unsaved changes: 0" in window.admin_status_label.text()
     assert questions_table.wordWrap() is True
     assert questions_table.textElideMode() == qt_core.Qt.TextElideMode.ElideNone
     assert "alternate-background-color: #f8fafc" in questions_table.styleSheet()

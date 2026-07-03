@@ -2,14 +2,16 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.30.1
+  version: 1.31.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, resizable splitter sections, school/classroom selectors, wider color-coded classroom list with per-classroom status-count overview, metric cards, positions table, fully editable right-side assignment/person details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics,
     director staffing-only launch mode that keeps the full mockup navigation rail visible, filters to an assigned school when supplied, and reuses the same Staffing page,
     compact home draft actions beside the start action, guided review-then-apply Admin Studio backed by admin_studio
-    with readable wrapped admin tables, visible edit mode, dirty-cell affordances,
-    unsaved-change discard confirmation, validation-blocked apply, interview notes
+    with grouped admin-console navigation, status-pill text, concept-specific cards
+    for high-risk settings, guarded validation review, readable wrapped admin tables,
+    visible edit mode, dirty-cell affordances, unsaved-change discard confirmation,
+    validation-blocked apply, interview notes
     regeneration actions, user-closable
     finalize progress with immediate ordered task/status rows in a compact scrollable
     dialog, successful-completion auto-close, live history refresh, and single-surface parity documentation
@@ -521,6 +523,63 @@ classes:
     inputs: {}
     returns:
       type: AdminStudioPaths
+    exceptions: []
+    side_effects: none
+  - name: _select_admin_nav_row
+    description: Map grouped Admin Studio sidebar rows to editor stack pages while
+      skipping disabled group headers.
+    locked: false
+    inputs:
+      row:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates the active Admin Studio editor stack page.
+  - name: _admin_concept_panel
+    description: Build a concept-specific Admin Studio card with status chips and
+      guidance for section-specific editing risk.
+    locked: false
+    inputs:
+      title:
+        type: str
+        required: true
+      chips:
+        type: list[str]
+        required: true
+      note:
+        type: str
+        required: true
+    returns:
+      type: QWidget
+    exceptions: []
+    side_effects: Creates PySide widgets.
+  - name: _admin_validation_page
+    description: Build the Admin Studio validation review screen with one card per
+      blocking issue and a targeted fix hint.
+    locked: false
+    inputs:
+      tab:
+        type: QWidget
+        required: true
+      tab_layout:
+        type: QVBoxLayout
+        required: true
+    returns:
+      type: QWidget
+    exceptions: []
+    side_effects: Adds validation widgets to the supplied page.
+  - name: _admin_validation_fix_hint
+    description: Map an Admin Studio validation error message to the most relevant
+      settings section for repair.
+    locked: false
+    inputs:
+      error:
+        type: str
+        required: true
+    returns:
+      type: str
     exceptions: []
     side_effects: none
   - name: _set_admin_editing_enabled

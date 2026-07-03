@@ -2,7 +2,7 @@ module:
   name: admin_studio
   language: python
   path: src/admin_studio.py
-  version: 1.3.0
+  version: 1.4.0
   description: Single admin boundary for local configuration review, draft editing,
     dirty tracking, validation, backup creation, and review-then-apply persistence
     for PySide Admin Studio, including checkpoint notification rules.
@@ -29,8 +29,19 @@ classes:
       type: Path | None
 - name: AdminSection
   type: dataclass
-  description: One guided Admin Studio section shown in the UI.
+  description: One guided Admin Studio section shown in grouped admin-console navigation.
   locked: false
+  attributes:
+    group:
+      type: str
+    key:
+      type: str
+    title:
+      type: str
+    description:
+      type: str
+    item_count:
+      type: int
 - name: AdminStudioSummary
   type: dataclass
   description: Section list, counts, dirty count, and validation state for the current

@@ -1450,6 +1450,54 @@ def _apply_styles(app: Any) -> None:
         QListWidget#PySideSidebarNavigation::item:selected {
             background: #2563eb;
         }
+        QListWidget#AdminStudioSectionList {
+            background: #ffffff;
+            border: 1px solid #d9dee7;
+            border-radius: 8px;
+            padding: 8px;
+        }
+        QListWidget#AdminStudioSectionList::item {
+            padding: 9px 10px;
+            border-radius: 6px;
+            color: #172033;
+        }
+        QListWidget#AdminStudioSectionList::item:disabled {
+            color: #667085;
+            font-weight: 700;
+            padding-top: 14px;
+            background: transparent;
+        }
+        QListWidget#AdminStudioSectionList::item:selected {
+            background: #eaf2ff;
+            color: #075dde;
+            border-left: 4px solid #2563eb;
+        }
+        QFrame#AdminStudioConceptPanel {
+            background: #ffffff;
+            border: 1px solid #d9dee7;
+            border-radius: 8px;
+        }
+        QFrame#AdminStudioValidationIssueCard {
+            background: #fff7ed;
+            border: 1px solid #fdba74;
+            border-radius: 8px;
+        }
+        QLabel#AdminStudioConceptTitle {
+            font-size: 16px;
+            font-weight: 700;
+        }
+        QLabel#AdminStudioChip {
+            color: #0f3f8c;
+            background: #eaf2ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 10px;
+            padding: 4px 9px;
+            font-size: 12px;
+        }
+        QLabel#AdminStudioValidationSeverity {
+            color: #9a3412;
+            font-weight: 700;
+        }
         QListWidget#PySideStaffingClassroomList {
             background: #ffffff;
             color: #172033;
@@ -3141,10 +3189,10 @@ class PySideInterviewWindow:
         toolbar = self.QtWidgets.QHBoxLayout()
         self.admin_status_label = self._label("", "AdminStudioStatus")
         toolbar.addWidget(self.admin_status_label, 1)
-        self.admin_edit_button = self.QtWidgets.QPushButton("Edit")
+        self.admin_edit_button = self.QtWidgets.QPushButton("Start Editing")
         self.admin_edit_button.setObjectName("AdminStudioEditButton")
         self.admin_edit_button.clicked.connect(lambda: self._set_admin_editing_enabled(True))
-        self.admin_review_button = self._primary_button("Review changes")
+        self.admin_review_button = self._primary_button("Review Changes")
         self.admin_review_button.setObjectName("AdminStudioReviewButton")
         self.admin_review_button.clicked.connect(self._review_admin_changes)
         self.admin_discard_button = self.QtWidgets.QPushButton("Discard")
@@ -3162,18 +3210,39 @@ class PySideInterviewWindow:
         self.admin_section_list.setFixedWidth(230)
         self.admin_stack = self.QtWidgets.QStackedWidget()
         self.admin_stack.setObjectName("AdminStudioEditorStack")
+        self._admin_nav_stack_indexes: dict[int, int] = {}
+        current_group = ""
         for section in self.admin_studio.summary(self.admin_draft).sections:
-            self.admin_section_list.addItem(section.title)
+            if section.group != current_group:
+                current_group = section.group
+                group_item = self.QtWidgets.QListWidgetItem(current_group)
+                group_item.setFlags(group_item.flags() & ~self.QtCore.Qt.ItemFlag.ItemIsSelectable & ~self.QtCore.Qt.ItemFlag.ItemIsEnabled)
+                group_item.setData(self.QtCore.Qt.ItemDataRole.UserRole, "group")
+                self.admin_section_list.addItem(group_item)
+            nav_item = self.QtWidgets.QListWidgetItem(section.title)
+            nav_item.setData(self.QtCore.Qt.ItemDataRole.UserRole, section.key)
+            self.admin_section_list.addItem(nav_item)
+            self._admin_nav_stack_indexes[self.admin_section_list.count() - 1] = self.admin_stack.count()
             self.admin_stack.addWidget(self._admin_section_page(section.key, section.title, section.description))
-        self.admin_section_list.currentRowChanged.connect(self.admin_stack.setCurrentIndex)
+        self.admin_section_list.currentRowChanged.connect(self._select_admin_nav_row)
         workspace.addWidget(self.admin_section_list)
         workspace.addWidget(self.admin_stack)
         workspace.setStretchFactor(1, 1)
         layout.addWidget(workspace, 1)
-        self.admin_section_list.setCurrentRow(0)
+        self.admin_section_list.setCurrentRow(1)
         self._set_admin_editing_enabled(False)
         self._sync_admin_status()
         return page
+
+    def _select_admin_nav_row(self, row: int) -> None:
+        stack_index = self._admin_nav_stack_indexes.get(row)
+        if stack_index is None:
+            for next_row in range(row + 1, self.admin_section_list.count()):
+                if next_row in self._admin_nav_stack_indexes:
+                    self.admin_section_list.setCurrentRow(next_row)
+                    return
+            return
+        self.admin_stack.setCurrentIndex(stack_index)
 
     def _admin_studio_paths(self) -> AdminStudioPaths:
         return AdminStudioPaths(
@@ -3190,18 +3259,44 @@ class PySideInterviewWindow:
         tab_layout.addWidget(self._label(title, "SectionTitle"))
         tab_layout.addWidget(self._label(description))
         if key == "questions":
+            tab_layout.addWidget(self._admin_concept_panel(
+                "Track Flow Builder",
+                ["Question cards", "Drag-ready ordering", "Type chips", "Right edit panel"],
+                "Edit question text below; flow structure stays guarded until dedicated move controls exist.",
+            ))
             table = self._admin_questions_table()
             tab_layout.addWidget(table, 1)
             return tab
         if key == "rubrics":
+            tab_layout.addWidget(self._admin_concept_panel(
+                "Trait Cards",
+                ["Priority", "Weight", "Linked question", "Score descriptors"],
+                "High-risk scoring edits stay in explicit edit mode and review before publish.",
+            ))
             table = self._admin_rubrics_table()
             tab_layout.addWidget(table, 1)
             return tab
+        if key == "signals":
+            tab_layout.addWidget(self._admin_concept_panel(
+                "Signal Dictionary",
+                ["Searchable", "Grouped by trait", "Read-only reference", "Scoring context"],
+                "Signals mirror rubric traits so reviewers can scan definitions without editing source JSON.",
+            ))
         if key == "templates":
+            tab_layout.addWidget(self._admin_concept_panel(
+                "School Folder Health",
+                ["Folder path", "Validation status", "Browse target", "Test write path"],
+                "Path edits are validated before any file write.",
+            ))
             table = self._admin_school_settings_table()
             tab_layout.addWidget(table, 1)
             return tab
         if key == "notifications":
+            tab_layout.addWidget(self._admin_concept_panel(
+                "Notification Rule Cards",
+                ["Event", "Enabled status", "Timing", "Recipients", "Subject/body preview"],
+                "Template edits use a dedicated dialog and placeholder validation.",
+            ))
             controls = self.QtWidgets.QHBoxLayout()
             edit_button = self.QtWidgets.QPushButton("Create/Modify Template")
             edit_button.setObjectName("AdminStudioNotificationTemplateButton")
@@ -3214,16 +3309,80 @@ class PySideInterviewWindow:
             tab_layout.addWidget(table, 1)
             return tab
         if key == "deepseek_model":
+            tab_layout.addWidget(self._admin_concept_panel(
+                "Model Options",
+                ["Speed", "Quality", "Hardware fit", "Current selection"],
+                "Only allowlisted local Ollama DeepSeek models can be published.",
+            ))
             tab_layout.addWidget(self._admin_deepseek_model_selector(), 1)
             return tab
         if key == "prompts":
+            tab_layout.addWidget(self._admin_concept_panel(
+                "Prompt Template Editor",
+                ["Variables", "Preview", "Version review", "Validation"],
+                "Prompt edits are high-risk and require review before publish.",
+            ))
             table = self._admin_prompts_table()
             tab_layout.addWidget(table, 1)
             return tab
+        if key == "advanced":
+            tab_layout.addWidget(self._admin_concept_panel(
+                "JSON File Health",
+                ["Read-only review", "Last modified", "Validation status", "Open in editor"],
+                "Advanced files are surfaced as system health, not ordinary data rows.",
+            ))
+        if key == "validation":
+            return self._admin_validation_page(tab, tab_layout)
         rows = self._admin_readonly_rows(key)
         table = self._admin_table(key, ["Key", "Value"], rows, set())
         tab_layout.addWidget(table, 1)
         return tab
+
+    def _admin_concept_panel(self, title: str, chips: list[str], note: str) -> Any:
+        frame, layout = self._surface()
+        frame.setObjectName("AdminStudioConceptPanel")
+        layout.addWidget(self._label(title, "AdminStudioConceptTitle"))
+        chip_row = self.QtWidgets.QHBoxLayout()
+        for chip in chips:
+            label = self._label(chip, "AdminStudioChip")
+            label.setWordWrap(False)
+            chip_row.addWidget(label)
+        chip_row.addStretch(1)
+        layout.addLayout(chip_row)
+        layout.addWidget(self._label(note))
+        return frame
+
+    def _admin_validation_page(self, tab: Any, tab_layout: Any) -> Any:
+        errors = self.admin_draft.validate()
+        if not errors:
+            tab_layout.addWidget(self._admin_concept_panel(
+                "No Blocking Issues",
+                ["Ready to review", "Safe to publish"],
+                "All current admin settings pass validation.",
+            ))
+            tab_layout.addStretch(1)
+            return tab
+        for error in errors:
+            card, card_layout = self._surface()
+            card.setObjectName("AdminStudioValidationIssueCard")
+            card_layout.addWidget(self._label("Blocked", "AdminStudioValidationSeverity"))
+            card_layout.addWidget(self._label(error))
+            card_layout.addWidget(self._label(f"Fix: {self._admin_validation_fix_hint(error)}"))
+            tab_layout.addWidget(card)
+        tab_layout.addStretch(1)
+        return tab
+
+    def _admin_validation_fix_hint(self, error: str) -> str:
+        text = error.lower()
+        if "prompt" in text:
+            return "Open DeepSeek Prompts."
+        if "folder" in text or "path" in text:
+            return "Open Templates & Folders."
+        if "notification" in text or "recipient" in text:
+            return "Open Notifications."
+        if "deepseek model" in text:
+            return "Open DeepSeek Model."
+        return "Review affected admin setting."
 
     def _admin_questions_table(self) -> Any:
         rows: list[list[str]] = []
@@ -3512,7 +3671,7 @@ class PySideInterviewWindow:
         notification_button = getattr(self, "admin_notification_template_button", None)
         if notification_button is not None:
             notification_button.setEnabled(enabled)
-        self.admin_edit_button.setText("Editing active" if enabled else "Start editing")
+        self.admin_edit_button.setText("Editing active" if enabled else "Start Editing")
         self.admin_edit_button.setEnabled(not enabled)
         self.admin_review_button.setEnabled(enabled)
         self.admin_discard_button.setEnabled(enabled)
@@ -3520,9 +3679,9 @@ class PySideInterviewWindow:
 
     def _sync_admin_status(self) -> None:
         summary = self.admin_studio.summary(self.admin_draft)
-        status = f"Tracks: {summary.track_count}    Questions: {summary.question_count}    Unsaved files: {summary.dirty_count}"
+        status = f"Tracks: {summary.track_count}    Questions: {summary.question_count}    Unsaved changes: {summary.dirty_count}"
         if summary.validation_errors:
-            status = f"{status}    Validation: blocked"
+            status = f"{status}    Validation blocked: {len(summary.validation_errors)} issues"
         else:
             status = f"{status}    Validation: ready"
         if self.admin_edit_mode:
