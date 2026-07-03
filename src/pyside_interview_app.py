@@ -83,6 +83,9 @@ STAFFING_PERMIT_VALUES = [
     "teacher_permit_approved",
     "no_units_needed",
 ]
+STAFFING_STATUS_VALUES = ["dont_need_now", "need_now", "coming", "filled", "replace"]
+STAFFING_POSITION_TYPES = ["Teacher", "Aide", "Assistant", "Director", "Float", "Chef", "Office", "Custodian"]
+STAFFING_PROGRAM_VALUES = ["Preschool", "Infant", "Toddler", "School Age", "Support"]
 QUICK_ACTIONS = [
     "Needs follow-up",
     "Candidate gave no example",
@@ -826,6 +829,37 @@ def _staffing_priority_status(rows: list[Any]) -> str:
     if rows and all(str(row.status) == "filled" for row in rows):
         return "Low"
     return "Review"
+
+
+def _staffing_classroom_list_status(rows: list[Any]) -> str:
+    statuses = {str(getattr(row, "status", "") or "") for row in rows}
+    for status in ("need_now", "replace", "coming", "dont_need_now", "filled"):
+        if status in statuses:
+            return status
+    return ""
+
+
+def _staffing_classroom_list_label(classroom: str, rows: list[Any]) -> str:
+    counts = {"need_now": 0, "replace": 0, "filled": 0, "dont_need_now": 0}
+    for row in rows:
+        status = str(getattr(row, "status", "") or "")
+        if status in counts:
+            counts[status] += 1
+    return (
+        f"{classroom}\n"
+        f"Need: {counts['need_now']} - Replace: {counts['replace']} - "
+        f"Filled: {counts['filled']} - Don't Need: {counts['dont_need_now']}"
+    )
+
+
+def _staffing_classroom_list_color(rows: list[Any]) -> str:
+    need_now = sum(1 for row in rows if str(getattr(row, "status", "") or "") == "need_now")
+    replace = sum(1 for row in rows if str(getattr(row, "status", "") or "") == "replace")
+    if need_now > 0:
+        return "#FEF08A"
+    if replace > 0:
+        return "#FF0000"
+    return "#BBF7D0"
 
 
 def _staffing_status_color(status: str) -> str:
@@ -3747,19 +3781,20 @@ class PySideInterviewWindow:
         selector_row.addStretch(1)
         layout.addLayout(selector_row)
 
-        main = self.QtWidgets.QHBoxLayout()
-        main.setSpacing(16)
+        main = self.QtWidgets.QSplitter(self.QtCore.Qt.Orientation.Horizontal)
+        main.setObjectName("PySideStaffingSectionSplitter")
+        main.setChildrenCollapsible(False)
         list_frame, list_layout = self._surface()
-        list_frame.setMinimumWidth(260)
-        list_frame.setMaximumWidth(320)
+        list_frame.setMinimumWidth(220)
         self.staffing_classroom_list = self.QtWidgets.QListWidget()
         self.staffing_classroom_list.setObjectName("PySideStaffingClassroomList")
         self.staffing_classroom_list.currentRowChanged.connect(self._select_staffing_classroom_index)
         list_layout.addWidget(self._label("Classrooms", "SectionTitle"))
         list_layout.addWidget(self.staffing_classroom_list, 1)
-        main.addWidget(list_frame, 1)
+        main.addWidget(list_frame)
 
         detail_frame, detail_layout = self._surface()
+        detail_frame.setMinimumWidth(420)
         detail_header = self.QtWidgets.QHBoxLayout()
         title_column = self.QtWidgets.QVBoxLayout()
         self.staffing_classroom_title = self._label("", "PySideStaffingClassroomTitle")
@@ -3792,10 +3827,11 @@ class PySideInterviewWindow:
         add_position = self.QtWidgets.QPushButton("+  Add Position")
         add_position.setObjectName("PySideStaffingAddPositionButton")
         detail_layout.addWidget(add_position)
-        main.addWidget(detail_frame, 3)
+        main.addWidget(detail_frame)
         self.staffing_detail_drawer = self._staffing_detail_drawer()
         main.addWidget(self.staffing_detail_drawer)
-        layout.addLayout(main, 1)
+        main.setSizes([360, 900, 380])
+        layout.addWidget(main, 1)
 
         tabs = self.QtWidgets.QTabWidget()
         tabs.setObjectName("PySideStaffingSchoolTabs")
@@ -3808,7 +3844,7 @@ class PySideInterviewWindow:
     def _staffing_detail_drawer(self) -> Any:
         drawer = self.QtWidgets.QFrame()
         drawer.setObjectName("PySideStaffingDetailDrawer")
-        drawer.setFixedWidth(360)
+        drawer.setMinimumWidth(300)
         drawer.hide()
         layout = self.QtWidgets.QVBoxLayout(drawer)
         layout.setContentsMargins(18, 18, 18, 18)
@@ -3910,24 +3946,37 @@ class PySideInterviewWindow:
         for row in rows:
             if row.classroom not in classrooms:
                 classrooms.append(row.classroom)
-        for widget in (getattr(self, "staffing_classroom_selector", None), getattr(self, "staffing_classroom_list", None)):
-            if widget is None:
-                continue
-            current = widget.currentText() if hasattr(widget, "currentText") else ""
-            widget.blockSignals(True)
-            widget.clear()
-            widget.addItems(classrooms)
+        classroom_rows = {classroom: [row for row in rows if row.classroom == classroom] for classroom in classrooms}
+        selector = getattr(self, "staffing_classroom_selector", None)
+        if selector is not None:
+            current = selector.currentText()
+            selector.blockSignals(True)
+            selector.clear()
+            selector.addItems(classrooms)
             if current in classrooms:
-                if hasattr(widget, "setCurrentRow"):
-                    widget.setCurrentRow(classrooms.index(current))
-                else:
-                    widget.setCurrentIndex(classrooms.index(current))
+                selector.setCurrentIndex(classrooms.index(current))
             elif classrooms:
-                if hasattr(widget, "setCurrentRow"):
-                    widget.setCurrentRow(0)
-                else:
-                    widget.setCurrentIndex(0)
-            widget.blockSignals(False)
+                selector.setCurrentIndex(0)
+            selector.blockSignals(False)
+        classroom_list = getattr(self, "staffing_classroom_list", None)
+        if classroom_list is not None:
+            classroom_list.setMinimumWidth(360)
+            classroom_list.setHorizontalScrollBarPolicy(self.QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            classroom_list.setWordWrap(True)
+            current_row = classroom_list.currentRow()
+            classroom_list.blockSignals(True)
+            classroom_list.clear()
+            for classroom in classrooms:
+                item = self.QtWidgets.QListWidgetItem(_staffing_classroom_list_label(classroom, classroom_rows[classroom]))
+                item.setData(self.QtCore.Qt.ItemDataRole.UserRole, classroom)
+                item.setToolTip(classroom)
+                item.setBackground(self.QtGui.QColor(_staffing_classroom_list_color(classroom_rows[classroom])))
+                classroom_list.addItem(item)
+            if 0 <= current_row < classroom_list.count():
+                classroom_list.setCurrentRow(current_row)
+            elif classrooms:
+                classroom_list.setCurrentRow(0)
+            classroom_list.blockSignals(False)
 
     def _selected_staffing_school(self) -> str:
         selector = getattr(self, "staffing_school_selector", None)
@@ -3974,7 +4023,9 @@ class PySideInterviewWindow:
         open_rows = [row for row in rows if row.status in {"need_now", "replace"}]
         avg_open = sum((row.days_open or 0) for row in open_rows) / len(open_rows) if open_rows else 0.0
         capacity = next((row.classroom_capacity for row in rows if row.classroom_capacity is not None), None)
-        program = next((row.ratio_group for row in rows if row.ratio_group), "Preschool")
+        program = next((row.classroom_program for row in rows if getattr(row, "classroom_program", "")), "")
+        if not program:
+            program = next((row.ratio_group for row in rows if row.ratio_group), "Preschool")
         card_values = [
             ("Program", program),
             ("Licensed Capacity", "" if capacity is None else str(capacity)),
@@ -4194,43 +4245,136 @@ class PySideInterviewWindow:
             widget = item.widget()
             child_layout = item.layout()
             if widget is not None:
+                widget.setParent(None)
                 widget.deleteLater()
             if child_layout is not None:
                 while child_layout.count():
                     child = child_layout.takeAt(0).widget()
                     if child is not None:
+                        child.setParent(None)
                         child.deleteLater()
         title = "Person Details" if assignment.person_name else "Position Details"
         layout.addWidget(self._label(title, "PySideStaffingDrawerTitle"))
         layout.addWidget(self._label(assignment.person_name or "OPEN POSITION", "PySideStaffingDrawerName"))
         layout.addWidget(self._label(assignment.position_name))
         layout.addWidget(self._label(f"{assignment.classroom}  |  {assignment.school}"))
+        layout.addWidget(self._label(_staffing_display_status(assignment.status)))
+        layout.addWidget(self._label(_staffing_display_permit(assignment.permit_status or "unknown")))
         layout.addSpacing(8)
-        details = [
-            ("Position Type", assignment.position_type),
-            ("Status", _staffing_display_status(assignment.status)),
-            ("Days Open", "-" if not assignment.current_opened_date else _staffing_days_open_text(assignment.current_opened_date)),
-            ("Start Date", assignment.start_date or "-"),
-            ("Permit Status", _staffing_display_permit(assignment.permit_status or "unknown")),
-            ("Shift", " - ".join(value for value in [assignment.shift_start, assignment.shift_end] if value) or "-"),
-        ]
-        for label, value in details:
-            row = self.QtWidgets.QHBoxLayout()
-            row.addWidget(self._label(label), 1)
-            row.addWidget(self._label(str(value)), 1)
-            layout.addLayout(row)
-        if assignment.notes:
-            layout.addWidget(self._label("Notes", "SectionTitle"))
-            layout.addWidget(self._label(assignment.notes))
+
+        form = self.QtWidgets.QFormLayout()
+        person_field = self.QtWidgets.QLineEdit(assignment.person_name)
+        person_field.setObjectName("PySideStaffingDetailPersonName")
+        position_field = self.QtWidgets.QLineEdit(assignment.position_name)
+        position_field.setObjectName("PySideStaffingDetailPositionName")
+        type_field = self.QtWidgets.QComboBox()
+        type_field.setObjectName("PySideStaffingDetailPositionType")
+        type_values = [assignment.position_type, *STAFFING_POSITION_TYPES]
+        type_field.addItems([value for index, value in enumerate(type_values) if value and value not in type_values[:index]])
+        type_field.setEditable(True)
+        type_field.setCurrentText(assignment.position_type)
+        status_field = self.QtWidgets.QComboBox()
+        status_field.setObjectName("PySideStaffingDetailStatus")
+        for status in STAFFING_STATUS_VALUES:
+            status_field.addItem(_staffing_display_status(status), status)
+        status_index = status_field.findData(assignment.status)
+        status_field.setCurrentIndex(max(0, status_index))
+        classroom_field = self.QtWidgets.QComboBox()
+        classroom_field.setObjectName("PySideStaffingDetailClassroom")
+        classrooms = []
+        for row in self._staffing_rows_by_school.get(assignment.school, []):
+            if row.classroom not in classrooms:
+                classrooms.append(row.classroom)
+        classroom_field.addItems(classrooms or [assignment.classroom])
+        classroom_field.setEditable(True)
+        classroom_field.setCurrentText(assignment.classroom)
+        program_field = self.QtWidgets.QComboBox()
+        program_field.setObjectName("PySideStaffingDetailProgram")
+        program_values = [assignment.classroom_program, *STAFFING_PROGRAM_VALUES]
+        program_field.addItems([value for index, value in enumerate(program_values) if value and value not in program_values[:index]])
+        program_field.setEditable(True)
+        program_field.setCurrentText(assignment.classroom_program or "Preschool")
+        start_field = self.QtWidgets.QDateEdit()
+        start_field.setObjectName("PySideStaffingDetailStartDate")
+        start_field.setCalendarPopup(True)
+        start_field.setDisplayFormat("MMM d, yyyy")
+        blank_date = self.QtCore.QDate(1900, 1, 1)
+        start_field.setMinimumDate(blank_date)
+        start_field.setSpecialValueText("-")
+        if assignment.start_date:
+            parsed = self.QtCore.QDate.fromString(assignment.start_date, "yyyy-MM-dd")
+            start_field.setDate(parsed if parsed.isValid() else blank_date)
+        else:
+            start_field.setDate(blank_date)
+        shift_start_field = self.QtWidgets.QTimeEdit()
+        shift_start_field.setObjectName("PySideStaffingDetailShiftStart")
+        shift_start_field.setDisplayFormat("h:mm AP")
+        shift_end_field = self.QtWidgets.QTimeEdit()
+        shift_end_field.setObjectName("PySideStaffingDetailShiftEnd")
+        shift_end_field.setDisplayFormat("h:mm AP")
+        for field, value in ((shift_start_field, assignment.shift_start), (shift_end_field, assignment.shift_end)):
+            parsed = self.QtCore.QTime.fromString(value, "HH:mm")
+            field.setTime(parsed if parsed.isValid() else self.QtCore.QTime(0, 0))
+        permit_field = self.QtWidgets.QComboBox()
+        permit_field.setObjectName("PySideStaffingDetailPermitStatus")
+        permit_field.addItems(STAFFING_PERMIT_VALUES)
+        permit_field.setCurrentText(assignment.permit_status if assignment.permit_status in STAFFING_PERMIT_VALUES else "unknown")
+        days_open = "-" if not assignment.current_opened_date else _staffing_days_open_text(assignment.current_opened_date)
+        notes_field = self.QtWidgets.QTextEdit()
+        notes_field.setObjectName("PySideStaffingDetailNotes")
+        notes_field.setPlainText(assignment.notes)
+        notes_field.setFixedHeight(90)
+        form.addRow("Person", person_field)
+        form.addRow("Position", position_field)
+        form.addRow("Position Type", type_field)
+        form.addRow("Status", status_field)
+        form.addRow("Classroom", classroom_field)
+        form.addRow("Program", program_field)
+        form.addRow("Days Open", self._label(days_open))
+        form.addRow("Start Date", start_field)
+        form.addRow("Permit Status", permit_field)
+        form.addRow("Shift Start", shift_start_field)
+        form.addRow("Shift End", shift_end_field)
+        form.addRow("Notes", notes_field)
+        layout.addLayout(form)
         layout.addStretch(1)
         actions = self.QtWidgets.QHBoxLayout()
+        edit_button = self.QtWidgets.QPushButton("Edit")
+        edit_button.clicked.connect(position_field.setFocus)
+        actions.addWidget(edit_button)
+        save_button = self._primary_button("Save")
+        save_button.setObjectName("PySideStaffingDetailSave")
+
+        def save_details() -> None:
+            start_date = "" if start_field.date() == blank_date else start_field.date().toString("yyyy-MM-dd")
+            shift_start = "" if not assignment.shift_start and shift_start_field.time() == self.QtCore.QTime(0, 0) else shift_start_field.time().toString("HH:mm")
+            shift_end = "" if not assignment.shift_end and shift_end_field.time() == self.QtCore.QTime(0, 0) else shift_end_field.time().toString("HH:mm")
+            self._run_staffing_action(
+                lambda service: service.update_assignment_details(
+                    assignment.id,
+                    classroom=classroom_field.currentText(),
+                    classroom_program=program_field.currentText(),
+                    position_name=position_field.text(),
+                    position_type=type_field.currentText(),
+                    status=str(status_field.currentData() or assignment.status),
+                    person_name=person_field.text(),
+                    start_date=start_date,
+                    shift_start=shift_start,
+                    shift_end=shift_end,
+                    permit_status=permit_field.currentText(),
+                    notes=notes_field.toPlainText(),
+                ),
+                "Assignment details updated.",
+            )
+            if self.staffing_status_label is None or self.staffing_status_label.text() == "Assignment details updated.":
+                self.QtCore.QTimer.singleShot(0, lambda item=assignment.id: self._open_staffing_assignment_details(item))
+
+        save_button.clicked.connect(save_details)
+        actions.addWidget(save_button)
         if assignment.person_name:
             replace_button = self.QtWidgets.QPushButton("Replace")
             replace_button.clicked.connect(lambda _checked=False, item=assignment.id: self._mark_staffing_replacing(item))
             actions.addWidget(replace_button)
-            edit_button = self.QtWidgets.QPushButton("Edit")
-            edit_button.clicked.connect(lambda _checked=False, item=assignment.id: self._update_staffing_permit(item))
-            actions.addWidget(edit_button)
         else:
             coming_button = self._primary_button("Mark Coming")
             coming_button.clicked.connect(lambda _checked=False, item=assignment.id: self._mark_staffing_coming(item))

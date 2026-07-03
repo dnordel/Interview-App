@@ -101,17 +101,29 @@ def test_update_assignment_details_edits_classroom_shift_and_permit(tmp_path: Pa
     result = service.update_assignment_details(
         assignment_id,
         classroom="Harmony",
+        classroom_program="Toddler",
+        position_name="Lead Teacher",
+        position_type="Lead",
+        person_name="Janet Doe",
+        start_date="2026-07-06",
         shift_start="08:30",
         shift_end="17:00",
         permit_status="teacher_permit_approved",
+        notes="Moved to lead role.",
     )
 
     assignment = store.get_assignment(assignment_id)
     assert result.assignment_id == assignment_id
     assert assignment.classroom == "Harmony"
+    assert assignment.classroom_program == "Toddler"
+    assert assignment.position_name == "Lead Teacher"
+    assert assignment.position_type == "Lead"
+    assert assignment.person_name == "Janet Doe"
+    assert assignment.start_date == "2026-07-06"
     assert assignment.shift_start == "08:30"
     assert assignment.shift_end == "17:00"
     assert assignment.permit_status == "teacher_permit_approved"
+    assert assignment.notes == "Moved to lead role."
 
 
 def test_locked_staffing_action_queues_and_replays_when_db_unlocks(tmp_path: Path) -> None:

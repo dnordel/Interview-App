@@ -2997,6 +2997,14 @@ def test_pyside_staffing_classroom_detail_matches_dashboard_mockup_shell(
                                     {"position_name": "Teacher 1", "position_type": "Teacher", "status": "filled", "person": {"name": "Sarah M."}}
                                 ],
                             },
+                            {
+                                "name": "Unity",
+                                "ratio_group": "Preschool",
+                                "licensed_capacity": 18,
+                                "slots": [
+                                    {"position_name": "Teacher 1", "position_type": "Teacher", "status": "replace", "person": {"name": "Mia"}},
+                                ],
+                            },
                         ],
                     }
                 ]
@@ -3018,6 +3026,7 @@ def test_pyside_staffing_classroom_detail_matches_dashboard_mockup_shell(
     school_selector = page.findChild(qt_widgets.QComboBox, "PySideStaffingSchoolSelector")
     classroom_selector = page.findChild(qt_widgets.QComboBox, "PySideStaffingClassroomSelector")
     classroom_list = page.findChild(qt_widgets.QListWidget, "PySideStaffingClassroomList")
+    section_splitter = page.findChild(qt_widgets.QSplitter, "PySideStaffingSectionSplitter")
     cards = page.findChildren(qt_widgets.QFrame, "PySideStaffingMetricCard")
     table = page.findChild(qt_widgets.QTableWidget, "PySideStaffingPositionsTable")
     title = page.findChild(qt_widgets.QLabel, "PySideStaffingClassroomTitle")
@@ -3026,7 +3035,22 @@ def test_pyside_staffing_classroom_detail_matches_dashboard_mockup_shell(
     assert window.stack.widget(3).findChild(qt_widgets.QLabel, "Title").text() == "Classroom Detail"
     assert school_selector.currentText() == "Hawthorne"
     assert classroom_selector.currentText() == "Harmony 1"
-    assert [classroom_list.item(index).text() for index in range(classroom_list.count())] == ["Harmony 1", "Quest"]
+    assert [classroom_selector.itemText(index) for index in range(classroom_selector.count())] == ["Harmony 1", "Quest", "Unity"]
+    assert [classroom_list.item(index).text() for index in range(classroom_list.count())] == [
+        "Harmony 1\nNeed: 1 - Replace: 1 - Filled: 1 - Don't Need: 0",
+        "Quest\nNeed: 0 - Replace: 0 - Filled: 1 - Don't Need: 0",
+        "Unity\nNeed: 0 - Replace: 1 - Filled: 0 - Don't Need: 0",
+    ]
+    assert section_splitter is not None
+    assert section_splitter.count() == 3
+    assert not section_splitter.childrenCollapsible()
+    assert section_splitter.widget(0).maximumWidth() > 320
+    assert section_splitter.widget(2).minimumWidth() == 300
+    assert classroom_list.minimumWidth() >= 360
+    assert classroom_list.wordWrap()
+    assert classroom_list.item(0).background().color().name().upper() == "#FEF08A"
+    assert classroom_list.item(1).background().color().name().upper() == "#BBF7D0"
+    assert classroom_list.item(2).background().color().name().upper() == "#FF0000"
     assert title.text() == "Harmony 1"
     assert priority.text() == "Need Now"
     assert len(cards) == 6
@@ -3094,8 +3118,8 @@ def test_pyside_staffing_row_click_opens_mockup_detail_drawer(
         school_options=["Hawthorne"],
     )
     window = pyside_interview_app.PySideInterviewWindow(model)
-    table = window.window.findChild(qt_widgets.QTableWidget, "PySideStaffingPositionsTable")
-    drawer = window.window.findChild(qt_widgets.QFrame, "PySideStaffingDetailDrawer")
+    table = window.staffing_positions_table
+    drawer = window.staffing_detail_drawer
 
     table.cellClicked.emit(_staffing_row_for_position(table, "Teacher 3"), 0)
     app.processEvents()
@@ -3107,9 +3131,36 @@ def test_pyside_staffing_row_click_opens_mockup_detail_drawer(
     assert "OPEN POSITION" in drawer_labels
     assert "Teacher 3" in drawer_labels
     assert "Need Now" in drawer_labels
-    assert {"Mark Coming", "Don't Need Now", "Close"} <= set(drawer_buttons)
+    assert {"Edit", "Save", "Mark Coming", "Don't Need Now", "Close"} <= set(drawer_buttons)
 
-    table.cellClicked.emit(_staffing_row_for_position(table, "Teacher 1"), 0)
+    position_type = drawer.findChild(qt_widgets.QComboBox, "PySideStaffingDetailPositionType")
+    status = drawer.findChild(qt_widgets.QComboBox, "PySideStaffingDetailStatus")
+    program = drawer.findChild(qt_widgets.QComboBox, "PySideStaffingDetailProgram")
+    start_date = drawer.findChild(qt_widgets.QDateEdit, "PySideStaffingDetailStartDate")
+    shift_start = drawer.findChild(qt_widgets.QTimeEdit, "PySideStaffingDetailShiftStart")
+    notes = drawer.findChild(qt_widgets.QTextEdit, "PySideStaffingDetailNotes")
+    save = drawer.findChild(qt_widgets.QPushButton, "PySideStaffingDetailSave")
+    assert position_type.currentText() == "Teacher"
+    assert status.currentText() == "Need Now"
+    assert start_date.specialValueText() == "-"
+    assert shift_start.displayFormat() == "h:mm AP"
+
+    position_type.setCurrentText("Aide")
+    program.setCurrentText("Toddler")
+    notes.setPlainText("Needs bilingual coverage.")
+    save.click()
+    app.processEvents()
+
+    updated = window.staffing_store.get_assignment(
+        next(row.id for row in window.staffing_store.list_assignments() if row.position_name == "Teacher 3")
+    )
+    assert updated.position_type == "Aide"
+    assert updated.classroom_program == "Toddler"
+    assert updated.notes == "Needs bilingual coverage."
+
+    drawer = window.staffing_detail_drawer
+    filled_id = next(row.id for row in window.staffing_store.list_assignments() if row.position_name == "Teacher 1")
+    window._open_staffing_assignment_details(filled_id)
     app.processEvents()
 
     drawer_labels = [label.text() for label in drawer.findChildren(qt_widgets.QLabel)]
@@ -3117,7 +3168,25 @@ def test_pyside_staffing_row_click_opens_mockup_detail_drawer(
     assert "Person Details" in drawer_labels
     assert "Sarah M." in drawer_labels
     assert "Teacher Permit Approved" in drawer_labels
-    assert {"Replace", "Edit", "Close"} <= set(drawer_buttons)
+    assert {"Replace", "Edit", "Save", "Close"} <= set(drawer_buttons)
+
+    person_name = drawer.findChild(qt_widgets.QLineEdit, "PySideStaffingDetailPersonName")
+    position_name = drawer.findChild(qt_widgets.QLineEdit, "PySideStaffingDetailPositionName")
+    permit = drawer.findChild(qt_widgets.QComboBox, "PySideStaffingDetailPermitStatus")
+    filled_notes = drawer.findChild(qt_widgets.QTextEdit, "PySideStaffingDetailNotes")
+    filled_save = drawer.findChild(qt_widgets.QPushButton, "PySideStaffingDetailSave")
+    person_name.setText("Sara M.")
+    position_name.setText("Lead Teacher")
+    permit.setCurrentText("permit_in_process")
+    filled_notes.setPlainText("Moved to lead slot.")
+    filled_save.click()
+    app.processEvents()
+
+    filled = window.staffing_store.get_assignment(filled_id)
+    assert filled.person_name == "Sara M."
+    assert filled.position_name == "Lead Teacher"
+    assert filled.permit_status == "permit_in_process"
+    assert filled.notes == "Moved to lead slot."
     window.window.close()
     app.processEvents()
 

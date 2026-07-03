@@ -2,7 +2,7 @@ module:
   name: staffing_models
   language: python
   path: src/staffing_models.py
-  version: 0.5.0
+  version: 0.6.0
   description: Dataclasses and enum constants for local staffing dashboard transactions, metrics, and workbook-style display metadata.
 functions: []
 classes: []
@@ -32,6 +32,7 @@ data_structures:
   - current_opened_date
   - current_filled_date
   - classroom_capacity
+  - classroom_program
   - ratio_group
   - slot_group
   - notes
@@ -56,6 +57,7 @@ data_structures:
   - shift_end
   - days_open
   - classroom_capacity
+  - classroom_program
   - ratio_group
   - slot_group
   - notes

@@ -352,6 +352,7 @@ class StaffingStore:
                    p.notice_given AS notice_given,
                    p.final_working_day AS final_working_day,
                    c.licensed_capacity AS classroom_capacity,
+                   c.program AS classroom_program,
                    c.ratio_group AS ratio_group
             FROM assignments a
             JOIN classrooms c ON c.id = a.classroom_id
@@ -382,6 +383,7 @@ class StaffingStore:
             current_opened_date=str(row["current_opened_date"] or ""),
             current_filled_date=str(row["current_filled_date"] or ""),
             classroom_capacity=int(row["classroom_capacity"]) if row["classroom_capacity"] is not None else None,
+            classroom_program=str(row["classroom_program"] or ""),
             ratio_group=str(row["ratio_group"] or ""),
             slot_group=str(row["slot_group"] or ""),
             notes=str(row["notes"] or ""),

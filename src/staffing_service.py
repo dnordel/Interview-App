@@ -119,25 +119,46 @@ class StaffingService:
         assignment_id: int,
         *,
         classroom: str,
+        classroom_program: str | None = None,
+        position_name: str | None = None,
+        position_type: str | None = None,
+        status: str | None = None,
+        person_name: str | None = None,
+        start_date: str | None = None,
         shift_start: str = "",
         shift_end: str = "",
         permit_status: str | None = None,
+        notes: str | None = None,
     ) -> StaffingTransitionResult:
         return self._run_or_queue(
             "update_assignment_details",
             {
                 "assignment_id": int(assignment_id),
                 "classroom": classroom,
+                "classroom_program": classroom_program,
+                "position_name": position_name,
+                "position_type": position_type,
+                "status": status,
+                "person_name": person_name,
+                "start_date": start_date,
                 "shift_start": shift_start,
                 "shift_end": shift_end,
                 "permit_status": permit_status,
+                "notes": notes,
             },
             lambda: self._update_assignment_details_impl(
                 assignment_id,
                 classroom=classroom,
+                classroom_program=classroom_program,
+                position_name=position_name,
+                position_type=position_type,
+                status=status,
+                person_name=person_name,
+                start_date=start_date,
                 shift_start=shift_start,
                 shift_end=shift_end,
                 permit_status=permit_status,
+                notes=notes,
             ),
         )
 
@@ -364,14 +385,35 @@ class StaffingService:
         assignment_id: int,
         *,
         classroom: str,
+        classroom_program: str | None = None,
+        position_name: str | None = None,
+        position_type: str | None = None,
+        status: str | None = None,
+        person_name: str | None = None,
+        start_date: str | None = None,
         shift_start: str = "",
         shift_end: str = "",
         permit_status: str | None = None,
+        notes: str | None = None,
     ) -> StaffingTransitionResult:
         now = self.clock()
         classroom = str(classroom or "").strip()
         if not classroom:
             raise ValueError("Classroom is required.")
+        classroom_program = None if classroom_program is None else str(classroom_program or "").strip()
+        position_name = None if position_name is None else str(position_name or "").strip()
+        position_type = None if position_type is None else str(position_type or "").strip()
+        status = None if status is None else str(status or "").strip()
+        person_name = None if person_name is None else str(person_name or "").strip()
+        notes = None if notes is None else str(notes or "").strip()
+        if position_name == "":
+            raise ValueError("Position name is required.")
+        if position_type == "":
+            raise ValueError("Position type is required.")
+        if status is not None and status not in {"dont_need_now", "need_now", "coming", "filled", "replace"}:
+            raise ValueError("Unknown assignment status.")
+        if start_date is not None:
+            start_date = "" if str(start_date or "").strip() == "" else _valid_date(str(start_date), "Start date")
         shift_start = _valid_time_or_blank(shift_start, "Shift start")
         shift_end = _valid_time_or_blank(shift_end, "Shift end")
         if permit_status is not None and permit_status not in PERMIT_STATUSES:
@@ -389,19 +431,67 @@ class StaffingService:
             ).fetchone()
             if school_row is None:
                 raise ValueError("Assignment not found.")
-            classroom_id = self.store._ensure_classroom(conn, int(school_row["school_id"]), classroom)
+            classroom_id = self.store._ensure_classroom(
+                conn,
+                int(school_row["school_id"]),
+                classroom,
+                program=assignment.classroom_program if classroom_program is None else classroom_program,
+                ratio_group=assignment.ratio_group,
+                licensed_capacity=assignment.classroom_capacity,
+            )
             conn.execute(
                 """
                 UPDATE assignments
-                SET classroom_id = ?, shift_start = ?, shift_end = ?, updated_at = ?
+                SET classroom_id = ?,
+                    position_name = COALESCE(?, position_name),
+                    position_type = COALESCE(?, position_type),
+                    status = COALESCE(?, status),
+                    start_date = COALESCE(?, start_date),
+                    shift_start = ?,
+                    shift_end = ?,
+                    notes = COALESCE(?, notes),
+                    updated_at = ?
                 WHERE id = ?
                 """,
-                (classroom_id, shift_start, shift_end, now, assignment_id),
+                (
+                    classroom_id,
+                    position_name,
+                    position_type,
+                    status,
+                    start_date,
+                    shift_start,
+                    shift_end,
+                    notes,
+                    now,
+                    assignment_id,
+                ),
             )
-            if permit_status is not None and assignment.person_id is not None:
+            if assignment.person_id is not None:
+                if person_name:
+                    conn.execute(
+                        """
+                        UPDATE people
+                        SET name = ?, normalized_name = ?, updated_at = ?
+                        WHERE id = ?
+                        """,
+                        (person_name, person_name.casefold(), now, assignment.person_id),
+                    )
+                if permit_status is not None:
+                    conn.execute(
+                        "UPDATE people SET permit_status = ?, updated_at = ? WHERE id = ?",
+                        (permit_status, now, assignment.person_id),
+                    )
+            elif person_name:
+                new_person_id = self.store.ensure_person(
+                    conn,
+                    person_name,
+                    position_type or assignment.position_type,
+                    permit_status or "unknown",
+                    now,
+                )
                 conn.execute(
-                    "UPDATE people SET permit_status = ?, updated_at = ? WHERE id = ?",
-                    (permit_status, now, assignment.person_id),
+                    "UPDATE assignments SET person_id = ?, updated_at = ? WHERE id = ?",
+                    (new_person_id, now, assignment_id),
                 )
             updated = self.store.assignment_context(conn, assignment_id)
         if permit_status is not None and updated.person_id is not None:
@@ -433,6 +523,7 @@ class StaffingService:
                     shift_end=assignment.shift_end,
                     days_open=days_open,
                     classroom_capacity=assignment.classroom_capacity,
+                    classroom_program=assignment.classroom_program,
                     ratio_group=assignment.ratio_group,
                     slot_group=assignment.slot_group,
                     notes=assignment.notes,

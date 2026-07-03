@@ -33,6 +33,7 @@ class StaffingAssignment:
     current_opened_date: str = ""
     current_filled_date: str = ""
     classroom_capacity: int | None = None
+    classroom_program: str = ""
     ratio_group: str = ""
     slot_group: str = ""
     notes: str = ""
@@ -70,6 +71,7 @@ class StaffingMetricRow:
     shift_end: str = ""
     days_open: int | None = None
     classroom_capacity: int | None = None
+    classroom_program: str = ""
     ratio_group: str = ""
     slot_group: str = ""
     notes: str = ""

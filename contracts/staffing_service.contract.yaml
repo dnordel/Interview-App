@@ -2,7 +2,7 @@ module:
   name: staffing_service
   language: python
   path: src/staffing_service.py
-  version: 0.6.0
+  version: 0.7.0
   description: Staffing assignment state machine, queued Dropbox edit handling, staffing dashboard metrics with pending-operation projection and workbook display metadata, confirmed person moves, editable assignment details, and post-commit notification emission for successful transactions.
 functions: []
 classes:
@@ -134,6 +134,30 @@ classes:
       classroom:
         type: str
         required: true
+      classroom_program:
+        type: str | None
+        required: false
+        default: null
+      position_name:
+        type: str | None
+        required: false
+        default: null
+      position_type:
+        type: str | None
+        required: false
+        default: null
+      status:
+        type: str | None
+        required: false
+        default: null
+      person_name:
+        type: str | None
+        required: false
+        default: null
+      start_date:
+        type: str | None
+        required: false
+        default: null
       shift_start:
         type: str
         required: false
@@ -146,11 +170,15 @@ classes:
         type: str | None
         required: false
         default: null
+      notes:
+        type: str | None
+        required: false
+        default: null
     returns:
       type: StaffingTransitionResult
     exceptions:
     - ValueError
-    side_effects: Updates assignment classroom/shift fields and assigned person's permit status when present; may emit staffing.permit.updated notification; if DB is locked, saves operation to pending queue and returns queued status.
+    side_effects: Updates assignment classroom/program, position name/type/status/start date/shift/notes fields, assigned or newly named person details, and assigned person's permit status when present; may emit staffing.permit.updated notification; if DB is locked, saves operation to pending queue and returns queued status.
   - name: staffing_metrics
     inputs:
       today:
