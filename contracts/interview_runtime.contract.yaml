@@ -2,7 +2,7 @@ module:
   name: interview_runtime
   language: python
   path: src/interview_runtime.py
-  version: 0.29.1
+  version: 0.30.0
   description: Flattened public interface for interview state, session management,
     audio/transcription runtime, transcript summary seam, controllers, history, and
     finalize pipeline; only active legacy adapters remain in the compatibility module
@@ -692,8 +692,9 @@ functions:
   exceptions: []
   side_effects: none
 - name: resolve_runtime
-  description: Resolve configured Whisper runtime model, device, and compute type
-    with defaults.
+  description: Resolve configured Whisper runtime model, device, compute type, and
+    backend with defaults, using the setup-published GPU vendor to select CUDA,
+    OpenVINO GenAI, configured whisper.cpp, or CPU-safe fallback.
   locked: false
   inputs:
     settings:
@@ -704,7 +705,8 @@ functions:
   exceptions: []
   side_effects: none
 - name: fallback_from_exception
-  description: Return a CPU fallback runtime for device-related Whisper runtime errors.
+  description: Return a CPU fallback runtime for CUDA/NVIDIA, AMD ROCm/HIP, Intel
+    GPU, or other device-related Whisper runtime errors.
   locked: false
   inputs:
     exc:
@@ -1992,7 +1994,7 @@ classes:
     exceptions: []
     side_effects: none
 - name: RuntimeConfig
-  description: Immutable Whisper runtime model/device/compute-type selection.
+  description: Immutable Whisper runtime backend/model/device/compute-type selection.
   locked: false
   attributes:
     model:
@@ -2000,6 +2002,8 @@ classes:
     device:
       type: str
     compute_type:
+      type: str
+    backend:
       type: str
   methods: []
 - name: AudioRuntimeController

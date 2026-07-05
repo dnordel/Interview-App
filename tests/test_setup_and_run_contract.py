@@ -77,6 +77,21 @@ def test_setup_and_run_contract_describes_current_python_and_venv_flow() -> None
     assert "system site packages" in descriptions
 
 
+def test_setup_and_run_drains_process_streams_without_pipe_deadlock() -> None:
+    script_text = SETUP_SCRIPT.read_text(encoding="utf-8")
+    contract = yaml.safe_load(SETUP_CONTRACT.read_text(encoding="utf-8"))
+    descriptions = " ".join(item["description"] for item in contract["functions"])
+
+    assert "ReadToEndAsync()" in script_text
+    assert ".add_OutputDataReceived" not in script_text
+    assert ".add_ErrorDataReceived" not in script_text
+    assert "BeginOutputReadLine()" not in script_text
+    assert "BeginErrorReadLine()" not in script_text
+    assert ".StandardOutput.ReadToEnd()" not in script_text
+    assert ".StandardError.ReadToEnd()" not in script_text
+    assert "prevent pipe deadlocks" in descriptions
+
+
 def test_windows_launchers_do_not_use_repo_root_venv() -> None:
     launcher_paths = [
         Path("Start Interview Assistant PySide6.bat"),
@@ -96,6 +111,18 @@ def test_windows_launchers_do_not_use_repo_root_venv() -> None:
     assert "%LOCALAPPDATA%\\LPL_InterviewTool\\py311" in requirements_text
     assert "venv --system-site-packages" in requirements_text
     assert '-File "%RUNNER%" -UiMode pyside' in pyside_launcher_text
+
+
+def test_primary_setup_launchers_force_pyside_mode() -> None:
+    launcher_paths = [
+        Path("..START PROGRAM.bat"),
+        Path("Start Preschool Teacher Interview Guide.bat"),
+        Path("start.bat"),
+    ]
+
+    for launcher_path in launcher_paths:
+        launcher_text = launcher_path.read_text(encoding="utf-8")
+        assert "-UiMode pyside" in launcher_text
 
 
 def test_setup_and_run_launches_runtime_wrapper_with_venv_python() -> None:
@@ -139,6 +166,83 @@ def test_setup_and_run_versions_requirements_and_checks_pyside_dependency() -> N
     assert "RequirementsFingerprint" in script_text
     assert 'Get-FileHash -Algorithm SHA256 -Path $RequirementsPath' in script_text
     assert '@{ Package = "PySide6"; Module = "PySide6" }' in script_text
+
+
+def test_setup_and_run_keeps_nvidia_packages_out_of_base_requirements() -> None:
+    requirements_text = Path("requirements.txt").read_text(encoding="utf-8").lower()
+    gpu_requirements_text = Path("requirements-gpu.txt").read_text(encoding="utf-8").lower()
+
+    assert "nvidia-" not in requirements_text
+    assert "nvidia-cublas-cu12" in gpu_requirements_text
+    assert "nvidia-cudnn-cu12" in gpu_requirements_text
+
+
+def test_setup_and_run_cleans_up_nvidia_packages_without_nvidia_gpu() -> None:
+    script_text = SETUP_SCRIPT.read_text(encoding="utf-8")
+    contract = yaml.safe_load(SETUP_CONTRACT.read_text(encoding="utf-8"))
+    function_names = {item["name"] for item in contract["functions"]}
+    descriptions = " ".join(item["description"] for item in contract["functions"])
+
+    assert "Get-GpuVendorProfile" in function_names
+    assert "Remove-NvidiaGpuPackagesWhenUnsupported" in function_names
+    assert "Set-GpuVendorEnvironment" in function_names
+    assert "Remove-NvidiaGpuPackagesWhenUnsupported -VenvPy $VenvPy" in script_text
+    assert "Set-GpuVendorEnvironment -Profile $gpuProfile" in script_text
+    assert "INTERVIEW_GPU_VENDOR=$vendor" in script_text
+    assert '"pip","uninstall","-y","nvidia-cublas-cu12","nvidia-cudnn-cu12"' in script_text
+    assert "Skipping GPU dependency install because no NVIDIA GPU was detected." in script_text
+    assert "remove NVIDIA-only Python wheels" in descriptions
+
+
+def test_setup_and_run_detects_amd_intel_without_installing_nvidia_wheels() -> None:
+    script_text = SETUP_SCRIPT.read_text(encoding="utf-8")
+
+    assert '$profile = [PSCustomObject]@{' in script_text
+    assert "Amd = $false" in script_text
+    assert "Intel = $false" in script_text
+    assert '$name -match "AMD|Radeon|Advanced Micro Devices"' in script_text
+    assert '$name -match "Intel|Arc|Iris|UHD Graphics"' in script_text
+    assert (
+        "AMD GPU detected. Ollama may use supported ROCm/Vulkan acceleration; "
+        "Whisper transcription remains CPU unless an external Vulkan whisper.cpp backend is configured."
+    ) in script_text
+    assert "Intel GPU detected. OpenVINO GenAI will be used for Whisper transcription" in script_text
+
+
+def test_setup_and_run_installs_openvino_packages_for_intel_gpu() -> None:
+    script_text = SETUP_SCRIPT.read_text(encoding="utf-8")
+    openvino_requirements = Path("requirements-openvino.txt").read_text(encoding="utf-8")
+
+    assert "openvino-genai" in openvino_requirements
+    assert "openvino-tokenizers" in openvino_requirements
+    assert '$openVinoReq = Join-Path $AppDir "requirements-openvino.txt"' in script_text
+    assert 'if ((Test-Path $openVinoReq) -and $gpuProfile.Intel)' in script_text
+    assert 'Run-Proc -File $VenvPy -Args @("-m","pip","install","-r",$openVinoReq)' in script_text
+    assert '$env:INTERVIEW_WHISPER_BACKEND = "openvino_genai"' in script_text
+    assert '$env:INTERVIEW_OPENVINO_WHISPER_MODEL = "OpenVINO/whisper-small-int8-ov"' in script_text
+
+
+def test_setup_and_run_configures_whisper_cpp_for_amd_when_present() -> None:
+    script_text = SETUP_SCRIPT.read_text(encoding="utf-8")
+    contract = yaml.safe_load(SETUP_CONTRACT.read_text(encoding="utf-8"))
+    function_names = {item["name"] for item in contract["functions"]}
+
+    assert "Find-WhisperCppCli" in function_names
+    assert "Find-WhisperCppModel" in function_names
+    assert '$env:INTERVIEW_WHISPER_BACKEND = "whisper_cpp"' in script_text
+    assert '$env:INTERVIEW_WHISPERCPP_EXE = $whisperCppExe' in script_text
+    assert '$env:INTERVIEW_WHISPERCPP_MODEL = $whisperCppModel' in script_text
+
+
+def test_setup_and_run_adds_cuda_paths_only_with_nvidia_gpu() -> None:
+    script_text = SETUP_SCRIPT.read_text(encoding="utf-8")
+
+    cuda_comment_index = script_text.index("# Expose CUDA runtime DLLs for faster-whisper")
+    vbcable_index = script_text.index("# VB-CABLE handling based on detection + user answer")
+    cuda_block = script_text[cuda_comment_index:vbcable_index]
+
+    assert "if (Test-NvidiaGPU) {" in cuda_block
+    assert "Skipping CUDA PATH setup because no NVIDIA GPU was detected." in cuda_block
 
 
 def test_setup_and_run_falls_back_to_tk_when_pyside_import_fails() -> None:
@@ -220,11 +324,30 @@ def test_setup_and_run_installs_local_deepseek_with_ollama() -> None:
     assert "[string]$localModel.name -ieq $Model" in script_text
     assert "[string]$localModel.model -ieq $Model" in script_text
     assert "foreach ($model in @($tags.models))" not in script_text
-    assert 'Run-Proc -File $OllamaExe -Args @("pull", $Model)' in script_text
+    assert "Invoke-OllamaModelPull -Model $Model" in script_text
     assert "for ($i = 0; $i -lt 10; $i++)" in script_text
     assert '$env:DEEPSEEK_API_BASE_URL = "$OllamaBaseUrl/v1"' in script_text
     assert '$env:DEEPSEEK_API_KEY = "ollama"' in script_text
     assert "retry local registry checks" in descriptions
+
+
+def test_setup_and_run_streams_deepseek_pull_progress_to_ui_and_log() -> None:
+    script_text = SETUP_SCRIPT.read_text(encoding="utf-8")
+    contract = yaml.safe_load(SETUP_CONTRACT.read_text(encoding="utf-8"))
+    function_names = {item["name"] for item in contract["functions"]}
+    descriptions = " ".join(item["description"] for item in contract["functions"])
+
+    assert "Invoke-OllamaModelPull" in function_names
+    assert '"$OllamaBaseUrl/api/pull"' in script_text
+    assert '"stream" = $true' in script_text
+    assert '"name" = $Model' in script_text
+    assert "ReadLine()" in script_text
+    assert '$percent = [Math]::Floor(($completed / $total) * 100)' in script_text
+    assert 'Set-Progress 65 "Downloading local DeepSeek model ($Model): $percent%"' in script_text
+    assert 'Write-Log "DeepSeek model download progress: $Model $percent% ($completed of $total bytes)"' in script_text
+    assert 'Invoke-OllamaModelPull -Model $Model' in script_text
+    assert 'Run-Proc -File $OllamaExe -Args @("pull", $Model)' not in script_text
+    assert "download percentage" in descriptions
 
 
 def test_setup_and_run_shows_visible_setup_details() -> None:

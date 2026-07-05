@@ -2,6 +2,7 @@ import importlib.machinery
 import importlib.util
 import sys
 import unittest
+from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -98,7 +99,7 @@ class TestOfferWorkflowOnboarding(unittest.TestCase):
         self.assertEqual(resolved["offer_email_to"], "global@example.org")
         self.assertEqual(resolved["director_referral_subject_template"], "Director")
 
-    def test_offer_status_update_emits_notification_event(self):
+    def test_offer_status_update_emits_notification_event_with_date_payload(self):
         app = InterviewApp.__new__(InterviewApp)
 
         class Store:
@@ -122,13 +123,26 @@ class TestOfferWorkflowOnboarding(unittest.TestCase):
         app._refresh_history_tree = lambda: None
 
         app._history_actions_service().update_history_offer_status(
-            {"candidate_name": "Jane Doe", "school": "Hawthorne", "position": "Teacher"},
-            "accepted",
+            {
+                "candidate_name": "Jane Doe",
+                "school": "Hawthorne",
+                "position": "Teacher",
+                "start_date": "2026-07-10",
+                "date_notice_given": "2026-06-20",
+                "last_working_day": "2026-07-03",
+            },
+            "generated",
         )
 
-        self.assertEqual(notifications.events[0][0], "offer.accepted")
+        self.assertEqual(notifications.events[0][0], "offer.generated")
         self.assertEqual(notifications.events[0][1]["candidate_name"], "Jane Doe")
-        self.assertEqual(notifications.events[0][2], "row-1:offer.accepted")
+        self.assertEqual(notifications.events[0][1]["generated_date"], date.today().isoformat())
+        self.assertEqual(notifications.events[0][1]["start_date"], "2026-07-10")
+        self.assertEqual(notifications.events[0][1]["notice_given"], "2026-06-20")
+        self.assertEqual(notifications.events[0][1]["date_notice_given"], "2026-06-20")
+        self.assertEqual(notifications.events[0][1]["final_working_day"], "2026-07-03")
+        self.assertEqual(notifications.events[0][1]["last_working_day"], "2026-07-03")
+        self.assertEqual(notifications.events[0][2], "row-1:offer.generated")
 
     def test_failed_offer_status_update_does_not_emit_notification_event(self):
         app = InterviewApp.__new__(InterviewApp)

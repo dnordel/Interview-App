@@ -51,13 +51,13 @@ def test_switch_to_ui_mode_persists_preference_and_launches_selected_app(tmp_pat
     ]
 
 
-def test_tk_and_pyside_sources_expose_ui_switch_controls() -> None:
+def test_tk_source_exposes_pyside_switch_and_pyside_does_not_expose_tk_switch() -> None:
     tk_source = Path("src/interview_app.pyw").read_text(encoding="utf-8")
     pyside_source = Path("src/pyside_interview_app.py").read_text(encoding="utf-8")
 
     assert "Current UI: Tk" in tk_source
     assert "Switch to PySide UI" in tk_source
     assert "switch_to_ui_mode(\"pyside\"" in tk_source
-    assert "Current UI: PySide" in pyside_source
-    assert "Switch to Tk UI" in pyside_source
-    assert "switch_to_ui_mode(\"tk\"" in pyside_source
+    assert "Current UI: PySide" not in pyside_source
+    assert "Switch to Tk UI" not in pyside_source
+    assert "switch_to_ui_mode(\"tk\"" not in pyside_source

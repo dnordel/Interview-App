@@ -72,6 +72,144 @@ class ExistingTranscriptionResult:
     segment_count: int
 
 
+class FasterWhisperBackend:
+    def __init__(self, *, model_name: str, device: str, compute_type: str) -> None:
+        from faster_whisper import WhisperModel
+
+        self.model = WhisperModel(model_name, device=device, compute_type=compute_type)
+
+    def transcribe_segments(
+        self,
+        *,
+        wav_path: Path,
+        speaker: str,
+        language: str,
+        offset_sec: float,
+        min_start_sec: float,
+        whisper_settings: Mapping[str, Any],
+    ) -> list[Segment]:
+        segs, _info = self.model.transcribe(str(wav_path), language=language, **whisper_settings)
+        return _segments_from_transcript_chunks(
+            chunks=segs,
+            speaker=speaker,
+            offset_sec=offset_sec,
+            min_start_sec=min_start_sec,
+            start_attr="start",
+            end_attr="end",
+        )
+
+
+class FasterWhisperModelBackend:
+    def __init__(self, model: Any) -> None:
+        self.model = model
+
+    def transcribe_segments(
+        self,
+        *,
+        wav_path: Path,
+        speaker: str,
+        language: str,
+        offset_sec: float,
+        min_start_sec: float,
+        whisper_settings: Mapping[str, Any],
+    ) -> list[Segment]:
+        segs, _info = self.model.transcribe(str(wav_path), language=language, **whisper_settings)
+        return _segments_from_transcript_chunks(
+            chunks=segs,
+            speaker=speaker,
+            offset_sec=offset_sec,
+            min_start_sec=min_start_sec,
+            start_attr="start",
+            end_attr="end",
+        )
+
+
+class OpenVinoGenAIBackend:
+    def __init__(self, *, model_name: str, device: str) -> None:
+        import openvino_genai as ov_genai
+
+        model_path = _resolve_openvino_model_path(model_name)
+        self.pipeline = ov_genai.WhisperPipeline(model_path, device)
+
+    def transcribe_segments(
+        self,
+        *,
+        wav_path: Path,
+        speaker: str,
+        language: str,
+        offset_sec: float,
+        min_start_sec: float,
+        whisper_settings: Mapping[str, Any],
+    ) -> list[Segment]:
+        raw_audio = _load_audio_for_openvino(wav_path)
+        language_token = f"<|{language}|>" if language and not language.startswith("<|") else language
+        result = self.pipeline.generate(
+            raw_audio,
+            language=language_token,
+            task="transcribe",
+            return_timestamps=True,
+        )
+        chunks = getattr(result, "chunks", None)
+        if chunks:
+            return _segments_from_transcript_chunks(
+                chunks=chunks,
+                speaker=speaker,
+                offset_sec=offset_sec,
+                min_start_sec=min_start_sec,
+                start_attr="start_ts",
+                end_attr="end_ts",
+            )
+        text = str(result).strip()
+        return [Segment(start=offset_sec, end=offset_sec, speaker=speaker, text=text)] if text else []
+
+
+class WhisperCppCliBackend:
+    def __init__(self, *, model_name: str) -> None:
+        exe = str(os.environ.get("INTERVIEW_WHISPERCPP_EXE") or "").strip()
+        if not exe:
+            raise RuntimeError("whisper.cpp backend requires INTERVIEW_WHISPERCPP_EXE.")
+        self.exe = exe
+        self.model_path = model_name
+
+    def transcribe_segments(
+        self,
+        *,
+        wav_path: Path,
+        speaker: str,
+        language: str,
+        offset_sec: float,
+        min_start_sec: float,
+        whisper_settings: Mapping[str, Any],
+    ) -> list[Segment]:
+        output_stem = wav_path.with_suffix("")
+        json_path = Path(str(output_stem) + ".json")
+        command = [
+            self.exe,
+            "-m",
+            self.model_path,
+            "-f",
+            str(wav_path),
+            "-l",
+            language or "en",
+            "-oj",
+            "-of",
+            str(output_stem),
+        ]
+        completed = subprocess.run(command, capture_output=True, text=True, check=False)
+        if completed.returncode != 0:
+            reason = (completed.stderr or completed.stdout or "whisper.cpp failed").strip()
+            raise RuntimeError(reason)
+        if not json_path.exists():
+            text = (completed.stdout or "").strip()
+            return [Segment(start=offset_sec, end=offset_sec, speaker=speaker, text=text)] if text else []
+        return _segments_from_whisper_cpp_json(
+            json_path=json_path,
+            speaker=speaker,
+            offset_sec=offset_sec,
+            min_start_sec=min_start_sec,
+        )
+
+
 class RecordingSession:
     """
     A running recording session (two FFmpeg processes).
@@ -91,6 +229,7 @@ class RecordingSession:
         whisper_model: str,
         whisper_device: str,
         whisper_compute_type: str,
+        whisper_backend: str = "faster_whisper",
         whisper_settings: Optional[Mapping[str, Any]] = None,
     ):
         self._logger = logging.getLogger(__name__)
@@ -104,6 +243,7 @@ class RecordingSession:
         self.whisper_model = whisper_model
         self.whisper_device = whisper_device
         self.whisper_compute_type = whisper_compute_type
+        self.whisper_backend = _normalize_whisper_backend(whisper_backend)
         self.whisper_settings = _normalize_whisper_transcribe_settings(whisper_settings)
 
         self._procs: list[subprocess.Popen] = []
@@ -114,18 +254,17 @@ class RecordingSession:
         self._sys_transcribed_until = sys_offset
 
     _model_cache: dict[tuple[str, str, str], Any] = {}
+    _backend_cache: dict[tuple[str, str, str, str], Any] = {}
 
     @classmethod
     def _get_or_create_model(cls, model_name: str, device: str, compute_type: str) -> Any:
-        from faster_whisper import WhisperModel
-
         key = (model_name, device, compute_type)
         cached = cls._model_cache.get(key)
         if cached is not None:
             return cached
 
         t0 = time.perf_counter()
-        model = WhisperModel(model_name, device=device, compute_type=compute_type)
+        model = FasterWhisperBackend(model_name=model_name, device=device, compute_type=compute_type).model
         cls._model_cache[key] = model
         logging.getLogger(__name__).info(
             "Initialized Whisper model cache for model=%s device=%s compute_type=%s in %.2fs",
@@ -135,6 +274,18 @@ class RecordingSession:
             time.perf_counter() - t0,
         )
         return model
+
+    @classmethod
+    def _get_or_create_backend(cls, backend: str, model_name: str, device: str, compute_type: str) -> Any:
+        if _normalize_whisper_backend(backend) == "faster_whisper":
+            return FasterWhisperModelBackend(cls._get_or_create_model(model_name, device, compute_type))
+        return _get_or_create_backend(
+            backend=backend,
+            model_name=model_name,
+            device=device,
+            compute_type=compute_type,
+            cache=cls._backend_cache,
+        )
 
     @property
     def is_running(self) -> bool:
@@ -252,7 +403,8 @@ class RecordingSession:
         transcript_jsonl = output_dir / f"{base_name}_transcript.jsonl"
 
         t0 = time.perf_counter()
-        model = self._get_or_create_model(
+        backend = self._get_or_create_backend(
+            self.whisper_backend,
             self.whisper_model,
             self.whisper_device,
             self.whisper_compute_type,
@@ -262,7 +414,7 @@ class RecordingSession:
         try:
             _ensure_at_least_one_audio_track({"mic": self.mic_wav, "system": self.sys_wav})
             mic_segs = _transcribe_segments(
-                model=model,
+                backend=backend,
                 wav_path=self.mic_wav,
                 speaker=self.mic_label,
                 language=language,
@@ -270,7 +422,7 @@ class RecordingSession:
                 whisper_settings=resolved_whisper_settings,
             )
             sys_segs = _transcribe_segments(
-                model=model,
+                backend=backend,
                 wav_path=self.sys_wav,
                 speaker=self.sys_label,
                 language=language,
@@ -288,6 +440,7 @@ class RecordingSession:
                     "whisper_model": self.whisper_model,
                     "whisper_device": self.whisper_device,
                     "whisper_compute_type": self.whisper_compute_type,
+                    "whisper_backend": self.whisper_backend,
                     "whisper_settings": resolved_whisper_settings,
                     "mic": probe_audio_file(self.mic_wav),
                     "sys": probe_audio_file(self.sys_wav),
@@ -331,14 +484,15 @@ class RecordingSession:
         Intended for incremental question-by-question processing during a long recording session.
         """
         t0 = time.perf_counter()
-        model = self._get_or_create_model(
+        backend = self._get_or_create_backend(
+            self.whisper_backend,
             self.whisper_model,
             self.whisper_device,
             self.whisper_compute_type,
         )
 
         mic_segs = _transcribe_segments(
-            model=model,
+            backend=backend,
             wav_path=self.mic_wav,
             speaker=self.mic_label,
             language=language,
@@ -350,7 +504,7 @@ class RecordingSession:
             self._mic_transcribed_until = max(self._mic_transcribed_until, max(s.end for s in mic_segs))
 
         sys_segs = _transcribe_segments(
-            model=model,
+            backend=backend,
             wav_path=self.sys_wav,
             speaker=self.sys_label,
             language=language,
@@ -398,6 +552,7 @@ def start_recording(
     whisper_model: str = "small",
     whisper_device: str = "cpu",
     whisper_compute_type: Optional[str] = None,
+    whisper_backend: str = "faster_whisper",
     whisper_settings: Optional[Mapping[str, Any]] = None,
 ) -> RecordingSession:
     """
@@ -464,6 +619,7 @@ def start_recording(
         whisper_model=whisper_model,
         whisper_device=whisper_device,
         whisper_compute_type=whisper_compute_type,
+        whisper_backend=whisper_backend,
         whisper_settings=whisper_settings,
     )
     session.start(mic_cmd, sys_cmd)
@@ -495,6 +651,159 @@ def _fmt_ts(seconds: float) -> str:
     mm = (s % 3600) // 60
     ss = s % 60
     return f"{hh:02d}:{mm:02d}:{ss:02d}"
+
+
+def _normalize_whisper_backend(value: str | None) -> str:
+    backend = str(value or "faster_whisper").strip().lower().replace("-", "_")
+    if backend in {"openvino", "openvino_genai"}:
+        return "openvino_genai"
+    if backend in {"whisper_cpp", "whispercpp"}:
+        return "whisper_cpp"
+    return "faster_whisper"
+
+
+def _resolve_openvino_model_path(model_name: str) -> str:
+    candidate = Path(model_name).expanduser()
+    if candidate.exists():
+        return str(candidate.resolve())
+
+    repo_id = str(model_name or "").strip()
+    if not repo_id.startswith("OpenVINO/"):
+        raise RuntimeError(f"OpenVINO Whisper model must be a local path or approved OpenVINO repo id: {repo_id}")
+
+    try:
+        from huggingface_hub import snapshot_download
+    except Exception as exc:
+        raise RuntimeError("OpenVINO Whisper model download requires huggingface_hub.") from exc
+
+    base = Path(os.environ.get("LOCALAPPDATA") or Path.home()) / "LPL_InterviewTool" / "openvino_models"
+    safe_name = repo_id.replace("/", "_").replace("\\", "_")
+    target = base / safe_name
+    target.mkdir(parents=True, exist_ok=True)
+    return snapshot_download(repo_id=repo_id, local_dir=str(target), local_dir_use_symlinks=False)
+
+
+def _get_or_create_backend(
+    *,
+    backend: str,
+    model_name: str,
+    device: str,
+    compute_type: str,
+    cache: dict[tuple[str, str, str, str], Any] | None = None,
+) -> Any:
+    resolved_backend = _normalize_whisper_backend(backend)
+    key = (resolved_backend, model_name, device, compute_type)
+    if cache is not None:
+        cached = cache.get(key)
+        if cached is not None:
+            return cached
+
+    t0 = time.perf_counter()
+    if resolved_backend == "openvino_genai":
+        instance = OpenVinoGenAIBackend(model_name=model_name, device=device)
+    elif resolved_backend == "whisper_cpp":
+        instance = WhisperCppCliBackend(model_name=model_name)
+    else:
+        instance = FasterWhisperBackend(model_name=model_name, device=device, compute_type=compute_type)
+
+    if cache is not None:
+        cache[key] = instance
+    logging.getLogger(__name__).info(
+        "Initialized transcription backend=%s model=%s device=%s compute_type=%s in %.2fs",
+        resolved_backend,
+        model_name,
+        device,
+        compute_type,
+        time.perf_counter() - t0,
+    )
+    return instance
+
+
+def _segments_from_transcript_chunks(
+    *,
+    chunks: Any,
+    speaker: str,
+    offset_sec: float,
+    min_start_sec: float,
+    start_attr: str,
+    end_attr: str,
+) -> list[Segment]:
+    segments: list[Segment] = []
+    for chunk in chunks:
+        text = str(getattr(chunk, "text", "") or "").strip()
+        if not text:
+            continue
+        start = float(getattr(chunk, start_attr, 0.0)) + offset_sec
+        end = float(getattr(chunk, end_attr, start)) + offset_sec
+        if start < min_start_sec:
+            continue
+        segments.append(Segment(start=start, end=end, speaker=speaker, text=text))
+    return segments
+
+
+def _load_audio_for_openvino(wav_path: Path) -> list[float]:
+    import soundfile as sf
+
+    audio, sample_rate = sf.read(str(wav_path), dtype="float32", always_2d=False)
+    try:
+        import numpy as np
+    except Exception as exc:
+        raise RuntimeError("OpenVINO transcription requires numpy.") from exc
+
+    audio_array = np.asarray(audio, dtype=np.float32)
+    if audio_array.ndim > 1:
+        audio_array = audio_array.mean(axis=1)
+    if sample_rate != 16000 and audio_array.size > 0:
+        duration = audio_array.size / float(sample_rate)
+        target_size = max(1, int(duration * 16000))
+        source_x = np.linspace(0.0, duration, num=audio_array.size, endpoint=False)
+        target_x = np.linspace(0.0, duration, num=target_size, endpoint=False)
+        audio_array = np.interp(target_x, source_x, audio_array).astype(np.float32)
+    return audio_array.tolist()
+
+
+def _parse_whisper_cpp_timestamp(value: Any) -> float:
+    text = str(value or "").strip()
+    if not text:
+        return 0.0
+    if ":" not in text:
+        try:
+            return float(text)
+        except ValueError:
+            return 0.0
+    parts = text.replace(",", ".").split(":")
+    try:
+        seconds = float(parts[-1])
+        minutes = int(parts[-2]) if len(parts) >= 2 else 0
+        hours = int(parts[-3]) if len(parts) >= 3 else 0
+    except ValueError:
+        return 0.0
+    return hours * 3600 + minutes * 60 + seconds
+
+
+def _segments_from_whisper_cpp_json(
+    *,
+    json_path: Path,
+    speaker: str,
+    offset_sec: float,
+    min_start_sec: float,
+) -> list[Segment]:
+    payload = json.loads(json_path.read_text(encoding="utf-8"))
+    raw_segments = payload.get("transcription") if isinstance(payload, dict) else None
+    if not isinstance(raw_segments, list):
+        raw_segments = payload.get("segments") if isinstance(payload, dict) else []
+    segments: list[Segment] = []
+    for item in raw_segments:
+        if not isinstance(item, dict):
+            continue
+        timestamps = item.get("timestamps") if isinstance(item.get("timestamps"), dict) else {}
+        start = _parse_whisper_cpp_timestamp(item.get("start") or timestamps.get("from")) + offset_sec
+        end = _parse_whisper_cpp_timestamp(item.get("end") or timestamps.get("to")) + offset_sec
+        text = str(item.get("text") or "").strip()
+        if not text or start < min_start_sec:
+            continue
+        segments.append(Segment(start=start, end=end, speaker=speaker, text=text))
+    return segments
 
 
 def _ffmpeg_windows_mic_cmd(ffmpeg: str, out_wav: Path, sr: int, mic_device: str) -> list[str]:
@@ -620,7 +929,7 @@ def _close_windows_handle(handle: Any) -> None:
 
 def _transcribe_segments(
     *,
-    model: Any,
+    backend: Any,
     wav_path: Path,
     speaker: str,
     language: str,
@@ -637,17 +946,14 @@ def _transcribe_segments(
     t0 = time.perf_counter()
     segs_out: list[Segment] = []
     transcribe_settings = _normalize_whisper_transcribe_settings(whisper_settings)
-    segs, _info = model.transcribe(str(wav_path), language=language, **transcribe_settings)
-
-    for s in segs:
-        txt = (s.text or "").strip()
-        if not txt:
-            continue
-        start = float(getattr(s, "start", 0.0)) + offset_sec
-        end = float(getattr(s, "end", start)) + offset_sec
-        if start < min_start_sec:
-            continue
-        segs_out.append(Segment(start=start, end=end, speaker=speaker, text=txt))
+    segs_out = backend.transcribe_segments(
+        wav_path=wav_path,
+        speaker=speaker,
+        language=language,
+        offset_sec=offset_sec,
+        min_start_sec=min_start_sec,
+        whisper_settings=transcribe_settings,
+    )
 
     logging.getLogger(__name__).info(
         "Transcribed %s for speaker=%s in %.2fs (%d kept segments, min_start=%.2f)",
@@ -693,6 +999,7 @@ def transcribe_existing_recordings(
     whisper_model: str = "small",
     whisper_device: str = "cpu",
     whisper_compute_type: str | None = None,
+    whisper_backend: str = "faster_whisper",
     whisper_settings: Optional[Mapping[str, Any]] = None,
 ) -> ExistingTranscriptionResult:
     out_dir = Path(output_dir).resolve()
@@ -704,7 +1011,12 @@ def transcribe_existing_recordings(
     if resolved_compute_type is None:
         resolved_compute_type = "int8" if whisper_device.lower() == "cpu" else "float16"
 
-    model = RecordingSession._get_or_create_model(whisper_model, whisper_device, resolved_compute_type)
+    backend = RecordingSession._get_or_create_backend(
+        whisper_backend,
+        whisper_model,
+        whisper_device,
+        resolved_compute_type,
+    )
     settings = _normalize_whisper_transcribe_settings(whisper_settings)
     mic_path = Path(mic_wav).expanduser() if mic_wav else None
     sys_path = Path(sys_wav).expanduser() if sys_wav else None
@@ -715,7 +1027,7 @@ def transcribe_existing_recordings(
     }
     _ensure_at_least_one_audio_track(provided_tracks)
     mic_segments = _transcribe_segments(
-        model=model,
+        backend=backend,
         wav_path=mic_path if mic_path else Path(""),
         speaker=mic_label,
         language=language,
@@ -723,7 +1035,7 @@ def transcribe_existing_recordings(
         whisper_settings=settings,
     ) if mic_path else []
     sys_segments = _transcribe_segments(
-        model=model,
+        backend=backend,
         wav_path=sys_path if sys_path else Path(""),
         speaker=sys_label,
         language=language,

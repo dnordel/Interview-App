@@ -402,6 +402,10 @@ class LaunchEmployeeSeed:
 
 @dataclass(slots=True)
 class EmailSettings:
+    account_label: str = ""
+    display_name: str = ""
+    authentication_type: str = "Normal password"
+    account_type: str = "IMAP"
     sender_email: str = ""
     smtp_host: str = ""
     smtp_port: int = 587
@@ -410,6 +414,11 @@ class EmailSettings:
     use_tls: bool = True
     imap_or_pop_host: str = ""
     imap_or_pop_port: int = 993
+    incoming_encryption: str = "SSL/TLS"
+    smtp_encryption: str = "STARTTLS"
+    remember_password: bool = True
+    require_spa: bool = False
+    use_same_credentials: bool = True
     director_and_owners: str = ""
     reminder_recipients: str = ""
     reminder_subject_template: str = ""
@@ -420,15 +429,26 @@ class EmailSettings:
     @classmethod
     def from_dict(cls, payload: dict[str, Any] | None) -> "EmailSettings":
         source = payload or {}
+        use_tls = bool(source.get("use_tls", True))
+        smtp_encryption = source.get("smtp_encryption", "STARTTLS" if use_tls else "None")
         return cls(
+            account_label=source.get("account_label", ""),
+            display_name=source.get("display_name", ""),
+            authentication_type=source.get("authentication_type", "Normal password"),
+            account_type=source.get("account_type", "IMAP"),
             sender_email=source.get("sender_email", ""),
             smtp_host=source.get("smtp_host", ""),
             smtp_port=_safe_int(source.get("smtp_port", 587), default=587, minimum=1),
             smtp_username=source.get("smtp_username", ""),
             smtp_password=source.get("smtp_password", ""),
-            use_tls=bool(source.get("use_tls", True)),
+            use_tls=use_tls,
             imap_or_pop_host=source.get("imap_or_pop_host", ""),
             imap_or_pop_port=_safe_int(source.get("imap_or_pop_port", 993), default=993, minimum=1),
+            incoming_encryption=source.get("incoming_encryption", "SSL/TLS"),
+            smtp_encryption=smtp_encryption,
+            remember_password=bool(source.get("remember_password", True)),
+            require_spa=bool(source.get("require_spa", False)),
+            use_same_credentials=bool(source.get("use_same_credentials", True)),
             director_and_owners=source.get("director_and_owners", ""),
             reminder_recipients=source.get("reminder_recipients", ""),
             reminder_subject_template=source.get("reminder_subject_template", ""),
@@ -439,6 +459,10 @@ class EmailSettings:
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "account_label": self.account_label,
+            "display_name": self.display_name,
+            "authentication_type": self.authentication_type,
+            "account_type": self.account_type,
             "sender_email": self.sender_email,
             "smtp_host": self.smtp_host,
             "smtp_port": self.smtp_port,
@@ -447,6 +471,11 @@ class EmailSettings:
             "use_tls": self.use_tls,
             "imap_or_pop_host": self.imap_or_pop_host,
             "imap_or_pop_port": self.imap_or_pop_port,
+            "incoming_encryption": self.incoming_encryption,
+            "smtp_encryption": self.smtp_encryption,
+            "remember_password": self.remember_password,
+            "require_spa": self.require_spa,
+            "use_same_credentials": self.use_same_credentials,
             "director_and_owners": self.director_and_owners,
             "reminder_recipients": self.reminder_recipients,
             "reminder_subject_template": self.reminder_subject_template,
@@ -2013,13 +2042,31 @@ def _send_email_message(settings: EmailSettings, recipients: list[str], subject:
     message["To"] = ", ".join(recipients)
     message.set_content(body)
 
-    with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=30) as server:
-        if settings.use_tls:
+    smtp_factory, should_starttls = _smtp_transport(settings)
+    with smtp_factory(settings.smtp_host, settings.smtp_port, timeout=30) as server:
+        if should_starttls:
             context = ssl.create_default_context()
             server.starttls(context=context)
         if settings.smtp_username:
             server.login(settings.smtp_username, resolve_smtp_password(settings.smtp_password))
         server.send_message(message)
+
+
+def verify_email_connection(settings: EmailSettings) -> None:
+    smtp_factory, should_starttls = _smtp_transport(settings)
+    with smtp_factory(settings.smtp_host, settings.smtp_port, timeout=30) as server:
+        if should_starttls:
+            context = ssl.create_default_context()
+            server.starttls(context=context)
+        if settings.smtp_username:
+            server.login(settings.smtp_username, resolve_smtp_password(settings.smtp_password))
+
+
+def _smtp_transport(settings: EmailSettings) -> tuple[Any, bool]:
+    smtp_encryption = str(settings.smtp_encryption or ("STARTTLS" if settings.use_tls else "None")).strip().lower()
+    if smtp_encryption in {"ssl/tls", "ssl", "tls"}:
+        return smtplib.SMTP_SSL, False
+    return smtplib.SMTP, smtp_encryption in {"starttls", "start tls"}
 
 
 def _validate_missing_values(context: str, templates: list[str], values: dict[str, str]) -> None:

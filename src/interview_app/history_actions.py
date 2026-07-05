@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from tkinter import messagebox
 from pathlib import Path
 from typing import Any
@@ -86,6 +87,12 @@ class HistoryActionsService:
             "school": str(row.get("school") or "").strip(),
             "position": str(row.get("position") or row.get("role") or "").strip(),
             "offer_status": str(status or "").strip().lower(),
+            "generated_date": date.today().isoformat(),
+            "start_date": str(row.get("start_date") or "").strip(),
+            "notice_given": str(row.get("notice_given") or row.get("date_notice_given") or "").strip(),
+            "date_notice_given": str(row.get("date_notice_given") or row.get("notice_given") or "").strip(),
+            "final_working_day": str(row.get("final_working_day") or row.get("last_working_day") or "").strip(),
+            "last_working_day": str(row.get("last_working_day") or row.get("final_working_day") or "").strip(),
         }
         try:
             service.emit_event(event_type, payload, f"{row_key}:{event_type}")

@@ -88,6 +88,7 @@ class AdminStudioDraft:
     prompts: dict[str, Any]
     app_settings: dict[str, Any]
     notification_rules: list[NotificationRule]
+    prompt_version_notes: dict[str, str] = field(default_factory=dict)
 
     @classmethod
     def from_payloads(
@@ -141,6 +142,7 @@ class AdminStudioDraft:
     def change_summary(self) -> AdminChangeSummary:
         changed = self.changed_payloads()
         lines: list[str] = []
+        lines.extend(_track_change_lines(self.baseline_rubric, self.rubric))
         lines.extend(_trait_change_lines(self.baseline_rubric, self.rubric))
         lines.extend(_school_change_lines(self.baseline_school_settings, self.school_settings))
         lines.extend(_prompt_change_lines(self.baseline_prompts, self.prompts))
@@ -164,6 +166,55 @@ class AdminStudioDraft:
         service = QuestionSettingsService(Path("rubric.json"), self.baseline_rubric)
         self.rubric = service.update_trait(self.rubric, trait_id, updates)
 
+    def duplicate_trait(self, trait_id: str) -> str:
+        clean_trait_id = str(trait_id or "").strip()
+        traits = [trait for trait in self.rubric.get("traits", []) or [] if isinstance(trait, dict)]
+        source = next((trait for trait in traits if str(trait.get("id", "")).strip() == clean_trait_id), None)
+        if source is None:
+            raise ValueError(f"Trait not found: {clean_trait_id}")
+        existing_ids = {str(trait.get("id", "")).strip() for trait in traits}
+        prefix, _, number = clean_trait_id.rpartition("_")
+        if not prefix or not number.isdigit():
+            raise ValueError("Trait id must end with a numeric suffix.")
+        same_prefix_numbers = []
+        for existing_id in existing_ids:
+            existing_prefix, _, existing_number = existing_id.rpartition("_")
+            if existing_prefix == prefix and existing_number.isdigit():
+                same_prefix_numbers.append(int(existing_number))
+        next_number = max(same_prefix_numbers or [int(number)]) + 1
+        new_id = f"{prefix}_{next_number}"
+        while new_id in existing_ids:
+            next_number += 1
+            new_id = f"{prefix}_{next_number}"
+        duplicate = deepcopy(source)
+        duplicate["id"] = new_id
+        duplicate["name"] = f"{str(source.get('name', '')).strip()} Copy".strip()
+        service = QuestionSettingsService(Path("rubric.json"), self.baseline_rubric)
+        self.rubric = service.add_trait(self.rubric, duplicate)
+        return new_id
+
+    def delete_trait(self, trait_id: str) -> None:
+        service = QuestionSettingsService(Path("rubric.json"), self.baseline_rubric)
+        self.rubric = service.delete_trait(self.rubric, str(trait_id or "").strip())
+
+    def add_track(self, track_key: str, label: str, description: str = "", *, active: bool = True) -> None:
+        clean_key = str(track_key or "").strip().lower().replace("-", "_").replace(" ", "_")
+        clean_label = str(label or "").strip()
+        clean_description = str(description or "").strip()
+        if not clean_key or not clean_label:
+            raise ValueError("Track key and label are required.")
+        if not all(ch.isalnum() or ch == "_" for ch in clean_key):
+            raise ValueError("Track key may contain only letters, numbers, and underscores.")
+        tracks = self.rubric.setdefault("tracks", {})
+        if clean_key in tracks:
+            raise ValueError("Track key already exists.")
+        tracks[clean_key] = {
+            "label": clean_label,
+            "description": clean_description,
+            "active": bool(active),
+        }
+        self.overrides.setdefault("track_question_flow", {}).setdefault(clean_key, [])
+
     def update_question_text(self, track_key: str, question_type: str, question_id: str, text: str) -> None:
         track_key = str(track_key or "").strip()
         question_type = str(question_type or "").strip().lower()
@@ -183,6 +234,155 @@ class AdminStudioDraft:
                 return
         custom_by_track.append({"id": question_id, "text": text, "order": len(custom_by_track) + 1})
 
+    def add_custom_question(
+        self,
+        track_key: str,
+        question_id: str,
+        label: str,
+        text: str,
+        *,
+        section: str = "Qualification",
+        position: int | None = None,
+    ) -> None:
+        track_key = str(track_key or "").strip()
+        question_id = str(question_id or "").strip()
+        clean_label = str(label or "").strip()
+        clean_text = str(text or "").strip()
+        clean_section = str(section or "Qualification").strip() or "Qualification"
+        if not track_key or not question_id or not clean_text:
+            raise ValueError("Question track, id, and text are required.")
+        if not all(ch.isalnum() or ch in {"_", "-"} for ch in question_id):
+            raise ValueError("Question id may contain only letters, numbers, underscores, and hyphens.")
+        custom_by_track = self.overrides.setdefault("custom_questions", {}).setdefault(track_key, [])
+        if any(isinstance(item, dict) and str(item.get("id")) == question_id for item in custom_by_track):
+            raise ValueError("Question id already exists for this track.")
+        order = int(position or (len(custom_by_track) + 1))
+        custom_by_track.append({
+            "id": question_id,
+            "label": clean_label or question_id,
+            "text": clean_text,
+            "order": order,
+            "section": clean_section,
+        })
+        flow = self.overrides.setdefault("track_question_flow", {}).setdefault(track_key, [])
+        insert_at = max(0, min(order - 1, len(flow)))
+        flow.insert(insert_at, {"type": "custom", "id": question_id})
+
+    def move_question(self, track_key: str, from_index: int, to_index: int) -> None:
+        track_key = str(track_key or "").strip()
+        if not track_key:
+            raise ValueError("Track key is required.")
+        flow = self.overrides.setdefault("track_question_flow", {}).setdefault(track_key, [])
+        if not isinstance(flow, list):
+            raise ValueError("Track question flow must be a list.")
+        source = int(from_index)
+        target = int(to_index)
+        if source < 0 or source >= len(flow) or target < 0 or target >= len(flow):
+            raise ValueError("Question move is outside the track flow.")
+        if source == target:
+            return
+        item = flow.pop(source)
+        flow.insert(target, item)
+
+    def delete_question(self, track_key: str, question_type: str, question_id: str) -> None:
+        track_key = str(track_key or "").strip()
+        question_type = str(question_type or "").strip().lower()
+        question_id = str(question_id or "").strip()
+        if not track_key or question_type not in {"custom", "trait"} or not question_id:
+            raise ValueError("Question delete requires track, type, and id.")
+        flow = self.overrides.setdefault("track_question_flow", {}).setdefault(track_key, [])
+        if not isinstance(flow, list):
+            raise ValueError("Track question flow must be a list.")
+        original_len = len(flow)
+        self.overrides["track_question_flow"][track_key] = [
+            item for item in flow
+            if not (
+                isinstance(item, dict)
+                and str(item.get("type", "")).strip().lower() == question_type
+                and str(item.get("id", "")).strip() == question_id
+            )
+        ]
+        if len(self.overrides["track_question_flow"][track_key]) == original_len:
+            raise ValueError("Question was not found in the selected track flow.")
+        if question_type != "custom":
+            return
+        custom_by_track = self.overrides.setdefault("custom_questions", {}).setdefault(track_key, [])
+        remaining: list[Any] = []
+        order = 1
+        for item in custom_by_track:
+            if isinstance(item, dict) and str(item.get("id", "")).strip() == question_id:
+                continue
+            if isinstance(item, dict):
+                item["order"] = order
+                order += 1
+            remaining.append(item)
+        self.overrides["custom_questions"][track_key] = remaining
+
+    def duplicate_question(self, track_key: str, question_type: str, question_id: str) -> str:
+        track_key = str(track_key or "").strip()
+        question_type = str(question_type or "").strip().lower()
+        question_id = str(question_id or "").strip()
+        if not track_key or question_type not in {"custom", "trait"} or not question_id:
+            raise ValueError("Question duplicate requires track, type, and id.")
+        flow = self.overrides.setdefault("track_question_flow", {}).setdefault(track_key, [])
+        if not isinstance(flow, list):
+            raise ValueError("Track question flow must be a list.")
+        source_index = -1
+        for index, item in enumerate(flow):
+            if (
+                isinstance(item, dict)
+                and str(item.get("type", "")).strip().lower() == question_type
+                and str(item.get("id", "")).strip() == question_id
+            ):
+                source_index = index
+                break
+        if source_index < 0:
+            raise ValueError("Question was not found in the selected track flow.")
+        custom_by_track = self.overrides.setdefault("custom_questions", {}).setdefault(track_key, [])
+        source_text = ""
+        source_label = question_id
+        source_section = "Qualification"
+        if question_type == "custom":
+            for item in custom_by_track:
+                if isinstance(item, dict) and str(item.get("id", "")).strip() == question_id:
+                    source_text = str(item.get("text", "")).strip()
+                    source_label = str(item.get("label", question_id)).strip() or question_id
+                    source_section = str(item.get("section", "Qualification")).strip() or "Qualification"
+                    break
+        else:
+            for trait in self.rubric.get("traits", []) or []:
+                if isinstance(trait, dict) and str(trait.get("id", "")).strip() == question_id:
+                    source_text = str(trait.get("primary_question", "")).strip()
+                    source_label = str(trait.get("name", question_id)).strip() or question_id
+                    source_section = "Core Traits"
+                    break
+        if not source_text:
+            raise ValueError("Question text is required before duplicating.")
+        existing_ids = {
+            str(item.get("id", "")).strip()
+            for item in custom_by_track
+            if isinstance(item, dict)
+        }
+        base_id = f"{question_id}-copy"
+        new_id = base_id
+        suffix = 2
+        while new_id in existing_ids:
+            new_id = f"{base_id}-{suffix}"
+            suffix += 1
+        order = source_index + 2
+        custom_by_track.append({
+            "id": new_id,
+            "label": f"{source_label} Copy",
+            "text": source_text,
+            "order": order,
+            "section": source_section,
+        })
+        flow.insert(source_index + 1, {"type": "custom", "id": new_id})
+        for index, item in enumerate(custom_by_track, start=1):
+            if isinstance(item, dict):
+                item["order"] = index
+        return new_id
+
     def update_school_settings(self, school: str, updates: dict[str, str]) -> None:
         school = str(school or "").strip()
         if not school:
@@ -190,6 +390,7 @@ class AdminStudioDraft:
         current = dict(self.school_settings.get(school, {}))
         current.setdefault("full_time_template", "")
         current.setdefault("part_time_template", "")
+        current.setdefault("contractor_template", "")
         current.setdefault("offer_output_dir", "")
         current.setdefault("interview_notes_dir", "")
         current.update({str(key): str(value) for key, value in updates.items()})
@@ -200,6 +401,16 @@ class AdminStudioDraft:
         if not key:
             raise ValueError("Prompt key is required.")
         self.prompts[key] = str(value)
+
+    def update_prompt_version_note(self, key: str, note: str) -> None:
+        key = str(key or "").strip()
+        if not key:
+            raise ValueError("Prompt key is required.")
+        clean_note = str(note or "").strip()
+        if clean_note:
+            self.prompt_version_notes[key] = clean_note
+            return
+        self.prompt_version_notes.pop(key, None)
 
     def update_deepseek_model(self, model: str) -> None:
         clean_model = str(model or "").strip()
@@ -260,6 +471,10 @@ class AdminStudioDraft:
             missing_prompts = [key for key, value in normalized.items() if isinstance(value, str) and not value.strip()]
             if missing_prompts:
                 errors.append(f"Prompt cannot be blank: {missing_prompts[0]}")
+            for key, value in normalized.items():
+                if self.baseline_prompts.get(key) != value and not str(self.prompt_version_notes.get(str(key), "")).strip():
+                    errors.append(f"DeepSeek prompt '{key}' requires version notes before publishing.")
+                    break
         except Exception as exc:
             errors.append(f"Prompt validation failed: {exc}")
         for cfg in self.school_settings.values():
@@ -270,6 +485,20 @@ class AdminStudioDraft:
         selected_model = str(self.app_settings.get("deepseek_summary_model", "") or DEFAULT_DEEPSEEK_MODEL).strip()
         if selected_model not in DEEPSEEK_MODEL_CHOICES:
             errors.append(f"DeepSeek model must be one of: {', '.join(DEEPSEEK_MODEL_CHOICES)}.")
+        question_flow = self.overrides.get("track_question_flow", {})
+        if not isinstance(question_flow, dict):
+            question_flow = {}
+        track_keys = list((self.rubric.get("tracks") or {}).keys())
+        for trait in self.rubric.get("traits", []):
+            if not isinstance(trait, dict):
+                continue
+            trait_id = str(trait.get("id", "") or "").strip()
+            if not trait_id:
+                continue
+            applicable_tracks = trait.get("applicable_tracks") or track_keys
+            if not _trait_has_linked_question(question_flow, trait_id, applicable_tracks):
+                errors.append(f"Rubric trait '{trait_id}' is missing a linked question in Questions & Flow.")
+                break
         for rule in self.notification_rules:
             if not rule.event_type.strip():
                 errors.append("Notification event type is required.")
@@ -360,6 +589,7 @@ class AdminStudio:
         traits = active.rubric.get("traits", []) if isinstance(active.rubric, dict) else []
         custom_count = sum(len(items or []) for items in (active.overrides.get("custom_questions", {}) or {}).values())
         sections = [
+            AdminSection("Configuration", "dashboard", "Admin Dashboard", "Manage interview configuration, AI settings, templates, system health, and publishing status.", 0),
             AdminSection("Configuration", "questions", "Questions & Flow", "Build track-based interview flow with editable question cards.", len(traits) + custom_count),
             AdminSection("Configuration", "rubrics", "Rubrics", "Tune scored trait cards, weights, and descriptors.", len(traits)),
             AdminSection("Configuration", "signals", "Signal Hints", "Search trait signal definitions by category.", len(traits)),
@@ -369,6 +599,7 @@ class AdminStudio:
             AdminSection("AI Settings", "prompts", "DeepSeek Prompts", "Edit prompt templates with variables, preview, and validation.", len(active.prompts)),
             AdminSection("System", "advanced", "Advanced JSON", "Review source JSON health in a guarded read-only layout.", 5),
             AdminSection("System", "validation", "Validation", "Review blocking issues and jump to affected settings.", len(active.validate())),
+            AdminSection("System", "email_settings", "Email Settings", "Configure shared company sender account for app notifications.", 1),
         ]
         return AdminStudioSummary(
             sections=sections,
@@ -475,6 +706,15 @@ def _parse_notification_offset_days(value: Any) -> int:
         raise ValueError("Notification offset days must be an integer.") from exc
 
 
+def _trait_has_linked_question(question_flow: dict[str, Any], trait_id: str, tracks: Any) -> bool:
+    track_list = tracks if isinstance(tracks, list) else []
+    for track in track_list:
+        for item in question_flow.get(str(track), []) or []:
+            if isinstance(item, dict) and item.get("type") == "trait" and str(item.get("id", "")) == trait_id:
+                return True
+    return False
+
+
 def _notification_template_errors(rule: NotificationRule) -> list[str]:
     errors: list[str] = []
     for field_name, template in (
@@ -486,6 +726,18 @@ def _notification_template_errors(rule: NotificationRule) -> list[str]:
         except ValueError:
             errors.append(f"Notification {field_name} template for '{rule.event_type}' has invalid placeholders.")
     return errors
+
+
+def _track_change_lines(before: dict[str, Any], after: dict[str, Any]) -> list[str]:
+    lines: list[str] = []
+    before_tracks = before.get("tracks", {}) if isinstance(before, dict) else {}
+    after_tracks = after.get("tracks", {}) if isinstance(after, dict) else {}
+    for track_key, cfg in after_tracks.items():
+        if track_key in before_tracks:
+            continue
+        label = cfg.get("label", track_key) if isinstance(cfg, dict) else track_key
+        lines.append(f"Track added: {label} ({track_key})")
+    return lines
 
 
 def _trait_change_lines(before: dict[str, Any], after: dict[str, Any]) -> list[str]:
@@ -506,7 +758,7 @@ def _school_change_lines(before: dict[str, Any], after: dict[str, Any]) -> list[
     lines: list[str] = []
     for school, cfg in after.items():
         old_cfg = before.get(school, {})
-        for field_name in ("full_time_template", "part_time_template", "offer_output_dir", "interview_notes_dir"):
+        for field_name in ("full_time_template", "part_time_template", "contractor_template", "offer_output_dir", "interview_notes_dir"):
             old = old_cfg.get(field_name, "")
             new = cfg.get(field_name, "")
             if old != new:

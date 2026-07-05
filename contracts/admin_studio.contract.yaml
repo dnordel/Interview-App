@@ -2,11 +2,29 @@ module:
   name: admin_studio
   language: python
   path: src/admin_studio.py
-  version: 1.4.0
+  version: 1.14.0
   description: Single admin boundary for local configuration review, draft editing,
     dirty tracking, validation, backup creation, and review-then-apply persistence
-    for PySide Admin Studio, including checkpoint notification rules.
-functions: []
+    for PySide Admin Studio, including contractor offer templates, checkpoint
+    notification rules, shared email settings navigation, and draft-only rubric
+    trait duplication/deletion.
+functions:
+- name: _trait_has_linked_question
+  description: Return whether a rubric trait appears as a trait question in any
+    applicable track question flow.
+  locked: false
+  inputs:
+    question_flow:
+      type: dict[str, Any]
+      required: true
+    trait_id:
+      type: str
+      required: true
+    tracks:
+      type: Any
+      required: true
+  returns:
+    type: bool
 classes:
 - name: AdminStudioPaths
   type: dataclass
@@ -29,7 +47,8 @@ classes:
       type: Path | None
 - name: AdminSection
   type: dataclass
-  description: One guided Admin Studio section shown in grouped admin-console navigation.
+  description: One guided Admin Studio section shown in grouped admin-console navigation,
+    including the Admin Dashboard overview section.
   locked: false
   attributes:
     group:
@@ -58,7 +77,8 @@ classes:
   locked: false
 - name: AdminStudioDraft
   description: In-memory editable admin configuration draft. No file writes occur
-    from draft mutation methods.
+    from draft mutation methods; prompt version notes are kept in memory to gate
+    publish validation for changed DeepSeek prompt templates.
   locked: false
   methods:
   - name: from_payloads
@@ -109,6 +129,52 @@ classes:
       type: None
     exceptions:
     - ValueError
+  - name: duplicate_trait
+    description: Duplicate an existing rubric trait inside the draft only, assigning
+      the next valid numeric trait id for the same prefix and preserving validated
+      descriptors, sample answers, track applicability, weight, priority, and primary
+      question.
+    inputs:
+      trait_id:
+        type: str
+        required: true
+    returns:
+      type: str
+    exceptions:
+    - ValueError
+  - name: delete_trait
+    description: Delete an existing rubric trait inside the draft only through
+      the same validated rubric service used by the settings editor.
+    inputs:
+      trait_id:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions:
+    - ValueError
+  - name: add_track
+    description: Draft a new interview track with validated key, label, description,
+      active state, and empty question flow without writing files.
+    inputs:
+      track_key:
+        type: str
+        required: true
+      label:
+        type: str
+        required: true
+      description:
+        type: str
+        required: false
+        default: ""
+      active:
+        type: bool
+        required: false
+        default: true
+    returns:
+      type: None
+    exceptions:
+    - ValueError
   - name: update_question_text
     description: Draft a custom question text edit or trait question override without
       writing files.
@@ -129,7 +195,91 @@ classes:
       type: None
     exceptions:
     - ValueError
+  - name: add_custom_question
+    description: Draft a new custom question for a track, add it to custom question
+      overrides, and insert it into the track question flow without writing files.
+    inputs:
+      track_key:
+        type: str
+        required: true
+      question_id:
+        type: str
+        required: true
+      label:
+        type: str
+        required: true
+      text:
+        type: str
+        required: true
+      section:
+        type: str
+        required: false
+        default: Qualification
+      position:
+        type: int | None
+        required: false
+        default: None
+    returns:
+      type: None
+    exceptions:
+    - ValueError
+  - name: move_question
+    description: Draft a question reorder inside one track question flow without
+      changing the moved question type or id and without writing files.
+    inputs:
+      track_key:
+        type: str
+        required: true
+      from_index:
+        type: int
+        required: true
+      to_index:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions:
+    - ValueError
+  - name: delete_question
+    description: Draft removal of a selected custom or trait question from one
+      track question flow without writing files; custom questions are also removed
+      from that track's custom-question overrides and remaining custom orders are
+      compacted.
+    inputs:
+      track_key:
+        type: str
+        required: true
+      question_type:
+        type: str
+        required: true
+      question_id:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions:
+    - ValueError
+  - name: duplicate_question
+    description: Draft a duplicate of a selected custom or trait question as a new
+      custom question inserted immediately after the source flow card, using a
+      unique copy id and without writing files.
+    inputs:
+      track_key:
+        type: str
+        required: true
+      question_type:
+        type: str
+        required: true
+      question_id:
+        type: str
+        required: true
+    returns:
+      type: str
+    exceptions:
+    - ValueError
   - name: update_school_settings
+    description: Update one school folder/template setting draft, preserving full-time,
+      part-time, contractor, offer output, and interview notes keys.
     inputs:
       school:
         type: str
@@ -147,6 +297,20 @@ classes:
         type: str
         required: true
       value:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions:
+    - ValueError
+  - name: update_prompt_version_note
+    description: Store or clear the in-memory version note required before a changed
+      DeepSeek prompt template can be published.
+    inputs:
+      key:
+        type: str
+        required: true
+      note:
         type: str
         required: true
     returns:
@@ -188,10 +352,11 @@ classes:
     returns:
       type: None
   - name: validate
-    description: Validate prompt payloads, school folder paths, allowlisted DeepSeek
-      model selection, notification recipients, complete active notification rows,
-      notification trigger timing/date-offset fields, and notification template
-      placeholder syntax before any apply writes.
+    description: Validate prompt payloads, required version notes for changed DeepSeek
+      prompt templates, school folder paths, allowlisted DeepSeek model selection,
+      rubric trait links to Questions & Flow, notification recipients, complete
+      active notification rows, notification trigger timing/date-offset fields,
+      and notification template placeholder syntax before any apply writes.
     inputs: {}
     returns:
       type: list[str]

@@ -2,12 +2,14 @@ module:
   name: interview_app_whisper_runtime_policy
   language: python
   path: src/interview_app/whisper_runtime_policy.py
-  version: 1.0.2
+  version: 1.1.0
   description: Deprecated compatibility wrapper for Whisper runtime selection and
     fallback policy implemented by interview_runtime.
 functions:
 - name: resolve_runtime
-  description: resolve_runtime function.
+  description: Resolve configured Whisper runtime backend/model/device/compute type
+    and select CUDA, OpenVINO GenAI, configured whisper.cpp, or CPU fallback from
+    setup-published GPU vendor.
   locked: false
   inputs:
     settings:
@@ -18,7 +20,8 @@ functions:
   exceptions: []
   side_effects: none
 - name: fallback_from_exception
-  description: fallback_from_exception function.
+  description: Return CPU fallback runtime for CUDA/NVIDIA, AMD ROCm/HIP, Intel GPU,
+    or other device-related Whisper runtime errors.
   locked: false
   inputs:
     exc:
@@ -117,6 +120,8 @@ classes:
     device:
       type: str
     compute_type:
+      type: str
+    backend:
       type: str
   methods: []
 data_structures:

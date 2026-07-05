@@ -2,7 +2,7 @@ module:
   name: interview_app_history_actions
   language: python
   path: src/interview_app/history_actions.py
-  version: 1.6.0
+  version: 1.6.1
   description: Contracts for history_actions module; history retranscription is retired
     and unavailable from interview history.
 functions: []
@@ -26,8 +26,9 @@ classes:
     exceptions: []
     side_effects: none
   - name: update_history_offer_status
-    description: Persist a row's offer status and refresh the history table when the
-      update succeeds.
+    description: Persist a row's offer status, emit an offer notification payload
+      with generated/start/notice/final-working date fields, and refresh the history
+      table when the update succeeds.
     locked: false
     inputs:
       row:
@@ -43,7 +44,8 @@ classes:
     returns:
       type: bool
     exceptions: []
-    side_effects: updates persisted history offer state and refreshes history UI
+    side_effects: updates persisted history offer state, may emit an offer notification
+      event, and refreshes history UI
   - name: handle_offer_action_for_row
     description: Route an offer action from a history row through generator, onboarding,
       or status-transition behavior.

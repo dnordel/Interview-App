@@ -1,0 +1,5 @@
+# Intel GPU/NPU/CPU acceleration path for Whisper transcription through OpenVINO GenAI.
+huggingface_hub>=0.33.0
+openvino>=2025.2.0
+openvino-tokenizers>=2025.2.0
+openvino-genai>=2025.2.0

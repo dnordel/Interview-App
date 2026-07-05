@@ -62,6 +62,19 @@ def test_notification_rule_crud_persists_date_offset_trigger_and_delete(tmp_path
     assert store.list_rules("staffing.assignment.coming") == []
 
 
+def test_notification_store_seeds_offer_generated_default_rule(tmp_path: Path) -> None:
+    store = NotificationStore(tmp_path / "notifications.sqlite3")
+
+    store.ensure_default_rules()
+
+    [rule] = store.list_rules("offer.generated")
+    assert rule.label == "Leadership: offer generated"
+    assert rule.active is False
+    assert rule.trigger_timing == "event"
+    assert "{candidate_name}" in rule.subject_template
+    assert "{start_date}" in rule.body_template
+
+
 def test_notification_service_sends_matching_rule_once_per_idempotency_key(tmp_path: Path) -> None:
     store = NotificationStore(tmp_path / "notifications.sqlite3")
     store.save_rule(
@@ -132,6 +145,84 @@ def test_notification_service_sends_date_offset_rule_only_on_due_date(tmp_path: 
     assert early[0].status == "not_due"
     assert due[0].status == "sent"
     assert sent == [(["director@example.org"], "Start soon: Jane Doe", "Jane Doe starts on 2026-07-10.")]
+
+
+def test_notification_service_queues_future_date_offset_and_sends_when_due(tmp_path: Path) -> None:
+    store = NotificationStore(tmp_path / "notifications.sqlite3")
+    store.save_rule(
+        NotificationRule(
+            event_type="offer.generated",
+            label="Start date reminder",
+            subject_template="Start soon: {candidate_name}",
+            body_template="{candidate_name} starts on {start_date}.",
+            recipients=[NotificationRecipient(email="director@example.org")],
+            trigger_timing="date_offset",
+            date_field="start_date",
+            offset_days=-3,
+        )
+    )
+    sent: list[tuple[list[str], str, str]] = []
+    today = __import__("datetime").date(2026, 7, 1)
+    service = NotificationService(
+        store=store,
+        email_settings=_settings(),
+        send_email=lambda settings, recipients, subject, body: sent.append((recipients, subject, body)),
+        current_date=lambda: today,
+    )
+
+    queued = service.emit_event(
+        "offer.generated",
+        {"candidate_name": "Jane Doe", "start_date": "2026-07-10"},
+        "offer-1-generated",
+    )
+
+    assert queued[0].status == "not_due"
+    assert sent == []
+
+    today = __import__("datetime").date(2026, 7, 7)
+    due = service.run_due_notifications()
+
+    assert due[0].status == "sent"
+    assert sent == [(["director@example.org"], "Start soon: Jane Doe", "Jane Doe starts on 2026-07-10.")]
+    assert service.run_due_notifications() == []
+    assert sent == [(["director@example.org"], "Start soon: Jane Doe", "Jane Doe starts on 2026-07-10.")]
+
+
+def test_notification_service_can_schedule_from_offer_generated_date(tmp_path: Path) -> None:
+    store = NotificationStore(tmp_path / "notifications.sqlite3")
+    store.save_rule(
+        NotificationRule(
+            event_type="offer.generated",
+            label="Generated follow up",
+            subject_template="Offer generated: {candidate_name}",
+            body_template="Offer was generated on {generated_date}.",
+            recipients=[NotificationRecipient(email="director@example.org")],
+            trigger_timing="date_offset",
+            date_field="generated_date",
+            offset_days=2,
+        )
+    )
+    sent: list[tuple[list[str], str, str]] = []
+    today = __import__("datetime").date(2026, 7, 5)
+    service = NotificationService(
+        store=store,
+        email_settings=_settings(),
+        send_email=lambda settings, recipients, subject, body: sent.append((recipients, subject, body)),
+        current_date=lambda: today,
+    )
+
+    queued = service.emit_event(
+        "offer.generated",
+        {"candidate_name": "Jane Doe", "generated_date": "2026-07-05"},
+        "offer-1-generated",
+    )
+
+    assert queued[0].status == "not_due"
+    today = __import__("datetime").date(2026, 7, 7)
+    due = service.run_due_notifications()
+
+    assert due[0].status == "sent"
+    assert sent == [(["director@example.org"], "Offer generated: Jane Doe", "Offer was generated on 2026-07-05.")]
 
 
 def test_notification_service_blocks_unknown_placeholders(tmp_path: Path) -> None:

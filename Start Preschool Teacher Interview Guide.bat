@@ -11,5 +11,5 @@ if not exist "%RUNNER%" (
   exit /b 1
 )
 
-powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "%RUNNER%"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "%RUNNER%" -UiMode pyside
 exit /b %errorlevel%

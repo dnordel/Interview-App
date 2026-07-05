@@ -2,8 +2,9 @@ module:
   name: interview_audio_recorder
   language: python
   path: src/interview_audio_recorder.py
-  version: 1.1.0
-  description: Records interview audio with ffmpeg and transcribes tracks with faster-whisper.
+  version: 1.2.0
+  description: Records interview audio with ffmpeg and transcribes tracks with
+    selectable faster-whisper, OpenVINO GenAI, or whisper.cpp CLI backends.
 functions:
 - name: start_recording
   description: Start an ffmpeg recording session and return a RecordingSession handle;
@@ -21,6 +22,10 @@ functions:
       type: str | None
       required: false
       default: null
+    whisper_backend:
+      type: str
+      required: false
+      default: faster_whisper
   returns:
     type: RecordingSession
   exceptions:
@@ -70,7 +75,184 @@ functions:
     type: None
   exceptions: []
   side_effects: closes OS handle
+- name: transcribe_existing_recordings
+  description: Transcribe existing WAV recordings through the selected Whisper backend
+    and write interleaved transcript TXT/JSONL outputs.
+  locked: false
+  inputs:
+    output_dir:
+      type: str | Path
+      required: true
+    base_name:
+      type: str
+      required: true
+    mic_wav:
+      type: str | Path | None
+      required: true
+    sys_wav:
+      type: str | Path | None
+      required: true
+  returns:
+    type: ExistingTranscriptionResult
+  exceptions:
+  - RuntimeError
+  side_effects: reads WAV files, may download/cache OpenVINO models, and writes
+    transcript outputs
+- name: _normalize_whisper_backend
+  description: Normalize a backend setting to a supported backend identifier.
+  locked: false
+  inputs:
+    value:
+      type: str | None
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _resolve_openvino_model_path
+  description: Resolve a local OpenVINO model path or download an approved OpenVINO
+    Whisper model into the LocalAppData model cache.
+  locked: false
+  inputs:
+    model_name:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions:
+  - RuntimeError
+  side_effects: may create model cache directories and download from Hugging Face
+- name: _get_or_create_backend
+  description: Load and cache the requested transcription backend.
+  locked: false
+  inputs:
+    backend:
+      type: str
+      required: true
+    model_name:
+      type: str
+      required: true
+    device:
+      type: str
+      required: true
+    compute_type:
+      type: str
+      required: true
+    cache:
+      type: dict[tuple[str, str, str, str], Any] | None
+      required: false
+      default: null
+  returns:
+    type: Any
+  exceptions:
+  - RuntimeError
+  side_effects: imports backend packages and may initialize model runtimes
+- name: _parse_whisper_cpp_timestamp
+  description: Parse whisper.cpp timestamp strings or seconds into float seconds.
+  locked: false
+  inputs:
+    value:
+      type: Any
+      required: true
+  returns:
+    type: float
+  exceptions: []
+  side_effects: none
+- name: _segments_from_whisper_cpp_json
+  description: Convert whisper.cpp JSON transcript output into normalized Segment
+    records.
+  locked: false
+  inputs:
+    json_path:
+      type: Path
+      required: true
+    speaker:
+      type: str
+      required: true
+    offset_sec:
+      type: float
+      required: true
+    min_start_sec:
+      type: float
+      required: true
+  returns:
+    type: list[Segment]
+  exceptions: []
+  side_effects: reads whisper.cpp JSON transcript file
 classes:
+- name: FasterWhisperBackend
+  description: faster-whisper transcription backend using CTranslate2.
+  locked: false
+  attributes:
+    model:
+      type: Any
+  methods:
+  - name: transcribe_segments
+    inputs:
+      wav_path:
+        type: Path
+      speaker:
+        type: str
+      language:
+        type: str
+      offset_sec:
+        type: float
+      min_start_sec:
+        type: float
+      whisper_settings:
+        type: Mapping[str, Any]
+    returns:
+      type: list[Segment]
+- name: OpenVinoGenAIBackend
+  description: OpenVINO GenAI WhisperPipeline backend for Intel GPU/CPU/NPU-capable
+    transcription.
+  locked: false
+  attributes:
+    pipeline:
+      type: Any
+  methods:
+  - name: transcribe_segments
+    inputs:
+      wav_path:
+        type: Path
+      speaker:
+        type: str
+      language:
+        type: str
+      offset_sec:
+        type: float
+      min_start_sec:
+        type: float
+      whisper_settings:
+        type: Mapping[str, Any]
+    returns:
+      type: list[Segment]
+- name: WhisperCppCliBackend
+  description: External whisper.cpp CLI backend, intended for Vulkan-capable AMD
+    or cross-vendor local transcription when configured.
+  locked: false
+  attributes:
+    exe:
+      type: str
+    model_path:
+      type: str
+  methods:
+  - name: transcribe_segments
+    inputs:
+      wav_path:
+        type: Path
+      speaker:
+        type: str
+      language:
+        type: str
+      offset_sec:
+        type: float
+      min_start_sec:
+        type: float
+      whisper_settings:
+        type: Mapping[str, Any]
+    returns:
+      type: list[Segment]
 - name: RecordingSession
   description: Manages ffmpeg recording subprocesses and transcription lifecycle.
   locked: false
@@ -79,6 +261,8 @@ classes:
       type: list[subprocess.Popen]
     _windows_job_handle:
       type: Any | None
+    whisper_backend:
+      type: str
   methods:
   - name: start
     inputs:

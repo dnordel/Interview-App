@@ -1,9 +1,16 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from interview_audio_recorder import RecordingSession
+from interview_audio_recorder import (
+    RecordingSession,
+    Segment,
+    _resolve_openvino_model_path,
+    _segments_from_whisper_cpp_json,
+    transcribe_existing_recordings,
+)
 from interview_runtime import (
     clip_diagnostic_text,
     extract_diagnostic_filename,
@@ -56,8 +63,6 @@ class TestTranscriptionDiagnostics(unittest.TestCase):
             self.assertIn("diagnostics", str(diagnostic_path))
 
     def test_transcribe_existing_recordings_raises_when_all_tracks_missing(self):
-        from interview_audio_recorder import transcribe_existing_recordings
-
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             with patch.object(RecordingSession, "_get_or_create_model", return_value=_SilentModel()):
@@ -70,6 +75,61 @@ class TestTranscriptionDiagnostics(unittest.TestCase):
                     )
 
             self.assertIn("No transcribable audio tracks were found", str(err.exception))
+
+    def test_transcribe_existing_recordings_uses_openvino_backend_when_requested(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            mic = root / "mic.wav"
+            mic.write_bytes(b"mic-bytes")
+
+            class _OpenVinoBackend:
+                def transcribe_segments(self, **kwargs):
+                    self.kwargs = kwargs
+                    return [Segment(start=1.0, end=2.0, speaker=kwargs["speaker"], text="OpenVINO text")]
+
+            backend = _OpenVinoBackend()
+            with patch("interview_audio_recorder._get_or_create_backend", return_value=backend):
+                result = transcribe_existing_recordings(
+                    output_dir=root,
+                    base_name="sample",
+                    mic_wav=mic,
+                    sys_wav=None,
+                    whisper_backend="openvino_genai",
+                    whisper_device="GPU",
+                    whisper_model="OpenVINO/whisper-small-int8-ov",
+                )
+
+            self.assertEqual(result.segment_count, 1)
+            self.assertIn("OpenVINO text", result.transcript_txt.read_text(encoding="utf-8"))
+            self.assertEqual(backend.kwargs["language"], "en")
+
+    def test_openvino_model_resolution_rejects_unapproved_repo_ids(self):
+        with self.assertRaises(RuntimeError):
+            _resolve_openvino_model_path("some-user/unknown-whisper")
+
+    def test_whisper_cpp_json_segments_are_normalized(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "segments.json"
+            path.write_text(
+                json.dumps(
+                    {
+                        "transcription": [
+                            {
+                                "timestamps": {"from": "00:00:01.000", "to": "00:00:02.500"},
+                                "text": " hello ",
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            segments = _segments_from_whisper_cpp_json(
+                json_path=path,
+                speaker="CANDIDATE",
+                offset_sec=10.0,
+                min_start_sec=0.0,
+            )
+        self.assertEqual(segments, [Segment(start=11.0, end=12.5, speaker="CANDIDATE", text="hello")])
 
     def test_stop_and_transcribe_missing_tracks_writes_diagnostic(self):
         with tempfile.TemporaryDirectory() as td:

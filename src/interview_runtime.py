@@ -3005,6 +3005,7 @@ class RuntimeConfig:
     model: str
     device: str
     compute_type: str
+    backend: str = "faster_whisper"
 
 
 def resolve_runtime(settings: dict[str, Any]) -> RuntimeConfig:
@@ -3026,7 +3027,33 @@ def resolve_runtime(settings: dict[str, Any]) -> RuntimeConfig:
         preferred_key="whisper_compute_type",
         default_value="float16",
     ).lower()
-    return RuntimeConfig(model=model, device=device, compute_type=compute_type)
+    runtime = RuntimeConfig(model=model, device=device, compute_type=compute_type)
+    vendor = os.environ.get("INTERVIEW_GPU_VENDOR", "").strip().lower()
+    backend = str(settings.get("whisper_backend") or os.environ.get("INTERVIEW_WHISPER_BACKEND") or "").strip().lower()
+    whisper_cpp_exe = str(os.environ.get("INTERVIEW_WHISPERCPP_EXE") or "").strip()
+    whisper_cpp_model = str(os.environ.get("INTERVIEW_WHISPERCPP_MODEL") or "").strip()
+    if backend == "whisper_cpp" or (vendor == "amd" and whisper_cpp_exe and whisper_cpp_model):
+        return RuntimeConfig(
+            model=whisper_cpp_model or model,
+            device="vulkan",
+            compute_type="int8",
+            backend="whisper_cpp",
+        )
+    if backend == "openvino_genai" or (vendor == "intel" and runtime.device == "cuda"):
+        openvino_model = str(
+            settings.get("whisper_openvino_model")
+            or os.environ.get("INTERVIEW_OPENVINO_WHISPER_MODEL")
+            or "OpenVINO/whisper-small-int8-ov"
+        ).strip()
+        return RuntimeConfig(
+            model=openvino_model,
+            device="GPU",
+            compute_type="fp16",
+            backend="openvino_genai",
+        )
+    if runtime.device == "cuda" and vendor and vendor != "nvidia":
+        return _resolve_cpu_fallback(preferred=runtime, settings=settings)
+    return runtime
 
 
 def fallback_from_exception(
@@ -3047,6 +3074,7 @@ def persist_runtime_choice(
     settings["whisper_runtime_model"] = runtime_config.model
     settings["whisper_runtime_device"] = runtime_config.device
     settings["whisper_runtime_compute_type"] = runtime_config.compute_type
+    settings["whisper_runtime_backend"] = runtime_config.backend
     settings["whisper_runtime_mode"] = mode
 
 
@@ -3075,6 +3103,12 @@ def _contains_runtime_error_marker(text: str) -> bool:
         "device",
         "not enough gpu",
         "no gpu",
+        "nvidia driver",
+        "no nvidia driver",
+        "amd gpu",
+        "rocm",
+        "hip runtime",
+        "intel gpu",
         "invalid device",
         "torch.cuda",
     )
@@ -3084,7 +3118,7 @@ def _contains_runtime_error_marker(text: str) -> bool:
 def _resolve_cpu_fallback(*, preferred: RuntimeConfig, settings: dict[str, Any]) -> RuntimeConfig:
     fallback_model = str(settings.get("whisper_fallback_model") or "").strip()
     model = fallback_model or preferred.model or "small"
-    return RuntimeConfig(model=model, device="cpu", compute_type="int8")
+    return RuntimeConfig(model=model, device="cpu", compute_type="int8", backend="faster_whisper")
 
 
 def _extract_dshow_audio_device_names(stderr_text: str) -> list[str]:
@@ -3290,6 +3324,7 @@ class AudioRuntimeController:
             whisper_model=runtime_config.model,
             whisper_device=runtime_config.device,
             whisper_compute_type=runtime_config.compute_type,
+            whisper_backend=runtime_config.backend,
             whisper_settings=self.app._current_whisper_transcription_settings(),
         )
 

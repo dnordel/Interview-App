@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import json
 import sqlite3
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from email_security import is_valid_email_address
 from notification_models import NotificationRecipient, NotificationRule
@@ -56,6 +58,13 @@ class NotificationStore:
                 label="Leadership: offer accepted",
                 subject_template="Offer accepted: {candidate_name}",
                 body_template="{candidate_name} accepted the {position} offer for {school}.",
+                active=False,
+            ),
+            NotificationRule(
+                event_type="offer.generated",
+                label="Leadership: offer generated",
+                subject_template="Offer generated: {candidate_name}",
+                body_template="{candidate_name}'s {position} offer was generated for {school}. Start date: {start_date}.",
                 active=False,
             ),
         ]
@@ -221,6 +230,76 @@ class NotificationStore:
                     ),
                 )
 
+    def schedule_notification(
+        self,
+        *,
+        event_type: str,
+        rule_id: int,
+        idempotency_key: str,
+        due_date: date,
+        payload: dict[str, Any],
+    ) -> None:
+        payload_json = json.dumps({str(key): str(value) for key, value in payload.items()}, sort_keys=True)
+        now = utc_now_iso()
+        with self._connect() as conn:
+            with conn:
+                conn.execute(
+                    """
+                    INSERT INTO notification_schedule
+                        (event_type, rule_id, idempotency_key, due_date, payload_json, status, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, 'pending', ?, ?)
+                    ON CONFLICT(rule_id, idempotency_key) DO UPDATE SET
+                        due_date = excluded.due_date,
+                        payload_json = excluded.payload_json,
+                        status = CASE
+                            WHEN notification_schedule.status = 'sent' THEN notification_schedule.status
+                            ELSE 'pending'
+                        END,
+                        updated_at = excluded.updated_at
+                    """,
+                    (
+                        str(event_type).strip(),
+                        int(rule_id),
+                        str(idempotency_key),
+                        due_date.isoformat(),
+                        payload_json,
+                        now,
+                        now,
+                    ),
+                )
+
+    def list_due_scheduled_notifications(self, current_date: date) -> list[dict[str, Any]]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT id, event_type, rule_id, idempotency_key, due_date, payload_json, status
+                FROM notification_schedule
+                WHERE status = 'pending' AND due_date <= ?
+                ORDER BY due_date, id
+                """,
+                (current_date.isoformat(),),
+            ).fetchall()
+            return [
+                {
+                    "id": int(row["id"]),
+                    "event_type": str(row["event_type"]),
+                    "rule_id": int(row["rule_id"]),
+                    "idempotency_key": str(row["idempotency_key"]),
+                    "due_date": str(row["due_date"]),
+                    "payload": json.loads(str(row["payload_json"] or "{}")),
+                    "status": str(row["status"]),
+                }
+                for row in rows
+            ]
+
+    def mark_scheduled_notification(self, schedule_id: int, status: str) -> None:
+        with self._connect() as conn:
+            with conn:
+                conn.execute(
+                    "UPDATE notification_schedule SET status = ?, updated_at = ? WHERE id = ?",
+                    (str(status).strip(), utc_now_iso(), int(schedule_id)),
+                )
+
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.path)
         conn.row_factory = sqlite3.Row
@@ -277,8 +356,30 @@ class NotificationStore:
                     )
                     """
                 )
+                conn.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS notification_schedule (
+                        id INTEGER PRIMARY KEY,
+                        event_type TEXT NOT NULL,
+                        rule_id INTEGER NOT NULL REFERENCES notification_rules(id) ON DELETE CASCADE,
+                        idempotency_key TEXT NOT NULL,
+                        due_date TEXT NOT NULL,
+                        payload_json TEXT NOT NULL,
+                        status TEXT NOT NULL DEFAULT 'pending',
+                        created_at TEXT NOT NULL,
+                        updated_at TEXT NOT NULL
+                    )
+                    """
+                )
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_notification_rules_event_type ON notification_rules(event_type)")
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_notification_recipients_rule_id ON notification_recipients(rule_id)")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_notification_schedule_due ON notification_schedule(status, due_date)")
+                conn.execute(
+                    """
+                    CREATE UNIQUE INDEX IF NOT EXISTS idx_notification_schedule_dedupe
+                    ON notification_schedule(rule_id, idempotency_key)
+                    """
+                )
                 conn.execute(
                     """
                     CREATE UNIQUE INDEX IF NOT EXISTS idx_notification_audit_dedupe

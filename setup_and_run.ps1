@@ -371,11 +371,13 @@ function Run-Proc {
   $p.StartInfo = $psi
 
   [void]$p.Start()
-
-  $stdout = $p.StandardOutput.ReadToEnd()
-  $stderr = $p.StandardError.ReadToEnd()
+  $stdoutTask = $p.StandardOutput.ReadToEndAsync()
+  $stderrTask = $p.StandardError.ReadToEndAsync()
 
   $p.WaitForExit()
+
+  $stdout = $stdoutTask.Result
+  $stderr = $stderrTask.Result
 
   if ($stdout) { $stdout | Out-File -FilePath $Log -Append -Encoding UTF8 }
   if ($stderr) { $stderr | Out-File -FilePath $Log -Append -Encoding UTF8 }
@@ -828,6 +830,144 @@ function Test-NvidiaGPU {
   return $false
 }
 
+function Get-GpuVendorProfile {
+  $profile = [PSCustomObject]@{
+    Nvidia = $false
+    Amd = $false
+    Intel = $false
+    Names = @()
+  }
+
+  try {
+    if (Test-NvidiaGPU) {
+      $profile.Nvidia = $true
+    }
+
+    $controllers = @(Get-WmiObject Win32_VideoController -ErrorAction Stop)
+    foreach ($controller in $controllers) {
+      $name = [string]$controller.Name
+      if (-not $name) { continue }
+
+      $profile.Names += $name
+      if ($name -match "NVIDIA") { $profile.Nvidia = $true }
+      if ($name -match "AMD|Radeon|Advanced Micro Devices") { $profile.Amd = $true }
+      if ($name -match "Intel|Arc|Iris|UHD Graphics") { $profile.Intel = $true }
+    }
+  } catch {
+    Write-Log "GPU vendor profile detection failed: $($_.Exception.Message)"
+  }
+
+  if ($profile.Names.Count -gt 0) {
+    Write-Log "Detected GPU profile: Nvidia=$($profile.Nvidia); AMD=$($profile.Amd); Intel=$($profile.Intel); Names=$($profile.Names -join '; ')"
+  } else {
+    Write-Log "Detected GPU profile: no GPU controllers reported."
+  }
+
+  return $profile
+}
+
+function Remove-NvidiaGpuPackagesWhenUnsupported {
+  param([Parameter(Mandatory=$true)][string]$VenvPy)
+
+  if (Test-NvidiaGPU) {
+    Write-Log "NVIDIA GPU present; keeping NVIDIA Python GPU packages if installed."
+    return
+  }
+
+  Write-Log "No NVIDIA GPU detected. Removing NVIDIA-only Python GPU packages if installed."
+  $ec = Run-Proc -File $VenvPy -Args @("-m","pip","uninstall","-y","nvidia-cublas-cu12","nvidia-cudnn-cu12")
+  if ($ec -ne 0) {
+    Write-Log "NVIDIA GPU package cleanup completed with non-zero exit code $ec; continuing in CPU/non-CUDA mode."
+  }
+}
+
+function Find-WhisperCppCli {
+  try {
+    $cmd = Get-Command "whisper-cli.exe" -ErrorAction SilentlyContinue
+    if ($cmd -and (Test-Path $cmd.Source)) {
+      return $cmd.Source
+    }
+  } catch {}
+
+  $candidates = @(
+    (Join-Path $env:LOCALAPPDATA "LPL_InterviewTool\whisper.cpp\whisper-cli.exe"),
+    (Join-Path $env:LOCALAPPDATA "LPL_InterviewTool\whisper.cpp\bin\whisper-cli.exe"),
+    (Join-Path $env:LOCALAPPDATA "Programs\whisper.cpp\whisper-cli.exe")
+  )
+
+  foreach ($path in $candidates) {
+    if (Test-Path $path) {
+      return $path
+    }
+  }
+
+  return $null
+}
+
+function Find-WhisperCppModel {
+  $candidates = @(
+    (Join-Path $env:LOCALAPPDATA "LPL_InterviewTool\whisper.cpp\models\ggml-small.bin"),
+    (Join-Path $env:LOCALAPPDATA "LPL_InterviewTool\whisper.cpp\models\ggml-base.bin"),
+    (Join-Path $AppDir "models\ggml-small.bin"),
+    (Join-Path $AppDir "models\ggml-base.bin")
+  )
+
+  foreach ($path in $candidates) {
+    if (Test-Path $path) {
+      return $path
+    }
+  }
+
+  return $null
+}
+
+function Set-GpuVendorEnvironment {
+  param([Parameter(Mandatory=$true)]$Profile)
+
+  $vendor = "cpu"
+  if ($Profile.Nvidia) {
+    $vendor = "nvidia"
+  } elseif ($Profile.Amd) {
+    $vendor = "amd"
+  } elseif ($Profile.Intel) {
+    $vendor = "intel"
+  }
+
+  $env:INTERVIEW_GPU_VENDOR = $vendor
+  if ($vendor -eq "amd") {
+    $whisperCppExe = Find-WhisperCppCli
+    $whisperCppModel = Find-WhisperCppModel
+    if ($whisperCppExe -and $whisperCppModel) {
+      $env:INTERVIEW_WHISPER_BACKEND = "whisper_cpp"
+      $env:INTERVIEW_WHISPERCPP_EXE = $whisperCppExe
+      $env:INTERVIEW_WHISPERCPP_MODEL = $whisperCppModel
+      Remove-Item Env:\INTERVIEW_OPENVINO_WHISPER_MODEL -ErrorAction SilentlyContinue
+      Write-Log "AMD GPU detected. Using configured whisper.cpp backend: $whisperCppExe"
+    } else {
+      $env:INTERVIEW_WHISPER_BACKEND = "faster_whisper"
+      Remove-Item Env:\INTERVIEW_WHISPERCPP_EXE -ErrorAction SilentlyContinue
+      Remove-Item Env:\INTERVIEW_WHISPERCPP_MODEL -ErrorAction SilentlyContinue
+      Remove-Item Env:\INTERVIEW_OPENVINO_WHISPER_MODEL -ErrorAction SilentlyContinue
+    }
+  } elseif ($vendor -eq "intel") {
+    $env:INTERVIEW_WHISPER_BACKEND = "openvino_genai"
+    $env:INTERVIEW_OPENVINO_WHISPER_MODEL = "OpenVINO/whisper-small-int8-ov"
+    Remove-Item Env:\INTERVIEW_WHISPERCPP_EXE -ErrorAction SilentlyContinue
+    Remove-Item Env:\INTERVIEW_WHISPERCPP_MODEL -ErrorAction SilentlyContinue
+  } elseif ($vendor -eq "nvidia") {
+    $env:INTERVIEW_WHISPER_BACKEND = "faster_whisper"
+    Remove-Item Env:\INTERVIEW_OPENVINO_WHISPER_MODEL -ErrorAction SilentlyContinue
+    Remove-Item Env:\INTERVIEW_WHISPERCPP_EXE -ErrorAction SilentlyContinue
+    Remove-Item Env:\INTERVIEW_WHISPERCPP_MODEL -ErrorAction SilentlyContinue
+  } else {
+    $env:INTERVIEW_WHISPER_BACKEND = "faster_whisper"
+    Remove-Item Env:\INTERVIEW_OPENVINO_WHISPER_MODEL -ErrorAction SilentlyContinue
+    Remove-Item Env:\INTERVIEW_WHISPERCPP_EXE -ErrorAction SilentlyContinue
+    Remove-Item Env:\INTERVIEW_WHISPERCPP_MODEL -ErrorAction SilentlyContinue
+  }
+  Write-Log "App GPU vendor environment set: INTERVIEW_GPU_VENDOR=$vendor"
+}
+
 # -------------------------
 # Local DeepSeek via Ollama
 # -------------------------
@@ -953,6 +1093,81 @@ function Test-OllamaModelInstalled {
   return $false
 }
 
+function Invoke-OllamaModelPull {
+  param([Parameter(Mandatory=$true)][string]$Model)
+
+  Write-Log "Pulling local DeepSeek model through Ollama API: $Model"
+  $body = @{
+    "name" = $Model
+    "stream" = $true
+  } | ConvertTo-Json -Compress
+
+  $request = [System.Net.HttpWebRequest]::Create("$OllamaBaseUrl/api/pull")
+  $request.Method = "POST"
+  $request.ContentType = "application/json"
+  $request.Timeout = -1
+  $request.ReadWriteTimeout = -1
+
+  $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($body)
+  $request.ContentLength = $bodyBytes.Length
+  $requestStream = $request.GetRequestStream()
+  try {
+    $requestStream.Write($bodyBytes, 0, $bodyBytes.Length)
+  }
+  finally {
+    $requestStream.Close()
+  }
+
+  $response = $null
+  $reader = $null
+  $lastPercent = -1
+
+  try {
+    $response = $request.GetResponse()
+    $reader = New-Object System.IO.StreamReader($response.GetResponseStream())
+
+    while (-not $reader.EndOfStream) {
+      $line = $reader.ReadLine()
+      if (-not $line) { continue }
+
+      $event = $line | ConvertFrom-Json
+      $status = [string]$event.status
+      if ($status) {
+        Write-Log "Ollama pull status: $status"
+      }
+
+      $completed = 0
+      $total = 0
+      if ($event.PSObject.Properties.Name -contains "completed") {
+        $completed = [double]$event.completed
+      }
+      if ($event.PSObject.Properties.Name -contains "total") {
+        $total = [double]$event.total
+      }
+
+      if ($completed -gt 0 -and $total -gt 0) {
+        $percent = [Math]::Floor(($completed / $total) * 100)
+        if ($percent -ne $lastPercent) {
+          Set-Progress 65 "Downloading local DeepSeek model ($Model): $percent%"
+          Write-Log "DeepSeek model download progress: $Model $percent% ($completed of $total bytes)"
+          $lastPercent = $percent
+        }
+      }
+
+      if ($status -match "success") {
+        Write-Log "Ollama model pull reported success: $Model"
+      }
+    }
+  }
+  catch {
+    throw "Ollama model pull failed for $Model. Error: $($_.Exception.Message)"
+  }
+  finally {
+    if ($reader) { $reader.Close() }
+    if ($response) { $response.Close() }
+  }
+}
+
 function Ensure-DeepSeekModel {
   param(
     [Parameter(Mandatory=$true)][string]$OllamaExe,
@@ -965,10 +1180,7 @@ function Ensure-DeepSeekModel {
   }
 
   Write-Log "Pulling local DeepSeek model: $Model"
-  $ec = Run-Proc -File $OllamaExe -Args @("pull", $Model)
-  if ($ec -ne 0) {
-    throw "Ollama model pull failed for $Model (exit code $ec)."
-  }
+  Invoke-OllamaModelPull -Model $Model
 
   for ($i = 0; $i -lt 10; $i++) {
     if (Test-OllamaModelInstalled -Model $Model) {
@@ -1076,12 +1288,15 @@ function Ensure-VenvAndDeps([string]$PyExe) {
   $ec = Run-Proc -File $VenvPy -Args @("-m","pip","install","-r",$req)
   if ($ec -ne 0) { throw "pip install failed (exit code $ec)" }
 
+  $gpuProfile = Get-GpuVendorProfile
+  Set-GpuVendorEnvironment -Profile $gpuProfile
+
   # -------------------------
   # Optional GPU dependencies
   # -------------------------
   $gpuReq = Join-Path $AppDir "requirements-gpu.txt"
 
-  if ((Test-Path $gpuReq) -and (Test-NvidiaGPU)) {
+  if ((Test-Path $gpuReq) -and $gpuProfile.Nvidia) {
     Write-Log "NVIDIA GPU detected. Attempting GPU dependency install..."
 
     $gpuEc = Run-Proc -File $VenvPy -Args @("-m","pip","install","-r",$gpuReq)
@@ -1091,6 +1306,26 @@ function Ensure-VenvAndDeps([string]$PyExe) {
     }
     else {
       Write-Log "GPU dependencies installed successfully."
+    }
+  } else {
+    Write-Log "Skipping GPU dependency install because no NVIDIA GPU was detected."
+    Remove-NvidiaGpuPackagesWhenUnsupported -VenvPy $VenvPy
+    if ($gpuProfile.Amd) {
+      Write-Log "AMD GPU detected. Ollama may use supported ROCm/Vulkan acceleration; Whisper transcription remains CPU unless an external Vulkan whisper.cpp backend is configured."
+    }
+    if ($gpuProfile.Intel) {
+      Write-Log "Intel GPU detected. OpenVINO GenAI will be used for Whisper transcription when dependencies install successfully."
+    }
+  }
+
+  $openVinoReq = Join-Path $AppDir "requirements-openvino.txt"
+  if ((Test-Path $openVinoReq) -and $gpuProfile.Intel) {
+    Write-Log "Intel GPU detected. Installing OpenVINO GenAI transcription dependencies..."
+    $openVinoEc = Run-Proc -File $VenvPy -Args @("-m","pip","install","-r",$openVinoReq)
+    if ($openVinoEc -ne 0) {
+      Write-Log "OpenVINO dependency install failed. Falling back to faster-whisper CPU mode."
+      $env:INTERVIEW_WHISPER_BACKEND = "faster_whisper"
+      Remove-Item Env:\INTERVIEW_OPENVINO_WHISPER_MODEL -ErrorAction SilentlyContinue
     }
   }
 
@@ -1452,6 +1687,7 @@ $form.Add_Shown({
     Set-Progress 45 "Checking Python venv and app packages..."
     $venvPy = Ensure-VenvAndDeps $py
     $cfg = Ensure-SelectedUiModeAvailable -Cfg $cfg -VenvPy $venvPy
+    Set-GpuVendorEnvironment -Profile (Get-GpuVendorProfile)
 
     Set-Progress 65 "Checking local DeepSeek through Ollama ($LocalDeepSeekModel)..."
     Ensure-LocalDeepSeek
@@ -1460,21 +1696,25 @@ $form.Add_Shown({
     # Expose CUDA runtime DLLs for faster-whisper
     # -------------------------
     
-    $venvScripts = Split-Path $venvPy -Parent
-    $venvRoot = Split-Path $venvScripts -Parent
-    $cudaBase = Join-Path $venvRoot "Lib\site-packages\nvidia"
+    if (Test-NvidiaGPU) {
+      $venvScripts = Split-Path $venvPy -Parent
+      $venvRoot = Split-Path $venvScripts -Parent
+      $cudaBase = Join-Path $venvRoot "Lib\site-packages\nvidia"
 
-    $paths = @(
-        (Join-Path $cudaBase "cublas\bin"),
-        (Join-Path $cudaBase "cudnn\bin"),
-        (Join-Path $cudaBase "cuda_runtime\bin")
-    )
+      $paths = @(
+          (Join-Path $cudaBase "cublas\bin"),
+          (Join-Path $cudaBase "cudnn\bin"),
+          (Join-Path $cudaBase "cuda_runtime\bin")
+      )
 
-    foreach ($p in $paths) {
-        if (Test-Path $p) {
-            $env:PATH = "$p;$env:PATH"
-            Write-Log "Added CUDA path: $p"
-        }
+      foreach ($p in $paths) {
+          if (Test-Path $p) {
+              $env:PATH = "$p;$env:PATH"
+              Write-Log "Added CUDA path: $p"
+          }
+      }
+    } else {
+      Write-Log "Skipping CUDA PATH setup because no NVIDIA GPU was detected."
     }
 
     # VB-CABLE handling based on detection + user answer

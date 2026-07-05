@@ -2,7 +2,7 @@ module:
   name: setup_and_run
   language: powershell
   path: setup_and_run.ps1
-  version: 1.7.0
+  version: 1.10.0
   description: Windows launcher bootstrap that checks prerequisites, installs Python
     3.11 when needed, provisions a per-user virtual environment that can reuse system
     site packages under LOCALAPPDATA instead of the repository folder, installs
@@ -118,8 +118,8 @@ functions:
   - Exception
   side_effects: starts a child Python process and may write redirected runtime logs
 - name: Run-Proc
-  description: Execute a child process, capture stdout and stderr, and append both
-    streams to the setup log.
+  description: Execute a child process, drain stdout and stderr asynchronously to
+    prevent pipe deadlocks, and append both streams to the setup log.
   locked: false
   inputs:
     File:
@@ -260,6 +260,60 @@ functions:
     type: bool
   exceptions: []
   side_effects: queries local executables and WMI and writes launcher log entries
+- name: Get-GpuVendorProfile
+  description: Detect NVIDIA, AMD, and Intel GPU controller names so setup can install
+    NVIDIA-only faster-whisper packages only on NVIDIA systems while leaving
+    AMD/Intel acceleration to supported local runtimes such as Ollama ROCm/Vulkan.
+  locked: false
+  inputs: {}
+  returns:
+    type: pscustomobject
+  exceptions: []
+  side_effects: queries local video controller metadata and writes launcher log entries
+- name: Remove-NvidiaGpuPackagesWhenUnsupported
+  description: Remove NVIDIA-only Python wheels from the LocalAppData virtual
+    environment when no NVIDIA GPU is detected, preserving CPU-safe operation on
+    AMD, Intel Arc, and integrated-GPU-only machines.
+  locked: false
+  inputs:
+    VenvPy:
+      type: string
+      required: true
+  returns:
+    type: void
+  exceptions: []
+  side_effects: may uninstall NVIDIA-only Python wheels and writes launcher log entries
+- name: Find-WhisperCppCli
+  description: Resolve an installed whisper.cpp CLI executable from PATH or common
+    LocalAppData locations for AMD/Vulkan-capable transcription.
+  locked: false
+  inputs: {}
+  returns:
+    type: string | null
+  exceptions: []
+  side_effects: reads local executable paths
+- name: Find-WhisperCppModel
+  description: Resolve a local whisper.cpp GGML model from common LocalAppData or
+    repository model locations.
+  locked: false
+  inputs: {}
+  returns:
+    type: string | null
+  exceptions: []
+  side_effects: reads local model paths
+- name: Set-GpuVendorEnvironment
+  description: Publish the detected GPU vendor and selected transcription backend
+    environment variables so Python modules can choose the supported runtime path
+    for the current machine.
+  locked: false
+  inputs:
+    Profile:
+      type: pscustomobject
+      required: true
+  returns:
+    type: void
+  exceptions: []
+  side_effects: mutates process environment variables and writes launcher log entries
 - name: Get-OllamaExe
   description: Resolve ollama.exe from PATH or common per-user/all-users install
     locations.
@@ -313,12 +367,27 @@ functions:
   exceptions: []
   side_effects: sends a local HTTP request to the Ollama model registry endpoint and
     writes diagnostics on failure or missing models
+- name: Invoke-OllamaModelPull
+  description: Pull a named Ollama model through the streaming local API and write
+    status plus download percentage to both the setup progress UI and launcher log.
+  locked: false
+  inputs:
+    Model:
+      type: string
+      required: true
+  returns:
+    type: void
+  exceptions:
+  - Exception
+  side_effects: sends a local HTTP request to the Ollama pull endpoint, may download
+    model layers, updates setup progress, and writes launcher log entries
 - name: Ensure-DeepSeekModel
   description: Pull the configured DeepSeek model into Ollama when it is not already
     installed locally, defaulting to the repo-selected local 8b balanced model while
     honoring a pre-set DEEPSEEK_SUMMARY_MODEL override or an allowlisted Admin Studio
-    app-settings model selection, then retry local registry checks to allow Ollama
-    to refresh after pull completion.
+    app-settings model selection, streaming pull status and download percentage to
+    the setup UI/log, then retry local registry checks to allow Ollama to refresh
+    after pull completion.
   locked: false
   inputs:
     OllamaExe:
@@ -383,8 +452,9 @@ functions:
 - name: Ensure-VenvAndDeps
   description: Create or repair the per-user virtual environment under LOCALAPPDATA
     with system site packages enabled, fingerprint requirements.txt for setup
-    versioning, install requirements, and add optional GPU dependencies when
-    supported.
+    versioning, install requirements, add optional NVIDIA GPU dependencies only when
+    supported, install OpenVINO GenAI dependencies on Intel GPU systems, and remove
+    NVIDIA-only Python wheels on non-NVIDIA systems.
   locked: false
   inputs:
     PyExe:

@@ -2,7 +2,7 @@ module:
   name: onboarding_operations
   language: python
   path: src/onboarding_operations.py
-  version: 0.17.0
+  version: 0.19.0
   description: Flattened public interface for onboarding models, storage, scheduling,
     reminders, notifications, dashboard actions, and onboarding UI composition helpers.
 functions:
@@ -1192,7 +1192,9 @@ functions:
   exceptions: []
   side_effects: none
 - name: _send_email_message
-  description: Build and send one SMTP email message for onboarding reminders.
+  description: Build and send one SMTP email message for onboarding reminders,
+    honoring EmailSettings smtp_encryption values for STARTTLS, SSL/TLS, or no
+    transport encryption.
   locked: false
   inputs:
     settings:
@@ -1212,8 +1214,35 @@ functions:
   exceptions:
   - smtplib.SMTPException
   - OSError
-  side_effects: Opens an SMTP connection and sends an email message without logging
-    credentials.
+  side_effects: Opens an SMTP or SMTP_SSL connection and sends an email message
+    without logging credentials.
+- name: verify_email_connection
+  description: Verify the configured SMTP transport and optional login without
+    sending an email message.
+  locked: false
+  inputs:
+    settings:
+      type: EmailSettings
+      required: true
+  returns:
+    type: None
+  exceptions:
+  - smtplib.SMTPException
+  - OSError
+  side_effects: Opens an SMTP or SMTP_SSL connection and authenticates when a username
+    is configured; does not send mail or log credentials.
+- name: _smtp_transport
+  description: Resolve the SMTP constructor and STARTTLS flag from EmailSettings
+    encryption fields.
+  locked: false
+  inputs:
+    settings:
+      type: EmailSettings
+      required: true
+  returns:
+    type: tuple[Any, bool]
+  exceptions: []
+  side_effects: none
 - name: _validate_missing_values
   description: Raise when reminder templates reference placeholders without runtime
     values.
@@ -1589,9 +1618,18 @@ classes:
     exceptions: []
     side_effects: none
 - name: EmailSettings
-  description: SMTP and reminder email settings for onboarding communications.
+  description: Shared SMTP/IMAP account settings and reminder email settings for
+    app notification communications.
   locked: false
   attributes:
+    account_label:
+      type: str
+    display_name:
+      type: str
+    authentication_type:
+      type: str
+    account_type:
+      type: str
     sender_email:
       type: str
     smtp_host:
@@ -1608,6 +1646,16 @@ classes:
       type: str
     imap_or_pop_port:
       type: int
+    incoming_encryption:
+      type: str
+    smtp_encryption:
+      type: str
+    remember_password:
+      type: bool
+    require_spa:
+      type: bool
+    use_same_credentials:
+      type: bool
     director_and_owners:
       type: str
     reminder_recipients:
@@ -1622,7 +1670,8 @@ classes:
       type: str
   methods:
   - name: from_dict
-    description: Build email settings from persisted data.
+    description: Build email settings from persisted data, mapping legacy use_tls
+      values into smtp_encryption when no explicit encryption value is present.
     locked: false
     inputs:
       cls:

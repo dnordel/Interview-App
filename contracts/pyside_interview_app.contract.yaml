@@ -2,13 +2,44 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.31.0
+  version: 1.55.114
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, resizable splitter sections, school/classroom selectors, wider color-coded classroom list with per-classroom status-count overview, metric cards, positions table, fully editable right-side assignment/person details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics,
     director staffing-only launch mode that keeps the full mockup navigation rail visible, filters to an assigned school when supplied, and reuses the same Staffing page,
     compact home draft actions beside the start action, guided review-then-apply Admin Studio backed by admin_studio
-    with grouped admin-console navigation, status-pill text, concept-specific cards
+    with dashboard-first grouped admin-console navigation, standard icons on each
+    selectable Admin Studio nav item, Environment/User cards at the bottom of the Admin Studio rail, distinct status pills,
+    icon-labeled Admin Dashboard cards with wired Quick Links shortcuts including edit-mode notification rule creation, inline
+    clickable Validation Review blocker list, refreshed Draft Changes file summaries,
+    Publishing Readiness checklist rows, and validation-gated Publish Changes action,
+    screen-aware initial window sizing, adaptive resize behavior for narrow and desktop widths, font-metric-aware responsive navigation/action sizing for Windows text/display scaling, viewport-clamped main pages that allow vertical overflow without forcing a hard page width, horizontally scrollable workspace action bars,
+    workspace action buttons, edit-gated model choice cards, no generic concept
+    scaffolding panels in modern Admin Studio pages, hidden backing tables
+    for legacy draft capture, dashboard panels, sectioned
+    Questions & Flow cards with two-row wrapping track tabs, draft-backed per-track stacked flow pages that refresh after add/reorder/duplicate/delete actions, compact edit-gated reorder/duplicate/action controls, expanding prompt text columns, an edit-gated question drawer with combo-box metadata, required/scoring checkboxes, scoring-weight selection, weak-response flagging, and draft delete action, add-question drop zone
+    with blank Create/Edit Question state,
+    live drawer counters, Create/Edit Track dialog, mockup-style Rubrics trait cards with search, priority, weight, and linked-question filters, grid/list toggle, duplicate/delete actions, and edit-gated rubric
+    trait editor with edit-gated weight minus/plus stepper, applicable-track checkboxes, descriptor and sample-answer text controls, validation impact, selected-trait-synced linked question preview/jump action, sample-answer
+    rows, and publish-rule checklist panels, searchable read-only Signal Hints groups with category chips, selected-card state, selectable detail reference, colored High/Moderate/Low signal-level cards, and no legacy raw table fallback
+    panel, selectable Templates & Folders school cards with wired Browse/Copy/Test Write actions, Add School draft flow, Delete School draft removal, offer template health cards with edit-gated New Template draft path picker, edit-gated detail drawer, folder picker, clipboard copy, and safe write-test probe action,
+    selectable Notifications rule cards with enabled-status filtering, sort controls, edit-gated create-rule/editor flow, removable recipient chips backed by the draft recipients field, subject variable insertion controls, email body toolbar insertion controls, user-friendly trigger and modular relative-date scheduling controls for before/on/after any supported or typed date field, live validation,
+    notification variable insertion chips, selected rule state, editor metadata,
+    variables preview and validation panels, and template preview dialog, selectable
+    DeepSeek Model comparison cards with hidden backing selector, hardware, Ollama compatibility, and performance guidance panels,
+    DeepSeek Prompt templates with mockup feature summary strip, searchable prompt cards, selected-prompt status/metadata header, edit-gated new-template draft flow, edit-gated prompt editor, edit-gated prompt version note field that unblocks publish validation, right-side Inspector/Activity tab panel, explicit JSON/Text format dropdown, expanded prompt editor dialog, nine visible variable insertion chips, required-variable validation, live editor footer
+    showing line, column, spacing, encoding, newline, and selected format status, clickable variable
+    insertion chips, Prompt Settings dialog with required-variable and validation policy, sample-data Prompt Preview dialog, prompt-specific Version History dialog, dashboard-level Version History dialog covering prompts/rubrics/notifications/JSON files, selectable Advanced JSON
+    file cards with mockup summary strip, selected-card state, read-only code viewer controls, JSON syntax highlighting, line-number gutter with warning marker, highlighted validation issue line, copy-to-clipboard actions for viewer text and file path, read-only expanded viewer dialog, viewer footer, issue/read-only detail panels with jump-to-line action, no legacy raw table fallback, and guarded JSON
+    Editor draft dialog gated by global Start Editing mode, shared Email Settings account setup screen with compact
+    identity/incoming/outgoing panels, working IMAP/POP3 default switching, and
+    notification sending including immediate offer.generated events, queued start-date/generated-date/notice/final-working-day relative notifications, and startup due-schedule drain, Validation Review
+    blocked banner, summary cards, guidance panels, inline expandable raw technical
+    details on each issue card, and technical Details dialog,
+    grouped Review Changes
+    dialog with section cards, before/after draft diffs, and explicit final review checkbox gating the publish handoff, Publish Confirmation dialog with validation
+    status, section summary cards, and explicit final confirmation checkbox gating the confirm action, Discard Changes confirmation dialog with section-grouped
+    lost-change summaries, section-specific cards
     for high-risk settings, guarded validation review, readable wrapped admin tables,
     visible edit mode, dirty-cell affordances, unsaved-change discard confirmation,
     validation-blocked apply, interview notes
@@ -488,7 +519,8 @@ classes:
     either the selected history row or completed review screen; Admin Studio exposes
     checkpoint notification rule rows for editable custom event types, active/delete
     flags, date-offset trigger fields, templates, recipients, and an allowlisted
-    local DeepSeek model selector.
+    local DeepSeek model choice controlled by card actions with only a hidden
+    selector retained as a backing field.
     Staffing dashboard view ownership is inline in this PySide shell rather than a
     separate staffing_dashboard_view module.
   locked: false
@@ -507,6 +539,8 @@ classes:
       type: AdminStudioDraft
     admin_notification_template_button:
       type: QPushButton | None
+    admin_sidebar_rail:
+      type: QFrame | None
   methods:
   - name: show
     description: Show the redesigned PySide6 main window.
@@ -516,6 +550,93 @@ classes:
       type: None
     exceptions: []
     side_effects: Displays the QMainWindow.
+  - name: _initial_window_size
+    description: Calculate startup QMainWindow size from current primary-screen
+      available logical geometry so Windows display scaling does not open the app
+      wider than the usable screen.
+    locked: false
+    inputs: {}
+    returns:
+      type: tuple[int, int]
+    exceptions: []
+    side_effects: Reads QApplication primary screen geometry.
+  - name: _apply_responsive_layout
+    description: Adjust main and Admin Studio sidebar width constraints from current
+      window breakpoints and live font metrics so Windows text/display scaling
+      does not clip navigation labels.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates sidebar, Admin Studio sidebar rail, and Admin Studio section
+      list minimum and maximum widths.
+  - name: _page
+    description: Build a top-level PySide page scroll area whose content width is
+      clamped to the current viewport during resize so Windows text/display scaling
+      cannot force the app wider than the visible window.
+    locked: false
+    inputs: {}
+    returns:
+      type: tuple[QScrollArea, QVBoxLayout]
+    exceptions: []
+    side_effects: Creates PySide scroll/content widgets and updates the content
+      maximum width on scroll-area resize.
+  - name: _admin_nav_icon
+    description: Return a Qt standard icon for a selectable Admin Studio navigation
+      key.
+    locked: false
+    inputs:
+      key:
+        type: str
+        required: true
+    returns:
+      type: QIcon
+    exceptions: []
+    side_effects: Reads the current QMainWindow style.
+  - name: _make_button_readable
+    description: Apply tooltip, minimum size, and sizing policy so PySide buttons
+      do not compress below font-metric text width at narrow widths or high Windows
+      text scaling.
+    locked: false
+    inputs:
+      button:
+        type: QPushButton
+        required: true
+    returns:
+      type: QPushButton
+    exceptions: []
+    side_effects: Updates button sizing policy, tooltip, minimum width, and minimum height.
+  - name: _scaled_list_width
+    description: Calculate a list widget width from current font metrics and padding
+      so navigation can respond to Windows text scaling.
+    locked: false
+    inputs:
+      list_widget:
+        type: QListWidget
+        required: true
+      padding:
+        type: int
+        required: true
+    returns:
+      type: int
+    exceptions: []
+    side_effects: none
+  - name: _horizontal_scroll_panel
+    description: Wrap a horizontal PySide layout in a frame-free scroll area so
+      controls remain readable on narrow windows instead of being clipped.
+    locked: false
+    inputs:
+      child_layout:
+        type: QLayout
+        required: true
+      object_name:
+        type: str
+        required: true
+    returns:
+      type: QScrollArea
+    exceptions: []
+    side_effects: Creates PySide scroll/content widgets.
   - name: _admin_studio_paths
     description: Build the AdminStudioPaths using the current PySide module config
       constants.
@@ -527,7 +648,8 @@ classes:
     side_effects: none
   - name: _select_admin_nav_row
     description: Map grouped Admin Studio sidebar rows to editor stack pages while
-      skipping disabled group headers.
+      skipping disabled group headers and refreshing dashboard or Validation Review
+      panels when returning to those dynamic pages.
     locked: false
     inputs:
       row:
@@ -536,10 +658,29 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Updates the active Admin Studio editor stack page.
+    side_effects: Updates the active Admin Studio editor stack page and may rebuild
+      the cached Admin Dashboard or Validation Review content.
+  - name: _refresh_admin_dashboard_page
+    description: Rebuild the cached Admin Dashboard content so validation, dirty
+      counts, and draft change rows reflect current in-memory Admin Studio edits.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Replaces the visible Admin Dashboard content widget when it exists.
+  - name: _refresh_admin_validation_page
+    description: Rebuild the cached Validation Review content so blocking issue
+      cards reflect current in-memory Admin Studio draft edits.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Replaces the visible Validation Review content widget when it exists.
   - name: _admin_concept_panel
-    description: Build a concept-specific Admin Studio card with status chips and
-      guidance for section-specific editing risk.
+    description: Build the legacy generic Admin Studio concept panel helper; modern
+      Admin Studio pages no longer insert this scaffolding panel into visible sections.
     locked: false
     inputs:
       title:
@@ -555,21 +696,1899 @@ classes:
       type: QWidget
     exceptions: []
     side_effects: Creates PySide widgets.
-  - name: _admin_validation_page
-    description: Build the Admin Studio validation review screen with one card per
-      blocking issue and a targeted fix hint.
+  - name: _admin_dashboard_action_target
+    description: Map Admin Dashboard panel action text to the Admin Studio section
+      key opened by that shortcut.
     locked: false
     inputs:
-      tab:
-        type: QWidget
+      action:
+        type: str
         required: true
-      tab_layout:
-        type: QVBoxLayout
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _run_admin_dashboard_action
+    description: Execute an Admin Dashboard or Quick Links action by navigating to
+      its target section and invoking any specific routed action such as blank
+      notification rule creation while edit mode is active.
+    locked: false
+    inputs:
+      action:
+        type: str
+        required: true
+      target_key:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates the selected Admin Studio section and may clear the
+      Notifications editor into a new draft rule state.
+  - name: _admin_dashboard_validation_panel
+    description: Build the Admin Dashboard Validation Review panel with blocker
+      count, clickable top issue rows routed to affected admin sections, and Review
+      All Issues navigation.
+    locked: false
+    inputs:
+      validation_errors:
+        type: list[str]
+        required: true
+    returns:
+      type: QFrame
+    exceptions: []
+    side_effects: Creates PySide widgets, wires each issue to its inferred affected
+      affected admin item when possible through the shared validation issue router,
+      and wires Review All Issues to Validation.
+  - name: _admin_dashboard_draft_changes_panel
+    description: Build the Admin Dashboard Draft Changes panel with unsaved count,
+      changed-file rows, compact before/after summaries, empty saved state, and
+      View Change History action.
+    locked: false
+    inputs:
+      summary:
+        type: AdminStudioSummary
+        required: true
+    returns:
+      type: QFrame
+    exceptions: []
+    side_effects: Creates PySide widgets and wires View Change History to the grouped
+      Review Changes dialog.
+  - name: _admin_dashboard_publishing_readiness_panel
+    description: Build the Admin Dashboard Publishing Readiness checklist with
+      folder health, prompt validation, notification completeness, JSON file health,
+      overall blocked/ready status, and View System Health navigation.
+    locked: false
+    inputs:
+      summary:
+        type: AdminStudioSummary
+        required: true
+    returns:
+      type: QFrame
+    exceptions: []
+    side_effects: Creates PySide widgets and wires View System Health to Advanced JSON.
+  - name: _admin_dashboard_publishing_readiness_checks
+    description: Derive the Admin Dashboard Publishing Readiness checklist labels
+      and statuses from current validation errors.
+    locked: false
+    inputs:
+      validation_errors:
+        type: list[str]
+        required: true
+    returns:
+      type: list[tuple[str, str]]
+    exceptions: []
+    side_effects: none
+  - name: _admin_questions_flow_cards
+    description: Build the Questions & Flow screen from the current Admin Studio
+      draft with wrapping track tabs capped to two rows, per-track stacked flow
+      sections, question cards with compact reorder/duplicate/action buttons and
+      expanding prompt text, shared Add Question drop zone, and right-side edit
+      drawer.
+    locked: false
+    inputs: {}
+    returns:
+      type: QWidget
+    exceptions: []
+    side_effects: Creates Admin Studio question widgets, stores track button/first-question
+      mappings, and selects the first available track.
+  - name: _admin_question_flows
+    description: Build draft-backed TrackFlow objects for Questions & Flow from
+      the in-memory AdminStudioDraft rubric and question overrides without writing
+      files.
+    locked: false
+    inputs: {}
+    returns:
+      type: list[TrackFlow]
+    exceptions: []
+    side_effects: none
+  - name: _refresh_admin_questions_flow_cards
+    description: Replace the visible Questions & Flow card panel after draft mutations
+      so add, reorder, duplicate, and delete actions are reflected immediately.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Rebuilds the visible Questions & Flow card panel and reapplies
+      edit-mode enablement when editing is active.
+  - name: _select_admin_questions_track
+    description: Switch the Questions & Flow stacked page to the selected track,
+      update checked tab state, remember the active track for Add Question, and
+      populate the edit drawer from that track's first question.
+    locked: false
+    inputs:
+      track_key:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates tab checked state, question-flow stack index, current
+      question-track key, and visible question drawer fields.
+  - name: _admin_question_sections
+    description: Group Admin Studio question-flow items into Opening, Qualification,
+      Core Traits, and Closing sections for the card-based flow builder.
+    locked: false
+    inputs:
+      items:
+        type: list[FlowQuestion]
+        required: true
+    returns:
+      type: list[tuple[str, list[tuple[int, FlowQuestion]]]]
+    exceptions: []
+    side_effects: none
+  - name: _move_admin_question
+    description: Move one Questions & Flow card within its track flow into the in-memory
+      Admin Studio draft while preserving the question type and id.
+    locked: false
+    inputs:
+      track_key:
+        type: str
+        required: true
+      from_index:
+        type: int
+        required: true
+      to_index:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Mutates AdminStudioDraft question flow, refreshes the visible
+      question-flow cards and Admin Studio status, or surfaces a validation message
+      for invalid moves.
+  - name: _show_admin_track_dialog
+    description: Show the Admin Studio Create/Edit Track dialog from the Questions
+      & Flow Add Track action.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Creates and shows a PySide dialog.
+  - name: _build_admin_track_dialog
+    description: Build the Admin Studio Create/Edit Track dialog with track name,
+      key, description, active status, cancel, and save controls.
+    locked: false
+    inputs: {}
+    returns:
+      type: QDialog
+    exceptions: []
+    side_effects: Creates PySide dialog widgets.
+  - name: _save_admin_track_dialog
+    description: Save the Create/Edit Track dialog fields into the in-memory Admin
+      Studio draft and refresh visible status pills without publishing.
+    locked: false
+    inputs:
+      dialog:
+        type: QDialog
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Mutates AdminStudioDraft rubric/override data; may show a validation
+      warning dialog; closes the track dialog on success.
+  - name: _suggest_admin_track_key
+    description: Convert a track label into a lowercase underscore-safe draft track
+      key suggestion.
+    locked: false
+    inputs:
+      label:
+        type: str
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _admin_question_edit_drawer
+    description: Build the right-side Admin Studio Edit Question drawer with question
+      metadata, blank new-question fields, text editor, type and linked-trait combo
+      boxes, required/scoring checkboxes, scoring-weight selection, weak-response
+      flagging, live character counters, internal notes, and edit-gated Save
+      Changes control.
+    locked: false
+    inputs: {}
+    returns:
+      type: QWidget
+    exceptions: []
+    side_effects: Creates PySide drawer widgets and stores drawer field references.
+  - name: _set_admin_new_question_fields_visible
+    description: Toggle the Create/Edit Question blank-state fields in the Admin
+      Studio question drawer.
+    locked: false
+    inputs:
+      visible:
+        type: bool
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates visible state for new-question drawer controls.
+  - name: _sync_admin_question_drawer_counters
+    description: Refresh Admin Studio Edit Question drawer character counters for
+      question text and internal notes.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates visible PySide counter labels.
+  - name: _select_admin_question_card
+    description: Populate the Admin Studio Edit Question drawer from a selected
+      question card without changing the question id.
+    locked: false
+    inputs:
+      track_key:
+        type: str
+        required: true
+      order:
+        type: int
+        required: true
+      question:
+        type: FlowQuestion
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates visible drawer fields and selected-question state.
+  - name: _start_admin_new_question
+    description: Populate the Admin Studio question drawer with a blank custom-question
+      state from the Add Question drop zone for the active track, including default
+      section and position.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates visible drawer fields and selected-question state.
+  - name: _save_admin_question_drawer
+    description: Save the selected Admin Studio question drawer text, or create
+      a new custom question from the blank drawer state, into the in-memory admin
+      draft and mirrored review table; file writes still require the existing
+      review/apply flow.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions:
+    - ValueError
+    side_effects: Mutates AdminStudioDraft question overrides, visible table text,
+      and refreshes the visible question-flow cards when a new question is created.
+  - name: _duplicate_admin_question
+    description: Duplicate a selected Admin Studio question into the in-memory draft
+      as a new custom question inserted after the source flow card, mirror it into
+      the review table, and keep file writes behind the existing review/apply flow.
+    locked: false
+    inputs:
+      track_key:
+        type: str
+        required: true
+      question_type:
+        type: str
+        required: true
+      question_id:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions:
+    - ValueError
+    side_effects: Mutates AdminStudioDraft question overrides, visible table rows,
+      visible question-flow cards, and admin status labels.
+  - name: _delete_admin_question_drawer
+    description: Delete the selected Admin Studio question from the in-memory draft
+      question flow, remove matching custom-question overrides when applicable,
+      clear the drawer selection, and update the mirrored review table; file writes
+      still require the existing review/apply flow.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions:
+    - ValueError
+    side_effects: Mutates AdminStudioDraft question overrides, visible table rows,
+      visible question-flow cards, drawer state, and admin status labels.
+  - name: _admin_object_suffix
+    description: Convert an arbitrary Admin Studio key into a stable Qt object-name
+      suffix for testable controls.
+    locked: false
+    inputs:
+      value:
+        type: str
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _admin_rubric_trait_cards
+    description: Build the Rubrics screen trait-card list with summary metrics,
+      search input, priority, weight, and linked-question filters, grid/list view
+      toggle metadata, selectable trait cards, and right-side rubric trait editor.
+    locked: false
+    inputs: {}
+    returns:
+      type: QWidget
+    exceptions: []
+    side_effects: Creates Rubrics widgets, stores filter controls/card metadata,
+      and selects the first trait when present.
+  - name: _filter_admin_rubric_traits
+    description: Apply Rubrics search, priority, weight, and linked-question controls
+      to trait cards while preserving filter-match metadata for tests and UI state.
+    locked: false
+    inputs:
+      _args:
+        type: Any
+        required: false
+        default: null
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates Rubrics trait card visibility and adminRubricFilterMatch
+      widget properties.
+  - name: _admin_rubric_trait_editor
+    description: Build the mockup-style Admin Studio Rubrics trait editor with
+      overview tabs, editable trait metadata, primary question, edit-gated
+      weight stepper, applicable-track checkboxes plus descriptor and sample-answer text controls,
+      sample-answer rows, validation impact panel, linked-question panel, publish-rule
+      checklist rows, and edit-gated Save Changes control.
+    locked: false
+    inputs:
+      trait:
+        type: dict[str, Any]
         required: true
     returns:
       type: QWidget
     exceptions: []
-    side_effects: Adds validation widgets to the supplied page.
+    side_effects: Creates PySide rubric editor widgets and stores current editor
+      field references, including score descriptor and sample-answer editors keyed 1 through 5,
+      track applicability checkboxes keyed by track id, and linked-question preview.
+  - name: _select_admin_rubric_trait
+    description: Populate the Admin Studio Rubrics trait editor from a selected
+      trait card, including score descriptor editor text, applicable-track
+      checkbox state, and linked-question preview text.
+    locked: false
+    inputs:
+      trait:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates visible rubric editor fields and selected-trait state.
+  - name: _open_admin_rubric_linked_question
+    description: Route from the Rubrics linked-question panel to Questions & Flow
+      and select the matching current trait question card without changing draft data.
+    locked: false
+    inputs:
+      trait_id:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Switches Admin Studio navigation to Questions & Flow and updates
+      the visible question drawer when the linked trait exists.
+  - name: _save_admin_rubric_trait_editor
+    description: Save the selected Admin Studio rubric trait editor fields into
+      the in-memory admin draft, including score descriptors, sample answers, and applicable tracks, and mirrored rubrics review table; file writes
+      still require the existing draft/review/apply flow.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions:
+    - ValueError
+    side_effects: Mutates AdminStudioDraft rubric data and visible rubrics table
+      text for the selected trait.
+  - name: _refresh_admin_rubric_trait_cards
+    description: Rebuild the Admin Studio Rubrics trait-card/editor region from
+      current draft rubric data and optionally reselect a trait after draft mutations.
+    locked: false
+    inputs:
+      selected_trait_id:
+        type: str
+        required: false
+        default: ""
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Replaces visible Rubrics trait-card widgets, preserves edit-mode
+      enabled state, and repopulates selected trait editor fields.
+  - name: _duplicate_admin_rubric_trait
+    description: Duplicate the selected Admin Studio Rubrics trait through the
+      AdminStudioDraft seam, append the hidden review-table row, refresh trait
+      cards, and select the new draft trait without writing files.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Mutates AdminStudioDraft rubric data, visible Rubrics cards,
+      selected trait editor state, hidden rubrics review table, and admin dirty status.
+  - name: _delete_admin_rubric_trait
+    description: Delete the selected Admin Studio Rubrics trait through the
+      AdminStudioDraft seam, remove the hidden review-table row, refresh trait
+      cards, and select the first remaining draft trait without writing files.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Mutates AdminStudioDraft rubric data, visible Rubrics cards,
+      selected trait editor state, hidden rubrics review table, and admin dirty status.
+  - name: _admin_signal_hint_cards
+    description: Build the read-only Signal Hints reference screen with searchable
+      hint-group cards, category chips, selected-card state, selected detail panel, colored High/Moderate/Low
+      signal-level cards, example phrases, usage notes, and metadata footer.
+    locked: false
+    inputs: {}
+    returns:
+      type: QWidget
+    exceptions: []
+    side_effects: Creates Signal Hints widgets, search/category wiring, selected-detail
+      labels, and tone-styled signal-level cards.
+  - name: _admin_signal_hint_count
+    description: Return the number of configured signal hint entries for an Admin
+      Studio rubric trait, falling back to descriptor count when explicit hints
+      are not present.
+    locked: false
+    inputs:
+      trait:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: int
+    exceptions: []
+    side_effects: none
+  - name: _admin_signal_hint_values
+    description: Return displayable Signal Hints reference values for a rubric
+      trait, using explicit signal_hints first and score descriptors as fallback.
+    locked: false
+    inputs:
+      trait:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: list[str]
+    exceptions: []
+    side_effects: none
+  - name: _admin_signal_example_values
+    description: Return example candidate phrase values for the Signal Hints detail
+      panel from sample answers or signal hints.
+    locked: false
+    inputs:
+      trait:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: list[str]
+    exceptions: []
+    side_effects: none
+  - name: _select_admin_signal_hint
+    description: Populate the Admin Studio Signal Hints detail panel from the selected
+      trait reference card.
+    locked: false
+    inputs:
+      trait:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates visible Signal Hints detail labels, selected reference
+      content, and selected-state properties on hint cards/buttons.
+  - name: _set_admin_signal_category
+    description: Select an Admin Studio Signal Hints category chip and reapply
+      the combined category plus text filter.
+    locked: false
+    inputs:
+      category:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates Signal Hints category chip selected-state properties
+      and visible hint-group card filtering.
+  - name: _filter_admin_signal_hints
+    description: Filter Admin Studio Signal Hints group cards by selected category
+      plus trait name, id, definition, signal text, or example phrase.
+    locked: false
+    inputs:
+      text:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates Signal Hints group card visibility and search-match widget
+      properties.
+  - name: _admin_model_option_cards
+    description: Build the DeepSeek Model decision screen with allowlisted model
+      option cards, selected model summary, hardware notes, Ollama compatibility
+      notes, and estimated performance guidance.
+    locked: false
+    inputs: {}
+    returns:
+      type: QWidget
+    exceptions: []
+    side_effects: Creates PySide widgets and wires Select this model buttons to
+      the hidden backing model selector.
+  - name: _admin_deepseek_model_selector
+    description: Build a hidden, zero-height backing QComboBox that preserves
+      allowlisted DeepSeek model selection state for draft capture while keeping
+      the visible screen card-based instead of a plain dropdown.
+    locked: false
+    inputs: {}
+    returns:
+      type: QWidget
+    exceptions: []
+    side_effects: Creates AdminStudioDeepseekModelSelector with adminBackingField
+      property, current allowlisted model data, and hidden collapsed display state.
+  - name: _admin_deepseek_model_options
+    description: Return display metadata for allowlisted local Ollama DeepSeek model
+      cards.
+    locked: false
+    inputs: {}
+    returns:
+      type: list[tuple[str, str, str, str, str, str]]
+    exceptions: []
+    side_effects: none
+  - name: _admin_selected_deepseek_model_panel
+    description: Build the selected DeepSeek model detail panel with model attributes,
+      rationale, publish restrictions, and model action buttons.
+    locked: false
+    inputs:
+      selected:
+        type: str
+        required: true
+      models:
+        type: list[tuple[str, str, str, str, str, str]]
+        required: true
+    returns:
+      type: QWidget
+    exceptions: []
+    side_effects: Creates PySide widgets and wires Use this model to the backing
+      selector.
+  - name: _set_admin_model_selector
+    description: Update the hidden backing DeepSeek model selector from a model
+      card action.
+    locked: false
+    inputs:
+      model:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates AdminStudioDeepseekModelSelector current index when the
+      model is allowlisted.
+  - name: _admin_offer_template_health_panel
+    description: Build the Templates & Folders Offer Template Health panel from
+      configured full-time, part-time, and contractor template paths, including
+      active count, per-template validation cards, New Template action, and View
+      all templates action.
+    locked: false
+    inputs:
+      settings:
+        type: dict[str, dict[str, Any]]
+        required: true
+    returns:
+      type: QWidget
+    exceptions: []
+    side_effects: Creates PySide widgets and checks whether configured template
+      paths exist.
+  - name: _add_admin_offer_template_to_selected_school
+    description: Add a selected Word offer template path to the currently selected
+      Templates & Folders school as the draft Standard Offer template.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Opens a file picker, mutates AdminStudioDraft school settings,
+      refreshes the selected school drawer linked-template text, and updates Admin
+      Studio dirty/status pills.
+  - name: _select_admin_school_folder
+    description: Populate the Admin Studio Templates & Folders school detail drawer
+      from a selected school folder card.
+    locked: false
+    inputs:
+      school:
+        type: str
+        required: true
+      cfg:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates visible school drawer fields, friendly linked-template
+      labels, selected school-folder state, and selected card/button/badge properties.
+  - name: _start_admin_new_school_folder
+    description: Prepare the Templates & Folders detail drawer for adding a new
+      school folder draft entry.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Clears selected school-folder state and visible drawer fields,
+      sets the drawer to Add School mode, and shows draft guidance.
+  - name: _run_admin_school_card_action
+    description: Select a Templates & Folders school card and run its Browse,
+      Copy Path, or Test Write action against the live draft settings for that
+      school.
+    locked: false
+    inputs:
+      school:
+        type: str
+        required: true
+      cfg:
+        type: dict[str, Any]
+        required: true
+      handler:
+        type: Callable[[], None]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates the visible school detail drawer to the selected school
+      and delegates to the requested folder action.
+  - name: _run_admin_school_test_write
+    description: Run a safe fixed-filename write probe against the selected Templates
+      & Folders drawer path without creating directories or overwriting an existing
+      probe file.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Writes and removes _admin_studio_test_write.tmp in the selected
+      school folder when possible; updates visible validation and last test-write
+      labels.
+  - name: _copy_admin_school_folder_path
+    description: Copy the selected Templates & Folders drawer path to the Qt clipboard
+      and show a visible status message.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates QApplication clipboard text and the visible last test-write
+      label.
+  - name: _browse_admin_school_folder_path
+    description: Open a native folder picker for the selected Templates & Folders
+      drawer path and stage the chosen path in the drawer without saving files.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Opens QFileDialog, updates the visible school folder path field,
+      validation label, and last test-write label when a folder is chosen.
+  - name: _save_admin_school_folder_drawer
+    description: Save the selected or newly added Templates & Folders drawer school
+      name and interview notes path into the in-memory admin draft and mirrored
+      school folder review table; file writes still require the existing draft/review/apply
+      flow.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions:
+    - ValueError
+    side_effects: Mutates AdminStudioDraft school settings, supports draft renames,
+      refreshes the visible school folder table text, updates the selected drawer,
+      and syncs Admin Studio status.
+  - name: _delete_admin_school_folder_drawer
+    description: Remove the selected Templates & Folders school setting from the
+      in-memory admin draft without deleting any folder from disk.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Mutates AdminStudioDraft school settings, refreshes the visible
+      school folder table, clears selected drawer fields, and syncs Admin Studio
+      status.
+  - name: _sync_admin_school_folder_table
+    description: Rebuild the hidden Templates & Folders review table from current
+      in-memory draft school settings while preserving edit-mode flags.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Replaces PySideSchoolFolderSettingsTable rows and refreshes row
+      heights.
+  - name: _admin_email_settings_page
+    description: Build the Admin Studio Email Settings screen for shared company
+      sender account identity, exclusive IMAP/POP account type selection with
+      mockup-style panels, incoming mail settings, outgoing SMTP settings, connection
+      guide, status, and Save Settings action.
+    locked: false
+    inputs: {}
+    returns:
+      type: QWidget
+    exceptions: []
+    side_effects: Reads shared email account settings and creates PySide widgets.
+  - name: _set_admin_email_account_type
+    description: Switch the Email Settings account type between IMAP and POP3,
+      update the incoming mail title, and optionally apply Gmail provider defaults.
+    locked: false
+    inputs:
+      account_type:
+        type: str
+        required: true
+      apply_defaults:
+        type: bool
+        required: false
+        default: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates Email Settings IMAP/POP3 button state, incoming server,
+      port, encryption, and section title.
+  - name: _admin_email_settings_from_fields
+    description: Build an EmailSettings value from the Email Settings screen fields
+      without writing or sending email.
+    locked: false
+    inputs: {}
+    returns:
+      type: EmailSettings
+    exceptions: []
+    side_effects: Reads visible PySide form fields.
+  - name: _save_admin_email_settings
+    description: Validate required shared sender fields, save the company email
+      account settings, and clear cached notification service so later notification
+      triggers use the saved SMTP settings.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Writes shared email account JSON settings and updates visible status.
+  - name: _test_admin_email_connection
+    description: Validate required Email Settings fields, verify SMTP transport/login,
+      and update connection status without saving settings or sending email.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Opens an SMTP or SMTP_SSL connection through verify_email_connection
+      and updates visible connection status label.
+  - name: _filter_admin_notification_rules
+    description: Apply the Notifications enabled-status filter to rule cards while
+      preserving filter-match metadata for tests and UI state.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates visible notification rule card visibility and
+      adminNotificationFilterMatch properties.
+  - name: _sort_admin_notification_rules
+    description: Apply the Notifications sort control to rule cards by event key
+      or active-recipient count while preserving enabled-status filter state.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Reorders visible notification rule widgets in the rule list panel,
+      updates adminNotificationSortRank properties, and reapplies the enabled-status
+      filter.
+  - name: _set_admin_notification_view_mode
+    description: Apply the Notifications Grid/List toggle to the rule list panel
+      and rule card metadata without mutating notification rules.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates adminNotificationViewMode properties on the rule list
+      panel and visible notification rule cards.
+  - name: _clear_admin_notification_filters
+    description: Reset Notifications filters to All statuses and show all rule
+      cards.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates the enabled-status filter control and rule card visibility.
+  - name: _refresh_admin_notification_rule_cards
+    description: Rebuild the visible Notifications rule cards/editor after draft
+      rule create, update, or delete actions and optionally reselect one event.
+    locked: false
+    inputs:
+      selected_event:
+        type: str
+        required: false
+        default: ''
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Replaces visible notification card/editor widgets and reapplies
+      Admin Studio edit-mode enablement.
+  - name: _create_admin_notification_rule_editor
+    description: Clear the Notifications editor into a blank draft notification
+      rule state so Start Editing users can create a new rule from the card toolbar.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Clears selected notification metadata, deselects visible cards,
+      resets rule editor fields to inactive event-trigger defaults, clears recipients,
+      refreshes recipient chips and validation, and focuses the event field.
+  - name: _admin_notification_date_fields
+    description: Return suggested notification date-field names for relative-date
+      scheduling, including start date, offer generated date, date notice given,
+      last working day, and legacy alias keys while leaving the editor combo editable
+      for future event date payload keys.
+    locked: false
+    inputs: {}
+    returns:
+      type: list[str]
+    exceptions: []
+    side_effects: none
+  - name: _admin_notification_timing_label
+    description: Convert a persisted notification trigger timing key into an
+      admin-facing label for event or relative-date scheduling.
+    locked: false
+    inputs:
+      timing:
+        type: str
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _admin_notification_selected_timing
+    description: Return the persisted notification trigger timing key selected
+      by the trigger combo.
+    locked: false
+    inputs: {}
+    returns:
+      type: str
+    exceptions: []
+    side_effects: Reads the current Notifications editor trigger combo-box item data.
+  - name: _admin_notification_date_field_label
+    description: Convert a persisted notification date-field key or supported alias
+      into an admin-facing label for relative-date scheduling controls.
+    locked: false
+    inputs:
+      field:
+        type: str
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _admin_notification_selected_date_field
+    description: Return the persisted notification date-field key selected by the
+      editable date-field combo, preserving custom typed payload keys.
+    locked: false
+    inputs: {}
+    returns:
+      type: str
+    exceptions: []
+    side_effects: Reads the current Notifications editor combo-box text and item data.
+  - name: _admin_notification_schedule_text
+    description: Format a notification rule's event or date-offset timing into
+      readable before/on/after scheduling text.
+    locked: false
+    inputs:
+      rule:
+        type: NotificationRule
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _set_admin_notification_offset_controls
+    description: Populate the Notifications editor before/on/after direction and
+      absolute day count controls from a signed offset_days value.
+    locked: false
+    inputs:
+      offset_days:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates visible Notifications date-offset controls.
+  - name: _admin_notification_signed_offset_days
+    description: Convert the Notifications editor direction and absolute day count
+      controls into signed offset_days where negative means before and positive
+      means after.
+    locked: false
+    inputs: {}
+    returns:
+      type: int
+    exceptions: []
+    side_effects: none
+  - name: _sync_admin_notification_schedule_summary
+    description: Refresh the visible Notifications schedule summary from current
+      event/date-field/direction/day controls.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates visible Notifications schedule summary label.
+  - name: _sync_admin_notification_recipients_from_text
+    description: Synchronize removable Notifications recipient chips from the
+      comma-separated recipient text field while preserving known role/name labels.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates selected recipient metadata, visible recipient chips, and
+      notification validation.
+  - name: _admin_notification_recipient_emails
+    description: Parse normalized recipient email entries from the Notifications
+      editor recipient text field.
+    locked: false
+    inputs: {}
+    returns:
+      type: list[str]
+    exceptions: []
+    side_effects: none
+  - name: _render_admin_notification_recipient_chips
+    description: Render the Notifications recipient selector chips with role/email
+      labels and edit-gated Remove actions.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Rebuilds visible recipient chip widgets and remove buttons.
+  - name: _remove_admin_notification_recipient
+    description: Remove one recipient from the Notifications editor chip selector,
+      update the backing recipient text field, and refresh validation.
+    locked: false
+    inputs:
+      email:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates selected recipient metadata, backing recipient text, visible
+      recipient chips, and notification validation.
+  - name: _select_admin_notification_rule
+    description: Populate the Admin Studio Notifications rule editor from the selected
+      rule card, including selected-card state, rule ID/event metadata, editable
+      date field, before/on/after direction, absolute day count, recipient chips,
+      and schedule summary.
+    locked: false
+    inputs:
+      rule:
+        type: NotificationRule
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates notification editor fields, selected notification rule
+      state, selected-card styling, editor metadata, recipient chips, and date-offset
+      controls.
+  - name: _delete_admin_notification_rule_editor
+    description: Remove the selected Notifications rule from the in-memory admin
+      draft, visible rule card list, and mirrored notification review table without
+      writing files until the existing Save Draft/Review/Publish flow runs.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Mutates AdminStudioDraft notification rules, removes the selected
+      notification card and table row, selects the next available rule or clears
+      the editor, and refreshes Admin Studio status.
+  - name: _insert_admin_notification_variable
+    description: Insert a notification template variable token at the current
+      notification body editor cursor when edit mode has enabled the editor.
+    locked: false
+    inputs:
+      token:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Mutates visible notification body text and refreshes validation
+      label.
+  - name: _insert_admin_notification_subject_variable
+    description: Insert a notification template variable token at the current
+      notification subject editor cursor when edit mode has enabled the editor.
+    locked: false
+    inputs:
+      token:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Mutates visible notification subject text and refreshes
+      validation label.
+  - name: _insert_admin_notification_body_snippet
+    description: Insert a notification email body toolbar snippet or variable token
+      at the current body editor cursor when edit mode has enabled the editor.
+    locked: false
+    inputs:
+      text:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Mutates visible notification body text and refreshes validation
+      label.
+  - name: _sync_admin_notification_rule_validation
+    description: Refresh the Notifications rule editor validation summary for active
+      rules missing subject, body, recipients, selected date-field basis, or recognized template variables,
+      including live subject/body/recipient edits before Save Changes.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates visible notification validation label, schedule summary,
+      and Variables Preview content.
+  - name: _show_admin_notification_preview_dialog
+    description: Show the Notifications template preview dialog for the currently
+      selected rule editor subject and body.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Creates and shows a PySide preview dialog.
+  - name: _build_admin_notification_preview_dialog
+    description: Build the Notifications template preview dialog with rendered
+      sample subject/body output and unresolved variable warnings.
+    locked: false
+    inputs: {}
+    returns:
+      type: QDialog
+    exceptions: []
+    side_effects: Creates PySide dialog widgets.
+  - name: _admin_notification_preview_sample
+    description: Return deterministic sample staffing data for rendering notification
+      template previews without external data access.
+    locked: false
+    inputs: {}
+    returns:
+      type: dict[str, str]
+    exceptions: []
+    side_effects: none
+  - name: _render_admin_notification_template
+    description: Render a notification template with sample data while preserving
+      and reporting unresolved placeholders.
+    locked: false
+    inputs:
+      template:
+        type: str
+        required: true
+      sample:
+        type: dict[str, str]
+        required: true
+    returns:
+      type: tuple[str, list[str]]
+    exceptions: []
+    side_effects: none
+  - name: _save_admin_notification_rule_editor
+    description: Save the selected Notifications rule editor fields into the in-memory
+      admin draft and mirrored notifications review table, including typed date
+      field and signed before/after offset; file writes still require the existing
+      draft/review/apply flow.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions:
+    - ValueError
+    side_effects: Mutates AdminStudioDraft notification rules and visible notifications
+      table text for the selected rule.
+  - name: _select_admin_prompt_template
+    description: Populate the Admin Studio DeepSeek Prompts editor from the selected
+      prompt template card and refresh validation plus editor footer state.
+    locked: false
+    inputs:
+      key:
+        type: str
+        required: true
+      value:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates visible prompt editor fields, selected prompt key state,
+      validation label, and editor footer label.
+  - name: _sync_admin_prompt_validation
+    description: Refresh the DeepSeek Prompts editor validation summary for blank
+      prompt text, ready prompt text, unknown template variables, and missing
+      required variables for known prompt templates.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates visible prompt validation label.
+  - name: _sync_admin_prompt_editor_footer
+    description: Refresh the DeepSeek Prompts editor footer with current cursor
+      line, cursor column, spacing, encoding, newline, and format status.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates visible prompt editor footer label.
+  - name: _admin_prompt_summary_strip
+    description: Build the DeepSeek Prompts feature summary strip with Variables,
+      Preview, Version review, Validation, Prompt Settings, and New Prompt controls.
+    locked: false
+    inputs: {}
+    returns:
+      type: QFrame
+    exceptions: []
+    side_effects: Creates PySide summary strip widgets and wires summary actions.
+  - name: _filter_admin_prompt_templates
+    description: Filter DeepSeek Prompts template cards by prompt key or prompt
+      text from the visible prompt search input.
+    locked: false
+    inputs:
+      text:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates DeepSeek prompt template card visibility.
+  - name: _add_admin_prompt_template_card
+    description: Add a DeepSeek Prompt template card to the visible prompt list
+      with stable object metadata and selection wiring.
+    locked: false
+    inputs:
+      key:
+        type: str
+        required: true
+      value:
+        type: str
+        required: true
+    returns:
+      type: QFrame
+    exceptions: []
+    side_effects: Creates PySide prompt card widgets and appends them to the DeepSeek
+      Prompt template list.
+  - name: _create_admin_prompt_template
+    description: Create a uniquely named custom DeepSeek prompt template in the
+      in-memory admin draft, mirror it to the backing prompts table, add a visible
+      prompt card, select it, and refresh Admin Studio dirty status.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Mutates AdminStudioDraft prompts and visible prompt list/table
+      state; file writes still require the existing save/review/publish flow.
+  - name: _admin_prompt_status
+    description: Return display status text for the selected DeepSeek prompt template.
+    locked: false
+    inputs:
+      key:
+        type: str
+        required: true
+      value:
+        type: str
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _admin_prompt_description
+    description: Return mockup description text for the selected DeepSeek prompt
+      template key.
+    locked: false
+    inputs:
+      key:
+        type: str
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _admin_prompt_metadata
+    description: Return mockup version, draft status, and last-modified metadata
+      text for the selected DeepSeek prompt template key.
+    locked: false
+    inputs:
+      key:
+        type: str
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _insert_admin_prompt_variable
+    description: Insert a prompt variable token at the current DeepSeek Prompts
+      editor cursor when edit mode has enabled the prompt editor.
+    locked: false
+    inputs:
+      token:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Mutates visible prompt editor text and refreshes validation label.
+  - name: _show_admin_prompt_expand_dialog
+    description: Show the DeepSeek Prompts expanded editor dialog for the currently
+      selected prompt editor text.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Creates and shows a PySide expanded prompt editor dialog.
+  - name: _build_admin_prompt_expand_dialog
+    description: Build the DeepSeek Prompts expanded editor dialog with current
+      prompt text, edit-mode-aware editor enablement, optional Apply to Editor
+      action, and close control.
+    locked: false
+    inputs: {}
+    returns:
+      type: QDialog
+    exceptions: []
+    side_effects: Creates PySide dialog widgets and may wire Apply to Editor to
+      update the visible prompt editor text.
+  - name: _show_admin_prompt_settings_dialog
+    description: Show the DeepSeek Prompts settings dialog for validation policy,
+      required variables, and supported sample-data variables.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Creates and shows a PySide prompt settings dialog.
+  - name: _build_admin_prompt_settings_dialog
+    description: Build the DeepSeek Prompts settings dialog with publish-blocking
+      validation policy, required prompt variables, and supported variable chips.
+    locked: false
+    inputs: {}
+    returns:
+      type: QDialog
+    exceptions: []
+    side_effects: Creates PySide dialog widgets.
+  - name: _show_admin_version_history_dialog
+    description: Show the Admin Studio Version History dialog for the selected
+      prompt/config item.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Creates and shows a PySide version history dialog.
+  - name: _show_admin_global_version_history_dialog
+    description: Show the Admin Studio Version History dialog for all tracked admin
+      artifact types from the dashboard shortcut.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Creates and shows a PySide version history dialog.
+  - name: _build_admin_version_history_dialog
+    description: Build the Admin Studio Version History dialog with version, status,
+      date, user, note, and changed item entries for either the selected prompt
+      or all tracked admin artifact types.
+    locked: false
+    inputs:
+      item_name:
+        type: str | None
+        required: false
+        default: None
+    returns:
+      type: QDialog
+    exceptions: []
+    side_effects: Creates PySide dialog widgets.
+  - name: _admin_version_history_entries
+    description: Return display entries for Admin Studio Version History.
+    locked: false
+    inputs:
+      item_name:
+        type: str
+        required: true
+    returns:
+      type: list[dict[str, str]]
+    exceptions: []
+    side_effects: none
+  - name: _show_admin_prompt_preview_dialog
+    description: Show the DeepSeek Prompt Preview dialog for the currently selected
+      prompt editor text.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Creates and shows a PySide preview dialog.
+  - name: _build_admin_prompt_preview_dialog
+    description: Build the DeepSeek Prompt Preview dialog with rendered sample
+      prompt text, deterministic model-response preview, JSON validation status,
+      and unresolved variable warnings.
+    locked: false
+    inputs: {}
+    returns:
+      type: QDialog
+    exceptions: []
+    side_effects: Creates PySide dialog widgets.
+  - name: _admin_prompt_preview_sample
+    description: Return deterministic sample interview transcript data for rendering
+      DeepSeek prompt previews without calling a model.
+    locked: false
+    inputs: {}
+    returns:
+      type: dict[str, str]
+    exceptions: []
+    side_effects: none
+  - name: _render_admin_prompt_template
+    description: Render a DeepSeek prompt template with sample data while preserving
+      and reporting unresolved placeholders.
+    locked: false
+    inputs:
+      template:
+        type: str
+        required: true
+      sample:
+        type: dict[str, str]
+        required: true
+    returns:
+      type: tuple[str, list[str]]
+    exceptions: []
+    side_effects: none
+  - name: _save_admin_prompt_editor
+    description: Save the selected DeepSeek prompt editor text into the in-memory
+      admin draft and mirrored prompts review table; file writes still require
+      the existing draft/review/apply flow.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions:
+    - ValueError
+    side_effects: Mutates AdminStudioDraft prompts and visible prompts table text
+      for the selected prompt.
+  - name: _admin_advanced_json_cards
+    description: Build the Admin Studio Advanced JSON read-only review workspace
+      with mockup summary strip, JSON file cards, center code viewer controls,
+      selected-card state, copy-to-clipboard support for viewer text and file path,
+      footer status, file details, issue card, read-only notice, and guarded Open
+      in Editor action.
+    locked: false
+    inputs: {}
+    returns:
+      type: QWidget
+    exceptions: []
+    side_effects: Creates PySide widgets and selects the first configured source
+      JSON file.
+  - name: _copy_admin_json_viewer_text
+    description: Copy the visible Advanced JSON read-only viewer contents to the
+      Qt clipboard and show a visible copy status.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates QApplication clipboard text and AdminStudioJsonCopyStatus.
+  - name: _copy_admin_json_file_path
+    description: Copy the selected Advanced JSON source file path to the Qt clipboard
+      and show a visible copy status.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates QApplication clipboard text and AdminStudioJsonCopyStatus.
+  - name: _jump_admin_json_issue_line
+    description: Move the Advanced JSON read-only viewer cursor to the current
+      selected file's validation issue line.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates AdminStudioJsonCodeViewer cursor position and focus.
+  - name: _sync_admin_json_line_numbers
+    description: Populate the Advanced JSON read-only viewer gutter with one line
+      number per visible document block and a warning marker on the current issue
+      line.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates AdminStudioJsonLineNumbers text.
+  - name: _install_admin_json_syntax_highlighter
+    description: Attach a read-only JSON syntax highlighter to the Advanced JSON
+      viewer document.
+    locked: false
+    inputs:
+      document:
+        type: QTextDocument
+        required: true
+    returns:
+      type: QSyntaxHighlighter
+    exceptions: []
+    side_effects: Creates a child QObject highlighter on the provided document.
+  - name: _highlight_admin_json_issue_line
+    description: Apply or clear the Advanced JSON read-only viewer full-width highlight
+      for the selected validation issue line.
+    locked: false
+    inputs:
+      line:
+        type: int | None
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates AdminStudioJsonCodeViewer extra selections.
+  - name: _admin_file_size_label
+    description: Return a compact display size label for an Admin Studio Advanced
+      JSON source file, or Missing when the file cannot be statted.
+    locked: false
+    inputs:
+      path:
+        type: Path
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: Reads file metadata.
+  - name: _select_admin_json_file
+    description: Populate the Admin Studio Advanced JSON read-only code viewer,
+      line-number gutter, issue-line highlight, and file detail panel from a selected
+      source JSON file card.
+    locked: false
+    inputs:
+      name:
+        type: str
+        required: true
+      path:
+        type: Path
+        required: true
+      description:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Reads local source JSON text, updates selected file-card state,
+      and updates visible Advanced JSON viewer, line-number gutter, issue-line
+      highlight, metadata labels, issue card, issue jump state, and viewer footer.
+  - name: _show_admin_json_editor_dialog
+    description: Show the guarded Admin Studio JSON Editor dialog for the selected
+      Advanced JSON source file.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Creates and shows a PySide JSON editor dialog.
+  - name: _show_admin_json_expand_dialog
+    description: Show the read-only Advanced JSON expanded viewer dialog for the
+      selected source file.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Creates and shows a PySide JSON expand dialog.
+  - name: _build_admin_json_expand_dialog
+    description: Build the read-only Advanced JSON expanded viewer dialog with
+      selected file name, description, visible viewer text, copy action, and close
+      control.
+    locked: false
+    inputs: {}
+    returns:
+      type: QDialog
+    exceptions: []
+    side_effects: Creates PySide dialog widgets and may update QApplication clipboard
+      text when Copy is clicked.
+  - name: _build_admin_json_editor_dialog
+    description: Build the guarded Admin Studio JSON Editor dialog with warning
+      text, edit-mode-gated JSON payload, validation status, and draft-only Save action.
+    locked: false
+    inputs: {}
+    returns:
+      type: QDialog
+    exceptions: []
+    side_effects: Creates PySide dialog widgets.
+  - name: _admin_json_editor_initial_text
+    description: Return formatted draft payload text for a supported Admin Studio
+      JSON file, falling back to file text when no draft payload mapping exists.
+    locked: false
+    inputs:
+      name:
+        type: str
+        required: true
+      path:
+        type: Path
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: May read a local JSON source file.
+  - name: _save_admin_json_editor_dialog
+    description: Validate edited JSON text only when global Start Editing mode is
+      active, reject invalid or non-object JSON, and move the editor cursor to the
+      JSON parse error line before copying supported payloads into the in-memory
+      Admin Studio draft without writing source files.
+    locked: false
+    inputs:
+      dialog:
+        type: QDialog
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Mutates AdminStudioDraft payloads for supported JSON files and
+      refreshes visible status/read-only viewer content.
+  - name: _admin_validation_summary_card
+    description: Build one Admin Studio Validation Review summary metric card.
+    locked: false
+    inputs:
+      title:
+        type: str
+        required: true
+      value:
+        type: str
+        required: true
+      note:
+        type: str
+        required: true
+    returns:
+      type: QWidget
+    exceptions: []
+    side_effects: Creates PySide validation summary widgets.
+  - name: _show_admin_review_changes_dialog
+    description: Capture current Admin Studio draft edits, validate them, and show
+      a non-modal grouped Review Changes dialog instead of immediately publishing.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: May show warning dialogs; creates and shows a PySide review dialog.
+  - name: _build_admin_review_changes_dialog
+    description: Build the grouped Admin Studio Review Changes dialog with changed
+      section cards, nested changed-file cards, human-readable change lines, before/after
+      snippets, and a final review checkbox that gates the Publish Changes handoff.
+    locked: false
+    inputs:
+      summary:
+        type: AdminChangeSummary
+        required: true
+    returns:
+      type: QDialog
+    exceptions: []
+    side_effects: Creates PySide dialog widgets.
+  - name: _admin_review_section_title
+    description: Map one changed Admin Studio payload filename to the user-facing
+      Admin Studio section heading used in Review Changes grouping.
+    locked: false
+    inputs:
+      filename:
+        type: str
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _admin_review_payload_diff_lines
+    description: Return compact before/after display lines for one changed Admin
+      Studio payload in the Review Changes dialog.
+    locked: false
+    inputs:
+      filename:
+        type: str
+        required: true
+      before:
+        type: Any
+        required: true
+      after:
+        type: Any
+        required: true
+    returns:
+      type: list[str]
+    exceptions: []
+    side_effects: none
+  - name: _admin_review_line_matches_file
+    description: Return whether a human-readable Admin Studio change summary line
+      belongs with a changed file card in the Review Changes dialog.
+    locked: false
+    inputs:
+      filename:
+        type: str
+        required: true
+      line:
+        type: str
+        required: true
+    returns:
+      type: bool
+    exceptions: []
+    side_effects: none
+  - name: _show_admin_publish_confirmation_dialog
+    description: Capture current Admin Studio draft edits, validate them, and show
+      a non-modal Publish Confirmation dialog for final confirmation before applying.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: May show warning dialogs; creates and shows a PySide publish
+      confirmation dialog.
+  - name: _build_admin_publish_confirmation_dialog
+    description: Build the Admin Studio Publish Confirmation dialog with validation
+      status, section summary cards, nested changed-file summaries, before/after
+      snippets, and a final confirmation checkbox that gates the Confirm Publish
+      action.
+    locked: false
+    inputs:
+      summary:
+        type: AdminChangeSummary
+        required: true
+    returns:
+      type: QDialog
+    exceptions: []
+    side_effects: Creates PySide dialog widgets.
+  - name: _publish_admin_draft_confirmed
+    description: Apply the already-reviewed Admin Studio draft, commit table baselines,
+      refresh the draft from saved files, leave edit mode, and update status text.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Writes changed admin configuration files through AdminStudio,
+      creates backups, and updates Admin Studio widgets.
+  - name: _show_admin_discard_confirmation_dialog
+    description: Show a non-modal Admin Studio Discard Changes confirmation dialog
+      when draft/table edits exist, or discard immediately when no edits exist.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: May capture visible table edits; creates and shows a PySide discard
+      confirmation dialog or resets admin widgets.
+  - name: _build_admin_discard_confirmation_dialog
+    description: Build the Admin Studio Discard Changes confirmation dialog showing
+      section-grouped changed files and before/after snippets that will be lost.
+    locked: false
+    inputs:
+      summary:
+        type: AdminChangeSummary
+        required: true
+    returns:
+      type: QDialog
+    exceptions: []
+    side_effects: Creates PySide dialog widgets.
+  - name: _discard_admin_changes_confirmed
+    description: Discard the current Admin Studio draft without prompting, revert
+      visible table edits, reset selectors, leave edit mode, and refresh status.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Resets AdminStudioDraft and updates Admin Studio widgets.
+  - name: _admin_validation_content
+    description: Build the Admin Studio validation review content with functional
+      issue filter controls, one card per blocking issue, plain-language Why this
+      matters and What to do sections, targeted fix hint, action button that opens
+      the affected Admin Studio section and exact affected notification/prompt when
+      available, View Details action for technical diagnostics, and a publish availability
+      panel with a disabled Publish blocked button while blockers remain.
+    locked: false
+    inputs: {}
+    returns:
+      type: QWidget
+    exceptions: []
+    side_effects: Creates Validation Review widgets from the current AdminStudioDraft.
+  - name: _admin_validation_publish_availability_panel
+    description: Build the Validation Review publish availability panel with a
+      disabled Publish blocked button when validation blockers exist, or a Publish
+      Changes button when clear.
+    locked: false
+    inputs:
+      blocked:
+        type: bool
+        required: true
+    returns:
+      type: QWidget
+    exceptions: []
+    side_effects: Creates PySide widgets and wires the clear-state Publish Changes
+      button to the publish confirmation dialog.
+  - name: _apply_admin_validation_issue_filter
+    description: Apply the selected Validation Review issue filter to issue card
+      visibility and adminValidationFilterMatch properties.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates Validation Review issue card visibility and filter-match
+      properties.
+  - name: _route_admin_validation_issue
+    description: Route one Validation Review issue action to the affected Admin
+      Studio section and select the specific notification rule, DeepSeek prompt,
+      or Advanced JSON file/line when the validation message names one.
+    locked: false
+    inputs:
+      error:
+        type: str
+        required: true
+      target_key:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Changes the selected Admin Studio section and may update the
+      selected notification rule/editor fields, selected prompt editor, or selected
+      Advanced JSON file viewer and issue line.
+  - name: _admin_validation_notification_event
+    description: Extract a notification event key from a validation error message
+      that references a named notification rule.
+    locked: false
+    inputs:
+      error:
+        type: str
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _admin_validation_prompt_key
+    description: Extract a DeepSeek prompt key from a validation error message that
+      references a named prompt or blank prompt key.
+    locked: false
+    inputs:
+      error:
+        type: str
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _admin_validation_json_target
+    description: Extract an Advanced JSON file target and optional line number from
+      a validation error message that references source JSON or question override
+      syntax.
+    locked: false
+    inputs:
+      error:
+        type: str
+        required: true
+    returns:
+      type: tuple[str, Path, str, int] | None
+    exceptions: []
+    side_effects: none
+  - name: _admin_validation_why_text
+    description: Return plain-language impact text explaining why one validation
+      issue matters.
+    locked: false
+    inputs:
+      error:
+        type: str
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _admin_validation_what_text
+    description: Return plain-language remediation text for one validation issue.
+    locked: false
+    inputs:
+      error:
+        type: str
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _show_admin_validation_details_dialog
+    description: Show a read-only Admin Studio Validation Details dialog for one
+      blocking issue.
+    locked: false
+    inputs:
+      error:
+        type: str
+        required: true
+      target_key:
+        type: str
+        required: true
+      fix_hint:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Creates and shows a PySide validation details dialog.
+  - name: _build_admin_validation_details_dialog
+    description: Build the Admin Studio Validation Details dialog with plain-language
+      issue text, target setting, suggested fix, and read-only raw validation output.
+    locked: false
+    inputs:
+      error:
+        type: str
+        required: true
+      target_key:
+        type: str
+        required: true
+      fix_hint:
+        type: str
+        required: true
+    returns:
+      type: QDialog
+    exceptions: []
+    side_effects: Creates PySide dialog widgets.
+  - name: _admin_validation_raw_output
+    description: Return JSON-formatted technical validation detail for one Admin
+      Studio blocking issue.
+    locked: false
+    inputs:
+      error:
+        type: str
+        required: true
+      target_key:
+        type: str
+        required: true
+      fix_hint:
+        type: str
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: Runs AdminStudioDraft validation to include current error list.
+  - name: _admin_validation_target_key
+    description: Map an Admin Studio validation error message to the section key
+      opened by the issue action button.
+    locked: false
+    inputs:
+      error:
+        type: str
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
   - name: _admin_validation_fix_hint
     description: Map an Admin Studio validation error message to the most relevant
       settings section for repair.
@@ -585,7 +2604,8 @@ classes:
   - name: _set_admin_editing_enabled
     description: Toggle Admin Studio tables and selector controls between read-only
       mode and explicit edit mode, including visible edit-state button text,
-      editable-cell highlighting/tooltips, and readable table wrapping.
+      editable-cell highlighting/tooltips, readable table wrapping, and initial
+      validation-gated publish action state.
     locked: false
     inputs:
       enabled:
@@ -595,8 +2615,28 @@ classes:
       type: None
     exceptions: []
     side_effects: Updates Admin Studio widgets.
+  - name: _save_admin_draft
+    description: Capture Admin Studio backing table edits into the in-memory draft
+      and refresh status/action state without publishing files.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: May show a warning dialog for invalid edits; updates Admin Studio
+      status widgets.
+  - name: _sync_admin_status
+    description: Refresh Admin Studio status pills, status text, and Publish Changes
+      enabled state from current draft counts and validation blockers.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates status labels, validation pill styling, and validation-gated
+      publish button state.
   - name: _review_admin_changes
-    description: Capture Admin Studio table edits and DeepSeek model selection,
+    description: Capture Admin Studio backing table edits and DeepSeek model selection,
       show changed files plus human-readable review confirmation, and apply confirmed
       valid changes through admin_studio with backups.
     locked: false
@@ -608,7 +2648,7 @@ classes:
       JSON files through AdminStudio only when confirmed and validation passes.
   - name: _discard_admin_changes
     description: Confirm when unsaved Admin Studio edits exist, reset the current
-      draft, revert edited table cells to their saved values, and return the UI
+      draft, revert edited backing table cells to their saved values, and return the UI
       to read-only mode.
     locked: false
     inputs: {}
@@ -616,6 +2656,29 @@ classes:
       type: None
     exceptions: []
     side_effects: May show confirmation dialog; updates Admin Studio widgets.
+  - name: _admin_table
+    description: Build a hidden zero-height Admin Studio QTableWidget backing store
+      for draft capture and tests while modern cards, drawers, and panels remain
+      the visible UI surface.
+    locked: false
+    inputs:
+      key:
+        type: str
+        required: true
+      headers:
+        type: list[str]
+        required: true
+      rows:
+        type: list[list[str]]
+        required: true
+      editable_columns:
+        type: set[int]
+        required: true
+    returns:
+      type: QTableWidget
+    exceptions: []
+    side_effects: Creates AdminStudio*Table widget with adminBackingField property,
+      hidden collapsed display state, item baselines, and dirty-cell signal wiring.
   - name: _mark_admin_cell_dirty
     description: Mark edited Admin Studio cells with unsaved-change affordances
       and status text until review/apply or discard.
@@ -647,7 +2710,7 @@ classes:
     exceptions: []
     side_effects: Updates Admin Studio table cells and dirty affordances.
   - name: _commit_admin_table_baselines
-    description: Promote visible Admin Studio table values to the saved baseline
+    description: Promote Admin Studio backing table values to the saved baseline
       after confirmed apply succeeds.
     locked: false
     inputs: {}
@@ -1184,13 +3247,25 @@ classes:
     exceptions: []
     side_effects: Updates staffing SQLite rows through the supplied action or queues a pending operation when the DB is locked, updates visible PySide status/metric/table widgets immediately, and schedules a short retry refresh for queued operations.
   - name: _notification_service
-    description: Return cached generic notification service backed by onboarding email settings.
+    description: Return cached generic notification service backed by shared company
+      Email Settings and current notification rules path.
     locked: false
     inputs: {}
     returns:
       type: NotificationService
     exceptions: []
-    side_effects: May read onboarding settings and open notification SQLite database.
+    side_effects: May read shared email account settings and open notification SQLite database.
+  - name: _run_due_notifications_safely
+    description: Best-effort drain of due queued notification schedules when PySide
+      starts, skipping real SMTP-backed sends if shared email settings are incomplete.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: May read shared email settings, open notification SQLite database,
+      send due notification emails, write sanitized audit rows, and update pending
+      schedule statuses; suppresses notification failures so app startup is not blocked.
   - name: _refresh_home_draft_panel
     description: Refresh the compact PySide home draft label and adjacent Continue/Delete Saved Draft button enabled states from the latest existing draft.
     locked: false
@@ -1313,10 +3388,26 @@ classes:
       type: bool
     exceptions: []
     side_effects: Writes interview history JSON and may emit notification.
+  - name: _emit_pyside_session_offer_generated
+    description: Emit generic offer.generated notification for an active PySide
+      interview session offer document, including candidate, school, position,
+      offer path, interview date when available, generated-date, start-date, notice,
+      and final-working-day payload fields used by immediate or queued date-offset
+      notification rules.
+    locked: false
+    inputs:
+      output_path:
+        type: Path
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: May read notification settings and write notification audit/send
+      email or queue future date-offset notification schedules.
   - name: _emit_pyside_offer_notification
     description: Emit generic offer notification event for a PySide history offer status,
-      including dynamic candidate, qualification, school, position, start-date, and
-      status placeholder payload fields.
+      including dynamic candidate, qualification, school, position, generated-date,
+      start-date, notice, final-working-day, and status placeholder payload fields.
     locked: false
     inputs:
       row:
@@ -1514,7 +3605,7 @@ data_structures:
     including interview_app, ui_composition, ui_windows, question_settings_window,
     question_screens, onboarding_app, onboarding_scrollable_modal, onboarding_scroll_helpers,
     ui_feedback, tk_theme, keyboard_telemetry, template_placeholders, runtime_wrapper,
-    and setup_and_run. PySide implements matching interview finalize/history behavior
+    and setup_and_run. PySide is the supported desktop surface and implements matching interview finalize/history behavior
     directly and documents partial/existing onboarding, admin, settings, validation,
     path-safety, and UI-mode surfaces here rather than creating mirrored PySide modules.
 dependencies:
@@ -1527,5 +3618,4 @@ dependencies:
 - module: scoring_reporting
 - module: staffing_service
 - module: staffing_store
-- module: ui_mode_switch
 - module: PySide6

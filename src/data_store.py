@@ -29,6 +29,7 @@ def default_school_offer_settings() -> dict[str, dict[str, str]]:
         school: {
             "full_time_template": "",
             "part_time_template": "",
+            "contractor_template": "",
             "offer_output_dir": "",
             "interview_notes_dir": notes_dir,
         }
@@ -560,6 +561,7 @@ class SchoolOfferSettingsStore:
             output[str(school)] = {
                 "full_time_template": str(cfg.get("full_time_template", "")).strip(),
                 "part_time_template": str(cfg.get("part_time_template", "")).strip(),
+                "contractor_template": str(cfg.get("contractor_template", "")).strip(),
                 "offer_output_dir": str(cfg.get("offer_output_dir", "")).strip(),
                 "interview_notes_dir": str(cfg.get("interview_notes_dir", "")).strip(),
             }

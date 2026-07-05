@@ -49,7 +49,7 @@ services:
     - onboarding_app
   notification_service:
     description: Generic checkpoint email notification rules, recipients, idempotent
-      send audit, and auto-send delivery through existing onboarding SMTP settings.
+      send audit, and auto-send delivery through shared company SMTP settings.
     modules:
     - notification_models
     - notification_store

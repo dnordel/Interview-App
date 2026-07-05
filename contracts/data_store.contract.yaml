@@ -2,13 +2,14 @@ module:
   name: data_store
   language: python
   path: src/data_store.py
-  version: 1.3.0
+  version: 1.3.1
   description: JSON-backed stores and loaders for interview runtime and onboarding
     settings.
 functions:
 - name: default_school_offer_settings
-  description: Return default per-school offer settings with portable interview-notes
-    folder fragments for known schools.
+  description: Return default per-school offer settings with full-time, part-time,
+    contractor template slots and portable interview-notes folder fragments for
+    known schools.
   locked: false
   inputs: {}
   returns:
@@ -356,8 +357,8 @@ classes:
     returns:
       type: bool
 - name: SchoolOfferSettingsStore
-  description: Stores per-school offer template settings and interview-note output
-    folder settings.
+  description: Stores per-school full-time, part-time, contractor offer template
+    settings and interview-note output folder settings.
   locked: false
   attributes: {}
   methods:

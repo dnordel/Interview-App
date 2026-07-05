@@ -148,6 +148,7 @@ def test_school_offer_settings_store_save_and_load_round_trip(tmp_path: Path):
         "north-campus": {
             "full_time_template": "full.docx",
             "part_time_template": "part.docx",
+            "contractor_template": "contractor.docx",
             "offer_output_dir": "offers",
             "interview_notes_dir": "notes",
         }
