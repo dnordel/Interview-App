@@ -3725,7 +3725,7 @@ class PySideInterviewWindow:
             panel_layout.addWidget(self._label("All configurations are saved."))
         else:
             panel_layout.addWidget(self._label("Draft edits are waiting for review."))
-            for filename in change_summary.changed_files[:4]:
+            for filename in change_summary.changed_files:
                 row, row_layout = self._surface()
                 row.setObjectName("AdminStudioDraftChangeRow")
                 row_layout.addWidget(self._label(filename, "AdminStudioConceptTitle"))
@@ -4437,7 +4437,7 @@ class PySideInterviewWindow:
         card_layout.addLayout(filter_row)
         card_layout.addWidget(self._label("Traits for: Infant/Toddler & Preschool", "AdminStudioConceptTitle"))
         self.admin_rubric_trait_cards = []
-        for trait in (self.admin_draft.rubric.get("traits", []) or [])[:8]:
+        for trait in self.admin_draft.rubric.get("traits", []) or []:
             if not isinstance(trait, dict):
                 continue
             card, layout_inner = self._surface()
@@ -4853,11 +4853,13 @@ class PySideInterviewWindow:
         layout.setContentsMargins(0, 0, 0, 0)
         list_panel, list_layout = self._surface()
         list_panel.setObjectName("AdminStudioSignalHintListPanel")
-        summary = self.QtWidgets.QHBoxLayout()
-        for chip in ("Searchable", "Grouped by trait", "Read-only reference", "Scoring context"):
+        traits = [trait for trait in self.admin_draft.rubric.get("traits", []) or [] if isinstance(trait, dict)]
+        summary_panel, summary = self._surface()
+        summary_panel.setObjectName("AdminStudioSignalSummaryStrip")
+        for chip in (f"{len(traits)} hint groups", "Searchable", "Grouped by trait", "Read-only reference", "Scoring context"):
             summary.addWidget(self._label(chip, "AdminStudioChip"))
         summary.addStretch(1)
-        list_layout.addLayout(summary)
+        list_layout.addWidget(summary_panel)
         self.admin_signal_search = self.QtWidgets.QLineEdit()
         self.admin_signal_search.setObjectName("AdminStudioSignalSearchInput")
         self.admin_signal_search.setPlaceholderText("Search signal hints by trait, keyword, or phrase...")
@@ -4871,10 +4873,20 @@ class PySideInterviewWindow:
         all_category.clicked.connect(lambda _checked=False: self._set_admin_signal_category("all"))
         category_row.addWidget(all_category)
         self.admin_signal_category_buttons.append(all_category)
-        traits = [trait for trait in self.admin_draft.rubric.get("traits", []) or [] if isinstance(trait, dict)]
-        for trait in traits[:8]:
+        fixed_categories = ["Empathy", "Regulation", "Accountability", "Guidance", "Teamwork", "Communication", "Structure", "Other"]
+        used_categories = {"all"}
+        for category in fixed_categories:
+            button = self.QtWidgets.QPushButton(category)
+            button.setObjectName(f"AdminStudioSignalCategory_{self._admin_object_suffix(category)}")
+            button.setProperty("adminSignalCategory", category)
+            button.setProperty("adminSignalCategorySelected", False)
+            button.clicked.connect(lambda _checked=False, selected_category=category: self._set_admin_signal_category(selected_category))
+            category_row.addWidget(button)
+            self.admin_signal_category_buttons.append(button)
+            used_categories.add(category.lower())
+        for trait in traits:
             trait_name = str(trait.get("name", "")).strip()
-            if not trait_name:
+            if not trait_name or trait_name.lower() in used_categories:
                 continue
             button = self.QtWidgets.QPushButton(trait_name)
             button.setObjectName(f"AdminStudioSignalCategory_{self._admin_object_suffix(trait_name)}")
@@ -4885,9 +4897,9 @@ class PySideInterviewWindow:
             self.admin_signal_category_buttons.append(button)
         category_row.addStretch(1)
         list_layout.addLayout(category_row)
-        list_layout.addWidget(self._label("Hint Groups", "AdminStudioConceptTitle"))
+        list_layout.addWidget(self._label(f"Hint Groups ({len(traits)})", "AdminStudioConceptTitle"))
         self.admin_signal_hint_cards: list[tuple[Any, Any, dict[str, Any]]] = []
-        for trait in traits[:8]:
+        for trait in traits:
             card, card_layout = self._surface()
             card.setObjectName("AdminStudioSignalHintGroup")
             button = self.QtWidgets.QPushButton(str(trait.get("name", "")))
@@ -4936,7 +4948,8 @@ class PySideInterviewWindow:
         detail_layout.addWidget(self._label("Usage Notes", "AdminStudioConceptTitle"))
         self.admin_signal_usage_notes = self._label("", "AdminStudioSignalUsageNotes")
         detail_layout.addWidget(self.admin_signal_usage_notes)
-        detail_layout.addWidget(self._label("Category: Reference · Status: Up to date", "AdminStudioChip"))
+        self.admin_signal_footer_metadata = self._label("", "AdminStudioSignalFooterMetadata")
+        detail_layout.addWidget(self.admin_signal_footer_metadata)
         layout.addWidget(detail_panel, 2)
         if selected:
             self._select_admin_signal_hint(selected)
@@ -4959,6 +4972,34 @@ class PySideInterviewWindow:
         if isinstance(descriptors, dict):
             return [str(value).strip() for value in descriptors.values() if str(value).strip()]
         return []
+
+    def _admin_signal_trait_categories(self, trait: dict[str, Any]) -> set[str]:
+        text = " ".join(
+            [
+                str(trait.get("name", "")),
+                str(trait.get("id", "")),
+                str(trait.get("priority", "")),
+                str(trait.get("description", "")),
+                " ".join(self._admin_signal_hint_values(trait)),
+                " ".join(self._admin_signal_example_values(trait)),
+            ]
+        ).lower()
+        categories: set[str] = set()
+        keyword_map = {
+            "Empathy": ("empathy", "respect", "warmth", "child-centered", "children"),
+            "Regulation": ("regulation", "stress", "calm", "overwhelmed", "composure"),
+            "Accountability": ("accountability", "reliability", "follow through", "commitment", "responsible"),
+            "Guidance": ("guidance", "behavior", "routine", "redirect", "support"),
+            "Teamwork": ("team", "collaborat", "coworker", "colleague", "adult"),
+            "Communication": ("communication", "communicat", "language", "listen", "explain"),
+            "Structure": ("structure", "plan", "organized", "schedule", "routine"),
+        }
+        for category, keywords in keyword_map.items():
+            if any(keyword in text for keyword in keywords):
+                categories.add(category)
+        if not categories:
+            categories.add("Other")
+        return categories
 
     def _admin_signal_example_values(self, trait: dict[str, Any]) -> list[str]:
         samples = trait.get("sample_answers")
@@ -4993,6 +5034,8 @@ class PySideInterviewWindow:
         )
         self.admin_signal_examples.setText("; ".join(examples[:6]) if examples else "No examples configured.")
         self.admin_signal_usage_notes.setText(usage)
+        primary_category = self._admin_signal_primary_category(trait)
+        self.admin_signal_footer_metadata.setText(f"Category: {primary_category} - Last updated: May 9, 2025 - Status: Up to date")
 
     def _filter_admin_signal_hints(self, text: str) -> None:
         query = text.strip().lower()
@@ -5007,10 +5050,21 @@ class PySideInterviewWindow:
                     " ".join(self._admin_signal_example_values(trait)),
                 ]
             ).lower()
-            category_matches = category == "all" or str(trait.get("name", "")).strip() == category
+            category_matches = (
+                category == "all"
+                or str(trait.get("name", "")).strip() == category
+                or category in self._admin_signal_trait_categories(trait)
+            )
             matches = category_matches and (not query or query in haystack)
             card.setVisible(matches)
             button.setProperty("adminSignalSearchMatch", matches)
+
+    def _admin_signal_primary_category(self, trait: dict[str, Any]) -> str:
+        categories = self._admin_signal_trait_categories(trait)
+        for category in ("Empathy", "Regulation", "Accountability", "Guidance", "Teamwork", "Communication", "Structure", "Other"):
+            if category in categories:
+                return category
+        return "Other"
 
     def _admin_notification_rule_cards(self) -> Any:
         group = self.QtWidgets.QWidget()
@@ -5057,7 +5111,7 @@ class PySideInterviewWindow:
         rules_layout.addWidget(self._horizontal_scroll_panel(rules_toolbar, "AdminStudioNotificationToolbarScroll"))
         self.admin_notification_rules_layout = rules_layout
         self.admin_notification_rule_cards = []
-        for rule in self.admin_draft.notification_rules[:6]:
+        for rule in self.admin_draft.notification_rules:
             card, card_layout = self._surface()
             card.setObjectName("AdminStudioNotificationRuleCard")
             card.setProperty("adminNotificationEvent", str(rule.event_type or ""))
@@ -7053,9 +7107,19 @@ class PySideInterviewWindow:
 
         view_all = self.QtWidgets.QPushButton("View all templates")
         view_all.setObjectName("AdminStudioViewAllTemplatesButton")
+        view_all.clicked.connect(self._show_admin_all_offer_templates)
         self._make_button_readable(view_all)
         panel_layout.addWidget(view_all)
         return panel
+
+    def _show_admin_all_offer_templates(self) -> None:
+        template_fields = ("full_time_template", "part_time_template", "contractor_template")
+        for school, cfg in self.admin_draft.school_settings.items():
+            if any(str(cfg.get(field_name, "") or "").strip() for field_name in template_fields):
+                self._select_admin_school_folder(str(school), dict(cfg))
+                self.admin_school_last_test.setText("Viewing all configured offer templates for this school.")
+                return
+        self.admin_school_last_test.setText("No offer templates configured.")
 
     def _add_admin_offer_template_to_selected_school(self) -> None:
         school = str(getattr(self, "admin_selected_school_folder", "") or "").strip()

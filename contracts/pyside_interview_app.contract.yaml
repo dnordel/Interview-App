@@ -742,8 +742,8 @@ classes:
       and wires Review All Issues to Validation.
   - name: _admin_dashboard_draft_changes_panel
     description: Build the Admin Dashboard Draft Changes panel with unsaved count,
-      changed-file rows, compact before/after summaries, empty saved state, and
-      View Change History action.
+      changed-file rows for every dirty admin artifact, compact before/after
+      summaries, empty saved state, and View Change History action.
     locked: false
     inputs:
       summary:
@@ -1024,7 +1024,8 @@ classes:
   - name: _admin_rubric_trait_cards
     description: Build the Rubrics screen trait-card list with summary metrics,
       search input, priority, weight, and linked-question filters, grid/list view
-      toggle metadata, selectable trait cards, and right-side rubric trait editor.
+      toggle metadata, selectable cards for every configured trait rather than a
+      capped preview subset, and right-side rubric trait editor.
     locked: false
     inputs: {}
     returns:
@@ -1139,8 +1140,11 @@ classes:
       selected trait editor state, hidden rubrics review table, and admin dirty status.
   - name: _admin_signal_hint_cards
     description: Build the read-only Signal Hints reference screen with searchable
-      hint-group cards, category chips, selected-card state, selected detail panel, colored High/Moderate/Low
-      signal-level cards, example phrases, usage notes, and metadata footer.
+      hint-group cards, a hint-group count summary strip, fixed category chips
+      plus trait-specific chips, selected-card state, selected detail panel,
+      colored High/Moderate/Low signal-level cards, example phrases, usage notes,
+      dynamic category/last-updated/status metadata footer, and every configured
+      rubric trait rather than a capped preview subset.
     locked: false
     inputs: {}
     returns:
@@ -1171,6 +1175,31 @@ classes:
         required: true
     returns:
       type: list[str]
+    exceptions: []
+    side_effects: none
+  - name: _admin_signal_trait_categories
+    description: Return fixed Signal Hints taxonomy categories matched from a
+      rubric trait's name, description, hints, descriptors, and examples; returns
+      Other when no fixed category keywords match.
+    locked: false
+    inputs:
+      trait:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: set[str]
+    exceptions: []
+    side_effects: none
+  - name: _admin_signal_primary_category
+    description: Return the first display category for a Signal Hints trait using
+      the fixed taxonomy order, falling back to Other.
+    locked: false
+    inputs:
+      trait:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: str
     exceptions: []
     side_effects: none
   - name: _admin_signal_example_values
@@ -1288,7 +1317,7 @@ classes:
     description: Build the Templates & Folders Offer Template Health panel from
       configured full-time, part-time, and contractor template paths, including
       active count, per-template validation cards, New Template action, and View
-      all templates action.
+      all templates action wired to the first school with linked templates.
     locked: false
     inputs:
       settings:
@@ -1299,6 +1328,17 @@ classes:
     exceptions: []
     side_effects: Creates PySide widgets and checks whether configured template
       paths exist.
+  - name: _show_admin_all_offer_templates
+    description: Select the first Templates & Folders school with configured offer
+      templates from the Offer Template Health panel, or show an empty template
+      status when no templates are configured.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates selected school drawer fields and the Last Test Write
+      status message.
   - name: _add_admin_offer_template_to_selected_school
     description: Add a selected Word offer template path to the currently selected
       Templates & Folders school as the draft Standard Offer template.
@@ -1480,6 +1520,18 @@ classes:
     exceptions: []
     side_effects: Opens an SMTP or SMTP_SSL connection through verify_email_connection
       and updates visible connection status label.
+  - name: _admin_notification_rule_cards
+    description: Build the Notifications screen rule-card list, toolbar filters,
+      sort/view controls, and editor panel while rendering every draft notification
+      rule instead of a capped preview subset.
+    locked: false
+    inputs: {}
+    returns:
+      type: QWidget
+    exceptions: []
+    side_effects: Creates Notifications rule cards for all draft rules, stores card
+      metadata for filtering/sorting, builds editor widgets, and selects the first
+      available rule.
   - name: _filter_admin_notification_rules
     description: Apply the Notifications enabled-status filter to rule cards while
       preserving filter-match metadata for tests and UI state.
