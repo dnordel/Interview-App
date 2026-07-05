@@ -5086,11 +5086,34 @@ class PySideInterviewWindow:
         create_button.clicked.connect(self._create_admin_notification_rule_editor)
         self._make_button_readable(create_button)
         rules_toolbar.addWidget(create_button)
+        self.admin_notification_event_filter = self.QtWidgets.QComboBox()
+        self.admin_notification_event_filter.setObjectName("AdminStudioNotificationEventFilter")
+        self.admin_notification_event_filter.setEditable(True)
+        self.admin_notification_event_filter.addItem("All events")
+        for event_type in sorted({str(rule.event_type or "").strip() for rule in self.admin_draft.notification_rules if str(rule.event_type or "").strip()}):
+            self.admin_notification_event_filter.addItem(event_type)
+        self.admin_notification_event_filter.currentTextChanged.connect(self._filter_admin_notification_rules)
+        rules_toolbar.addWidget(self.admin_notification_event_filter)
         self.admin_notification_enabled_filter = self.QtWidgets.QComboBox()
         self.admin_notification_enabled_filter.setObjectName("AdminStudioNotificationEnabledStatusFilter")
         self.admin_notification_enabled_filter.addItems(["All statuses", "Enabled", "Disabled"])
         self.admin_notification_enabled_filter.currentTextChanged.connect(self._filter_admin_notification_rules)
         rules_toolbar.addWidget(self.admin_notification_enabled_filter)
+        self.admin_notification_timing_filter = self.QtWidgets.QComboBox()
+        self.admin_notification_timing_filter.setObjectName("AdminStudioNotificationTimingFilter")
+        self.admin_notification_timing_filter.addItems(["All timings", "When event happens", "Reference date"])
+        self.admin_notification_timing_filter.currentTextChanged.connect(self._filter_admin_notification_rules)
+        rules_toolbar.addWidget(self.admin_notification_timing_filter)
+        self.admin_notification_recipients_filter = self.QtWidgets.QComboBox()
+        self.admin_notification_recipients_filter.setObjectName("AdminStudioNotificationRecipientsFilter")
+        self.admin_notification_recipients_filter.addItems(["All recipients", "Has recipients", "No recipients"])
+        self.admin_notification_recipients_filter.currentTextChanged.connect(self._filter_admin_notification_rules)
+        rules_toolbar.addWidget(self.admin_notification_recipients_filter)
+        self.admin_notification_template_filter = self.QtWidgets.QComboBox()
+        self.admin_notification_template_filter.setObjectName("AdminStudioNotificationTemplateFilter")
+        self.admin_notification_template_filter.addItems(["All templates", "Complete templates", "Missing subject", "Missing body"])
+        self.admin_notification_template_filter.currentTextChanged.connect(self._filter_admin_notification_rules)
+        rules_toolbar.addWidget(self.admin_notification_template_filter)
         self.admin_notification_sort = self.QtWidgets.QComboBox()
         self.admin_notification_sort.setObjectName("AdminStudioNotificationSortBy")
         self.admin_notification_sort.addItems(["Sort by: Event", "Sort by: Recipients"])
@@ -5127,6 +5150,7 @@ class PySideInterviewWindow:
             self._make_button_readable(button)
             button.clicked.connect(lambda _checked=False, selected_rule=rule: self._select_admin_notification_rule(selected_rule))
             card_layout.addWidget(button)
+            card_layout.addWidget(self._label(f"ID: {rule.id if rule.id is not None else 'Draft'}"))
             card_layout.addWidget(self._label(rule.label or rule.event_type))
             card_layout.addWidget(self._label("Enabled" if rule.active else "Disabled", "AdminStudioChip"))
             meta = self.QtWidgets.QHBoxLayout()
@@ -5135,6 +5159,11 @@ class PySideInterviewWindow:
             card_layout.addLayout(meta)
             card_layout.addWidget(self._label(f"Subject\n{rule.subject_template or 'Missing subject template'}"))
             card_layout.addWidget(self._label(f"Body preview\n{rule.body_template[:180] if rule.body_template else 'Missing body template'}"))
+            open_rule = self.QtWidgets.QPushButton("Open >")
+            open_rule.setObjectName(f"AdminStudioNotificationOpenRule_{self._admin_object_suffix(rule.event_type)}")
+            open_rule.clicked.connect(lambda _checked=False, selected_rule=rule: self._select_admin_notification_rule(selected_rule))
+            self._make_button_readable(open_rule)
+            card_layout.addWidget(open_rule)
             rules_layout.addWidget(card)
             self.admin_notification_rule_cards.append((card, rule))
         self._sort_admin_notification_rules()
@@ -5334,18 +5363,53 @@ class PySideInterviewWindow:
             card.setProperty("adminNotificationViewMode", mode)
 
     def _filter_admin_notification_rules(self) -> None:
+        selected_event = self.admin_notification_event_filter.currentText().strip() if hasattr(self, "admin_notification_event_filter") else "All events"
         selected_status = self.admin_notification_enabled_filter.currentText()
+        selected_timing = self.admin_notification_timing_filter.currentText() if hasattr(self, "admin_notification_timing_filter") else "All timings"
+        selected_recipients = self.admin_notification_recipients_filter.currentText() if hasattr(self, "admin_notification_recipients_filter") else "All recipients"
+        selected_template = self.admin_notification_template_filter.currentText() if hasattr(self, "admin_notification_template_filter") else "All templates"
         for card, rule in getattr(self, "admin_notification_rule_cards", []):
-            matches = (
+            event_type = str(getattr(rule, "event_type", "") or "").strip()
+            event_matches = selected_event in {"", "All events"} or event_type == selected_event
+            status_matches = (
                 selected_status == "All statuses"
                 or (selected_status == "Enabled" and bool(rule.active))
                 or (selected_status == "Disabled" and not bool(rule.active))
             )
+            timing = str(getattr(rule, "trigger_timing", "event") or "event").strip()
+            timing_matches = (
+                selected_timing == "All timings"
+                or (selected_timing == "When event happens" and timing == "event")
+                or (selected_timing == "Reference date" and timing == "date_offset")
+            )
+            active_recipient_count = len([recipient for recipient in getattr(rule, "recipients", []) if getattr(recipient, "active", True)])
+            recipient_matches = (
+                selected_recipients == "All recipients"
+                or (selected_recipients == "Has recipients" and active_recipient_count > 0)
+                or (selected_recipients == "No recipients" and active_recipient_count == 0)
+            )
+            has_subject = bool(str(getattr(rule, "subject_template", "") or "").strip())
+            has_body = bool(str(getattr(rule, "body_template", "") or "").strip())
+            template_matches = (
+                selected_template == "All templates"
+                or (selected_template == "Complete templates" and has_subject and has_body)
+                or (selected_template == "Missing subject" and not has_subject)
+                or (selected_template == "Missing body" and not has_body)
+            )
+            matches = event_matches and status_matches and timing_matches and recipient_matches and template_matches
             card.setProperty("adminNotificationFilterMatch", matches)
             card.setVisible(matches)
 
     def _clear_admin_notification_filters(self) -> None:
+        if hasattr(self, "admin_notification_event_filter"):
+            self.admin_notification_event_filter.setCurrentText("All events")
         self.admin_notification_enabled_filter.setCurrentText("All statuses")
+        if hasattr(self, "admin_notification_timing_filter"):
+            self.admin_notification_timing_filter.setCurrentText("All timings")
+        if hasattr(self, "admin_notification_recipients_filter"):
+            self.admin_notification_recipients_filter.setCurrentText("All recipients")
+        if hasattr(self, "admin_notification_template_filter"):
+            self.admin_notification_template_filter.setCurrentText("All templates")
         self._filter_admin_notification_rules()
 
     def _refresh_admin_notification_rule_cards(self, selected_event: str = "") -> None:

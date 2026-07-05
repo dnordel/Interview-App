@@ -4618,7 +4618,7 @@ def test_pyside_admin_notification_rule_editor_saves_draft(tmp_path: Path, monke
     app_settings_path = tmp_path / "interview_app_settings.json"
     app_settings_path.write_text(json.dumps({"deepseek_summary_model": "deepseek-r1:8b"}), encoding="utf-8")
     notification_rules_path = tmp_path / "notification_rules.sqlite3"
-    NotificationStore(notification_rules_path).save_rule(
+    saved_rule = NotificationStore(notification_rules_path).save_rule(
         NotificationRule(
             event_type="staffing.assign-manager",
             label="Hiring manager: position needed now",
@@ -4647,6 +4647,12 @@ def test_pyside_admin_notification_rule_editor_saves_draft(tmp_path: Path, monke
     section_list.setCurrentRow(6)
 
     rule_button = window.window.findChild(qt_widgets.QPushButton, "AdminStudioNotificationRuleButton_staffing_assign_manager")
+    rule_cards = [
+        card
+        for card in window.window.findChildren(qt_widgets.QFrame, "AdminStudioNotificationRuleCard")
+        if card.property("adminNotificationEvent") == "staffing.assign-manager"
+    ]
+    open_rule = window.window.findChild(qt_widgets.QPushButton, "AdminStudioNotificationOpenRule_staffing_assign_manager")
     label = window.window.findChild(qt_widgets.QLineEdit, "AdminStudioNotificationRuleLabel")
     event = window.window.findChild(qt_widgets.QLineEdit, "AdminStudioNotificationRuleEvent")
     active = window.window.findChild(qt_widgets.QCheckBox, "AdminStudioNotificationRuleActive")
@@ -4658,6 +4664,11 @@ def test_pyside_admin_notification_rule_editor_saves_draft(tmp_path: Path, monke
     save = window.window.findChild(qt_widgets.QPushButton, "AdminStudioNotificationRuleSave")
 
     assert rule_button is not None
+    assert rule_cards
+    assert f"ID: {saved_rule.id}" in _widget_text(rule_cards[0])
+    assert open_rule is not None
+    open_rule.click()
+    assert event.text() == "staffing.assign-manager"
     rule_button.click()
     assert label.text() == "Hiring manager: position needed now"
     assert event.text() == "staffing.assign-manager"
@@ -5388,6 +5399,332 @@ def test_pyside_admin_notifications_enabled_filter_hides_nonmatching_rule_cards(
     clear.click()
     assert not cards["offer.approved"].isHidden()
     assert not cards["offer.accepted"].isHidden()
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_admin_notifications_timing_filter_hides_nonmatching_rule_cards(tmp_path: Path, monkeypatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    from notification_models import NotificationRecipient, NotificationRule
+    from notification_store import NotificationStore
+
+    rubric_path = _write_test_rubric(tmp_path)
+    overrides_path = _write_test_overrides(tmp_path)
+    settings_path = tmp_path / "school_offer_settings.json"
+    settings_path.write_text(json.dumps({}), encoding="utf-8")
+    prompts_path = tmp_path / "deepseek_prompts.json"
+    prompts_path.write_text(json.dumps({"answer_summary_user": "Summarize."}), encoding="utf-8")
+    app_settings_path = tmp_path / "interview_app_settings.json"
+    app_settings_path.write_text(json.dumps({"deepseek_summary_model": "deepseek-r1:8b"}), encoding="utf-8")
+    notification_rules_path = tmp_path / "notification_rules.sqlite3"
+    store = NotificationStore(notification_rules_path)
+    store.save_rule(
+        NotificationRule(
+            event_type="offer.generated",
+            label="Offer generated",
+            active=True,
+            subject_template="Generated: {candidate_name}",
+            body_template="{candidate_name} generated.",
+            recipients=[NotificationRecipient(email="director@example.org")],
+            trigger_timing="event",
+        )
+    )
+    store.save_rule(
+        NotificationRule(
+            event_type="onboarding.start-reminder",
+            label="Start reminder",
+            active=True,
+            subject_template="Start soon: {person_name}",
+            body_template="{person_name} starts on {start_date}.",
+            recipients=[NotificationRecipient(email="director@example.org")],
+            trigger_timing="date_offset",
+            date_field="start_date",
+            offset_days=-3,
+        )
+    )
+    monkeypatch.setattr(pyside_interview_app, "DEFAULT_RUBRIC_PATH", rubric_path)
+    monkeypatch.setattr(pyside_interview_app, "QUESTIONS_OVERRIDE_PATH", overrides_path)
+    monkeypatch.setattr(pyside_interview_app, "SCHOOL_OFFER_SETTINGS_PATH", settings_path)
+    monkeypatch.setattr(pyside_interview_app, "DEEPSEEK_PROMPTS_CONFIG_PATH", prompts_path)
+    monkeypatch.setattr(pyside_interview_app, "INTERVIEW_APP_SETTINGS_PATH", app_settings_path)
+    monkeypatch.setattr(pyside_interview_app, "NOTIFICATION_RULES_PATH", notification_rules_path)
+    model = build_interview_redesign_model(
+        rubric_path=rubric_path,
+        overrides_path=overrides_path,
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
+    section_list.setCurrentRow(6)
+
+    timing_filter = window.window.findChild(qt_widgets.QComboBox, "AdminStudioNotificationTimingFilter")
+    assert timing_filter is not None
+    timing_filter.setCurrentText("Reference date")
+    cards = {
+        card.property("adminNotificationEvent"): card
+        for card in window.window.findChildren(qt_widgets.QFrame, "AdminStudioNotificationRuleCard")
+    }
+
+    assert cards["offer.generated"].isHidden()
+    assert not cards["onboarding.start-reminder"].isHidden()
+    assert cards["offer.generated"].property("adminNotificationFilterMatch") is False
+    assert cards["onboarding.start-reminder"].property("adminNotificationFilterMatch") is True
+
+    clear = window.window.findChild(qt_widgets.QPushButton, "AdminStudioNotificationClearFilters")
+    clear.click()
+    assert timing_filter.currentText() == "All timings"
+    assert not cards["offer.generated"].isHidden()
+    assert not cards["onboarding.start-reminder"].isHidden()
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_admin_notifications_recipients_filter_hides_empty_recipient_rules(tmp_path: Path, monkeypatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    from notification_models import NotificationRecipient, NotificationRule
+    from notification_store import NotificationStore
+
+    rubric_path = _write_test_rubric(tmp_path)
+    overrides_path = _write_test_overrides(tmp_path)
+    settings_path = tmp_path / "school_offer_settings.json"
+    settings_path.write_text(json.dumps({}), encoding="utf-8")
+    prompts_path = tmp_path / "deepseek_prompts.json"
+    prompts_path.write_text(json.dumps({"answer_summary_user": "Summarize."}), encoding="utf-8")
+    app_settings_path = tmp_path / "interview_app_settings.json"
+    app_settings_path.write_text(json.dumps({"deepseek_summary_model": "deepseek-r1:8b"}), encoding="utf-8")
+    notification_rules_path = tmp_path / "notification_rules.sqlite3"
+    store = NotificationStore(notification_rules_path)
+    store.save_rule(
+        NotificationRule(
+            event_type="offer.approved",
+            label="Offer approved",
+            active=True,
+            subject_template="Approved: {candidate_name}",
+            body_template="{candidate_name} approved.",
+            recipients=[NotificationRecipient(email="director@example.org")],
+        )
+    )
+    store.save_rule(
+        NotificationRule(
+            event_type="custom.missing-recipient",
+            label="Missing recipient",
+            active=True,
+            subject_template="Needs recipient",
+            body_template="Needs recipient.",
+            recipients=[],
+        )
+    )
+    monkeypatch.setattr(pyside_interview_app, "DEFAULT_RUBRIC_PATH", rubric_path)
+    monkeypatch.setattr(pyside_interview_app, "QUESTIONS_OVERRIDE_PATH", overrides_path)
+    monkeypatch.setattr(pyside_interview_app, "SCHOOL_OFFER_SETTINGS_PATH", settings_path)
+    monkeypatch.setattr(pyside_interview_app, "DEEPSEEK_PROMPTS_CONFIG_PATH", prompts_path)
+    monkeypatch.setattr(pyside_interview_app, "INTERVIEW_APP_SETTINGS_PATH", app_settings_path)
+    monkeypatch.setattr(pyside_interview_app, "NOTIFICATION_RULES_PATH", notification_rules_path)
+    model = build_interview_redesign_model(
+        rubric_path=rubric_path,
+        overrides_path=overrides_path,
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
+    section_list.setCurrentRow(6)
+
+    recipients_filter = window.window.findChild(qt_widgets.QComboBox, "AdminStudioNotificationRecipientsFilter")
+    assert recipients_filter is not None
+    recipients_filter.setCurrentText("No recipients")
+    cards = {
+        card.property("adminNotificationEvent"): card
+        for card in window.window.findChildren(qt_widgets.QFrame, "AdminStudioNotificationRuleCard")
+    }
+
+    assert cards["offer.approved"].isHidden()
+    assert not cards["custom.missing-recipient"].isHidden()
+    assert cards["offer.approved"].property("adminNotificationFilterMatch") is False
+    assert cards["custom.missing-recipient"].property("adminNotificationFilterMatch") is True
+
+    recipients_filter.setCurrentText("Has recipients")
+    assert not cards["offer.approved"].isHidden()
+    assert cards["custom.missing-recipient"].isHidden()
+
+    window.window.findChild(qt_widgets.QPushButton, "AdminStudioNotificationClearFilters").click()
+    assert recipients_filter.currentText() == "All recipients"
+    assert not cards["offer.approved"].isHidden()
+    assert not cards["custom.missing-recipient"].isHidden()
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_admin_notifications_event_filter_hides_nonmatching_rule_cards(tmp_path: Path, monkeypatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    from notification_models import NotificationRecipient, NotificationRule
+    from notification_store import NotificationStore
+
+    rubric_path = _write_test_rubric(tmp_path)
+    overrides_path = _write_test_overrides(tmp_path)
+    settings_path = tmp_path / "school_offer_settings.json"
+    settings_path.write_text(json.dumps({}), encoding="utf-8")
+    prompts_path = tmp_path / "deepseek_prompts.json"
+    prompts_path.write_text(json.dumps({"answer_summary_user": "Summarize."}), encoding="utf-8")
+    app_settings_path = tmp_path / "interview_app_settings.json"
+    app_settings_path.write_text(json.dumps({"deepseek_summary_model": "deepseek-r1:8b"}), encoding="utf-8")
+    notification_rules_path = tmp_path / "notification_rules.sqlite3"
+    store = NotificationStore(notification_rules_path)
+    store.save_rule(
+        NotificationRule(
+            event_type="offer.generated",
+            label="Offer generated",
+            active=True,
+            subject_template="Generated: {candidate_name}",
+            body_template="{candidate_name} generated.",
+            recipients=[NotificationRecipient(email="director@example.org")],
+        )
+    )
+    store.save_rule(
+        NotificationRule(
+            event_type="staffing.assign-manager",
+            label="Hiring manager",
+            active=True,
+            subject_template="Position: {position_name}",
+            body_template="{position_name}",
+            recipients=[NotificationRecipient(email="director@example.org")],
+        )
+    )
+    monkeypatch.setattr(pyside_interview_app, "DEFAULT_RUBRIC_PATH", rubric_path)
+    monkeypatch.setattr(pyside_interview_app, "QUESTIONS_OVERRIDE_PATH", overrides_path)
+    monkeypatch.setattr(pyside_interview_app, "SCHOOL_OFFER_SETTINGS_PATH", settings_path)
+    monkeypatch.setattr(pyside_interview_app, "DEEPSEEK_PROMPTS_CONFIG_PATH", prompts_path)
+    monkeypatch.setattr(pyside_interview_app, "INTERVIEW_APP_SETTINGS_PATH", app_settings_path)
+    monkeypatch.setattr(pyside_interview_app, "NOTIFICATION_RULES_PATH", notification_rules_path)
+    model = build_interview_redesign_model(
+        rubric_path=rubric_path,
+        overrides_path=overrides_path,
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
+    section_list.setCurrentRow(6)
+
+    event_filter = window.window.findChild(qt_widgets.QComboBox, "AdminStudioNotificationEventFilter")
+    assert event_filter is not None
+    assert "offer.generated" in [event_filter.itemText(index) for index in range(event_filter.count())]
+    event_filter.setCurrentText("offer.generated")
+    cards = {
+        card.property("adminNotificationEvent"): card
+        for card in window.window.findChildren(qt_widgets.QFrame, "AdminStudioNotificationRuleCard")
+    }
+
+    assert not cards["offer.generated"].isHidden()
+    assert cards["staffing.assign-manager"].isHidden()
+    assert cards["offer.generated"].property("adminNotificationFilterMatch") is True
+    assert cards["staffing.assign-manager"].property("adminNotificationFilterMatch") is False
+
+    window.window.findChild(qt_widgets.QPushButton, "AdminStudioNotificationClearFilters").click()
+    assert event_filter.currentText() == "All events"
+    assert not cards["offer.generated"].isHidden()
+    assert not cards["staffing.assign-manager"].isHidden()
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_admin_notifications_template_filter_hides_by_subject_body_completeness(tmp_path: Path, monkeypatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    from notification_models import NotificationRecipient, NotificationRule
+    from notification_store import NotificationStore
+
+    rubric_path = _write_test_rubric(tmp_path)
+    overrides_path = _write_test_overrides(tmp_path)
+    settings_path = tmp_path / "school_offer_settings.json"
+    settings_path.write_text(json.dumps({}), encoding="utf-8")
+    prompts_path = tmp_path / "deepseek_prompts.json"
+    prompts_path.write_text(json.dumps({"answer_summary_user": "Summarize."}), encoding="utf-8")
+    app_settings_path = tmp_path / "interview_app_settings.json"
+    app_settings_path.write_text(json.dumps({"deepseek_summary_model": "deepseek-r1:8b"}), encoding="utf-8")
+    notification_rules_path = tmp_path / "notification_rules.sqlite3"
+    store = NotificationStore(notification_rules_path)
+    store.save_rule(
+        NotificationRule(
+            event_type="offer.approved",
+            label="Offer approved",
+            active=True,
+            subject_template="Approved: {candidate_name}",
+            body_template="{candidate_name} approved.",
+            recipients=[NotificationRecipient(email="director@example.org")],
+        )
+    )
+    store.save_rule(
+        NotificationRule(
+            event_type="custom.missing-subject",
+            label="Missing subject",
+            active=True,
+            subject_template="",
+            body_template="Body exists.",
+            recipients=[NotificationRecipient(email="director@example.org")],
+        )
+    )
+    store.save_rule(
+        NotificationRule(
+            event_type="custom.missing-body",
+            label="Missing body",
+            active=True,
+            subject_template="Subject exists",
+            body_template="",
+            recipients=[NotificationRecipient(email="director@example.org")],
+        )
+    )
+    monkeypatch.setattr(pyside_interview_app, "DEFAULT_RUBRIC_PATH", rubric_path)
+    monkeypatch.setattr(pyside_interview_app, "QUESTIONS_OVERRIDE_PATH", overrides_path)
+    monkeypatch.setattr(pyside_interview_app, "SCHOOL_OFFER_SETTINGS_PATH", settings_path)
+    monkeypatch.setattr(pyside_interview_app, "DEEPSEEK_PROMPTS_CONFIG_PATH", prompts_path)
+    monkeypatch.setattr(pyside_interview_app, "INTERVIEW_APP_SETTINGS_PATH", app_settings_path)
+    monkeypatch.setattr(pyside_interview_app, "NOTIFICATION_RULES_PATH", notification_rules_path)
+    model = build_interview_redesign_model(
+        rubric_path=rubric_path,
+        overrides_path=overrides_path,
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
+    section_list.setCurrentRow(6)
+
+    template_filter = window.window.findChild(qt_widgets.QComboBox, "AdminStudioNotificationTemplateFilter")
+    assert template_filter is not None
+    cards = {
+        card.property("adminNotificationEvent"): card
+        for card in window.window.findChildren(qt_widgets.QFrame, "AdminStudioNotificationRuleCard")
+    }
+
+    template_filter.setCurrentText("Missing subject")
+    assert cards["offer.approved"].isHidden()
+    assert not cards["custom.missing-subject"].isHidden()
+    assert cards["custom.missing-body"].isHidden()
+
+    template_filter.setCurrentText("Missing body")
+    assert cards["offer.approved"].isHidden()
+    assert cards["custom.missing-subject"].isHidden()
+    assert not cards["custom.missing-body"].isHidden()
+
+    template_filter.setCurrentText("Complete templates")
+    assert not cards["offer.approved"].isHidden()
+    assert cards["custom.missing-subject"].isHidden()
+    assert cards["custom.missing-body"].isHidden()
+
+    window.window.findChild(qt_widgets.QPushButton, "AdminStudioNotificationClearFilters").click()
+    assert template_filter.currentText() == "All templates"
+    assert not cards["offer.approved"].isHidden()
+    assert not cards["custom.missing-subject"].isHidden()
+    assert not cards["custom.missing-body"].isHidden()
     window.window.close()
     app.processEvents()
 

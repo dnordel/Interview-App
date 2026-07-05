@@ -1522,8 +1522,9 @@ classes:
       and updates visible connection status label.
   - name: _admin_notification_rule_cards
     description: Build the Notifications screen rule-card list, toolbar filters,
-      sort/view controls, and editor panel while rendering every draft notification
-      rule instead of a capped preview subset.
+      event/enabled/timing/recipient/template-completeness filter controls, sort/view
+      controls, visible rule IDs, per-card Open actions, and editor panel while
+      rendering every draft notification rule instead of a capped preview subset.
     locked: false
     inputs: {}
     returns:
@@ -1533,8 +1534,9 @@ classes:
       metadata for filtering/sorting, builds editor widgets, and selects the first
       available rule.
   - name: _filter_admin_notification_rules
-    description: Apply the Notifications enabled-status filter to rule cards while
-      preserving filter-match metadata for tests and UI state.
+    description: Apply the Notifications event, enabled-status, trigger-timing,
+      recipient-count, and subject/body-template completeness filters to rule cards
+      while preserving filter-match metadata for tests and UI state.
     locked: false
     inputs: {}
     returns:
