@@ -8945,6 +8945,8 @@ def test_pyside_staffing_v2_classrooms_dashboard_uses_new_shell_and_db_rows(
         assert view_button.text() == "View"
         assert not view_button.icon().isNull()
         assert not view_button.isEnabled()
+    assert page.findChild(qt_widgets.QLabel, "StaffingV2ClassroomsResultCount").text() == "Showing 1 to 2 of 2 classrooms"
+    assert page.findChild(qt_widgets.QComboBox, "StaffingV2ClassroomsRowsPerPage").currentText() == "10 / page"
     detail = page.findChild(qt_widgets.QFrame, "StaffingV2ClassroomsDetailPanel")
     detail_text = _widget_text(detail)
     assert "Classroom Detail" in detail_text

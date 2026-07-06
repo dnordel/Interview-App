@@ -340,6 +340,9 @@ Shell:
   - Open Positions
 - Filter row: School, Program, Status, search, More Filters, Clear.
 - Main table: Classroom, School, Program, Licensed Capacity, Total Positions, Filled, Open, Priority Status, Active, Actions.
+- Pagination footer: result count on left, page controls centered/right, rows-per-page combo on far right.
+  - Result label object: `StaffingV2ClassroomsResultCount`.
+  - Rows-per-page combo object: `StaffingV2ClassroomsRowsPerPage`.
 - Optional right detail drawer with staffing summary and validation cards.
 - Validation health strip/cards under table.
 
