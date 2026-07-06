@@ -8943,6 +8943,12 @@ def test_pyside_staffing_v2_classrooms_dashboard_uses_new_shell_and_db_rows(
     assert "Current Positions" in detail_text
     assert "Teacher 1" in detail_text
     assert "OPEN POSITION" in detail_text
+    deactivate_button = page.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsDeactivateButton")
+    assert deactivate_button.text() == "Deactivate Classroom"
+    assert not deactivate_button.icon().isNull()
+    save_button = page.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsSaveButton")
+    assert save_button.text() == "Save Changes"
+    assert not save_button.icon().isNull()
     assert "Classroom Validation & Health" in _widget_text(page.findChild(qt_widgets.QFrame, "StaffingV2ClassroomsValidationPanel"))
     assert len(store.list_assignments()) == len(before_assignments)
     window.window.close()
