@@ -9205,6 +9205,11 @@ def test_pyside_staffing_v2_position_detail_drawer_opens_from_position_row(
     assert "Lifecycle History" in drawer_text
     assert "Related Person" in drawer_text
     assert "No person is currently assigned to this position." in drawer_text
+    assign_person = drawer.findChild(qt_widgets.QPushButton, "StaffingV2DrawerAssignPerson")
+    assert assign_person is not None
+    assert assign_person.text() == "Assign or Create Person"
+    assert not assign_person.isEnabled()
+    assert not assign_person.icon().isNull()
     assert drawer.findChild(qt_widgets.QPushButton, "StaffingV2DrawerMarkComing").text() == "Mark Coming"
     assert drawer.findChild(qt_widgets.QPushButton, "StaffingV2DrawerMarkDontNeed").text() == "Mark Don't Need"
     assert drawer.findChild(qt_widgets.QPushButton, "StaffingV2DrawerViewHistory").text() == "View Full History"

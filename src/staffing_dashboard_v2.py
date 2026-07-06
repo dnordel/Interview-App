@@ -2357,6 +2357,8 @@ class StaffingDashboardV2Page:
         else:
             related_layout.addWidget(self._label("No person is currently assigned to this position."))
             assign = self.QtWidgets.QPushButton("Assign or Create Person")
+            assign.setObjectName("StaffingV2DrawerAssignPerson")
+            self._set_button_icon(assign, "person_add")
             assign.setEnabled(False)
             related_layout.addWidget(assign)
         lower.addWidget(related, 0, 1, 2, 1)
