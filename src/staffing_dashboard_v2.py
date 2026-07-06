@@ -190,12 +190,16 @@ QLabel#StaffingV2SummaryLabel[staffingV2SummaryVariant="success"],
 QLabel#StaffingV2SummaryValue[staffingV2SummaryVariant="success"] {
     color: #15803d;
 }
-QLabel#StaffingV2PriorityChip {
+QFrame#StaffingV2PriorityChip {
     background-color: #fee2e2;
-    color: #dc2626;
     border: 1px solid #fecaca;
     border-radius: 8px;
     padding: 8px 14px;
+}
+QLabel#StaffingV2PriorityChipText,
+QLabel#StaffingV2PriorityChipIcon {
+    background-color: transparent;
+    color: #dc2626;
     font-weight: 800;
 }
 QLabel#StaffingV2NeedNowChip,
@@ -681,8 +685,14 @@ class StaffingDashboardV2Page:
         title_stack.addWidget(self.classroom_title)
         title_stack.addWidget(self.classroom_subtitle)
         detail_header.addLayout(title_stack, 1)
-        self.priority_chip = self._label("", "StaffingV2PriorityChip")
-        self.priority_chip.setAlignment(self.QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.priority_chip = self.QtWidgets.QFrame()
+        self.priority_chip.setObjectName("StaffingV2PriorityChip")
+        priority_layout = self.QtWidgets.QHBoxLayout(self.priority_chip)
+        priority_layout.setContentsMargins(8, 4, 8, 4)
+        priority_layout.setSpacing(6)
+        priority_layout.addWidget(self._icon_label("status_need", "StaffingV2PriorityChipIcon"))
+        self.priority_chip_text = self._label("", "StaffingV2PriorityChipText")
+        priority_layout.addWidget(self.priority_chip_text)
         detail_header.addWidget(self.priority_chip)
         detail_layout.addLayout(detail_header)
         self.overview_layout = self.QtWidgets.QHBoxLayout()
@@ -2078,7 +2088,7 @@ class StaffingDashboardV2Page:
         self.classroom_title.setText(classroom)
         self.classroom_subtitle.setText(school)
         priority = _classroom_priority_status(rows) if rows else ""
-        self.priority_chip.setText(priority)
+        self.priority_chip_text.setText(priority)
         self.priority_chip.setVisible(bool(priority))
         self._refresh_overview(rows)
         self._refresh_positions(rows)

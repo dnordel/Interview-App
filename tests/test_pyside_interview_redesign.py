@@ -8778,7 +8778,10 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
     assert [action.text() for action in filled_action.menu().actions()] == ["Manage Filled", "Replace", "Update Permit", "View Details"]
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2AddPositionButton").text() == "+  Add Position"
     assert page.findChild(qt_widgets.QFrame, "StaffingV2AddPositionDropZone") is not None
-    assert page.findChild(qt_widgets.QLabel, "StaffingV2PriorityChip") is not None
+    priority_chip = page.findChild(qt_widgets.QFrame, "StaffingV2PriorityChip")
+    assert priority_chip is not None
+    assert priority_chip.findChild(qt_widgets.QLabel, "StaffingV2PriorityChipIcon") is not None
+    assert priority_chip.findChild(qt_widgets.QLabel, "StaffingV2PriorityChipText").text() == "Need Now"
     assert "Need Now" in _widget_text(page.findChild(qt_widgets.QFrame, "StaffingV2StatusKey"))
     assert len(store.list_assignments()) == before_count
     window.window.close()
