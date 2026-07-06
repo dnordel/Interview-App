@@ -9387,6 +9387,10 @@ def test_pyside_staffing_v2_mark_filled_dialog_uses_coming_start_date(
     assert "What will happen on save" in dialog_text
     assert "This action closes the current open assignment history cycle." in dialog_text
     assert window.window.findChild(qt_widgets.QDialog, "PySideStaffingMarkFilledDialog") is None
+    close_button = dialog.findChild(qt_widgets.QPushButton, "StaffingV2FilledClose")
+    assert close_button is not None
+    assert close_button.text() == ""
+    assert not close_button.icon().isNull()
     filled_date = dialog.findChild(qt_widgets.QLineEdit, "StaffingV2FilledDate")
     assert filled_date is not None
     assert filled_date.text() == "2026-07-08"
@@ -9463,6 +9467,10 @@ def test_pyside_staffing_v2_manage_filled_dialog_selects_next_workflow(
     assert "Replace Employee" in dialog_text
     assert "What happens next" in dialog_text
     assert "This step does not change anything until you continue" in dialog_text
+    close_button = dialog.findChild(qt_widgets.QPushButton, "StaffingV2ManageFilledClose")
+    assert close_button is not None
+    assert close_button.text() == ""
+    assert not close_button.icon().isNull()
 
     permit_option = dialog.findChild(qt_widgets.QRadioButton, "StaffingV2ManageFilledPermitOption")
     replace_option = dialog.findChild(qt_widgets.QRadioButton, "StaffingV2ManageFilledReplaceOption")
@@ -9535,6 +9543,10 @@ def test_pyside_staffing_v2_update_permit_dialog_saves_people_permit_details(
     assert "Validation / Requirements" in dialog_text
     assert "What will happen on save" in dialog_text
     assert "This action updates People only and does not reopen the staffing cycle." in dialog_text
+    close_button = dialog.findChild(qt_widgets.QPushButton, "StaffingV2PermitClose")
+    assert close_button is not None
+    assert close_button.text() == ""
+    assert not close_button.icon().isNull()
     assert dialog.findChild(qt_widgets.QLineEdit, "StaffingV2PermitEmployeeName").text() == "Imgard"
     assert not dialog.findChild(qt_widgets.QLineEdit, "StaffingV2PermitEmployeeName").isEnabled()
     assert dialog.findChild(qt_widgets.QLineEdit, "StaffingV2PermitRole").text() == "Teacher"

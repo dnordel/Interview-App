@@ -330,7 +330,10 @@ QPushButton#StaffingV2FilterCloseButton,
 QPushButton#StaffingV2ClassroomsFilterClose,
 QPushButton#StaffingV2DrawerClose,
 QPushButton#StaffingV2AddPositionClose,
-QPushButton#StaffingV2ComingClose {
+QPushButton#StaffingV2ComingClose,
+QPushButton#StaffingV2ManageFilledClose,
+QPushButton#StaffingV2PermitClose,
+QPushButton#StaffingV2FilledClose {
     background-color: transparent;
     color: #0f172a;
     border: none;
@@ -2821,7 +2824,9 @@ class StaffingDashboardV2Page:
         title_block.addWidget(self._label("Manage Filled Position", "StaffingV2DrawerTitle"))
         title_block.addWidget(self._label("Choose what you want to do with this filled position.", "StaffingV2Muted"))
         header.addLayout(title_block, 1)
-        close = self.QtWidgets.QPushButton("X")
+        close = self.QtWidgets.QPushButton("")
+        close.setObjectName("StaffingV2ManageFilledClose")
+        self._set_button_icon(close, "close")
         close.clicked.connect(dialog.close)
         header.addWidget(close)
         root.addLayout(header)
@@ -2957,7 +2962,9 @@ class StaffingDashboardV2Page:
         title_block.addWidget(self._label("Update Permit Status", "StaffingV2DrawerTitle"))
         title_block.addWidget(self._label("Update the employee permit level without reopening this position.", "StaffingV2Muted"))
         header.addLayout(title_block, 1)
-        close = self.QtWidgets.QPushButton("X")
+        close = self.QtWidgets.QPushButton("")
+        close.setObjectName("StaffingV2PermitClose")
+        self._set_button_icon(close, "close")
         close.clicked.connect(dialog.close)
         header.addWidget(close)
         root.addLayout(header)
@@ -3243,7 +3250,9 @@ class StaffingDashboardV2Page:
         title_block.addWidget(self._label("Mark Filled", "StaffingV2DrawerTitle"))
         title_block.addWidget(self._label("Confirm that the candidate has started and close the current open cycle.", "StaffingV2Muted"))
         header.addLayout(title_block, 1)
-        close = self.QtWidgets.QPushButton("X")
+        close = self.QtWidgets.QPushButton("")
+        close.setObjectName("StaffingV2FilledClose")
+        self._set_button_icon(close, "close")
         close.clicked.connect(dialog.close)
         header.addWidget(close)
         root.addLayout(header)
