@@ -17,6 +17,11 @@ QWidget#PySideStaffingV2Page {
 QFrame#StaffingV2Shell {
     background-color: #f8fafc;
 }
+QFrame#StaffingV2DashboardHeaderTopRow,
+QFrame#StaffingV2DashboardHeaderActionRow {
+    background-color: transparent;
+    border: none;
+}
 QFrame#StaffingV2Sidebar {
     background-color: #ffffff;
     border-right: 1px solid #e2e8f0;
@@ -533,7 +538,11 @@ class StaffingDashboardV2Page:
         dashboard_root.setSpacing(14)
         self.page_stack.addWidget(self.dashboard_view)
 
-        header = self.QtWidgets.QHBoxLayout()
+        header_top = self.QtWidgets.QFrame()
+        header_top.setObjectName("StaffingV2DashboardHeaderTopRow")
+        header = self.QtWidgets.QHBoxLayout(header_top)
+        header.setContentsMargins(0, 0, 0, 0)
+        header.setSpacing(12)
         title_block = self.QtWidgets.QVBoxLayout()
         title = self.QtWidgets.QLabel("Staffing Dashboard")
         title.setObjectName("StaffingV2PageTitle")
@@ -559,18 +568,6 @@ class StaffingDashboardV2Page:
         self.search.addAction(self._standard_icon("search"), self.QtWidgets.QLineEdit.ActionPosition.LeadingPosition)
         self.search.textChanged.connect(self._refresh_filters)
         header.addWidget(self.search)
-        self.export_button = self.QtWidgets.QPushButton("Export")
-        self.export_button.setObjectName("StaffingV2ExportButton")
-        self._set_button_icon(self.export_button, "export")
-        self.export_button.setMinimumHeight(40)
-        self.export_button.setEnabled(False)
-        header.addWidget(self.export_button)
-        self.view_history_button = self.QtWidgets.QPushButton("View History")
-        self.view_history_button.setObjectName("StaffingV2ViewHistoryButton")
-        self._set_button_icon(self.view_history_button, "history")
-        self.view_history_button.setMinimumHeight(40)
-        self.view_history_button.clicked.connect(self._show_history_view)
-        header.addWidget(self.view_history_button)
         self.add_button = self.QtWidgets.QPushButton("+  Add Position")
         self.add_button.setObjectName("StaffingV2AddPositionButton")
         self._set_button_icon(self.add_button, "add")
@@ -578,7 +575,27 @@ class StaffingDashboardV2Page:
         self.add_button.setMinimumHeight(40)
         self.add_button.clicked.connect(self._open_add_position_dialog)
         header.addWidget(self.add_button)
-        dashboard_root.addLayout(header)
+        dashboard_root.addWidget(header_top)
+
+        header_actions = self.QtWidgets.QFrame()
+        header_actions.setObjectName("StaffingV2DashboardHeaderActionRow")
+        header_actions_layout = self.QtWidgets.QHBoxLayout(header_actions)
+        header_actions_layout.setContentsMargins(0, 0, 0, 0)
+        header_actions_layout.setSpacing(10)
+        header_actions_layout.addStretch(1)
+        self.export_button = self.QtWidgets.QPushButton("Export")
+        self.export_button.setObjectName("StaffingV2ExportButton")
+        self._set_button_icon(self.export_button, "export")
+        self.export_button.setMinimumHeight(40)
+        self.export_button.setEnabled(False)
+        header_actions_layout.addWidget(self.export_button)
+        self.view_history_button = self.QtWidgets.QPushButton("View History")
+        self.view_history_button.setObjectName("StaffingV2ViewHistoryButton")
+        self._set_button_icon(self.view_history_button, "history")
+        self.view_history_button.setMinimumHeight(40)
+        self.view_history_button.clicked.connect(self._show_history_view)
+        header_actions_layout.addWidget(self.view_history_button)
+        dashboard_root.addWidget(header_actions)
 
         self.metrics_layout = self.QtWidgets.QHBoxLayout()
         self.metrics_layout.setSpacing(10)

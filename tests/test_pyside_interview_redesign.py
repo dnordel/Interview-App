@@ -8634,6 +8634,16 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
     ):
         assert not page.findChild(qt_widgets.QPushButton, object_name).icon().isNull()
     assert page.findChild(qt_widgets.QFrame, "StaffingV2TopTabBar") is None
+    header_top_row = page.findChild(qt_widgets.QFrame, "StaffingV2DashboardHeaderTopRow")
+    header_action_row = page.findChild(qt_widgets.QFrame, "StaffingV2DashboardHeaderActionRow")
+    assert header_top_row is not None
+    assert header_action_row is not None
+    assert page.findChild(qt_widgets.QComboBox, "StaffingV2SchoolFilter").parent() is header_top_row
+    assert page.findChild(qt_widgets.QComboBox, "StaffingV2ProgramFilter").parent() is header_top_row
+    assert page.findChild(qt_widgets.QLineEdit, "StaffingV2Search").parent() is header_top_row
+    assert page.findChild(qt_widgets.QPushButton, "StaffingV2AddPositionButton").parent() is header_top_row
+    assert page.findChild(qt_widgets.QPushButton, "StaffingV2ExportButton").parent() is header_action_row
+    assert page.findChild(qt_widgets.QPushButton, "StaffingV2ViewHistoryButton").parent() is header_action_row
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2ExportButton").text() == "Export"
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2ViewHistoryButton").text() == "View History"
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2AddPositionButton").minimumHeight() >= 40
