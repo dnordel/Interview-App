@@ -3309,8 +3309,9 @@ class StaffingDashboardV2Page:
         frame, layout = self._panel("StaffingV2AddPositionDropZone")
         frame.setMinimumHeight(58)
         frame.setMaximumHeight(66)
-        button = self.QtWidgets.QPushButton("+  Add Position")
+        button = self.QtWidgets.QPushButton("Add Position")
         button.setObjectName("StaffingV2DropZoneAddButton")
+        self._set_button_icon(button, "add")
         button.clicked.connect(self._open_add_position_dialog)
         layout.addWidget(button, alignment=self.QtCore.Qt.AlignmentFlag.AlignCenter)
         return frame
