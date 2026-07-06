@@ -320,7 +320,8 @@ QFrame#StaffingV2HealthyChip {
     font-weight: 700;
 }
 QLabel#StaffingV2NeutralChip,
-QFrame#StaffingV2NeutralChip {
+QFrame#StaffingV2NeutralChip,
+QFrame#StaffingV2HistoryAssignmentIdChip {
     background-color: #f1f5f9;
     color: #475569;
     border: 1px solid #cbd5e1;
@@ -2228,7 +2229,16 @@ class StaffingDashboardV2Page:
             self.history_detail_layout.addWidget(self._label("No history record selected", "StaffingV2Muted"))
             return
         self.history_detail_layout.addWidget(self._label("History Record Detail", "StaffingV2HistoryDetailTitle"))
-        self.history_detail_layout.addWidget(self._label(f"Assignment ID: A-{record.assignment_id:04d}", "StaffingV2SectionTitle"))
+        assignment_id_row = self.QtWidgets.QHBoxLayout()
+        assignment_id_row.addWidget(self._label("Assignment ID:", "StaffingV2SectionTitle"))
+        assignment_id_chip = self.QtWidgets.QFrame()
+        assignment_id_chip.setObjectName("StaffingV2HistoryAssignmentIdChip")
+        assignment_id_chip_layout = self.QtWidgets.QHBoxLayout(assignment_id_chip)
+        assignment_id_chip_layout.setContentsMargins(8, 2, 8, 2)
+        assignment_id_chip_layout.addWidget(self._label(f"A-{record.assignment_id:04d}", "StaffingV2ChipText"))
+        assignment_id_row.addWidget(assignment_id_chip)
+        assignment_id_row.addStretch(1)
+        self.history_detail_layout.addLayout(assignment_id_row)
         overview, overview_layout = self._panel("StaffingV2HistoryDetailCard")
         overview_layout.addLayout(self._detail_row("Classroom", record.classroom))
         overview_layout.addLayout(self._detail_row("Position", record.position_name))

@@ -9960,6 +9960,9 @@ def test_pyside_staffing_v2_assignment_history_dashboard_renders_history_from_db
     detail = page.findChild(qt_widgets.QFrame, "StaffingV2HistoryDetailPanel")
     detail_text = _widget_text(detail)
     assert f"Assignment ID: A-{open_id:04d}" in detail_text
+    assignment_id_chip = page.findChild(qt_widgets.QFrame, "StaffingV2HistoryAssignmentIdChip")
+    assert assignment_id_chip is not None
+    assert _widget_text(assignment_id_chip) == f"A-{open_id:04d}"
     assert "Quest" in detail_text
     assert "Lifecycle Events" in detail_text
     assert "Position opened" in detail_text

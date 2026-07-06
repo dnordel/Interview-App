@@ -308,6 +308,7 @@ Shell:
 - Detail panel:
   - History Record Detail
   - assignment ID chip
+    - Neutral slate chip, object `StaffingV2HistoryAssignmentIdChip`, text like `A-1024`.
   - lifecycle events
   - validation/integrity checklist
   - footer buttons View Assignment, Open Employee, Export Record
