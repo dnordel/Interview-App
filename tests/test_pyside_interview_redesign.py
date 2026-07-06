@@ -8695,6 +8695,9 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
     assert list_filter.text() == ""
     assert not list_filter.icon().isNull()
     assert list_filter.toolTip() == "Classroom filters"
+    assert page.findChild(qt_widgets.QLabel, "StaffingV2ClassroomListFooter").text() == (
+        "Showing 1-2 of 2 classrooms"
+    )
     assert classroom_list.count() == 2
     assert "Harmony 1" in classroom_list.item(0).text()
     assert "Need 1" in classroom_list.item(0).text()

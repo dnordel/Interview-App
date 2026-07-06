@@ -462,7 +462,8 @@ QLabel#StaffingV2ClassroomItemTitle {
     font-weight: 800;
 }
 QLabel#StaffingV2ClassroomItemCounts,
-QLabel#StaffingV2ClassroomItemChevron {
+QLabel#StaffingV2ClassroomItemChevron,
+QLabel#StaffingV2ClassroomListFooter {
     color: #334155;
 }
 """
@@ -674,6 +675,8 @@ class StaffingDashboardV2Page:
         self.classroom_list.setObjectName("StaffingV2ClassroomList")
         self.classroom_list.currentRowChanged.connect(self._select_classroom)
         classroom_layout.addWidget(self.classroom_list, 1)
+        self.classroom_list_footer = self._label("", "StaffingV2ClassroomListFooter")
+        classroom_layout.addWidget(self.classroom_list_footer)
         main.addWidget(self.classroom_panel)
 
         self.detail_panel, detail_layout = self._panel()
@@ -2031,6 +2034,12 @@ class StaffingDashboardV2Page:
             item.setSizeHint(self.QtCore.QSize(0, 68))
             self.classroom_list.addItem(item)
             self.classroom_list.setItemWidget(item, self._classroom_list_item_widget(classroom, rows))
+        visible_count = self.classroom_list.count()
+        total_count = len(self.classroom_rows)
+        if visible_count:
+            self.classroom_list_footer.setText(f"Showing 1-{visible_count} of {total_count} classrooms")
+        else:
+            self.classroom_list_footer.setText("Showing 0 of 0 classrooms")
         if current in self.classroom_rows:
             self.classroom_list.setCurrentRow(list(self.classroom_rows).index(current))
         elif self.classroom_list.count():
