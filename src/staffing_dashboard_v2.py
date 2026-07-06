@@ -1531,6 +1531,29 @@ class StaffingDashboardV2Page:
         body.addWidget(self.validation_right_panel)
         body.setSizes([900, 320])
         main_layout.addWidget(body, 1)
+        validation_footer = self.QtWidgets.QHBoxLayout()
+        self.validation_result_count = self._label("Showing 0 to 0 of 0 issues", "StaffingV2Muted")
+        self.validation_result_count.setObjectName("StaffingV2ValidationResultCount")
+        validation_footer.addWidget(self.validation_result_count)
+        validation_footer.addStretch(1)
+        previous_page = self.QtWidgets.QPushButton("‹")
+        previous_page.setObjectName("StaffingV2ValidationPreviousPage")
+        previous_page.setEnabled(False)
+        validation_footer.addWidget(previous_page)
+        current_page = self.QtWidgets.QPushButton("1")
+        current_page.setObjectName("StaffingV2ValidationCurrentPage")
+        current_page.setEnabled(False)
+        validation_footer.addWidget(current_page)
+        next_page = self.QtWidgets.QPushButton("›")
+        next_page.setObjectName("StaffingV2ValidationNextPage")
+        next_page.setEnabled(False)
+        validation_footer.addWidget(next_page)
+        self.validation_rows_per_page = self.QtWidgets.QComboBox()
+        self.validation_rows_per_page.setObjectName("StaffingV2ValidationRowsPerPage")
+        self.validation_rows_per_page.addItems(["10 / page", "25 / page", "50 / page"])
+        self.validation_rows_per_page.setEnabled(False)
+        validation_footer.addWidget(self.validation_rows_per_page)
+        main_layout.addLayout(validation_footer)
 
         self.filter_drawer, self.filter_drawer_layout = self._panel("StaffingV2FilterDrawer")
         self.filter_drawer.setObjectName("StaffingV2FilterDrawer")
@@ -1654,6 +1677,12 @@ class StaffingDashboardV2Page:
             self.visible_validation_issues.append(issue)
         self._refresh_validation_metrics()
         self._refresh_validation_table()
+        if hasattr(self, "validation_result_count"):
+            visible_count = len(self.visible_validation_issues)
+            if visible_count:
+                self.validation_result_count.setText(f"Showing 1 to {visible_count} of {visible_count} issues")
+            else:
+                self.validation_result_count.setText("Showing 0 to 0 of 0 issues")
         self._refresh_validation_right_panel()
 
     def _refresh_validation_metrics(self) -> None:

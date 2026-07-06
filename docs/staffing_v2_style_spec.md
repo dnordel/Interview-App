@@ -359,6 +359,9 @@ Shell:
   - PySide implementation marks active tab with `staffingV2ActiveValidationTab` for QSS and tests.
 - Search and Filters button.
 - Issues table: Issue, Classroom, Type, Severity, Detected, Details, Action.
+- Pagination footer: result count on left, page controls centered/right, rows-per-page combo on far right.
+  - Result label object: `StaffingV2ValidationResultCount`.
+  - Rows-per-page combo object: `StaffingV2ValidationRowsPerPage`.
 - Right filter/summary panel:
   - Filters
   - Compliance Summary donut or simplified bar if donut not practical in PySide

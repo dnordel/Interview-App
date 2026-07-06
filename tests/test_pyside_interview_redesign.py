@@ -10112,10 +10112,13 @@ def test_pyside_staffing_v2_validation_dashboard_and_filter_drawer_use_existing_
         assert view_button.text() == "View"
         assert not view_button.icon().isNull()
         assert not view_button.isEnabled()
+    assert page.findChild(qt_widgets.QLabel, "StaffingV2ValidationResultCount").text() == "Showing 1 to 3 of 3 issues"
+    assert page.findChild(qt_widgets.QComboBox, "StaffingV2ValidationRowsPerPage").currentText() == "10 / page"
     critical_tab.click()
     app.processEvents()
     assert table.rowCount() == 1
     assert table.item(0, 3).text() == "Critical"
+    assert page.findChild(qt_widgets.QLabel, "StaffingV2ValidationResultCount").text() == "Showing 1 to 1 of 1 issues"
     assert all_issues_tab.property("staffingV2ActiveValidationTab") is False
     assert critical_tab.property("staffingV2ActiveValidationTab") is True
     all_issues_tab.click()
