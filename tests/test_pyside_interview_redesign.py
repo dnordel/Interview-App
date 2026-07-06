@@ -9246,6 +9246,9 @@ def test_pyside_staffing_v2_position_detail_drawer_opens_from_position_row(
     assert footer_buttons["StaffingV2DrawerCancel"] == "Cancel"
     assert footer_buttons["StaffingV2DrawerSaveDraft"] == "Save Draft"
     assert footer_buttons["StaffingV2DrawerSaveChanges"] == "Save Changes"
+    assert not drawer.findChild(qt_widgets.QPushButton, "StaffingV2DrawerCancel").icon().isNull()
+    assert not drawer.findChild(qt_widgets.QPushButton, "StaffingV2DrawerSaveDraft").icon().isNull()
+    assert not drawer.findChild(qt_widgets.QPushButton, "StaffingV2DrawerSaveChanges").icon().isNull()
     assert len(store.list_assignments()) == 2
     window.window.close()
     app.processEvents()
