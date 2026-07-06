@@ -1781,13 +1781,18 @@ class StaffingDashboardV2Page:
                 _format_units(person.units),
                 "Active" if person.active else "Inactive",
                 person.current_assignment or "-",
-                "View",
             ]
             for column, value in enumerate(values):
                 item = self.QtWidgets.QTableWidgetItem(value)
                 if column == 0:
                     item.setData(self.QtCore.Qt.ItemDataRole.UserRole, person.id)
                 self.people_table.setItem(row_index, column, item)
+            view = self.QtWidgets.QPushButton("View")
+            view.setObjectName("StaffingV2PeopleRowView")
+            view.setProperty("personId", person.id)
+            self._set_button_icon(view, "info")
+            view.setEnabled(False)
+            self.people_table.setCellWidget(row_index, 6, view)
         if self.people_table.rowCount():
             self.people_table.setCurrentCell(0, 0)
             self._select_person(0)

@@ -9770,6 +9770,12 @@ def test_pyside_staffing_v2_people_dashboard_renders_employee_management_from_db
         "Aide",
         "Permit in Process",
     } <= table_text
+    for row in range(table.rowCount()):
+        view_button = table.cellWidget(row, 6)
+        assert isinstance(view_button, qt_widgets.QPushButton)
+        assert view_button.text() == "View"
+        assert not view_button.icon().isNull()
+        assert not view_button.isEnabled()
     detail = page.findChild(qt_widgets.QFrame, "StaffingV2PeopleDetailPanel")
     detail_text = _widget_text(detail)
     assert "Maria Gonzalez" in detail_text
