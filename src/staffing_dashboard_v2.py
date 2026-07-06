@@ -843,9 +843,20 @@ class StaffingDashboardV2Page:
         button.setIconSize(self.QtCore.QSize(18, 18))
 
     def _standard_icon(self, icon_key: str) -> Any:
+        if icon_key == "add":
+            pixmap = self.QtGui.QPixmap(18, 18)
+            pixmap.fill(self.QtCore.Qt.GlobalColor.transparent)
+            painter = self.QtGui.QPainter(pixmap)
+            pen = self.QtGui.QPen(self.QtGui.QColor("#2563eb"))
+            pen.setWidth(2)
+            pen.setCapStyle(self.QtCore.Qt.PenCapStyle.RoundCap)
+            painter.setPen(pen)
+            painter.drawLine(9, 4, 9, 14)
+            painter.drawLine(4, 9, 14, 9)
+            painter.end()
+            return self.QtGui.QIcon(pixmap)
         pixmaps = self.QtWidgets.QStyle.StandardPixmap
         mapping = {
-            "add": pixmaps.SP_FileDialogNewFolder,
             "analytics": pixmaps.SP_FileDialogInfoView,
             "classrooms": pixmaps.SP_DirHomeIcon,
             "close": pixmaps.SP_DialogCloseButton,

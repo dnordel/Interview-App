@@ -83,6 +83,7 @@ Icons:
 - Use an icon helper around `QLabel`/`QPushButton` text or Qt-compatible icon font/assets.
 - Required icon sizes: nav 18 px, metric 18-20 px, button 16 px, status 14-16 px.
 - Icons must not be replaced by text if mockup uses an icon.
+- Add actions use a primary-blue plus icon, not the native folder/new-file glyph.
 - If no icon library is added yet, use short Unicode-free ASCII-safe fallbacks only as a temporary test-safe state, then replace before visual QA.
 
 ## Staffing v2 Shell

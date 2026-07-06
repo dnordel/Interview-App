@@ -30,6 +30,16 @@ def _widget_text(widget) -> str:
     return " ".join(label.text() for label in labels)
 
 
+def _icon_has_primary_blue(icon, size: int = 18) -> bool:
+    image = icon.pixmap(size, size).toImage()
+    for y in range(image.height()):
+        for x in range(image.width()):
+            color = image.pixelColor(x, y)
+            if color.alpha() > 0 and color.red() == 37 and color.green() == 99 and color.blue() == 235:
+                return True
+    return False
+
+
 def test_redesign_model_prioritizes_guided_interview_workflow(tmp_path: Path) -> None:
     rubric_path = tmp_path / "rubric.json"
     overrides_path = tmp_path / "question_overrides.json"
@@ -8670,6 +8680,7 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
     assert not page.findChild(qt_widgets.QPushButton, "StaffingV2ExportButton").icon().isNull()
     assert not page.findChild(qt_widgets.QPushButton, "StaffingV2ViewHistoryButton").icon().isNull()
     assert not page.findChild(qt_widgets.QPushButton, "StaffingV2AddPositionButton").icon().isNull()
+    assert _icon_has_primary_blue(page.findChild(qt_widgets.QPushButton, "StaffingV2AddPositionButton").icon())
     assert page.findChild(qt_widgets.QFrame, "StaffingV2Sidebar").minimumWidth() >= 240
     assert page.objectName() == "PySideStaffingV2Page"
     assert page.findChild(qt_widgets.QLabel, "StaffingV2PageTitle").text() == "Staffing Dashboard"
