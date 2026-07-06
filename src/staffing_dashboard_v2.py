@@ -1577,9 +1577,16 @@ class StaffingDashboardV2Page:
         self.validation_right_layout.addWidget(summary)
         actions, actions_layout = self._panel("StaffingV2ValidationSideCard")
         actions_layout.addWidget(self._label("Quick Actions", "StaffingV2SectionTitle"))
-        actions_layout.addWidget(self._label("Run Full Validation"))
-        actions_layout.addWidget(self._label("Export Validation Report"))
-        actions_layout.addWidget(self._label("View Validation Rules"))
+        for object_name, text, icon_key in [
+            ("StaffingV2ValidationRunFullButton", "Run Full Validation", "history"),
+            ("StaffingV2ValidationExportQuickButton", "Export Validation Report", "export"),
+            ("StaffingV2ValidationRulesButton", "View Validation Rules", "validation"),
+        ]:
+            button = self.QtWidgets.QPushButton(text)
+            button.setObjectName(object_name)
+            self._set_button_icon(button, icon_key)
+            button.setEnabled(False)
+            actions_layout.addWidget(button)
         self.validation_right_layout.addWidget(actions)
         about, about_layout = self._panel("StaffingV2ValidationSideCard")
         about_layout.addWidget(self._label("About Validation", "StaffingV2SectionTitle"))

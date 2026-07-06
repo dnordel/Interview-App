@@ -10039,6 +10039,17 @@ def test_pyside_staffing_v2_validation_dashboard_and_filter_drawer_use_existing_
     right_panel_text = _widget_text(page.findChild(qt_widgets.QFrame, "StaffingV2ValidationRightPanel"))
     assert "Compliance Summary" in right_panel_text
     assert "Quick Actions" in right_panel_text
+    quick_actions = {
+        "StaffingV2ValidationRunFullButton": "Run Full Validation",
+        "StaffingV2ValidationExportQuickButton": "Export Validation Report",
+        "StaffingV2ValidationRulesButton": "View Validation Rules",
+    }
+    for object_name, text in quick_actions.items():
+        action_button = page.findChild(qt_widgets.QPushButton, object_name)
+        assert action_button is not None
+        assert action_button.text() == text
+        assert not action_button.icon().isNull()
+        assert not action_button.isEnabled()
     assert "About Validation" in right_panel_text
 
     drawer = page.findChild(qt_widgets.QFrame, "StaffingV2FilterDrawer")
