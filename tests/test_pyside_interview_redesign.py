@@ -8883,7 +8883,7 @@ def test_pyside_staffing_v2_classrooms_dashboard_uses_new_shell_and_db_rows(
     assert page.findChild(qt_widgets.QWidget, "StaffingV2ClassroomManagementDashboard") is not None
     assert page.findChild(qt_widgets.QLabel, "StaffingV2ClassroomsTitle").text() == "Classroom Management"
     assert "Manage classroom records" in page.findChild(qt_widgets.QLabel, "StaffingV2ClassroomsSubtitle").text()
-    assert page.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsAddButton").text() == "+  Add Classroom"
+    assert page.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsAddButton").text() == "Add Classroom"
     assert not page.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsExportButton").icon().isNull()
     assert not page.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsAddButton").icon().isNull()
     assert page.findChild(qt_widgets.QComboBox, "StaffingV2ClassroomsSchoolFilter").currentText() == "All Schools"
@@ -9685,7 +9685,7 @@ def test_pyside_staffing_v2_people_dashboard_renders_employee_management_from_db
         page.findChild(qt_widgets.QLabel, "StaffingV2PeopleSubtitle").text()
         == "Manage employee records, permits, roles, and assignments."
     )
-    assert page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleAddButton").text() == "+  Add Person"
+    assert page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleAddButton").text() == "Add Person"
     assert not page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleAddButton").icon().isNull()
     assert page.findChild(qt_widgets.QLineEdit, "StaffingV2PeopleSearch").placeholderText() == (
         "Search by name, role, or email..."
