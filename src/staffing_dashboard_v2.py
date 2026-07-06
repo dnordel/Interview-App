@@ -349,6 +349,43 @@ QListWidget#StaffingV2ClassroomList::item:selected {
     background-color: #eff6ff;
     color: #0f172a;
 }
+QFrame#StaffingV2ClassroomListItem {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+QFrame#StaffingV2ClassroomListItem[staffingV2Selected="true"] {
+    background-color: #eff6ff;
+    border: 2px solid #2563eb;
+}
+QFrame#StaffingV2ClassroomStatusDot {
+    border-radius: 5px;
+    min-width: 10px;
+    max-width: 10px;
+    min-height: 10px;
+    max-height: 10px;
+}
+QFrame#StaffingV2ClassroomStatusDot[staffingV2Status="need_now"],
+QFrame#StaffingV2ClassroomStatusDot[staffingV2Status="replace"] {
+    background-color: #ef4444;
+}
+QFrame#StaffingV2ClassroomStatusDot[staffingV2Status="coming"] {
+    background-color: #f59e0b;
+}
+QFrame#StaffingV2ClassroomStatusDot[staffingV2Status="filled"] {
+    background-color: #22c55e;
+}
+QFrame#StaffingV2ClassroomStatusDot[staffingV2Status="dont_need_now"] {
+    background-color: #64748b;
+}
+QLabel#StaffingV2ClassroomItemTitle {
+    color: #0f172a;
+    font-weight: 800;
+}
+QLabel#StaffingV2ClassroomItemCounts,
+QLabel#StaffingV2ClassroomItemChevron {
+    color: #334155;
+}
 """
 
 
@@ -1837,13 +1874,15 @@ class StaffingDashboardV2Page:
         for classroom, rows in self.classroom_rows.items():
             item = self.QtWidgets.QListWidgetItem(_classroom_label(classroom, rows))
             item.setData(self.QtCore.Qt.ItemDataRole.UserRole, classroom)
-            item.setSizeHint(self.QtCore.QSize(0, 64))
+            item.setSizeHint(self.QtCore.QSize(0, 68))
             self.classroom_list.addItem(item)
+            self.classroom_list.setItemWidget(item, self._classroom_list_item_widget(classroom, rows))
         if current in self.classroom_rows:
             self.classroom_list.setCurrentRow(list(self.classroom_rows).index(current))
         elif self.classroom_list.count():
             self.classroom_list.setCurrentRow(0)
         self.classroom_list.blockSignals(False)
+        self._sync_classroom_list_selection()
         self._select_classroom(self.classroom_list.currentRow())
 
     def _select_classroom(self, index: int) -> None:
@@ -1851,7 +1890,44 @@ class StaffingDashboardV2Page:
             self._render_classroom("", [])
             return
         classroom = str(self.classroom_list.item(index).data(self.QtCore.Qt.ItemDataRole.UserRole) or "")
+        self._sync_classroom_list_selection()
         self._render_classroom(classroom, self.classroom_rows.get(classroom, []))
+
+    def _classroom_list_item_widget(self, classroom: str, rows: list[StaffingMetricRow]) -> Any:
+        frame = self.QtWidgets.QFrame()
+        frame.setObjectName("StaffingV2ClassroomListItem")
+        frame.setProperty("staffingV2Selected", False)
+        layout = self.QtWidgets.QHBoxLayout(frame)
+        layout.setContentsMargins(10, 6, 10, 6)
+        layout.setSpacing(10)
+        dot = self.QtWidgets.QFrame()
+        dot.setObjectName("StaffingV2ClassroomStatusDot")
+        dot.setProperty("staffingV2Status", _classroom_status_key(rows))
+        layout.addWidget(dot, alignment=self.QtCore.Qt.AlignmentFlag.AlignTop)
+        text = self.QtWidgets.QVBoxLayout()
+        text.setSpacing(2)
+        title = self._label(classroom, "StaffingV2ClassroomItemTitle")
+        title.setWordWrap(False)
+        counts = self._label(_classroom_counts_text(rows), "StaffingV2ClassroomItemCounts")
+        counts.setWordWrap(False)
+        text.addWidget(title)
+        text.addWidget(counts)
+        layout.addLayout(text, 1)
+        chevron = self._label(">", "StaffingV2ClassroomItemChevron")
+        chevron.setAlignment(self.QtCore.Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(chevron)
+        return frame
+
+    def _sync_classroom_list_selection(self) -> None:
+        current_row = self.classroom_list.currentRow()
+        for index in range(self.classroom_list.count()):
+            widget = self.classroom_list.itemWidget(self.classroom_list.item(index))
+            if widget is None:
+                continue
+            widget.setProperty("staffingV2Selected", index == current_row)
+            widget.style().unpolish(widget)
+            widget.style().polish(widget)
+            widget.update()
 
     def _render_classroom(self, classroom: str, rows: list[StaffingMetricRow]) -> None:
         school = rows[0].school if rows else ""
@@ -3079,12 +3155,29 @@ class StaffingDashboardV2Page:
 
 
 def _classroom_label(classroom: str, rows: list[StaffingMetricRow]) -> str:
+    return f"{classroom}\n{_classroom_counts_text(rows)}"
+
+
+def _classroom_counts_text(rows: list[StaffingMetricRow]) -> str:
     need = sum(1 for row in rows if row.status == "need_now")
     replace = sum(1 for row in rows if row.status == "replace")
     coming = sum(1 for row in rows if row.status == "coming")
     filled = sum(1 for row in rows if row.status == "filled")
     dont_need = sum(1 for row in rows if row.status == "dont_need_now")
-    return f"{classroom}\nNeed {need} · Replace {replace} · Coming {coming} · Filled {filled} · Don't Need {dont_need}"
+    return f"Need {need} · Replace {replace} · Coming {coming} · Filled {filled} · Don't Need {dont_need}"
+
+
+def _classroom_status_key(rows: list[StaffingMetricRow]) -> str:
+    statuses = {row.status for row in rows}
+    if "need_now" in statuses:
+        return "need_now"
+    if "replace" in statuses:
+        return "replace"
+    if "coming" in statuses:
+        return "coming"
+    if "filled" in statuses:
+        return "filled"
+    return "dont_need_now"
 
 
 def _table_assignment_id(table: Any, row: int) -> int | None:

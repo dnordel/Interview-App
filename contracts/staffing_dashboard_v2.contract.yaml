@@ -2,8 +2,8 @@ module:
   name: staffing_dashboard_v2
   language: python
   path: src/staffing_dashboard_v2.py
-  version: 0.13.1
-  description: Parallel PySide Staffing v2 dashboard page module for the mockup-driven rewrite; renders a standalone mockup-style staffing shell/sidebar with active nav state, main Staffing Dashboard filters, compact summary chips, classroom list, position table with status and permit chips, dashed Add Position drop zone, status key, service-backed Add Position dialog, Classroom Management sub-dashboard with side filter drawer, Staffing Validation sub-dashboard with filter drawer, read-only position detail drawer, v2 Mark Coming / Mark Filled dialogs, v2 Manage Filled chooser, v2 Update Permit dialog, v2 Mark Need Now dialog, People / Employee Management sub-dashboard, and Assignment History sub-dashboard while the legacy Staffing page remains available.
+  version: 0.13.2
+  description: Parallel PySide Staffing v2 dashboard page module for the mockup-driven rewrite; renders a standalone mockup-style staffing shell/sidebar with active nav state, main Staffing Dashboard filters, compact summary chips, custom classroom list rows with status dots and chevrons, position table with status and permit chips, dashed Add Position drop zone, status key, service-backed Add Position dialog, Classroom Management sub-dashboard with side filter drawer, Staffing Validation sub-dashboard with filter drawer, read-only position detail drawer, v2 Mark Coming / Mark Filled dialogs, v2 Manage Filled chooser, v2 Update Permit dialog, v2 Mark Need Now dialog, People / Employee Management sub-dashboard, and Assignment History sub-dashboard while the legacy Staffing page remains available.
 functions:
 - name: _classroom_priority_status
   description: Return the Classroom Management priority label for a group of staffing metric rows, preferring Need Now, Replace, Coming, Filled / Healthy, then Don't Need.
@@ -49,9 +49,31 @@ functions:
     type: str
   exceptions: []
   side_effects: none
+- name: _classroom_counts_text
+  description: Format Staffing v2 classroom row status counts from StaffingMetricRow data for both legacy item text and custom row widgets.
+  locked: false
+  inputs:
+    rows:
+      type: list[StaffingMetricRow]
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _classroom_status_key
+  description: Return the status key used to color a main-dashboard classroom list status dot, preferring Need Now, Replace, Coming, Filled, then Don't Need.
+  locked: false
+  inputs:
+    rows:
+      type: list[StaffingMetricRow]
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
 classes:
 - name: StaffingDashboardV2Page
-  description: Builds and refreshes the parallel Staffing v2 PySide shell/sidebar, dashboard, compact summary chips, chip-based positions table, service-backed Add Position dialog and drop zone, Classroom Management dashboard and filter drawer, Staffing Validation dashboard and filter drawer, read-only position detail drawer, Mark Coming / Mark Filled workflows, Manage Filled workflow chooser, Update Permit workflow, Mark Need Now replacement-clear workflow, People / Employee Management dashboard, and Assignment History dashboard from StaffingService metrics and StaffingStore data while keeping staffing mutations in StaffingService.
+  description: Builds and refreshes the parallel Staffing v2 PySide shell/sidebar, dashboard, compact summary chips, custom classroom list item widgets, chip-based positions table, service-backed Add Position dialog and drop zone, Classroom Management dashboard and filter drawer, Staffing Validation dashboard and filter drawer, read-only position detail drawer, Mark Coming / Mark Filled workflows, Manage Filled workflow chooser, Update Permit workflow, Mark Need Now replacement-clear workflow, People / Employee Management dashboard, and Assignment History dashboard from StaffingService metrics and StaffingStore data while keeping staffing mutations in StaffingService.
   locked: false
   methods:
   - name: __init__
@@ -89,6 +111,24 @@ classes:
       type: None
     exceptions: []
     side_effects: Initializes staffing storage if needed, reads staffing metrics, people snapshots, and assignment history snapshots, and refreshes Staffing v2 visible selectors, cards, classroom list, positions table, Classroom Management widgets, Staffing Validation widgets, People dashboard widgets, and Assignment History dashboard widgets.
+  - name: _classroom_list_item_widget
+    inputs:
+      classroom:
+        type: str
+        required: true
+      rows:
+        type: list[StaffingMetricRow]
+        required: true
+    returns:
+      type: QFrame
+    exceptions: []
+    side_effects: Creates one mockup-style main dashboard classroom list row widget with status dot, title, count text, and chevron without mutating staffing data.
+  - name: _sync_classroom_list_selection
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates staffingV2Selected properties and repolishes custom classroom list row widgets so selected rows remain readable.
   - name: _sidebar_button
     inputs:
       object_name:

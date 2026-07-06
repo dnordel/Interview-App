@@ -8646,6 +8646,17 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
     assert classroom_list.count() == 2
     assert "Harmony 1" in classroom_list.item(0).text()
     assert "Need 1" in classroom_list.item(0).text()
+    assert classroom_list.item(0).sizeHint().height() >= 60
+    first_row_widget = classroom_list.itemWidget(classroom_list.item(0))
+    assert first_row_widget is not None
+    assert first_row_widget.objectName() == "StaffingV2ClassroomListItem"
+    assert first_row_widget.findChild(qt_widgets.QFrame, "StaffingV2ClassroomStatusDot") is not None
+    assert first_row_widget.findChild(qt_widgets.QFrame, "StaffingV2ClassroomStatusDot").property("staffingV2Status") == "need_now"
+    assert first_row_widget.findChild(qt_widgets.QLabel, "StaffingV2ClassroomItemTitle").text() == "Harmony 1"
+    assert first_row_widget.findChild(qt_widgets.QLabel, "StaffingV2ClassroomItemCounts").text() == (
+        "Need 1 · Replace 0 · Coming 0 · Filled 1 · Don't Need 0"
+    )
+    assert first_row_widget.findChild(qt_widgets.QLabel, "StaffingV2ClassroomItemChevron").text() == ">"
     assert page.findChild(qt_widgets.QLabel, "StaffingV2ClassroomTitle").text() == "Harmony 1"
     table = page.findChild(qt_widgets.QTableWidget, "StaffingV2PositionsTable")
     assert table.maximumHeight() <= 230
