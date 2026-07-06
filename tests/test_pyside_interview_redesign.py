@@ -9004,6 +9004,13 @@ def test_pyside_staffing_v2_classrooms_filter_side_panel_filters_rows_without_mu
     assert "Status" in drawer_text
     assert "Open Positions" in drawer_text
     assert "Days Open" in drawer_text
+    reset = drawer.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsFilterReset")
+    assert reset.text() == "Reset"
+    assert not reset.icon().isNull()
+    assert drawer.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsFilterClose").text() == ""
+    apply_button = drawer.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsFilterApply")
+    assert apply_button.text() == "Apply Filters"
+    assert not apply_button.icon().isNull()
     need_now = drawer.findChild(qt_widgets.QCheckBox, "StaffingV2ClassroomsFilterNeedNow")
     filled = drawer.findChild(qt_widgets.QCheckBox, "StaffingV2ClassroomsFilterFilled")
     assert need_now.isChecked()

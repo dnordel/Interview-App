@@ -272,7 +272,16 @@ QPushButton#StaffingV2FilterApplyButton {
     padding: 8px 14px;
     font-weight: 700;
 }
-QPushButton#StaffingV2FilterCloseButton {
+QPushButton#StaffingV2ClassroomsFilterApply {
+    background-color: #2563eb;
+    color: #ffffff;
+    border: 1px solid #2563eb;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-weight: 700;
+}
+QPushButton#StaffingV2FilterCloseButton,
+QPushButton#StaffingV2ClassroomsFilterClose {
     background-color: transparent;
     color: #0f172a;
     border: none;
@@ -306,7 +315,9 @@ QPushButton#StaffingV2HistoryClear,
 QPushButton#StaffingV2ValidationExportButton,
 QPushButton#StaffingV2ValidationFiltersButton,
 QPushButton#StaffingV2FilterResetButton,
-QPushButton#StaffingV2FilterCancelButton {
+QPushButton#StaffingV2FilterCancelButton,
+QPushButton#StaffingV2ClassroomsFilterReset,
+QPushButton#StaffingV2ClassroomsFilterCancel {
     background-color: #ffffff;
     color: #1e293b;
     border: 1px solid #cbd5e1;
@@ -952,9 +963,12 @@ class StaffingDashboardV2Page:
         header.addStretch(1)
         reset = self.QtWidgets.QPushButton("Reset")
         reset.setObjectName("StaffingV2ClassroomsFilterReset")
+        self._set_button_icon(reset, "reset")
         reset.clicked.connect(self._reset_classrooms_filter_drawer)
-        close = self.QtWidgets.QPushButton("X")
+        close = self.QtWidgets.QPushButton("")
         close.setObjectName("StaffingV2ClassroomsFilterClose")
+        self._set_button_icon(close, "close")
+        close.setFixedSize(32, 32)
         close.clicked.connect(self.classrooms_filter_drawer.hide)
         header.addWidget(reset)
         header.addWidget(close)
@@ -993,6 +1007,7 @@ class StaffingDashboardV2Page:
         cancel.clicked.connect(self.classrooms_filter_drawer.hide)
         apply = self.QtWidgets.QPushButton("Apply Filters")
         apply.setObjectName("StaffingV2ClassroomsFilterApply")
+        self._set_button_icon(apply, "filter")
         apply.clicked.connect(self._apply_classrooms_filter_drawer)
         footer.addWidget(cancel)
         footer.addWidget(apply)
