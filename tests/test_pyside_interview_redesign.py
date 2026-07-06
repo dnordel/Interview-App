@@ -8679,7 +8679,13 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
     assert "Open positions 1" in metric_text
     assert "Validation healthy" in metric_text
     assert "20639" not in metric_text
-    for card in page.findChildren(qt_widgets.QFrame, "StaffingV2MetricCard"):
+    summary_chips = page.findChildren(qt_widgets.QFrame, "StaffingV2MetricCard")
+    chip_variants = {chip.accessibleName(): chip.property("staffingV2SummaryVariant") for chip in summary_chips}
+    assert chip_variants["Schools: 1"] == "info"
+    assert chip_variants["Open positions: 1"] == "info"
+    assert chip_variants["Open > 7 days: 0"] == "danger"
+    assert chip_variants["Validation healthy"] == "success"
+    for card in summary_chips:
         assert card.maximumHeight() <= 50
     classroom_list = page.findChild(qt_widgets.QListWidget, "StaffingV2ClassroomList")
     assert classroom_list.count() == 2

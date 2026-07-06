@@ -93,6 +93,18 @@ QFrame#StaffingV2AddPositionDropZone {
 QFrame#StaffingV2MetricCard {
     border-radius: 8px;
 }
+QFrame#StaffingV2MetricCard[staffingV2SummaryVariant="info"] {
+    background-color: #f8fbff;
+    border: 1px solid #bfdbfe;
+}
+QFrame#StaffingV2MetricCard[staffingV2SummaryVariant="danger"] {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+}
+QFrame#StaffingV2MetricCard[staffingV2SummaryVariant="success"] {
+    background-color: #f0fdf4;
+    border: 1px solid #bbf7d0;
+}
 QFrame#StaffingV2AddPositionDropZone {
     border: 1px dashed #cbd5e1;
     background-color: #ffffff;
@@ -165,6 +177,18 @@ QLabel#StaffingV2SummaryValue {
     color: #0f172a;
     font-size: 13px;
     font-weight: 800;
+}
+QLabel#StaffingV2SummaryLabel[staffingV2SummaryVariant="info"],
+QLabel#StaffingV2SummaryValue[staffingV2SummaryVariant="info"] {
+    color: #2563eb;
+}
+QLabel#StaffingV2SummaryLabel[staffingV2SummaryVariant="danger"],
+QLabel#StaffingV2SummaryValue[staffingV2SummaryVariant="danger"] {
+    color: #dc2626;
+}
+QLabel#StaffingV2SummaryLabel[staffingV2SummaryVariant="success"],
+QLabel#StaffingV2SummaryValue[staffingV2SummaryVariant="success"] {
+    color: #15803d;
 }
 QLabel#StaffingV2PriorityChip {
     background-color: #fee2e2;
@@ -3236,13 +3260,18 @@ class StaffingDashboardV2Page:
     def _summary_chip(self, label: str, value: str, accessible_text: str) -> Any:
         card, layout = self._panel("StaffingV2MetricCard")
         card.setAccessibleName(accessible_text)
+        variant = "success" if "validation" in accessible_text.casefold() else "danger" if "open > 7" in accessible_text.casefold() else "info"
+        card.setProperty("staffingV2SummaryVariant", variant)
         card.setMinimumHeight(38)
         card.setMaximumHeight(48)
         row = self.QtWidgets.QHBoxLayout()
         row.setContentsMargins(2, 0, 2, 0)
         row.setSpacing(6)
-        row.addWidget(self._label(label, "StaffingV2Muted"))
+        label_widget = self._label(label, "StaffingV2SummaryLabel")
+        label_widget.setProperty("staffingV2SummaryVariant", variant)
+        row.addWidget(label_widget)
         value_widget = self._label(value, "StaffingV2SummaryValue")
+        value_widget.setProperty("staffingV2SummaryVariant", variant)
         row.addWidget(value_widget)
         layout.addLayout(row)
         return card
