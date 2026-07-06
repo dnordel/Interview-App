@@ -10086,7 +10086,8 @@ def test_pyside_staffing_v2_validation_dashboard_and_filter_drawer_use_existing_
     assert validation_search.placeholderText() == "Search issues..."
     assert validation_search.actions()
     filters = page.findChild(qt_widgets.QPushButton, "StaffingV2ValidationFiltersButton")
-    assert filters.text() == "Filters"
+    assert filters.text() == "Filters 3"
+    assert filters.property("staffingV2FilterActiveCount") == 3
     assert not filters.icon().isNull()
     table = page.findChild(qt_widgets.QTableWidget, "StaffingV2ValidationTable")
     assert table.rowCount() == 3
@@ -10159,8 +10160,10 @@ def test_pyside_staffing_v2_validation_dashboard_and_filter_drawer_use_existing_
     assert reset_button.text() == "Reset"
     assert not reset_button.icon().isNull()
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2FilterCloseButton").text() == ""
-    assert page.findChild(qt_widgets.QPushButton, "StaffingV2FilterApplyButton").text() == "Apply Filters"
-    assert not page.findChild(qt_widgets.QPushButton, "StaffingV2FilterApplyButton").icon().isNull()
+    apply_button = page.findChild(qt_widgets.QPushButton, "StaffingV2FilterApplyButton")
+    assert apply_button.text() == "Apply Filters 3"
+    assert apply_button.property("staffingV2FilterActiveCount") == 3
+    assert not apply_button.icon().isNull()
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2FilterCancelButton").text() == "Cancel"
     page.findChild(qt_widgets.QPushButton, "StaffingV2FilterCancelButton").click()
     app.processEvents()

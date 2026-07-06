@@ -1507,11 +1507,11 @@ class StaffingDashboardV2Page:
         self.validation_search.addAction(self._standard_icon("search"), self.QtWidgets.QLineEdit.ActionPosition.LeadingPosition)
         self.validation_search.textChanged.connect(self._refresh_validation_filters)
         controls.addWidget(self.validation_search, 1)
-        filters = self.QtWidgets.QPushButton("Filters")
-        filters.setObjectName("StaffingV2ValidationFiltersButton")
-        self._set_button_icon(filters, "filter")
-        filters.clicked.connect(self._open_filter_drawer)
-        controls.addWidget(filters)
+        self.validation_filters_button = self.QtWidgets.QPushButton("Filters")
+        self.validation_filters_button.setObjectName("StaffingV2ValidationFiltersButton")
+        self._set_button_icon(self.validation_filters_button, "filter")
+        self.validation_filters_button.clicked.connect(self._open_filter_drawer)
+        controls.addWidget(self.validation_filters_button)
         main_layout.addLayout(controls)
 
         body = self.QtWidgets.QSplitter(self.QtCore.Qt.Orientation.Horizontal)
@@ -1611,12 +1611,12 @@ class StaffingDashboardV2Page:
         cancel = self.QtWidgets.QPushButton("Cancel")
         cancel.setObjectName("StaffingV2FilterCancelButton")
         cancel.clicked.connect(self.filter_drawer.hide)
-        apply = self.QtWidgets.QPushButton("Apply Filters")
-        apply.setObjectName("StaffingV2FilterApplyButton")
-        self._set_button_icon(apply, "filter")
-        apply.clicked.connect(self._apply_validation_filters)
+        self.validation_apply_button = self.QtWidgets.QPushButton("Apply Filters")
+        self.validation_apply_button.setObjectName("StaffingV2FilterApplyButton")
+        self._set_button_icon(self.validation_apply_button, "filter")
+        self.validation_apply_button.clicked.connect(self._apply_validation_filters)
         footer.addWidget(cancel)
-        footer.addWidget(apply)
+        footer.addWidget(self.validation_apply_button)
         self.filter_drawer_layout.addLayout(footer)
 
     def _validation_filter_combo(self, object_name: str, values: list[str]) -> Any:
@@ -1667,6 +1667,27 @@ class StaffingDashboardV2Page:
             severities.add("Warning")
         if self.validation_severity_info.isChecked():
             severities.add("Info")
+        active_filter_count = len(severities)
+        if school != "All Schools":
+            active_filter_count += 1
+        if program != "All Programs":
+            active_filter_count += 1
+        if issue_type != "All Types":
+            active_filter_count += 1
+        if self.validation_detected_date_filter.currentText() != "Last 30 Days":
+            active_filter_count += 1
+        if search:
+            active_filter_count += 1
+        if hasattr(self, "validation_filters_button"):
+            self.validation_filters_button.setText(f"Filters {active_filter_count}")
+            self.validation_filters_button.setProperty("staffingV2FilterActiveCount", active_filter_count)
+            self.validation_filters_button.style().unpolish(self.validation_filters_button)
+            self.validation_filters_button.style().polish(self.validation_filters_button)
+        if hasattr(self, "validation_apply_button"):
+            self.validation_apply_button.setText(f"Apply Filters {active_filter_count}")
+            self.validation_apply_button.setProperty("staffingV2FilterActiveCount", active_filter_count)
+            self.validation_apply_button.style().unpolish(self.validation_apply_button)
+            self.validation_apply_button.style().polish(self.validation_apply_button)
         self.visible_validation_issues = []
         for issue in self.validation_issues:
             haystack = f"{issue['issue']} {issue['classroom']} {issue['type']} {issue['severity']} {issue['details']}".casefold()

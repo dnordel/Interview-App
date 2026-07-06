@@ -380,6 +380,7 @@ Used by Classrooms and Validation screens:
 - Validation drawer includes severity checkboxes, issue type combo, and Detected Date combo.
   - Detected Date combo object: `StaffingV2FilterDetectedDate`.
   - Default detected date text: `Last 30 Days`.
+- Validation filter trigger and apply button display active filter count, e.g. `Filters 3` and `Apply Filters 3`.
 - Footer fixed bottom: Cancel, primary Apply Filters with active count chip.
 - Drawer must not mutate DB; only updates view filters.
 
