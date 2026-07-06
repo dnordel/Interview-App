@@ -1601,6 +1601,11 @@ class StaffingDashboardV2Page:
             ["All Types", "Coverage", "Upcoming", "Compliance"],
         )
         self.filter_drawer_layout.addLayout(self._labeled_control("Issue Type", self.validation_issue_type_filter))
+        self.validation_detected_date_filter = self._validation_filter_combo(
+            "StaffingV2FilterDetectedDate",
+            ["Last 30 Days", "Last 7 Days", "Today", "All Dates"],
+        )
+        self.filter_drawer_layout.addLayout(self._labeled_control("Detected Date", self.validation_detected_date_filter))
         self.filter_drawer_layout.addStretch(1)
         footer = self.QtWidgets.QHBoxLayout()
         cancel = self.QtWidgets.QPushButton("Cancel")
@@ -1627,6 +1632,7 @@ class StaffingDashboardV2Page:
         self.validation_school_filter.setCurrentText("All Schools")
         self.validation_program_filter.setCurrentText("All Programs")
         self.validation_issue_type_filter.setCurrentText("All Types")
+        self.validation_detected_date_filter.setCurrentText("Last 30 Days")
         self.validation_severity_critical.setChecked(True)
         self.validation_severity_warning.setChecked(True)
         self.validation_severity_info.setChecked(True)

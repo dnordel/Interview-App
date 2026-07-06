@@ -377,6 +377,9 @@ Used by Classrooms and Validation screens:
 - Header: Filters, Reset, close X.
 - Form controls stacked with 16-24 px section spacing.
 - Status checkboxes with colored dots.
+- Validation drawer includes severity checkboxes, issue type combo, and Detected Date combo.
+  - Detected Date combo object: `StaffingV2FilterDetectedDate`.
+  - Default detected date text: `Last 30 Days`.
 - Footer fixed bottom: Cancel, primary Apply Filters with active count chip.
 - Drawer must not mutate DB; only updates view filters.
 

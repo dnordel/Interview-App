@@ -10153,6 +10153,8 @@ def test_pyside_staffing_v2_validation_dashboard_and_filter_drawer_use_existing_
     assert "School" in drawer_text
     assert "Severity" in drawer_text
     assert "Issue Type" in drawer_text
+    assert "Detected Date" in drawer_text
+    assert page.findChild(qt_widgets.QComboBox, "StaffingV2FilterDetectedDate").currentText() == "Last 30 Days"
     reset_button = page.findChild(qt_widgets.QPushButton, "StaffingV2FilterResetButton")
     assert reset_button.text() == "Reset"
     assert not reset_button.icon().isNull()
