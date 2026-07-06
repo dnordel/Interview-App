@@ -282,7 +282,9 @@ QPushButton#StaffingV2ExportButton,
 QPushButton#StaffingV2ViewHistoryButton,
 QPushButton#StaffingV2ClassroomsExportButton,
 QPushButton#StaffingV2ClassroomsMoreFilters,
-QPushButton#StaffingV2ClassroomsClear {
+QPushButton#StaffingV2ClassroomsClear,
+QPushButton#StaffingV2PeopleMoreFilters,
+QPushButton#StaffingV2PeopleClear {
     background-color: #ffffff;
     color: #1e293b;
     border: 1px solid #cbd5e1;
@@ -293,6 +295,7 @@ QPushButton#StaffingV2ClassroomsClear {
 QPushButton#StaffingV2DrawerMarkComing,
 QPushButton#StaffingV2DrawerMarkFilled,
 QPushButton#StaffingV2ClassroomsAddButton,
+QPushButton#StaffingV2PeopleAddButton,
 QPushButton#StaffingV2ComingSubmit,
 QPushButton#StaffingV2FilledSubmit,
 QPushButton#StaffingV2ManageFilledContinue,
@@ -1473,6 +1476,7 @@ class StaffingDashboardV2Page:
         header.addWidget(self._label("Last updated: May 8, 2025 9:41 AM", "StaffingV2Muted"))
         add_person = self.QtWidgets.QPushButton("+  Add Person")
         add_person.setObjectName("StaffingV2PeopleAddButton")
+        self._set_button_icon(add_person, "add")
         add_person.setEnabled(False)
         add_person.setToolTip("Add Person workflow will be implemented in a later People mockup slice.")
         header.addWidget(add_person)
@@ -1496,6 +1500,7 @@ class StaffingDashboardV2Page:
         filters.addLayout(self._labeled_control("Permit Status", self.people_permit_filter), 1)
         more_filters = self.QtWidgets.QPushButton("More Filters")
         more_filters.setObjectName("StaffingV2PeopleMoreFilters")
+        self._set_button_icon(more_filters, "filter")
         more_filters.setEnabled(False)
         filters.addWidget(more_filters)
         clear = self.QtWidgets.QPushButton("Clear")

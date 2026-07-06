@@ -9654,6 +9654,7 @@ def test_pyside_staffing_v2_people_dashboard_renders_employee_management_from_db
         == "Manage employee records, permits, roles, and assignments."
     )
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleAddButton").text() == "+  Add Person"
+    assert not page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleAddButton").icon().isNull()
     assert page.findChild(qt_widgets.QLineEdit, "StaffingV2PeopleSearch").placeholderText() == (
         "Search by name, role, or email..."
     )
@@ -9661,6 +9662,7 @@ def test_pyside_staffing_v2_people_dashboard_renders_employee_management_from_db
     assert page.findChild(qt_widgets.QComboBox, "StaffingV2PeopleRoleFilter").currentText() == "All"
     assert page.findChild(qt_widgets.QComboBox, "StaffingV2PeoplePermitFilter").currentText() == "All"
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleMoreFilters").text() == "More Filters"
+    assert not page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleMoreFilters").icon().isNull()
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleClear").text() == "Clear"
     metric_text = " ".join(_widget_text(card) for card in page.findChildren(qt_widgets.QFrame, "StaffingV2PeopleMetricCard"))
     assert "Total People 2" in metric_text
