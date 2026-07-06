@@ -8690,6 +8690,11 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
     for card in summary_chips:
         assert card.maximumHeight() <= 50
     classroom_list = page.findChild(qt_widgets.QListWidget, "StaffingV2ClassroomList")
+    list_filter = page.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomListFilterButton")
+    assert list_filter is not None
+    assert list_filter.text() == ""
+    assert not list_filter.icon().isNull()
+    assert list_filter.toolTip() == "Classroom filters"
     assert classroom_list.count() == 2
     assert "Harmony 1" in classroom_list.item(0).text()
     assert "Need 1" in classroom_list.item(0).text()

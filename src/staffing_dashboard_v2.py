@@ -658,8 +658,10 @@ class StaffingDashboardV2Page:
         list_header = self.QtWidgets.QHBoxLayout()
         list_header.addWidget(self._label("Classrooms", "StaffingV2SectionTitle"))
         list_header.addStretch(1)
-        list_filter = self.QtWidgets.QPushButton("≡")
+        list_filter = self.QtWidgets.QPushButton("")
         list_filter.setObjectName("StaffingV2ClassroomListFilterButton")
+        self._set_button_icon(list_filter, "filter")
+        list_filter.setToolTip("Classroom filters")
         list_filter.setEnabled(False)
         list_filter.setFixedSize(34, 34)
         list_header.addWidget(list_filter)
@@ -741,6 +743,7 @@ class StaffingDashboardV2Page:
             "classrooms": pixmaps.SP_DirHomeIcon,
             "dashboard": pixmaps.SP_ComputerIcon,
             "export": pixmaps.SP_DialogSaveButton,
+            "filter": pixmaps.SP_FileDialogDetailedView,
             "history": pixmaps.SP_BrowserReload,
             "info": pixmaps.SP_MessageBoxInformation,
             "integrations": pixmaps.SP_DriveNetIcon,
