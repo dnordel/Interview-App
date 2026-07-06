@@ -8935,6 +8935,12 @@ def test_pyside_staffing_v2_classrooms_dashboard_uses_new_shell_and_db_rows(
         "18",
         "Filled / Healthy",
     } <= table_text
+    for row in range(table.rowCount()):
+        view_button = table.cellWidget(row, 9)
+        assert isinstance(view_button, qt_widgets.QPushButton)
+        assert view_button.text() == "View"
+        assert not view_button.icon().isNull()
+        assert not view_button.isEnabled()
     detail = page.findChild(qt_widgets.QFrame, "StaffingV2ClassroomsDetailPanel")
     detail_text = _widget_text(detail)
     assert "Classroom Detail" in detail_text

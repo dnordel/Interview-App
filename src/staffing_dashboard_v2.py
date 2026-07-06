@@ -1249,12 +1249,17 @@ class StaffingDashboardV2Page:
                 str(open_count),
                 _classroom_priority_status(rows),
                 "Yes",
-                "View",
             ]
             for column, value in enumerate(values):
                 item = self.QtWidgets.QTableWidgetItem(value)
                 item.setData(self.QtCore.Qt.ItemDataRole.UserRole, key)
                 self.classrooms_table.setItem(row_index, column, item)
+            view = self.QtWidgets.QPushButton("View")
+            view.setObjectName("StaffingV2ClassroomsRowView")
+            view.setProperty("classroomKey", key)
+            self._set_button_icon(view, "info")
+            view.setEnabled(False)
+            self.classrooms_table.setCellWidget(row_index, 9, view)
         if self.classrooms_table.rowCount():
             self.classrooms_table.setCurrentCell(0, 0)
             self._select_classroom_management(0)
