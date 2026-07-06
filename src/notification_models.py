@@ -12,11 +12,13 @@ class NotificationEvent:
 
 @dataclass(frozen=True)
 class NotificationRecipient:
-    email: str
+    email: str = ""
     name: str = ""
     role_label: str = ""
     active: bool = True
     id: int | None = None
+    recipient_type: str = "email"
+    role_key: str = ""
 
 
 @dataclass(frozen=True)

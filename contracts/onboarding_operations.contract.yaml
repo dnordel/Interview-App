@@ -2,7 +2,7 @@ module:
   name: onboarding_operations
   language: python
   path: src/onboarding_operations.py
-  version: 0.19.0
+  version: 0.19.1
   description: Flattened public interface for onboarding models, storage, scheduling,
     reminders, notifications, dashboard actions, and onboarding UI composition helpers.
 functions:
@@ -1209,13 +1209,17 @@ functions:
     body:
       type: str
       required: true
+    attachment_paths:
+      type: Sequence[str] | None
+      required: false
+      default: null
   returns:
     type: None
   exceptions:
   - smtplib.SMTPException
   - OSError
-  side_effects: Opens an SMTP or SMTP_SSL connection and sends an email message
-    without logging credentials.
+  side_effects: Reads optional attachment files, opens an SMTP or SMTP_SSL connection,
+    and sends an email message without logging credentials.
 - name: verify_email_connection
   description: Verify the configured SMTP transport and optional login without
     sending an email message.

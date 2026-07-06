@@ -48,22 +48,24 @@ services:
     - onboarding_operations
     - onboarding_app
   notification_service:
-    description: Generic checkpoint email notification rules, recipients, idempotent
-      send audit, and auto-send delivery through shared company SMTP settings.
+    description: Generic checkpoint email notification rules, explicit-email and role recipients
+      including Candidate, school Director, Hiring Manager, and Executive Director,
+      selected-rule test sends, approved-offer PDF attachments, scheduled rows,
+      idempotent send audit, and auto-send delivery through ignored local shared company SMTP settings.
     modules:
     - notification_models
     - notification_store
     - notification_service
   staffing_dashboard_service:
     description: Local SQLite staffing assignment state machine, workbook-style school/classroom/slot display metadata, assignment history,
-      permit updates, metrics, seed import, post-commit checkpoint notification hooks, and parallel PySide Staffing v2 dashboard rewrite surface.
+      permit updates, metrics, seed import, post-commit checkpoint notification hooks, and parallel PySide Staffing v2 dashboard rewrite surface including notification rule management and test-send UI.
     modules:
     - staffing_models
     - staffing_store
     - staffing_service
     - staffing_dashboard_v2
   director_staffing_dashboard_service:
-    description: Director-facing generated Windows launch paths, one per staffing seed school, for the full PySide app in staffing-only mode; each launcher hides non-staffing dashboards, filters to its assigned school, and reuses the exact same staffing page, persistence, transitions, and setup path as the full app.
+    description: Director-facing generated Windows launch paths, one per staffing seed school, for the full PySide app in staffing-only mode; each launcher hides non-staffing dashboards, filters to its assigned school, and reuses the exact same Staffing v2 page, persistence, transitions, and setup path as the full app.
     modules:
     - director_staffing_launcher
     - pyside_interview_app

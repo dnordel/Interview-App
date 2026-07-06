@@ -63,6 +63,10 @@ functions:
     body:
       type: str
       required: true
+    attachment_paths:
+      type: Sequence[str] | None
+      required: false
+      default: null
   returns:
     type: None
   exceptions: []

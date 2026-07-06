@@ -2,8 +2,8 @@ module:
   name: staffing_service
   language: python
   path: src/staffing_service.py
-  version: 0.9.1
-  description: Staffing assignment state machine, service-backed position creation, queued Dropbox edit handling, staffing dashboard metrics with pending-operation projection and workbook display metadata, confirmed person moves, editable assignment details, person permit metadata updates, and post-commit notification emission for successful transactions.
+  version: 0.12.0
+  description: Staffing assignment state machine, service-backed classroom, position, and person creation, queued Dropbox edit handling, staffing dashboard metrics with pending-operation projection and workbook display metadata, confirmed person moves, editable assignment details, person permit metadata updates, and post-commit notification emission for successful transactions.
 functions: []
 classes:
 - name: StaffingService
@@ -68,6 +68,98 @@ classes:
     - ValueError
     - StaffingEditLock
     side_effects: Creates school/classroom/person rows as needed, inserts one assignment, opens history for open/coming statuses, and may emit staffing.assignment.created notification.
+  - name: add_person
+    inputs:
+      name:
+        type: str
+        required: true
+      role:
+        type: str
+        required: true
+      permit_status:
+        type: str
+        required: false
+        default: unknown
+      units:
+        type: float | int | None
+        required: false
+        default: null
+    returns:
+      type: StaffingPerson
+    exceptions:
+    - ValueError
+    - StaffingEditLock
+    side_effects: Creates or updates one active person row through StaffingStore.ensure_person under the staffing write lock without mutating assignments.
+  - name: add_classroom
+    inputs:
+      school:
+        type: str
+        required: true
+      name:
+        type: str
+        required: true
+      program:
+        type: str
+        required: false
+        default: ''
+      ratio_group:
+        type: str
+        required: false
+        default: ''
+      licensed_capacity:
+        type: int | None
+        required: false
+        default: null
+    returns:
+      type: StaffingClassroom
+    exceptions:
+    - ValueError
+    - StaffingEditLock
+    side_effects: Creates or updates one active school/classroom row through StaffingStore without mutating assignments or assignment_history.
+  - name: update_classroom
+    inputs:
+      classroom_id:
+        type: int
+        required: true
+      school:
+        type: str
+        required: true
+      name:
+        type: str
+        required: true
+      program:
+        type: str
+        required: false
+        default: ''
+      ratio_group:
+        type: str
+        required: false
+        default: ''
+      licensed_capacity:
+        type: int | None
+        required: false
+        default: null
+      display_order:
+        type: int
+        required: false
+        default: 0
+    returns:
+      type: StaffingClassroom
+    exceptions:
+    - ValueError
+    - StaffingEditLock
+    side_effects: Updates one classroom record through StaffingStore without mutating assignments or assignment_history.
+  - name: deactivate_classroom
+    inputs:
+      classroom_id:
+        type: int
+        required: true
+    returns:
+      type: StaffingClassroom
+    exceptions:
+    - ValueError
+    - StaffingEditLock
+    side_effects: Fails closed when active assignments exist; otherwise soft-deactivates one classroom through StaffingStore without deleting assignments or assignment_history.
   - name: mark_coming
     inputs:
       assignment_id:

@@ -20,6 +20,7 @@ def test_director_bat_runs_full_pyside_setup_in_staffing_only_mode() -> None:
         assert "-UiMode pyside" in text
         assert "-DirectorStaffingMode" in text
         assert f'-DirectorSchool "{school}"' in text
+        assert "--director-staffing-v2" not in text
         assert text.splitlines() == generator.director_launcher_body(school).splitlines()
         assert "setup_director_staffing.ps1" not in text
         assert 'cd /d "%~dp0"' in text

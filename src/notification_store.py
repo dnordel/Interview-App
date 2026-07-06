@@ -10,6 +10,61 @@ from email_security import is_valid_email_address
 from notification_models import NotificationRecipient, NotificationRule
 
 
+STAFFING_NOTIFICATION_ROLE_RECIPIENTS = [
+    NotificationRecipient(
+        email="",
+        name="Hiring Manager",
+        role_label="Hiring Manager",
+        recipient_type="role",
+        role_key="hiring_manager",
+    ),
+    NotificationRecipient(
+        email="",
+        name="Director",
+        role_label="Director",
+        recipient_type="role",
+        role_key="director",
+    ),
+]
+HIRING_MANAGER_NOTIFICATION_ROLE_RECIPIENTS = [
+    NotificationRecipient(
+        email="",
+        name="Hiring Manager",
+        role_label="Hiring Manager",
+        recipient_type="role",
+        role_key="hiring_manager",
+    )
+]
+OFFER_APPROVED_NOTIFICATION_ROLE_RECIPIENTS = [
+    NotificationRecipient(
+        name="Candidate",
+        role_label="Candidate",
+        recipient_type="role",
+        role_key="candidate",
+    )
+]
+OFFER_ACCEPTED_NOTIFICATION_ROLE_RECIPIENTS = [
+    NotificationRecipient(
+        name="Candidate",
+        role_label="Candidate",
+        recipient_type="role",
+        role_key="candidate",
+    ),
+    NotificationRecipient(
+        name="Director",
+        role_label="Director",
+        recipient_type="role",
+        role_key="director",
+    ),
+    NotificationRecipient(
+        name="Executive Director",
+        role_label="Executive Director",
+        recipient_type="role",
+        role_key="executive_director",
+    ),
+]
+
+
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
@@ -47,17 +102,103 @@ class NotificationStore:
     def ensure_default_rules(self) -> None:
         defaults = [
             NotificationRule(
+                event_type="staffing.assignment.created",
+                label="Hiring manager: position created",
+                subject_template="Position created: {position_name}",
+                body_template="{school} created {position_name} for {classroom}.",
+                recipients=STAFFING_NOTIFICATION_ROLE_RECIPIENTS,
+                active=False,
+            ),
+            NotificationRule(
                 event_type="staffing.assignment.need_now",
                 label="Hiring manager: position needed now",
                 subject_template="Position needed now: {position_name}",
                 body_template="{school} needs {position_name} for {classroom}.",
+                recipients=STAFFING_NOTIFICATION_ROLE_RECIPIENTS,
+                active=False,
+            ),
+            NotificationRule(
+                event_type="staffing.assignment.coming",
+                label="Director: candidate marked coming",
+                subject_template="Candidate coming: {person_name}",
+                body_template="{person_name} is marked coming for {position_name} in {classroom}. Start date: {start_date}.",
+                recipients=STAFFING_NOTIFICATION_ROLE_RECIPIENTS,
+                active=False,
+            ),
+            NotificationRule(
+                event_type="staffing.assignment.filled",
+                label="Leadership: position filled",
+                subject_template="Position filled: {position_name}",
+                body_template="{position_name} in {classroom} has been filled by {person_name}.",
+                recipients=STAFFING_NOTIFICATION_ROLE_RECIPIENTS,
+                active=False,
+            ),
+            NotificationRule(
+                event_type="staffing.assignment.replace",
+                label="Director: replacement needed",
+                subject_template="Replacement needed: {position_name}",
+                body_template="{person_name} needs replacement for {position_name}. Final working day: {final_working_day}.",
+                recipients=STAFFING_NOTIFICATION_ROLE_RECIPIENTS,
+                active=False,
+            ),
+            NotificationRule(
+                event_type="staffing.assignment.not_needed",
+                label="Leadership: position no longer needed",
+                subject_template="Position not needed: {position_name}",
+                body_template="{position_name} in {classroom} is no longer needed. Status: {assignment_status}.",
+                recipients=STAFFING_NOTIFICATION_ROLE_RECIPIENTS,
+                active=False,
+            ),
+            NotificationRule(
+                event_type="staffing.permit.updated",
+                label="Director: permit updated",
+                subject_template="Permit updated: {person_name}",
+                body_template="{person_name} permit status changed to {permit_status}.",
+                recipients=STAFFING_NOTIFICATION_ROLE_RECIPIENTS,
                 active=False,
             ),
             NotificationRule(
                 event_type="offer.accepted",
                 label="Leadership: offer accepted",
-                subject_template="Offer accepted: {candidate_name}",
-                body_template="{candidate_name} accepted the {position} offer for {school}.",
+                subject_template="RE: Offer of Employment - Launch Pad Learning {school_code}",
+                body_template=(
+                    "Hello {candidate},\n\n"
+                    "Thank you for accepting the offer for a teacher position at Launch Pad Learning. "
+                    "Please coordinate with your director on your official start date (all paperwork must be completed before your first day). "
+                    "I've attached our onboarding guide for new employees.\n\n"
+                    "You will need to have completed a physical examination and a TB test within the past year. "
+                    "If you have not had an appointment within the past year, please call your doctor to schedule one as soon as possible.\n"
+                    "You will be separately emailed the employment documents to complete.\n"
+                    "Welcome to the team! We are excited to work with you.\n"
+                    "Best Regards,\n"
+                    "David Nordel\n"
+                    "Director, Recruiting & Community Relations\n"
+                    "Launch Pad Learning\n"
+                    "(310)347-8694\n"
+                    "davidn@launchpadpreschool.com"
+                ),
+                recipients=OFFER_ACCEPTED_NOTIFICATION_ROLE_RECIPIENTS,
+                active=False,
+            ),
+            NotificationRule(
+                event_type="offer.approved",
+                label="Leadership: offer approved",
+                subject_template="Offer of Employment - Launch Pad Learning {school_code}",
+                body_template=(
+                    "Hello {candidate},\n\n"
+                    "I hope you are doing well. We are thrilled to offer you a {position} position at Launch Pad Learning in {school_location}.\n\n"
+                    "The official offer letter detailing your compensation, benefits, and other employment terms is attached to this email.\n\n"
+                    "Please reply with your signed offer letter by 5:00 PM on {reply_by_date}, to confirm your acceptance.\n\n"
+                    "If you have questions or need clarification, please email or call Ms. Deidre at deidre@launchpadpreschool.com or (310) 977-6133.\n\n"
+                    "We look forward to having you join our team and working together to provide our students with a nurturing and enriching environment.\n\n"
+                    "Best Regards,\n"
+                    "David Nordel\n"
+                    "Director, Recruiting & Community Relations\n"
+                    "Launch Pad Learning\n"
+                    "(310)347-8694\n"
+                    "davidn@launchpadpreschool.com"
+                ),
+                recipients=OFFER_APPROVED_NOTIFICATION_ROLE_RECIPIENTS,
                 active=False,
             ),
             NotificationRule(
@@ -65,13 +206,54 @@ class NotificationStore:
                 label="Leadership: offer generated",
                 subject_template="Offer generated: {candidate_name}",
                 body_template="{candidate_name}'s {position} offer was generated for {school}. Start date: {start_date}.",
+                recipients=HIRING_MANAGER_NOTIFICATION_ROLE_RECIPIENTS,
                 active=False,
+            ),
+            NotificationRule(
+                event_type="custom.reminder",
+                label="Custom reminder",
+                subject_template="Reminder: {position_name}",
+                body_template="This is a reminder for {position_name} at {school}.",
+                active=False,
+                trigger_timing="date_offset",
+                date_field="start_date",
+                offset_days=1,
             ),
         ]
         existing = {rule.event_type for rule in self.list_rules()}
         for rule in defaults:
             if rule.event_type not in existing:
                 self.save_rule(rule)
+                continue
+            self._backfill_default_recipients(rule)
+
+    def _backfill_default_recipients(self, default_rule: NotificationRule) -> None:
+        existing_rules = self.list_rules(default_rule.event_type)
+        if len(existing_rules) != 1:
+            return
+        existing_rule = existing_rules[0]
+        if existing_rule.recipients:
+            return
+        if existing_rule.label != default_rule.label:
+            return
+        if existing_rule.subject_template != default_rule.subject_template:
+            return
+        if existing_rule.body_template != default_rule.body_template:
+            return
+        self.save_rule(
+            NotificationRule(
+                id=existing_rule.id,
+                event_type=existing_rule.event_type,
+                label=existing_rule.label,
+                subject_template=existing_rule.subject_template,
+                body_template=existing_rule.body_template,
+                recipients=list(default_rule.recipients),
+                active=existing_rule.active,
+                trigger_timing=existing_rule.trigger_timing,
+                date_field=existing_rule.date_field,
+                offset_days=existing_rule.offset_days,
+            )
+        )
 
     def save_rule(self, rule: NotificationRule) -> NotificationRule:
         event_type = str(rule.event_type or "").strip()
@@ -88,8 +270,14 @@ class NotificationStore:
         if trigger_timing == "date_offset" and not date_field:
             raise ValueError("Date-offset notification requires a date field.")
         for recipient in rule.recipients:
+            recipient_type = str(recipient.recipient_type or "email").strip() or "email"
+            role_key = str(recipient.role_key or "").strip()
             email = str(recipient.email or "").strip()
-            if not is_valid_email_address(email):
+            if recipient_type not in {"email", "role"}:
+                raise ValueError("Notification recipient type must be email or role.")
+            if recipient_type == "role" and role_key not in {"candidate", "director", "executive_director", "hiring_manager"}:
+                raise ValueError("Unknown notification recipient role.")
+            if recipient_type == "email" and not is_valid_email_address(email):
                 raise ValueError("Invalid recipient email.")
 
         now = utc_now_iso()
@@ -142,17 +330,20 @@ class NotificationStore:
                     conn.execute("DELETE FROM notification_recipients WHERE rule_id = ?", (rule_id,))
 
                 for recipient in rule.recipients:
+                    recipient_type = str(recipient.recipient_type or "email").strip() or "email"
                     conn.execute(
                         """
                         INSERT INTO notification_recipients
-                            (rule_id, name, email, role_label, active, created_at, updated_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                            (rule_id, name, email, role_label, recipient_type, role_key, active, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         (
                             rule_id,
                             str(recipient.name or "").strip(),
                             str(recipient.email or "").strip(),
                             str(recipient.role_label or "").strip(),
+                            recipient_type,
+                            str(recipient.role_key or "").strip(),
                             1 if recipient.active else 0,
                             now,
                             now,
@@ -230,6 +421,44 @@ class NotificationStore:
                     ),
                 )
 
+    def list_audit(self, rule_id: int | None = None, limit: int = 25) -> list[dict[str, Any]]:
+        limited = max(1, min(int(limit), 200))
+        with self._connect() as conn:
+            if rule_id is None:
+                rows = conn.execute(
+                    """
+                    SELECT id, event_type, rule_id, idempotency_key, recipient_count, status, error, created_at
+                    FROM notification_audit
+                    ORDER BY id DESC
+                    LIMIT ?
+                    """,
+                    (limited,),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    """
+                    SELECT id, event_type, rule_id, idempotency_key, recipient_count, status, error, created_at
+                    FROM notification_audit
+                    WHERE rule_id = ?
+                    ORDER BY id DESC
+                    LIMIT ?
+                    """,
+                    (int(rule_id), limited),
+                ).fetchall()
+            return [
+                {
+                    "id": int(row["id"]),
+                    "event_type": str(row["event_type"]),
+                    "rule_id": int(row["rule_id"]) if row["rule_id"] is not None else None,
+                    "idempotency_key": str(row["idempotency_key"]),
+                    "recipient_count": int(row["recipient_count"]),
+                    "status": str(row["status"]),
+                    "error": str(row["error"]),
+                    "created_at": str(row["created_at"]),
+                }
+                for row in rows
+            ]
+
     def schedule_notification(
         self,
         *,
@@ -292,6 +521,48 @@ class NotificationStore:
                 for row in rows
             ]
 
+    def list_scheduled_notifications(
+        self,
+        rule_id: int | None = None,
+        status: str | None = None,
+        limit: int = 25,
+    ) -> list[dict[str, Any]]:
+        limited = max(1, min(int(limit), 200))
+        clauses: list[str] = []
+        params: list[Any] = []
+        if rule_id is not None:
+            clauses.append("rule_id = ?")
+            params.append(int(rule_id))
+        if status is not None:
+            clauses.append("status = ?")
+            params.append(str(status).strip())
+        where = "WHERE " + " AND ".join(clauses) if clauses else ""
+        with self._connect() as conn:
+            rows = conn.execute(
+                f"""
+                SELECT id, event_type, rule_id, idempotency_key, due_date, payload_json, status, created_at, updated_at
+                FROM notification_schedule
+                {where}
+                ORDER BY due_date DESC, id DESC
+                LIMIT ?
+                """,
+                (*params, limited),
+            ).fetchall()
+            return [
+                {
+                    "id": int(row["id"]),
+                    "event_type": str(row["event_type"]),
+                    "rule_id": int(row["rule_id"]),
+                    "idempotency_key": str(row["idempotency_key"]),
+                    "due_date": str(row["due_date"]),
+                    "payload": json.loads(str(row["payload_json"] or "{}")),
+                    "status": str(row["status"]),
+                    "created_at": str(row["created_at"]),
+                    "updated_at": str(row["updated_at"]),
+                }
+                for row in rows
+            ]
+
     def mark_scheduled_notification(self, schedule_id: int, status: str) -> None:
         with self._connect() as conn:
             with conn:
@@ -336,12 +607,16 @@ class NotificationStore:
                         name TEXT NOT NULL DEFAULT '',
                         email TEXT NOT NULL,
                         role_label TEXT NOT NULL DEFAULT '',
+                        recipient_type TEXT NOT NULL DEFAULT 'email',
+                        role_key TEXT NOT NULL DEFAULT '',
                         active INTEGER NOT NULL DEFAULT 1,
                         created_at TEXT NOT NULL,
                         updated_at TEXT NOT NULL
                     )
                     """
                 )
+                _ensure_column(conn, "notification_recipients", "recipient_type", "TEXT NOT NULL DEFAULT 'email'")
+                _ensure_column(conn, "notification_recipients", "role_key", "TEXT NOT NULL DEFAULT ''")
                 conn.execute(
                     """
                     CREATE TABLE IF NOT EXISTS notification_audit (
@@ -396,10 +671,12 @@ class NotificationStore:
                 email=str(recipient["email"]),
                 role_label=str(recipient["role_label"]),
                 active=bool(recipient["active"]),
+                recipient_type=str(recipient["recipient_type"] or "email"),
+                role_key=str(recipient["role_key"] or ""),
             )
             for recipient in conn.execute(
                 """
-                SELECT id, name, email, role_label, active
+                SELECT id, name, email, role_label, recipient_type, role_key, active
                 FROM notification_recipients
                 WHERE rule_id = ?
                 ORDER BY id

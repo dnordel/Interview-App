@@ -2,9 +2,35 @@ module:
   name: notification_service
   language: python
   path: src/notification_service.py
-  version: 1.3.2
-  description: Generic checkpoint notification emitter that renders safe dynamic payload templates including offer-generated, start, notice-given, and last-working-day dates, supports event-triggered and queued date-offset rules, auto-sends via shared company SMTP settings or onboarding SMTP settings, and records sanitized audit outcomes.
+  version: 1.6.0
+  description: Generic checkpoint notification emitter that renders safe dynamic payload templates including staffing, offer, start, notice-given, last-working-day, school-code, reply-by-date, candidate-email, and attachment fields, resolves explicit-email and role recipients including Candidate, school Director, Hiring Manager, and Executive Director, supports event-triggered and queued date-offset rules, supports selected-rule test sends from Staffing v2 without enabling disabled rules, auto-sends via shared company SMTP settings or onboarding SMTP settings, attaches approved-offer PDFs, and records sanitized audit outcomes.
 functions:
+- name: resolve_notification_recipients
+  locked: false
+  inputs:
+    rule:
+      type: NotificationRule
+      required: true
+    payload:
+      type: dict[str, str]
+      required: true
+  returns:
+    type: tuple[list[str], str, str]
+  exceptions: []
+  side_effects: Resolves active email recipients and role recipients including candidate email, school Director, Hiring Manager, and Executive Director, deduping addresses and returning a display summary or sanitized blocked reason.
+- name: _notification_attachment_paths
+  locked: false
+  inputs:
+    event_type:
+      type: str
+      required: true
+    payload:
+      type: dict[str, str]
+      required: true
+  returns:
+    type: tuple[list[str], str]
+  exceptions: []
+  side_effects: Validates approved-offer PDF and optional accepted-offer onboarding guide attachment paths without logging file contents or secrets.
 - name: emit_notification_event
   locked: false
   inputs:
@@ -102,6 +128,22 @@ classes:
     - ValueError
     side_effects: Reads rules, checks event or date-offset trigger timing, may queue
       future date-offset notifications, may send email, writes audit outcomes.
+  - name: send_test
+    inputs:
+      rule_id:
+        type: int
+        required: true
+      payload:
+        type: dict[str, str]
+        required: true
+      idempotency_key:
+        type: str
+        required: true
+    returns:
+      type: NotificationSendResult
+    exceptions:
+    - ValueError
+    side_effects: Reads the selected rule by id, bypasses only the rule active flag and date-offset trigger gate, enforces recipients, SMTP settings, and template variables, may send email, and writes sanitized audit outcomes.
   - name: run_due_notifications
     inputs: {}
     returns:
@@ -111,6 +153,12 @@ classes:
       overdue notifications, records audit outcomes, and marks schedule rows sent,
       blocked, failed, or duplicate.
 data_structures:
+- name: HIRING_MANAGER_EMAIL
+  type: str
+- name: EXECUTIVE_DIRECTOR_EMAIL
+  type: str
+- name: DIRECTOR_EMAILS_BY_SCHOOL
+  type: dict[str, str]
 - name: SUPPORTED_NOTIFICATION_EVENTS
   type: tuple[str, ...]
 - name: NOTIFICATION_TEMPLATE_FIELDS

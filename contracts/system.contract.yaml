@@ -47,6 +47,9 @@ modules:
   staffing_dashboard_v2:
     path: src/staffing_dashboard_v2.py
     depends_on:
+    - notification_models
+    - notification_service
+    - notification_store
     - staffing_models
     - staffing_service
     - staffing_store

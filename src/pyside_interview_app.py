@@ -11,7 +11,7 @@ import threading
 import time
 from difflib import SequenceMatcher
 from dataclasses import dataclass, field, replace
-from datetime import date
+from datetime import date, timedelta
 from datetime import datetime
 from pathlib import Path
 from string import Formatter
@@ -79,7 +79,7 @@ from staffing_store import StaffingStore
 
 APP_TITLE = "Interview Assistant"
 NAVIGATION = ["Interviews", "Candidates", "Offers", "Staffing", "Staffing v2", "Onboarding", "Admin"]
-DIRECTOR_STAFFING_NAVIGATION = ["Staffing"]
+DIRECTOR_STAFFING_NAVIGATION = ["Staffing v2"]
 SETUP_STEPS = ["Candidate", "Interview Plan", "Ready"]
 STAFFING_DB_PATH = DEFAULT_BASE_DIR / "staffing_dashboard.sqlite3"
 STAFFING_SEED_PATH = CONFIG_DIR / "staffing_seed.json"
@@ -130,6 +130,8 @@ class PySideHistoryRow:
     offer_action: str
     notes_path: str
     report_path: str
+    candidate_email: str = ""
+    offer_path: str = ""
     deepseek_processing_status: str = ""
     deepseek_processing_warning: str = ""
 
@@ -915,6 +917,59 @@ def _staffing_slot_label(row: Any) -> str:
     return str(getattr(row, "position_type", "") or "").strip()
 
 
+def _offer_school_code(school: str) -> str:
+    normalized = str(school or "").strip().casefold()
+    if normalized == "hawthorne":
+        return "HAW"
+    if normalized == "north long beach":
+        return "NLB"
+    if normalized == "palmdale":
+        return "PMD"
+    return str(school or "").strip()
+
+
+def _offer_school_location(school: str) -> str:
+    normalized = str(school or "").strip()
+    return normalized or "your school"
+
+
+def _ensure_offer_pdf_path(offer_path: str) -> str:
+    path_text = str(offer_path or "").strip()
+    if not path_text:
+        return ""
+    source = Path(path_text)
+    if source.suffix.casefold() == ".pdf" and source.is_file():
+        return str(source)
+    if source.suffix.casefold() != ".docx" or not source.is_file():
+        return ""
+    pdf_path = source.with_suffix(".pdf")
+    if pdf_path.is_file():
+        return str(pdf_path)
+    word = None
+    document = None
+    try:
+        import win32com.client  # type: ignore[import-not-found]
+
+        word = win32com.client.DispatchEx("Word.Application")
+        word.Visible = False
+        document = word.Documents.Open(str(source))
+        document.ExportAsFixedFormat(str(pdf_path), 17)
+    except Exception:
+        return ""
+    finally:
+        if document is not None:
+            try:
+                document.Close(False)
+            except Exception:
+                pass
+        if word is not None:
+            try:
+                word.Quit()
+            except Exception:
+                pass
+    return str(pdf_path) if pdf_path.is_file() else ""
+
+
 def _build_pyside_history_rows(history_path: Path) -> list[PySideHistoryRow]:
     store = InterviewHistoryStore(Path(history_path))
     rows = store.load()
@@ -941,6 +996,8 @@ def _build_pyside_history_rows(history_path: Path) -> list[PySideHistoryRow]:
                 offer_action=_history_offer_action(offer_status),
                 notes_path=_history_text(row, "interview_notes_path", "saved_report_path", "notes_path", default=""),
                 report_path=_history_text(row, "saved_report_path", "report_path", "interview_notes_path", default=""),
+                candidate_email=_history_text(row, "candidate_email", "email", "candidateEmail", default=""),
+                offer_path=_history_text(row, "offer_letter_path", "offer_path", default=""),
                 deepseek_processing_status=_history_text(row, "deepseek_processing_status", default="").strip().lower(),
                 deepseek_processing_warning=_history_text(row, "deepseek_processing_warning", default=""),
             )
@@ -1765,6 +1822,8 @@ class PySideInterviewWindow:
             builder = page_builders.get(name)
             if builder is not None:
                 self.stack.addWidget(builder())
+        if self.director_staffing_mode:
+            self.sidebar_panel.hide()
         self._run_due_notifications_safely()
         self.sidebar.setCurrentRow(0)
         self._apply_responsive_layout()
@@ -2984,6 +3043,7 @@ class PySideInterviewWindow:
                     )
                 except queue.Empty:
                     break
+        self._attach_latest_deepseek_progress_from_history()
         deepseek_step, _status = self._read_pyside_deepseek_progress_step()
         if deepseek_step:
             self._pyside_finalize_progress_step = deepseek_step
@@ -2996,6 +3056,46 @@ class PySideInterviewWindow:
                     fallback=self._pyside_finalize_progress_step,
                 )
             )
+
+    def _attach_latest_deepseek_progress_from_history(self) -> None:
+        if self.pyside_finalize_deepseek_progress_path is not None:
+            return
+        history_path = Path(getattr(self.model, "history_path", ""))
+        try:
+            rows = json.loads(history_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return
+        if not isinstance(rows, list):
+            return
+        allowed_dirs = {
+            (history_path.parent / "deepseek_jobs").resolve(),
+            (history_path.parent / "interviews" / "deepseek_jobs").resolve(),
+        }
+        if history_path.parent.name == "user_artifacts":
+            allowed_dirs.add((history_path.parent / "interviews" / "deepseek_jobs").resolve())
+        for row in reversed(rows):
+            if not isinstance(row, dict):
+                continue
+            status = str(row.get("deepseek_processing_status") or "").strip().lower()
+            if status != "processing":
+                continue
+            progress_value = str(row.get("deepseek_progress_path") or "").strip()
+            if not progress_value:
+                continue
+            progress_path = Path(progress_value)
+            if not progress_path.name.startswith("deepseek-finalize-") or progress_path.suffix != ".json":
+                continue
+            if not progress_path.name.endswith(".progress.json"):
+                continue
+            try:
+                resolved = progress_path.resolve()
+            except OSError:
+                continue
+            if resolved.parent not in allowed_dirs:
+                continue
+            if resolved.exists():
+                self.pyside_finalize_deepseek_progress_path = resolved
+                return
 
     def _read_pyside_deepseek_progress_step(self) -> tuple[str, str]:
         path = self.pyside_finalize_deepseek_progress_path
@@ -3318,12 +3418,19 @@ class PySideInterviewWindow:
         if self.session is None:
             return
         payload = {
+            "candidate": self.session.candidate_name,
             "candidate_name": self.session.candidate_name,
+            "candidate_email": "",
             "school": self.session.school,
+            "school_code": _offer_school_code(self.session.school),
+            "school_location": _offer_school_location(self.session.school),
             "director_name": "",
             "position": self.offer_fields["position"].text().strip() if hasattr(self, "offer_fields") else self.session.track_key,
             "offer_status": "generated",
             "offer_path": str(output_path),
+            "offer_pdf_path": "",
+            "onboarding_guide_path": str(self.settings.get("welcome_onboarding_pdf_path", "")).strip() if hasattr(self, "settings") else "",
+            "reply_by_date": (date.today() + timedelta(days=3)).isoformat(),
             "generated_date": date.today().isoformat(),
             "interview_date": str(getattr(self.session, "interview_date", "") or ""),
             "start_date": self.offer_fields["start_date"].text().strip() if hasattr(self, "offer_fields") and "start_date" in self.offer_fields else "",
@@ -3348,12 +3455,21 @@ class PySideInterviewWindow:
         }.get(str(status or "").strip().lower())
         if not event_type:
             return
+        offer_pdf_path = _ensure_offer_pdf_path(row.offer_path) if event_type == "offer.approved" else ""
         payload = {
+            "candidate": row.candidate,
             "candidate_name": row.candidate,
+            "candidate_email": row.candidate_email,
             "school": row.school,
+            "school_code": _offer_school_code(row.school),
+            "school_location": _offer_school_location(row.school),
             "director_name": "",
             "position": row.position,
             "offer_status": str(status or "").strip().lower(),
+            "offer_path": row.offer_path,
+            "offer_pdf_path": offer_pdf_path,
+            "onboarding_guide_path": str(self.settings.get("welcome_onboarding_pdf_path", "")).strip() if hasattr(self, "settings") else "",
+            "reply_by_date": (date.today() + timedelta(days=3)).isoformat(),
             "generated_date": date.today().isoformat(),
             "start_date": self.offer_fields["start_date"].text().strip() if hasattr(self, "offer_fields") and "start_date" in self.offer_fields else "",
             "notice_given": "",
@@ -8886,6 +9002,20 @@ class PySideInterviewWindow:
         return page
 
     def _staffing_v2_page(self) -> Any:
+        self.staffing_store.initialize()
+        existing_assignments = self.staffing_store.list_assignments()
+        if STAFFING_SEED_PATH.exists() and not existing_assignments:
+            self.staffing_store.import_seed_file(STAFFING_SEED_PATH)
+        elif STAFFING_SEED_PATH.exists():
+            seed_data = json.loads(STAFFING_SEED_PATH.read_text(encoding="utf-8"))
+            seed_assignment_count = 0
+            for school in seed_data.get("schools", []):
+                for classroom in school.get("classrooms", []):
+                    seed_assignment_count += len(classroom.get("slots", classroom.get("positions", [])))
+                for support_row in school.get("support_rows", []):
+                    seed_assignment_count += len(support_row.get("slots", support_row.get("positions", [])))
+            if len(existing_assignments) < seed_assignment_count:
+                self.staffing_store.import_seed_file(STAFFING_SEED_PATH)
         dashboard = StaffingDashboardV2Page(
             QtCore=self.QtCore,
             QtGui=self.QtGui,
@@ -8904,6 +9034,8 @@ class PySideInterviewWindow:
                 "view_details": self._open_staffing_assignment_details,
             },
             school_filter=self.director_staffing_school,
+            notification_store_path=NOTIFICATION_RULES_PATH,
+            notification_service_factory=self._notification_service,
         )
         self.staffing_v2_dashboard = dashboard
         return dashboard.widget

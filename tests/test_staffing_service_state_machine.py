@@ -191,6 +191,50 @@ def test_update_permit_status_records_effective_date_units_and_notes(tmp_path: P
     assert person.permit_notes == "Permit file received."
 
 
+def test_add_person_creates_active_employee_record(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    service = StaffingService(store, clock=_Clock(["2026-07-06T09:00:00Z"]))
+
+    person = service.add_person(
+        name="Nina Patel",
+        role="Aide",
+        permit_status="permit_in_process",
+        units=5,
+    )
+
+    people = store.list_people()
+    assert person.id == people[0].id
+    assert person.name == "Nina Patel"
+    assert person.role == "Aide"
+    assert person.permit_status == "permit_in_process"
+    assert person.units == 5
+    assert person.active is True
+    assert person.updated_at == "2026-07-06T09:00:00Z"
+
+
+def test_add_classroom_creates_classroom_record_without_positions(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    service = StaffingService(store, clock=_Clock(["2026-07-06T09:00:00Z"]))
+
+    classroom = service.add_classroom(
+        school="Hawthorne",
+        name="Sunflower",
+        program="Preschool",
+        licensed_capacity=18,
+    )
+
+    classrooms = store.list_classrooms()
+    assert classroom.id == classrooms[0].id
+    assert classroom.school == "Hawthorne"
+    assert classroom.name == "Sunflower"
+    assert classroom.program == "Preschool"
+    assert classroom.licensed_capacity == 18
+    assert classroom.active is True
+    assert store.list_assignments() == []
+
+
 def test_add_position_creates_need_now_assignment_and_open_history(tmp_path: Path) -> None:
     store = StaffingStore(tmp_path / "staffing.sqlite3")
     store.initialize()

@@ -2,11 +2,11 @@ module:
   name: staffing_dashboard_v2
   language: python
   path: src/staffing_dashboard_v2.py
-  version: 0.13.59
-  description: Parallel PySide Staffing v2 dashboard page module for the mockup-driven rewrite; renders a standalone mockup-style staffing shell/sidebar with active nav state, Qt icons plus custom primary-blue add and person-add icons, styled scrollbars, and disabled placeholder nav entries for unimplemented mockup destinations, main Staffing Dashboard header with labeled filters/icon-owned Add Position and a shared summary/action row containing semantic compact icon-bearing summary chips plus Export/View History actions, mockup colon labels, icon-bearing overview cards, icon-bearing classroom priority chip, custom classroom list rows with status dots and chevrons, icon-only classroom list filter affordance, classroom list footer count, position table with explicit row-number column, icon-bearing status and permit chips plus menu-style row actions, icon-bearing dashed Add Position drop zone, status key, service-backed Add Position dialog with icon-only close, Classroom Management sub-dashboard with icon-owned Add Classroom header action, pagination footer, icon-bearing header/filter/search/table-row/detail-footer actions, and icon-bearing side filter drawer active-count controls, Staffing Validation sub-dashboard with metric cards, active-state issue severity tabs, pagination footer, icon-bearing export/filter/search/row-action/quick-action controls, and icon-bearing filter drawer footer/header/detected-date/active-count controls, read-only position detail drawer with icon-only close, icon-bearing action buttons, icon-bearing related-person placeholder action, and icon-bearing footer actions, v2 Mark Coming / Mark Filled dialogs with icon-only close and icon-bearing footer actions, v2 Manage Filled chooser with icon-only close, v2 Update Permit dialog with icon-only close, v2 Mark Need Now dialog with icon-only close, People / Employee Management sub-dashboard with icon-owned Add Person header action, active-state detail tabs, pagination footer, and icon-bearing header/filter/search/table-row/detail-footer actions, and Assignment History sub-dashboard with icon-bearing header/date-range/table-row/detail-footer actions, View Validation navigation, pagination footer, a neutral assignment-ID detail chip, icon-bearing lifecycle event rows, and icon-bearing validation checklist rows while the legacy Staffing page remains available.
+  version: 0.17.0
+  description: Parallel PySide Staffing v2 dashboard page module for the mockup-driven rewrite; renders a standalone mockup-style staffing shell/sidebar with active nav state, Qt icons plus custom primary-blue add and person-add icons, styled scrollbars, and disabled placeholder nav entries for unimplemented mockup destinations, main Staffing Dashboard with stable dashboard objectName, labeled filters/icon-owned Add Position and a shared selected-school summary/action row containing semantic compact icon-bearing summary chips plus Export/View History actions, validation worklist chip drilldown, mockup colon labels, icon-bearing overview cards, icon-bearing classroom priority chip, custom classroom list rows with status dots and chevrons, icon-only classroom list filter dialog for status/permit/open-days filters, classroom list footer count, position table with explicit row-number column, normalized date/program display, icon-bearing status and permit chips plus menu-style row actions, icon-bearing dashed Add Position drop zone, status key, service-backed Add Position dialog with icon-only close, filtered Export read-only preview dialog, Classroom Management sub-dashboard with icon-owned Add Classroom header action, service-backed Add Classroom dialog, Export read-only filtered-classrooms preview dialog, pagination footer, readable fixed-width table columns with status/active chips, icon-bearing metric/detail/health cards, row View detail selection, and an overlay side filter drawer with draft-only controls and active-count badges, Staffing Validation sub-dashboard with metric cards, active-state issue severity tabs, lifecycle/permit/date worklist issues, pagination footer, icon-bearing export/filter/search/table-row/detail-footer actions, row View drawer navigation, Run Full Validation refresh action, Export Validation Report read-only filtered-issues preview dialog, View Validation Rules read-only dialog, and icon-bearing filter drawer/footer/header/detected-date/active-count controls, read-only position detail drawer with icon-only close, normalized date/program display, icon-bearing action buttons, icon-bearing related-person placeholder action, and icon-bearing footer actions, v2 Mark Coming / Mark Filled dialogs with icon-only close and icon-bearing footer actions, v2 Manage Filled chooser with icon-only close, v2 Update Permit dialog with icon-only close, v2 Mark Need Now dialog with icon-only close, People / Employee Management sub-dashboard with icon-owned Add Person header action, active-state detail tabs, pagination footer, icon-bearing header/filter/search/table-row/detail/footer actions, row View detail selection, service-backed Add Person dialog, and icon-bearing side filter drawer active-count controls, full Staffing v2 Notifications dashboard with editable free-form events, filters, sorting, list/grid toggle, recipient chips, template variables, preview, test send, validation, sanitized audit errors, scheduled counts, save/cancel/delete backed by NotificationStore and NotificationService, and Assignment History sub-dashboard with icon-bearing header/date-range/table-row/detail-footer actions, View Validation navigation, View Assignment drawer navigation, Open Employee navigation, header Export read-only filtered-records preview dialog, Export Record read-only preview dialog, pagination footer, a neutral assignment-ID detail chip, icon-bearing lifecycle event rows, and icon-bearing validation checklist rows while the legacy Staffing page remains available.
 functions:
 - name: _classroom_priority_status
-  description: Return the Classroom Management priority label for a group of staffing metric rows, preferring Need Now, Replace, Coming, Filled / Healthy, then Don't Need.
+  description: Return the Classroom Management priority label for a group of staffing metric rows, preferring Need Now, Replace, Coming, Filled, then Don't Need.
   locked: false
   inputs:
     rows:
@@ -17,7 +17,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: _validation_issues_from_rows
-  description: Build Staffing Validation issue dictionaries from StaffingMetricRow data for coverage, upcoming start-date, and permit-status checks without mutating staffing data.
+  description: Build Staffing Validation issue dictionaries from StaffingMetricRow data for coverage, upcoming start-date, seed placeholder-date, and assigned-person permit-status checks without mutating staffing data.
   locked: false
   inputs:
     rows:
@@ -38,6 +38,17 @@ functions:
     type: str
   exceptions: []
   side_effects: none
+- name: _permit_status_from_label
+  description: Convert Staffing v2 permit status combo labels to staffing permit status values used by StaffingService.
+  locked: false
+  inputs:
+    label:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
 - name: _permit_chip_status
   description: Convert permit status values to Staffing v2 status-chip style keys for dashboard table permit chips.
   locked: false
@@ -47,6 +58,28 @@ functions:
       required: true
   returns:
     type: str
+  exceptions: []
+  side_effects: none
+- name: _row_has_permit_issue
+  description: Return whether a StaffingMetricRow has an assigned person with an unknown or missing permit status requiring operator review.
+  locked: false
+  inputs:
+    row:
+      type: StaffingMetricRow
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+- name: _parse_int_or_none
+  description: Parse optional Classroom Management drawer days-open range text into an integer or None without raising on invalid operator input.
+  locked: false
+  inputs:
+    value:
+      type: str
+      required: true
+  returns:
+    type: int | None
   exceptions: []
   side_effects: none
 - name: _classroom_counts_text
@@ -115,9 +148,185 @@ functions:
     type: str
   exceptions: []
   side_effects: none
+- name: _format_notification_recipients
+  description: Format notification recipients as comma-separated display text for Staffing v2 Notifications editor fields.
+  locked: false
+  inputs:
+    recipients:
+      type: list[NotificationRecipient]
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _parse_notification_recipients
+  description: Parse comma-separated Staffing v2 Notifications recipient text into NotificationRecipient values for NotificationStore validation.
+  locked: false
+  inputs:
+    value:
+      type: str
+      required: true
+  returns:
+    type: list[NotificationRecipient]
+  exceptions: []
+  side_effects: none
+- name: _notification_role_recipient
+  description: Build a Staffing v2 notification role recipient value for Candidate, Hiring Manager, school-based Director, or Executive Director chips.
+  locked: false
+  inputs:
+    role_key:
+      type: str
+      required: true
+  returns:
+    type: NotificationRecipient
+  exceptions: []
+  side_effects: none
+- name: _notification_recipient_key
+  description: Return a stable dedupe/remove key for explicit email and role notification recipients.
+  locked: false
+  inputs:
+    recipient:
+      type: NotificationRecipient
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _notification_recipient_display
+  description: Return operator-facing chip text for explicit email and role notification recipients without resolving candidate or school-specific director email.
+  locked: false
+  inputs:
+    recipient:
+      type: NotificationRecipient
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _notification_recipient_remove_suffix
+  description: Return a stable objectName suffix for explicit email and role notification recipient remove buttons.
+  locked: false
+  inputs:
+    recipient:
+      type: NotificationRecipient
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _show_rule_in_staffing_v2_notifications
+  description: Return whether a notification rule should be visible in the Staffing v2 Notifications dashboard, hiding empty unrelated onboarding/welcome placeholders while preserving edited user-created rules.
+  locked: false
+  inputs:
+    rule:
+      type: NotificationRule
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+- name: _safe_object_suffix
+  description: Convert user-provided notification text into a stable objectName-safe suffix for chip remove buttons.
+  locked: false
+  inputs:
+    value:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _notification_template_fields
+  description: Extract template variable field names from a notification rule subject and body for variable previews and unknown-variable validation.
+  locked: false
+  inputs:
+    rule:
+      type: NotificationRule
+      required: true
+  returns:
+    type: list[str]
+  exceptions: []
+  side_effects: none
+- name: _notification_preview_sample
+  description: Return sample staffing and offer payload values used by Staffing v2 notification preview and test send.
+  locked: false
+  inputs: {}
+  returns:
+    type: dict[str, str]
+  exceptions: []
+  side_effects: none
+- name: _render_notification_preview
+  description: Render a notification template with a sample payload while returning unresolved variable names instead of failing open.
+  locked: false
+  inputs:
+    template:
+      type: str
+      required: true
+    payload:
+      type: dict[str, str]
+      required: true
+  returns:
+    type: tuple[str, list[str]]
+  exceptions: []
+  side_effects: none
+- name: _safe_notification_error
+  description: Redact operator-facing notification audit error text when it appears to include passwords, tokens, secrets, or authorization values.
+  locked: false
+  inputs:
+    value:
+      type: object
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _safe_staffing_error
+  description: Return sanitized operator-facing staffing dialog error text, redacting secret-like content and suppressing overly long backend details.
+  locked: false
+  inputs:
+    value:
+      type: object
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _display_date
+  description: Format staffing date strings for visible dashboard/drawer labels while hiding seed placeholder dates as unknown.
+  locked: false
+  inputs:
+    value:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _is_placeholder_date
+  description: Return whether a staffing date string is the seed epoch placeholder value that should be hidden from operators.
+  locked: false
+  inputs:
+    value:
+      type: str
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+- name: _notification_validation_text
+  description: Return operator-facing Staffing v2 Notifications completeness text for the selected notification rule, including role-resolution guidance for Candidate and Director chips.
+  locked: false
+  inputs:
+    rule:
+      type: NotificationRule
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
 classes:
 - name: StaffingDashboardV2Page
-  description: Builds and refreshes the parallel Staffing v2 PySide shell/sidebar with Qt icons plus custom primary-blue add and person-add icons, styled scrollbars, mockup nav placeholders, dashboard with mockup-style header controls and one shared summary/action row containing Export/View History beside semantic compact icon-bearing summary chips with visible colon labels, icon-bearing overview cards and priority chip, custom classroom list item widgets, classroom list footer count, and icon-only filter affordance, explicit-numbered chip-based positions table with menu-style row actions, service-backed Add Position dialog with icon-only close and icon-bearing drop zone, Classroom Management dashboard with icon-owned Add Classroom action text, pagination footer, icon-bearing header/filter/search/table-row/detail-footer actions, and icon-bearing filter drawer active-count controls, Staffing Validation dashboard with metric cards, active-state issue severity tabs, pagination footer, icon-bearing export/filter/search/row-action/quick-action controls, and icon-bearing filter drawer footer/header/detected-date/active-count controls, read-only position detail drawer with icon-only close, icon-bearing action buttons, icon-bearing related-person placeholder action, and icon-bearing footer actions, Mark Coming and Mark Filled workflows with icon-only close and icon-bearing footer actions, Manage Filled workflow chooser with icon-only close, Update Permit workflow with icon-only close, Mark Need Now replacement-clear workflow with icon-only close, People / Employee Management dashboard with icon-owned Add Person action text, active-state detail tabs, pagination footer, and icon-bearing header/filter/search/table-row actions, and Assignment History dashboard with icon-bearing header/date-range/table-row/detail-footer actions, View Validation navigation, pagination footer, neutral assignment-ID detail chip, lifecycle event rows, and validation checklist rows from StaffingService metrics and StaffingStore data while keeping staffing mutations in StaffingService.
+  description: Builds and refreshes the parallel Staffing v2 PySide shell/sidebar with Qt icons plus custom primary-blue add and person-add icons, styled scrollbars, mockup nav placeholders, dashboard with mockup-style header controls and one shared selected-school summary/action row containing Export/View History beside semantic compact icon-bearing summary chips with visible colon labels, icon-bearing overview cards and priority chip, custom classroom list item widgets, classroom list footer count, and icon-only filter affordance, explicit-numbered chip-based positions table with menu-style row actions, service-backed Add Position dialog with icon-only close and icon-bearing drop zone, Export read-only preview dialog, Classroom Management dashboard with icon-owned Add Classroom action text, Export read-only filtered-classrooms preview dialog, pagination footer, icon-bearing header/filter/search/table-row/detail-footer actions, row View detail selection, and icon-bearing filter drawer active-count controls, Notifications dashboard with rule cards, filters, sorting, list/grid toggle, editable free-form event combo, recipient chips, template toolbar/variables, preview dialog, send-test action, audit/scheduled panel, validation, save/cancel/delete backed by NotificationStore and NotificationService, Staffing Validation dashboard with metric cards, active-state issue severity tabs, pagination footer, icon-bearing export/filter/search/table-row/detail-footer actions, row View drawer navigation, Run Full Validation refresh action, Export Validation Report read-only filtered-issues preview dialog, View Validation Rules read-only dialog, and icon-bearing filter drawer footer/header/detected-date/active-count controls, read-only position detail drawer with icon-only close, icon-bearing action buttons, icon-bearing related-person placeholder action, and icon-bearing footer actions, Mark Coming and Mark Filled workflows with icon-only close and icon-bearing footer actions, Manage Filled workflow chooser with icon-only close, Update Permit workflow with icon-only close, Mark Need Now replacement-clear workflow with icon-only close, People / Employee Management dashboard with icon-owned Add Person action text, service-backed Add Person dialog, active-state detail tabs, pagination footer, icon-bearing header/filter/search/table-row actions, row View detail selection, and icon-bearing filter drawer active-count controls, and Assignment History dashboard with icon-bearing header/date-range/table-row/detail-footer actions, row View detail selection, View Validation navigation, View Assignment drawer navigation, Open Employee navigation, header Export read-only filtered-records preview dialog, Export Record read-only preview dialog, pagination footer, neutral assignment-ID detail chip, lifecycle event rows, and validation checklist rows from StaffingService metrics and StaffingStore data while keeping staffing mutations in StaffingService.
   locked: false
   methods:
   - name: __init__
@@ -145,6 +354,14 @@ classes:
         type: str
         required: false
         default: ''
+      notification_store_path:
+        type: Path | None
+        required: false
+        default: null
+      notification_service_factory:
+        type: Callable[[], NotificationService] | None
+        required: false
+        default: null
     returns:
       type: None
     exceptions: []
@@ -154,7 +371,13 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Initializes staffing storage if needed, reads staffing metrics, people snapshots, and assignment history snapshots, and refreshes Staffing v2 visible selectors, cards, classroom list, positions table, Classroom Management widgets, Staffing Validation widgets, People dashboard widgets, and Assignment History dashboard widgets including the DB-backed history date-range display.
+    side_effects: Initializes staffing storage if needed, reads staffing metrics, classroom records, people snapshots, and assignment history snapshots, and refreshes Staffing v2 visible selectors, selected-school summary cards, classroom list, positions table, Classroom Management widgets, Staffing Validation widgets, People dashboard widgets, and Assignment History dashboard widgets including the DB-backed history date-range display.
+  - name: _refresh_selected_school_metrics
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Rebuilds the main Staffing Dashboard summary chips from StaffingService.staffing_metrics scoped to the currently selected school filter without mutating staffing data.
   - name: _classroom_list_item_widget
     inputs:
       classroom:
@@ -249,36 +472,120 @@ classes:
       type: None
     exceptions: []
     side_effects: Refreshes assignment history snapshots from StaffingStore.list_assignment_history, marks the Assignment History nav item active, and switches the v2 stack to the Assignment History dashboard without mutating staffing data.
+  - name: _show_notifications_view
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Refreshes notification rules from NotificationStore, marks the Notifications nav item active, and switches the v2 stack to the Notifications dashboard without mutating staffing data.
+  - name: _notification_store
+    inputs: {}
+    returns:
+      type: NotificationStore
+    exceptions: []
+    side_effects: Opens the configured notification rules SQLite store path.
   - name: _build_classrooms_view
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Creates the Classroom Management dashboard widget tree, icon-bearing header and filter actions, filters, side filter drawer, metric cards area, classroom table, detail panel, and validation health panel in the shared Staffing v2 shell.
+    side_effects: Creates the Classroom Management dashboard widget tree, icon-bearing header and filter actions, filters, overlay side filter drawer, metric cards area, readable fixed-width classroom table, detail panel, and validation health panel in the shared Staffing v2 shell.
   - name: _build_classrooms_filter_drawer
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Populates the Classroom Management side filter drawer with status checkboxes, Don't Need unchecked by default, open-position controls, days-open controls, icon-bearing reset, icon-only close, cancel, and primary icon-bearing apply actions with active filter counts without mutating staffing data.
+    side_effects: Populates the Classroom Management overlay side filter drawer with school, program, status rows, Don't Need unchecked by default, open-position, days-open range, permit, assigned-staff, sort, icon-bearing reset, icon-only close, cancel, and primary icon-bearing apply actions without mutating staffing data.
+  - name: _classrooms_status_filter_row
+    inputs:
+      checkbox:
+        type: QCheckBox
+        required: true
+    returns:
+      type: QFrame
+    exceptions: []
+    side_effects: Wraps a Classroom Management status filter checkbox with a colored status dot for the drawer.
+  - name: _classrooms_drawer_combo
+    inputs:
+      object_name:
+        type: str
+        required: true
+      values:
+        type: list[str]
+        required: true
+    returns:
+      type: QComboBox
+    exceptions: []
+    side_effects: Creates a draft-only Classroom Management drawer combo without wiring immediate table refresh.
+  - name: _default_classrooms_filter_state
+    inputs: {}
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: none
   - name: _open_classrooms_filter_drawer
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Shows the Classroom Management side filter drawer without mutating staffing data.
+    side_effects: Copies applied Classroom Management filter state into draft drawer controls, positions the drawer as an overlay over the dashboard, shows it, and does not resize dashboard content or mutate staffing data.
+  - name: _position_classrooms_filter_drawer
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Positions the Classroom Management filter drawer over the right side of the dashboard without adding it to the dashboard layout.
   - name: _reset_classrooms_filter_drawer
     inputs: {}
     returns:
       type: None
     exceptions: []
     side_effects: Resets Classroom Management side drawer filters to Need Now, Coming, and Filled statuses, all open-position states, and all days-open states without applying until requested.
+  - name: _cancel_classrooms_filter_drawer
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Restores Classroom Management draft drawer controls from applied filter state and hides the overlay without refreshing visible rows.
+  - name: _sync_classrooms_filter_drawer_from_state
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Copies the applied Classroom Management side filter state into drawer controls without refreshing visible rows.
+  - name: _set_classrooms_filter_drawer_state
+    inputs:
+      state:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates Classroom Management drawer controls from a state dictionary without mutating staffing data.
+  - name: _classrooms_filter_state_from_drawer
+    inputs: {}
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: Reads draft Classroom Management drawer controls into an applied filter state dictionary.
   - name: _apply_classrooms_filter_drawer
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Applies Classroom Management side drawer filters, refreshes visible classroom rows, and hides the drawer without mutating staffing data.
+    side_effects: Promotes draft Classroom Management drawer filters to applied state, refreshes visible classroom rows, and hides the drawer without mutating staffing data.
+  - name: _open_add_classroom_dialog
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Opens a service-backed Add Classroom dialog with icon-only close; on confirmation, calls StaffingService.add_classroom, refreshes Staffing v2 data, and does not create positions or assignment_history rows.
+  - name: _open_classrooms_export_dialog
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Opens a read-only Classroom Management export preview dialog for currently visible filtered classroom groups without writing files or mutating staffing data.
   - name: _classrooms_filter_combo
     inputs:
       object_name:
@@ -296,43 +603,136 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Groups StaffingMetricRow data by school/classroom, synchronizes Classroom Management filter choices, and refreshes filtered classroom rows without mutating staffing data.
+    side_effects: Groups StaffingMetricRow data by school/classroom, includes empty classrooms from StaffingStore.list_classrooms, synchronizes Classroom Management filter choices, and refreshes filtered classroom rows without mutating staffing data.
   - name: _clear_classrooms_filters
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Resets Classroom Management school, program, status, and search filters to their default values.
+    side_effects: Resets Classroom Management school, program, status, search, applied drawer filters, and pagination to their default values.
   - name: _refresh_classrooms_filters
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Applies Classroom Management top filters and side drawer status/open-position/days-open filters, updates active filter count on trigger/apply controls, then refreshes metrics, table, detail, and validation panels.
+    side_effects: Applies Classroom Management top filters plus applied drawer school/program/status/open-position/days-open/permit/assigned-staff/sort filters, resets pagination to page 1, updates active filter count on trigger/apply controls, then refreshes metrics, paginated table, detail, and validation panels.
+  - name: _classrooms_rows_per_page_value
+    inputs: {}
+    returns:
+      type: int
+    exceptions: []
+    side_effects: Reads the Classroom Management rows-per-page combo label and returns the numeric page size.
+  - name: _classrooms_total_pages
+    inputs: {}
+    returns:
+      type: int
+    exceptions: []
+    side_effects: Calculates the Classroom Management page count from filtered classroom groups and selected page size.
+  - name: _classrooms_page_items
+    inputs: {}
+    returns:
+      type: list[tuple[str, list[StaffingMetricRow]]]
+    exceptions: []
+    side_effects: Clamps current Classroom Management page to valid bounds and returns only the current visible page slice.
+  - name: _refresh_classrooms_pagination
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates Classroom Management result count, current page label, and Previous/Next enabled states without mutating staffing data.
+  - name: _classrooms_rows_per_page_changed
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Resets Classroom Management pagination to page 1 and redraws the current filtered table.
+  - name: _previous_classrooms_page
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Moves Classroom Management pagination back one page when possible and redraws the table without changing filters.
+  - name: _next_classrooms_page
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Moves Classroom Management pagination forward one page when possible and redraws the table without changing filters.
   - name: _refresh_classrooms_filter_count
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Updates Classroom Management filter trigger and apply button text and staffingV2FilterActiveCount properties without mutating staffing data.
+    side_effects: Updates Classroom Management filter trigger and apply button text from applied filter state and staffingV2FilterActiveCount properties without mutating staffing data.
   - name: _classrooms_allowed_statuses
     inputs: {}
     returns:
       type: set[str]
     exceptions: []
-    side_effects: Reads Classroom Management side drawer status checkbox state and returns the allowed priority labels for filtering.
+    side_effects: Reads applied Classroom Management side drawer status state and returns the allowed priority labels for filtering.
+  - name: _classroom_matches_days_range
+    inputs:
+      rows:
+        type: list[StaffingMetricRow]
+        required: true
+      state:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: bool
+    exceptions: []
+    side_effects: Reads optional applied days-open range values and returns whether a classroom group matches without mutating staffing data.
+  - name: _classrooms_sort_key
+    inputs:
+      key:
+        type: str
+        required: true
+      rows:
+        type: list[StaffingMetricRow]
+        required: true
+      sort_by:
+        type: str
+        required: true
+    returns:
+      type: tuple[Any, ...]
+    exceptions: []
+    side_effects: Returns the Classroom Management sort key for default, classroom, open-position, or days-open ordering without mutating staffing data.
+  - name: _classroom_group_info
+    inputs:
+      key:
+        type: str
+        required: true
+      rows:
+        type: list[StaffingMetricRow]
+        required: true
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: Returns school, classroom, program, and capacity display data from metric rows or an empty StaffingStore classroom record without mutating staffing data.
   - name: _refresh_classrooms_metrics
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Rebuilds Classroom Management metric cards from grouped StaffingMetricRow data.
+    side_effects: Rebuilds Classroom Management icon-bearing metric cards from grouped StaffingMetricRow data plus empty StaffingStore classroom records.
   - name: _refresh_classrooms_table
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Rebuilds the read-only Classroom Management table from filtered classroom groups.
+    side_effects: Rebuilds the read-only Classroom Management table from the current filtered/paginated classroom slice, including empty classroom records with zero positions, text-first status and active chips, row View buttons to refresh the detail panel, selects the first visible classroom, updates pagination controls, and resets the horizontal scroll to the left edge without mutating staffing data.
+  - name: _table_chip
+    inputs:
+      text:
+        type: str
+        required: true
+      status:
+        type: str
+        required: true
+    returns:
+      type: QLabel
+    exceptions: []
+    side_effects: Creates a text-first Classroom Management table chip label with stable chip objectName and tooltip for readable dense table cells.
   - name: _select_classroom_management
     inputs:
       row_index:
@@ -341,22 +741,82 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Selects a filtered Classroom Management row and refreshes the classroom detail panel.
+    side_effects: Selects a Classroom Management row from the current page slice and refreshes the classroom detail panel.
+  - name: _select_classroom_management_by_key
+    inputs:
+      classroom_key:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Selects a Classroom Management classroom group by stable school/classroom key and refreshes the detail panel.
   - name: _render_classroom_management_detail
     inputs:
+      key:
+        type: str
+        required: true
       rows:
         type: list[StaffingMetricRow]
         required: true
     returns:
       type: None
     exceptions: []
-    side_effects: Rebuilds the Classroom Management detail panel for the selected classroom without mutating staffing data.
+    side_effects: Rebuilds the Classroom Management detail panel with editable classroom fields, four staffing summary metric cards, current positions, Save Changes, Deactivate Classroom, and fail-closed status message area for the selected classroom without mutating staffing data during render.
+  - name: _save_classroom_detail
+    inputs:
+      record:
+        type: StaffingClassroom | None
+        required: true
+      school:
+        type: QComboBox
+        required: true
+      name:
+        type: QLineEdit
+        required: true
+      program:
+        type: QComboBox
+        required: true
+      capacity:
+        type: QLineEdit
+        required: true
+      display_order:
+        type: QLineEdit
+        required: true
+      status:
+        type: QLabel
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Validates detail fields, calls StaffingService.update_classroom, refreshes Classroom Management, and reselects the updated classroom; validation failures are displayed without mutating assignments or assignment_history.
+  - name: _deactivate_selected_classroom
+    inputs:
+      record:
+        type: StaffingClassroom | None
+        required: true
+      status:
+        type: QLabel
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Calls StaffingService.deactivate_classroom for the selected classroom; active-assignment failures are displayed and successful deactivation refreshes Classroom Management without deleting assignments or assignment_history.
   - name: _refresh_classrooms_validation_panel
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Rebuilds Classroom Management validation and health cards from grouped classroom data.
+    side_effects: Rebuilds Classroom Management validation and health cards with success/warning/danger variant properties from grouped classroom data.
+  - name: _mark_layout_widgets_stale
+    inputs:
+      layout:
+        type: QLayout
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Renames soon-to-be-deleted Classroom Management cards so Qt deferred deletion does not leave stale objectName matches in tests or accessibility queries.
   - name: _build_validation_view
     inputs: {}
     returns:
@@ -387,6 +847,12 @@ classes:
       type: None
     exceptions: []
     side_effects: Shows the Staffing v2 filter drawer without mutating staffing data.
+  - name: _open_dashboard_export_dialog
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Opens a read-only main Staffing Dashboard export preview dialog using currently loaded StaffingService metric rows without writing files or mutating staffing data.
   - name: _reset_validation_filters
     inputs: {}
     returns:
@@ -422,13 +888,319 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Rebuilds the read-only Staffing Validation issue table from filtered validation issue data.
+    side_effects: Rebuilds the read-only Staffing Validation issue table from filtered validation issue data and wires row View buttons to open the related Position Detail drawer without mutating staffing data.
   - name: _refresh_validation_right_panel
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Rebuilds Staffing Validation compliance summary, quick actions, and about cards.
+    side_effects: Rebuilds Staffing Validation compliance summary, quick actions, and about cards, wiring Run Full Validation to refresh StaffingService-backed data, Export Validation Report to open a read-only filtered-issues preview dialog, and View Validation Rules to open a read-only rules dialog without mutating staffing data.
+  - name: _open_validation_rules_dialog
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Opens a read-only Staffing Validation rules dialog with icon-only close and no staffing data mutation.
+  - name: _open_validation_export_dialog
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Opens a read-only Staffing Validation export preview dialog for currently visible filtered validation issues without writing files or mutating staffing data.
+  - name: _build_notifications_view
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Creates the Staffing v2 Notifications dashboard widget tree, filters, sort and view controls, rule list, free-form rule editor, recipient chips, template toolbar, variables preview, preview/send-test actions, validation panel, audit panel, and save/cancel/delete actions.
+  - name: _refresh_notifications
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Ensures editable default notification rules, reads notification rules from NotificationStore, synchronizes filter choices, and refreshes the visible rule list/editor.
+  - name: _sync_notification_filter_choices
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Rebuilds Notifications event filter and editable event selector choices from known staffing events and current rule events.
+  - name: _refresh_notification_filters
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Applies Notifications event, enabled-status, timing, recipient, and template-completeness filters plus sort order, then refreshes the visible rule list.
+  - name: _refresh_notification_rule_list
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Rebuilds the Notifications rule list and loads the selected visible rule into the editor.
+  - name: _select_notification_rule_from_list
+    inputs:
+      row:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Loads the selected visible notification rule into the editor.
+  - name: _load_notification_rule
+    inputs:
+      rule:
+        type: NotificationRule | None
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates visible Notifications editor controls, recipient chips, variable preview, validation text, and audit panel from the selected rule or clears the editor when no rule is selected.
+  - name: _create_notification_rule
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Clears the selected rule id and preloads a new inactive staffing notification rule draft into the editor.
+  - name: _save_notification_rule
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Validates and persists one NotificationRule through NotificationStore.save_rule, then refreshes the Notifications dashboard.
+  - name: _delete_notification_rule
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Deletes the selected notification rule through NotificationStore.delete_rule, then refreshes the Notifications dashboard.
+  - name: _clear_notification_filters
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Resets all Staffing v2 notification filters, sort, and view controls to defaults and refreshes the visible rule list.
+  - name: _set_notification_view_mode
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Stores the selected list/grid view mode on the notification rule list widget for mockup styling without mutating rules.
+  - name: _current_notification_recipients
+    inputs: {}
+    returns:
+      type: list[NotificationRecipient]
+    exceptions: []
+    side_effects: Reads selected recipient chips plus pending recipient text and returns deduplicated recipients for validation and saving.
+  - name: _add_notification_recipient_from_text
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Parses typed recipient text into chips, clears the entry field, and refreshes validation.
+  - name: _add_notification_role_recipient
+    inputs:
+      role_key:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Adds a Hiring Manager or Director role recipient chip when not already present and refreshes validation.
+  - name: _render_notification_recipient_chips
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Rebuilds the recipient chip panel with remove buttons from the selected notification recipients.
+  - name: _remove_notification_recipient
+    inputs:
+      email:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Removes one selected notification recipient chip by email and refreshes validation.
+  - name: _sync_notification_rule_validation
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Recomputes the editor validation text and variables preview from the current unsaved notification editor state.
+  - name: _notification_rule_from_editor
+    inputs: {}
+    returns:
+      type: NotificationRule
+    exceptions: []
+    side_effects: Reads visible editor fields and selected chips into an unsaved NotificationRule value.
+  - name: _insert_notification_subject_variable
+    inputs:
+      token:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Inserts a template variable token at the subject cursor and refreshes validation.
+  - name: _insert_notification_body_text
+    inputs:
+      text:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Inserts plain-text template toolbar text or a variable token into the body editor at the cursor and refreshes validation.
+  - name: _open_notification_preview_dialog
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Opens a read-only notification preview dialog rendered with sample staffing payload values and unresolved-variable warnings.
+  - name: _send_notification_test
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Sends a selected-rule test notification through NotificationService without changing the rule active flag, updates status text, and refreshes audit.
+  - name: _refresh_notification_audit
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Reads recent audit rows and pending scheduled notifications for the selected rule and displays sanitized status text.
+  - name: _cancel_notification_rule
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Reloads the selected notification rule from NotificationStore or refreshes the dashboard if the rule no longer exists.
+  - name: _open_add_person_dialog
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Opens a service-backed Staffing v2 Add Person dialog and refreshes the People table after a successful StaffingService.add_person call.
+  - name: _build_people_filter_drawer
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Populates the People / Employee Management side filter drawer with active-status, role, permit-status, and units controls plus icon-bearing reset, icon-only close, cancel, and primary icon-bearing apply actions without mutating staffing data.
+  - name: _people_drawer_combo
+    inputs:
+      object_name:
+        type: str
+        required: true
+      values:
+        type: list[str]
+        required: true
+    returns:
+      type: QComboBox
+    exceptions: []
+    side_effects: Creates a People / Employee Management side drawer filter combo with stable objectName.
+  - name: _open_people_filter_drawer
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Synchronizes People side drawer controls from current top-filter state and shows the drawer without mutating staffing data.
+  - name: _reset_people_filter_drawer
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Resets People side drawer controls to default active, role, permit, and units filters without applying until requested.
+  - name: _apply_people_filter_drawer
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Applies People side drawer filters to the visible People table and hides the drawer without mutating staffing data.
+  - name: _refresh_people_filters
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Applies People search, active, role, permit, and units filters, then refreshes metrics, the read-only people table, result count, and selected detail panel without mutating staffing data.
+  - name: _refresh_people_metrics
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Rebuilds People / Employee Management metric cards from StaffingStore person snapshot data.
+  - name: _refresh_people_table
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Rebuilds the read-only People table from filtered person records, wires row View buttons to refresh the detail panel, and selects the first visible person without mutating staffing data.
+  - name: _select_person
+    inputs:
+      row_index:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Renders the People / Employee Management detail panel for a visible table row or a no-selection message without mutating staffing data.
+  - name: _render_person_detail
+    inputs:
+      person:
+        type: StaffingPerson | None
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Rebuilds the People / Employee Management detail panel for the selected person, including active tabs, employee information, current assignment, status, and footer actions without mutating staffing data.
+  - name: _refresh_history_table
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Rebuilds the read-only Assignment History table from filtered history records, wires row View buttons to refresh the detail panel, and selects the first visible record without mutating staffing data.
+  - name: _select_history_record
+    inputs:
+      row_index:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Renders the Assignment History detail panel for a visible table row or a no-selection message without mutating staffing data.
+  - name: _open_history_assignment
+    inputs:
+      assignment_id:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Switches from Assignment History to the main Staffing Dashboard and opens the selected assignment in the Position Detail drawer without mutating staffing data.
+  - name: _open_history_employee
+    inputs:
+      employee_name:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Switches from Assignment History to People / Employee Management and selects the visible person matching the history employee name without mutating staffing data.
+  - name: _open_history_export_list_dialog
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Opens a read-only Assignment History export preview dialog for currently visible filtered history records without writing files or mutating staffing data.
+  - name: _open_history_export_dialog
+    inputs:
+      record:
+        type: StaffingHistoryRecord
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Opens a read-only Assignment History export preview dialog for the selected record without writing files or mutating staffing data.
   - name: _show_position_drawer
     inputs:
       assignment_id:
@@ -437,7 +1209,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Reads one staffing assignment, rebuilds the visible Staffing v2 read-only Position Detail drawer with icon-only close, icon-bearing action buttons, icon-bearing related-person placeholder action, and icon-bearing Cancel/Save Draft/Save Changes footer actions, and wires drawer action buttons to supplied service-backed callbacks without mutating staffing data during render.
+    side_effects: Reads one staffing assignment, rebuilds the visible Staffing v2 read-only Position Detail drawer with icon-only close, icon-bearing action buttons, icon-bearing related-person placeholder action, View Full History navigation, and icon-bearing Cancel/Save Draft/Save Changes footer actions, and wires drawer action buttons to supplied service-backed callbacks without mutating staffing data during render.
   - name: _wire_menu_action
     inputs:
       action:
@@ -452,7 +1224,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Wires a Staffing v2 positions-table menu action to an implemented dialog/drawer workflow, supplied callback, or disables unsupported actions without mutating data during render.
+    side_effects: Wires a Staffing v2 positions-table menu action to an implemented dialog/drawer/navigation workflow, supplied callback, or disables unsupported actions without mutating data during render.
   - name: _open_add_position_dialog
     inputs: {}
     returns:
@@ -575,6 +1347,9 @@ data_structures:
 - name: ActionCallback
   type: Callable[[int], None]
 dependencies:
+- notification_models
+- notification_service
+- notification_store
 - staffing_models
 - staffing_service
 - staffing_store

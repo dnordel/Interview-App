@@ -1,7 +1,6 @@
 from pathlib import Path
-from types import SimpleNamespace
 
-from interview_app.audio_runtime import AudioRuntimeController
+from interview_app.audio_runtime import AudioRuntimeController, RuntimeConfig
 
 
 class _AppStub:
@@ -22,7 +21,7 @@ def test_start_recording_session_uses_resolved_windows_system_device(monkeypatch
     )
 
     controller = AudioRuntimeController(app=_AppStub(), shared_state=object())
-    runtime_config = SimpleNamespace(model="small", device="cpu", compute_type="int8")
+    runtime_config = RuntimeConfig(model="small", device="cpu", compute_type="int8")
 
     controller.start_recording_session(
         _start_recording,

@@ -2,8 +2,8 @@ module:
   name: notification_models
   language: python
   path: src/notification_models.py
-  version: 1.1.0
-  description: Dataclasses for generic checkpoint notification events, rules, recipients, and send results.
+  version: 1.2.1
+  description: Dataclasses for generic checkpoint notification events, rules, explicit-email recipients, role recipients, and send results.
 functions: []
 classes:
 - name: NotificationEvent
@@ -22,20 +22,19 @@ classes:
   attributes:
     email:
       type: str
+      default: ''
     name:
       type: str
     role_label:
       type: str
     active:
       type: bool
-    trigger_timing:
-      type: str
-    date_field:
-      type: str
-    offset_days:
-      type: int
     id:
       type: int | None
+    recipient_type:
+      type: str
+    role_key:
+      type: str
 - name: NotificationRule
   type: dataclass
   locked: false
@@ -52,6 +51,12 @@ classes:
       type: list[NotificationRecipient]
     active:
       type: bool
+    trigger_timing:
+      type: str
+    date_field:
+      type: str
+    offset_days:
+      type: int
     id:
       type: int | None
     created_at:

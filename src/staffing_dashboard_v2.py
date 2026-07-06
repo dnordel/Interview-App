@@ -1,10 +1,15 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
+from string import Formatter
 from typing import Any
 
-from staffing_models import StaffingHistoryRecord, StaffingMetricRow, StaffingPerson
+from notification_models import NotificationRecipient, NotificationRule
+from notification_service import EXECUTIVE_DIRECTOR_EMAIL, HIRING_MANAGER_EMAIL, NOTIFICATION_TEMPLATE_FIELDS, NotificationService
+from notification_store import NotificationStore
+from staffing_models import StaffingClassroom, StaffingHistoryRecord, StaffingMetricRow, StaffingPerson
 from staffing_service import StaffingService
 from staffing_store import StaffingStore
 
@@ -160,6 +165,12 @@ QFrame#StaffingV2OverviewCard,
 QFrame#StaffingV2PeopleMetricCard,
 QFrame#StaffingV2HistoryMetricCard,
 QFrame#StaffingV2ClassroomsMetricCard,
+QFrame#StaffingV2ClassroomsDetailMetricCard,
+QFrame#StaffingV2ClassroomsHealthCard,
+QFrame#StaffingV2NotificationEditor,
+QFrame#StaffingV2NotificationPanel,
+QFrame#StaffingV2NotificationValidationPanel,
+QFrame#StaffingV2NotificationVariablesPanel,
 QFrame#StaffingV2Panel,
 QFrame#StaffingV2PositionDrawer,
 QFrame#StaffingV2DrawerSection,
@@ -184,6 +195,18 @@ QFrame#StaffingV2MetricCard[staffingV2SummaryVariant="success"] {
     background-color: #f0fdf4;
     border: 1px solid #bbf7d0;
 }
+QFrame#StaffingV2ClassroomsHealthCard[staffingV2HealthVariant="success"] {
+    background-color: #f0fdf4;
+    border: 1px solid #bbf7d0;
+}
+QFrame#StaffingV2ClassroomsHealthCard[staffingV2HealthVariant="warning"] {
+    background-color: #fff7ed;
+    border: 1px solid #fed7aa;
+}
+QFrame#StaffingV2ClassroomsHealthCard[staffingV2HealthVariant="danger"] {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+}
 QFrame#StaffingV2AddPositionDropZone {
     border: 1px dashed #cbd5e1;
     background-color: #ffffff;
@@ -196,7 +219,15 @@ QDialog#StaffingV2MarkFilledDialog,
 QDialog#StaffingV2ManageFilledDialog,
 QDialog#StaffingV2UpdatePermitDialog,
 QDialog#StaffingV2MarkNeedNowDialog,
-QDialog#StaffingV2AddPositionDialog {
+QDialog#StaffingV2AddPositionDialog,
+QDialog#StaffingV2AddPersonDialog,
+QDialog#StaffingV2AddClassroomDialog,
+QDialog#StaffingV2ClassroomsExportDialog,
+QDialog#StaffingV2ValidationRulesDialog,
+QDialog#StaffingV2ValidationExportDialog,
+QDialog#StaffingV2HistoryExportDialog,
+QDialog#StaffingV2HistoryExportRecordDialog,
+QDialog#StaffingV2DashboardExportDialog {
     background-color: #ffffff;
     color: #0f172a;
 }
@@ -519,7 +550,8 @@ QFrame#StaffingV2ClassroomsDetailCard,
 QFrame#StaffingV2ValidationRightPanel,
 QFrame#StaffingV2ValidationSideCard,
 QFrame#StaffingV2FilterDrawer,
-QFrame#StaffingV2ClassroomsFilterDrawer {
+QFrame#StaffingV2ClassroomsFilterDrawer,
+QFrame#StaffingV2PeopleFilterDrawer {
     background-color: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
@@ -539,7 +571,8 @@ QTableWidget#StaffingV2ValidationTable {
 QFrame#StaffingV2FilterDrawer {
     border-left: 1px solid #e2e8f0;
 }
-QFrame#StaffingV2ClassroomsFilterDrawer {
+QFrame#StaffingV2ClassroomsFilterDrawer,
+QFrame#StaffingV2PeopleFilterDrawer {
     border-left: 1px solid #e2e8f0;
 }
 QTableWidget#StaffingV2HistoryTable {
@@ -548,6 +581,23 @@ QTableWidget#StaffingV2HistoryTable {
     border-radius: 12px;
     gridline-color: #e2e8f0;
     selection-background-color: #eaf2ff;
+}
+QListWidget#StaffingV2NotificationsRuleList {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 6px;
+}
+QListWidget#StaffingV2NotificationsRuleList::item {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    margin: 4px;
+    padding: 10px;
+}
+QListWidget#StaffingV2NotificationsRuleList::item:selected {
+    border: 2px solid #2563eb;
+    background-color: #eff6ff;
+    color: #0f172a;
 }
 QListWidget#StaffingV2ClassroomList {
     background-color: #ffffff;
@@ -619,6 +669,8 @@ class StaffingDashboardV2Page:
         service_factory: Callable[[], StaffingService],
         actions: dict[str, ActionCallback] | None = None,
         school_filter: str = "",
+        notification_store_path: Path | None = None,
+        notification_service_factory: Callable[[], NotificationService] | None = None,
     ) -> None:
         self.QtCore = QtCore
         self.QtGui = QtGui
@@ -627,15 +679,27 @@ class StaffingDashboardV2Page:
         self.service_factory = service_factory
         self.actions = actions or {}
         self.school_filter = str(school_filter or "").strip()
+        self.notification_store_path = (
+            Path(notification_store_path) if notification_store_path is not None else Path("notification_rules.sqlite3")
+        )
+        self.notification_service_factory = notification_service_factory
         self.rows: list[StaffingMetricRow] = []
         self.visible_rows: list[StaffingMetricRow] = []
         self.classroom_rows: dict[str, list[StaffingMetricRow]] = {}
+        self.notification_rules: list[NotificationRule] = []
+        self.visible_notification_rules: list[NotificationRule] = []
+        self.selected_notification_rule_id: int | None = None
+        self.notification_selected_recipients: list[NotificationRecipient] = []
         self.people: list[StaffingPerson] = []
         self.visible_people: list[StaffingPerson] = []
         self.history_records: list[StaffingHistoryRecord] = []
         self.visible_history_records: list[StaffingHistoryRecord] = []
         self.classroom_management_rows: dict[str, list[StaffingMetricRow]] = {}
         self.visible_classroom_management: list[tuple[str, list[StaffingMetricRow]]] = []
+        self.classrooms_current_page = 1
+        self.selected_classroom_management_key = ""
+        self.classrooms_applied_filter_state: dict[str, Any] = self._default_classrooms_filter_state()
+        self.dashboard_classroom_filter_state: dict[str, Any] = self._default_dashboard_classroom_filter_state()
         self.validation_issues: list[dict[str, str]] = []
         self.visible_validation_issues: list[dict[str, str]] = []
         self.widget = QtWidgets.QWidget()
@@ -687,7 +751,7 @@ class StaffingDashboardV2Page:
         self.analytics_nav_button = self._sidebar_button("StaffingV2AnalyticsNavButton", "Analytics", "analytics")
         self.analytics_nav_button.setEnabled(False)
         self.notifications_nav_button = self._sidebar_button("StaffingV2NotificationsNavButton", "Notifications", "notifications")
-        self.notifications_nav_button.setEnabled(False)
+        self.notifications_nav_button.clicked.connect(self._show_notifications_view)
         sidebar_layout.addWidget(self.analytics_nav_button)
         sidebar_layout.addWidget(self.notifications_nav_button)
         sidebar_layout.addSpacing(16)
@@ -722,6 +786,7 @@ class StaffingDashboardV2Page:
         shell_layout.addWidget(content, 1)
 
         self.dashboard_view = self.QtWidgets.QWidget()
+        self.dashboard_view.setObjectName("StaffingV2Dashboard")
         dashboard_root = self.QtWidgets.QVBoxLayout(self.dashboard_view)
         dashboard_root.setContentsMargins(0, 0, 0, 0)
         dashboard_root.setSpacing(14)
@@ -778,7 +843,7 @@ class StaffingDashboardV2Page:
         self.export_button.setObjectName("StaffingV2ExportButton")
         self._set_button_icon(self.export_button, "export")
         self.export_button.setMinimumHeight(40)
-        self.export_button.setEnabled(False)
+        self.export_button.clicked.connect(self._open_dashboard_export_dialog)
         summary_actions_layout.addWidget(self.export_button)
         self.view_history_button = self.QtWidgets.QPushButton("View History")
         self.view_history_button.setObjectName("StaffingV2ViewHistoryButton")
@@ -801,7 +866,7 @@ class StaffingDashboardV2Page:
         list_filter.setObjectName("StaffingV2ClassroomListFilterButton")
         self._set_button_icon(list_filter, "filter")
         list_filter.setToolTip("Classroom filters")
-        list_filter.setEnabled(False)
+        list_filter.clicked.connect(self._open_dashboard_classroom_filter_drawer)
         list_filter.setFixedSize(34, 34)
         list_header.addWidget(list_filter)
         classroom_layout.addLayout(list_header)
@@ -866,6 +931,7 @@ class StaffingDashboardV2Page:
         self._build_classrooms_view()
         self._build_people_view()
         self._build_history_view()
+        self._build_notifications_view()
         self._build_validation_view()
         self._set_active_nav(self.dashboard_nav_button)
 
@@ -993,12 +1059,11 @@ class StaffingDashboardV2Page:
         export = self.QtWidgets.QPushButton("Export")
         export.setObjectName("StaffingV2ClassroomsExportButton")
         self._set_button_icon(export, "export")
-        export.setEnabled(False)
+        export.clicked.connect(self._open_classrooms_export_dialog)
         add_classroom = self.QtWidgets.QPushButton("Add Classroom")
         add_classroom.setObjectName("StaffingV2ClassroomsAddButton")
         self._set_button_icon(add_classroom, "add")
-        add_classroom.setEnabled(False)
-        add_classroom.setToolTip("Add Classroom workflow will be implemented in a later classroom mockup slice.")
+        add_classroom.clicked.connect(self._open_add_classroom_dialog)
         header.addWidget(export)
         header.addWidget(add_classroom)
         classrooms_root.addLayout(header)
@@ -1036,6 +1101,7 @@ class StaffingDashboardV2Page:
         classrooms_root.addWidget(filters_panel)
 
         body = self.QtWidgets.QSplitter(self.QtCore.Qt.Orientation.Horizontal)
+        body.setObjectName("StaffingV2ClassroomsBodySplitter")
         body.setChildrenCollapsible(False)
         left = self.QtWidgets.QWidget()
         left_layout = self.QtWidgets.QVBoxLayout(left)
@@ -1060,7 +1126,22 @@ class StaffingDashboardV2Page:
             ]
         )
         self.classrooms_table.horizontalHeader().setStretchLastSection(True)
-        self.classrooms_table.horizontalHeader().setSectionResizeMode(self.QtWidgets.QHeaderView.ResizeMode.Stretch)
+        self.classrooms_table.horizontalHeader().setSectionResizeMode(self.QtWidgets.QHeaderView.ResizeMode.Interactive)
+        for column, width in {
+            0: 120,
+            1: 110,
+            2: 110,
+            3: 132,
+            4: 118,
+            5: 74,
+            6: 74,
+            7: 136,
+            8: 86,
+            9: 108,
+        }.items():
+            self.classrooms_table.setColumnWidth(column, width)
+        self.classrooms_table.verticalHeader().setVisible(False)
+        self.classrooms_table.setAlternatingRowColors(False)
         self.classrooms_table.currentCellChanged.connect(
             lambda row, _column, _prev_row, _prev_column: self._select_classroom_management(row)
         )
@@ -1072,20 +1153,23 @@ class StaffingDashboardV2Page:
         classrooms_footer.addStretch(1)
         previous_page = self.QtWidgets.QPushButton("‹")
         previous_page.setObjectName("StaffingV2ClassroomsPreviousPage")
-        previous_page.setEnabled(False)
+        previous_page.clicked.connect(self._previous_classrooms_page)
+        self.classrooms_previous_page = previous_page
         classrooms_footer.addWidget(previous_page)
         current_page = self.QtWidgets.QPushButton("1")
         current_page.setObjectName("StaffingV2ClassroomsCurrentPage")
         current_page.setEnabled(False)
+        self.classrooms_current_page_button = current_page
         classrooms_footer.addWidget(current_page)
         next_page = self.QtWidgets.QPushButton("›")
         next_page.setObjectName("StaffingV2ClassroomsNextPage")
-        next_page.setEnabled(False)
+        next_page.clicked.connect(self._next_classrooms_page)
+        self.classrooms_next_page = next_page
         classrooms_footer.addWidget(next_page)
         self.classrooms_rows_per_page = self.QtWidgets.QComboBox()
         self.classrooms_rows_per_page.setObjectName("StaffingV2ClassroomsRowsPerPage")
         self.classrooms_rows_per_page.addItems(["10 / page", "25 / page", "50 / page"])
-        self.classrooms_rows_per_page.setEnabled(False)
+        self.classrooms_rows_per_page.currentIndexChanged.connect(self._classrooms_rows_per_page_changed)
         classrooms_footer.addWidget(self.classrooms_rows_per_page)
         left_layout.addLayout(classrooms_footer)
         self.classrooms_validation_panel, self.classrooms_validation_layout = self._panel("StaffingV2ClassroomsValidationPanel")
@@ -1097,10 +1181,10 @@ class StaffingDashboardV2Page:
         body.setSizes([860, 420])
         classrooms_root.addWidget(body, 1)
         self.classrooms_filter_drawer, self.classrooms_filter_drawer_layout = self._panel("StaffingV2ClassroomsFilterDrawer")
-        self.classrooms_filter_drawer.setFixedWidth(340)
+        self.classrooms_filter_drawer.setParent(self.classrooms_view)
+        self.classrooms_filter_drawer.setFixedWidth(460)
         self.classrooms_filter_drawer.hide()
         self._build_classrooms_filter_drawer()
-        classrooms_outer.addWidget(self.classrooms_filter_drawer)
 
     def _build_classrooms_filter_drawer(self) -> None:
         header = self.QtWidgets.QHBoxLayout()
@@ -1114,10 +1198,18 @@ class StaffingDashboardV2Page:
         close.setObjectName("StaffingV2ClassroomsFilterClose")
         self._set_button_icon(close, "close")
         close.setFixedSize(32, 32)
-        close.clicked.connect(self.classrooms_filter_drawer.hide)
+        close.clicked.connect(self._cancel_classrooms_filter_drawer)
         header.addWidget(reset)
         header.addWidget(close)
         self.classrooms_filter_drawer_layout.addLayout(header)
+        self.classrooms_filter_school = self._classrooms_drawer_combo(
+            "StaffingV2ClassroomsFilterSchool", ["All Schools"]
+        )
+        self.classrooms_filter_drawer_layout.addLayout(self._labeled_control("School", self.classrooms_filter_school))
+        self.classrooms_filter_program = self._classrooms_drawer_combo(
+            "StaffingV2ClassroomsFilterProgram", ["All Programs"]
+        )
+        self.classrooms_filter_drawer_layout.addLayout(self._labeled_control("Program", self.classrooms_filter_program))
         self.classrooms_filter_drawer_layout.addWidget(self._label("Status", "StaffingV2SectionTitle"))
         self.classrooms_filter_need_now = self.QtWidgets.QCheckBox("Need Now")
         self.classrooms_filter_need_now.setObjectName("StaffingV2ClassroomsFilterNeedNow")
@@ -1133,30 +1225,53 @@ class StaffingDashboardV2Page:
             self.classrooms_filter_filled,
         ):
             checkbox.setChecked(True)
-        self.classrooms_filter_dont_need.setChecked(False)
+        self.classrooms_filter_dont_need.setChecked(True)
         for checkbox in (
             self.classrooms_filter_need_now,
             self.classrooms_filter_coming,
             self.classrooms_filter_filled,
             self.classrooms_filter_dont_need,
         ):
-            checkbox.stateChanged.connect(self._refresh_classrooms_filters)
-            self.classrooms_filter_drawer_layout.addWidget(checkbox)
+            checkbox.setProperty("staffingV2DrawerDraft", True)
+            self.classrooms_filter_drawer_layout.addWidget(self._classrooms_status_filter_row(checkbox))
         self.classrooms_filter_drawer_layout.addWidget(self._label("Open Positions", "StaffingV2SectionTitle"))
-        self.classrooms_filter_open_positions = self._classrooms_filter_combo(
+        self.classrooms_filter_open_positions = self._classrooms_drawer_combo(
             "StaffingV2ClassroomsFilterOpenPositions", ["All", "Has Open Positions", "No Open Positions"]
         )
         self.classrooms_filter_drawer_layout.addWidget(self.classrooms_filter_open_positions)
         self.classrooms_filter_drawer_layout.addWidget(self._label("Days Open", "StaffingV2SectionTitle"))
-        self.classrooms_filter_days_open = self._classrooms_filter_combo(
-            "StaffingV2ClassroomsFilterDaysOpen", ["All", "Over 7 Days", "No Open Date"]
+        self.classrooms_filter_days_open = self._classrooms_drawer_combo(
+            "StaffingV2ClassroomsFilterDaysOpen", ["All", "Over 7 Days", "No Open Date", "Custom Range"]
         )
         self.classrooms_filter_drawer_layout.addWidget(self.classrooms_filter_days_open)
-        self.classrooms_filter_drawer_layout.addStretch(1)
+        days_range = self.QtWidgets.QHBoxLayout()
+        self.classrooms_filter_days_from = self.QtWidgets.QLineEdit()
+        self.classrooms_filter_days_from.setObjectName("StaffingV2ClassroomsFilterDaysFrom")
+        self.classrooms_filter_days_from.setPlaceholderText("From")
+        self.classrooms_filter_days_to = self.QtWidgets.QLineEdit()
+        self.classrooms_filter_days_to.setObjectName("StaffingV2ClassroomsFilterDaysTo")
+        self.classrooms_filter_days_to.setPlaceholderText("To")
+        days_range.addLayout(self._labeled_control("From", self.classrooms_filter_days_from))
+        days_range.addLayout(self._labeled_control("To", self.classrooms_filter_days_to))
+        self.classrooms_filter_drawer_layout.addLayout(days_range)
+        self.classrooms_filter_permit = self._classrooms_drawer_combo(
+            "StaffingV2ClassroomsFilterPermit",
+            ["All Permit Statuses", "Teacher Permit", "Permit in Process", "Unknown", "No Units Needed", "No Permit"],
+        )
+        self.classrooms_filter_drawer_layout.addLayout(self._labeled_control("Permit Status", self.classrooms_filter_permit))
+        self.classrooms_filter_assigned_staff = self._classrooms_drawer_combo(
+            "StaffingV2ClassroomsFilterAssignedStaff", ["All Staff", "Assigned", "Unassigned"]
+        )
+        self.classrooms_filter_drawer_layout.addLayout(self._labeled_control("Assigned Staff", self.classrooms_filter_assigned_staff))
+        self.classrooms_filter_sort_by = self._classrooms_drawer_combo(
+            "StaffingV2ClassroomsFilterSortBy",
+            ["Default Order", "Days Open (High to Low)", "Classroom (A to Z)", "Open Positions (High to Low)"],
+        )
+        self.classrooms_filter_drawer_layout.addLayout(self._labeled_control("Sort By", self.classrooms_filter_sort_by))
         footer = self.QtWidgets.QHBoxLayout()
         cancel = self.QtWidgets.QPushButton("Cancel")
         cancel.setObjectName("StaffingV2ClassroomsFilterCancel")
-        cancel.clicked.connect(self.classrooms_filter_drawer.hide)
+        cancel.clicked.connect(self._cancel_classrooms_filter_drawer)
         self.classrooms_filter_apply_button = self.QtWidgets.QPushButton("Apply Filters")
         self.classrooms_filter_apply_button.setObjectName("StaffingV2ClassroomsFilterApply")
         self._set_button_icon(self.classrooms_filter_apply_button, "filter")
@@ -1165,23 +1280,261 @@ class StaffingDashboardV2Page:
         footer.addWidget(self.classrooms_filter_apply_button)
         self.classrooms_filter_drawer_layout.addLayout(footer)
 
+    def _classrooms_status_filter_row(self, checkbox: Any) -> Any:
+        row = self.QtWidgets.QFrame()
+        row.setObjectName("StaffingV2ClassroomsFilterStatusRow")
+        layout = self.QtWidgets.QHBoxLayout(row)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+        layout.addWidget(checkbox)
+        dot = self.QtWidgets.QFrame()
+        dot.setObjectName("StaffingV2ClassroomStatusDot")
+        dot.setProperty("staffingV2Status", _status_from_label(checkbox.text()))
+        layout.addWidget(dot)
+        layout.addStretch(1)
+        return row
+
+    def _classrooms_drawer_combo(self, object_name: str, values: list[str]) -> Any:
+        combo = self.QtWidgets.QComboBox()
+        combo.setObjectName(object_name)
+        combo.addItems(values)
+        return combo
+
+    def _default_classrooms_filter_state(self) -> dict[str, Any]:
+        return {
+            "school": "All Schools",
+            "program": "All Programs",
+            "need_now": True,
+            "coming": True,
+            "filled": True,
+            "dont_need": True,
+            "open_positions": "All",
+            "days_open": "All",
+            "days_from": "",
+            "days_to": "",
+            "permit": "All Permit Statuses",
+            "assigned_staff": "All Staff",
+            "sort_by": "Default Order",
+        }
+
     def _open_classrooms_filter_drawer(self) -> None:
+        self._sync_classrooms_filter_drawer_from_state()
+        self._position_classrooms_filter_drawer()
         self.classrooms_filter_drawer.show()
+        self.classrooms_filter_drawer.raise_()
+
+    def _position_classrooms_filter_drawer(self) -> None:
+        if not hasattr(self, "classrooms_filter_drawer"):
+            return
+        parent = self.classrooms_view
+        width = self.classrooms_filter_drawer.width() or 460
+        height = max(parent.height(), self.widget.height(), 640)
+        x = max(0, parent.width() - width)
+        self.classrooms_filter_drawer.setGeometry(x, 0, width, height)
 
     def _reset_classrooms_filter_drawer(self) -> None:
-        for checkbox in (
-            self.classrooms_filter_need_now,
-            self.classrooms_filter_coming,
-            self.classrooms_filter_filled,
+        state = self._default_classrooms_filter_state()
+        self._set_classrooms_filter_drawer_state(state)
+
+    def _cancel_classrooms_filter_drawer(self) -> None:
+        self._sync_classrooms_filter_drawer_from_state()
+        self.classrooms_filter_drawer.hide()
+
+    def _sync_classrooms_filter_drawer_from_state(self) -> None:
+        self._set_classrooms_filter_drawer_state(self.classrooms_applied_filter_state)
+
+    def _set_classrooms_filter_drawer_state(self, state: dict[str, Any]) -> None:
+        if not hasattr(self, "classrooms_filter_need_now"):
+            return
+        self.classrooms_filter_school.setCurrentText(str(state.get("school", "All Schools")))
+        self.classrooms_filter_program.setCurrentText(str(state.get("program", "All Programs")))
+        for checkbox, key in (
+            (self.classrooms_filter_need_now, "need_now"),
+            (self.classrooms_filter_coming, "coming"),
+            (self.classrooms_filter_filled, "filled"),
         ):
-            checkbox.setChecked(True)
-        self.classrooms_filter_dont_need.setChecked(False)
-        self.classrooms_filter_open_positions.setCurrentText("All")
-        self.classrooms_filter_days_open.setCurrentText("All")
+            checkbox.setChecked(bool(state.get(key, True)))
+        self.classrooms_filter_dont_need.setChecked(bool(state.get("dont_need", True)))
+        self.classrooms_filter_open_positions.setCurrentText(str(state.get("open_positions", "All")))
+        self.classrooms_filter_days_open.setCurrentText(str(state.get("days_open", "All")))
+        self.classrooms_filter_days_from.setText(str(state.get("days_from", "")))
+        self.classrooms_filter_days_to.setText(str(state.get("days_to", "")))
+        self.classrooms_filter_permit.setCurrentText(str(state.get("permit", "All Permit Statuses")))
+        self.classrooms_filter_assigned_staff.setCurrentText(str(state.get("assigned_staff", "All Staff")))
+        self.classrooms_filter_sort_by.setCurrentText(str(state.get("sort_by", "Default Order")))
+
+    def _classrooms_filter_state_from_drawer(self) -> dict[str, Any]:
+        return {
+            "school": self.classrooms_filter_school.currentText(),
+            "program": self.classrooms_filter_program.currentText(),
+            "need_now": self.classrooms_filter_need_now.isChecked(),
+            "coming": self.classrooms_filter_coming.isChecked(),
+            "filled": self.classrooms_filter_filled.isChecked(),
+            "dont_need": self.classrooms_filter_dont_need.isChecked(),
+            "open_positions": self.classrooms_filter_open_positions.currentText(),
+            "days_open": self.classrooms_filter_days_open.currentText(),
+            "days_from": self.classrooms_filter_days_from.text().strip(),
+            "days_to": self.classrooms_filter_days_to.text().strip(),
+            "permit": self.classrooms_filter_permit.currentText(),
+            "assigned_staff": self.classrooms_filter_assigned_staff.currentText(),
+            "sort_by": self.classrooms_filter_sort_by.currentText(),
+        }
 
     def _apply_classrooms_filter_drawer(self) -> None:
+        self.classrooms_applied_filter_state = self._classrooms_filter_state_from_drawer()
+        self.classrooms_current_page = 1
         self._refresh_classrooms_filters()
         self.classrooms_filter_drawer.hide()
+
+    def _open_add_classroom_dialog(self) -> None:
+        dialog = self.QtWidgets.QDialog(self.widget)
+        dialog.setObjectName("StaffingV2AddClassroomDialog")
+        dialog.setWindowTitle("Add Classroom")
+        dialog.setModal(True)
+        dialog.resize(520, 430)
+        layout = self.QtWidgets.QVBoxLayout(dialog)
+        layout.setContentsMargins(22, 18, 22, 18)
+        layout.setSpacing(12)
+
+        header = self.QtWidgets.QHBoxLayout()
+        title_column = self.QtWidgets.QVBoxLayout()
+        title_column.addWidget(self._label("Add Classroom", "StaffingV2DrawerTitle"))
+        title_column.addWidget(
+            self._label("Create a classroom record before adding staffing positions.", "StaffingV2Muted")
+        )
+        header.addLayout(title_column, 1)
+        close = self.QtWidgets.QPushButton("")
+        close.setObjectName("StaffingV2AddClassroomClose")
+        self._set_button_icon(close, "close")
+        close.clicked.connect(dialog.close)
+        header.addWidget(close)
+        layout.addLayout(header)
+
+        form, form_layout = self._dialog_section("StaffingV2DialogSection")
+        school = self.QtWidgets.QComboBox()
+        school.setObjectName("StaffingV2AddClassroomSchool")
+        schools = sorted({row.school for row in self.rows if row.school})
+        try:
+            schools.extend(classroom.school for classroom in self.store.list_classrooms() if classroom.school)
+        except (OSError, ValueError):
+            pass
+        school.addItems(sorted(set(schools)) or ["Hawthorne"])
+        form_layout.addLayout(self._labeled_control("School *", school))
+        name = self.QtWidgets.QLineEdit()
+        name.setObjectName("StaffingV2AddClassroomName")
+        name.setPlaceholderText("Classroom name")
+        form_layout.addLayout(self._labeled_control("Classroom Name *", name))
+        program = self.QtWidgets.QComboBox()
+        program.setObjectName("StaffingV2AddClassroomProgram")
+        program.addItems(["Preschool", "Infant", "Toddler", "Pre-K", "Other"])
+        form_layout.addLayout(self._labeled_control("Program", program))
+        capacity = self.QtWidgets.QLineEdit()
+        capacity.setObjectName("StaffingV2AddClassroomCapacity")
+        capacity.setPlaceholderText("Licensed capacity")
+        form_layout.addLayout(self._labeled_control("Licensed Capacity", capacity))
+        status = self._label("", "StaffingV2NeedNowChip")
+        status.setObjectName("StaffingV2AddClassroomStatus")
+        form_layout.addWidget(status)
+        layout.addWidget(form)
+
+        info, info_layout = self._dialog_section("StaffingV2DialogInfo")
+        info_layout.addWidget(self._label("What happens on save", "StaffingV2SectionTitle"))
+        info_layout.addWidget(self._label("Classroom record is created or updated"))
+        info_layout.addWidget(self._label("No staffing position is created"))
+        info_layout.addWidget(self._label("Add positions separately from the Staffing Dashboard"))
+        layout.addWidget(info)
+
+        footer = self.QtWidgets.QHBoxLayout()
+        footer.addStretch(1)
+        cancel = self.QtWidgets.QPushButton("Cancel")
+        cancel.setObjectName("StaffingV2SecondaryButton")
+        cancel.clicked.connect(dialog.reject)
+        save = self.QtWidgets.QPushButton("Add Classroom")
+        save.setObjectName("StaffingV2AddClassroomSave")
+        self._set_button_icon(save, "add")
+
+        def save_classroom() -> None:
+            try:
+                capacity_value = None
+                if capacity.text().strip():
+                    capacity_value = int(capacity.text().strip())
+                self.service_factory().add_classroom(
+                    school=school.currentText(),
+                    name=name.text(),
+                    program=program.currentText(),
+                    licensed_capacity=capacity_value,
+                )
+            except ValueError as exc:
+                status.setText(str(exc))
+                return
+            if hasattr(self, "classrooms_filter_dont_need"):
+                self.classrooms_filter_dont_need.setChecked(True)
+            self.classrooms_applied_filter_state["dont_need"] = True
+            self.classrooms_current_page = 1
+            self.refresh()
+            dialog.accept()
+
+        save.clicked.connect(save_classroom)
+        footer.addWidget(cancel)
+        footer.addWidget(save)
+        layout.addLayout(footer)
+        dialog.show()
+
+    def _open_classrooms_export_dialog(self) -> None:
+        dialog = self.QtWidgets.QDialog(self.widget)
+        dialog.setObjectName("StaffingV2ClassroomsExportDialog")
+        dialog.setWindowTitle("Export Classroom Management")
+        dialog.setModal(True)
+        dialog.resize(560, 460)
+        layout = self.QtWidgets.QVBoxLayout(dialog)
+        layout.setContentsMargins(22, 18, 22, 18)
+        layout.setSpacing(12)
+
+        header = self.QtWidgets.QHBoxLayout()
+        title_column = self.QtWidgets.QVBoxLayout()
+        title_column.addWidget(self._label("Export Classroom Management", "StaffingV2DrawerTitle"))
+        title_column.addWidget(self._label("Preview the currently filtered classroom records.", "StaffingV2Muted"))
+        header.addLayout(title_column, 1)
+        close = self.QtWidgets.QPushButton("")
+        close.setObjectName("StaffingV2ClassroomsExportClose")
+        self._set_button_icon(close, "close")
+        close.clicked.connect(dialog.close)
+        header.addWidget(close)
+        layout.addLayout(header)
+
+        groups = [rows for _key, rows in getattr(self, "visible_classroom_management", []) if rows]
+        total_positions = sum(len(rows) for rows in groups)
+        open_positions = sum(1 for rows in groups for row in rows if row.status in {"need_now", "replace"})
+        capacities = [rows[0].classroom_capacity for rows in groups if rows[0].classroom_capacity is not None]
+        preview, preview_layout = self._dialog_section("StaffingV2DialogInfo")
+        for label, value in [
+            ("Total classrooms", str(len(groups))),
+            ("Total positions", str(total_positions)),
+            ("Open positions", str(open_positions)),
+            ("Avg licensed capacity", f"{(sum(capacities) / len(capacities)):.1f}" if capacities else "0.0"),
+            ("School filter", self.classrooms_school_filter.currentText()),
+            ("Program filter", self.classrooms_program_filter.currentText()),
+            ("Status filter", self.classrooms_status_filter.currentText()),
+        ]:
+            preview_layout.addLayout(self._detail_row(label, value))
+        for rows in groups[:8]:
+            first = rows[0]
+            filled = sum(1 for row in rows if row.status == "filled")
+            open_count = sum(1 for row in rows if row.status in {"need_now", "replace"})
+            summary = f"{first.school} - {first.classroom_program or '-'} - filled {filled} - open {open_count}"
+            preview_layout.addLayout(self._detail_row(first.classroom, summary))
+        if len(groups) > 8:
+            preview_layout.addLayout(self._detail_row("Additional classrooms", str(len(groups) - 8)))
+        layout.addWidget(preview)
+
+        footer = self.QtWidgets.QHBoxLayout()
+        footer.addStretch(1)
+        close_button = self.QtWidgets.QPushButton("Close")
+        close_button.setObjectName("StaffingV2SecondaryButton")
+        close_button.clicked.connect(dialog.accept)
+        footer.addWidget(close_button)
+        layout.addLayout(footer)
+        dialog.show()
 
     def _classrooms_filter_combo(self, object_name: str, values: list[str]) -> Any:
         combo = self.QtWidgets.QComboBox()
@@ -1196,56 +1549,101 @@ class StaffingDashboardV2Page:
         grouped: dict[str, list[StaffingMetricRow]] = {}
         for row in self.rows:
             grouped.setdefault(f"{row.school}\u241f{row.classroom}", []).append(row)
+        self.classroom_records_by_key: dict[str, StaffingClassroom] = {}
+        for classroom in self.store.list_classrooms():
+            if self.school_filter and classroom.school != self.school_filter:
+                continue
+            key = f"{classroom.school}\u241f{classroom.name}"
+            self.classroom_records_by_key[key] = classroom
+            grouped.setdefault(key, [])
         self.classroom_management_rows = grouped
         groups = list(grouped.values())
         self._sync_combo(
             self.classrooms_school_filter,
-            ["All Schools", *sorted({rows[0].school for rows in groups if rows and rows[0].school})],
+            [
+                "All Schools",
+                *sorted(
+                    {
+                        self._classroom_group_info(key, rows)["school"]
+                        for key, rows in grouped.items()
+                        if self._classroom_group_info(key, rows)["school"]
+                    }
+                ),
+            ],
         )
         self._sync_combo(
             self.classrooms_program_filter,
-            ["All Programs", *sorted({rows[0].classroom_program for rows in groups if rows and rows[0].classroom_program})],
+            [
+                "All Programs",
+                *sorted(
+                    {
+                        self._classroom_group_info(key, rows)["program"]
+                        for key, rows in grouped.items()
+                        if self._classroom_group_info(key, rows)["program"]
+                    }
+                ),
+            ],
         )
+        if hasattr(self, "classrooms_filter_school"):
+            self._sync_combo(
+                self.classrooms_filter_school,
+                [self.classrooms_school_filter.itemText(index) for index in range(self.classrooms_school_filter.count())],
+            )
+            self._sync_combo(
+                self.classrooms_filter_program,
+                [self.classrooms_program_filter.itemText(index) for index in range(self.classrooms_program_filter.count())],
+            )
         self._sync_combo(
             self.classrooms_status_filter,
-            ["All Statuses", "Need Now", "Replace", "Coming", "Filled / Healthy", "Don't Need"],
+            ["All Statuses", "Need Now", "Replace", "Coming", "Filled", "Don't Need"],
         )
         self._refresh_classrooms_filters()
 
     def _clear_classrooms_filters(self) -> None:
+        self.classrooms_current_page = 1
         self.classrooms_school_filter.setCurrentText("All Schools")
         self.classrooms_program_filter.setCurrentText("All Programs")
         self.classrooms_status_filter.setCurrentText("All Statuses")
         self.classrooms_search.clear()
         if hasattr(self, "classrooms_filter_need_now"):
+            self.classrooms_applied_filter_state = self._default_classrooms_filter_state()
             self._reset_classrooms_filter_drawer()
         self._refresh_classrooms_filters()
 
     def _refresh_classrooms_filters(self) -> None:
         if not hasattr(self, "classrooms_table"):
             return
+        self.classrooms_current_page = 1
         school = self.classrooms_school_filter.currentText()
         program = self.classrooms_program_filter.currentText()
         status = self.classrooms_status_filter.currentText()
         search = self.classrooms_search.text().strip().casefold()
+        state = self.classrooms_applied_filter_state
+        drawer_school = str(state.get("school", "All Schools"))
+        drawer_program = str(state.get("program", "All Programs"))
         allowed_statuses = self._classrooms_allowed_statuses()
-        open_positions_filter = self.classrooms_filter_open_positions.currentText() if hasattr(self, "classrooms_filter_open_positions") else "All"
-        days_open_filter = self.classrooms_filter_days_open.currentText() if hasattr(self, "classrooms_filter_days_open") else "All"
+        open_positions_filter = str(state.get("open_positions", "All"))
+        days_open_filter = str(state.get("days_open", "All"))
+        permit_filter = str(state.get("permit", "All Permit Statuses"))
+        assigned_staff_filter = str(state.get("assigned_staff", "All Staff"))
+        sort_by = str(state.get("sort_by", "Default Order"))
         self.visible_classroom_management = []
         for key, rows in self.classroom_management_rows.items():
-            if not rows:
+            info = self._classroom_group_info(key, rows)
+            classroom_status = _classroom_priority_status(rows) if rows else "Don't Need"
+            if school != "All Schools" and info["school"] != school:
                 continue
-            classroom_status = _classroom_priority_status(rows)
-            first = rows[0]
-            if school != "All Schools" and first.school != school:
+            if drawer_school != "All Schools" and info["school"] != drawer_school:
                 continue
-            if program != "All Programs" and first.classroom_program != program:
+            if program != "All Programs" and info["program"] != program:
+                continue
+            if drawer_program != "All Programs" and info["program"] != drawer_program:
                 continue
             if status != "All Statuses" and classroom_status != status:
                 continue
             if classroom_status not in allowed_statuses:
                 continue
-            haystack = f"{first.school} {first.classroom} {first.classroom_program}".casefold()
+            haystack = f"{info['school']} {info['classroom']} {info['program']}".casefold()
             if search and search not in haystack:
                 continue
             open_count = sum(1 for row in rows if row.status in {"need_now", "replace"})
@@ -1259,34 +1657,95 @@ class StaffingDashboardV2Page:
                 continue
             if days_open_filter == "No Open Date" and not has_no_open_date:
                 continue
+            if days_open_filter == "Custom Range" and not self._classroom_matches_days_range(rows, state):
+                continue
+            if permit_filter != "All Permit Statuses" and not any(
+                _permit_label(row.permit_status) == permit_filter for row in rows
+            ):
+                continue
+            if assigned_staff_filter == "Assigned" and not any(row.person_name for row in rows):
+                continue
+            if assigned_staff_filter == "Unassigned" and not any(not row.person_name for row in rows):
+                continue
             self.visible_classroom_management.append((key, rows))
+        self.visible_classroom_management.sort(
+            key=lambda item: self._classrooms_sort_key(item[0], item[1], sort_by)
+        )
         self._refresh_classrooms_metrics()
         self._refresh_classrooms_table()
         self._refresh_classrooms_filter_count()
-        if hasattr(self, "classrooms_result_count"):
-            visible_count = len(self.visible_classroom_management)
-            if visible_count:
-                self.classrooms_result_count.setText(f"Showing 1 to {visible_count} of {visible_count} classrooms")
-            else:
-                self.classrooms_result_count.setText("Showing 0 to 0 of 0 classrooms")
         self._refresh_classrooms_validation_panel()
 
-    def _refresh_classrooms_filter_count(self) -> None:
-        if not hasattr(self, "classrooms_filter_need_now"):
+    def _classrooms_rows_per_page_value(self) -> int:
+        label = self.classrooms_rows_per_page.currentText() if hasattr(self, "classrooms_rows_per_page") else "10 / page"
+        return _parse_int_or_none(label.split("/", 1)[0].strip()) or 10
+
+    def _classrooms_total_pages(self) -> int:
+        total = len(self.visible_classroom_management)
+        if total == 0:
+            return 1
+        rows_per_page = max(1, self._classrooms_rows_per_page_value())
+        return ((total - 1) // rows_per_page) + 1
+
+    def _classrooms_page_items(self) -> list[tuple[str, list[StaffingMetricRow]]]:
+        total_pages = self._classrooms_total_pages()
+        self.classrooms_current_page = max(1, min(self.classrooms_current_page, total_pages))
+        rows_per_page = max(1, self._classrooms_rows_per_page_value())
+        start = (self.classrooms_current_page - 1) * rows_per_page
+        return self.visible_classroom_management[start : start + rows_per_page]
+
+    def _refresh_classrooms_pagination(self) -> None:
+        if not hasattr(self, "classrooms_result_count"):
             return
-        active_filter_count = sum(
-            1
-            for checkbox in (
-                self.classrooms_filter_need_now,
-                self.classrooms_filter_coming,
-                self.classrooms_filter_filled,
-                self.classrooms_filter_dont_need,
-            )
-            if checkbox.isChecked()
-        )
-        if self.classrooms_filter_open_positions.currentText() != "All":
+        total = len(self.visible_classroom_management)
+        total_pages = self._classrooms_total_pages()
+        self.classrooms_current_page = max(1, min(self.classrooms_current_page, total_pages))
+        rows_per_page = max(1, self._classrooms_rows_per_page_value())
+        if total:
+            start = ((self.classrooms_current_page - 1) * rows_per_page) + 1
+            end = min(start + rows_per_page - 1, total)
+            self.classrooms_result_count.setText(f"Showing {start} to {end} of {total} classrooms")
+        else:
+            self.classrooms_result_count.setText("Showing 0 to 0 of 0 classrooms")
+        self.classrooms_current_page_button.setText(str(self.classrooms_current_page))
+        self.classrooms_previous_page.setEnabled(self.classrooms_current_page > 1)
+        self.classrooms_next_page.setEnabled(self.classrooms_current_page < total_pages)
+
+    def _classrooms_rows_per_page_changed(self) -> None:
+        self.classrooms_current_page = 1
+        self._refresh_classrooms_table()
+
+    def _previous_classrooms_page(self) -> None:
+        if self.classrooms_current_page <= 1:
+            return
+        self.classrooms_current_page -= 1
+        self._refresh_classrooms_table()
+
+    def _next_classrooms_page(self) -> None:
+        if self.classrooms_current_page >= self._classrooms_total_pages():
+            return
+        self.classrooms_current_page += 1
+        self._refresh_classrooms_table()
+
+    def _refresh_classrooms_filter_count(self) -> None:
+        state = self.classrooms_applied_filter_state
+        status_defaults = {"need_now": True, "coming": True, "filled": True, "dont_need": True}
+        active_filter_count = 0
+        if any(bool(state.get(key, default)) != default for key, default in status_defaults.items()):
             active_filter_count += 1
-        if self.classrooms_filter_days_open.currentText() != "All":
+        if state.get("school", "All Schools") != "All Schools":
+            active_filter_count += 1
+        if state.get("program", "All Programs") != "All Programs":
+            active_filter_count += 1
+        if state.get("open_positions", "All") != "All":
+            active_filter_count += 1
+        if state.get("days_open", "All") != "All":
+            active_filter_count += 1
+        if state.get("permit", "All Permit Statuses") != "All Permit Statuses":
+            active_filter_count += 1
+        if state.get("assigned_staff", "All Staff") != "All Staff":
+            active_filter_count += 1
+        if state.get("sort_by", "Default Order") != "Default Order":
             active_filter_count += 1
         if hasattr(self, "classrooms_more_filters_button"):
             self.classrooms_more_filters_button.setText(f"Filters {active_filter_count}")
@@ -1300,29 +1759,74 @@ class StaffingDashboardV2Page:
             self.classrooms_filter_apply_button.style().polish(self.classrooms_filter_apply_button)
 
     def _classrooms_allowed_statuses(self) -> set[str]:
-        if not hasattr(self, "classrooms_filter_need_now"):
-            return {"Need Now", "Replace", "Coming", "Filled / Healthy", "Don't Need"}
+        state = self.classrooms_applied_filter_state
         allowed: set[str] = set()
-        if self.classrooms_filter_need_now.isChecked():
+        if state.get("need_now", True):
             allowed.update({"Need Now", "Replace"})
-        if self.classrooms_filter_coming.isChecked():
+        if state.get("coming", True):
             allowed.add("Coming")
-        if self.classrooms_filter_filled.isChecked():
-            allowed.add("Filled / Healthy")
-        if self.classrooms_filter_dont_need.isChecked():
+        if state.get("filled", True):
+            allowed.add("Filled")
+        if state.get("dont_need", True):
             allowed.add("Don't Need")
         return allowed
+
+    def _classroom_matches_days_range(self, rows: list[StaffingMetricRow], state: dict[str, Any]) -> bool:
+        lower = _parse_int_or_none(str(state.get("days_from", "")))
+        upper = _parse_int_or_none(str(state.get("days_to", "")))
+        days = [row.days_open for row in rows if row.days_open is not None and row.status in {"need_now", "replace"}]
+        if not days:
+            return False
+        return any((lower is None or day >= lower) and (upper is None or day <= upper) for day in days)
+
+    def _classrooms_sort_key(self, key: str, rows: list[StaffingMetricRow], sort_by: str) -> tuple[Any, ...]:
+        info = self._classroom_group_info(key, rows)
+        if sort_by == "Classroom (A to Z)":
+            return (str(info["classroom"]).casefold(), str(info["school"]).casefold())
+        if sort_by == "Open Positions (High to Low)":
+            open_count = sum(1 for row in rows if row.status in {"need_now", "replace"})
+            return (-open_count, str(info["classroom"]).casefold())
+        if sort_by == "Days Open (High to Low)":
+            max_days = max((row.days_open or 0 for row in rows if row.status in {"need_now", "replace"}), default=0)
+            return (-max_days, str(info["classroom"]).casefold())
+        return (str(info["school"]).casefold(), str(info["classroom"]).casefold())
+
+    def _classroom_group_info(self, key: str, rows: list[StaffingMetricRow]) -> dict[str, Any]:
+        if rows:
+            first = rows[0]
+            return {
+                "school": first.school,
+                "classroom": first.classroom,
+                "program": first.classroom_program,
+                "capacity": first.classroom_capacity,
+            }
+        record = getattr(self, "classroom_records_by_key", {}).get(key)
+        if record is None:
+            school, _separator, classroom = key.partition("\u241f")
+            return {"school": school, "classroom": classroom, "program": "", "capacity": None}
+        return {
+            "school": record.school,
+            "classroom": record.name,
+            "program": record.program,
+            "capacity": record.licensed_capacity,
+        }
 
     def _refresh_classrooms_metrics(self) -> None:
         while self.classrooms_metrics_layout.count():
             item = self.classrooms_metrics_layout.takeAt(0)
             widget = item.widget()
             if widget is not None:
+                widget.setObjectName("StaffingV2ClassroomsMetricCardStale")
                 widget.deleteLater()
-        groups = list(self.classroom_management_rows.values())
-        capacities = [rows[0].classroom_capacity for rows in groups if rows and rows[0].classroom_capacity is not None]
-        total_positions = sum(len(rows) for rows in groups)
-        open_positions = sum(1 for rows in groups for row in rows if row.status in {"need_now", "replace"})
+        groups = list(self.classroom_management_rows.items())
+        capacities = [
+            info["capacity"]
+            for key, rows in groups
+            for info in [self._classroom_group_info(key, rows)]
+            if info["capacity"] is not None
+        ]
+        total_positions = sum(len(rows) for _key, rows in groups)
+        open_positions = sum(1 for _key, rows in groups for row in rows if row.status in {"need_now", "replace"})
         cards = [
             ("Total Classrooms", str(len(groups))),
             ("Active", str(len(groups))),
@@ -1337,58 +1841,104 @@ class StaffingDashboardV2Page:
 
     def _refresh_classrooms_table(self) -> None:
         self.classrooms_table.setRowCount(0)
-        for key, rows in self.visible_classroom_management:
-            first = rows[0]
+        self.classrooms_table.horizontalScrollBar().setValue(0)
+        page_items = self._classrooms_page_items()
+        for key, rows in page_items:
+            info = self._classroom_group_info(key, rows)
             row_index = self.classrooms_table.rowCount()
             self.classrooms_table.insertRow(row_index)
             total = len(rows)
             filled = sum(1 for row in rows if row.status == "filled")
             open_count = sum(1 for row in rows if row.status in {"need_now", "replace"})
             values = [
-                first.classroom,
-                first.school,
-                first.classroom_program or "-",
-                "" if first.classroom_capacity is None else str(first.classroom_capacity),
+                info["classroom"],
+                info["school"],
+                info["program"] or "-",
+                "" if info["capacity"] is None else str(info["capacity"]),
                 str(total),
                 str(filled),
                 str(open_count),
-                _classroom_priority_status(rows),
+                _classroom_priority_status(rows) if rows else "Don't Need",
                 "Yes",
             ]
             for column, value in enumerate(values):
                 item = self.QtWidgets.QTableWidgetItem(value)
                 item.setData(self.QtCore.Qt.ItemDataRole.UserRole, key)
                 self.classrooms_table.setItem(row_index, column, item)
+            status_value = values[7]
+            status_chip = self._table_chip(status_value, _status_from_label(status_value))
+            self.classrooms_table.setCellWidget(row_index, 7, status_chip)
+            active_chip = self._table_chip("Yes", "healthy")
+            self.classrooms_table.setCellWidget(row_index, 8, active_chip)
             view = self.QtWidgets.QPushButton("View")
             view.setObjectName("StaffingV2ClassroomsRowView")
             view.setProperty("classroomKey", key)
             self._set_button_icon(view, "info")
-            view.setEnabled(False)
+            view.clicked.connect(lambda _checked=False, classroom_key=key: self._select_classroom_management_by_key(classroom_key))
             self.classrooms_table.setCellWidget(row_index, 9, view)
+        self._refresh_classrooms_pagination()
         if self.classrooms_table.rowCount():
             self.classrooms_table.setCurrentCell(0, 0)
+            self.classrooms_table.horizontalScrollBar().setValue(0)
+            self.QtCore.QTimer.singleShot(0, lambda: self.classrooms_table.horizontalScrollBar().setValue(0))
             self._select_classroom_management(0)
         else:
-            self._render_classroom_management_detail([])
+            self._render_classroom_management_detail("", [])
+
+    def _table_chip(self, text: str, status: str) -> Any:
+        label = self._label(text, _chip_object_name(status))
+        label.setWordWrap(False)
+        label.setAlignment(self.QtCore.Qt.AlignmentFlag.AlignCenter)
+        label.setMinimumHeight(28)
+        label.setToolTip(text)
+        return label
 
     def _select_classroom_management(self, row_index: int) -> None:
-        if row_index < 0 or row_index >= len(self.visible_classroom_management):
-            self._render_classroom_management_detail([])
+        page_items = self._classrooms_page_items()
+        if row_index < 0 or row_index >= len(page_items):
+            self._render_classroom_management_detail("", [])
             return
-        self._render_classroom_management_detail(self.visible_classroom_management[row_index][1])
+        self._render_classroom_management_detail(page_items[row_index][0], page_items[row_index][1])
 
-    def _render_classroom_management_detail(self, rows: list[StaffingMetricRow]) -> None:
+    def _select_classroom_management_by_key(self, classroom_key: str) -> None:
+        for key, rows in self.visible_classroom_management:
+            if key == classroom_key:
+                self._render_classroom_management_detail(key, rows)
+                return
+        self._render_classroom_management_detail("", [])
+
+    def _render_classroom_management_detail(self, key: str, rows: list[StaffingMetricRow]) -> None:
+        self._mark_layout_widgets_stale(self.classrooms_detail_layout)
         self._clear_layout(self.classrooms_detail_layout)
-        if not rows:
+        if not key:
             self.classrooms_detail_layout.addWidget(self._label("No classroom selected", "StaffingV2Muted"))
             return
-        first = rows[0]
+        self.selected_classroom_management_key = key
+        info = self._classroom_group_info(key, rows)
+        record = getattr(self, "classroom_records_by_key", {}).get(key)
         self.classrooms_detail_layout.addWidget(self._label("Classroom Detail", "StaffingV2SectionTitle"))
-        self.classrooms_detail_layout.addWidget(self._label(first.classroom, "StaffingV2ClassroomsDetailName"))
+        self.classrooms_detail_layout.addWidget(self._label(str(info["classroom"]), "StaffingV2ClassroomsDetailName"))
         overview, overview_layout = self._panel("StaffingV2ClassroomsDetailCard")
-        overview_layout.addLayout(self._detail_row("School", first.school))
-        overview_layout.addLayout(self._detail_row("Program", first.classroom_program or "-"))
-        overview_layout.addLayout(self._detail_row("Licensed Capacity", "" if first.classroom_capacity is None else str(first.classroom_capacity)))
+        school = self.QtWidgets.QComboBox()
+        school.setObjectName("StaffingV2ClassroomsDetailSchoolEdit")
+        school.addItems(sorted({classroom.school for classroom in self.store.list_classrooms() if classroom.school}) or [str(info["school"])])
+        school.setCurrentText(str(info["school"]))
+        overview_layout.addLayout(self._labeled_control("School", school))
+        name = self.QtWidgets.QLineEdit(str(info["classroom"]))
+        name.setObjectName("StaffingV2ClassroomsDetailNameEdit")
+        overview_layout.addLayout(self._labeled_control("Classroom", name))
+        program = self.QtWidgets.QComboBox()
+        program.setObjectName("StaffingV2ClassroomsDetailProgramEdit")
+        program.setEditable(True)
+        program.addItems(["", "Preschool", "Infant", "Toddler", "Pre-K", "Support", "Other"])
+        program.setCurrentText(str(info["program"] or ""))
+        overview_layout.addLayout(self._labeled_control("Program", program))
+        capacity = self.QtWidgets.QLineEdit("" if info["capacity"] is None else str(info["capacity"]))
+        capacity.setObjectName("StaffingV2ClassroomsDetailCapacityEdit")
+        overview_layout.addLayout(self._labeled_control("Licensed Capacity", capacity))
+        display_order = self.QtWidgets.QLineEdit(str(record.display_order if record is not None else 0))
+        display_order.setObjectName("StaffingV2ClassroomsDetailDisplayOrderEdit")
+        overview_layout.addLayout(self._labeled_control("Display Order", display_order))
         overview_layout.addLayout(self._detail_row("Current Priority", _classroom_priority_status(rows)))
         self.classrooms_detail_layout.addWidget(overview)
 
@@ -1397,10 +1947,17 @@ class StaffingDashboardV2Page:
         open_count = sum(1 for row in rows if row.status in {"need_now", "replace"})
         summary, summary_layout = self._panel("StaffingV2ClassroomsDetailCard")
         summary_layout.addWidget(self._label("Staffing Summary", "StaffingV2SectionTitle"))
-        summary_layout.addLayout(self._detail_row("Total Positions", str(total)))
-        summary_layout.addLayout(self._detail_row("Filled", str(filled)))
-        summary_layout.addLayout(self._detail_row("Open", str(open_count)))
-        summary_layout.addLayout(self._detail_row("Avg Days to Fill", _avg_open_days(rows)))
+        summary_cards = self.QtWidgets.QHBoxLayout()
+        for label, value in [
+            ("Total Positions", str(total)),
+            ("Filled", str(filled)),
+            ("Open", str(open_count)),
+            ("Avg Days to Fill", _avg_open_days(rows)),
+        ]:
+            summary_cards.addWidget(
+                self._metric_card(label, value, f"{label} {value}", "StaffingV2ClassroomsDetailMetricCard")
+            )
+        summary_layout.addLayout(summary_cards)
         self.classrooms_detail_layout.addWidget(summary)
 
         positions, positions_layout = self._panel("StaffingV2ClassroomsDetailCard")
@@ -1412,20 +1969,69 @@ class StaffingDashboardV2Page:
         self.classrooms_detail_layout.addWidget(positions, 1)
 
         footer = self.QtWidgets.QHBoxLayout()
+        status = self._label("", "StaffingV2Muted")
+        status.setObjectName("StaffingV2ClassroomsDetailStatus")
         deactivate = self.QtWidgets.QPushButton("Deactivate Classroom")
         deactivate.setObjectName("StaffingV2ClassroomsDeactivateButton")
         self._set_button_icon(deactivate, "status_need")
-        deactivate.setEnabled(False)
         save = self.QtWidgets.QPushButton("Save Changes")
         save.setObjectName("StaffingV2ClassroomsSaveButton")
         self._set_button_icon(save, "status_filled")
-        save.setEnabled(False)
+        save.setEnabled(record is not None)
+        deactivate.setEnabled(record is not None)
+        save.clicked.connect(lambda _checked=False: self._save_classroom_detail(record, school, name, program, capacity, display_order, status))
+        deactivate.clicked.connect(lambda _checked=False: self._deactivate_selected_classroom(record, status))
+        self.classrooms_detail_layout.addWidget(status)
         footer.addWidget(deactivate)
         footer.addStretch(1)
         footer.addWidget(save)
         self.classrooms_detail_layout.addLayout(footer)
 
+    def _save_classroom_detail(
+        self,
+        record: StaffingClassroom | None,
+        school: Any,
+        name: Any,
+        program: Any,
+        capacity: Any,
+        display_order: Any,
+        status: Any,
+    ) -> None:
+        if record is None:
+            status.setText("Classroom record not found.")
+            return
+        try:
+            capacity_value = None
+            if capacity.text().strip():
+                capacity_value = int(capacity.text().strip())
+            display_order_value = int(display_order.text().strip() or "0")
+            updated = self.service_factory().update_classroom(
+                classroom_id=record.id,
+                school=school.currentText(),
+                name=name.text(),
+                program=program.currentText(),
+                licensed_capacity=capacity_value,
+                display_order=display_order_value,
+            )
+        except ValueError as exc:
+            status.setText(str(exc))
+            return
+        self.refresh()
+        self._select_classroom_management_by_key(f"{updated.school}\u241f{updated.name}")
+
+    def _deactivate_selected_classroom(self, record: StaffingClassroom | None, status: Any) -> None:
+        if record is None:
+            status.setText("Classroom record not found.")
+            return
+        try:
+            self.service_factory().deactivate_classroom(record.id)
+        except ValueError as exc:
+            status.setText(str(exc))
+            return
+        self.refresh()
+
     def _refresh_classrooms_validation_panel(self) -> None:
+        self._mark_layout_widgets_stale(self.classrooms_validation_layout)
         self._clear_layout(self.classrooms_validation_layout)
         self.classrooms_validation_layout.addWidget(self._label("Classroom Validation & Health", "StaffingV2SectionTitle"))
         groups = list(self.classroom_management_rows.values())
@@ -1441,8 +2047,25 @@ class StaffingDashboardV2Page:
             ("Classrooms with no positions", no_positions),
             ("Other issues", 0),
         ]:
-            row.addWidget(self._metric_card(label, str(value), f"{label} {value}", "StaffingV2ClassroomsMetricCard"))
+            card = self._metric_card(label, str(value), f"{label} {value}", "StaffingV2ClassroomsHealthCard")
+            variant = "success" if value == 0 else "danger" if "no positions" in label.casefold() else "warning"
+            card.setProperty("staffingV2HealthVariant", variant)
+            row.addWidget(card)
         self.classrooms_validation_layout.addLayout(row)
+
+    def _mark_layout_widgets_stale(self, layout: Any) -> None:
+        for index in range(layout.count()):
+            item = layout.itemAt(index)
+            child_layout = item.layout()
+            widget = item.widget()
+            if widget is not None and widget.objectName() in {
+                "StaffingV2ClassroomsHealthCard",
+                "StaffingV2ClassroomsMetricCard",
+                "StaffingV2ClassroomsDetailMetricCard",
+            }:
+                widget.setObjectName(f"{widget.objectName()}Stale")
+            if child_layout is not None:
+                self._mark_layout_widgets_stale(child_layout)
 
     def _build_validation_view(self) -> None:
         self.validation_view = self.QtWidgets.QWidget()
@@ -1471,7 +2094,7 @@ class StaffingDashboardV2Page:
         export = self.QtWidgets.QPushButton("Export Report")
         export.setObjectName("StaffingV2ValidationExportButton")
         self._set_button_icon(export, "export")
-        export.setEnabled(False)
+        export.clicked.connect(self._open_validation_export_dialog)
         header.addWidget(export)
         main_layout.addLayout(header)
 
@@ -1634,7 +2257,7 @@ class StaffingDashboardV2Page:
         self.filter_drawer_layout.addWidget(self.validation_severity_info)
         self.validation_issue_type_filter = self._validation_filter_combo(
             "StaffingV2FilterIssueType",
-            ["All Types", "Coverage", "Upcoming", "Compliance"],
+            ["All Types", "Coverage", "Upcoming", "Compliance", "Lifecycle"],
         )
         self.filter_drawer_layout.addLayout(self._labeled_control("Issue Type", self.validation_issue_type_filter))
         self.validation_detected_date_filter = self._validation_filter_combo(
@@ -1797,7 +2420,9 @@ class StaffingDashboardV2Page:
             view.setObjectName("StaffingV2ValidationViewButton")
             view.setProperty("assignmentId", issue["assignment_id"])
             self._set_button_icon(view, "info")
-            view.setEnabled(False)
+            view.clicked.connect(
+                lambda _checked=False, item=issue["assignment_id"]: self._show_position_drawer(item)
+            )
             self.validation_table.setCellWidget(row_index, 6, view)
 
     def _refresh_validation_right_panel(self) -> None:
@@ -1818,7 +2443,12 @@ class StaffingDashboardV2Page:
             button = self.QtWidgets.QPushButton(text)
             button.setObjectName(object_name)
             self._set_button_icon(button, icon_key)
-            button.setEnabled(False)
+            if object_name == "StaffingV2ValidationRunFullButton":
+                button.clicked.connect(self.refresh)
+            elif object_name == "StaffingV2ValidationExportQuickButton":
+                button.clicked.connect(self._open_validation_export_dialog)
+            elif object_name == "StaffingV2ValidationRulesButton":
+                button.clicked.connect(self._open_validation_rules_dialog)
             actions_layout.addWidget(button)
         self.validation_right_layout.addWidget(actions)
         about, about_layout = self._panel("StaffingV2ValidationSideCard")
@@ -1826,12 +2456,727 @@ class StaffingDashboardV2Page:
         about_layout.addWidget(self._label("Validation checks staffing coverage, permit status, position lifecycle, and start-date requirements."))
         self.validation_right_layout.addWidget(about, 1)
 
+    def _open_validation_rules_dialog(self) -> None:
+        dialog = self.QtWidgets.QDialog(self.widget)
+        dialog.setObjectName("StaffingV2ValidationRulesDialog")
+        dialog.setWindowTitle("Validation Rules")
+        dialog.setModal(True)
+        dialog.resize(520, 440)
+        layout = self.QtWidgets.QVBoxLayout(dialog)
+        layout.setContentsMargins(22, 18, 22, 18)
+        layout.setSpacing(12)
+
+        header = self.QtWidgets.QHBoxLayout()
+        title_column = self.QtWidgets.QVBoxLayout()
+        title_column.addWidget(self._label("Validation Rules", "StaffingV2DrawerTitle"))
+        title_column.addWidget(self._label("Read-only staffing validation checks used by Staffing v2.", "StaffingV2Muted"))
+        header.addLayout(title_column, 1)
+        close = self.QtWidgets.QPushButton("")
+        close.setObjectName("StaffingV2ValidationRulesClose")
+        self._set_button_icon(close, "close")
+        close.clicked.connect(dialog.close)
+        header.addWidget(close)
+        layout.addLayout(header)
+
+        rules, rules_layout = self._dialog_section("StaffingV2DialogInfo")
+        for title, detail in [
+            ("Coverage", "Need Now and Replace positions must have open-cycle visibility and be counted as open."),
+            ("Permit Status", "Filled and Coming assignments should have a known permit status when a person is assigned."),
+            ("Upcoming Start Dates", "Coming assignments require a start date before they can be marked filled."),
+            ("Lifecycle Integrity", "Open cycles should map to one valid classroom and avoid duplicate active history records."),
+        ]:
+            rules_layout.addWidget(self._label(title, "StaffingV2SectionTitle"))
+            rules_layout.addWidget(self._label(detail, "StaffingV2Muted"))
+        layout.addWidget(rules)
+
+        footer = self.QtWidgets.QHBoxLayout()
+        footer.addStretch(1)
+        done = self.QtWidgets.QPushButton("Close")
+        done.setObjectName("StaffingV2SecondaryButton")
+        done.clicked.connect(dialog.accept)
+        footer.addWidget(done)
+        layout.addLayout(footer)
+        dialog.show()
+
+    def _open_validation_export_dialog(self) -> None:
+        dialog = self.QtWidgets.QDialog(self.widget)
+        dialog.setObjectName("StaffingV2ValidationExportDialog")
+        dialog.setWindowTitle("Export Validation Report")
+        dialog.setModal(True)
+        dialog.resize(560, 460)
+        layout = self.QtWidgets.QVBoxLayout(dialog)
+        layout.setContentsMargins(22, 18, 22, 18)
+        layout.setSpacing(12)
+
+        header = self.QtWidgets.QHBoxLayout()
+        title_column = self.QtWidgets.QVBoxLayout()
+        title_column.addWidget(self._label("Export Validation Report", "StaffingV2DrawerTitle"))
+        title_column.addWidget(self._label("Preview the currently filtered validation report.", "StaffingV2Muted"))
+        header.addLayout(title_column, 1)
+        close = self.QtWidgets.QPushButton("")
+        close.setObjectName("StaffingV2ValidationExportClose")
+        self._set_button_icon(close, "close")
+        close.clicked.connect(dialog.close)
+        header.addWidget(close)
+        layout.addLayout(header)
+
+        issues = list(getattr(self, "visible_validation_issues", []))
+        critical = sum(1 for issue in issues if issue["severity"] == "Critical")
+        warning = sum(1 for issue in issues if issue["severity"] == "Warning")
+        info = sum(1 for issue in issues if issue["severity"] == "Info")
+        preview, preview_layout = self._dialog_section("StaffingV2DialogInfo")
+        for label, value in [
+            ("Total issues", str(len(issues))),
+            ("Critical", str(critical)),
+            ("Warning", str(warning)),
+            ("Info", str(info)),
+            ("School filter", self.validation_school_filter.currentText()),
+            ("Program filter", self.validation_program_filter.currentText()),
+        ]:
+            preview_layout.addLayout(self._detail_row(label, value))
+        for issue in issues[:8]:
+            summary = f"{issue['classroom']} - {issue['severity']} - {issue['details']}"
+            preview_layout.addLayout(self._detail_row(issue["issue"], summary))
+        if len(issues) > 8:
+            preview_layout.addLayout(self._detail_row("Additional issues", str(len(issues) - 8)))
+        layout.addWidget(preview)
+
+        footer = self.QtWidgets.QHBoxLayout()
+        footer.addStretch(1)
+        close_button = self.QtWidgets.QPushButton("Close")
+        close_button.setObjectName("StaffingV2SecondaryButton")
+        close_button.clicked.connect(dialog.accept)
+        footer.addWidget(close_button)
+        layout.addLayout(footer)
+        dialog.show()
+
+    def _build_notifications_view(self) -> None:
+        self.notifications_view = self.QtWidgets.QWidget()
+        self.notifications_view.setObjectName("StaffingV2NotificationsDashboard")
+        outer = self.QtWidgets.QHBoxLayout(self.notifications_view)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(14)
+        self.page_stack.addWidget(self.notifications_view)
+
+        left, left_layout = self._panel("StaffingV2NotificationPanel")
+        left.setMinimumWidth(520)
+        outer.addWidget(left, 3)
+        header = self.QtWidgets.QHBoxLayout()
+        title_block = self.QtWidgets.QVBoxLayout()
+        title_block.addWidget(self._label("Notifications", "StaffingV2NotificationsTitle"))
+        title_block.addWidget(
+            self._label("Manage staffing notification rule cards, recipients, and email previews.", "StaffingV2Muted")
+        )
+        header.addLayout(title_block, 1)
+        self.notifications_rule_count = self._label("0 rules", "StaffingV2NotificationsRuleCount")
+        header.addWidget(self.notifications_rule_count)
+        left_layout.addLayout(header)
+
+        filters = self.QtWidgets.QHBoxLayout()
+        self.notifications_event_filter = self.QtWidgets.QComboBox()
+        self.notifications_event_filter.setObjectName("StaffingV2NotificationsEventFilter")
+        self.notifications_event_filter.setMinimumWidth(115)
+        self.notifications_event_filter.currentIndexChanged.connect(self._refresh_notification_filters)
+        filters.addWidget(self.notifications_event_filter)
+        self.notifications_enabled_filter = self.QtWidgets.QComboBox()
+        self.notifications_enabled_filter.setObjectName("StaffingV2NotificationsEnabledFilter")
+        self.notifications_enabled_filter.addItems(["All statuses", "Enabled", "Disabled"])
+        self.notifications_enabled_filter.setMinimumWidth(115)
+        self.notifications_enabled_filter.currentIndexChanged.connect(self._refresh_notification_filters)
+        filters.addWidget(self.notifications_enabled_filter)
+        self.notifications_timing_filter = self.QtWidgets.QComboBox()
+        self.notifications_timing_filter.setObjectName("StaffingV2NotificationsTimingFilter")
+        self.notifications_timing_filter.addItems(["All timings", "Event", "Reference date"])
+        self.notifications_timing_filter.setMinimumWidth(115)
+        self.notifications_timing_filter.currentIndexChanged.connect(self._refresh_notification_filters)
+        filters.addWidget(self.notifications_timing_filter)
+        self.notifications_recipients_filter = self.QtWidgets.QComboBox()
+        self.notifications_recipients_filter.setObjectName("StaffingV2NotificationsRecipientsFilter")
+        self.notifications_recipients_filter.addItems(["All recipients", "Has recipients", "No recipients"])
+        self.notifications_recipients_filter.setMinimumWidth(125)
+        self.notifications_recipients_filter.currentIndexChanged.connect(self._refresh_notification_filters)
+        filters.addWidget(self.notifications_recipients_filter)
+        self.notifications_template_filter = self.QtWidgets.QComboBox()
+        self.notifications_template_filter.setObjectName("StaffingV2NotificationsTemplateFilter")
+        self.notifications_template_filter.addItems(["All templates", "Complete templates", "Missing subject", "Missing body"])
+        self.notifications_template_filter.setMinimumWidth(125)
+        self.notifications_template_filter.currentIndexChanged.connect(self._refresh_notification_filters)
+        filters.addWidget(self.notifications_template_filter)
+        self.notifications_sort = self.QtWidgets.QComboBox()
+        self.notifications_sort.setObjectName("StaffingV2NotificationsSort")
+        self.notifications_sort.addItems(["Event sort", "Recipients sort", "Status sort"])
+        self.notifications_sort.setMinimumWidth(110)
+        self.notifications_sort.currentIndexChanged.connect(self._refresh_notification_filters)
+        filters.addWidget(self.notifications_sort)
+        self.notifications_view_toggle = self.QtWidgets.QComboBox()
+        self.notifications_view_toggle.setObjectName("StaffingV2NotificationsViewToggle")
+        self.notifications_view_toggle.addItems(["List", "Grid"])
+        self.notifications_view_toggle.setMinimumWidth(75)
+        self.notifications_view_toggle.currentIndexChanged.connect(self._set_notification_view_mode)
+        filters.addWidget(self.notifications_view_toggle)
+        clear_filters = self.QtWidgets.QPushButton("Clear filters")
+        clear_filters.setObjectName("StaffingV2NotificationsClearFilters")
+        clear_filters.clicked.connect(self._clear_notification_filters)
+        filters.addWidget(clear_filters)
+        filters.addStretch(1)
+        self.notifications_create_button = self.QtWidgets.QPushButton("Create / Modify")
+        self.notifications_create_button.setObjectName("StaffingV2NotificationsCreateButton")
+        self._set_button_icon(self.notifications_create_button, "add")
+        self.notifications_create_button.clicked.connect(self._create_notification_rule)
+        filters.addWidget(self.notifications_create_button)
+        left_layout.addLayout(filters)
+
+        self.notifications_rule_list = self.QtWidgets.QListWidget()
+        self.notifications_rule_list.setObjectName("StaffingV2NotificationsRuleList")
+        self.notifications_rule_list.currentRowChanged.connect(self._select_notification_rule_from_list)
+        left_layout.addWidget(self.notifications_rule_list, 1)
+
+        right, right_layout = self._panel("StaffingV2NotificationEditor")
+        right.setMinimumWidth(520)
+        outer.addWidget(right, 2)
+        right_layout.addWidget(self._label("Edit Notification Rule", "StaffingV2NotificationEditorTitle"))
+        self.notifications_status = self._label("", "StaffingV2NotificationsStatus")
+        right_layout.addWidget(self.notifications_status)
+
+        form = self.QtWidgets.QFormLayout()
+        self.notification_rule_label = self.QtWidgets.QLineEdit()
+        self.notification_rule_label.setObjectName("StaffingV2NotificationRuleLabel")
+        self.notification_rule_event = self.QtWidgets.QComboBox()
+        self.notification_rule_event.setObjectName("StaffingV2NotificationRuleEvent")
+        self.notification_rule_event.setEditable(True)
+        self.notification_rule_enabled = self.QtWidgets.QCheckBox("Enabled")
+        self.notification_rule_enabled.setObjectName("StaffingV2NotificationEnabled")
+        self.notification_rule_timing = self.QtWidgets.QComboBox()
+        self.notification_rule_timing.setObjectName("StaffingV2NotificationTiming")
+        self.notification_rule_timing.addItems(["Event", "Reference date"])
+        self.notification_rule_date_field = self.QtWidgets.QLineEdit()
+        self.notification_rule_date_field.setObjectName("StaffingV2NotificationDateField")
+        self.notification_rule_date_field.setPlaceholderText("start_date")
+        self.notification_rule_offset = self.QtWidgets.QSpinBox()
+        self.notification_rule_offset.setObjectName("StaffingV2NotificationOffsetDays")
+        self.notification_rule_offset.setRange(0, 365)
+        self.notification_rule_recipients = self.QtWidgets.QLineEdit()
+        self.notification_rule_recipients.setObjectName("StaffingV2NotificationRecipients")
+        self.notification_rule_recipients.setPlaceholderText("Custom Name <name@example.com>")
+        self.notification_rule_subject = self.QtWidgets.QLineEdit()
+        self.notification_rule_subject.setObjectName("StaffingV2NotificationSubject")
+        self.notification_rule_body = self.QtWidgets.QPlainTextEdit()
+        self.notification_rule_body.setObjectName("StaffingV2NotificationBody")
+        self.notification_rule_body.setMinimumHeight(150)
+        self.notification_rule_label.textChanged.connect(self._sync_notification_rule_validation)
+        self.notification_rule_event.currentTextChanged.connect(self._sync_notification_rule_validation)
+        self.notification_rule_enabled.toggled.connect(self._sync_notification_rule_validation)
+        self.notification_rule_timing.currentTextChanged.connect(self._sync_notification_rule_validation)
+        self.notification_rule_date_field.textChanged.connect(self._sync_notification_rule_validation)
+        self.notification_rule_offset.valueChanged.connect(self._sync_notification_rule_validation)
+        self.notification_rule_subject.textChanged.connect(self._sync_notification_rule_validation)
+        self.notification_rule_body.textChanged.connect(self._sync_notification_rule_validation)
+        form.addRow("Label", self.notification_rule_label)
+        form.addRow("Event", self.notification_rule_event)
+        form.addRow("Enabled", self.notification_rule_enabled)
+        form.addRow("Timing", self.notification_rule_timing)
+        form.addRow("Date field", self.notification_rule_date_field)
+        form.addRow("Offset days", self.notification_rule_offset)
+        recipient_row = self.QtWidgets.QHBoxLayout()
+        recipient_row.addWidget(self.notification_rule_recipients, 1)
+        self.notification_recipient_add = self.QtWidgets.QPushButton("Add")
+        self.notification_recipient_add.setObjectName("StaffingV2NotificationRecipientAdd")
+        self.notification_recipient_add.clicked.connect(self._add_notification_recipient_from_text)
+        recipient_row.addWidget(self.notification_recipient_add)
+        self.notification_recipient_candidate = self.QtWidgets.QPushButton("Candidate")
+        self.notification_recipient_candidate.setObjectName("StaffingV2NotificationRecipientCandidate")
+        self.notification_recipient_candidate.clicked.connect(lambda _checked=False: self._add_notification_role_recipient("candidate"))
+        recipient_row.addWidget(self.notification_recipient_candidate)
+        self.notification_recipient_hiring_manager = self.QtWidgets.QPushButton("Hiring Manager")
+        self.notification_recipient_hiring_manager.setObjectName("StaffingV2NotificationRecipientHiringManager")
+        self.notification_recipient_hiring_manager.clicked.connect(
+            lambda _checked=False: self._add_notification_role_recipient("hiring_manager")
+        )
+        recipient_row.addWidget(self.notification_recipient_hiring_manager)
+        self.notification_recipient_director = self.QtWidgets.QPushButton("Director")
+        self.notification_recipient_director.setObjectName("StaffingV2NotificationRecipientDirector")
+        self.notification_recipient_director.clicked.connect(lambda _checked=False: self._add_notification_role_recipient("director"))
+        recipient_row.addWidget(self.notification_recipient_director)
+        self.notification_recipient_executive_director = self.QtWidgets.QPushButton("Executive Director")
+        self.notification_recipient_executive_director.setObjectName("StaffingV2NotificationRecipientExecutiveDirector")
+        self.notification_recipient_executive_director.clicked.connect(
+            lambda _checked=False: self._add_notification_role_recipient("executive_director")
+        )
+        recipient_row.addWidget(self.notification_recipient_executive_director)
+        form.addRow("Recipients", recipient_row)
+        form.addRow("Subject", self.notification_rule_subject)
+        form.addRow("Body", self.notification_rule_body)
+        right_layout.addLayout(form)
+        self.notification_recipient_chips, self.notification_recipient_chips_layout = self._panel("StaffingV2NotificationRecipientChips")
+        self.notification_recipient_chips_layout.addWidget(self._label("Recipients", "StaffingV2SectionTitle"))
+        right_layout.addWidget(self.notification_recipient_chips)
+
+        subject_tools = self.QtWidgets.QHBoxLayout()
+        subject_tools.addWidget(self._label("Subject variables", "StaffingV2Muted"))
+        for variable in ("position_name", "person_name", "school", "company_name"):
+            button = self.QtWidgets.QPushButton(f"{{{variable}}}")
+            button.setObjectName(f"StaffingV2NotificationSubjectVariable_{variable}")
+            button.clicked.connect(lambda _checked=False, token=f"{{{variable}}}": self._insert_notification_subject_variable(token))
+            subject_tools.addWidget(button)
+        subject_tools.addStretch(1)
+        right_layout.addLayout(subject_tools)
+
+        body_tools = self.QtWidgets.QHBoxLayout()
+        for label, object_name, snippet in (
+            ("Bold", "StaffingV2NotificationBodyBold", "**bold text**"),
+            ("Italic", "StaffingV2NotificationBodyItalic", "_italic text_"),
+            ("Bullets", "StaffingV2NotificationBodyBullets", "\n- list item"),
+            ("Link", "StaffingV2NotificationBodyLink", "[link text](https://example.com)"),
+            ("Code", "StaffingV2NotificationBodyCode", "`code`"),
+            ("Variables", "StaffingV2NotificationBodyVariables", "{position_name}"),
+        ):
+            button = self.QtWidgets.QPushButton(label)
+            button.setObjectName(object_name)
+            button.clicked.connect(lambda _checked=False, text=snippet: self._insert_notification_body_text(text))
+            body_tools.addWidget(button)
+        body_tools.addStretch(1)
+        right_layout.addLayout(body_tools)
+
+        self.notification_variables_panel, variables_layout = self._panel("StaffingV2NotificationVariablesPanel")
+        variables_layout.addWidget(self._label("Variables Preview", "StaffingV2SectionTitle"))
+        self.notification_variables_preview = self._label("", "StaffingV2NotificationVariablesPreview")
+        variables_layout.addWidget(self.notification_variables_preview)
+        variable_buttons = self.QtWidgets.QGridLayout()
+        for index, variable in enumerate(NOTIFICATION_TEMPLATE_FIELDS[:12]):
+            button = self.QtWidgets.QPushButton(f"{{{variable}}}")
+            button.setObjectName(f"StaffingV2NotificationVariable_{variable}")
+            button.setMinimumWidth(120)
+            button.clicked.connect(lambda _checked=False, token=f"{{{variable}}}": self._insert_notification_body_text(token))
+            variable_buttons.addWidget(button, index // 3, index % 3)
+        variables_layout.addLayout(variable_buttons)
+        right_layout.addWidget(self.notification_variables_panel)
+        self.notification_validation_panel, validation_layout = self._panel("StaffingV2NotificationValidationPanel")
+        validation_layout.addWidget(self._label("Validation", "StaffingV2SectionTitle"))
+        self.notification_validation = self._label("", "StaffingV2NotificationValidation")
+        validation_layout.addWidget(self.notification_validation)
+        right_layout.addWidget(self.notification_validation_panel)
+        self.notification_audit_panel, audit_layout = self._panel("StaffingV2NotificationAuditPanel")
+        audit_layout.addWidget(self._label("Recent Sends", "StaffingV2SectionTitle"))
+        self.notification_audit_summary = self._label("", "StaffingV2NotificationAuditSummary")
+        audit_layout.addWidget(self.notification_audit_summary)
+        right_layout.addWidget(self.notification_audit_panel)
+
+        actions = self.QtWidgets.QHBoxLayout()
+        self.notification_delete = self.QtWidgets.QPushButton("Delete Rule")
+        self.notification_delete.setObjectName("StaffingV2NotificationDelete")
+        self.notification_delete.clicked.connect(self._delete_notification_rule)
+        actions.addWidget(self.notification_delete)
+        actions.addStretch(1)
+        self.notification_preview = self.QtWidgets.QPushButton("Preview")
+        self.notification_preview.setObjectName("StaffingV2NotificationPreview")
+        self.notification_preview.clicked.connect(self._open_notification_preview_dialog)
+        actions.addWidget(self.notification_preview)
+        self.notification_test_send = self.QtWidgets.QPushButton("Send Test")
+        self.notification_test_send.setObjectName("StaffingV2NotificationSendTest")
+        self.notification_test_send.clicked.connect(self._send_notification_test)
+        actions.addWidget(self.notification_test_send)
+        self.notification_cancel = self.QtWidgets.QPushButton("Cancel")
+        self.notification_cancel.setObjectName("StaffingV2NotificationCancel")
+        self.notification_cancel.clicked.connect(self._cancel_notification_rule)
+        actions.addWidget(self.notification_cancel)
+        self.notification_save = self.QtWidgets.QPushButton("Save Changes")
+        self.notification_save.setObjectName("StaffingV2NotificationSave")
+        self._set_button_icon(self.notification_save, "export")
+        self.notification_save.clicked.connect(self._save_notification_rule)
+        actions.addWidget(self.notification_save)
+        right_layout.addLayout(actions)
+
+    def _refresh_notifications(self) -> None:
+        if not hasattr(self, "notifications_rule_list"):
+            return
+        store = self._notification_store()
+        if not store.list_rules():
+            store.ensure_default_rules()
+        self.notification_rules = [
+            rule for rule in store.list_rules() if _show_rule_in_staffing_v2_notifications(rule)
+        ]
+        self._sync_notification_filter_choices()
+        self._refresh_notification_filters()
+
+    def _sync_notification_filter_choices(self) -> None:
+        current_event = self.notifications_event_filter.currentText() or "All events"
+        self.notifications_event_filter.blockSignals(True)
+        self.notifications_event_filter.clear()
+        self.notifications_event_filter.addItem("All events")
+        for event_type in sorted({rule.event_type for rule in self.notification_rules if rule.event_type}):
+            self.notifications_event_filter.addItem(event_type)
+        index = self.notifications_event_filter.findText(current_event)
+        self.notifications_event_filter.setCurrentIndex(index if index >= 0 else 0)
+        self.notifications_event_filter.blockSignals(False)
+
+        current_rule_event = self.notification_rule_event.currentText()
+        self.notification_rule_event.blockSignals(True)
+        self.notification_rule_event.clear()
+        for event_type in [
+            "staffing.assignment.need_now",
+            "staffing.assignment.coming",
+            "staffing.assignment.filled",
+            "staffing.assignment.replace",
+            "staffing.assignment.not_needed",
+            "staffing.permit.updated",
+        ]:
+            self.notification_rule_event.addItem(event_type)
+        for event_type in sorted({rule.event_type for rule in self.notification_rules if rule.event_type}):
+            if self.notification_rule_event.findText(event_type) < 0:
+                self.notification_rule_event.addItem(event_type)
+        if current_rule_event:
+            self.notification_rule_event.setCurrentText(current_rule_event)
+        self.notification_rule_event.blockSignals(False)
+
+    def _refresh_notification_filters(self) -> None:
+        selected_event = self.notifications_event_filter.currentText()
+        selected_status = self.notifications_enabled_filter.currentText()
+        selected_timing = self.notifications_timing_filter.currentText()
+        selected_recipients = self.notifications_recipients_filter.currentText()
+        selected_template = self.notifications_template_filter.currentText()
+        self.visible_notification_rules = []
+        for rule in self.notification_rules:
+            active_recipients = [recipient for recipient in rule.recipients if recipient.active]
+            if selected_event != "All events" and rule.event_type != selected_event:
+                continue
+            if selected_status == "Enabled" and not rule.active:
+                continue
+            if selected_status == "Disabled" and rule.active:
+                continue
+            if selected_timing == "Event" and rule.trigger_timing != "event":
+                continue
+            if selected_timing == "Reference date" and rule.trigger_timing != "date_offset":
+                continue
+            if selected_recipients == "Has recipients" and not active_recipients:
+                continue
+            if selected_recipients == "No recipients" and active_recipients:
+                continue
+            if selected_template == "Complete templates" and (not rule.subject_template or not rule.body_template):
+                continue
+            if selected_template == "Missing subject" and rule.subject_template:
+                continue
+            if selected_template == "Missing body" and rule.body_template:
+                continue
+            self.visible_notification_rules.append(rule)
+        sort_text = self.notifications_sort.currentText()
+        if sort_text == "Recipients sort":
+            self.visible_notification_rules.sort(key=lambda item: (-len([r for r in item.recipients if r.active]), item.event_type))
+        elif sort_text == "Status sort":
+            self.visible_notification_rules.sort(key=lambda item: (not item.active, item.event_type, item.label))
+        else:
+            self.visible_notification_rules.sort(key=lambda item: (item.event_type, item.label))
+        self._refresh_notification_rule_list()
+
+    def _refresh_notification_rule_list(self) -> None:
+        self.notifications_rule_list.blockSignals(True)
+        self.notifications_rule_list.clear()
+        for rule in self.visible_notification_rules:
+            status = "Enabled" if rule.active else "Disabled"
+            timing = "Reference date" if rule.trigger_timing == "date_offset" else "Event"
+            recipient_count = sum(1 for recipient in rule.recipients if recipient.active)
+            template_status = _notification_validation_text(rule)
+            item = self.QtWidgets.QListWidgetItem(
+                f"{rule.label}\n{rule.event_type}\n{status} · {timing} · Recipients {recipient_count}\n"
+                f"Subject: {rule.subject_template or 'Missing subject template'}\n"
+                f"Body preview: {(rule.body_template or 'Missing body template')[:140]}\n{template_status}"
+            )
+            item.setData(self.QtCore.Qt.ItemDataRole.UserRole, rule.id)
+            self.notifications_rule_list.addItem(item)
+        self.notifications_rule_list.blockSignals(False)
+        self.notifications_rule_count.setText(f"{len(self.visible_notification_rules)} rules")
+        selected_index = 0
+        if self.selected_notification_rule_id is not None:
+            for index, rule in enumerate(self.visible_notification_rules):
+                if rule.id == self.selected_notification_rule_id:
+                    selected_index = index
+                    break
+        if self.visible_notification_rules:
+            self.notifications_rule_list.setCurrentRow(selected_index)
+            self._load_notification_rule(self.visible_notification_rules[selected_index])
+        else:
+            self._load_notification_rule(None)
+
+    def _select_notification_rule_from_list(self, row: int) -> None:
+        if row < 0 or row >= len(self.visible_notification_rules):
+            return
+        self._load_notification_rule(self.visible_notification_rules[row])
+
+    def _load_notification_rule(self, rule: NotificationRule | None) -> None:
+        if rule is None:
+            self.selected_notification_rule_id = None
+            self.notification_rule_label.clear()
+            self.notification_rule_event.setCurrentText("staffing.assignment.need_now")
+            self.notification_rule_enabled.setChecked(False)
+            self.notification_rule_timing.setCurrentText("Event")
+            self.notification_rule_date_field.clear()
+            self.notification_rule_offset.setValue(0)
+            self.notification_rule_recipients.clear()
+            self.notification_rule_subject.clear()
+            self.notification_rule_body.clear()
+            self.notification_selected_recipients = []
+            self._render_notification_recipient_chips()
+            self.notification_validation.setText("No rule selected.")
+            self.notification_variables_preview.setText("")
+            self.notification_audit_summary.setText("")
+            return
+        self.selected_notification_rule_id = rule.id
+        self.notification_rule_label.setText(rule.label)
+        self.notification_rule_event.setCurrentText(rule.event_type)
+        self.notification_rule_enabled.setChecked(rule.active)
+        self.notification_rule_timing.setCurrentText("Reference date" if rule.trigger_timing == "date_offset" else "Event")
+        self.notification_rule_date_field.setText(rule.date_field)
+        self.notification_rule_offset.setValue(int(rule.offset_days))
+        self.notification_selected_recipients = [recipient for recipient in rule.recipients if recipient.active]
+        self.notification_rule_recipients.setText("")
+        self._render_notification_recipient_chips()
+        self.notification_rule_subject.setText(rule.subject_template)
+        self.notification_rule_body.setPlainText(rule.body_template)
+        self._sync_notification_rule_validation()
+        self._refresh_notification_audit()
+
+    def _create_notification_rule(self) -> None:
+        self.selected_notification_rule_id = None
+        self._load_notification_rule(
+            NotificationRule(
+                event_type="staffing.assignment.need_now",
+                label="New notification rule",
+                subject_template="",
+                body_template="",
+                recipients=[],
+                active=False,
+                id=None,
+            )
+        )
+        self.notifications_status.setText("New notification rule ready.")
+        self._render_notification_recipient_chips()
+
+    def _save_notification_rule(self) -> None:
+        timing = "date_offset" if self.notification_rule_timing.currentText() == "Reference date" else "event"
+        rule = NotificationRule(
+            id=self.selected_notification_rule_id,
+            event_type=self.notification_rule_event.currentText(),
+            label=self.notification_rule_label.text(),
+            active=self.notification_rule_enabled.isChecked(),
+            trigger_timing=timing,
+            date_field=self.notification_rule_date_field.text(),
+            offset_days=self.notification_rule_offset.value(),
+            subject_template=self.notification_rule_subject.text(),
+            body_template=self.notification_rule_body.toPlainText(),
+            recipients=self._current_notification_recipients(),
+        )
+        try:
+            saved = self._notification_store().save_rule(rule)
+        except Exception as exc:  # noqa: BLE001 - surface existing store validation to operator.
+            self.notification_validation.setText(_safe_notification_error(exc))
+            self.notifications_status.setText("Notification rule was not saved.")
+            return
+        self.selected_notification_rule_id = saved.id
+        self.notifications_status.setText("Notification rule saved.")
+        self._refresh_notifications()
+
+    def _delete_notification_rule(self) -> None:
+        if self.selected_notification_rule_id is None:
+            return
+        self._notification_store().delete_rule(self.selected_notification_rule_id)
+        self.selected_notification_rule_id = None
+        self.notifications_status.setText("Notification rule deleted.")
+        self._refresh_notifications()
+
+    def _clear_notification_filters(self) -> None:
+        self.notifications_event_filter.setCurrentText("All events")
+        self.notifications_enabled_filter.setCurrentText("All statuses")
+        self.notifications_timing_filter.setCurrentText("All timings")
+        self.notifications_recipients_filter.setCurrentText("All recipients")
+        self.notifications_template_filter.setCurrentText("All templates")
+        self.notifications_sort.setCurrentText("Event sort")
+        self._refresh_notification_filters()
+
+    def _set_notification_view_mode(self) -> None:
+        mode = self.notifications_view_toggle.currentText().casefold()
+        self.notifications_rule_list.setProperty("staffingV2NotificationViewMode", mode)
+        self.notifications_rule_list.style().unpolish(self.notifications_rule_list)
+        self.notifications_rule_list.style().polish(self.notifications_rule_list)
+
+    def _current_notification_recipients(self) -> list[NotificationRecipient]:
+        typed = _parse_notification_recipients(self.notification_rule_recipients.text())
+        merged = [*self.notification_selected_recipients, *typed]
+        deduped: dict[str, NotificationRecipient] = {}
+        for recipient in merged:
+            key = _notification_recipient_key(recipient)
+            if key and key not in deduped:
+                deduped[key] = recipient
+        return list(deduped.values())
+
+    def _add_notification_recipient_from_text(self) -> None:
+        recipients = _parse_notification_recipients(self.notification_rule_recipients.text())
+        if not recipients:
+            return
+        existing = {_notification_recipient_key(recipient) for recipient in self.notification_selected_recipients}
+        self.notification_selected_recipients.extend(
+            [recipient for recipient in recipients if _notification_recipient_key(recipient) not in existing]
+        )
+        self.notification_rule_recipients.clear()
+        self._render_notification_recipient_chips()
+        self._sync_notification_rule_validation()
+
+    def _add_notification_role_recipient(self, role_key: str) -> None:
+        recipient = _notification_role_recipient(role_key)
+        existing = {_notification_recipient_key(item) for item in self.notification_selected_recipients}
+        key = _notification_recipient_key(recipient)
+        if key not in existing:
+            self.notification_selected_recipients.append(recipient)
+        self._render_notification_recipient_chips()
+        self._sync_notification_rule_validation()
+
+    def _render_notification_recipient_chips(self) -> None:
+        layout = getattr(self, "notification_recipient_chips_layout", None)
+        if layout is None:
+            return
+        self._clear_layout(layout)
+        layout.addWidget(self._label("Recipients", "StaffingV2SectionTitle"))
+        recipients = self._current_notification_recipients()
+        if not recipients:
+            layout.addWidget(self._label("No recipients configured.", "StaffingV2Muted"))
+            return
+        for recipient in recipients:
+            row = self.QtWidgets.QHBoxLayout()
+            text = _notification_recipient_display(recipient)
+            row.addWidget(self._label(text, "StaffingV2NeutralChip"))
+            remove = self.QtWidgets.QPushButton("Remove")
+            key = _notification_recipient_key(recipient)
+            remove.setObjectName(f"StaffingV2NotificationRecipientRemove_{_notification_recipient_remove_suffix(recipient)}")
+            remove.clicked.connect(lambda _checked=False, item_key=key: self._remove_notification_recipient(item_key))
+            row.addWidget(remove)
+            row.addStretch(1)
+            layout.addLayout(row)
+
+    def _remove_notification_recipient(self, recipient_key: str) -> None:
+        selected_key = str(recipient_key or "").strip()
+        self.notification_selected_recipients = [
+            recipient for recipient in self.notification_selected_recipients if _notification_recipient_key(recipient) != selected_key
+        ]
+        self._render_notification_recipient_chips()
+        self._sync_notification_rule_validation()
+
+    def _sync_notification_rule_validation(self) -> None:
+        if not hasattr(self, "notification_validation"):
+            return
+        rule = self._notification_rule_from_editor()
+        self.notification_validation.setText(_notification_validation_text(rule))
+        self.notification_variables_preview.setText("  ".join(f"{{{field}}}" for field in _notification_template_fields(rule)))
+
+    def _notification_rule_from_editor(self) -> NotificationRule:
+        timing = "date_offset" if self.notification_rule_timing.currentText() == "Reference date" else "event"
+        return NotificationRule(
+            id=self.selected_notification_rule_id,
+            event_type=self.notification_rule_event.currentText(),
+            label=self.notification_rule_label.text(),
+            active=self.notification_rule_enabled.isChecked(),
+            trigger_timing=timing,
+            date_field=self.notification_rule_date_field.text(),
+            offset_days=self.notification_rule_offset.value(),
+            subject_template=self.notification_rule_subject.text(),
+            body_template=self.notification_rule_body.toPlainText(),
+            recipients=self._current_notification_recipients(),
+        )
+
+    def _insert_notification_subject_variable(self, token: str) -> None:
+        text = self.notification_rule_subject.text()
+        position = self.notification_rule_subject.cursorPosition()
+        self.notification_rule_subject.setText(text[:position] + token + text[position:])
+        self.notification_rule_subject.setCursorPosition(position + len(token))
+        self._sync_notification_rule_validation()
+
+    def _insert_notification_body_text(self, text: str) -> None:
+        cursor = self.notification_rule_body.textCursor()
+        cursor.insertText(str(text or ""))
+        self.notification_rule_body.setTextCursor(cursor)
+        self._sync_notification_rule_validation()
+
+    def _open_notification_preview_dialog(self) -> None:
+        rule = self._notification_rule_from_editor()
+        sample = _notification_preview_sample()
+        subject, subject_unresolved = _render_notification_preview(rule.subject_template, sample)
+        body, body_unresolved = _render_notification_preview(rule.body_template, sample)
+        unresolved = sorted(set(subject_unresolved + body_unresolved))
+        dialog = self.QtWidgets.QDialog(self.widget)
+        dialog.setObjectName("StaffingV2NotificationPreviewDialog")
+        dialog.setWindowTitle("Notification Preview")
+        dialog.resize(620, 500)
+        layout = self.QtWidgets.QVBoxLayout(dialog)
+        layout.addWidget(self._label("Notification Preview", "StaffingV2DrawerTitle"))
+        layout.addWidget(self._label("Subject", "StaffingV2SectionTitle"))
+        layout.addWidget(self._label(subject or "(blank subject)", "StaffingV2Muted"))
+        layout.addWidget(self._label("Body", "StaffingV2SectionTitle"))
+        body_view = self.QtWidgets.QPlainTextEdit(body or "(blank body)")
+        body_view.setObjectName("StaffingV2NotificationPreviewBody")
+        body_view.setReadOnly(True)
+        layout.addWidget(body_view, 1)
+        if unresolved:
+            layout.addWidget(self._label(f"Unresolved variables: {', '.join(unresolved)}", "StaffingV2NeedNowChip"))
+        else:
+            layout.addWidget(self._label("All variables resolved.", "StaffingV2HealthyChip"))
+        close = self.QtWidgets.QPushButton("Close")
+        close.clicked.connect(dialog.accept)
+        layout.addWidget(close)
+        dialog.show()
+
+    def _send_notification_test(self) -> None:
+        if self.selected_notification_rule_id is None:
+            self.notifications_status.setText("Save the notification rule before sending a test.")
+            return
+        try:
+            service = self.notification_service_factory() if self.notification_service_factory else NotificationService(store=self._notification_store())
+            result = service.send_test(
+                int(self.selected_notification_rule_id),
+                _notification_preview_sample(),
+                (
+                    f"staffing-v2-test:{self.selected_notification_rule_id}:"
+                    f"{datetime.now(timezone.utc).isoformat()}"
+                ),
+            )
+        except Exception as exc:  # noqa: BLE001 - operator-facing status only.
+            self.notifications_status.setText(str(exc))
+            self._refresh_notification_audit()
+            return
+        self.notifications_status.setText(f"Test send {result.status}.")
+        self._refresh_notification_audit()
+
+    def _refresh_notification_audit(self) -> None:
+        if self.selected_notification_rule_id is None or not hasattr(self, "notification_audit_summary"):
+            return
+        store = self._notification_store()
+        audit = store.list_audit(self.selected_notification_rule_id, limit=5)
+        scheduled = store.list_scheduled_notifications(self.selected_notification_rule_id, status="pending", limit=5)
+        lines = [f"Pending scheduled: {len(scheduled)}"]
+        for row in audit:
+            safe_error = _safe_notification_error(row.get("error", ""))
+            error = f" - {safe_error}" if safe_error else ""
+            lines.append(f"{row['created_at']} · {row['status']} · recipients {row['recipient_count']}{error}")
+        if len(lines) == 1:
+            lines.append("No send attempts yet.")
+        self.notification_audit_summary.setText("\n".join(lines))
+
+    def _cancel_notification_rule(self) -> None:
+        if self.selected_notification_rule_id is None:
+            self._refresh_notifications()
+            return
+        try:
+            self._load_notification_rule(self._notification_store().get_rule(self.selected_notification_rule_id))
+        except ValueError:
+            self._refresh_notifications()
+
     def _build_people_view(self) -> None:
         self.people_view = self.QtWidgets.QWidget()
         self.people_view.setObjectName("StaffingV2PeopleDashboard")
-        people_root = self.QtWidgets.QVBoxLayout(self.people_view)
+        people_outer = self.QtWidgets.QHBoxLayout(self.people_view)
+        people_outer.setContentsMargins(0, 0, 0, 0)
+        people_outer.setSpacing(14)
+        people_main = self.QtWidgets.QWidget()
+        people_root = self.QtWidgets.QVBoxLayout(people_main)
         people_root.setContentsMargins(0, 0, 0, 0)
         people_root.setSpacing(14)
+        people_outer.addWidget(people_main, 1)
         self.page_stack.addWidget(self.people_view)
 
         header = self.QtWidgets.QHBoxLayout()
@@ -1847,8 +3192,7 @@ class StaffingDashboardV2Page:
         add_person = self.QtWidgets.QPushButton("Add Person")
         add_person.setObjectName("StaffingV2PeopleAddButton")
         self._set_button_icon(add_person, "add")
-        add_person.setEnabled(False)
-        add_person.setToolTip("Add Person workflow will be implemented in a later People mockup slice.")
+        add_person.clicked.connect(self._open_add_person_dialog)
         header.addWidget(add_person)
         people_root.addLayout(header)
 
@@ -1874,7 +3218,7 @@ class StaffingDashboardV2Page:
         more_filters = self.QtWidgets.QPushButton("More Filters")
         more_filters.setObjectName("StaffingV2PeopleMoreFilters")
         self._set_button_icon(more_filters, "filter")
-        more_filters.setEnabled(False)
+        more_filters.clicked.connect(self._open_people_filter_drawer)
         filters.addWidget(more_filters)
         clear = self.QtWidgets.QPushButton("Clear")
         clear.setObjectName("StaffingV2PeopleClear")
@@ -1927,6 +3271,159 @@ class StaffingDashboardV2Page:
         self.people_rows_per_page.setEnabled(False)
         people_footer.addWidget(self.people_rows_per_page)
         people_root.addLayout(people_footer)
+        self.people_units_filter_value = "All Units"
+        self.people_filter_drawer, self.people_filter_drawer_layout = self._panel("StaffingV2PeopleFilterDrawer")
+        self.people_filter_drawer.setFixedWidth(340)
+        self.people_filter_drawer.hide()
+        self._build_people_filter_drawer()
+        people_outer.addWidget(self.people_filter_drawer)
+
+    def _build_people_filter_drawer(self) -> None:
+        header = self.QtWidgets.QHBoxLayout()
+        header.addWidget(self._label("Filters", "StaffingV2SectionTitle"), 1)
+        reset = self.QtWidgets.QPushButton("Reset")
+        reset.setObjectName("StaffingV2PeopleFilterReset")
+        self._set_button_icon(reset, "reset")
+        reset.clicked.connect(self._reset_people_filter_drawer)
+        close = self.QtWidgets.QPushButton("")
+        close.setObjectName("StaffingV2PeopleFilterClose")
+        self._set_button_icon(close, "close")
+        close.setFixedSize(32, 32)
+        close.clicked.connect(self.people_filter_drawer.hide)
+        header.addWidget(reset)
+        header.addWidget(close)
+        self.people_filter_drawer_layout.addLayout(header)
+
+        self.people_filter_active = self._people_drawer_combo("StaffingV2PeopleFilterActive", ["All", "Active", "Inactive"])
+        self.people_filter_drawer_layout.addLayout(self._labeled_control("Active Status", self.people_filter_active))
+        self.people_filter_role = self._people_drawer_combo("StaffingV2PeopleFilterRole", ["All", "Teacher", "Aide"])
+        self.people_filter_drawer_layout.addLayout(self._labeled_control("Role", self.people_filter_role))
+        self.people_filter_permit = self._people_drawer_combo(
+            "StaffingV2PeopleFilterPermit",
+            ["All", "Teacher Permit", "Permit in Process", "Unknown"],
+        )
+        self.people_filter_drawer_layout.addLayout(self._labeled_control("Permit Status", self.people_filter_permit))
+        self.people_filter_units = self._people_drawer_combo(
+            "StaffingV2PeopleFilterUnits",
+            ["All Units", "Has Units", "No Units"],
+        )
+        self.people_filter_drawer_layout.addLayout(self._labeled_control("Units", self.people_filter_units))
+        self.people_filter_drawer_layout.addStretch(1)
+
+        footer = self.QtWidgets.QHBoxLayout()
+        cancel = self.QtWidgets.QPushButton("Cancel")
+        cancel.setObjectName("StaffingV2PeopleFilterCancel")
+        cancel.clicked.connect(self.people_filter_drawer.hide)
+        apply = self.QtWidgets.QPushButton("Apply Filters")
+        apply.setObjectName("StaffingV2PeopleFilterApply")
+        self._set_button_icon(apply, "filter")
+        apply.clicked.connect(self._apply_people_filter_drawer)
+        footer.addWidget(cancel)
+        footer.addWidget(apply)
+        self.people_filter_drawer_layout.addLayout(footer)
+
+    def _people_drawer_combo(self, object_name: str, values: list[str]) -> Any:
+        combo = self.QtWidgets.QComboBox()
+        combo.setObjectName(object_name)
+        combo.addItems(values)
+        return combo
+
+    def _open_people_filter_drawer(self) -> None:
+        self.people_filter_active.setCurrentText(self.people_active_filter.currentText())
+        self.people_filter_role.setCurrentText(self.people_role_filter.currentText())
+        self.people_filter_permit.setCurrentText(self.people_permit_filter.currentText())
+        self.people_filter_units.setCurrentText(self.people_units_filter_value)
+        self.people_filter_drawer.show()
+
+    def _reset_people_filter_drawer(self) -> None:
+        self.people_filter_active.setCurrentText("All")
+        self.people_filter_role.setCurrentText("All")
+        self.people_filter_permit.setCurrentText("All")
+        self.people_filter_units.setCurrentText("All Units")
+
+    def _apply_people_filter_drawer(self) -> None:
+        self.people_active_filter.setCurrentText(self.people_filter_active.currentText())
+        self.people_role_filter.setCurrentText(self.people_filter_role.currentText())
+        self.people_permit_filter.setCurrentText(self.people_filter_permit.currentText())
+        self.people_units_filter_value = self.people_filter_units.currentText()
+        self._refresh_people_filters()
+        self.people_filter_drawer.hide()
+
+    def _open_add_person_dialog(self) -> None:
+        dialog = self.QtWidgets.QDialog(self.widget)
+        dialog.setObjectName("StaffingV2AddPersonDialog")
+        dialog.setWindowTitle("Add Person")
+        dialog.setModal(True)
+        dialog.resize(520, 420)
+        layout = self.QtWidgets.QVBoxLayout(dialog)
+        layout.setContentsMargins(22, 18, 22, 18)
+        layout.setSpacing(12)
+
+        header = self.QtWidgets.QHBoxLayout()
+        title_column = self.QtWidgets.QVBoxLayout()
+        title_column.addWidget(self._label("Add Person", "StaffingV2DrawerTitle"))
+        title_column.addWidget(self._label("Create an employee record for staffing assignments.", "StaffingV2Muted"))
+        header.addLayout(title_column, 1)
+        close = self.QtWidgets.QPushButton("")
+        close.setObjectName("StaffingV2AddPersonClose")
+        self._set_button_icon(close, "close")
+        close.clicked.connect(dialog.close)
+        header.addWidget(close)
+        layout.addLayout(header)
+
+        form, form_layout = self._dialog_section("StaffingV2DialogSection")
+        name = self.QtWidgets.QLineEdit()
+        name.setObjectName("StaffingV2AddPersonName")
+        name.setPlaceholderText("Full name")
+        form_layout.addLayout(self._labeled_control("Full Name", name))
+        role = self.QtWidgets.QComboBox()
+        role.setObjectName("StaffingV2AddPersonRole")
+        role.addItems(["Teacher", "Aide"])
+        form_layout.addLayout(self._labeled_control("Role", role))
+        permit = self.QtWidgets.QComboBox()
+        permit.setObjectName("StaffingV2AddPersonPermit")
+        permit.addItems(["Unknown", "Permit in Process", "Teacher Permit", "No Units Needed", "No Permit"])
+        form_layout.addLayout(self._labeled_control("Permit Status", permit))
+        units = self.QtWidgets.QLineEdit()
+        units.setObjectName("StaffingV2AddPersonUnits")
+        units.setPlaceholderText("Optional units")
+        form_layout.addLayout(self._labeled_control("Units", units))
+        status = self._label("", "StaffingV2Muted")
+        status.setObjectName("StaffingV2AddPersonStatus")
+        form_layout.addWidget(status)
+        layout.addWidget(form)
+
+        footer = self.QtWidgets.QHBoxLayout()
+        footer.addStretch(1)
+        cancel = self.QtWidgets.QPushButton("Cancel")
+        cancel.setObjectName("StaffingV2SecondaryButton")
+        cancel.clicked.connect(dialog.reject)
+        save = self.QtWidgets.QPushButton("Add Person")
+        save.setObjectName("StaffingV2AddPersonSave")
+        self._set_button_icon(save, "add")
+
+        def save_person() -> None:
+            try:
+                units_value = None
+                if units.text().strip():
+                    units_value = float(units.text().strip())
+                self.service_factory().add_person(
+                    name=name.text(),
+                    role=role.currentText(),
+                    permit_status=_permit_status_from_label(permit.currentText()),
+                    units=units_value,
+                )
+            except ValueError as exc:
+                status.setText(str(exc))
+                return
+            self._refresh_people()
+            dialog.accept()
+
+        save.clicked.connect(save_person)
+        footer.addWidget(cancel)
+        footer.addWidget(save)
+        layout.addLayout(footer)
+        dialog.show()
 
     def _show_people_view(self) -> None:
         self._set_active_nav(self.people_nav_button)
@@ -1937,6 +3434,11 @@ class StaffingDashboardV2Page:
         self._set_active_nav(self.history_nav_button)
         self._refresh_history()
         self.page_stack.setCurrentWidget(self.history_view)
+
+    def _show_notifications_view(self) -> None:
+        self._set_active_nav(self.notifications_nav_button)
+        self._refresh_notifications()
+        self.page_stack.setCurrentWidget(self.notifications_view)
 
     def _people_filter_combo(self, object_name: str, values: list[str]) -> Any:
         combo = self.QtWidgets.QComboBox()
@@ -1956,12 +3458,74 @@ class StaffingDashboardV2Page:
         metrics = self.service_factory().staffing_metrics(today=date.today(), school=self.school_filter)
         self.rows = list(metrics.rows)
         self._sync_selectors()
-        self._refresh_metrics(metrics.open_count, metrics.avg_days_to_fill, metrics.open_over_7_days)
         self._refresh_filters()
         self._refresh_classrooms()
         self._refresh_people()
         self._refresh_history()
+        self._refresh_notifications()
         self._refresh_validation()
+
+    def _notification_store(self) -> NotificationStore:
+        return NotificationStore(self.notification_store_path)
+
+    def _open_dashboard_export_dialog(self) -> None:
+        dialog = self.QtWidgets.QDialog(self.widget)
+        dialog.setObjectName("StaffingV2DashboardExportDialog")
+        dialog.setWindowTitle("Export Staffing Dashboard")
+        dialog.setModal(True)
+        dialog.setAttribute(self.QtCore.Qt.WidgetAttribute.WA_DeleteOnClose, True)
+        dialog.resize(560, 460)
+        layout = self.QtWidgets.QVBoxLayout(dialog)
+        layout.setContentsMargins(22, 18, 22, 18)
+        layout.setSpacing(12)
+
+        header = self.QtWidgets.QHBoxLayout()
+        title_column = self.QtWidgets.QVBoxLayout()
+        title_column.addWidget(self._label("Export Staffing Dashboard", "StaffingV2DrawerTitle"))
+        title_column.addWidget(self._label("Preview the current Staffing v2 dashboard export.", "StaffingV2Muted"))
+        header.addLayout(title_column, 1)
+        close = self.QtWidgets.QPushButton("")
+        close.setObjectName("StaffingV2DashboardExportClose")
+        self._set_button_icon(close, "close")
+        close.clicked.connect(dialog.close)
+        header.addWidget(close)
+        layout.addLayout(header)
+
+        rows = [row for classroom_rows in getattr(self, "classroom_rows", {}).values() for row in classroom_rows]
+        status_filter = str(self.dashboard_classroom_filter_state.get("status", "All Statuses"))
+        open_filter_dialog = self.widget.findChild(self.QtWidgets.QDialog, "StaffingV2DashboardClassroomFilterDrawer")
+        if open_filter_dialog is not None:
+            status_combo = open_filter_dialog.findChild(self.QtWidgets.QComboBox, "StaffingV2DashboardClassroomStatusFilter")
+            if status_combo is not None:
+                status_filter = status_combo.currentText()
+        schools = sorted({row.school for row in rows if row.school})
+        open_positions = sum(1 for row in rows if row.status in {"need_now", "replace"})
+        filled_positions = sum(1 for row in rows if row.status == "filled")
+        permit_issues = sum(1 for row in rows if _row_has_permit_issue(row))
+        classrooms = sorted({row.classroom for row in rows if row.classroom})
+        preview, preview_layout = self._dialog_section("StaffingV2DialogInfo")
+        for label, value in [
+            ("Schools", str(len(schools))),
+            ("School filter", self.school_selector.currentText() or "-"),
+            ("Program filter", self.program_selector.currentText() or "All Programs"),
+            ("Search filter", self.search.text().strip() or "-"),
+            ("Classroom status filter", status_filter),
+            ("Open positions", str(open_positions)),
+            ("Filled positions", str(filled_positions)),
+            ("Permit issues", str(permit_issues)),
+            ("Classrooms", ", ".join(classrooms) if classrooms else "-"),
+        ]:
+            preview_layout.addLayout(self._detail_row(label, value))
+        layout.addWidget(preview)
+
+        footer = self.QtWidgets.QHBoxLayout()
+        footer.addStretch(1)
+        close_button = self.QtWidgets.QPushButton("Close")
+        close_button.setObjectName("StaffingV2SecondaryButton")
+        close_button.clicked.connect(dialog.accept)
+        footer.addWidget(close_button)
+        layout.addLayout(footer)
+        dialog.show()
 
     def _refresh_people(self) -> None:
         self.people = self.store.list_people()
@@ -1972,6 +3536,10 @@ class StaffingDashboardV2Page:
         self.people_active_filter.setCurrentText("All")
         self.people_role_filter.setCurrentText("All")
         self.people_permit_filter.setCurrentText("All")
+        if hasattr(self, "people_units_filter_value"):
+            self.people_units_filter_value = "All Units"
+            if hasattr(self, "people_filter_units"):
+                self.people_filter_units.setCurrentText("All Units")
         self._refresh_people_filters()
 
     def _refresh_people_filters(self) -> None:
@@ -1981,6 +3549,7 @@ class StaffingDashboardV2Page:
         active_filter = self.people_active_filter.currentText()
         role_filter = self.people_role_filter.currentText()
         permit_filter = self.people_permit_filter.currentText()
+        units_filter = getattr(self, "people_units_filter_value", "All Units")
         self.visible_people = []
         for person in self.people:
             haystack = f"{person.name} {person.role} {person.permit_status} {person.current_assignment}".casefold()
@@ -1993,6 +3562,10 @@ class StaffingDashboardV2Page:
             if role_filter != "All" and person.role != role_filter:
                 continue
             if permit_filter != "All" and _permit_label(person.permit_status) != permit_filter:
+                continue
+            if units_filter == "Has Units" and person.units is None:
+                continue
+            if units_filter == "No Units" and person.units is not None:
                 continue
             self.visible_people.append(person)
         self._refresh_people_metrics()
@@ -2048,7 +3621,7 @@ class StaffingDashboardV2Page:
             view.setObjectName("StaffingV2PeopleRowView")
             view.setProperty("personId", person.id)
             self._set_button_icon(view, "info")
-            view.setEnabled(False)
+            view.clicked.connect(lambda _checked=False, index=row_index: self._select_person(index))
             self.people_table.setCellWidget(row_index, 6, view)
         if self.people_table.rowCount():
             self.people_table.setCurrentCell(0, 0)
@@ -2063,11 +3636,7 @@ class StaffingDashboardV2Page:
         self._render_person_detail(self.visible_people[row_index])
 
     def _render_person_detail(self, person: StaffingPerson | None) -> None:
-        while self.people_detail_layout.count():
-            item = self.people_detail_layout.takeAt(0)
-            widget = item.widget()
-            if widget is not None:
-                widget.deleteLater()
+        self._clear_layout(self.people_detail_layout)
         if person is None:
             self.people_detail_layout.addWidget(self._label("No employee selected", "StaffingV2Muted"))
             return
@@ -2174,7 +3743,7 @@ class StaffingDashboardV2Page:
         export = self.QtWidgets.QPushButton("Export")
         export.setObjectName("StaffingV2HistoryExportButton")
         self._set_button_icon(export, "export")
-        export.setEnabled(False)
+        export.clicked.connect(self._open_history_export_list_dialog)
         validation = self.QtWidgets.QPushButton("View Validation")
         validation.setObjectName("StaffingV2HistoryValidationButton")
         self._set_button_icon(validation, "validation")
@@ -2390,7 +3959,7 @@ class StaffingDashboardV2Page:
             view.setObjectName("StaffingV2HistoryRowView")
             view.setProperty("historyId", record.id)
             self._set_button_icon(view, "info")
-            view.setEnabled(False)
+            view.clicked.connect(lambda _checked=False, index=row_index: self._select_history_record(index))
             self.history_table.setCellWidget(row_index, 9, view)
         if self.history_table.rowCount():
             self.history_table.setCurrentCell(0, 0)
@@ -2405,11 +3974,7 @@ class StaffingDashboardV2Page:
         self._render_history_detail(self.visible_history_records[row_index])
 
     def _render_history_detail(self, record: StaffingHistoryRecord | None) -> None:
-        while self.history_detail_layout.count():
-            item = self.history_detail_layout.takeAt(0)
-            widget = item.widget()
-            if widget is not None:
-                widget.deleteLater()
+        self._clear_layout(self.history_detail_layout)
         if record is None:
             self.history_detail_layout.addWidget(self._label("No history record selected", "StaffingV2Muted"))
             return
@@ -2482,19 +4047,124 @@ class StaffingDashboardV2Page:
         view = self.QtWidgets.QPushButton("View Assignment")
         view.setObjectName("StaffingV2HistoryViewAssignment")
         self._set_button_icon(view, "dashboard")
-        view.setEnabled(False)
+        view.clicked.connect(lambda _checked=False, item=record.assignment_id: self._open_history_assignment(item))
         employee = self.QtWidgets.QPushButton("Open Employee")
         employee.setObjectName("StaffingV2HistoryOpenEmployee")
         self._set_button_icon(employee, "people")
-        employee.setEnabled(False)
+        if record.employee and record.employee != "OPEN POSITION":
+            employee.clicked.connect(lambda _checked=False, name=record.employee: self._open_history_employee(name))
+        else:
+            employee.setEnabled(False)
         export = self.QtWidgets.QPushButton("Export Record")
         export.setObjectName("StaffingV2HistoryExportRecord")
         self._set_button_icon(export, "export")
-        export.setEnabled(False)
+        export.clicked.connect(lambda _checked=False, item=record: self._open_history_export_dialog(item))
         footer.addWidget(view)
         footer.addWidget(employee)
         footer.addWidget(export)
         self.history_detail_layout.addLayout(footer)
+
+    def _open_history_assignment(self, assignment_id: int) -> None:
+        self._show_dashboard_view()
+        self._show_position_drawer(assignment_id)
+
+    def _open_history_employee(self, employee_name: str) -> None:
+        self._show_people_view()
+        for row_index, person in enumerate(self.visible_people):
+            if person.name == employee_name:
+                self.people_table.setCurrentCell(row_index, 0)
+                self._select_person(row_index)
+                return
+
+    def _open_history_export_list_dialog(self) -> None:
+        dialog = self.QtWidgets.QDialog(self.widget)
+        dialog.setObjectName("StaffingV2HistoryExportDialog")
+        dialog.setWindowTitle("Export Assignment History")
+        dialog.setModal(True)
+        dialog.resize(560, 460)
+        layout = self.QtWidgets.QVBoxLayout(dialog)
+        layout.setContentsMargins(22, 18, 22, 18)
+        layout.setSpacing(12)
+
+        header = self.QtWidgets.QHBoxLayout()
+        title_column = self.QtWidgets.QVBoxLayout()
+        title_column.addWidget(self._label("Export Assignment History", "StaffingV2DrawerTitle"))
+        title_column.addWidget(self._label("Preview the currently filtered assignment history records.", "StaffingV2Muted"))
+        header.addLayout(title_column, 1)
+        close = self.QtWidgets.QPushButton("")
+        close.setObjectName("StaffingV2HistoryExportClose")
+        self._set_button_icon(close, "close")
+        close.clicked.connect(dialog.close)
+        header.addWidget(close)
+        layout.addLayout(header)
+
+        records = list(getattr(self, "visible_history_records", []))
+        preview, preview_layout = self._dialog_section("StaffingV2DialogInfo")
+        preview_layout.addLayout(self._detail_row("Total records", str(len(records))))
+        preview_layout.addLayout(self._detail_row("School filter", self.history_school_filter.currentText()))
+        preview_layout.addLayout(self._detail_row("Classroom filter", self.history_classroom_filter.currentText()))
+        preview_layout.addLayout(self._detail_row("Cycle status filter", self.history_cycle_filter.currentText()))
+        for record in records[:8]:
+            summary = f"{record.classroom} - {record.position_name} - {record.cycle_status}"
+            preview_layout.addLayout(self._detail_row(f"A-{record.assignment_id:04d}", summary))
+        if len(records) > 8:
+            preview_layout.addLayout(self._detail_row("Additional records", str(len(records) - 8)))
+        layout.addWidget(preview)
+
+        footer = self.QtWidgets.QHBoxLayout()
+        footer.addStretch(1)
+        close_button = self.QtWidgets.QPushButton("Close")
+        close_button.setObjectName("StaffingV2SecondaryButton")
+        close_button.clicked.connect(dialog.accept)
+        footer.addWidget(close_button)
+        layout.addLayout(footer)
+        dialog.show()
+
+    def _open_history_export_dialog(self, record: StaffingHistoryRecord) -> None:
+        dialog = self.QtWidgets.QDialog(self.widget)
+        dialog.setObjectName("StaffingV2HistoryExportRecordDialog")
+        dialog.setWindowTitle("Export Record")
+        dialog.setModal(True)
+        dialog.resize(520, 420)
+        layout = self.QtWidgets.QVBoxLayout(dialog)
+        layout.setContentsMargins(22, 18, 22, 18)
+        layout.setSpacing(12)
+
+        header = self.QtWidgets.QHBoxLayout()
+        title_column = self.QtWidgets.QVBoxLayout()
+        title_column.addWidget(self._label("Export Record", "StaffingV2DrawerTitle"))
+        title_column.addWidget(self._label("Preview the selected assignment history record before export.", "StaffingV2Muted"))
+        header.addLayout(title_column, 1)
+        close = self.QtWidgets.QPushButton("")
+        close.setObjectName("StaffingV2HistoryExportRecordClose")
+        self._set_button_icon(close, "close")
+        close.clicked.connect(dialog.close)
+        header.addWidget(close)
+        layout.addLayout(header)
+
+        preview, preview_layout = self._dialog_section("StaffingV2DialogInfo")
+        for label, value in [
+            ("Assignment ID", f"A-{record.assignment_id:04d}"),
+            ("Classroom", record.classroom),
+            ("Position", record.position_name),
+            ("Cycle status", record.cycle_status),
+            ("Opened date", record.opened_date),
+            ("Filled date", record.filled_date or "-"),
+            ("Days to fill", "" if record.days_to_fill is None else str(record.days_to_fill)),
+            ("Employee", record.employee),
+            ("Data integrity", record.data_integrity),
+        ]:
+            preview_layout.addLayout(self._detail_row(label, value))
+        layout.addWidget(preview)
+
+        footer = self.QtWidgets.QHBoxLayout()
+        footer.addStretch(1)
+        close_button = self.QtWidgets.QPushButton("Close")
+        close_button.setObjectName("StaffingV2SecondaryButton")
+        close_button.clicked.connect(dialog.accept)
+        footer.addWidget(close_button)
+        layout.addLayout(footer)
+        dialog.show()
 
     def _sync_selectors(self) -> None:
         current_school = self.school_selector.currentText()
@@ -2518,25 +4188,127 @@ class StaffingDashboardV2Page:
         self.program_selector.setCurrentText(current_program if current_program in programs else "All Programs")
         self.program_selector.blockSignals(False)
 
-    def _refresh_metrics(self, open_count: int, avg_days_to_fill: float, open_over_7_days: int) -> None:
+    def _refresh_selected_school_metrics(self) -> None:
+        selected_school = self.school_selector.currentText().strip() if self.school_selector.count() else ""
+        metrics = self.service_factory().staffing_metrics(today=date.today(), school=selected_school or self.school_filter)
+        school_count = len({row.school for row in metrics.rows if row.school})
+        self._refresh_metrics(
+            metrics.open_count,
+            metrics.avg_days_to_fill,
+            metrics.open_over_7_days,
+            school_count=school_count,
+            rows=metrics.rows,
+        )
+
+    def _refresh_metrics(
+        self,
+        open_count: int,
+        avg_days_to_fill: float,
+        open_over_7_days: int,
+        *,
+        school_count: int | None = None,
+        rows: list[StaffingMetricRow] | None = None,
+    ) -> None:
         while self.metrics_layout.count():
             item = self.metrics_layout.takeAt(0)
             widget = item.widget()
             if widget is not None:
                 widget.deleteLater()
-        school_count = len({row.school for row in self.rows if row.school})
+        if school_count is None:
+            school_count = len({row.school for row in self.rows if row.school})
         cards = [
             ("Schools", str(school_count), f"Schools: {school_count}"),
             ("Open positions", str(open_count), f"Open positions: {open_count}"),
             ("Avg fill time", f"{avg_days_to_fill:.1f} days", f"Avg fill time: {avg_days_to_fill:.1f} days"),
             ("Open > 7 days", str(open_over_7_days), f"Open > 7 days: {open_over_7_days}"),
-            ("Validation", "healthy", "Validation healthy"),
+            self._dashboard_validation_card(rows if rows is not None else self.rows),
         ]
         for label, value, accessible_text in cards:
             self.metrics_layout.addWidget(self._summary_chip(label, value, accessible_text))
         self.metrics_layout.addStretch(1)
 
+    def _dashboard_validation_card(self, rows: list[StaffingMetricRow]) -> tuple[str, str, str]:
+        issue_count = len(_validation_issues_from_rows(rows))
+        if issue_count == 0:
+            return ("Validation", "healthy", "Validation healthy")
+        issue_text = "issue" if issue_count == 1 else "issues"
+        return ("Validation", f"{issue_count} {issue_text}", f"Validation: {issue_count} {issue_text}")
+
+    def _default_dashboard_classroom_filter_state(self) -> dict[str, Any]:
+        return {
+            "status": "All Statuses",
+            "permit_issue_only": False,
+            "open_over_7_only": False,
+        }
+
+    def _open_dashboard_classroom_filter_drawer(self) -> None:
+        dialog = self.QtWidgets.QDialog(self.widget)
+        dialog.setObjectName("StaffingV2DashboardClassroomFilterDrawer")
+        dialog.setWindowTitle("Classroom Filters")
+        dialog.setModal(False)
+        dialog.setStyleSheet(APP_QSS)
+        dialog.setAttribute(self.QtCore.Qt.WidgetAttribute.WA_DeleteOnClose, True)
+        dialog.resize(420, 360)
+        layout = self.QtWidgets.QVBoxLayout(dialog)
+        layout.setContentsMargins(20, 18, 20, 18)
+        layout.setSpacing(12)
+
+        header = self.QtWidgets.QHBoxLayout()
+        header.addWidget(self._label("Classroom Filters", "StaffingV2DrawerTitle"), 1)
+        close = self.QtWidgets.QPushButton("")
+        close.setObjectName("StaffingV2FilterCloseButton")
+        self._set_button_icon(close, "close")
+        close.clicked.connect(dialog.close)
+        header.addWidget(close)
+        layout.addLayout(header)
+
+        status = self.QtWidgets.QComboBox()
+        status.setObjectName("StaffingV2DashboardClassroomStatusFilter")
+        status.addItems(["All Statuses", "Need Now", "Replace", "Coming", "Filled", "Don't Need"])
+        status.setCurrentText(str(self.dashboard_classroom_filter_state.get("status", "All Statuses")))
+        permit_issue_only = self.QtWidgets.QCheckBox("Only classrooms with permit issues")
+        permit_issue_only.setObjectName("StaffingV2DashboardPermitIssueFilter")
+        permit_issue_only.setChecked(bool(self.dashboard_classroom_filter_state.get("permit_issue_only", False)))
+        open_over_7_only = self.QtWidgets.QCheckBox("Only classrooms open > 7 days")
+        open_over_7_only.setObjectName("StaffingV2DashboardOpenOver7Filter")
+        open_over_7_only.setChecked(bool(self.dashboard_classroom_filter_state.get("open_over_7_only", False)))
+        layout.addLayout(self._labeled_control("Status", status))
+        layout.addWidget(permit_issue_only)
+        layout.addWidget(open_over_7_only)
+        layout.addStretch(1)
+
+        footer = self.QtWidgets.QHBoxLayout()
+        reset = self.QtWidgets.QPushButton("Reset")
+        reset.setObjectName("StaffingV2FilterResetButton")
+        self._set_button_icon(reset, "reset")
+        apply = self.QtWidgets.QPushButton("Apply Filters")
+        apply.setObjectName("StaffingV2FilterApplyButton")
+        self._set_button_icon(apply, "filter")
+        footer.addWidget(reset)
+        footer.addStretch(1)
+        footer.addWidget(apply)
+        layout.addLayout(footer)
+
+        def reset_filters() -> None:
+            status.setCurrentText("All Statuses")
+            permit_issue_only.setChecked(False)
+            open_over_7_only.setChecked(False)
+
+        def apply_filters() -> None:
+            self.dashboard_classroom_filter_state = {
+                "status": status.currentText(),
+                "permit_issue_only": permit_issue_only.isChecked(),
+                "open_over_7_only": open_over_7_only.isChecked(),
+            }
+            dialog.close()
+            self._refresh_filters()
+
+        reset.clicked.connect(reset_filters)
+        apply.clicked.connect(apply_filters)
+        dialog.show()
+
     def _refresh_filters(self) -> None:
+        self._refresh_selected_school_metrics()
         school = self.school_selector.currentText()
         program = self.program_selector.currentText()
         search = self.search.text().strip().casefold()
@@ -2552,6 +4324,11 @@ class StaffingDashboardV2Page:
         self.classroom_rows = {}
         for row in self.visible_rows:
             self.classroom_rows.setdefault(row.classroom, []).append(row)
+        self.classroom_rows = {
+            classroom: rows
+            for classroom, rows in self.classroom_rows.items()
+            if self._dashboard_classroom_matches_filters(rows)
+        }
         current = self.classroom_list.currentItem().data(self.QtCore.Qt.ItemDataRole.UserRole) if self.classroom_list.currentItem() else ""
         self.classroom_list.blockSignals(True)
         self.classroom_list.clear()
@@ -2574,6 +4351,25 @@ class StaffingDashboardV2Page:
         self.classroom_list.blockSignals(False)
         self._sync_classroom_list_selection()
         self._select_classroom(self.classroom_list.currentRow())
+
+    def _dashboard_classroom_matches_filters(self, rows: list[StaffingMetricRow]) -> bool:
+        status = str(self.dashboard_classroom_filter_state.get("status", "All Statuses"))
+        status_map = {
+            "Need Now": "need_now",
+            "Replace": "replace",
+            "Coming": "coming",
+            "Filled": "filled",
+            "Don't Need": "dont_need_now",
+        }
+        if status != "All Statuses" and not any(row.status == status_map.get(status, "") for row in rows):
+            return False
+        if self.dashboard_classroom_filter_state.get("permit_issue_only") and not any(_row_has_permit_issue(row) for row in rows):
+            return False
+        if self.dashboard_classroom_filter_state.get("open_over_7_only") and not any(
+            row.days_open is not None and row.days_open > 7 for row in rows
+        ):
+            return False
+        return True
 
     def _select_classroom(self, index: int) -> None:
         if index < 0 or index >= self.classroom_list.count():
@@ -2634,11 +4430,13 @@ class StaffingDashboardV2Page:
             item = self.overview_layout.takeAt(0)
             widget = item.widget()
             if widget is not None:
+                if widget.objectName() == "StaffingV2OverviewCard":
+                    widget.setObjectName("StaffingV2OverviewCardStale")
                 widget.deleteLater()
         total = len(rows)
         filled = sum(1 for row in rows if row.status == "filled")
         open_count = sum(1 for row in rows if row.status in {"need_now", "replace"})
-        program = next((row.classroom_program for row in rows if row.classroom_program), "Program")
+        program = next((row.classroom_program for row in rows if row.classroom_program), "-")
         capacity = next((row.classroom_capacity for row in rows if row.classroom_capacity is not None), None)
         overview = [
             ("Program", program),
@@ -2658,7 +4456,7 @@ class StaffingDashboardV2Page:
                 str(row_index + 1),
                 row.position_name,
                 row.person_name or "OPEN POSITION",
-                row.start_date or "-",
+                _display_date(row.start_date),
                 "-" if row.days_open is None else str(row.days_open),
             ]
             for column, value in zip((0, 1, 2, 4, 5), values, strict=True):
@@ -2711,7 +4509,7 @@ class StaffingDashboardV2Page:
         position_column.addWidget(self._label(assignment.position_name, "StaffingV2DrawerPositionName"))
         position_column.addWidget(
             self._label(
-                f"Classroom {assignment.classroom}   School {assignment.school}   Program {assignment.classroom_program or 'Program'}   Position Type {assignment.position_type}",
+                f"Classroom {assignment.classroom}   School {assignment.school}   Program {assignment.classroom_program or '-'}   Position Type {assignment.position_type}",
                 "StaffingV2Muted",
             )
         )
@@ -2726,10 +4524,10 @@ class StaffingDashboardV2Page:
                 "\n".join(
                     [
                         f"Assigned person: {assignment.person_name or 'OPEN POSITION'}",
-                        f"Start date: {assignment.start_date or '-'}",
+                        f"Start date: {_display_date(assignment.start_date)}",
                         f"Permit status: {_display_permit(assignment.permit_status or 'unknown')}",
-                        f"Current opened date: {assignment.current_opened_date or '-'}",
-                        f"Current filled date: {assignment.current_filled_date or '-'}",
+                        f"Current opened date: {_display_date(assignment.current_opened_date)}",
+                        f"Current filled date: {_display_date(assignment.current_filled_date)}",
                         f"Days open: {_days_open_text(metric_row)}",
                         f"Current priority: {_display_status(assignment.status)}",
                     ]
@@ -2836,6 +4634,9 @@ class StaffingDashboardV2Page:
         if action_key == "clear_replacement":
             action.triggered.connect(lambda _checked=False, item=assignment_id: self._open_mark_need_now_dialog(item))
             return
+        if action_key == "view_history":
+            action.triggered.connect(lambda _checked=False: self._show_history_view())
+            return
         if action_key == "view_details":
             action.triggered.connect(lambda _checked=False, item=assignment_id: self._show_position_drawer(item))
             return
@@ -2860,6 +4661,9 @@ class StaffingDashboardV2Page:
             return
         if action_key == "clear_replacement":
             button.clicked.connect(lambda _checked=False, item=assignment_id: self._open_mark_need_now_dialog(item))
+            return
+        if action_key == "view_history":
+            button.clicked.connect(lambda _checked=False: self._show_history_view())
             return
         callback = self.actions.get(action_key)
         if callback is None:
@@ -2986,7 +4790,7 @@ class StaffingDashboardV2Page:
                     notes=notes.toPlainText(),
                 )
             except Exception as exc:  # noqa: BLE001 - show service/store validation to user.
-                error.setText(str(exc))
+                error.setText(_safe_staffing_error(exc))
                 error.show()
                 return
             dialog.close()
@@ -3207,7 +5011,7 @@ class StaffingDashboardV2Page:
                 if selected_permit != "unknown" and result.person_id is not None:
                     service.update_permit_status(result.person_id, selected_permit)
             except Exception as exc:  # noqa: BLE001 - show service validation error in dialog.
-                error.setText(str(exc))
+                error.setText(_safe_staffing_error(exc))
                 error.show()
                 return
             dialog.close()
@@ -3524,7 +5328,7 @@ class StaffingDashboardV2Page:
                     notes=notes.toPlainText(),
                 )
             except Exception as exc:  # noqa: BLE001 - show service validation error in dialog.
-                error.setText(str(exc))
+                error.setText(_safe_staffing_error(exc))
                 error.show()
                 return
             dialog.close()
@@ -3634,7 +5438,7 @@ class StaffingDashboardV2Page:
             try:
                 self.service_factory().clear_replacement(assignment_id)
             except Exception as exc:  # noqa: BLE001 - show service validation error in dialog.
-                error.setText(str(exc))
+                error.setText(_safe_staffing_error(exc))
                 error.show()
                 return
             dialog.close()
@@ -3830,7 +5634,7 @@ class StaffingDashboardV2Page:
             try:
                 self.service_factory().mark_filled(assignment_id)
             except Exception as exc:  # noqa: BLE001 - show service validation error in dialog.
-                error.setText(str(exc))
+                error.setText(_safe_staffing_error(exc))
                 error.show()
                 return
             dialog.close()
@@ -3845,7 +5649,8 @@ class StaffingDashboardV2Page:
         card.setAccessibleName(accessible_text)
         icon_row = self.QtWidgets.QHBoxLayout()
         icon_row.setContentsMargins(0, 0, 0, 0)
-        icon_row.addWidget(self._icon_label(_metric_icon_key(label), "StaffingV2CardIcon"))
+        icon_object_name = "StaffingV2ClassroomsMetricIcon" if object_name == "StaffingV2ClassroomsMetricCard" else "StaffingV2CardIcon"
+        icon_row.addWidget(self._icon_label(_metric_icon_key(label), icon_object_name))
         icon_row.addWidget(self._label(label, "StaffingV2Muted"), 1)
         layout.addLayout(icon_row)
         value_widget = self._label(value, "StaffingV2MetricValue")
@@ -3855,8 +5660,18 @@ class StaffingDashboardV2Page:
     def _summary_chip(self, label: str, value: str, accessible_text: str) -> Any:
         card, layout = self._panel("StaffingV2MetricCard")
         card.setAccessibleName(accessible_text)
-        variant = "success" if "validation" in accessible_text.casefold() else "danger" if "open > 7" in accessible_text.casefold() else "info"
+        normalized_accessible = accessible_text.casefold()
+        variant = (
+            "success"
+            if "validation healthy" in normalized_accessible
+            else "danger"
+            if "open > 7" in normalized_accessible or "validation:" in normalized_accessible
+            else "info"
+        )
         card.setProperty("staffingV2SummaryVariant", variant)
+        if label == "Validation":
+            card.setCursor(self.QtCore.Qt.CursorShape.PointingHandCursor)
+            card.mousePressEvent = lambda _event: self._show_validation_view()  # type: ignore[method-assign]
         card.setMinimumHeight(38)
         card.setMaximumHeight(48)
         row = self.QtWidgets.QHBoxLayout()
@@ -3939,6 +5754,7 @@ class StaffingDashboardV2Page:
             if child_layout is not None:
                 self._clear_layout(child_layout)
             if widget is not None:
+                widget.setParent(None)
                 widget.deleteLater()
 
     def _label(self, text: str, object_name: str = "") -> Any:
@@ -3998,7 +5814,7 @@ def _drawer_actions(status: str) -> list[tuple[str, str, str]]:
     if status == "need_now":
         return [
             ("StaffingV2DrawerMarkComing", "Mark Coming", "mark_coming"),
-            ("StaffingV2DrawerMarkDontNeed", "Mark Don't Need", "mark_dont_need"),
+            ("StaffingV2DrawerMarkDontNeed", "Mark Not Needed", "mark_dont_need"),
             ("StaffingV2DrawerEditPosition", "Edit Position", "view_details"),
             ("StaffingV2DrawerViewHistory", "View Full History", "view_history"),
         ]
@@ -4088,11 +5904,11 @@ def _classroom_priority_status(rows: list[StaffingMetricRow]) -> str:
     if "coming" in statuses:
         return "Coming"
     if statuses and statuses <= {"filled"}:
-        return "Filled / Healthy"
+        return "Filled"
     if statuses and statuses <= {"dont_need_now"}:
         return "Don't Need"
     if "filled" in statuses:
-        return "Filled / Healthy"
+        return "Filled"
     return "Don't Need"
 
 
@@ -4126,18 +5942,42 @@ def _validation_issues_from_rows(rows: list[StaffingMetricRow]) -> list[dict[str
                     "details": f"{row.position_name} has no start date",
                 }
             )
-        if row.permit_status in {"", "unknown"} and row.status in {"need_now", "coming", "filled", "replace"}:
+        if row.status in {"need_now", "replace"} and _is_placeholder_date(row.start_date):
             issues.append(
                 {
                     **base,
-                    "issue": "Permit status unknown",
+                    "issue": "Placeholder start date",
+                    "type": "Lifecycle",
+                    "severity": "Warning",
+                    "details": f"{row.position_name} has a seed placeholder date",
+                }
+            )
+        if row.person_name and row.permit_status in {"", "unknown", "no_permit_or_application"} and row.status in {"coming", "filled", "replace"}:
+            issues.append(
+                {
+                    **base,
+                    "issue": "Permit status needs review",
                     "type": "Compliance",
-                    "severity": "Info",
+                    "severity": "Warning" if row.permit_status == "no_permit_or_application" else "Info",
                     "details": f"{row.position_name} permit status needs review",
                 }
             )
     severity_order = {"Critical": 0, "Warning": 1, "Info": 2}
-    return sorted(issues, key=lambda issue: (severity_order.get(issue["severity"], 3), issue["classroom"], issue["issue"]))
+    issue_order = {
+        "Unfilled Need Now position": 0,
+        "Coming position missing start date": 1,
+        "Placeholder start date": 2,
+        "Permit status needs review": 3,
+    }
+    return sorted(
+        issues,
+        key=lambda issue: (
+            severity_order.get(issue["severity"], 3),
+            issue["classroom"],
+            issue_order.get(issue["issue"], 99),
+            issue["issue"],
+        ),
+    )
 
 
 def _display_status(status: str) -> str:
@@ -4174,6 +6014,16 @@ def _permit_label(status: str) -> str:
     return _display_permit(status or "unknown")
 
 
+def _permit_status_from_label(label: str) -> str:
+    return {
+        "Unknown": "unknown",
+        "No Permit": "no_permit_or_application",
+        "Permit in Process": "permit_in_process",
+        "Teacher Permit": "teacher_permit_approved",
+        "No Units Needed": "no_units_needed",
+    }.get(str(label or "").strip(), "unknown")
+
+
 def _permit_chip_status(status: str) -> str:
     return {
         "permit_in_process": "coming",
@@ -4181,6 +6031,241 @@ def _permit_chip_status(status: str) -> str:
         "no_units_needed": "filled",
         "no_permit_or_application": "replace",
     }.get(status or "unknown", "dont_need_now")
+
+
+def _row_has_permit_issue(row: StaffingMetricRow) -> bool:
+    if not row.person_name:
+        return False
+    return row.permit_status in {"", "unknown", "no_permit_or_application"}
+
+
+def _parse_int_or_none(value: str) -> int | None:
+    stripped = str(value or "").strip()
+    if not stripped:
+        return None
+    try:
+        return int(stripped)
+    except ValueError:
+        return None
+
+
+def _format_notification_recipients(recipients: list[NotificationRecipient]) -> str:
+    parts: list[str] = []
+    for recipient in recipients:
+        email = str(recipient.email or "").strip()
+        if not email:
+            continue
+        label = str(recipient.role_label or recipient.name or "").strip()
+        parts.append(f"{label} <{email}>" if label else email)
+    return ", ".join(parts)
+
+
+def _parse_notification_recipients(value: str) -> list[NotificationRecipient]:
+    recipients: list[NotificationRecipient] = []
+    for raw_part in str(value or "").split(","):
+        part = raw_part.strip()
+        if not part:
+            continue
+        name = ""
+        email = part
+        if "<" in part and part.endswith(">"):
+            name, email = part[:-1].split("<", 1)
+            name = name.strip()
+            email = email.strip()
+        recipients.append(NotificationRecipient(email=email, name=name, role_label=name))
+    return recipients
+
+
+def _notification_role_recipient(role_key: str) -> NotificationRecipient:
+    normalized = str(role_key or "").strip()
+    if normalized == "candidate":
+        return NotificationRecipient(
+            name="Candidate",
+            role_label="Candidate",
+            recipient_type="role",
+            role_key="candidate",
+        )
+    if normalized == "hiring_manager":
+        return NotificationRecipient(
+            email="",
+            name="Hiring Manager",
+            role_label="Hiring Manager",
+            recipient_type="role",
+            role_key="hiring_manager",
+        )
+    if normalized == "executive_director":
+        return NotificationRecipient(
+            name="Executive Director",
+            role_label="Executive Director",
+            recipient_type="role",
+            role_key="executive_director",
+        )
+    return NotificationRecipient(
+        email="",
+        name="Director",
+        role_label="Director",
+        recipient_type="role",
+        role_key="director",
+    )
+
+
+def _notification_recipient_key(recipient: NotificationRecipient) -> str:
+    recipient_type = str(recipient.recipient_type or "email").strip() or "email"
+    if recipient_type == "role":
+        return f"role:{str(recipient.role_key or '').strip()}"
+    return f"email:{str(recipient.email or '').strip().casefold()}"
+
+
+def _notification_recipient_display(recipient: NotificationRecipient) -> str:
+    if str(recipient.recipient_type or "email") == "role":
+        if recipient.role_key == "candidate":
+            return "Candidate (payload email)"
+        if recipient.role_key == "hiring_manager":
+            return f"Hiring Manager <{HIRING_MANAGER_EMAIL}>"
+        if recipient.role_key == "executive_director":
+            return f"Executive Director <{EXECUTIVE_DIRECTOR_EMAIL}>"
+        return "Director (school-based)"
+    label = str(recipient.role_label or recipient.name or "Recipient").strip()
+    return f"{label} <{recipient.email}>" if label else str(recipient.email or "").strip()
+
+
+def _notification_recipient_remove_suffix(recipient: NotificationRecipient) -> str:
+    if str(recipient.recipient_type or "email") == "role":
+        return _safe_object_suffix(f"role_{recipient.role_key}")
+    return _safe_object_suffix(str(recipient.email or ""))
+
+
+def _show_rule_in_staffing_v2_notifications(rule: NotificationRule) -> bool:
+    hidden_placeholder_events = {"offer.welcome_email_sent"}
+    hidden_placeholder_prefixes = ("onboarding.",)
+    event_type = str(rule.event_type or "")
+    if event_type not in hidden_placeholder_events and not event_type.startswith(hidden_placeholder_prefixes):
+        return True
+    return bool(rule.subject_template or rule.body_template or rule.recipients)
+
+
+def _safe_object_suffix(value: str) -> str:
+    suffix = "".join(character if character.isalnum() else "_" for character in str(value or "").casefold())
+    return suffix.strip("_") or "item"
+
+
+def _notification_template_fields(rule: NotificationRule) -> list[str]:
+    fields: set[str] = set()
+    for template in [rule.subject_template, rule.body_template]:
+        for _, field_name, _, _ in Formatter().parse(str(template or "")):
+            if field_name:
+                fields.add(field_name.split(".", 1)[0].split("[", 1)[0])
+    if not fields:
+        fields.update(["position_name", "person_name", "school", "company_name"])
+    return sorted(fields)
+
+
+def _notification_preview_sample() -> dict[str, str]:
+    return {
+        "candidate": "Jordan Lee",
+        "candidate_email": "jordan@example.org",
+        "candidate_name": "Jordan Lee",
+        "classroom": "Harmony 1",
+        "company_name": "Launch Pad Learning",
+        "department": "Preschool",
+        "hiring_manager_name": "Alex Morgan",
+        "location": "Hawthorne",
+        "permit_status": "Permit in Process",
+        "person_name": "Imani Carter",
+        "position_name": "Teacher 1",
+        "program": "Preschool",
+        "recruiter_name": "Taylor Smith",
+        "reply_by_date": (date.today() + timedelta(days=3)).isoformat(),
+        "school": "Hawthorne",
+        "school_code": "HAW",
+        "school_location": "Hawthorne",
+        "offer_path": "C:/Offers/Jordan Lee Offer.docx",
+        "offer_pdf_path": "C:/Offers/Jordan Lee Offer.pdf",
+        "onboarding_guide_path": "C:/Offers/New Employee Onboarding Guide.pdf",
+        "start_date": date.today().isoformat(),
+    }
+
+
+def _render_notification_preview(template: str, payload: dict[str, str]) -> tuple[str, list[str]]:
+    unresolved: list[str] = []
+
+    class SafePayload(dict[str, str]):
+        def __missing__(self, key: str) -> str:
+            unresolved.append(key)
+            return "{" + key + "}"
+
+    return str(template or "").format_map(SafePayload(payload)), unresolved
+
+
+def _safe_notification_error(value: object) -> str:
+    text = str(value or "")
+    if not text:
+        return ""
+    lowered = text.casefold()
+    sensitive_markers = ["password", "passwd", "token", "secret", "authorization", "auth"]
+    if any(marker in lowered for marker in sensitive_markers):
+        return "Error details redacted."
+    return text
+
+
+def _safe_staffing_error(value: object) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return "Could not save staffing change. Check required fields and try again."
+    lowered = text.casefold()
+    sensitive_markers = ["password", "passwd", "token", "secret", "authorization", "auth", "smtp"]
+    if any(marker in lowered for marker in sensitive_markers):
+        return "Could not save staffing change. Error details redacted."
+    if len(text) > 180:
+        return "Could not save staffing change. Check required fields and try again."
+    return text
+
+
+def _notification_validation_text(rule: NotificationRule) -> str:
+    problems: list[str] = []
+    if not str(rule.event_type or "").strip():
+        problems.append("Missing event")
+    if not str(rule.label or "").strip():
+        problems.append("Missing label")
+    if not str(rule.subject_template or "").strip():
+        problems.append("Missing subject template")
+    if not str(rule.body_template or "").strip():
+        problems.append("Missing body template")
+    if not [recipient for recipient in rule.recipients if recipient.active]:
+        problems.append("Missing active recipients")
+    elif any(recipient.recipient_type == "role" and recipient.role_key == "candidate" for recipient in rule.recipients):
+        problems.append("Candidate resolves from payload email")
+    elif any(recipient.recipient_type == "role" and recipient.role_key == "director" for recipient in rule.recipients):
+        problems.append("Director resolves from payload school")
+    if rule.trigger_timing == "date_offset" and not str(rule.date_field or "").strip():
+        problems.append("Missing date field")
+    unknown_fields = sorted(set(_notification_template_fields(rule)) - set(NOTIFICATION_TEMPLATE_FIELDS))
+    if unknown_fields:
+        problems.append(f"Unknown variables: {', '.join(unknown_fields)}")
+    if problems == ["Director resolves from payload school"]:
+        return "No issues found; Director resolves from payload school."
+    if problems == ["Candidate resolves from payload email"]:
+        return "No issues found; Candidate resolves from payload email."
+    return "No issues found" if not problems else "; ".join(problems)
+
+
+def _notification_template_fields(rule: NotificationRule) -> list[str]:
+    fields: set[str] = set()
+    for template in (rule.subject_template, rule.body_template, rule.date_field):
+        text = str(template or "")
+        cursor = 0
+        while cursor < len(text):
+            start = text.find("{", cursor)
+            if start == -1:
+                break
+            end = text.find("}", start + 1)
+            if end == -1:
+                break
+            field = text[start + 1 : end].strip()
+            if field:
+                fields.add(field)
+            cursor = end + 1
+    return sorted(fields)
 
 
 def _metric_icon_key(label: str) -> str:
@@ -4206,6 +6291,7 @@ def _status_icon_key(status: str) -> str:
         "replace": "status_replace",
         "coming": "status_pending",
         "filled": "status_filled",
+        "healthy": "status_filled",
         "dont_need_now": "status_neutral",
     }.get(status or "dont_need_now", "status_neutral")
 
@@ -4235,13 +6321,20 @@ def _assignment_detail(person: StaffingPerson) -> str:
 
 def _display_date(value: str) -> str:
     text = str(value or "").strip()
-    if not text:
+    if not text or _is_placeholder_date(text):
         return "-"
     try:
         parsed = date.fromisoformat(text[:10])
     except ValueError:
         return text
     return parsed.strftime("%B %d, %Y").replace(" 0", " ")
+
+
+def _is_placeholder_date(value: str) -> bool:
+    text = str(value or "").strip()
+    if not text:
+        return False
+    return text.startswith("1970-01-01")
 
 
 def _primary_action(status: str) -> tuple[str, str]:
@@ -4258,7 +6351,7 @@ def _action_menu_specs(status: str) -> list[tuple[str, str]]:
     return {
         "need_now": [
             ("Mark Coming", "mark_coming"),
-            ("Mark Don't Need", "mark_dont_need"),
+            ("Mark Not Needed", "mark_dont_need"),
             ("View Details", "view_details"),
         ],
         "coming": [
@@ -4290,6 +6383,7 @@ def _status_color(status: str) -> str:
         "replace": "#ffedd5",
         "coming": "#fef3c7",
         "filled": "#dcfce7",
+        "healthy": "#dcfce7",
         "dont_need_now": "#f1f5f9",
     }.get(status, "#ffffff")
 
@@ -4300,5 +6394,6 @@ def _chip_object_name(status: str) -> str:
         "replace": "StaffingV2ReplaceChip",
         "coming": "StaffingV2ComingChip",
         "filled": "StaffingV2FilledChip",
+        "healthy": "StaffingV2HealthyChip",
         "dont_need_now": "StaffingV2NeutralChip",
     }.get(status, "StaffingV2NeutralChip")

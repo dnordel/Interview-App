@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
+import pytest
+
 from staffing_service import StaffingService
 from staffing_store import StaffingStore
 
@@ -131,3 +133,51 @@ def test_staffing_metrics_treat_seed_epoch_open_dates_as_unknown(tmp_path: Path)
     assert metrics.open_count == 1
     assert metrics.open_over_7_days == 0
     assert metrics.rows[0].days_open is None
+
+
+def test_classroom_update_and_deactivate_stay_classroom_scoped(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    service = StaffingService(store)
+    empty = service.add_classroom(
+        school="Hawthorne",
+        name="Sunflower",
+        program="Preschool",
+        licensed_capacity=18,
+    )
+    occupied_assignment_id = store.seed_assignment(
+        school="Hawthorne",
+        classroom="Harmony 1",
+        position_name="Teacher 1",
+        position_type="Teacher",
+        status="need_now",
+    )
+    before_assignments = store.list_assignments()
+    before_history_count = store.active_history_count(occupied_assignment_id)
+
+    updated = service.update_classroom(
+        classroom_id=empty.id,
+        school="Hawthorne",
+        name="Sunflower 2",
+        program="Pre-K",
+        licensed_capacity=20,
+        display_order=7,
+    )
+
+    assert updated.name == "Sunflower 2"
+    assert updated.program == "Pre-K"
+    assert updated.licensed_capacity == 20
+    assert updated.display_order == 7
+    assert len(store.list_assignments()) == len(before_assignments)
+    assert store.active_history_count(occupied_assignment_id) == before_history_count
+
+    occupied = next(classroom for classroom in store.list_classrooms() if classroom.name == "Harmony 1")
+    with pytest.raises(ValueError, match="active assignments"):
+        service.deactivate_classroom(occupied.id)
+    assert any(classroom.id == occupied.id for classroom in store.list_classrooms())
+
+    deactivated = service.deactivate_classroom(updated.id)
+
+    assert deactivated.active is False
+    assert all(classroom.id != updated.id for classroom in store.list_classrooms())
+    assert len(store.list_assignments()) == len(before_assignments)

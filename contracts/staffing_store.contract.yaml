@@ -2,7 +2,7 @@ module:
   name: staffing_store
   language: python
   path: src/staffing_store.py
-  version: 0.9.0
+  version: 0.11.0
   description: SQLite persistence for staffing schools, classrooms, people including optional units, active status, role, current assignment summary, and permit effective-date/documentation metadata, service-backed assignment creation, assignments with shift metadata, workbook display metadata, assignment history dashboard records, Dropbox-visible edit locking, pending operation queueing, required staffing indexes, and deterministic seed imports.
 functions: []
 classes:
@@ -152,6 +152,89 @@ classes:
     - ValueError
     - StaffingEditLock
     side_effects: Uses a staffing write lock, inserts or updates school/classroom/person rows, inserts one assignment, and opens assignment_history for Need Now, Replace, and Coming positions.
+  - name: create_classroom
+    inputs:
+      school:
+        type: str
+        required: true
+      name:
+        type: str
+        required: true
+      program:
+        type: str
+        required: false
+        default: ''
+      ratio_group:
+        type: str
+        required: false
+        default: ''
+      licensed_capacity:
+        type: int | None
+        required: false
+        default: null
+      display_order:
+        type: int
+        required: false
+        default: 0
+    returns:
+      type: int
+    exceptions:
+    - ValueError
+    - StaffingEditLock
+    side_effects: Uses a staffing write lock and inserts or updates one school/classroom record without mutating assignments or assignment_history.
+  - name: update_classroom
+    inputs:
+      classroom_id:
+        type: int
+        required: true
+      school:
+        type: str
+        required: true
+      name:
+        type: str
+        required: true
+      program:
+        type: str
+        required: false
+        default: ''
+      ratio_group:
+        type: str
+        required: false
+        default: ''
+      licensed_capacity:
+        type: int | None
+        required: false
+        default: null
+      display_order:
+        type: int
+        required: false
+        default: 0
+    returns:
+      type: StaffingClassroom
+    exceptions:
+    - ValueError
+    - StaffingEditLock
+    side_effects: Uses a staffing write lock to update one active classroom's school, name, program, ratio group, licensed capacity, and display order without mutating assignments or assignment_history.
+  - name: classroom_active_assignment_count
+    inputs:
+      classroom_id:
+        type: int
+        required: true
+    returns:
+      type: int
+    exceptions: []
+    side_effects: Reads the number of active assignment rows attached to one classroom.
+  - name: deactivate_classroom
+    inputs:
+      classroom_id:
+        type: int
+        required: true
+    returns:
+      type: StaffingClassroom
+    exceptions:
+    - ValueError
+    - StaffingEditLock
+    side_effects: Uses a staffing write lock to set one classroom active flag to false and returns the deactivated classroom without deleting or mutating assignments or assignment_history.
   - name: import_seed_file
     inputs:
       seed_path:
@@ -168,6 +251,12 @@ classes:
       type: list[StaffingAssignment]
     exceptions: []
     side_effects: Reads staffing SQLite database.
+  - name: list_classrooms
+    inputs: {}
+    returns:
+      type: list[StaffingClassroom]
+    exceptions: []
+    side_effects: Reads staffing SQLite school/classroom records for Classroom Management and Add Classroom workflows.
   - name: list_people
     inputs: {}
     returns:
@@ -234,6 +323,32 @@ classes:
     exceptions:
     - ValueError
     side_effects: Reads staffing SQLite database through supplied connection.
+  - name: classroom_context
+    inputs:
+      conn:
+        type: sqlite3.Connection
+        required: true
+      classroom_id:
+        type: int
+        required: true
+    returns:
+      type: StaffingClassroom
+    exceptions:
+    - ValueError
+    side_effects: Reads staffing SQLite classroom data through supplied connection.
+  - name: _classroom_context_any_active
+    inputs:
+      conn:
+        type: sqlite3.Connection
+        required: true
+      classroom_id:
+        type: int
+        required: true
+    returns:
+      type: StaffingClassroom
+    exceptions:
+    - ValueError
+    side_effects: Reads one classroom row by id regardless of classroom active flag while requiring an active school.
   - name: ensure_person
     inputs:
       conn:

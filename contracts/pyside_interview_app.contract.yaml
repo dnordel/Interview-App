@@ -2,11 +2,11 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.56.1
+  version: 1.57.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, resizable splitter sections, school/classroom selectors, wider color-coded classroom list with per-classroom status-count overview, metric cards, positions table, fully editable right-side assignment/person details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics, parallel Staffing v2 navigation/page shell with its own mockup-style staffing sidebar, People / Employee Management and Assignment History sub-dashboards for the mockup-driven rewrite backed by staffing_dashboard_v2 while the legacy Staffing page remains available,
-    director staffing-only launch mode that keeps the full mockup navigation rail visible, filters to an assigned school when supplied, and reuses the same Staffing page,
+    director staffing-only launch mode that opens the Staffing v2 dashboard, keeps the full mockup navigation rail visible, filters to an assigned school when supplied, and reuses the same Staffing v2 page,
     compact home draft actions beside the start action, guided review-then-apply Admin Studio backed by admin_studio
     with dashboard-first grouped admin-console navigation, standard icons on each
     selectable Admin Studio nav item, Environment/User cards at the bottom of the Admin Studio rail, distinct status pills,
@@ -33,7 +33,7 @@ module:
     file cards with mockup summary strip, selected-card state, read-only code viewer controls, JSON syntax highlighting, line-number gutter with warning marker, highlighted validation issue line, copy-to-clipboard actions for viewer text and file path, read-only expanded viewer dialog, viewer footer, issue/read-only detail panels with jump-to-line action, no legacy raw table fallback, and guarded JSON
     Editor draft dialog gated by global Start Editing mode, shared Email Settings account setup screen with compact
     identity/incoming/outgoing panels, working IMAP/POP3 default switching, and
-    notification sending including immediate offer.generated events, queued start-date/generated-date/notice/final-working-day relative notifications, and startup due-schedule drain, Validation Review
+    notification sending including immediate offer.generated events, offer.approved candidate payloads with school code/location, reply-by date, and offer PDF attachment path conversion, queued start-date/generated-date/notice/final-working-day relative notifications, and startup due-schedule drain, Validation Review
     blocked banner, summary cards, guidance panels, inline expandable raw technical
     details on each issue card, and technical Details dialog,
     grouped Review Changes
@@ -75,7 +75,7 @@ functions:
   - ValueError
   side_effects: Reads local rubric, question override, user_artifacts history JSON, and root-level legacy history JSON when the canonical history path is used; may normalize question flow through QuestionOverridesStore.
 - name: build_director_staffing_model
-  description: Return a director staffing-only PySide model that keeps full app data/contracts but exposes only the Staffing content surface, optional assigned school filter, and mockup-style full navigation rail display.
+  description: Return a director staffing-only PySide model that keeps full app data/contracts but exposes only the Staffing v2 content surface, optional assigned school filter, and mockup-style full navigation rail display.
   locked: false
   inputs:
     model:
@@ -158,6 +158,39 @@ functions:
     type: str
   exceptions: []
   side_effects: none
+- name: _offer_school_code
+  description: Return the Launch Pad Learning offer-email school code HAW, NLB, or PMD for a supported school, falling back to the supplied school text.
+  locked: false
+  inputs:
+    school:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _offer_school_location
+  description: Return human-readable school location text for offer email templates.
+  locked: false
+  inputs:
+    school:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _ensure_offer_pdf_path
+  description: Return an existing offer PDF path or convert an existing DOCX offer letter to a same-stem PDF through Microsoft Word automation when available.
+  locked: false
+  inputs:
+    offer_path:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: May read a DOCX offer letter and write a same-stem PDF; suppresses conversion errors so notification send can block cleanly.
 - name: latest_pyside_draft_path
   description: Return the newest PySide draft JSON path from the draft directory, if one exists.
   locked: false
@@ -2913,13 +2946,29 @@ classes:
     side_effects: Updates in-memory progress step and task/status state.
   - name: _refresh_pyside_finalize_progress
     description: Drain queued PySide finalize progress updates and render task/status
-      rows in pipeline order when the progress dialog is still open.
+      rows in pipeline order when the progress dialog is still open, discovering
+      the latest safe detached DeepSeek progress file from processing history rows
+      when the finalize result has not attached it yet.
     locked: false
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Updates visible progress label text.
+    side_effects: May read local interview history JSON and updates visible progress
+      label text.
+  - name: _attach_latest_deepseek_progress_from_history
+    description: Attach the newest safe local detached DeepSeek progress JSON path
+      from a processing history row so an open finalize progress dialog can show
+      worker progress even before the finalize result callback attaches the path.
+      Rejects non-DeepSeek progress filenames and paths outside expected local
+      deepseek_jobs directories.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Reads local interview history JSON and may set the active PySide
+      finalize DeepSeek progress path.
   - name: _read_pyside_deepseek_progress_step
     description: Read local detached DeepSeek progress JSON produced by the finalize
       queue and return sanitized step/status text.
@@ -2990,13 +3039,13 @@ classes:
     exceptions: []
     side_effects: Changes the visible stack index and toggles sidebar_panel visibility.
   - name: _staffing_v2_page
-    description: Build the temporary parallel Staffing v2 page from staffing_dashboard_v2 so the mockup-driven rewrite can be developed beside the existing Staffing page.
+    description: Build the Staffing v2 page from staffing_dashboard_v2 for the mockup-driven rewrite and director staffing-only launch surface, passing the shared notification rules store path and shared notification service factory into the V2 Notifications dashboard.
     locked: false
     inputs: {}
     returns:
       type: QWidget
     exceptions: []
-    side_effects: Creates a StaffingDashboardV2Page, stores it on the PySide window, and wires service-backed staffing actions from the existing StaffingService handlers.
+    side_effects: Initializes local staffing storage, imports staffing seed data when the DB is empty or clearly missing seed assignments, creates a StaffingDashboardV2Page, stores it on the PySide window, wires service-backed staffing actions from the existing StaffingService handlers, and connects the V2 Notifications dashboard to the shared notification rules SQLite path and shared email notification service.
   - name: _refresh_staffing_dashboard
     description: Initialize local staffing storage, import seed data when the staffing DB is empty or clearly missing seed assignments, compute metrics, and refresh the hidden compatibility metric label, school/classroom selectors, classroom list, metric cards, positions table, and hidden legacy school-tabbed workbook boards.
     locked: false
@@ -3474,10 +3523,10 @@ classes:
     side_effects: Writes interview history JSON and may emit notification.
   - name: _emit_pyside_session_offer_generated
     description: Emit generic offer.generated notification for an active PySide
-      interview session offer document, including candidate, school, position,
-      offer path, interview date when available, generated-date, start-date, notice,
-      and final-working-day payload fields used by immediate or queued date-offset
-      notification rules.
+      interview session offer document, including candidate aliases, school code/location,
+      position, offer path, reply-by date, interview date when available, generated-date,
+      start-date, notice, and final-working-day payload fields used by immediate or queued
+      date-offset notification rules.
     locked: false
     inputs:
       output_path:
@@ -3490,7 +3539,8 @@ classes:
       email or queue future date-offset notification schedules.
   - name: _emit_pyside_offer_notification
     description: Emit generic offer notification event for a PySide history offer status,
-      including dynamic candidate, qualification, school, position, generated-date,
+      including dynamic candidate aliases/email, qualification, school code/location,
+      position, generated-date, reply-by date, offer path/PDF path for approved offers,
       start-date, notice, final-working-day, and status placeholder payload fields.
     locked: false
     inputs:
@@ -3503,7 +3553,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: May read notification settings and write notification audit/send email.
+    side_effects: May convert an approved-offer DOCX to PDF, read notification settings, and write notification audit/send email.
   - name: _open_notification_template_dialog
     description: Open a PySide pop-up for creating or modifying one Admin Studio
       notification template row, including custom system event, active/delete state,
@@ -3652,12 +3702,12 @@ data_structures:
   description: Headless UI model for navigation, setup readiness, interview flows,
     home dashboard/history data, rubric data, and the history JSON path used for
     offer-status persistence; director_staffing_school optionally filters the Staffing
-    page to one assigned school in director mode.
+    v2 page to one assigned school in director mode.
 - name: PySideHistoryRow
   type: dataclass
   description: Render-ready finalized interview history row with stable row key,
     interview date, candidate, school, position, score, status, offer status/action,
-    notes path, report path, and detached DeepSeek processing state/warning for the
+    notes path, report path, candidate email, offer path, and detached DeepSeek processing state/warning for the
     searchable, filterable, sortable, outcome-colored, content-sized PySide history
     grid and offer workflow. Status must follow score display thresholds when a
     numeric score is present unless explicit no-hire override metadata or an

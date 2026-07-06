@@ -526,6 +526,11 @@ class AdminStudioDraft:
                 errors.extend(template_errors)
                 break
             for recipient in rule.recipients:
+                if str(recipient.recipient_type or "email").strip() == "role":
+                    if not str(recipient.role_key or "").strip():
+                        errors.append("Notification role recipient requires a role key.")
+                        return errors
+                    continue
                 if not is_valid_email_address(recipient.email):
                     errors.append("Invalid notification recipient email.")
                     return errors
@@ -561,7 +566,8 @@ class AdminStudio:
         prompts = normalize_deepseek_prompt_templates(_read_json_object(paths.prompts_path))
         app_settings = InterviewAppSettingsStore(paths.app_settings_path).load()
         notification_store = NotificationStore(paths.notification_rules_path)
-        notification_store.ensure_default_rules()
+        if not notification_store.list_rules():
+            notification_store.ensure_default_rules()
         notification_rules = notification_store.list_rules()
         return cls(
             paths=paths,

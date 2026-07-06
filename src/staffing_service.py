@@ -6,7 +6,15 @@ from datetime import date, datetime, timezone
 import json
 from typing import TYPE_CHECKING, Any
 
-from staffing_models import PERMIT_STATUSES, StaffingAssignment, StaffingMetricRow, StaffingMetrics, StaffingTransitionResult
+from staffing_models import (
+    PERMIT_STATUSES,
+    StaffingAssignment,
+    StaffingClassroom,
+    StaffingMetricRow,
+    StaffingMetrics,
+    StaffingPerson,
+    StaffingTransitionResult,
+)
 from staffing_store import StaffingEditLock, StaffingStore
 
 if TYPE_CHECKING:
@@ -73,6 +81,67 @@ class StaffingService:
             start_date=start_date,
             notes=notes,
         )
+
+    def add_person(
+        self,
+        *,
+        name: str,
+        role: str,
+        permit_status: str = "unknown",
+        units: float | int | None = None,
+    ) -> StaffingPerson:
+        return self._add_person_impl(
+            name=name,
+            role=role,
+            permit_status=permit_status,
+            units=units,
+        )
+
+    def add_classroom(
+        self,
+        *,
+        school: str,
+        name: str,
+        program: str = "",
+        ratio_group: str = "",
+        licensed_capacity: int | None = None,
+    ) -> StaffingClassroom:
+        classroom_id = self.store.create_classroom(
+            school=school,
+            name=name,
+            program=program,
+            ratio_group=ratio_group,
+            licensed_capacity=licensed_capacity,
+        )
+        with self.store.connect() as conn:
+            return self.store.classroom_context(conn, classroom_id)
+
+    def update_classroom(
+        self,
+        *,
+        classroom_id: int,
+        school: str,
+        name: str,
+        program: str = "",
+        ratio_group: str = "",
+        licensed_capacity: int | None = None,
+        display_order: int = 0,
+    ) -> StaffingClassroom:
+        return self.store.update_classroom(
+            classroom_id=int(classroom_id),
+            school=school,
+            name=name,
+            program=program,
+            ratio_group=ratio_group,
+            licensed_capacity=licensed_capacity,
+            display_order=int(display_order),
+        )
+
+    def deactivate_classroom(self, classroom_id: int) -> StaffingClassroom:
+        assignment_count = self.store.classroom_active_assignment_count(int(classroom_id))
+        if assignment_count > 0:
+            raise ValueError("Cannot deactivate classroom with active assignments.")
+        return self.store.deactivate_classroom(int(classroom_id))
 
     def mark_coming(self, assignment_id: int, *, person_name: str, start_date: str) -> StaffingTransitionResult:
         return self._run_or_queue(
@@ -251,6 +320,37 @@ class StaffingService:
         assignment = self.store.get_assignment(assignment_id)
         self._emit_assignment_event("add_position", assignment)
         return _result(assignment)
+
+    def _add_person_impl(
+        self,
+        *,
+        name: str,
+        role: str,
+        permit_status: str = "unknown",
+        units: float | int | None = None,
+    ) -> StaffingPerson:
+        name = str(name or "").strip()
+        role = str(role or "").strip()
+        permit_status = str(permit_status or "unknown").strip() or "unknown"
+        if not name:
+            raise ValueError("Person name is required.")
+        if not role:
+            raise ValueError("Role is required.")
+        if permit_status not in PERMIT_STATUSES:
+            raise ValueError("Unknown permit status.")
+        units_value = None if units is None else float(units)
+        now = self.clock()
+        with self.store.write_connection("add_person") as conn:
+            person_id = self.store.ensure_person(conn, name, role, permit_status, now)
+            conn.execute(
+                """
+                UPDATE people
+                SET role = ?, permit_status = ?, units = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (role, permit_status, units_value, now, person_id),
+            )
+            return self.store.person_context(conn, person_id)
 
     def _open_position_impl(self, assignment_id: int) -> StaffingTransitionResult:
         now = self.clock()

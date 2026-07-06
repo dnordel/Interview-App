@@ -8,7 +8,14 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
-from staffing_models import ASSIGNMENT_STATUSES, PERMIT_STATUSES, StaffingAssignment, StaffingHistoryRecord, StaffingPerson
+from staffing_models import (
+    ASSIGNMENT_STATUSES,
+    PERMIT_STATUSES,
+    StaffingAssignment,
+    StaffingClassroom,
+    StaffingHistoryRecord,
+    StaffingPerson,
+)
 
 EDIT_LOCK_STALE_SECONDS = 15 * 60
 
@@ -350,6 +357,98 @@ class StaffingStore:
                 )
             return assignment_id
 
+    def create_classroom(
+        self,
+        *,
+        school: str,
+        name: str,
+        program: str = "",
+        ratio_group: str = "",
+        licensed_capacity: int | None = None,
+        display_order: int = 0,
+    ) -> int:
+        school = _required_text(school, "School")
+        name = _required_text(name, "Classroom")
+        with self.write_connection("create_classroom") as conn:
+            school_id = self._ensure_school(conn, school)
+            return self._ensure_classroom(
+                conn,
+                school_id,
+                name,
+                program=str(program or "").strip(),
+                ratio_group=str(ratio_group or "").strip(),
+                licensed_capacity=licensed_capacity,
+                display_order=int(display_order),
+            )
+
+    def update_classroom(
+        self,
+        *,
+        classroom_id: int,
+        school: str,
+        name: str,
+        program: str = "",
+        ratio_group: str = "",
+        licensed_capacity: int | None = None,
+        display_order: int = 0,
+    ) -> StaffingClassroom:
+        school = _required_text(school, "School")
+        name = _required_text(name, "Classroom")
+        with self.write_connection("update_classroom") as conn:
+            current = conn.execute("SELECT id FROM classrooms WHERE id = ? AND active = 1", (int(classroom_id),)).fetchone()
+            if current is None:
+                raise ValueError("Classroom not found.")
+            school_id = self._ensure_school(conn, school)
+            duplicate = conn.execute(
+                """
+                SELECT id FROM classrooms
+                WHERE school_id = ? AND name = ? AND id != ? AND active = 1
+                """,
+                (school_id, name, int(classroom_id)),
+            ).fetchone()
+            if duplicate is not None:
+                raise ValueError("Classroom already exists for this school.")
+            conn.execute(
+                """
+                UPDATE classrooms
+                SET school_id = ?, name = ?, program = ?, ratio_group = ?, licensed_capacity = ?, display_order = ?
+                WHERE id = ?
+                """,
+                (
+                    school_id,
+                    name,
+                    str(program or "").strip(),
+                    str(ratio_group or "").strip(),
+                    licensed_capacity,
+                    int(display_order),
+                    int(classroom_id),
+                ),
+            )
+            return self.classroom_context(conn, int(classroom_id))
+
+    def classroom_active_assignment_count(self, classroom_id: int) -> int:
+        with self.connect() as conn:
+            row = conn.execute(
+                "SELECT COUNT(*) AS count FROM assignments WHERE classroom_id = ? AND active = 1",
+                (int(classroom_id),),
+            ).fetchone()
+            return int(row["count"] if row is not None else 0)
+
+    def deactivate_classroom(self, classroom_id: int) -> StaffingClassroom:
+        with self.write_connection("deactivate_classroom") as conn:
+            classroom = self._classroom_context_any_active(conn, int(classroom_id))
+            conn.execute("UPDATE classrooms SET active = 0 WHERE id = ?", (int(classroom_id),))
+            return StaffingClassroom(
+                id=classroom.id,
+                school=classroom.school,
+                name=classroom.name,
+                program=classroom.program,
+                ratio_group=classroom.ratio_group,
+                licensed_capacity=classroom.licensed_capacity,
+                active=False,
+                display_order=classroom.display_order,
+            )
+
     def import_seed_file(self, seed_path: Path) -> dict[str, int]:
         data = json.loads(Path(seed_path).read_text(encoding="utf-8"))
         schools = _seed_schools(data)
@@ -389,6 +488,19 @@ class StaffingStore:
                 """
             ).fetchall()
             return [self.assignment_context(conn, int(row["id"])) for row in rows]
+
+    def list_classrooms(self) -> list[StaffingClassroom]:
+        with self.connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT c.*, s.name AS school
+                FROM classrooms c
+                JOIN schools s ON s.id = c.school_id
+                WHERE c.active = 1 AND s.active = 1
+                ORDER BY s.display_order, s.name, c.display_order, c.name
+                """
+            ).fetchall()
+            return [self._classroom_from_row(row) for row in rows]
 
     def list_people(self) -> list[StaffingPerson]:
         with self.connect() as conn:
@@ -529,6 +641,46 @@ class StaffingStore:
             notice_given=str(row["notice_given"] or ""),
             final_working_day=str(row["final_working_day"] or ""),
             updated_at=str(row["updated_at"] or ""),
+        )
+
+    def classroom_context(self, conn: sqlite3.Connection, classroom_id: int) -> StaffingClassroom:
+        row = conn.execute(
+            """
+            SELECT c.*, s.name AS school
+            FROM classrooms c
+            JOIN schools s ON s.id = c.school_id
+            WHERE c.id = ? AND c.active = 1 AND s.active = 1
+            """,
+            (classroom_id,),
+        ).fetchone()
+        if row is None:
+            raise ValueError("Classroom not found.")
+        return self._classroom_from_row(row)
+
+    def _classroom_context_any_active(self, conn: sqlite3.Connection, classroom_id: int) -> StaffingClassroom:
+        row = conn.execute(
+            """
+            SELECT c.*, s.name AS school
+            FROM classrooms c
+            JOIN schools s ON s.id = c.school_id
+            WHERE c.id = ? AND s.active = 1
+            """,
+            (classroom_id,),
+        ).fetchone()
+        if row is None:
+            raise ValueError("Classroom not found.")
+        return self._classroom_from_row(row)
+
+    def _classroom_from_row(self, row: sqlite3.Row) -> StaffingClassroom:
+        return StaffingClassroom(
+            id=int(row["id"]),
+            school=str(row["school"] or ""),
+            name=str(row["name"] or ""),
+            program=str(row["program"] or ""),
+            ratio_group=str(row["ratio_group"] or ""),
+            licensed_capacity=int(row["licensed_capacity"]) if row["licensed_capacity"] is not None else None,
+            active=bool(row["active"]),
+            display_order=int(row["display_order"] or 0),
         )
 
     def _person_from_row(self, row: sqlite3.Row) -> StaffingPerson:

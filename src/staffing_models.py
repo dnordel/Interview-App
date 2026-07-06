@@ -61,6 +61,18 @@ class StaffingPerson:
 
 
 @dataclass(frozen=True)
+class StaffingClassroom:
+    id: int
+    school: str
+    name: str
+    program: str = ""
+    ratio_group: str = ""
+    licensed_capacity: int | None = None
+    active: bool = True
+    display_order: int = 0
+
+
+@dataclass(frozen=True)
 class StaffingHistoryRecord:
     id: int
     assignment_id: int

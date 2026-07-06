@@ -126,6 +126,7 @@ Header:
 - Left: `Staffing Dashboard`, subtitle.
 - Right/top: labeled School combo, Program combo, search field with search icon, primary `+ Add Position`.
 - Secondary action row right: `Export`, `View History`.
+  - `Export` opens a read-only dashboard export preview dialog without writing files or mutating DB.
 - No visible `Staffing Dashboard / People / Assignment History` content tab buttons.
 
 Summary chips:
@@ -197,6 +198,7 @@ Match mockup panel:
   - Data Integrity / Validation
   - Lifecycle History
   - Related Person
+- `View Full History` action navigates to Assignment History without mutating DB.
 - Footer: last updated, Cancel/Save Draft/Save Changes.
 - Buttons use primary/secondary styles, not generic native buttons.
 
@@ -279,9 +281,13 @@ Shell:
 
 - Same Admin Studio sidebar, People active.
 - Header title: `People / Employee Management`, subtitle, Add Person.
+  - `Add Person` opens a modal with Full Name, Role, Permit Status, Units, Cancel, and Add Person controls; save calls `StaffingService.add_person` and does not mutate assignments.
 - Filter row: Search, Active Status, Role, Permit Status, More Filters, Clear.
+  - `More Filters` opens a right-side filter drawer with Active Status, Role, Permit Status, Units, Reset, Cancel, and Apply Filters controls.
+  - `Apply Filters` updates visible People rows without mutating DB; `Clear` restores top and drawer filters.
 - Metrics: Total People, Active, Inactive, Teachers, Aides, Avg Units.
 - Table: Name with avatar/email subtext, Role, Permit Status chip, Units, Status chip, Current Assignment, Actions.
+- Row `View` action selects that employee and refreshes the right detail panel without mutating DB.
 - Pagination footer: result count on left, page controls centered/right, rows-per-page combo on far right.
   - Result label object: `StaffingV2PeopleResultCount`.
   - Rows-per-page combo object: `StaffingV2PeopleRowsPerPage`.
@@ -305,10 +311,12 @@ Shell:
 
 - Same Admin Studio sidebar, Assignment History active.
 - Header title/subtitle, last updated, refresh icon, Export, View Validation.
+  - `Export` opens a read-only preview of the currently filtered Assignment History records without writing files or mutating DB.
   - `View Validation` navigates to the Staffing Validation sub-dashboard without mutating DB.
 - Metrics: Total Cycles, Open Cycles, Closed Cycles, Avg Days to Fill, Data Issues.
 - Filters: School, Classroom, Cycle Status, Date Range, Search, More Filters, Clear.
 - Table: Assignment ID, Classroom, Position, Opened Date, Filled Date, Days to Fill, Cycle Status, Employee, Data Integrity, Actions.
+  - Row `View` action selects that history record and refreshes the detail panel without mutating DB.
 - Pagination footer: result count on left, page controls centered/right, rows-per-page combo on far right.
   - Result label object: `StaffingV2HistoryResultCount`.
   - Rows-per-page combo object: `StaffingV2HistoryRowsPerPage`.
@@ -325,6 +333,9 @@ Shell:
     - Row property `staffingV2ValidationCheckStatus` is `pass` or `warning`.
     - Rows include leading pass/warning icon, not plain paragraph text.
   - footer buttons View Assignment, Open Employee, Export Record
+    - `View Assignment` returns to the Staffing Dashboard and opens the selected position detail drawer without mutating DB.
+    - `Open Employee` navigates to People / Employee Management and selects the related employee without mutating DB.
+    - `Export Record` opens a read-only export preview dialog for the selected record without writing files or mutating DB.
 - Data integrity badges: Healthy green, Warning orange, Critical red.
 
 ## Classroom Management
@@ -333,6 +344,10 @@ Shell:
 
 - Same sidebar, Classrooms active.
 - Header: `Classroom Management` or `Classrooms` depending mockup variant.
+  - `Export` opens a read-only preview of the currently filtered classroom records without writing files or mutating DB.
+  - `Add Classroom` opens a v2 modal using the shared dialog spec. It collects school, classroom name, program, and licensed capacity, then calls `StaffingService.add_classroom`.
+  - Add Classroom save creates or updates only the school/classroom record. It must not create positions, assignments, assignment history rows, or direct table-status edits.
+  - After save, Classroom Management includes the empty classroom with zero positions; if needed, the Don't Need status filter is enabled so the new row is visible immediately.
 - Top metrics:
   - Total Classrooms
   - Active
@@ -341,10 +356,23 @@ Shell:
   - Open Positions
 - Filter row: School, Program, Status, search, More Filters, Clear.
 - Main table: Classroom, School, Program, Licensed Capacity, Total Positions, Filled, Open, Priority Status, Active, Actions.
+  - Refreshing, filtering, or selecting rows must leave the horizontal scroll at the left edge so Classroom remains visible.
+  - At normal desktop app width, the Classroom column remains visible without requiring horizontal scrolling.
+  - Priority and Active cells use text-first chips; icons must not clip words such as `Filled / Healthy`.
+- Row `View` action selects that classroom and refreshes the detail panel without mutating DB.
 - Pagination footer: result count on left, page controls centered/right, rows-per-page combo on far right.
   - Result label object: `StaffingV2ClassroomsResultCount`.
   - Rows-per-page combo object: `StaffingV2ClassroomsRowsPerPage`.
-- Optional right detail drawer with staffing summary and validation cards.
+  - Rows-per-page values are `10 / page`, `25 / page`, and `50 / page`.
+  - Previous/Next update only the visible page slice. Filters, search, and sort remain applied across page changes.
+  - The result label shows the visible slice, such as `Showing 1 to 10 of 34 classrooms`.
+  - Applying or clearing filters returns pagination to page 1.
+- Right detail panel with staffing summary and validation cards.
+  - Detail fields are editable for school, classroom name, program, licensed capacity, and display order.
+  - `Save Changes` calls `StaffingService.update_classroom`, refreshes the table/detail view, and does not mutate assignments or assignment_history.
+  - `Deactivate Classroom` calls `StaffingService.deactivate_classroom`.
+  - Deactivation is fail-closed when active assignments exist and shows an inline validation message.
+  - Successful deactivation soft-hides the classroom from the active Classroom Management list without deleting assignments or assignment_history.
 - Validation health strip/cards under table.
 
 ## Staffing Validation
@@ -353,6 +381,7 @@ Shell:
 
 - Same sidebar, Validation active.
 - Header: `Staffing Validation`, subtitle, last updated, Export Report.
+  - `Export Report` opens a read-only preview of the currently filtered validation issues without writing files or mutating DB.
 - Overview cards: Total Issues, Critical, Warning, Info, Overall Compliance.
 - Issue tabs: All Issues, Critical, Warnings, Info.
   - Active tab uses blue text and 2 px blue underline.
@@ -360,6 +389,7 @@ Shell:
   - PySide implementation marks active tab with `staffingV2ActiveValidationTab` for QSS and tests.
 - Search and Filters button.
 - Issues table: Issue, Classroom, Type, Severity, Detected, Details, Action.
+- Row `View` action opens the related Position Detail drawer without mutating DB.
 - Pagination footer: result count on left, page controls centered/right, rows-per-page combo on far right.
   - Result label object: `StaffingV2ValidationResultCount`.
   - Rows-per-page combo object: `StaffingV2ValidationRowsPerPage`.
@@ -367,6 +397,9 @@ Shell:
   - Filters
   - Compliance Summary donut or simplified bar if donut not practical in PySide
   - Quick Actions
+    - `Run Full Validation` refreshes StaffingService-backed metrics and validation rows without mutating DB.
+    - `Export Validation Report` opens the same read-only filtered-issues preview as the header export action.
+    - `View Validation Rules` opens a read-only rules dialog covering coverage, permit status, upcoming start dates, and lifecycle integrity.
   - About Validation
 - Severity chips and icons must be visible.
 
@@ -374,17 +407,21 @@ Shell:
 
 Used by Classrooms and Validation screens:
 
-- Right drawer overlay, width about 360 px.
+- Right drawer overlay, width 420-520 px. Opening the drawer must not resize, squeeze, or reflow the dashboard behind it.
+- Drawer footer actions Cancel and Apply remain visible and inside drawer bounds at the real desktop app size.
 - Header: Filters, Reset, close X.
 - Form controls stacked with 16-24 px section spacing.
 - Status checkboxes with colored dots.
+- Classrooms drawer includes School, Program, Status, Open Positions, Days Open range, Permit Status, Assigned Staff, and Sort By controls.
 - Classrooms drawer default checked statuses: Need Now, Coming, Filled; Don't Need Now off.
+- Classrooms drawer controls are draft-only until Apply; Cancel or close restores the prior applied state without changing visible rows.
 - Classrooms filter trigger and apply button display active filter count, e.g. `Filters 3` and `Apply Filters 3`.
 - Validation drawer includes severity checkboxes, issue type combo, and Detected Date combo.
   - Detected Date combo object: `StaffingV2FilterDetectedDate`.
   - Default detected date text: `Last 30 Days`.
 - Validation filter trigger and apply button display active filter count, e.g. `Filters 3` and `Apply Filters 3`.
 - Footer fixed bottom: Cancel, primary Apply Filters with active count chip.
+- Footer actions must remain reachable in the current viewport; do not push Cancel/Apply below the visible drawer with a stretch spacer.
 - Drawer must not mutate DB; only updates view filters.
 
 ## Add Position Dialog

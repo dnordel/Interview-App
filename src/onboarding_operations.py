@@ -2035,12 +2035,24 @@ def _build_template_values(
     return values
 
 
-def _send_email_message(settings: EmailSettings, recipients: list[str], subject: str, body: str) -> None:
+def _send_email_message(
+    settings: EmailSettings,
+    recipients: list[str],
+    subject: str,
+    body: str,
+    attachment_paths: Sequence[str] | None = None,
+) -> None:
     message = EmailMessage()
     message["Subject"] = sanitize_email_subject(subject)
     message["From"] = settings.sender_email
     message["To"] = ", ".join(recipients)
     message.set_content(body)
+    for path_text in attachment_paths or []:
+        path = Path(path_text)
+        with path.open("rb") as attachment_file:
+            data = attachment_file.read()
+        maintype, subtype = ("application", "pdf") if path.suffix.casefold() == ".pdf" else ("application", "octet-stream")
+        message.add_attachment(data, maintype=maintype, subtype=subtype, filename=path.name)
 
     smtp_factory, should_starttls = _smtp_transport(settings)
     with smtp_factory(settings.smtp_host, settings.smtp_port, timeout=30) as server:
