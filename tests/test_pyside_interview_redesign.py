@@ -10035,6 +10035,12 @@ def test_pyside_staffing_v2_validation_dashboard_and_filter_drawer_use_existing_
     assert "Warning 1" in metric_text
     assert "Info 1" in metric_text
     assert "Overall Compliance" in metric_text
+    validation_tabs = page.findChild(qt_widgets.QFrame, "StaffingV2ValidationTabs")
+    assert validation_tabs is not None
+    assert page.findChild(qt_widgets.QPushButton, "StaffingV2ValidationAllIssuesTab").text() == "All Issues (3)"
+    assert page.findChild(qt_widgets.QPushButton, "StaffingV2ValidationCriticalTab").text() == "Critical (1)"
+    assert page.findChild(qt_widgets.QPushButton, "StaffingV2ValidationWarningsTab").text() == "Warnings (1)"
+    assert page.findChild(qt_widgets.QPushButton, "StaffingV2ValidationInfoTab").text() == "Info (1)"
     validation_search = page.findChild(qt_widgets.QLineEdit, "StaffingV2ValidationSearch")
     assert validation_search.placeholderText() == "Search issues..."
     assert validation_search.actions()
@@ -10065,6 +10071,13 @@ def test_pyside_staffing_v2_validation_dashboard_and_filter_drawer_use_existing_
         assert view_button.text() == "View"
         assert not view_button.icon().isNull()
         assert not view_button.isEnabled()
+    page.findChild(qt_widgets.QPushButton, "StaffingV2ValidationCriticalTab").click()
+    app.processEvents()
+    assert table.rowCount() == 1
+    assert table.item(0, 3).text() == "Critical"
+    page.findChild(qt_widgets.QPushButton, "StaffingV2ValidationAllIssuesTab").click()
+    app.processEvents()
+    assert table.rowCount() == 3
     right_panel_text = _widget_text(page.findChild(qt_widgets.QFrame, "StaffingV2ValidationRightPanel"))
     assert "Compliance Summary" in right_panel_text
     assert "Quick Actions" in right_panel_text

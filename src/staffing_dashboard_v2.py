@@ -1374,6 +1374,41 @@ class StaffingDashboardV2Page:
         self.validation_metrics_layout.setSpacing(10)
         main_layout.addLayout(self.validation_metrics_layout)
 
+        tabs = self.QtWidgets.QFrame()
+        tabs.setObjectName("StaffingV2ValidationTabs")
+        tabs_layout = self.QtWidgets.QHBoxLayout(tabs)
+        tabs_layout.setContentsMargins(0, 0, 0, 0)
+        tabs_layout.setSpacing(10)
+        self.validation_all_tab = self.QtWidgets.QPushButton("All Issues")
+        self.validation_all_tab.setObjectName("StaffingV2ValidationAllIssuesTab")
+        self.validation_critical_tab = self.QtWidgets.QPushButton("Critical")
+        self.validation_critical_tab.setObjectName("StaffingV2ValidationCriticalTab")
+        self.validation_warning_tab = self.QtWidgets.QPushButton("Warnings")
+        self.validation_warning_tab.setObjectName("StaffingV2ValidationWarningsTab")
+        self.validation_info_tab = self.QtWidgets.QPushButton("Info")
+        self.validation_info_tab.setObjectName("StaffingV2ValidationInfoTab")
+        for button in (
+            self.validation_all_tab,
+            self.validation_critical_tab,
+            self.validation_warning_tab,
+            self.validation_info_tab,
+        ):
+            button.setMinimumHeight(34)
+            tabs_layout.addWidget(button)
+        tabs_layout.addStretch(1)
+
+        def select_validation_tab(severity: str | None) -> None:
+            self.validation_severity_critical.setChecked(severity in {None, "Critical"})
+            self.validation_severity_warning.setChecked(severity in {None, "Warning"})
+            self.validation_severity_info.setChecked(severity in {None, "Info"})
+            self._refresh_validation_filters()
+
+        self.validation_all_tab.clicked.connect(lambda _checked=False: select_validation_tab(None))
+        self.validation_critical_tab.clicked.connect(lambda _checked=False: select_validation_tab("Critical"))
+        self.validation_warning_tab.clicked.connect(lambda _checked=False: select_validation_tab("Warning"))
+        self.validation_info_tab.clicked.connect(lambda _checked=False: select_validation_tab("Info"))
+        main_layout.addWidget(tabs)
+
         controls = self.QtWidgets.QHBoxLayout()
         self.validation_search = self.QtWidgets.QLineEdit()
         self.validation_search.setObjectName("StaffingV2ValidationSearch")
@@ -1540,6 +1575,11 @@ class StaffingDashboardV2Page:
         critical = sum(1 for issue in self.validation_issues if issue["severity"] == "Critical")
         warning = sum(1 for issue in self.validation_issues if issue["severity"] == "Warning")
         info = sum(1 for issue in self.validation_issues if issue["severity"] == "Info")
+        if hasattr(self, "validation_all_tab"):
+            self.validation_all_tab.setText(f"All Issues ({total_issues})")
+            self.validation_critical_tab.setText(f"Critical ({critical})")
+            self.validation_warning_tab.setText(f"Warnings ({warning})")
+            self.validation_info_tab.setText(f"Info ({info})")
         total_positions = max(1, len(self.rows))
         compliance = max(0, round(((total_positions - critical - warning) / total_positions) * 100))
         for label, value in [
