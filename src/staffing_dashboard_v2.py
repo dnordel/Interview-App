@@ -471,13 +471,13 @@ class StaffingDashboardV2Page:
         sidebar_layout.addWidget(self._label("Launch Pad Learning", "StaffingV2Brand"))
         sidebar_layout.addSpacing(18)
         sidebar_layout.addWidget(self._label("STAFFING", "StaffingV2SidebarSection"))
-        self.dashboard_nav_button = self._sidebar_button("StaffingV2DashboardNavButton", "Staffing Dashboard")
+        self.dashboard_nav_button = self._sidebar_button("StaffingV2DashboardNavButton", "Staffing Dashboard", "dashboard")
         self.dashboard_nav_button.clicked.connect(self._show_dashboard_view)
-        self.classrooms_nav_button = self._sidebar_button("StaffingV2ClassroomsNavButton", "Classrooms")
+        self.classrooms_nav_button = self._sidebar_button("StaffingV2ClassroomsNavButton", "Classrooms", "classrooms")
         self.classrooms_nav_button.clicked.connect(self._show_classrooms_view)
-        self.people_nav_button = self._sidebar_button("StaffingV2PeopleNavButton", "People")
+        self.people_nav_button = self._sidebar_button("StaffingV2PeopleNavButton", "People", "people")
         self.people_nav_button.clicked.connect(self._show_people_view)
-        self.history_nav_button = self._sidebar_button("StaffingV2HistoryNavButton", "Assignment History")
+        self.history_nav_button = self._sidebar_button("StaffingV2HistoryNavButton", "Assignment History", "history")
         self.history_nav_button.clicked.connect(self._show_history_view)
         for button in (
             self.dashboard_nav_button,
@@ -488,9 +488,9 @@ class StaffingDashboardV2Page:
             sidebar_layout.addWidget(button)
         sidebar_layout.addSpacing(16)
         sidebar_layout.addWidget(self._label("SYSTEM", "StaffingV2SidebarSection"))
-        self.validation_nav_button = self._sidebar_button("StaffingV2ValidationNavButton", "Validation")
+        self.validation_nav_button = self._sidebar_button("StaffingV2ValidationNavButton", "Validation", "validation")
         self.validation_nav_button.clicked.connect(self._show_validation_view)
-        self.settings_nav_button = self._sidebar_button("StaffingV2SettingsNavButton", "Settings")
+        self.settings_nav_button = self._sidebar_button("StaffingV2SettingsNavButton", "Settings", "settings")
         self.settings_nav_button.setEnabled(False)
         sidebar_layout.addWidget(self.validation_nav_button)
         sidebar_layout.addWidget(self.settings_nav_button)
@@ -543,20 +543,24 @@ class StaffingDashboardV2Page:
         self.search.setObjectName("StaffingV2Search")
         self.search.setPlaceholderText("Search classrooms")
         self.search.setMinimumHeight(40)
+        self.search.addAction(self._standard_icon("search"), self.QtWidgets.QLineEdit.ActionPosition.LeadingPosition)
         self.search.textChanged.connect(self._refresh_filters)
         header.addWidget(self.search)
         self.export_button = self.QtWidgets.QPushButton("Export")
         self.export_button.setObjectName("StaffingV2ExportButton")
+        self._set_button_icon(self.export_button, "export")
         self.export_button.setMinimumHeight(40)
         self.export_button.setEnabled(False)
         header.addWidget(self.export_button)
         self.view_history_button = self.QtWidgets.QPushButton("View History")
         self.view_history_button.setObjectName("StaffingV2ViewHistoryButton")
+        self._set_button_icon(self.view_history_button, "history")
         self.view_history_button.setMinimumHeight(40)
         self.view_history_button.clicked.connect(self._show_history_view)
         header.addWidget(self.view_history_button)
         self.add_button = self.QtWidgets.QPushButton("+  Add Position")
         self.add_button.setObjectName("StaffingV2AddPositionButton")
+        self._set_button_icon(self.add_button, "add")
         self.add_button.setProperty("staffingV2Action", "add_position")
         self.add_button.setMinimumHeight(40)
         self.add_button.clicked.connect(self._open_add_position_dialog)
@@ -635,12 +639,33 @@ class StaffingDashboardV2Page:
         self._build_validation_view()
         self._set_active_nav(self.dashboard_nav_button)
 
-    def _sidebar_button(self, object_name: str, text: str) -> Any:
+    def _sidebar_button(self, object_name: str, text: str, icon_key: str = "") -> Any:
         button = self.QtWidgets.QPushButton(text)
         button.setObjectName(object_name)
         button.setMinimumHeight(40)
         button.setProperty("staffingV2ActiveNav", False)
+        if icon_key:
+            self._set_button_icon(button, icon_key)
         return button
+
+    def _set_button_icon(self, button: Any, icon_key: str) -> None:
+        button.setIcon(self._standard_icon(icon_key))
+        button.setIconSize(self.QtCore.QSize(18, 18))
+
+    def _standard_icon(self, icon_key: str) -> Any:
+        pixmaps = self.QtWidgets.QStyle.StandardPixmap
+        mapping = {
+            "add": pixmaps.SP_FileDialogNewFolder,
+            "classrooms": pixmaps.SP_DirHomeIcon,
+            "dashboard": pixmaps.SP_ComputerIcon,
+            "export": pixmaps.SP_DialogSaveButton,
+            "history": pixmaps.SP_BrowserReload,
+            "people": pixmaps.SP_FileDialogDetailedView,
+            "search": pixmaps.SP_FileDialogContentsView,
+            "settings": pixmaps.SP_FileDialogDetailedView,
+            "validation": pixmaps.SP_MessageBoxInformation,
+        }
+        return self.widget.style().standardIcon(mapping.get(icon_key, pixmaps.SP_FileIcon))
 
     def _set_active_nav(self, active_button: Any) -> None:
         for button in (

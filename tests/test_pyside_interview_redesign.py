@@ -8625,16 +8625,28 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2DashboardNavButton").property("staffingV2ActiveNav") is True
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleNavButton").text() == "People"
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2HistoryNavButton").text() == "Assignment History"
+    for object_name in (
+        "StaffingV2DashboardNavButton",
+        "StaffingV2ClassroomsNavButton",
+        "StaffingV2PeopleNavButton",
+        "StaffingV2HistoryNavButton",
+        "StaffingV2ValidationNavButton",
+    ):
+        assert not page.findChild(qt_widgets.QPushButton, object_name).icon().isNull()
     assert page.findChild(qt_widgets.QFrame, "StaffingV2TopTabBar") is None
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2ExportButton").text() == "Export"
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2ViewHistoryButton").text() == "View History"
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2AddPositionButton").minimumHeight() >= 40
+    assert not page.findChild(qt_widgets.QPushButton, "StaffingV2ExportButton").icon().isNull()
+    assert not page.findChild(qt_widgets.QPushButton, "StaffingV2ViewHistoryButton").icon().isNull()
+    assert not page.findChild(qt_widgets.QPushButton, "StaffingV2AddPositionButton").icon().isNull()
     assert page.findChild(qt_widgets.QFrame, "StaffingV2Sidebar").minimumWidth() >= 240
     assert page.objectName() == "PySideStaffingV2Page"
     assert page.findChild(qt_widgets.QLabel, "StaffingV2PageTitle").text() == "Staffing Dashboard"
     assert page.findChild(qt_widgets.QComboBox, "StaffingV2SchoolFilter").currentText() == "Hawthorne"
     assert page.findChild(qt_widgets.QComboBox, "StaffingV2ProgramFilter").currentText() == "All Programs"
     assert page.findChild(qt_widgets.QLineEdit, "StaffingV2Search").placeholderText() == "Search classrooms"
+    assert page.findChild(qt_widgets.QLineEdit, "StaffingV2Search").actions()
     metric_text = " ".join(_widget_text(card) for card in page.findChildren(qt_widgets.QFrame, "StaffingV2MetricCard"))
     assert "Schools 1" in metric_text
     assert "Open positions 1" in metric_text
