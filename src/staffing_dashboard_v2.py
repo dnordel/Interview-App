@@ -264,6 +264,20 @@ QPushButton#StaffingV2PrimaryButton {
     padding: 8px 14px;
     font-weight: 700;
 }
+QPushButton#StaffingV2FilterApplyButton {
+    background-color: #2563eb;
+    color: #ffffff;
+    border: 1px solid #2563eb;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-weight: 700;
+}
+QPushButton#StaffingV2FilterCloseButton {
+    background-color: transparent;
+    color: #0f172a;
+    border: none;
+    border-radius: 8px;
+}
 QPushButton#StaffingV2DropZoneAddButton {
     background-color: transparent;
     color: #2563eb;
@@ -290,7 +304,9 @@ QPushButton#StaffingV2HistoryValidationButton,
 QPushButton#StaffingV2HistoryMoreFilters,
 QPushButton#StaffingV2HistoryClear,
 QPushButton#StaffingV2ValidationExportButton,
-QPushButton#StaffingV2ValidationFiltersButton {
+QPushButton#StaffingV2ValidationFiltersButton,
+QPushButton#StaffingV2FilterResetButton,
+QPushButton#StaffingV2FilterCancelButton {
     background-color: #ffffff;
     color: #1e293b;
     border: 1px solid #cbd5e1;
@@ -767,6 +783,7 @@ class StaffingDashboardV2Page:
             "add": pixmaps.SP_FileDialogNewFolder,
             "analytics": pixmaps.SP_FileDialogInfoView,
             "classrooms": pixmaps.SP_DirHomeIcon,
+            "close": pixmaps.SP_DialogCloseButton,
             "dashboard": pixmaps.SP_ComputerIcon,
             "export": pixmaps.SP_DialogSaveButton,
             "filter": pixmaps.SP_FileDialogDetailedView,
@@ -777,6 +794,7 @@ class StaffingDashboardV2Page:
             "people": pixmaps.SP_FileDialogDetailedView,
             "search": pixmaps.SP_FileDialogContentsView,
             "settings": pixmaps.SP_FileDialogDetailedView,
+            "reset": pixmaps.SP_DialogResetButton,
             "status_filled": pixmaps.SP_DialogApplyButton,
             "status_need": pixmaps.SP_MessageBoxWarning,
             "status_neutral": pixmaps.SP_DialogResetButton,
@@ -1296,9 +1314,12 @@ class StaffingDashboardV2Page:
         header.addWidget(self._label("Filters", "StaffingV2SectionTitle"), 1)
         reset = self.QtWidgets.QPushButton("Reset")
         reset.setObjectName("StaffingV2FilterResetButton")
+        self._set_button_icon(reset, "reset")
         reset.clicked.connect(self._reset_validation_filters)
-        close = self.QtWidgets.QPushButton("X")
+        close = self.QtWidgets.QPushButton("")
         close.setObjectName("StaffingV2FilterCloseButton")
+        self._set_button_icon(close, "close")
+        close.setFixedSize(32, 32)
         close.clicked.connect(self.filter_drawer.hide)
         header.addWidget(reset)
         header.addWidget(close)
@@ -1334,6 +1355,7 @@ class StaffingDashboardV2Page:
         cancel.clicked.connect(self.filter_drawer.hide)
         apply = self.QtWidgets.QPushButton("Apply Filters")
         apply.setObjectName("StaffingV2FilterApplyButton")
+        self._set_button_icon(apply, "filter")
         apply.clicked.connect(self._apply_validation_filters)
         footer.addWidget(cancel)
         footer.addWidget(apply)
