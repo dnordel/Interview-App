@@ -130,6 +130,7 @@ Header:
 Summary chips:
 
 - One horizontal row below header.
+- `Export` and `View History` sit at the right side of this same row, not in a separate row above or below the chips.
 - Compact pill/cards, not large metric tiles:
   - `Schools: 4`
   - `Open positions: 7`

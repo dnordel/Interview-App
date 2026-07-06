@@ -64,7 +64,7 @@ QScrollBar::sub-page:horizontal {
     width: 0px;
 }
 QFrame#StaffingV2DashboardHeaderTopRow,
-QFrame#StaffingV2DashboardHeaderActionRow {
+QFrame#StaffingV2DashboardSummaryActionRow {
     background-color: transparent;
     border: none;
 }
@@ -726,29 +726,27 @@ class StaffingDashboardV2Page:
         header.addWidget(self.add_button)
         dashboard_root.addWidget(header_top)
 
-        header_actions = self.QtWidgets.QFrame()
-        header_actions.setObjectName("StaffingV2DashboardHeaderActionRow")
-        header_actions_layout = self.QtWidgets.QHBoxLayout(header_actions)
-        header_actions_layout.setContentsMargins(0, 0, 0, 0)
-        header_actions_layout.setSpacing(10)
-        header_actions_layout.addStretch(1)
+        summary_actions = self.QtWidgets.QFrame()
+        summary_actions.setObjectName("StaffingV2DashboardSummaryActionRow")
+        summary_actions_layout = self.QtWidgets.QHBoxLayout(summary_actions)
+        summary_actions_layout.setContentsMargins(0, 0, 0, 0)
+        summary_actions_layout.setSpacing(10)
+        self.metrics_layout = self.QtWidgets.QHBoxLayout()
+        self.metrics_layout.setSpacing(10)
+        summary_actions_layout.addLayout(self.metrics_layout, 1)
         self.export_button = self.QtWidgets.QPushButton("Export")
         self.export_button.setObjectName("StaffingV2ExportButton")
         self._set_button_icon(self.export_button, "export")
         self.export_button.setMinimumHeight(40)
         self.export_button.setEnabled(False)
-        header_actions_layout.addWidget(self.export_button)
+        summary_actions_layout.addWidget(self.export_button)
         self.view_history_button = self.QtWidgets.QPushButton("View History")
         self.view_history_button.setObjectName("StaffingV2ViewHistoryButton")
         self._set_button_icon(self.view_history_button, "history")
         self.view_history_button.setMinimumHeight(40)
         self.view_history_button.clicked.connect(self._show_history_view)
-        header_actions_layout.addWidget(self.view_history_button)
-        dashboard_root.addWidget(header_actions)
-
-        self.metrics_layout = self.QtWidgets.QHBoxLayout()
-        self.metrics_layout.setSpacing(10)
-        dashboard_root.addLayout(self.metrics_layout)
+        summary_actions_layout.addWidget(self.view_history_button)
+        dashboard_root.addWidget(summary_actions)
 
         main = self.QtWidgets.QSplitter(self.QtCore.Qt.Orientation.Horizontal)
         main.setObjectName("StaffingV2MainSplitter")
