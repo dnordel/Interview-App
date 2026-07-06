@@ -9228,6 +9228,7 @@ def test_pyside_staffing_v2_position_detail_drawer_opens_from_position_row(
     assert assign_person.text() == "Assign or Create Person"
     assert not assign_person.isEnabled()
     assert not assign_person.icon().isNull()
+    assert _icon_has_primary_blue(assign_person.icon())
     assert drawer.findChild(qt_widgets.QPushButton, "StaffingV2DrawerMarkComing").text() == "Mark Coming"
     assert drawer.findChild(qt_widgets.QPushButton, "StaffingV2DrawerMarkDontNeed").text() == "Mark Don't Need"
     assert drawer.findChild(qt_widgets.QPushButton, "StaffingV2DrawerViewHistory").text() == "View Full History"
@@ -9330,6 +9331,7 @@ def test_pyside_staffing_v2_mark_coming_dialog_saves_through_service(
     assert not close_button.icon().isNull()
     assert not dialog.findChild(qt_widgets.QPushButton, "StaffingV2ComingSelectPerson").icon().isNull()
     assert not dialog.findChild(qt_widgets.QPushButton, "StaffingV2ComingCreatePerson").icon().isNull()
+    assert _icon_has_primary_blue(dialog.findChild(qt_widgets.QPushButton, "StaffingV2ComingCreatePerson").icon())
     assert not dialog.findChild(qt_widgets.QPushButton, "StaffingV2ComingSubmit").icon().isNull()
 
     dialog.findChild(qt_widgets.QLineEdit, "StaffingV2ComingFullName").setText("Emily Carter")

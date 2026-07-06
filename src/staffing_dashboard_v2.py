@@ -855,6 +855,20 @@ class StaffingDashboardV2Page:
             painter.drawLine(4, 9, 14, 9)
             painter.end()
             return self.QtGui.QIcon(pixmap)
+        if icon_key == "person_add":
+            pixmap = self.QtGui.QPixmap(18, 18)
+            pixmap.fill(self.QtCore.Qt.GlobalColor.transparent)
+            painter = self.QtGui.QPainter(pixmap)
+            pen = self.QtGui.QPen(self.QtGui.QColor("#2563eb"))
+            pen.setWidth(2)
+            pen.setCapStyle(self.QtCore.Qt.PenCapStyle.RoundCap)
+            painter.setPen(pen)
+            painter.drawEllipse(2, 2, 6, 6)
+            painter.drawArc(1, 10, 9, 6, 0, 180 * 16)
+            painter.drawLine(13, 6, 13, 14)
+            painter.drawLine(9, 10, 17, 10)
+            painter.end()
+            return self.QtGui.QIcon(pixmap)
         pixmaps = self.QtWidgets.QStyle.StandardPixmap
         mapping = {
             "analytics": pixmaps.SP_FileDialogInfoView,
@@ -868,7 +882,6 @@ class StaffingDashboardV2Page:
             "integrations": pixmaps.SP_DriveNetIcon,
             "notifications": pixmaps.SP_MessageBoxInformation,
             "people": pixmaps.SP_FileDialogDetailedView,
-            "person_add": pixmaps.SP_FileDialogNewFolder,
             "search": pixmaps.SP_FileDialogContentsView,
             "settings": pixmaps.SP_FileDialogDetailedView,
             "reset": pixmaps.SP_DialogResetButton,
