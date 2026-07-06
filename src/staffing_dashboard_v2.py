@@ -1560,12 +1560,17 @@ class StaffingDashboardV2Page:
                 issue["severity"],
                 issue["detected"],
                 issue["details"],
-                "View",
             ]
             for column, value in enumerate(values):
                 item = self.QtWidgets.QTableWidgetItem(value)
                 item.setData(self.QtCore.Qt.ItemDataRole.UserRole, issue["assignment_id"])
                 self.validation_table.setItem(row_index, column, item)
+            view = self.QtWidgets.QPushButton("View")
+            view.setObjectName("StaffingV2ValidationViewButton")
+            view.setProperty("assignmentId", issue["assignment_id"])
+            self._set_button_icon(view, "info")
+            view.setEnabled(False)
+            self.validation_table.setCellWidget(row_index, 6, view)
 
     def _refresh_validation_right_panel(self) -> None:
         self._clear_layout(self.validation_right_layout)

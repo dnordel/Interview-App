@@ -10034,8 +10034,13 @@ def test_pyside_staffing_v2_validation_dashboard_and_filter_drawer_use_existing_
         "Critical",
         "Warning",
         "Info",
-        "View",
     } <= table_text
+    for row in range(table.rowCount()):
+        view_button = table.cellWidget(row, 6)
+        assert isinstance(view_button, qt_widgets.QPushButton)
+        assert view_button.text() == "View"
+        assert not view_button.icon().isNull()
+        assert not view_button.isEnabled()
     right_panel_text = _widget_text(page.findChild(qt_widgets.QFrame, "StaffingV2ValidationRightPanel"))
     assert "Compliance Summary" in right_panel_text
     assert "Quick Actions" in right_panel_text
