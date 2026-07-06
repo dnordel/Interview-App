@@ -956,6 +956,9 @@ class StaffingDashboardV2Page:
         self.classrooms_search = self.QtWidgets.QLineEdit()
         self.classrooms_search.setObjectName("StaffingV2ClassroomsSearch")
         self.classrooms_search.setPlaceholderText("Search classrooms...")
+        self.classrooms_search.addAction(
+            self._standard_icon("search"), self.QtWidgets.QLineEdit.ActionPosition.LeadingPosition
+        )
         self.classrooms_search.textChanged.connect(self._refresh_classrooms_filters)
         filters.addWidget(self.classrooms_search, 2)
         more = self.QtWidgets.QPushButton("More Filters")
@@ -1591,6 +1594,9 @@ class StaffingDashboardV2Page:
         self.people_search = self.QtWidgets.QLineEdit()
         self.people_search.setObjectName("StaffingV2PeopleSearch")
         self.people_search.setPlaceholderText("Search by name, role, or email...")
+        self.people_search.addAction(
+            self._standard_icon("search"), self.QtWidgets.QLineEdit.ActionPosition.LeadingPosition
+        )
         self.people_search.textChanged.connect(self._refresh_people_filters)
         search_wrap.addWidget(self.people_search)
         filters.addLayout(search_wrap, 2)
@@ -1876,6 +1882,9 @@ class StaffingDashboardV2Page:
         self.history_search = self.QtWidgets.QLineEdit()
         self.history_search.setObjectName("StaffingV2HistorySearch")
         self.history_search.setPlaceholderText("Search assignments...")
+        self.history_search.addAction(
+            self._standard_icon("search"), self.QtWidgets.QLineEdit.ActionPosition.LeadingPosition
+        )
         self.history_search.textChanged.connect(self._refresh_history_filters)
         filters.addWidget(self.history_search, 2)
         more = self.QtWidgets.QPushButton("More Filters")

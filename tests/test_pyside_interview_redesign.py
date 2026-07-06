@@ -8889,7 +8889,9 @@ def test_pyside_staffing_v2_classrooms_dashboard_uses_new_shell_and_db_rows(
     assert page.findChild(qt_widgets.QComboBox, "StaffingV2ClassroomsSchoolFilter").currentText() == "All Schools"
     assert page.findChild(qt_widgets.QComboBox, "StaffingV2ClassroomsProgramFilter").currentText() == "All Programs"
     assert page.findChild(qt_widgets.QComboBox, "StaffingV2ClassroomsStatusFilter").currentText() == "All Statuses"
-    assert page.findChild(qt_widgets.QLineEdit, "StaffingV2ClassroomsSearch").placeholderText() == "Search classrooms..."
+    classrooms_search = page.findChild(qt_widgets.QLineEdit, "StaffingV2ClassroomsSearch")
+    assert classrooms_search.placeholderText() == "Search classrooms..."
+    assert classrooms_search.actions()
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsMoreFilters").text() == "More Filters"
     assert not page.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsMoreFilters").icon().isNull()
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsClear").text() == "Clear"
@@ -9711,9 +9713,9 @@ def test_pyside_staffing_v2_people_dashboard_renders_employee_management_from_db
     )
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleAddButton").text() == "Add Person"
     assert not page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleAddButton").icon().isNull()
-    assert page.findChild(qt_widgets.QLineEdit, "StaffingV2PeopleSearch").placeholderText() == (
-        "Search by name, role, or email..."
-    )
+    people_search = page.findChild(qt_widgets.QLineEdit, "StaffingV2PeopleSearch")
+    assert people_search.placeholderText() == "Search by name, role, or email..."
+    assert people_search.actions()
     assert page.findChild(qt_widgets.QComboBox, "StaffingV2PeopleActiveFilter").currentText() == "All"
     assert page.findChild(qt_widgets.QComboBox, "StaffingV2PeopleRoleFilter").currentText() == "All"
     assert page.findChild(qt_widgets.QComboBox, "StaffingV2PeoplePermitFilter").currentText() == "All"
@@ -9854,7 +9856,9 @@ def test_pyside_staffing_v2_assignment_history_dashboard_renders_history_from_db
     assert page.findChild(qt_widgets.QComboBox, "StaffingV2HistorySchoolFilter").currentText() == "All Schools"
     assert page.findChild(qt_widgets.QComboBox, "StaffingV2HistoryClassroomFilter").currentText() == "All Classrooms"
     assert page.findChild(qt_widgets.QComboBox, "StaffingV2HistoryCycleFilter").currentText() == "All Statuses"
-    assert page.findChild(qt_widgets.QLineEdit, "StaffingV2HistorySearch").placeholderText() == "Search assignments..."
+    history_search = page.findChild(qt_widgets.QLineEdit, "StaffingV2HistorySearch")
+    assert history_search.placeholderText() == "Search assignments..."
+    assert history_search.actions()
     assert not page.findChild(qt_widgets.QPushButton, "StaffingV2HistoryMoreFilters").icon().isNull()
     table = page.findChild(qt_widgets.QTableWidget, "StaffingV2HistoryTable")
     assert table.rowCount() == 2
