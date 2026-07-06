@@ -9628,6 +9628,10 @@ def test_pyside_staffing_v2_mark_need_now_dialog_clears_replacement(
     assert "Status will change from Replace to Need Now" in dialog_text
     assert "Teacher name and start date will be cleared" in dialog_text
     assert "Options" in dialog_text
+    close_button = dialog.findChild(qt_widgets.QPushButton, "StaffingV2NeedNowClose")
+    assert close_button is not None
+    assert close_button.text() == ""
+    assert not close_button.icon().isNull()
     checkbox = dialog.findChild(qt_widgets.QCheckBox, "StaffingV2NeedNowClearPerson")
     assert checkbox is not None
     assert checkbox.isChecked()

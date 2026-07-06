@@ -333,7 +333,8 @@ QPushButton#StaffingV2AddPositionClose,
 QPushButton#StaffingV2ComingClose,
 QPushButton#StaffingV2ManageFilledClose,
 QPushButton#StaffingV2PermitClose,
-QPushButton#StaffingV2FilledClose {
+QPushButton#StaffingV2FilledClose,
+QPushButton#StaffingV2NeedNowClose {
     background-color: transparent;
     color: #0f172a;
     border: none;
@@ -3140,7 +3141,9 @@ class StaffingDashboardV2Page:
         title_block = self.QtWidgets.QVBoxLayout()
         title_block.addWidget(self._label("Mark Position as Need Now", "StaffingV2DrawerTitle"))
         header.addLayout(title_block, 1)
-        close = self.QtWidgets.QPushButton("X")
+        close = self.QtWidgets.QPushButton("")
+        close.setObjectName("StaffingV2NeedNowClose")
+        self._set_button_icon(close, "close")
         close.clicked.connect(dialog.close)
         header.addWidget(close)
         root.addLayout(header)
