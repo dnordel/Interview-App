@@ -281,7 +281,8 @@ QPushButton#StaffingV2ClassroomsFilterApply {
     font-weight: 700;
 }
 QPushButton#StaffingV2FilterCloseButton,
-QPushButton#StaffingV2ClassroomsFilterClose {
+QPushButton#StaffingV2ClassroomsFilterClose,
+QPushButton#StaffingV2DrawerClose {
     background-color: transparent;
     color: #0f172a;
     border: none;
@@ -317,7 +318,9 @@ QPushButton#StaffingV2ValidationFiltersButton,
 QPushButton#StaffingV2FilterResetButton,
 QPushButton#StaffingV2FilterCancelButton,
 QPushButton#StaffingV2ClassroomsFilterReset,
-QPushButton#StaffingV2ClassroomsFilterCancel {
+QPushButton#StaffingV2ClassroomsFilterCancel,
+QPushButton#StaffingV2DrawerCancel,
+QPushButton#StaffingV2DrawerSaveDraft {
     background-color: #ffffff;
     color: #1e293b;
     border: 1px solid #cbd5e1;
@@ -329,6 +332,7 @@ QPushButton#StaffingV2DrawerMarkComing,
 QPushButton#StaffingV2DrawerMarkFilled,
 QPushButton#StaffingV2ClassroomsAddButton,
 QPushButton#StaffingV2PeopleAddButton,
+QPushButton#StaffingV2DrawerSaveChanges,
 QPushButton#StaffingV2ComingSubmit,
 QPushButton#StaffingV2FilledSubmit,
 QPushButton#StaffingV2ManageFilledContinue,
@@ -2230,8 +2234,10 @@ class StaffingDashboardV2Page:
         title_column.addWidget(self._label("Position Detail", "StaffingV2DrawerTitle"))
         title_column.addWidget(self._label(f"{assignment.classroom} · {assignment.school} · Assignment ID #{assignment.id}", "StaffingV2Muted"))
         header.addLayout(title_column, 1)
-        close = self.QtWidgets.QPushButton("X")
+        close = self.QtWidgets.QPushButton("")
         close.setObjectName("StaffingV2DrawerClose")
+        self._set_button_icon(close, "close")
+        close.setFixedSize(32, 32)
         close.clicked.connect(self.drawer.hide)
         header.addWidget(close)
         self.drawer_layout.addLayout(header)
@@ -2310,6 +2316,21 @@ class StaffingDashboardV2Page:
         self.drawer_layout.addStretch(1)
         footer = self._label(f"Last updated: {assignment.updated_at or '-'}", "StaffingV2Muted")
         self.drawer_layout.addWidget(footer)
+        actions = self.QtWidgets.QHBoxLayout()
+        cancel = self.QtWidgets.QPushButton("Cancel")
+        cancel.setObjectName("StaffingV2DrawerCancel")
+        cancel.clicked.connect(self.drawer.hide)
+        draft = self.QtWidgets.QPushButton("Save Draft")
+        draft.setObjectName("StaffingV2DrawerSaveDraft")
+        draft.setEnabled(False)
+        save = self.QtWidgets.QPushButton("Save Changes")
+        save.setObjectName("StaffingV2DrawerSaveChanges")
+        save.setEnabled(False)
+        actions.addWidget(cancel)
+        actions.addStretch(1)
+        actions.addWidget(draft)
+        actions.addWidget(save)
+        self.drawer_layout.addLayout(actions)
         self.drawer.show()
 
     def _action_button(self, row: StaffingMetricRow) -> Any:

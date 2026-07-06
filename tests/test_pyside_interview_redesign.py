@@ -9205,7 +9205,18 @@ def test_pyside_staffing_v2_position_detail_drawer_opens_from_position_row(
     assert drawer.findChild(qt_widgets.QPushButton, "StaffingV2DrawerMarkComing").text() == "Mark Coming"
     assert drawer.findChild(qt_widgets.QPushButton, "StaffingV2DrawerMarkDontNeed").text() == "Mark Don't Need"
     assert drawer.findChild(qt_widgets.QPushButton, "StaffingV2DrawerViewHistory").text() == "View Full History"
-    assert page.findChild(qt_widgets.QPushButton, "StaffingV2DrawerClose") is not None
+    close = page.findChild(qt_widgets.QPushButton, "StaffingV2DrawerClose")
+    assert close is not None
+    assert close.text() == ""
+    assert not close.icon().isNull()
+    footer_buttons = {
+        button.objectName(): button.text()
+        for button in drawer.findChildren(qt_widgets.QPushButton)
+        if button.objectName().startswith("StaffingV2Drawer")
+    }
+    assert footer_buttons["StaffingV2DrawerCancel"] == "Cancel"
+    assert footer_buttons["StaffingV2DrawerSaveDraft"] == "Save Draft"
+    assert footer_buttons["StaffingV2DrawerSaveChanges"] == "Save Changes"
     assert len(store.list_assignments()) == 2
     window.window.close()
     app.processEvents()
