@@ -310,6 +310,9 @@ Shell:
   - assignment ID chip
     - Neutral slate chip, object `StaffingV2HistoryAssignmentIdChip`, text like `A-1024`.
   - lifecycle events
+    - Each row uses object `StaffingV2HistoryLifecycleEventRow`.
+    - Row property `staffingV2LifecycleEventType` is `opened`, `filled`, or `open`.
+    - Rows include leading event icon and date subtext where available.
   - validation/integrity checklist
     - Each row uses object `StaffingV2HistoryValidationCheckRow`.
     - Row property `staffingV2ValidationCheckStatus` is `pass` or `warning`.

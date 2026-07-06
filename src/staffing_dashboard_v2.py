@@ -206,12 +206,14 @@ QFrame#StaffingV2DialogWarning,
 QFrame#StaffingV2AddPositionStatusCard,
 QFrame#StaffingV2ManagePermitCard,
 QFrame#StaffingV2ManageReplaceCard,
-QFrame#StaffingV2HistoryValidationCheckRow {
+QFrame#StaffingV2HistoryValidationCheckRow,
+QFrame#StaffingV2HistoryLifecycleEventRow {
     background-color: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
 }
-QFrame#StaffingV2HistoryValidationCheckRow {
+QFrame#StaffingV2HistoryValidationCheckRow,
+QFrame#StaffingV2HistoryLifecycleEventRow {
     border: none;
 }
 QFrame#StaffingV2DialogInfo {
@@ -2256,11 +2258,25 @@ class StaffingDashboardV2Page:
 
         lifecycle, lifecycle_layout = self._panel("StaffingV2HistoryDetailCard")
         lifecycle_layout.addWidget(self._label("Lifecycle Events", "StaffingV2SectionTitle"))
-        lifecycle_layout.addWidget(self._label(f"Position opened\n{record.opened_date}"))
+        lifecycle_events = [("opened", "Position opened", record.opened_date, "add")]
         if record.filled_date:
-            lifecycle_layout.addWidget(self._label(f"Position marked Filled\n{record.filled_date}"))
+            lifecycle_events.append(("filled", "Position marked Filled", record.filled_date, "status_filled"))
         else:
-            lifecycle_layout.addWidget(self._label("Cycle remains open"))
+            lifecycle_events.append(("open", "Cycle remains open", "", "status_pending"))
+        for event_type, title, date_text, icon_key in lifecycle_events:
+            event_row = self.QtWidgets.QFrame()
+            event_row.setObjectName("StaffingV2HistoryLifecycleEventRow")
+            event_row.setProperty("staffingV2LifecycleEventType", event_type)
+            event_layout = self.QtWidgets.QHBoxLayout(event_row)
+            event_layout.setContentsMargins(0, 2, 0, 2)
+            event_layout.setSpacing(8)
+            event_layout.addWidget(self._icon_label(icon_key, "StaffingV2ChipIcon"))
+            text_column = self.QtWidgets.QVBoxLayout()
+            text_column.addWidget(self._label(title))
+            if date_text:
+                text_column.addWidget(self._label(date_text, "StaffingV2Muted"))
+            event_layout.addLayout(text_column, 1)
+            lifecycle_layout.addWidget(event_row)
         self.history_detail_layout.addWidget(lifecycle)
 
         validation, validation_layout = self._panel("StaffingV2HistoryDetailCard")

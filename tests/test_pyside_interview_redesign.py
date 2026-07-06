@@ -9966,6 +9966,9 @@ def test_pyside_staffing_v2_assignment_history_dashboard_renders_history_from_db
     assert "Quest" in detail_text
     assert "Lifecycle Events" in detail_text
     assert "Position opened" in detail_text
+    lifecycle_rows = page.findChildren(qt_widgets.QFrame, "StaffingV2HistoryLifecycleEventRow")
+    assert lifecycle_rows
+    assert any(row.property("staffingV2LifecycleEventType") == "opened" for row in lifecycle_rows)
     assert "Validation / Integrity" in detail_text
     assert "Duplicate active cycle" in detail_text
     validation_rows = page.findChildren(qt_widgets.QFrame, "StaffingV2HistoryValidationCheckRow")
