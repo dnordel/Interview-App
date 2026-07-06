@@ -8712,6 +8712,19 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
         assert not icon.pixmap().isNull()
     table = page.findChild(qt_widgets.QTableWidget, "StaffingV2PositionsTable")
     assert table.maximumHeight() <= 230
+    assert table.columnCount() == 8
+    assert [table.horizontalHeaderItem(column).text() for column in range(table.columnCount())] == [
+        "",
+        "Position",
+        "Person",
+        "Status",
+        "Start Date",
+        "Days Open",
+        "Permit Status",
+        "Next Action",
+    ]
+    assert table.verticalHeader().isHidden()
+    assert table.horizontalHeader().sectionResizeMode(0) == qt_widgets.QHeaderView.ResizeMode.Fixed
     table_text = {
         table.item(row, column).text()
         for row in range(table.rowCount())
@@ -8732,20 +8745,22 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
     assert table.editTriggers() == qt_widgets.QAbstractItemView.EditTrigger.NoEditTriggers
     need_now_row = _staffing_row_for_position(table, "Teacher 1")
     filled_row = _staffing_row_for_position(table, "Teacher 2")
-    assert table.cellWidget(need_now_row, 2).objectName() == "StaffingV2NeedNowChip"
-    assert table.cellWidget(filled_row, 2).objectName() == "StaffingV2FilledChip"
-    assert table.cellWidget(need_now_row, 5).objectName() == "StaffingV2NeutralChip"
-    assert table.cellWidget(filled_row, 5).objectName() == "StaffingV2ComingChip"
+    assert table.item(need_now_row, 0).text() == "1"
+    assert table.item(filled_row, 0).text() == "2"
+    assert table.cellWidget(need_now_row, 3).objectName() == "StaffingV2NeedNowChip"
+    assert table.cellWidget(filled_row, 3).objectName() == "StaffingV2FilledChip"
+    assert table.cellWidget(need_now_row, 6).objectName() == "StaffingV2NeutralChip"
+    assert table.cellWidget(filled_row, 6).objectName() == "StaffingV2ComingChip"
     for chip in (
-        table.cellWidget(need_now_row, 2),
-        table.cellWidget(filled_row, 2),
-        table.cellWidget(need_now_row, 5),
-        table.cellWidget(filled_row, 5),
+        table.cellWidget(need_now_row, 3),
+        table.cellWidget(filled_row, 3),
+        table.cellWidget(need_now_row, 6),
+        table.cellWidget(filled_row, 6),
     ):
         assert chip.findChild(qt_widgets.QLabel, "StaffingV2ChipIcon") is not None
         assert chip.findChild(qt_widgets.QLabel, "StaffingV2ChipText") is not None
-    assert table.item(need_now_row, 2) is None
-    assert table.item(filled_row, 5) is None
+    assert table.item(need_now_row, 3) is None
+    assert table.item(filled_row, 6) is None
     need_now_action = table.cellWidget(need_now_row, table.columnCount() - 1)
     filled_action = table.cellWidget(filled_row, table.columnCount() - 1)
     assert need_now_action.text() == "Mark Coming"

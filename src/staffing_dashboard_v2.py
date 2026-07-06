@@ -687,15 +687,18 @@ class StaffingDashboardV2Page:
         self.overview_layout.setSpacing(10)
         detail_layout.addLayout(self.overview_layout)
         detail_layout.addWidget(self._label("Positions", "StaffingV2SectionTitle"))
-        self.positions_table = self.QtWidgets.QTableWidget(0, 7)
+        self.positions_table = self.QtWidgets.QTableWidget(0, 8)
         self.positions_table.setObjectName("StaffingV2PositionsTable")
         self.positions_table.setEditTriggers(self.QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         self.positions_table.setSelectionBehavior(self.QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
         self.positions_table.setHorizontalHeaderLabels(
-            ["Position", "Person", "Status", "Start Date", "Days Open", "Permit Status", "Next Action"]
+            ["", "Position", "Person", "Status", "Start Date", "Days Open", "Permit Status", "Next Action"]
         )
+        self.positions_table.verticalHeader().hide()
         self.positions_table.horizontalHeader().setStretchLastSection(True)
         self.positions_table.horizontalHeader().setSectionResizeMode(self.QtWidgets.QHeaderView.ResizeMode.Stretch)
+        self.positions_table.horizontalHeader().setSectionResizeMode(0, self.QtWidgets.QHeaderView.ResizeMode.Fixed)
+        self.positions_table.setColumnWidth(0, 44)
         self.positions_table.cellClicked.connect(self._open_position_drawer_from_table)
         self.positions_table.setMinimumHeight(150)
         self.positions_table.setMaximumHeight(220)
@@ -2103,23 +2106,26 @@ class StaffingDashboardV2Page:
         self.positions_table.setRowCount(len(rows))
         for row_index, row in enumerate(rows):
             values = [
+                str(row_index + 1),
                 row.position_name,
                 row.person_name or "OPEN POSITION",
                 row.start_date or "-",
                 "-" if row.days_open is None else str(row.days_open),
             ]
-            for column, value in zip((0, 1, 3, 4), values, strict=True):
+            for column, value in zip((0, 1, 2, 4, 5), values, strict=True):
                 item = self.QtWidgets.QTableWidgetItem(value)
                 item.setToolTip(row.position_name)
                 item.setData(self.QtCore.Qt.ItemDataRole.UserRole, row.assignment_id)
+                if column == 0:
+                    item.setTextAlignment(self.QtCore.Qt.AlignmentFlag.AlignCenter)
                 self.positions_table.setItem(row_index, column, item)
-            self.positions_table.setCellWidget(row_index, 2, self._chip(_display_status(row.status), row.status))
+            self.positions_table.setCellWidget(row_index, 3, self._chip(_display_status(row.status), row.status))
             self.positions_table.setCellWidget(
                 row_index,
-                5,
+                6,
                 self._chip(_display_permit(row.permit_status or "unknown"), _permit_chip_status(row.permit_status or "unknown")),
             )
-            self.positions_table.setCellWidget(row_index, 6, self._action_button(row))
+            self.positions_table.setCellWidget(row_index, 7, self._action_button(row))
         self.positions_table.resizeColumnsToContents()
 
     def _open_position_drawer_from_table(self, row: int, _column: int) -> None:
