@@ -665,7 +665,7 @@ class StaffingDashboardV2Page:
         self.search.addAction(self._standard_icon("search"), self.QtWidgets.QLineEdit.ActionPosition.LeadingPosition)
         self.search.textChanged.connect(self._refresh_filters)
         header.addWidget(self.search)
-        self.add_button = self.QtWidgets.QPushButton("+  Add Position")
+        self.add_button = self.QtWidgets.QPushButton("Add Position")
         self.add_button.setObjectName("StaffingV2AddPositionButton")
         self._set_button_icon(self.add_button, "add")
         self.add_button.setProperty("staffingV2Action", "add_position")

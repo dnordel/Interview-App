@@ -8663,6 +8663,7 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2ViewHistoryButton").parent() is header_action_row
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2ExportButton").text() == "Export"
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2ViewHistoryButton").text() == "View History"
+    assert page.findChild(qt_widgets.QPushButton, "StaffingV2AddPositionButton").text() == "Add Position"
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2AddPositionButton").minimumHeight() >= 40
     assert not page.findChild(qt_widgets.QPushButton, "StaffingV2ExportButton").icon().isNull()
     assert not page.findChild(qt_widgets.QPushButton, "StaffingV2ViewHistoryButton").icon().isNull()
@@ -8779,7 +8780,7 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
     assert filled_action.text() == "Manage Filled"
     assert filled_action.menu() is not None
     assert [action.text() for action in filled_action.menu().actions()] == ["Manage Filled", "Replace", "Update Permit", "View Details"]
-    assert page.findChild(qt_widgets.QPushButton, "StaffingV2AddPositionButton").text() == "+  Add Position"
+    assert page.findChild(qt_widgets.QPushButton, "StaffingV2AddPositionButton").text() == "Add Position"
     drop_zone = page.findChild(qt_widgets.QFrame, "StaffingV2AddPositionDropZone")
     assert drop_zone is not None
     drop_zone_button = drop_zone.findChild(qt_widgets.QPushButton, "StaffingV2DropZoneAddButton")
