@@ -807,6 +807,7 @@ class StaffingDashboardV2Page:
             "integrations": pixmaps.SP_DriveNetIcon,
             "notifications": pixmaps.SP_MessageBoxInformation,
             "people": pixmaps.SP_FileDialogDetailedView,
+            "person_add": pixmaps.SP_FileDialogNewFolder,
             "search": pixmaps.SP_FileDialogContentsView,
             "settings": pixmaps.SP_FileDialogDetailedView,
             "reset": pixmaps.SP_DialogResetButton,
@@ -2282,6 +2283,7 @@ class StaffingDashboardV2Page:
         for index, (object_name, label, action_key) in enumerate(_drawer_actions(assignment.status)):
             button = self.QtWidgets.QPushButton(label)
             button.setObjectName(object_name)
+            self._set_button_icon(button, _drawer_action_icon_key(action_key))
             self._wire_action_button(button, action_key, assignment.id)
             buttons.addWidget(button, index // 2, index % 2)
         action_layout.addLayout(buttons)
@@ -3542,6 +3544,20 @@ def _drawer_actions(status: str) -> list[tuple[str, str, str]]:
         ("StaffingV2DrawerEditPosition", "Edit Position", "view_details"),
         ("StaffingV2DrawerViewHistory", "View Full History", "view_history"),
     ]
+
+
+def _drawer_action_icon_key(action_key: str) -> str:
+    if action_key in {"mark_coming", "mark_filled", "revert_coming"}:
+        return "status_pending"
+    if action_key in {"mark_dont_need", "clear_replacement", "open_position"}:
+        return "status_need"
+    if action_key in {"manage_filled", "update_permit"}:
+        return "status_filled"
+    if action_key in {"replace_employee", "view_details"}:
+        return "people"
+    if action_key in {"view_history", "update_final_day"}:
+        return "history"
+    return "info"
 
 
 def _validation_lines(assignment: Any) -> list[str]:

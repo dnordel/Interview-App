@@ -9205,6 +9205,9 @@ def test_pyside_staffing_v2_position_detail_drawer_opens_from_position_row(
     assert drawer.findChild(qt_widgets.QPushButton, "StaffingV2DrawerMarkComing").text() == "Mark Coming"
     assert drawer.findChild(qt_widgets.QPushButton, "StaffingV2DrawerMarkDontNeed").text() == "Mark Don't Need"
     assert drawer.findChild(qt_widgets.QPushButton, "StaffingV2DrawerViewHistory").text() == "View Full History"
+    assert not drawer.findChild(qt_widgets.QPushButton, "StaffingV2DrawerMarkComing").icon().isNull()
+    assert not drawer.findChild(qt_widgets.QPushButton, "StaffingV2DrawerMarkDontNeed").icon().isNull()
+    assert not drawer.findChild(qt_widgets.QPushButton, "StaffingV2DrawerViewHistory").icon().isNull()
     close = page.findChild(qt_widgets.QPushButton, "StaffingV2DrawerClose")
     assert close is not None
     assert close.text() == ""
