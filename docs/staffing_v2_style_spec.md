@@ -282,6 +282,9 @@ Shell:
 - Filter row: Search, Active Status, Role, Permit Status, More Filters, Clear.
 - Metrics: Total People, Active, Inactive, Teachers, Aides, Avg Units.
 - Table: Name with avatar/email subtext, Role, Permit Status chip, Units, Status chip, Current Assignment, Actions.
+- Pagination footer: result count on left, page controls centered/right, rows-per-page combo on far right.
+  - Result label object: `StaffingV2PeopleResultCount`.
+  - Rows-per-page combo object: `StaffingV2PeopleRowsPerPage`.
 - Right detail panel:
   - initials/avatar + name/role/contact
   - Active chip

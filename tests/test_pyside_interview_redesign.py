@@ -9786,6 +9786,8 @@ def test_pyside_staffing_v2_people_dashboard_renders_employee_management_from_db
         assert view_button.text() == "View"
         assert not view_button.icon().isNull()
         assert not view_button.isEnabled()
+    assert page.findChild(qt_widgets.QLabel, "StaffingV2PeopleResultCount").text() == "Showing 1 to 2 of 2 people"
+    assert page.findChild(qt_widgets.QComboBox, "StaffingV2PeopleRowsPerPage").currentText() == "10 / page"
     detail = page.findChild(qt_widgets.QFrame, "StaffingV2PeopleDetailPanel")
     detail_text = _widget_text(detail)
     assert "Maria Gonzalez" in detail_text

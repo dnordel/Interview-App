@@ -1783,6 +1783,29 @@ class StaffingDashboardV2Page:
         body.addWidget(self.people_detail_panel)
         body.setSizes([860, 420])
         people_root.addWidget(body, 1)
+        people_footer = self.QtWidgets.QHBoxLayout()
+        self.people_result_count = self.QtWidgets.QLabel("Showing 0 to 0 of 0 people")
+        self.people_result_count.setObjectName("StaffingV2PeopleResultCount")
+        people_footer.addWidget(self.people_result_count)
+        people_footer.addStretch(1)
+        previous_page = self.QtWidgets.QPushButton("‹")
+        previous_page.setObjectName("StaffingV2PeoplePreviousPage")
+        previous_page.setEnabled(False)
+        people_footer.addWidget(previous_page)
+        current_page = self.QtWidgets.QPushButton("1")
+        current_page.setObjectName("StaffingV2PeopleCurrentPage")
+        current_page.setEnabled(False)
+        people_footer.addWidget(current_page)
+        next_page = self.QtWidgets.QPushButton("›")
+        next_page.setObjectName("StaffingV2PeopleNextPage")
+        next_page.setEnabled(False)
+        people_footer.addWidget(next_page)
+        self.people_rows_per_page = self.QtWidgets.QComboBox()
+        self.people_rows_per_page.setObjectName("StaffingV2PeopleRowsPerPage")
+        self.people_rows_per_page.addItems(["10 / page", "25 / page", "50 / page"])
+        self.people_rows_per_page.setEnabled(False)
+        people_footer.addWidget(self.people_rows_per_page)
+        people_root.addLayout(people_footer)
 
     def _show_people_view(self) -> None:
         self._set_active_nav(self.people_nav_button)
@@ -1853,6 +1876,12 @@ class StaffingDashboardV2Page:
             self.visible_people.append(person)
         self._refresh_people_metrics()
         self._refresh_people_table()
+        if hasattr(self, "people_result_count"):
+            visible_count = len(self.visible_people)
+            if visible_count:
+                self.people_result_count.setText(f"Showing 1 to {visible_count} of {visible_count} people")
+            else:
+                self.people_result_count.setText("Showing 0 to 0 of 0 people")
 
     def _refresh_people_metrics(self) -> None:
         while self.people_metrics_layout.count():
