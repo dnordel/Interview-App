@@ -9907,6 +9907,9 @@ def test_pyside_staffing_v2_assignment_history_dashboard_renders_history_from_db
     assert "Validation / Integrity" in detail_text
     assert "Duplicate active cycle" in detail_text
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2HistoryViewAssignment").text() == "View Assignment"
+    assert not page.findChild(qt_widgets.QPushButton, "StaffingV2HistoryViewAssignment").icon().isNull()
+    assert not page.findChild(qt_widgets.QPushButton, "StaffingV2HistoryOpenEmployee").icon().isNull()
+    assert not page.findChild(qt_widgets.QPushButton, "StaffingV2HistoryExportRecord").icon().isNull()
     assert len(store.list_assignment_history()) == len(before_records)
     assert len(store.list_assignments()) == len(before_assignments)
     window.window.close()
