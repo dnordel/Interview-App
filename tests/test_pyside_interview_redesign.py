@@ -9777,8 +9777,12 @@ def test_pyside_staffing_v2_people_dashboard_renders_employee_management_from_db
     assert "Harmony 1 - Teacher 1" in detail_text
     assert "Employment Status" in detail_text
     assert "Additional Information" in detail_text
-    assert page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleDeactivateButton").text() == "Deactivate Employee"
-    assert page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleEditButton").text() == "Edit Person"
+    deactivate_button = page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleDeactivateButton")
+    assert deactivate_button.text() == "Deactivate Employee"
+    assert not deactivate_button.icon().isNull()
+    edit_button = page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleEditButton")
+    assert edit_button.text() == "Edit Person"
+    assert not edit_button.icon().isNull()
     assert len(store.list_people()) == len(before_people)
     assert len(store.list_assignments()) == len(before_assignments)
     window.window.close()
