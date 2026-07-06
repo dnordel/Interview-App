@@ -1901,6 +1901,11 @@ class StaffingDashboardV2Page:
         filters.addLayout(self._labeled_control("Classroom", self.history_classroom_filter), 1)
         self.history_cycle_filter = self._history_filter_combo("StaffingV2HistoryCycleFilter", ["All Statuses", "Open", "Closed"])
         filters.addLayout(self._labeled_control("Cycle Status", self.history_cycle_filter), 1)
+        self.history_date_range_filter = self.QtWidgets.QPushButton("No date range")
+        self.history_date_range_filter.setObjectName("StaffingV2HistoryDateRangeFilter")
+        self._set_button_icon(self.history_date_range_filter, "history")
+        self.history_date_range_filter.setToolTip("Displayed from assignment history open dates.")
+        filters.addLayout(self._labeled_control("Date Range", self.history_date_range_filter), 1)
         self.history_search = self.QtWidgets.QLineEdit()
         self.history_search.setObjectName("StaffingV2HistorySearch")
         self.history_search.setPlaceholderText("Search assignments...")
@@ -1971,6 +1976,11 @@ class StaffingDashboardV2Page:
             self.history_classroom_filter,
             ["All Classrooms", *sorted({record.classroom for record in self.history_records if record.classroom})],
         )
+        opened_dates = sorted({record.opened_date for record in self.history_records if record.opened_date})
+        if opened_dates:
+            self.history_date_range_filter.setText(f"{opened_dates[0]} - {opened_dates[-1]}")
+        else:
+            self.history_date_range_filter.setText("No date range")
 
     def _sync_combo(self, combo: Any, values: list[str]) -> None:
         current = combo.currentText()

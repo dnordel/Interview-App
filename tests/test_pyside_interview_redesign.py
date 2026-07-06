@@ -9873,6 +9873,9 @@ def test_pyside_staffing_v2_assignment_history_dashboard_renders_history_from_db
     assert page.findChild(qt_widgets.QComboBox, "StaffingV2HistorySchoolFilter").currentText() == "All Schools"
     assert page.findChild(qt_widgets.QComboBox, "StaffingV2HistoryClassroomFilter").currentText() == "All Classrooms"
     assert page.findChild(qt_widgets.QComboBox, "StaffingV2HistoryCycleFilter").currentText() == "All Statuses"
+    history_date_range = page.findChild(qt_widgets.QPushButton, "StaffingV2HistoryDateRangeFilter")
+    assert history_date_range.text() == "2026-05-08 - 2026-07-01"
+    assert not history_date_range.icon().isNull()
     history_search = page.findChild(qt_widgets.QLineEdit, "StaffingV2HistorySearch")
     assert history_search.placeholderText() == "Search assignments..."
     assert history_search.actions()
