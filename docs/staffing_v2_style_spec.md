@@ -305,6 +305,7 @@ Shell:
 
 - Same Admin Studio sidebar, Assignment History active.
 - Header title/subtitle, last updated, refresh icon, Export, View Validation.
+  - `View Validation` navigates to the Staffing Validation sub-dashboard without mutating DB.
 - Metrics: Total Cycles, Open Cycles, Closed Cycles, Avg Days to Fill, Data Issues.
 - Filters: School, Classroom, Cycle Status, Date Range, Search, More Filters, Clear.
 - Table: Assignment ID, Classroom, Position, Opened Date, Filled Date, Days to Fill, Cycle Status, Employee, Data Integrity, Actions.

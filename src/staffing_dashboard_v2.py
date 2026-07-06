@@ -2178,7 +2178,7 @@ class StaffingDashboardV2Page:
         validation = self.QtWidgets.QPushButton("View Validation")
         validation.setObjectName("StaffingV2HistoryValidationButton")
         self._set_button_icon(validation, "validation")
-        validation.setEnabled(False)
+        validation.clicked.connect(self._show_validation_view)
         header.addWidget(export)
         header.addWidget(validation)
         history_root.addLayout(header)

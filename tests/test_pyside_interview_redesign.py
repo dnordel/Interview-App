@@ -9914,8 +9914,10 @@ def test_pyside_staffing_v2_assignment_history_dashboard_renders_history_from_db
     assert "Review open-to-fill staffing cycles" in page.findChild(qt_widgets.QLabel, "StaffingV2HistorySubtitle").text()
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2HistoryExportButton").text() == "Export"
     assert not page.findChild(qt_widgets.QPushButton, "StaffingV2HistoryExportButton").icon().isNull()
-    assert page.findChild(qt_widgets.QPushButton, "StaffingV2HistoryValidationButton").text() == "View Validation"
-    assert not page.findChild(qt_widgets.QPushButton, "StaffingV2HistoryValidationButton").icon().isNull()
+    history_validation_button = page.findChild(qt_widgets.QPushButton, "StaffingV2HistoryValidationButton")
+    assert history_validation_button.text() == "View Validation"
+    assert history_validation_button.isEnabled()
+    assert not history_validation_button.icon().isNull()
     metric_text = " ".join(_widget_text(card) for card in page.findChildren(qt_widgets.QFrame, "StaffingV2HistoryMetricCard"))
     assert "Total Cycles 2" in metric_text
     assert "Open Cycles 1" in metric_text
@@ -9990,6 +9992,11 @@ def test_pyside_staffing_v2_assignment_history_dashboard_renders_history_from_db
     assert not page.findChild(qt_widgets.QPushButton, "StaffingV2HistoryViewAssignment").icon().isNull()
     assert not page.findChild(qt_widgets.QPushButton, "StaffingV2HistoryOpenEmployee").icon().isNull()
     assert not page.findChild(qt_widgets.QPushButton, "StaffingV2HistoryExportRecord").icon().isNull()
+    history_validation_button.click()
+    app.processEvents()
+    assert page.findChild(qt_widgets.QWidget, "StaffingV2ValidationDashboard") is not None
+    assert page.findChild(qt_widgets.QPushButton, "StaffingV2ValidationNavButton").property("staffingV2ActiveNav") is True
+    assert page.findChild(qt_widgets.QPushButton, "StaffingV2HistoryNavButton").property("staffingV2ActiveNav") is False
     assert len(store.list_assignment_history()) == len(before_records)
     assert len(store.list_assignments()) == len(before_assignments)
     window.window.close()
