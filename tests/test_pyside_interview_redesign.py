@@ -8656,6 +8656,7 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
 ) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    qt_core = pytest.importorskip("PySide6.QtCore")
     app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
     seed_path = tmp_path / "staffing_seed.json"
     seed_path.write_text(
@@ -9268,6 +9269,7 @@ def test_pyside_staffing_v2_classrooms_dashboard_uses_new_shell_and_db_rows(
 ) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    qt_core = pytest.importorskip("PySide6.QtCore")
     app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
     seed_path = tmp_path / "staffing_seed.json"
     seed_path.write_text(
@@ -9448,13 +9450,25 @@ def test_pyside_staffing_v2_classrooms_dashboard_uses_new_shell_and_db_rows(
     assert "Current Positions" in detail_text
     assert "Teacher 1" in detail_text
     assert "OPEN POSITION" in detail_text
+    detail_scroll = detail.findChild(qt_widgets.QScrollArea, "StaffingV2ClassroomsDetailScroll")
+    assert detail_scroll is not None
+    assert detail_scroll.widgetResizable()
+    assert detail_scroll.verticalScrollBarPolicy() == qt_core.Qt.ScrollBarPolicy.ScrollBarAlwaysOn
+    assert detail_scroll.widget().findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsSaveButton") is None
     assert len(detail.findChildren(qt_widgets.QFrame, "StaffingV2ClassroomsDetailMetricCard")) == 4
+    for detail_card in detail.findChildren(qt_widgets.QFrame, "StaffingV2ClassroomsDetailCard"):
+        assert detail_card.sizePolicy().verticalPolicy() == qt_widgets.QSizePolicy.Policy.Maximum
+    detail_footer = detail.findChild(qt_widgets.QWidget, "StaffingV2ClassroomsDetailFooter")
+    assert detail_footer is not None
     deactivate_button = page.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsDeactivateButton")
     assert deactivate_button.text() == "Deactivate Classroom"
     assert not deactivate_button.icon().isNull()
+    assert detail_footer.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsDeactivateButton") is deactivate_button
     save_button = page.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsSaveButton")
     assert save_button.text() == "Save Changes"
     assert not save_button.icon().isNull()
+    assert save_button.parent() is not detail_scroll.widget()
+    assert detail_footer.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsSaveButton") is save_button
     validation_panel = page.findChild(qt_widgets.QFrame, "StaffingV2ClassroomsValidationPanel")
     assert "Classroom Validation & Health" in _widget_text(validation_panel)
     health_cards = validation_panel.findChildren(qt_widgets.QFrame, "StaffingV2ClassroomsHealthCard")
@@ -9863,6 +9877,89 @@ def test_pyside_staffing_v2_add_position_dialog_creates_need_now_position_throug
     app.processEvents()
 
 
+def test_pyside_staffing_v2_add_position_submit_immediately_shows_created_position_when_filters_are_stale(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    seed_path = tmp_path / "staffing_seed.json"
+    seed_path.write_text(
+        json.dumps(
+            {
+                "schools": [
+                    {
+                        "name": "Hawthorne",
+                        "classrooms": [
+                            {
+                                "name": "Harmony 1",
+                                "program": "Preschool",
+                                "licensed_capacity": 24,
+                                "slots": [
+                                    {"position_name": "Teacher 1", "position_type": "Teacher", "status": "filled"}
+                                ],
+                            }
+                        ],
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    db_path = tmp_path / "staffing.sqlite3"
+    store = pyside_interview_app.StaffingStore(db_path)
+    store.initialize()
+    store.import_seed_file(seed_path)
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", db_path)
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", tmp_path / "missing_seed.json")
+    full_model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.json",
+        school_options=["Hawthorne"],
+    )
+    director_model = pyside_interview_app.build_director_staffing_model(full_model, school="Hawthorne")
+    window = pyside_interview_app.PySideInterviewWindow(director_model)
+    page = window.stack.widget(0)
+    page.findChild(qt_widgets.QLineEdit, "StaffingV2Search").setText("not-visible")
+    app.processEvents()
+    assert page.findChild(qt_widgets.QTableWidget, "StaffingV2PositionsTable").rowCount() == 0
+
+    page.findChild(qt_widgets.QPushButton, "StaffingV2AddPositionButton").click()
+    app.processEvents()
+    dialog = window.window.findChild(qt_widgets.QDialog, "StaffingV2AddPositionDialog")
+    assert dialog is not None
+    position_type = dialog.findChild(qt_widgets.QComboBox, "StaffingV2AddPositionType")
+    assert "Director" in [position_type.itemText(index) for index in range(position_type.count())]
+    position_type.setCurrentText("Director")
+    dialog.findChild(qt_widgets.QLineEdit, "StaffingV2AddPositionName").setText("Director")
+    dialog.findChild(qt_widgets.QComboBox, "StaffingV2AddPositionInitialStatus").setCurrentText("Need Now")
+    dialog.findChild(qt_widgets.QPushButton, "StaffingV2AddPositionSubmit").click()
+    app.processEvents()
+
+    table = page.findChild(qt_widgets.QTableWidget, "StaffingV2PositionsTable")
+    visible_text = {
+        table.item(row, column).text()
+        for row in range(table.rowCount())
+        for column in range(table.columnCount())
+        if table.item(row, column) is not None
+    }
+    assert page.findChild(qt_widgets.QLineEdit, "StaffingV2Search").text() == ""
+    assert "Director" in visible_text
+    assert page.findChild(qt_widgets.QLabel, "StaffingV2DrawerPositionName").text() == "Director"
+    created = next(row for row in store.list_assignments() if row.position_name == "Director")
+    assert created.position_type == "Director"
+    page.findChild(qt_widgets.QPushButton, "StaffingV2DrawerMarkComing").click()
+    app.processEvents()
+    coming_dialog = window.window.findChild(qt_widgets.QDialog, "StaffingV2MarkComingDialog")
+    assert coming_dialog is not None
+    role = coming_dialog.findChild(qt_widgets.QComboBox, "StaffingV2ComingRole")
+    assert "Director" in [role.itemText(index) for index in range(role.count())]
+    assert role.currentText() == "Director"
+    window.window.close()
+    app.processEvents()
+
+
 def test_pyside_staffing_v2_position_detail_drawer_opens_from_position_row(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -10158,6 +10255,8 @@ def test_pyside_staffing_v2_manage_filled_dialog_selects_next_workflow(
 ) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    qt_core = pytest.importorskip("PySide6.QtCore")
+    qt_test = pytest.importorskip("PySide6.QtTest")
     app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
     db_path = tmp_path / "staffing.sqlite3"
     store = pyside_interview_app.StaffingStore(db_path)
@@ -10222,12 +10321,58 @@ def test_pyside_staffing_v2_manage_filled_dialog_selects_next_workflow(
     assert replace_option.isChecked()
     assert continue_button.text() == "Continue"
 
-    dialog.close()
+    continue_button.click()
     app.processEvents()
+    replace_dialog = window.window.findChild(qt_widgets.QDialog, "StaffingV2ReplaceEmployeeDialog")
+    assert replace_dialog is not None
+    assert not replace_dialog.isHidden()
+    assert window.window.findChild(qt_widgets.QDialog, "PySideStaffingReplaceDialog") is None
+    replace_text = _widget_text(replace_dialog)
+    assert "Replace Employee" in replace_text
+    assert "Position Summary" in replace_text
+    assert "Replacement Details" in replace_text
+    assert "Validation / Requirements" in replace_text
+    assert "What will happen on save" in replace_text
+    close = replace_dialog.findChild(qt_widgets.QPushButton, "StaffingV2ReplaceClose")
+    assert close is not None
+    assert close.text() == ""
+    assert not close.icon().isNull()
+    notice = replace_dialog.findChild(qt_widgets.QDateEdit, "StaffingV2ReplaceNotice")
+    final_day = replace_dialog.findChild(qt_widgets.QDateEdit, "StaffingV2ReplaceFinalDay")
+    reason = replace_dialog.findChild(qt_widgets.QComboBox, "StaffingV2ReplaceReason")
+    assert notice is not None
+    assert final_day is not None
+    assert notice.calendarPopup()
+    assert final_day.calendarPopup()
+    assert notice.date() == qt_core.QDate.currentDate()
+    assert final_day.date() == qt_core.QDate.currentDate()
+    assert reason is not None
+    assert [reason.itemText(index) for index in range(reason.count())] == [
+        "Resignation",
+        "Termination",
+        "Leave of absence",
+        "Transfer",
+        "Other",
+    ]
+    submit = replace_dialog.findChild(qt_widgets.QPushButton, "StaffingV2ReplaceSubmit")
+    qt_test.QTest.mouseClick(notice, qt_core.Qt.MouseButton.LeftButton, pos=notice.rect().center())
+    app.processEvents()
+    assert notice.calendarWidget().isVisible()
     after = store.get_assignment(assignment_id)
     assert after.status == before.status
     assert after.person_name == before.person_name
     assert after.permit_status == before.permit_status
+
+    notice.setDate(qt_core.QDate(2026, 8, 1))
+    final_day.setDate(qt_core.QDate(2026, 8, 15))
+    reason.setCurrentText("Transfer")
+    submit.click()
+    app.processEvents()
+    replaced = store.get_assignment(assignment_id)
+    assert replaced.status == "replace"
+    assert replaced.person_name == before.person_name
+    assert replaced.notice_given == "2026-08-01"
+    assert replaced.final_working_day == "2026-08-15"
     window.window.close()
     app.processEvents()
 
@@ -10397,6 +10542,7 @@ def test_pyside_staffing_v2_people_dashboard_renders_employee_management_from_db
 ) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    qt_core = pytest.importorskip("PySide6.QtCore")
     app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
     db_path = tmp_path / "staffing.sqlite3"
     store = pyside_interview_app.StaffingStore(db_path)
@@ -10461,11 +10607,21 @@ def test_pyside_staffing_v2_people_dashboard_renders_employee_management_from_db
     assert people_more_filters.text() == "More Filters"
     assert not people_more_filters.icon().isNull()
     assert people_more_filters.isEnabled()
+    people_table = page.findChild(qt_widgets.QTableWidget, "StaffingV2PeopleTable")
+    people_table_width = people_table.width()
     people_more_filters.click()
     app.processEvents()
     people_filter_drawer = page.findChild(qt_widgets.QFrame, "StaffingV2PeopleFilterDrawer")
     assert people_filter_drawer is not None
     assert not people_filter_drawer.isHidden()
+    assert people_filter_drawer.parent() is page.findChild(qt_widgets.QWidget, "StaffingV2PeopleDashboard")
+    assert people_table.width() == people_table_width
+    people_filter_scroll = people_filter_drawer.findChild(qt_widgets.QScrollArea, "StaffingV2PeopleFilterDrawerScroll")
+    assert people_filter_scroll is not None
+    assert people_filter_scroll.widget().findChild(qt_widgets.QPushButton, "StaffingV2PeopleFilterApply") is None
+    people_filter_footer = people_filter_drawer.findChild(qt_widgets.QWidget, "StaffingV2PeopleFilterDrawerFooter")
+    assert people_filter_footer is not None
+    assert people_filter_footer.findChild(qt_widgets.QPushButton, "StaffingV2PeopleFilterApply") is not None
     people_filter_text = _widget_text(people_filter_drawer)
     assert "Filters" in people_filter_text
     assert "Active Status" in people_filter_text
@@ -10522,6 +10678,13 @@ def test_pyside_staffing_v2_people_dashboard_renders_employee_management_from_db
     assert page.findChild(qt_widgets.QLabel, "StaffingV2PeopleResultCount").text() == "Showing 1 to 2 of 2 people"
     assert page.findChild(qt_widgets.QComboBox, "StaffingV2PeopleRowsPerPage").currentText() == "10 / page"
     detail = page.findChild(qt_widgets.QFrame, "StaffingV2PeopleDetailPanel")
+    assert detail.parent() is page.findChild(qt_widgets.QWidget, "StaffingV2PeopleDashboard")
+    people_detail_scroll = detail.findChild(qt_widgets.QScrollArea, "StaffingV2PeopleDetailPanelScroll")
+    assert people_detail_scroll is not None
+    assert people_detail_scroll.verticalScrollBarPolicy() == qt_core.Qt.ScrollBarPolicy.ScrollBarAlwaysOn
+    assert people_detail_scroll.widget().findChild(qt_widgets.QPushButton, "StaffingV2PeopleEditButton") is None
+    people_detail_footer = detail.findChild(qt_widgets.QWidget, "StaffingV2PeopleDetailPanelFooter")
+    assert people_detail_footer is not None
     detail_text = _widget_text(detail)
     assert "Sofia Ramirez" in detail_text
     assert "SR" in detail_text
@@ -10534,6 +10697,8 @@ def test_pyside_staffing_v2_people_dashboard_renders_employee_management_from_db
     assert "Unity 1 - Aide 1" in detail_text
     assert "Employment Status" in detail_text
     assert "Additional Information" in detail_text
+    for detail_card in detail.findChildren(qt_widgets.QFrame, "StaffingV2PeopleDetailCard"):
+        assert detail_card.sizePolicy().verticalPolicy() == qt_widgets.QSizePolicy.Policy.Maximum
     people_tabs = page.findChild(qt_widgets.QFrame, "StaffingV2PeopleDetailTabs")
     assert people_tabs is not None
     overview_tab = page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleOverviewTab")
@@ -10557,6 +10722,7 @@ def test_pyside_staffing_v2_people_dashboard_renders_employee_management_from_db
     edit_button = page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleEditButton")
     assert edit_button.text() == "Edit Person"
     assert not edit_button.icon().isNull()
+    assert people_detail_footer.findChild(qt_widgets.QPushButton, "StaffingV2PeopleEditButton") is edit_button
     assert len(store.list_people()) == len(before_people)
     assert len(store.list_assignments()) == len(before_assignments)
     window.window.close()
@@ -10568,6 +10734,7 @@ def test_pyside_staffing_v2_add_person_dialog_creates_person_through_service(
 ) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    qt_core = pytest.importorskip("PySide6.QtCore")
     app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
     db_path = tmp_path / "staffing.sqlite3"
     store = pyside_interview_app.StaffingStore(db_path)
@@ -10629,6 +10796,7 @@ def test_pyside_staffing_v2_assignment_history_dashboard_renders_history_from_db
 ) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    qt_core = pytest.importorskip("PySide6.QtCore")
     app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
     db_path = tmp_path / "staffing.sqlite3"
     store = pyside_interview_app.StaffingStore(db_path)
@@ -10776,17 +10944,27 @@ def test_pyside_staffing_v2_assignment_history_dashboard_renders_history_from_db
     closed_view.click()
     app.processEvents()
     closed_detail_panel = page.findChild(qt_widgets.QFrame, "StaffingV2HistoryDetailPanel")
+    assert closed_detail_panel.parent() is page.findChild(qt_widgets.QWidget, "StaffingV2AssignmentHistoryDashboard")
+    history_detail_scroll = closed_detail_panel.findChild(qt_widgets.QScrollArea, "StaffingV2HistoryDetailPanelScroll")
+    assert history_detail_scroll is not None
+    assert history_detail_scroll.verticalScrollBarPolicy() == qt_core.Qt.ScrollBarPolicy.ScrollBarAlwaysOn
+    assert history_detail_scroll.widget().findChild(qt_widgets.QPushButton, "StaffingV2HistoryExportRecord") is None
+    history_detail_footer = closed_detail_panel.findChild(qt_widgets.QWidget, "StaffingV2HistoryDetailPanelFooter")
+    assert history_detail_footer is not None
     closed_detail = _widget_text(closed_detail_panel)
     assert f"Assignment ID: A-{closed_id:04d}" in closed_detail
     closed_chip = closed_detail_panel.findChild(qt_widgets.QFrame, "StaffingV2HistoryAssignmentIdChip")
     assert closed_chip is not None
     assert _widget_text(closed_chip) == f"A-{closed_id:04d}"
+    for detail_card in closed_detail_panel.findChildren(qt_widgets.QFrame, "StaffingV2HistoryDetailCard"):
+        assert detail_card.sizePolicy().verticalPolicy() == qt_widgets.QSizePolicy.Policy.Maximum
     open_employee = closed_detail_panel.findChild(qt_widgets.QPushButton, "StaffingV2HistoryOpenEmployee")
     assert open_employee is not None
     assert open_employee.isEnabled()
     export_record = closed_detail_panel.findChild(qt_widgets.QPushButton, "StaffingV2HistoryExportRecord")
     assert export_record is not None
     assert export_record.isEnabled()
+    assert history_detail_footer.findChild(qt_widgets.QPushButton, "StaffingV2HistoryExportRecord") is export_record
     export_record.click()
     app.processEvents()
     export_dialog = window.window.findChild(qt_widgets.QDialog, "StaffingV2HistoryExportRecordDialog")
@@ -10866,6 +11044,7 @@ def test_pyside_staffing_v2_validation_dashboard_and_filter_drawer_use_existing_
 ) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    qt_core = pytest.importorskip("PySide6.QtCore")
     app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
     db_path = tmp_path / "staffing.sqlite3"
     store = pyside_interview_app.StaffingStore(db_path)
@@ -10974,6 +11153,7 @@ def test_pyside_staffing_v2_validation_dashboard_and_filter_drawer_use_existing_
     assert filters.property("staffingV2FilterActiveCount") == 3
     assert not filters.icon().isNull()
     table = page.findChild(qt_widgets.QTableWidget, "StaffingV2ValidationTable")
+    validation_table_width = table.width()
     assert table.rowCount() == 2
     table_text = {
         table.item(row, column).text()
@@ -11004,6 +11184,15 @@ def test_pyside_staffing_v2_validation_dashboard_and_filter_drawer_use_existing_
     app.processEvents()
     drawer = page.findChild(qt_widgets.QFrame, "StaffingV2PositionDrawer")
     assert drawer is not None
+    assert drawer.parent() is page.findChild(qt_widgets.QWidget, "StaffingV2Dashboard")
+    assert table.width() == validation_table_width
+    drawer_scroll = drawer.findChild(qt_widgets.QScrollArea, "StaffingV2PositionDrawerScroll")
+    assert drawer_scroll is not None
+    assert drawer_scroll.verticalScrollBarPolicy() == qt_core.Qt.ScrollBarPolicy.ScrollBarAlwaysOn
+    assert drawer_scroll.widget().findChild(qt_widgets.QPushButton, "StaffingV2DrawerSaveChanges") is None
+    drawer_footer = drawer.findChild(qt_widgets.QWidget, "StaffingV2PositionDrawerFooter")
+    assert drawer_footer is not None
+    assert drawer_footer.findChild(qt_widgets.QPushButton, "StaffingV2DrawerSaveChanges") is not None
     assert drawer.findChild(qt_widgets.QLabel, "StaffingV2DrawerPositionName").text() == "Teacher 1"
     drawer_text = _widget_text(drawer)
     assert "Harmony 1" in drawer_text
@@ -11022,7 +11211,12 @@ def test_pyside_staffing_v2_validation_dashboard_and_filter_drawer_use_existing_
     assert table.rowCount() == 2
     assert all_issues_tab.property("staffingV2ActiveValidationTab") is True
     assert critical_tab.property("staffingV2ActiveValidationTab") is False
-    right_panel_text = _widget_text(page.findChild(qt_widgets.QFrame, "StaffingV2ValidationRightPanel"))
+    right_panel = page.findChild(qt_widgets.QFrame, "StaffingV2ValidationRightPanel")
+    assert right_panel.parent() is page.findChild(qt_widgets.QWidget, "StaffingV2ValidationDashboard")
+    right_scroll = right_panel.findChild(qt_widgets.QScrollArea, "StaffingV2ValidationRightPanelScroll")
+    assert right_scroll is not None
+    assert right_scroll.verticalScrollBarPolicy() == qt_core.Qt.ScrollBarPolicy.ScrollBarAlwaysOn
+    right_panel_text = _widget_text(right_panel)
     assert "Compliance Summary" in right_panel_text
     assert "Quick Actions" in right_panel_text
     quick_actions = {
@@ -11078,6 +11272,13 @@ def test_pyside_staffing_v2_validation_dashboard_and_filter_drawer_use_existing_
     filters.click()
     app.processEvents()
     assert not drawer.isHidden()
+    assert drawer.parent() is page.findChild(qt_widgets.QWidget, "StaffingV2ValidationDashboard")
+    assert table.width() == validation_table_width
+    filter_scroll = drawer.findChild(qt_widgets.QScrollArea, "StaffingV2FilterDrawerScroll")
+    assert filter_scroll is not None
+    assert filter_scroll.widget().findChild(qt_widgets.QPushButton, "StaffingV2FilterApplyButton") is None
+    filter_footer = drawer.findChild(qt_widgets.QWidget, "StaffingV2FilterDrawerFooter")
+    assert filter_footer is not None
     drawer_text = _widget_text(drawer)
     assert "Filters" in drawer_text
     assert "School" in drawer_text
@@ -11093,6 +11294,7 @@ def test_pyside_staffing_v2_validation_dashboard_and_filter_drawer_use_existing_
     assert apply_button.text() == "Apply Filters 3"
     assert apply_button.property("staffingV2FilterActiveCount") == 3
     assert not apply_button.icon().isNull()
+    assert filter_footer.findChild(qt_widgets.QPushButton, "StaffingV2FilterApplyButton") is apply_button
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2FilterCancelButton").text() == "Cancel"
     page.findChild(qt_widgets.QPushButton, "StaffingV2FilterCancelButton").click()
     app.processEvents()
@@ -12013,6 +12215,8 @@ def test_pyside_replace_employee_uses_guided_dialog_and_saves_replacement(
 ) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    qt_core = pytest.importorskip("PySide6.QtCore")
+    qt_test = pytest.importorskip("PySide6.QtTest")
     app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
     seed_path = tmp_path / "staffing_seed.json"
     seed_path.write_text(
@@ -12065,9 +12269,36 @@ def test_pyside_replace_employee_uses_guided_dialog_and_saves_replacement(
     assert {
         label.text() for label in dialog.findChildren(qt_widgets.QLabel) if label.text()
     } >= {"Replace Employee", "Current Employee", "Notice Given *", "Final Working Day *", "Reason (optional)"}
-    dialog.findChild(qt_widgets.QLineEdit, "PySideStaffingReplaceNotice").setText("2026-08-01")
-    dialog.findChild(qt_widgets.QLineEdit, "PySideStaffingReplaceFinalDay").setText("2026-08-15")
-    dialog.findChild(qt_widgets.QPushButton, "PySideStaffingReplaceSave").click()
+    notice_field = dialog.findChild(qt_widgets.QDateEdit, "PySideStaffingReplaceNotice")
+    final_day_field = dialog.findChild(qt_widgets.QDateEdit, "PySideStaffingReplaceFinalDay")
+    reason_field = dialog.findChild(qt_widgets.QComboBox, "PySideStaffingReplaceReason")
+    assert notice_field is not None
+    assert final_day_field is not None
+    assert notice_field.calendarPopup()
+    assert final_day_field.calendarPopup()
+    assert notice_field.date() == qt_core.QDate.currentDate()
+    assert final_day_field.date() == qt_core.QDate.currentDate()
+    assert reason_field is not None
+    assert [reason_field.itemText(index) for index in range(reason_field.count())] == [
+        "Resignation",
+        "Termination",
+        "Leave of absence",
+        "Transfer",
+        "Other",
+    ]
+    save_button = dialog.findChild(qt_widgets.QPushButton, "PySideStaffingReplaceSave")
+    qt_test.QTest.mouseClick(notice_field, qt_core.Qt.MouseButton.LeftButton, pos=notice_field.rect().center())
+    app.processEvents()
+    assert notice_field.calendarWidget().isVisible()
+    calendar_parent = notice_field.calendarWidget().parentWidget()
+    if calendar_parent is not None:
+        calendar_parent.hide()
+    assert window.staffing_store.get_assignment(assignment_id).status == "filled"
+
+    notice_field.setDate(qt_core.QDate(2026, 8, 1))
+    final_day_field.setDate(qt_core.QDate(2026, 8, 15))
+    reason_field.setCurrentText("Transfer")
+    save_button.click()
     app.processEvents()
 
     updated = window.staffing_store.get_assignment(assignment_id)

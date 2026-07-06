@@ -658,6 +658,96 @@ QLabel#StaffingV2ClassroomListFooter {
 ActionCallback = Callable[[int], None]
 
 
+class _StaffingV2OverlayPanel:
+    def __init__(
+        self,
+        *,
+        QtCore: Any,
+        QtWidgets: Any,
+        parent: Any,
+        object_name: str,
+        width: int,
+    ) -> None:
+        self.QtCore = QtCore
+        self.QtWidgets = QtWidgets
+        self.parent = parent
+        self.width = width
+        self.frame = QtWidgets.QFrame(parent)
+        self.frame.setObjectName(object_name)
+        self.frame.setFixedWidth(width)
+        self.frame.hide()
+
+        root = QtWidgets.QVBoxLayout(self.frame)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(0)
+
+        self.scroll_area = QtWidgets.QScrollArea()
+        self.scroll_area.setObjectName(f"{object_name}Scroll")
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
+        self.scroll_area.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scroll_area.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+
+        self.body = QtWidgets.QWidget()
+        self.body.setObjectName(f"{object_name}Body")
+        self.body_layout = QtWidgets.QVBoxLayout(self.body)
+        self.body_layout.setContentsMargins(14, 12, 14, 12)
+        self.body_layout.setSpacing(8)
+        self.scroll_area.setWidget(self.body)
+        root.addWidget(self.scroll_area, 1)
+
+        self.footer = QtWidgets.QWidget()
+        self.footer.setObjectName(f"{object_name}Footer")
+        self.footer_layout = QtWidgets.QVBoxLayout(self.footer)
+        self.footer_layout.setContentsMargins(14, 8, 14, 12)
+        self.footer_layout.setSpacing(8)
+        root.addWidget(self.footer)
+
+        class ResizeFilter(QtCore.QObject):
+            def __init__(self, overlay: "_StaffingV2OverlayPanel") -> None:
+                super().__init__(parent)
+                self.overlay = overlay
+
+            def eventFilter(self, watched: Any, event: Any) -> bool:  # noqa: N802
+                if watched is self.overlay.parent and event.type() == QtCore.QEvent.Type.Resize:
+                    self.overlay.reposition()
+                return False
+
+        self._resize_filter = ResizeFilter(self)
+        parent.installEventFilter(self._resize_filter)
+        self.reposition()
+
+    def clear(self) -> None:
+        self._clear_layout(self.body_layout)
+        self._clear_layout(self.footer_layout)
+
+    def hide(self) -> None:
+        self.frame.hide()
+
+    def show_overlay(self) -> None:
+        self.reposition()
+        self.frame.show()
+        self.frame.raise_()
+
+    def reposition(self) -> None:
+        height = max(self.parent.height(), 640)
+        width = min(self.width, max(320, self.parent.width()))
+        x = max(0, self.parent.width() - width)
+        self.frame.setFixedWidth(width)
+        self.frame.setGeometry(x, 0, width, height)
+
+    def _clear_layout(self, layout: Any) -> None:
+        while layout.count():
+            item = layout.takeAt(0)
+            child_layout = item.layout()
+            widget = item.widget()
+            if child_layout is not None:
+                self._clear_layout(child_layout)
+            if widget is not None:
+                widget.setParent(None)
+                widget.deleteLater()
+
+
 class StaffingDashboardV2Page:
     def __init__(
         self,
@@ -921,12 +1011,17 @@ class StaffingDashboardV2Page:
         detail_layout.addStretch(1)
         detail_layout.addWidget(self._status_key())
         main.addWidget(self.detail_panel)
-        self.drawer, self.drawer_layout = self._panel("StaffingV2PositionDrawer")
-        self.drawer.setObjectName("StaffingV2PositionDrawer")
-        self.drawer.setMinimumWidth(420)
-        self.drawer.hide()
-        main.addWidget(self.drawer)
-        main.setSizes([380, 920, 480])
+        self.drawer_panel = _StaffingV2OverlayPanel(
+            QtCore=self.QtCore,
+            QtWidgets=self.QtWidgets,
+            parent=self.dashboard_view,
+            object_name="StaffingV2PositionDrawer",
+            width=480,
+        )
+        self.drawer = self.drawer_panel.frame
+        self.drawer_layout = self.drawer_panel.body_layout
+        self.drawer_footer_layout = self.drawer_panel.footer_layout
+        main.setSizes([380, 920])
         dashboard_root.addWidget(main, 1)
         self._build_classrooms_view()
         self._build_people_view()
@@ -1175,15 +1270,32 @@ class StaffingDashboardV2Page:
         self.classrooms_validation_panel, self.classrooms_validation_layout = self._panel("StaffingV2ClassroomsValidationPanel")
         left_layout.addWidget(self.classrooms_validation_panel)
         body.addWidget(left)
-        self.classrooms_detail_panel, self.classrooms_detail_layout = self._panel("StaffingV2ClassroomsDetailPanel")
-        self.classrooms_detail_panel.setMinimumWidth(420)
-        body.addWidget(self.classrooms_detail_panel)
-        body.setSizes([860, 420])
+        self.classrooms_detail_overlay = _StaffingV2OverlayPanel(
+            QtCore=self.QtCore,
+            QtWidgets=self.QtWidgets,
+            parent=self.classrooms_view,
+            object_name="StaffingV2ClassroomsDetailPanel",
+            width=440,
+        )
+        self.classrooms_detail_panel = self.classrooms_detail_overlay.frame
+        self.classrooms_detail_scroll = self.classrooms_detail_overlay.scroll_area
+        self.classrooms_detail_scroll.setObjectName("StaffingV2ClassroomsDetailScroll")
+        self.classrooms_detail_layout = self.classrooms_detail_overlay.body_layout
+        self.classrooms_detail_footer_layout = self.classrooms_detail_overlay.footer_layout
+        self.classrooms_detail_overlay.body.setObjectName("StaffingV2ClassroomsDetailContent")
+        self.classrooms_detail_overlay.footer.setObjectName("StaffingV2ClassroomsDetailFooter")
+        body.setSizes([860])
         classrooms_root.addWidget(body, 1)
-        self.classrooms_filter_drawer, self.classrooms_filter_drawer_layout = self._panel("StaffingV2ClassroomsFilterDrawer")
-        self.classrooms_filter_drawer.setParent(self.classrooms_view)
-        self.classrooms_filter_drawer.setFixedWidth(460)
-        self.classrooms_filter_drawer.hide()
+        self.classrooms_filter_drawer_panel = _StaffingV2OverlayPanel(
+            QtCore=self.QtCore,
+            QtWidgets=self.QtWidgets,
+            parent=self.classrooms_view,
+            object_name="StaffingV2ClassroomsFilterDrawer",
+            width=460,
+        )
+        self.classrooms_filter_drawer = self.classrooms_filter_drawer_panel.frame
+        self.classrooms_filter_drawer_layout = self.classrooms_filter_drawer_panel.body_layout
+        self.classrooms_filter_drawer_footer_layout = self.classrooms_filter_drawer_panel.footer_layout
         self._build_classrooms_filter_drawer()
 
     def _build_classrooms_filter_drawer(self) -> None:
@@ -1278,7 +1390,7 @@ class StaffingDashboardV2Page:
         self.classrooms_filter_apply_button.clicked.connect(self._apply_classrooms_filter_drawer)
         footer.addWidget(cancel)
         footer.addWidget(self.classrooms_filter_apply_button)
-        self.classrooms_filter_drawer_layout.addLayout(footer)
+        self.classrooms_filter_drawer_footer_layout.addLayout(footer)
 
     def _classrooms_status_filter_row(self, checkbox: Any) -> Any:
         row = self.QtWidgets.QFrame()
@@ -1319,18 +1431,12 @@ class StaffingDashboardV2Page:
 
     def _open_classrooms_filter_drawer(self) -> None:
         self._sync_classrooms_filter_drawer_from_state()
-        self._position_classrooms_filter_drawer()
-        self.classrooms_filter_drawer.show()
-        self.classrooms_filter_drawer.raise_()
+        self.classrooms_filter_drawer_panel.show_overlay()
 
     def _position_classrooms_filter_drawer(self) -> None:
         if not hasattr(self, "classrooms_filter_drawer"):
             return
-        parent = self.classrooms_view
-        width = self.classrooms_filter_drawer.width() or 460
-        height = max(parent.height(), self.widget.height(), 640)
-        x = max(0, parent.width() - width)
-        self.classrooms_filter_drawer.setGeometry(x, 0, width, height)
+        self.classrooms_filter_drawer_panel.reposition()
 
     def _reset_classrooms_filter_drawer(self) -> None:
         state = self._default_classrooms_filter_state()
@@ -1909,16 +2015,19 @@ class StaffingDashboardV2Page:
 
     def _render_classroom_management_detail(self, key: str, rows: list[StaffingMetricRow]) -> None:
         self._mark_layout_widgets_stale(self.classrooms_detail_layout)
+        self._mark_layout_widgets_stale(self.classrooms_detail_footer_layout)
         self._clear_layout(self.classrooms_detail_layout)
+        self._clear_layout(self.classrooms_detail_footer_layout)
         if not key:
             self.classrooms_detail_layout.addWidget(self._label("No classroom selected", "StaffingV2Muted"))
+            self.classrooms_detail_overlay.hide()
             return
         self.selected_classroom_management_key = key
         info = self._classroom_group_info(key, rows)
         record = getattr(self, "classroom_records_by_key", {}).get(key)
         self.classrooms_detail_layout.addWidget(self._label("Classroom Detail", "StaffingV2SectionTitle"))
         self.classrooms_detail_layout.addWidget(self._label(str(info["classroom"]), "StaffingV2ClassroomsDetailName"))
-        overview, overview_layout = self._panel("StaffingV2ClassroomsDetailCard")
+        overview, overview_layout = self._detail_panel_card("StaffingV2ClassroomsDetailCard")
         school = self.QtWidgets.QComboBox()
         school.setObjectName("StaffingV2ClassroomsDetailSchoolEdit")
         school.addItems(sorted({classroom.school for classroom in self.store.list_classrooms() if classroom.school}) or [str(info["school"])])
@@ -1945,8 +2054,7 @@ class StaffingDashboardV2Page:
         total = len(rows)
         filled = sum(1 for row in rows if row.status == "filled")
         open_count = sum(1 for row in rows if row.status in {"need_now", "replace"})
-        summary, summary_layout = self._panel("StaffingV2ClassroomsDetailCard")
-        summary_layout.addWidget(self._label("Staffing Summary", "StaffingV2SectionTitle"))
+        summary, summary_layout = self._detail_panel_card("StaffingV2ClassroomsDetailCard", "Staffing Summary")
         summary_cards = self.QtWidgets.QHBoxLayout()
         for label, value in [
             ("Total Positions", str(total)),
@@ -1960,13 +2068,12 @@ class StaffingDashboardV2Page:
         summary_layout.addLayout(summary_cards)
         self.classrooms_detail_layout.addWidget(summary)
 
-        positions, positions_layout = self._panel("StaffingV2ClassroomsDetailCard")
-        positions_layout.addWidget(self._label("Current Positions", "StaffingV2SectionTitle"))
+        positions, positions_layout = self._detail_panel_card("StaffingV2ClassroomsDetailCard", "Current Positions")
         for row in rows:
             positions_layout.addWidget(
                 self._label(f"{row.position_name}    {_display_status(row.status)}    {row.person_name or 'OPEN POSITION'}")
             )
-        self.classrooms_detail_layout.addWidget(positions, 1)
+        self.classrooms_detail_layout.addWidget(positions)
 
         footer = self.QtWidgets.QHBoxLayout()
         status = self._label("", "StaffingV2Muted")
@@ -1981,11 +2088,12 @@ class StaffingDashboardV2Page:
         deactivate.setEnabled(record is not None)
         save.clicked.connect(lambda _checked=False: self._save_classroom_detail(record, school, name, program, capacity, display_order, status))
         deactivate.clicked.connect(lambda _checked=False: self._deactivate_selected_classroom(record, status))
-        self.classrooms_detail_layout.addWidget(status)
+        self.classrooms_detail_footer_layout.addWidget(status)
         footer.addWidget(deactivate)
         footer.addStretch(1)
         footer.addWidget(save)
-        self.classrooms_detail_layout.addLayout(footer)
+        self.classrooms_detail_footer_layout.addLayout(footer)
+        self.classrooms_detail_overlay.show_overlay()
 
     def _save_classroom_detail(
         self,
@@ -2185,10 +2293,16 @@ class StaffingDashboardV2Page:
         self.validation_table.horizontalHeader().setStretchLastSection(True)
         self.validation_table.horizontalHeader().setSectionResizeMode(self.QtWidgets.QHeaderView.ResizeMode.Stretch)
         body.addWidget(self.validation_table)
-        self.validation_right_panel, self.validation_right_layout = self._panel("StaffingV2ValidationRightPanel")
-        self.validation_right_panel.setMinimumWidth(320)
-        body.addWidget(self.validation_right_panel)
-        body.setSizes([900, 320])
+        self.validation_right_overlay = _StaffingV2OverlayPanel(
+            QtCore=self.QtCore,
+            QtWidgets=self.QtWidgets,
+            parent=self.validation_view,
+            object_name="StaffingV2ValidationRightPanel",
+            width=360,
+        )
+        self.validation_right_panel = self.validation_right_overlay.frame
+        self.validation_right_layout = self.validation_right_overlay.body_layout
+        body.setSizes([900])
         main_layout.addWidget(body, 1)
         validation_footer = self.QtWidgets.QHBoxLayout()
         self.validation_result_count = self._label("Showing 0 to 0 of 0 issues", "StaffingV2Muted")
@@ -2214,12 +2328,17 @@ class StaffingDashboardV2Page:
         validation_footer.addWidget(self.validation_rows_per_page)
         main_layout.addLayout(validation_footer)
 
-        self.filter_drawer, self.filter_drawer_layout = self._panel("StaffingV2FilterDrawer")
-        self.filter_drawer.setObjectName("StaffingV2FilterDrawer")
-        self.filter_drawer.setFixedWidth(340)
+        self.filter_drawer_panel = _StaffingV2OverlayPanel(
+            QtCore=self.QtCore,
+            QtWidgets=self.QtWidgets,
+            parent=self.validation_view,
+            object_name="StaffingV2FilterDrawer",
+            width=340,
+        )
+        self.filter_drawer = self.filter_drawer_panel.frame
+        self.filter_drawer_layout = self.filter_drawer_panel.body_layout
+        self.filter_drawer_footer_layout = self.filter_drawer_panel.footer_layout
         self._build_filter_drawer_contents()
-        self.filter_drawer.hide()
-        validation_root.addWidget(self.filter_drawer)
 
     def _build_filter_drawer_contents(self) -> None:
         header = self.QtWidgets.QHBoxLayout()
@@ -2276,7 +2395,7 @@ class StaffingDashboardV2Page:
         self.validation_apply_button.clicked.connect(self._apply_validation_filters)
         footer.addWidget(cancel)
         footer.addWidget(self.validation_apply_button)
-        self.filter_drawer_layout.addLayout(footer)
+        self.filter_drawer_footer_layout.addLayout(footer)
 
     def _validation_filter_combo(self, object_name: str, values: list[str]) -> Any:
         combo = self.QtWidgets.QComboBox()
@@ -2285,7 +2404,7 @@ class StaffingDashboardV2Page:
         return combo
 
     def _open_filter_drawer(self) -> None:
-        self.filter_drawer.show()
+        self.filter_drawer_panel.show_overlay()
 
     def _reset_validation_filters(self) -> None:
         self.validation_school_filter.setCurrentText("All Schools")
@@ -2455,6 +2574,7 @@ class StaffingDashboardV2Page:
         about_layout.addWidget(self._label("About Validation", "StaffingV2SectionTitle"))
         about_layout.addWidget(self._label("Validation checks staffing coverage, permit status, position lifecycle, and start-date requirements."))
         self.validation_right_layout.addWidget(about, 1)
+        self.validation_right_overlay.show_overlay()
 
     def _open_validation_rules_dialog(self) -> None:
         dialog = self.QtWidgets.QDialog(self.widget)
@@ -3211,7 +3331,7 @@ class StaffingDashboardV2Page:
 
         self.people_active_filter = self._people_filter_combo("StaffingV2PeopleActiveFilter", ["All", "Active", "Inactive"])
         filters.addLayout(self._labeled_control("Active Status", self.people_active_filter), 1)
-        self.people_role_filter = self._people_filter_combo("StaffingV2PeopleRoleFilter", ["All", "Teacher", "Aide"])
+        self.people_role_filter = self._people_filter_combo("StaffingV2PeopleRoleFilter", ["All", "Director", "Teacher", "Aide"])
         filters.addLayout(self._labeled_control("Role", self.people_role_filter), 1)
         self.people_permit_filter = self._people_filter_combo("StaffingV2PeoplePermitFilter", ["All", "Teacher Permit", "Permit in Process", "Unknown"])
         filters.addLayout(self._labeled_control("Permit Status", self.people_permit_filter), 1)
@@ -3243,10 +3363,17 @@ class StaffingDashboardV2Page:
         self.people_table.horizontalHeader().setSectionResizeMode(self.QtWidgets.QHeaderView.ResizeMode.Stretch)
         self.people_table.currentCellChanged.connect(lambda row, _column, _prev_row, _prev_column: self._select_person(row))
         body.addWidget(self.people_table)
-        self.people_detail_panel, self.people_detail_layout = self._panel("StaffingV2PeopleDetailPanel")
-        self.people_detail_panel.setMinimumWidth(420)
-        body.addWidget(self.people_detail_panel)
-        body.setSizes([860, 420])
+        self.people_detail_overlay = _StaffingV2OverlayPanel(
+            QtCore=self.QtCore,
+            QtWidgets=self.QtWidgets,
+            parent=self.people_view,
+            object_name="StaffingV2PeopleDetailPanel",
+            width=420,
+        )
+        self.people_detail_panel = self.people_detail_overlay.frame
+        self.people_detail_layout = self.people_detail_overlay.body_layout
+        self.people_detail_footer_layout = self.people_detail_overlay.footer_layout
+        body.setSizes([860])
         people_root.addWidget(body, 1)
         people_footer = self.QtWidgets.QHBoxLayout()
         self.people_result_count = self.QtWidgets.QLabel("Showing 0 to 0 of 0 people")
@@ -3272,11 +3399,17 @@ class StaffingDashboardV2Page:
         people_footer.addWidget(self.people_rows_per_page)
         people_root.addLayout(people_footer)
         self.people_units_filter_value = "All Units"
-        self.people_filter_drawer, self.people_filter_drawer_layout = self._panel("StaffingV2PeopleFilterDrawer")
-        self.people_filter_drawer.setFixedWidth(340)
-        self.people_filter_drawer.hide()
+        self.people_filter_drawer_panel = _StaffingV2OverlayPanel(
+            QtCore=self.QtCore,
+            QtWidgets=self.QtWidgets,
+            parent=self.people_view,
+            object_name="StaffingV2PeopleFilterDrawer",
+            width=340,
+        )
+        self.people_filter_drawer = self.people_filter_drawer_panel.frame
+        self.people_filter_drawer_layout = self.people_filter_drawer_panel.body_layout
+        self.people_filter_drawer_footer_layout = self.people_filter_drawer_panel.footer_layout
         self._build_people_filter_drawer()
-        people_outer.addWidget(self.people_filter_drawer)
 
     def _build_people_filter_drawer(self) -> None:
         header = self.QtWidgets.QHBoxLayout()
@@ -3320,7 +3453,7 @@ class StaffingDashboardV2Page:
         apply.clicked.connect(self._apply_people_filter_drawer)
         footer.addWidget(cancel)
         footer.addWidget(apply)
-        self.people_filter_drawer_layout.addLayout(footer)
+        self.people_filter_drawer_footer_layout.addLayout(footer)
 
     def _people_drawer_combo(self, object_name: str, values: list[str]) -> Any:
         combo = self.QtWidgets.QComboBox()
@@ -3333,7 +3466,7 @@ class StaffingDashboardV2Page:
         self.people_filter_role.setCurrentText(self.people_role_filter.currentText())
         self.people_filter_permit.setCurrentText(self.people_permit_filter.currentText())
         self.people_filter_units.setCurrentText(self.people_units_filter_value)
-        self.people_filter_drawer.show()
+        self.people_filter_drawer_panel.show_overlay()
 
     def _reset_people_filter_drawer(self) -> None:
         self.people_filter_active.setCurrentText("All")
@@ -3378,7 +3511,7 @@ class StaffingDashboardV2Page:
         form_layout.addLayout(self._labeled_control("Full Name", name))
         role = self.QtWidgets.QComboBox()
         role.setObjectName("StaffingV2AddPersonRole")
-        role.addItems(["Teacher", "Aide"])
+        role.addItems(["Director", "Teacher", "Aide"])
         form_layout.addLayout(self._labeled_control("Role", role))
         permit = self.QtWidgets.QComboBox()
         permit.setObjectName("StaffingV2AddPersonPermit")
@@ -3637,8 +3770,10 @@ class StaffingDashboardV2Page:
 
     def _render_person_detail(self, person: StaffingPerson | None) -> None:
         self._clear_layout(self.people_detail_layout)
+        self._clear_layout(self.people_detail_footer_layout)
         if person is None:
             self.people_detail_layout.addWidget(self._label("No employee selected", "StaffingV2Muted"))
+            self.people_detail_overlay.hide()
             return
 
         top = self.QtWidgets.QHBoxLayout()
@@ -3672,8 +3807,7 @@ class StaffingDashboardV2Page:
         tabs_layout.addStretch(1)
         self.people_detail_layout.addWidget(tabs)
 
-        info, info_layout = self._panel("StaffingV2PeopleDetailCard")
-        info_layout.addWidget(self._label("Employee Information", "StaffingV2SectionTitle"))
+        info, info_layout = self._detail_panel_card("StaffingV2PeopleDetailCard", "Employee Information")
         info_layout.addLayout(self._detail_row("Role", person.role or "-"))
         info_layout.addLayout(self._detail_row("Permit Status", _permit_label(person.permit_status)))
         info_layout.addLayout(self._detail_row("Units", _format_units(person.units)))
@@ -3681,26 +3815,23 @@ class StaffingDashboardV2Page:
         info_layout.addLayout(self._detail_row("Active", "Yes" if person.active else "No"))
         self.people_detail_layout.addWidget(info)
 
-        current, current_layout = self._panel("StaffingV2PeopleDetailCard")
-        current_layout.addWidget(self._label("Current Assignment", "StaffingV2SectionTitle"))
+        current, current_layout = self._detail_panel_card("StaffingV2PeopleDetailCard", "Current Assignment")
         current_layout.addWidget(self._label(person.assignment_school or "-", "StaffingV2Muted"))
         current_layout.addWidget(self._label(_assignment_detail(person), "StaffingV2Muted"))
         self.people_detail_layout.addWidget(current)
 
-        employment, employment_layout = self._panel("StaffingV2PeopleDetailCard")
-        employment_layout.addWidget(self._label("Employment Status", "StaffingV2SectionTitle"))
+        employment, employment_layout = self._detail_panel_card("StaffingV2PeopleDetailCard", "Employment Status")
         employment_layout.addLayout(self._detail_row("Notice Given", person.notice_given or "-"))
         employment_layout.addLayout(self._detail_row("Final Working Day", person.final_working_day or "-"))
         employment_layout.addLayout(self._detail_row("Employment Status", "Active" if person.active else "Inactive"))
         employment_layout.addLayout(self._detail_row("Rehire Eligible", "Yes" if person.active else "-"))
         self.people_detail_layout.addWidget(employment)
 
-        additional, additional_layout = self._panel("StaffingV2PeopleDetailCard")
-        additional_layout.addWidget(self._label("Additional Information", "StaffingV2SectionTitle"))
+        additional, additional_layout = self._detail_panel_card("StaffingV2PeopleDetailCard", "Additional Information")
         additional_layout.addLayout(self._detail_row("Permit Effective Date", person.permit_effective_date or "-"))
         additional_layout.addLayout(self._detail_row("Documentation", "Received" if person.permit_documentation_received else "-"))
         additional_layout.addLayout(self._detail_row("Notes", person.permit_notes or "-"))
-        self.people_detail_layout.addWidget(additional, 1)
+        self.people_detail_layout.addWidget(additional)
 
         footer = self.QtWidgets.QHBoxLayout()
         deactivate = self.QtWidgets.QPushButton("Deactivate Employee")
@@ -3714,10 +3845,12 @@ class StaffingDashboardV2Page:
         footer.addWidget(deactivate)
         footer.addStretch(1)
         footer.addWidget(edit)
-        self.people_detail_layout.addLayout(footer)
+        self.people_detail_footer_layout.addLayout(footer)
+        self.people_detail_overlay.show_overlay()
 
     def _detail_row(self, label: str, value: str) -> Any:
         row = self.QtWidgets.QHBoxLayout()
+        row.setSpacing(6)
         row.addWidget(self._label(label, "StaffingV2Muted"))
         row.addWidget(self._label(value, "StaffingV2Muted"))
         return row
@@ -3813,10 +3946,17 @@ class StaffingDashboardV2Page:
             lambda row, _column, _prev_row, _prev_column: self._select_history_record(row)
         )
         body.addWidget(self.history_table)
-        self.history_detail_panel, self.history_detail_layout = self._panel("StaffingV2HistoryDetailPanel")
-        self.history_detail_panel.setMinimumWidth(380)
-        body.addWidget(self.history_detail_panel)
-        body.setSizes([900, 380])
+        self.history_detail_overlay = _StaffingV2OverlayPanel(
+            QtCore=self.QtCore,
+            QtWidgets=self.QtWidgets,
+            parent=self.history_view,
+            object_name="StaffingV2HistoryDetailPanel",
+            width=400,
+        )
+        self.history_detail_panel = self.history_detail_overlay.frame
+        self.history_detail_layout = self.history_detail_overlay.body_layout
+        self.history_detail_footer_layout = self.history_detail_overlay.footer_layout
+        body.setSizes([900])
         history_root.addWidget(body, 1)
         history_footer = self.QtWidgets.QHBoxLayout()
         self.history_result_count = self.QtWidgets.QLabel("Showing 0 to 0 of 0 records")
@@ -3975,8 +4115,10 @@ class StaffingDashboardV2Page:
 
     def _render_history_detail(self, record: StaffingHistoryRecord | None) -> None:
         self._clear_layout(self.history_detail_layout)
+        self._clear_layout(self.history_detail_footer_layout)
         if record is None:
             self.history_detail_layout.addWidget(self._label("No history record selected", "StaffingV2Muted"))
+            self.history_detail_overlay.hide()
             return
         self.history_detail_layout.addWidget(self._label("History Record Detail", "StaffingV2HistoryDetailTitle"))
         assignment_id_row = self.QtWidgets.QHBoxLayout()
@@ -3989,7 +4131,7 @@ class StaffingDashboardV2Page:
         assignment_id_row.addWidget(assignment_id_chip)
         assignment_id_row.addStretch(1)
         self.history_detail_layout.addLayout(assignment_id_row)
-        overview, overview_layout = self._panel("StaffingV2HistoryDetailCard")
+        overview, overview_layout = self._detail_panel_card("StaffingV2HistoryDetailCard")
         overview_layout.addLayout(self._detail_row("Classroom", record.classroom))
         overview_layout.addLayout(self._detail_row("Position", record.position_name))
         overview_layout.addLayout(self._detail_row("Cycle status", record.cycle_status))
@@ -4000,8 +4142,7 @@ class StaffingDashboardV2Page:
         overview_layout.addLayout(self._detail_row("School", record.school))
         self.history_detail_layout.addWidget(overview)
 
-        lifecycle, lifecycle_layout = self._panel("StaffingV2HistoryDetailCard")
-        lifecycle_layout.addWidget(self._label("Lifecycle Events", "StaffingV2SectionTitle"))
+        lifecycle, lifecycle_layout = self._detail_panel_card("StaffingV2HistoryDetailCard", "Lifecycle Events")
         lifecycle_events = [("opened", "Position opened", record.opened_date, "add")]
         if record.filled_date:
             lifecycle_events.append(("filled", "Position marked Filled", record.filled_date, "status_filled"))
@@ -4023,8 +4164,7 @@ class StaffingDashboardV2Page:
             lifecycle_layout.addWidget(event_row)
         self.history_detail_layout.addWidget(lifecycle)
 
-        validation, validation_layout = self._panel("StaffingV2HistoryDetailCard")
-        validation_layout.addWidget(self._label("Validation / Integrity", "StaffingV2SectionTitle"))
+        validation, validation_layout = self._detail_panel_card("StaffingV2HistoryDetailCard", "Validation / Integrity")
         check_rows = [
             ("pass" if record.data_integrity == "Healthy" else "warning", f"History status: {record.data_integrity}"),
             ("pass" if record.opened_date else "warning", "Dates valid" if record.opened_date else "Missing opened date"),
@@ -4041,7 +4181,7 @@ class StaffingDashboardV2Page:
             row_layout.addWidget(self._label(text))
             row_layout.addStretch(1)
             validation_layout.addWidget(row)
-        self.history_detail_layout.addWidget(validation, 1)
+        self.history_detail_layout.addWidget(validation)
 
         footer = self.QtWidgets.QHBoxLayout()
         view = self.QtWidgets.QPushButton("View Assignment")
@@ -4062,7 +4202,8 @@ class StaffingDashboardV2Page:
         footer.addWidget(view)
         footer.addWidget(employee)
         footer.addWidget(export)
-        self.history_detail_layout.addLayout(footer)
+        self.history_detail_footer_layout.addLayout(footer)
+        self.history_detail_overlay.show_overlay()
 
     def _open_history_assignment(self, assignment_id: int) -> None:
         self._show_dashboard_view()
@@ -4488,6 +4629,7 @@ class StaffingDashboardV2Page:
             return
         metric_row = next((row for row in self.rows if row.assignment_id == assignment_id), None)
         self._clear_layout(self.drawer_layout)
+        self._clear_layout(self.drawer_footer_layout)
 
         header = self.QtWidgets.QHBoxLayout()
         title_column = self.QtWidgets.QVBoxLayout()
@@ -4578,7 +4720,7 @@ class StaffingDashboardV2Page:
         self.drawer_layout.addLayout(lower)
         self.drawer_layout.addStretch(1)
         footer = self._label(f"Last updated: {assignment.updated_at or '-'}", "StaffingV2Muted")
-        self.drawer_layout.addWidget(footer)
+        self.drawer_footer_layout.addWidget(footer)
         actions = self.QtWidgets.QHBoxLayout()
         cancel = self.QtWidgets.QPushButton("Cancel")
         cancel.setObjectName("StaffingV2DrawerCancel")
@@ -4596,8 +4738,8 @@ class StaffingDashboardV2Page:
         actions.addStretch(1)
         actions.addWidget(draft)
         actions.addWidget(save)
-        self.drawer_layout.addLayout(actions)
-        self.drawer.show()
+        self.drawer_footer_layout.addLayout(actions)
+        self.drawer_panel.show_overlay()
 
     def _action_button(self, row: StaffingMetricRow) -> Any:
         action_key, label = _primary_action(row.status)
@@ -4703,7 +4845,7 @@ class StaffingDashboardV2Page:
         classroom.setObjectName("StaffingV2AddPositionClassroom")
         position_type = self.QtWidgets.QComboBox()
         position_type.setObjectName("StaffingV2AddPositionType")
-        position_type.addItems(["Teacher", "Aide", "Floater", "Chef", "Other"])
+        position_type.addItems(["Director", "Teacher", "Aide", "Floater", "Chef", "Other"])
         position_name = self.QtWidgets.QLineEdit()
         position_name.setObjectName("StaffingV2AddPositionName")
         position_name.setPlaceholderText("Teacher 2")
@@ -4794,7 +4936,18 @@ class StaffingDashboardV2Page:
                 error.show()
                 return
             dialog.close()
+            assignment = self.store.get_assignment(result.assignment_id)
+            self.dashboard_classroom_filter_state = self._default_dashboard_classroom_filter_state()
+            self.search.clear()
+            if assignment.school:
+                self.school_selector.setCurrentText(assignment.school)
+            if assignment.classroom_program:
+                self.program_selector.setCurrentText(assignment.classroom_program)
             self.refresh()
+            for index in range(self.classroom_list.count()):
+                if self.classroom_list.item(index).data(self.QtCore.Qt.ItemDataRole.UserRole) == assignment.classroom:
+                    self.classroom_list.setCurrentRow(index)
+                    break
             self._show_position_drawer(result.assignment_id)
 
         school.currentIndexChanged.connect(sync_classrooms)
@@ -4883,8 +5036,9 @@ class StaffingDashboardV2Page:
         full_name.setText(assignment.person_name or "Emily Carter")
         role = self.QtWidgets.QComboBox()
         role.setObjectName("StaffingV2ComingRole")
-        role.addItems(["Teacher", "Aide", "Floater", "Chef"])
-        role.setCurrentText(assignment.position_type if assignment.position_type in {"Teacher", "Aide", "Floater", "Chef"} else "Teacher")
+        role.addItems(["Director", "Teacher", "Aide", "Floater", "Chef"])
+        supported_roles = {"Director", "Teacher", "Aide", "Floater", "Chef"}
+        role.setCurrentText(assignment.position_type if assignment.position_type in supported_roles else "Teacher")
         start_date = self.QtWidgets.QDateEdit()
         start_date.setObjectName("StaffingV2ComingStartDate")
         start_date.setCalendarPopup(True)
@@ -5144,17 +5298,180 @@ class StaffingDashboardV2Page:
 
         def run_selected() -> None:
             action_key = "replace_employee" if replace_option.isChecked() else "update_permit"
-            callback = self.actions.get(action_key)
             dialog.close()
             if action_key == "update_permit":
                 self._open_update_permit_dialog(assignment_id)
                 return
-            if callback is not None:
-                callback(assignment_id)
+            self._open_replace_employee_dialog(assignment_id)
 
         permit_action.clicked.connect(lambda _checked=False: permit_option.setChecked(True))
         replace_action.clicked.connect(lambda _checked=False: replace_option.setChecked(True))
         continue_button.clicked.connect(run_selected)
+        dialog.show()
+
+    def _open_replace_employee_dialog(self, assignment_id: int) -> None:
+        try:
+            assignment = self.store.get_assignment(assignment_id)
+        except ValueError:
+            return
+        if assignment.person_id is None:
+            return
+        dialog = self.QtWidgets.QDialog(self.widget)
+        dialog.setObjectName("StaffingV2ReplaceEmployeeDialog")
+        dialog.setWindowTitle("Replace Employee")
+        dialog.setModal(False)
+        dialog.setStyleSheet(APP_QSS)
+        dialog.resize(760, 660)
+
+        root = self.QtWidgets.QVBoxLayout(dialog)
+        root.setContentsMargins(18, 16, 18, 16)
+        root.setSpacing(12)
+        header = self.QtWidgets.QHBoxLayout()
+        title_block = self.QtWidgets.QVBoxLayout()
+        title_block.addWidget(self._label("Replace Employee", "StaffingV2DrawerTitle"))
+        title_block.addWidget(
+            self._label("Mark the current employee as leaving and reopen this position.", "StaffingV2Muted")
+        )
+        header.addLayout(title_block, 1)
+        close = self.QtWidgets.QPushButton("")
+        close.setObjectName("StaffingV2ReplaceClose")
+        self._set_button_icon(close, "close")
+        close.clicked.connect(dialog.close)
+        header.addWidget(close)
+        root.addLayout(header)
+
+        summary, summary_layout = self._dialog_section()
+        summary_layout.addWidget(self._label("Position Summary", "StaffingV2SectionTitle"))
+        summary_grid = self.QtWidgets.QGridLayout()
+        summary_items = [
+            ("Employee", assignment.person_name or "-"),
+            ("Position", assignment.position_name),
+            ("Classroom", assignment.classroom),
+            ("School", assignment.school),
+            ("Current Status", _display_status(assignment.status)),
+            ("Assignment ID", f"A-{assignment.id:04d}"),
+        ]
+        for column, (label, value) in enumerate(summary_items):
+            cell = self.QtWidgets.QVBoxLayout()
+            cell.addWidget(self._label(label, "StaffingV2Muted"))
+            if label == "Current Status":
+                cell.addWidget(self._chip(value, assignment.status))
+            else:
+                cell.addWidget(self._label(value))
+            summary_grid.addLayout(cell, 0, column)
+        summary_layout.addLayout(summary_grid)
+        root.addWidget(summary)
+
+        body = self.QtWidgets.QHBoxLayout()
+        form_section, form_layout = self._dialog_section()
+        form_layout.addWidget(self._label("Replacement Details", "StaffingV2SectionTitle"))
+        form = self.QtWidgets.QGridLayout()
+
+        class ReplaceDateEdit(self.QtWidgets.QDateEdit):
+            def _open_calendar(date_self: Any) -> None:
+                calendar = date_self.calendarWidget()
+                calendar.setSelectedDate(date_self.date())
+                popup = calendar.parentWidget()
+                target = popup or calendar
+                target.move(date_self.mapToGlobal(self.QtCore.QPoint(0, date_self.height())))
+                target.show()
+                target.raise_()
+
+            def mousePressEvent(date_self: Any, event: Any) -> None:  # noqa: N802 - Qt override.
+                super(ReplaceDateEdit, date_self).mousePressEvent(event)
+                if event.button() != self.QtCore.Qt.MouseButton.LeftButton or not date_self.calendarPopup():
+                    return
+                self.QtCore.QTimer.singleShot(0, date_self._open_calendar)
+
+        today = self.QtCore.QDate.currentDate()
+        notice = ReplaceDateEdit()
+        notice.setObjectName("StaffingV2ReplaceNotice")
+        notice.setCalendarPopup(True)
+        notice.setDisplayFormat("yyyy-MM-dd")
+        notice.setDate(today)
+        final_day = ReplaceDateEdit()
+        final_day.setObjectName("StaffingV2ReplaceFinalDay")
+        final_day.setCalendarPopup(True)
+        final_day.setDisplayFormat("yyyy-MM-dd")
+        final_day.setDate(today)
+        reason = self.QtWidgets.QComboBox()
+        reason.setObjectName("StaffingV2ReplaceReason")
+        reason.addItems(["Resignation", "Termination", "Leave of absence", "Transfer", "Other"])
+        fields = [
+            ("Notice Given *", notice, 0),
+            ("Final Working Day *", final_day, 1),
+            ("Reason (optional)", reason, 2),
+        ]
+        for label, widget, row in fields:
+            wrap = self.QtWidgets.QVBoxLayout()
+            wrap.addWidget(self._label(label, "StaffingV2Muted"))
+            wrap.addWidget(widget)
+            form.addLayout(wrap, row, 0)
+        form_layout.addLayout(form)
+        body.addWidget(form_section, 2)
+
+        right = self.QtWidgets.QVBoxLayout()
+        validation, validation_layout = self._dialog_section()
+        validation_layout.addWidget(self._label("Validation / Requirements", "StaffingV2SectionTitle"))
+        for line in (
+            "✓ Notice Given is required",
+            "✓ Final Working Day is required",
+            "✓ Employee record found",
+            "✓ Position status will become Replace",
+        ):
+            validation_layout.addWidget(self._label(line))
+        right.addWidget(validation)
+        happens, happens_layout = self._dialog_section("StaffingV2DialogInfo")
+        happens_layout.addWidget(self._label("What will happen on save", "StaffingV2SectionTitle"))
+        for line in (
+            "People.Active will be set to false",
+            "Notice Given and Final Working Day will save to People",
+            "Assignment status changes to Replace",
+            "A new AssignmentHistory open cycle is created",
+        ):
+            happens_layout.addWidget(self._label(f"✓ {line}"))
+        right.addWidget(happens)
+        right.addStretch(1)
+        body.addLayout(right, 1)
+        root.addLayout(body, 1)
+
+        warning, warning_layout = self._dialog_section("StaffingV2DialogWarning")
+        warning_layout.addWidget(
+            self._label("This action opens a replacement need while preserving the current employee on the record.")
+        )
+        root.addWidget(warning)
+        error = self._label("", "StaffingV2NeedNowChip")
+        error.setObjectName("StaffingV2ReplaceError")
+        error.hide()
+        root.addWidget(error)
+
+        footer = self.QtWidgets.QHBoxLayout()
+        footer.addStretch(1)
+        cancel = self.QtWidgets.QPushButton("Cancel")
+        cancel.setObjectName("StaffingV2ReplaceCancel")
+        cancel.clicked.connect(dialog.close)
+        submit = self.QtWidgets.QPushButton("Confirm Replace")
+        submit.setObjectName("StaffingV2ReplaceSubmit")
+        footer.addWidget(cancel)
+        footer.addWidget(submit)
+        root.addLayout(footer)
+
+        def save() -> None:
+            try:
+                self.service_factory().mark_replacing(
+                    assignment_id,
+                    notice_given=notice.date().toString("yyyy-MM-dd"),
+                    final_working_day=final_day.date().toString("yyyy-MM-dd"),
+                )
+            except Exception as exc:  # noqa: BLE001 - show service validation error in dialog.
+                error.setText(_safe_staffing_error(exc))
+                error.show()
+                return
+            dialog.close()
+            self.refresh()
+            self._show_position_drawer(assignment_id)
+
+        submit.clicked.connect(save)
         dialog.show()
 
     def _open_update_permit_dialog(self, assignment_id: int) -> None:
@@ -5736,6 +6053,18 @@ class StaffingDashboardV2Page:
         layout = self.QtWidgets.QVBoxLayout(frame)
         layout.setContentsMargins(14, 12, 14, 12)
         layout.setSpacing(8)
+        return frame, layout
+
+    def _detail_panel_card(self, object_name: str, title: str = "") -> tuple[Any, Any]:
+        frame, layout = self._panel(object_name)
+        layout.setContentsMargins(10, 8, 10, 8)
+        layout.setSpacing(5)
+        frame.setSizePolicy(
+            self.QtWidgets.QSizePolicy.Policy.Preferred,
+            self.QtWidgets.QSizePolicy.Policy.Maximum,
+        )
+        if title:
+            layout.addWidget(self._label(title, "StaffingV2SectionTitle"))
         return frame, layout
 
     def _dialog_section(self, object_name: str = "StaffingV2DialogSection") -> tuple[Any, Any]:

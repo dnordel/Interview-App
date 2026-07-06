@@ -9788,17 +9788,44 @@ class PySideInterviewWindow:
         layout.addWidget(self._label(assignment.person_name or "Unassigned", "PySideStaffingDrawerName"))
 
         form = self.QtWidgets.QFormLayout()
-        notice_field = self.QtWidgets.QLineEdit()
+
+        class ReplaceDateEdit(self.QtWidgets.QDateEdit):
+            def _open_calendar(date_self: Any) -> None:
+                calendar = date_self.calendarWidget()
+                calendar.setSelectedDate(date_self.date())
+                popup = calendar.parentWidget()
+                target = popup or calendar
+                target.move(date_self.mapToGlobal(self.QtCore.QPoint(0, date_self.height())))
+                target.show()
+                target.raise_()
+
+            def mousePressEvent(date_self: Any, event: Any) -> None:  # noqa: N802 - Qt override.
+                super(ReplaceDateEdit, date_self).mousePressEvent(event)
+                if event.button() != self.QtCore.Qt.MouseButton.LeftButton or not date_self.calendarPopup():
+                    return
+                self.QtCore.QTimer.singleShot(0, date_self._open_calendar)
+
+        today = self.QtCore.QDate.currentDate()
+        notice_field = ReplaceDateEdit()
         notice_field.setObjectName("PySideStaffingReplaceNotice")
-        final_day_field = self.QtWidgets.QLineEdit()
+        notice_field.setCalendarPopup(True)
+        notice_field.setDisplayFormat("MMM d, yyyy")
+        notice_field.setDate(today)
+        final_day_field = ReplaceDateEdit()
         final_day_field.setObjectName("PySideStaffingReplaceFinalDay")
-        reason_field = self.QtWidgets.QTextEdit()
+        final_day_field.setCalendarPopup(True)
+        final_day_field.setDisplayFormat("MMM d, yyyy")
+        final_day_field.setDate(today)
+        reason_field = self.QtWidgets.QComboBox()
         reason_field.setObjectName("PySideStaffingReplaceReason")
-        reason_field.setFixedHeight(80)
+        reason_field.addItems(["Resignation", "Termination", "Leave of absence", "Transfer", "Other"])
         form.addRow("Notice Given *", notice_field)
         form.addRow("Final Working Day *", final_day_field)
         form.addRow("Reason (optional)", reason_field)
         layout.addLayout(form)
+        error_label = self._label("")
+        error_label.setObjectName("PySideStaffingReplaceError")
+        layout.addWidget(error_label)
         note = self._label(
             "Confirming this action will update the People record and move the current assignment to Replace."
         )
@@ -9813,16 +9840,19 @@ class PySideInterviewWindow:
         save.setObjectName("PySideStaffingReplaceSave")
 
         def save_replace() -> None:
+            error_label.setText("")
             self._run_staffing_action(
                 lambda service: service.mark_replacing(
                     assignment_id,
-                    notice_given=notice_field.text().strip(),
-                    final_working_day=final_day_field.text().strip(),
+                    notice_given=notice_field.date().toString("yyyy-MM-dd"),
+                    final_working_day=final_day_field.date().toString("yyyy-MM-dd"),
                 ),
                 "Replacement need opened.",
             )
             if self.staffing_status_label is None or self.staffing_status_label.text() == "Replacement need opened.":
                 dialog.close()
+            elif self.staffing_status_label is not None:
+                error_label.setText(self.staffing_status_label.text())
 
         save.clicked.connect(save_replace)
         buttons.addWidget(save)

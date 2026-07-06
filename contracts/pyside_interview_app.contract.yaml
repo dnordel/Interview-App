@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.57.0
+  version: 1.57.2
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, resizable splitter sections, school/classroom selectors, wider color-coded classroom list with per-classroom status-count overview, metric cards, positions table, fully editable right-side assignment/person details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics, parallel Staffing v2 navigation/page shell with its own mockup-style staffing sidebar, People / Employee Management and Assignment History sub-dashboards for the mockup-driven rewrite backed by staffing_dashboard_v2 while the legacy Staffing page remains available,
@@ -3297,7 +3297,7 @@ classes:
     exceptions: []
     side_effects: Shows a nonblocking PySide guided action dialog; saving updates staffing SQLite rows, optionally updates permit status, and refreshes visible PySide staffing dashboard widgets.
   - name: _mark_staffing_replacing
-    description: Show the guided Replace Employee dialog for notice date, final working day, and optional reason; saving marks a filled staffing position as replacing through StaffingService and refreshes the Staffing dashboard.
+    description: Show the guided Replace Employee dialog with date picker widgets for notice date and final working day that default to today and open the calendar when users click either the field or dropdown arrow, a fixed reason dropdown, and dialog-local save errors; saving marks a filled staffing position as replacing through StaffingService and refreshes the Staffing dashboard.
     locked: false
     inputs:
       assignment_id:
@@ -3306,7 +3306,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Shows a nonblocking PySide guided action dialog; saving updates staffing SQLite rows and refreshes visible PySide staffing dashboard widgets.
+    side_effects: Shows a nonblocking PySide guided action dialog; failed saves keep the dialog open with an inline error, while valid saving updates staffing SQLite rows and refreshes visible PySide staffing dashboard widgets.
   - name: _revert_staffing_coming
     description: Revert a coming staffing assignment to need_now through StaffingService and refresh the Staffing dashboard.
     locked: false
