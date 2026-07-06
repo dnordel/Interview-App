@@ -279,7 +279,10 @@ QPushButton#StaffingV2AddPositionButton {
     font-weight: 700;
 }
 QPushButton#StaffingV2ExportButton,
-QPushButton#StaffingV2ViewHistoryButton {
+QPushButton#StaffingV2ViewHistoryButton,
+QPushButton#StaffingV2ClassroomsExportButton,
+QPushButton#StaffingV2ClassroomsMoreFilters,
+QPushButton#StaffingV2ClassroomsClear {
     background-color: #ffffff;
     color: #1e293b;
     border: 1px solid #cbd5e1;
@@ -289,6 +292,7 @@ QPushButton#StaffingV2ViewHistoryButton {
 }
 QPushButton#StaffingV2DrawerMarkComing,
 QPushButton#StaffingV2DrawerMarkFilled,
+QPushButton#StaffingV2ClassroomsAddButton,
 QPushButton#StaffingV2ComingSubmit,
 QPushButton#StaffingV2FilledSubmit,
 QPushButton#StaffingV2ManageFilledContinue,
@@ -831,9 +835,11 @@ class StaffingDashboardV2Page:
         header.addWidget(self._label("Last updated: May 20, 2025 9:42 AM", "StaffingV2Muted"))
         export = self.QtWidgets.QPushButton("Export")
         export.setObjectName("StaffingV2ClassroomsExportButton")
+        self._set_button_icon(export, "export")
         export.setEnabled(False)
         add_classroom = self.QtWidgets.QPushButton("+  Add Classroom")
         add_classroom.setObjectName("StaffingV2ClassroomsAddButton")
+        self._set_button_icon(add_classroom, "add")
         add_classroom.setEnabled(False)
         add_classroom.setToolTip("Add Classroom workflow will be implemented in a later classroom mockup slice.")
         header.addWidget(export)
@@ -859,6 +865,7 @@ class StaffingDashboardV2Page:
         filters.addWidget(self.classrooms_search, 2)
         more = self.QtWidgets.QPushButton("More Filters")
         more.setObjectName("StaffingV2ClassroomsMoreFilters")
+        self._set_button_icon(more, "filter")
         more.clicked.connect(self._open_classrooms_filter_drawer)
         clear = self.QtWidgets.QPushButton("Clear")
         clear.setObjectName("StaffingV2ClassroomsClear")

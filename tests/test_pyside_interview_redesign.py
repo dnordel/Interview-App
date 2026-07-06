@@ -8881,11 +8881,14 @@ def test_pyside_staffing_v2_classrooms_dashboard_uses_new_shell_and_db_rows(
     assert page.findChild(qt_widgets.QLabel, "StaffingV2ClassroomsTitle").text() == "Classroom Management"
     assert "Manage classroom records" in page.findChild(qt_widgets.QLabel, "StaffingV2ClassroomsSubtitle").text()
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsAddButton").text() == "+  Add Classroom"
+    assert not page.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsExportButton").icon().isNull()
+    assert not page.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsAddButton").icon().isNull()
     assert page.findChild(qt_widgets.QComboBox, "StaffingV2ClassroomsSchoolFilter").currentText() == "All Schools"
     assert page.findChild(qt_widgets.QComboBox, "StaffingV2ClassroomsProgramFilter").currentText() == "All Programs"
     assert page.findChild(qt_widgets.QComboBox, "StaffingV2ClassroomsStatusFilter").currentText() == "All Statuses"
     assert page.findChild(qt_widgets.QLineEdit, "StaffingV2ClassroomsSearch").placeholderText() == "Search classrooms..."
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsMoreFilters").text() == "More Filters"
+    assert not page.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsMoreFilters").icon().isNull()
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsClear").text() == "Clear"
     metric_text = " ".join(_widget_text(card) for card in page.findChildren(qt_widgets.QFrame, "StaffingV2ClassroomsMetricCard"))
     assert "Total Classrooms 2" in metric_text
