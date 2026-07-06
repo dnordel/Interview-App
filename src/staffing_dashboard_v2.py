@@ -284,7 +284,11 @@ QPushButton#StaffingV2ClassroomsExportButton,
 QPushButton#StaffingV2ClassroomsMoreFilters,
 QPushButton#StaffingV2ClassroomsClear,
 QPushButton#StaffingV2PeopleMoreFilters,
-QPushButton#StaffingV2PeopleClear {
+QPushButton#StaffingV2PeopleClear,
+QPushButton#StaffingV2HistoryExportButton,
+QPushButton#StaffingV2HistoryValidationButton,
+QPushButton#StaffingV2HistoryMoreFilters,
+QPushButton#StaffingV2HistoryClear {
     background-color: #ffffff;
     color: #1e293b;
     border: 1px solid #cbd5e1;
@@ -1749,9 +1753,11 @@ class StaffingDashboardV2Page:
         header.addWidget(self._label("Last updated: May 20, 2025 9:42 AM", "StaffingV2Muted"))
         export = self.QtWidgets.QPushButton("Export")
         export.setObjectName("StaffingV2HistoryExportButton")
+        self._set_button_icon(export, "export")
         export.setEnabled(False)
         validation = self.QtWidgets.QPushButton("View Validation")
         validation.setObjectName("StaffingV2HistoryValidationButton")
+        self._set_button_icon(validation, "validation")
         validation.setEnabled(False)
         header.addWidget(export)
         header.addWidget(validation)
@@ -1775,6 +1781,7 @@ class StaffingDashboardV2Page:
         filters.addWidget(self.history_search, 2)
         more = self.QtWidgets.QPushButton("More Filters")
         more.setObjectName("StaffingV2HistoryMoreFilters")
+        self._set_button_icon(more, "filter")
         more.setEnabled(False)
         clear = self.QtWidgets.QPushButton("Clear")
         clear.setObjectName("StaffingV2HistoryClear")

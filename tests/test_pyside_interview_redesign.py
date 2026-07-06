@@ -9786,7 +9786,9 @@ def test_pyside_staffing_v2_assignment_history_dashboard_renders_history_from_db
     assert page.findChild(qt_widgets.QLabel, "StaffingV2HistoryTitle").text() == "Assignment History"
     assert "Review open-to-fill staffing cycles" in page.findChild(qt_widgets.QLabel, "StaffingV2HistorySubtitle").text()
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2HistoryExportButton").text() == "Export"
+    assert not page.findChild(qt_widgets.QPushButton, "StaffingV2HistoryExportButton").icon().isNull()
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2HistoryValidationButton").text() == "View Validation"
+    assert not page.findChild(qt_widgets.QPushButton, "StaffingV2HistoryValidationButton").icon().isNull()
     metric_text = " ".join(_widget_text(card) for card in page.findChildren(qt_widgets.QFrame, "StaffingV2HistoryMetricCard"))
     assert "Total Cycles 2" in metric_text
     assert "Open Cycles 1" in metric_text
@@ -9797,6 +9799,7 @@ def test_pyside_staffing_v2_assignment_history_dashboard_renders_history_from_db
     assert page.findChild(qt_widgets.QComboBox, "StaffingV2HistoryClassroomFilter").currentText() == "All Classrooms"
     assert page.findChild(qt_widgets.QComboBox, "StaffingV2HistoryCycleFilter").currentText() == "All Statuses"
     assert page.findChild(qt_widgets.QLineEdit, "StaffingV2HistorySearch").placeholderText() == "Search assignments..."
+    assert not page.findChild(qt_widgets.QPushButton, "StaffingV2HistoryMoreFilters").icon().isNull()
     table = page.findChild(qt_widgets.QTableWidget, "StaffingV2HistoryTable")
     assert table.rowCount() == 2
     table_text = {
