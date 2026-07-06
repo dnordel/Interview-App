@@ -9295,6 +9295,9 @@ def test_pyside_staffing_v2_mark_coming_dialog_saves_through_service(
     assert "Validation / Requirements" in dialog_text
     assert "What will happen on save" in dialog_text
     assert "This action does not close the open assignment history cycle." in dialog_text
+    assert not dialog.findChild(qt_widgets.QPushButton, "StaffingV2ComingSelectPerson").icon().isNull()
+    assert not dialog.findChild(qt_widgets.QPushButton, "StaffingV2ComingCreatePerson").icon().isNull()
+    assert not dialog.findChild(qt_widgets.QPushButton, "StaffingV2ComingSubmit").icon().isNull()
 
     dialog.findChild(qt_widgets.QLineEdit, "StaffingV2ComingFullName").setText("Emily Carter")
     dialog.findChild(qt_widgets.QComboBox, "StaffingV2ComingRole").setCurrentText("Teacher")
