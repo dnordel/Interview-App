@@ -10041,6 +10041,14 @@ def test_pyside_staffing_v2_validation_dashboard_and_filter_drawer_use_existing_
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2ValidationCriticalTab").text() == "Critical (1)"
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2ValidationWarningsTab").text() == "Warnings (1)"
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2ValidationInfoTab").text() == "Info (1)"
+    all_issues_tab = page.findChild(qt_widgets.QPushButton, "StaffingV2ValidationAllIssuesTab")
+    critical_tab = page.findChild(qt_widgets.QPushButton, "StaffingV2ValidationCriticalTab")
+    warning_tab = page.findChild(qt_widgets.QPushButton, "StaffingV2ValidationWarningsTab")
+    info_tab = page.findChild(qt_widgets.QPushButton, "StaffingV2ValidationInfoTab")
+    assert all_issues_tab.property("staffingV2ActiveValidationTab") is True
+    assert critical_tab.property("staffingV2ActiveValidationTab") is False
+    assert warning_tab.property("staffingV2ActiveValidationTab") is False
+    assert info_tab.property("staffingV2ActiveValidationTab") is False
     validation_search = page.findChild(qt_widgets.QLineEdit, "StaffingV2ValidationSearch")
     assert validation_search.placeholderText() == "Search issues..."
     assert validation_search.actions()
@@ -10071,13 +10079,17 @@ def test_pyside_staffing_v2_validation_dashboard_and_filter_drawer_use_existing_
         assert view_button.text() == "View"
         assert not view_button.icon().isNull()
         assert not view_button.isEnabled()
-    page.findChild(qt_widgets.QPushButton, "StaffingV2ValidationCriticalTab").click()
+    critical_tab.click()
     app.processEvents()
     assert table.rowCount() == 1
     assert table.item(0, 3).text() == "Critical"
-    page.findChild(qt_widgets.QPushButton, "StaffingV2ValidationAllIssuesTab").click()
+    assert all_issues_tab.property("staffingV2ActiveValidationTab") is False
+    assert critical_tab.property("staffingV2ActiveValidationTab") is True
+    all_issues_tab.click()
     app.processEvents()
     assert table.rowCount() == 3
+    assert all_issues_tab.property("staffingV2ActiveValidationTab") is True
+    assert critical_tab.property("staffingV2ActiveValidationTab") is False
     right_panel_text = _widget_text(page.findChild(qt_widgets.QFrame, "StaffingV2ValidationRightPanel"))
     assert "Compliance Summary" in right_panel_text
     assert "Quick Actions" in right_panel_text

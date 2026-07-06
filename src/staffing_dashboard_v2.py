@@ -116,6 +116,22 @@ QPushButton[staffingV2ActiveNav="true"] {
     text-align: left;
     font-weight: 800;
 }
+QPushButton#StaffingV2ValidationAllIssuesTab,
+QPushButton#StaffingV2ValidationCriticalTab,
+QPushButton#StaffingV2ValidationWarningsTab,
+QPushButton#StaffingV2ValidationInfoTab {
+    background-color: transparent;
+    color: #475569;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0px;
+    padding: 6px 10px;
+    font-weight: 700;
+}
+QPushButton[staffingV2ActiveValidationTab="true"] {
+    color: #2563eb;
+    border-bottom: 2px solid #2563eb;
+}
 QFrame#StaffingV2SidebarCard {
     background-color: #ffffff;
     border: 1px solid #e2e8f0;
@@ -1394,19 +1410,41 @@ class StaffingDashboardV2Page:
             self.validation_info_tab,
         ):
             button.setMinimumHeight(34)
+            button.setProperty("staffingV2ActiveValidationTab", False)
             tabs_layout.addWidget(button)
         tabs_layout.addStretch(1)
 
-        def select_validation_tab(severity: str | None) -> None:
+        validation_tab_buttons = (
+            self.validation_all_tab,
+            self.validation_critical_tab,
+            self.validation_warning_tab,
+            self.validation_info_tab,
+        )
+
+        def mark_validation_tab(active_button: Any) -> None:
+            for button in validation_tab_buttons:
+                button.setProperty("staffingV2ActiveValidationTab", button is active_button)
+                button.style().unpolish(button)
+                button.style().polish(button)
+
+        def select_validation_tab(severity: str | None, active_button: Any) -> None:
+            mark_validation_tab(active_button)
             self.validation_severity_critical.setChecked(severity in {None, "Critical"})
             self.validation_severity_warning.setChecked(severity in {None, "Warning"})
             self.validation_severity_info.setChecked(severity in {None, "Info"})
             self._refresh_validation_filters()
 
-        self.validation_all_tab.clicked.connect(lambda _checked=False: select_validation_tab(None))
-        self.validation_critical_tab.clicked.connect(lambda _checked=False: select_validation_tab("Critical"))
-        self.validation_warning_tab.clicked.connect(lambda _checked=False: select_validation_tab("Warning"))
-        self.validation_info_tab.clicked.connect(lambda _checked=False: select_validation_tab("Info"))
+        mark_validation_tab(self.validation_all_tab)
+        self.validation_all_tab.clicked.connect(
+            lambda _checked=False: select_validation_tab(None, self.validation_all_tab)
+        )
+        self.validation_critical_tab.clicked.connect(
+            lambda _checked=False: select_validation_tab("Critical", self.validation_critical_tab)
+        )
+        self.validation_warning_tab.clicked.connect(
+            lambda _checked=False: select_validation_tab("Warning", self.validation_warning_tab)
+        )
+        self.validation_info_tab.clicked.connect(lambda _checked=False: select_validation_tab("Info", self.validation_info_tab))
         main_layout.addWidget(tabs)
 
         controls = self.QtWidgets.QHBoxLayout()

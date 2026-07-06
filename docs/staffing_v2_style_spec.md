@@ -335,6 +335,9 @@ Shell:
 - Header: `Staffing Validation`, subtitle, last updated, Export Report.
 - Overview cards: Total Issues, Critical, Warning, Info, Overall Compliance.
 - Issue tabs: All Issues, Critical, Warnings, Info.
+  - Active tab uses blue text and 2 px blue underline.
+  - Inactive tabs are transparent, navy/slate text, no filled button chrome.
+  - PySide implementation marks active tab with `staffingV2ActiveValidationTab` for QSS and tests.
 - Search and Filters button.
 - Issues table: Issue, Classroom, Type, Severity, Detected, Details, Action.
 - Right filter/summary panel:
