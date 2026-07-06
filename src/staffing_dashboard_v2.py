@@ -3530,6 +3530,7 @@ class StaffingDashboardV2Page:
         row = self.QtWidgets.QHBoxLayout()
         row.setContentsMargins(2, 0, 2, 0)
         row.setSpacing(6)
+        row.addWidget(self._icon_label(_metric_icon_key(label), "StaffingV2SummaryIcon"))
         label_text = label if variant == "success" else f"{label}:"
         label_widget = self._label(label_text, "StaffingV2SummaryLabel")
         label_widget.setProperty("staffingV2SummaryVariant", variant)

@@ -8704,6 +8704,10 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
     assert chip_variants["Validation healthy"] == "success"
     for card in summary_chips:
         assert card.maximumHeight() <= 50
+        icon = card.findChild(qt_widgets.QLabel, "StaffingV2SummaryIcon")
+        assert icon is not None
+        assert icon.pixmap() is not None
+        assert not icon.pixmap().isNull()
     classroom_list = page.findChild(qt_widgets.QListWidget, "StaffingV2ClassroomList")
     list_filter = page.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomListFilterButton")
     assert list_filter is not None
