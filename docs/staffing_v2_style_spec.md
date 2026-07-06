@@ -377,6 +377,8 @@ Used by Classrooms and Validation screens:
 - Header: Filters, Reset, close X.
 - Form controls stacked with 16-24 px section spacing.
 - Status checkboxes with colored dots.
+- Classrooms drawer default checked statuses: Need Now, Coming, Filled; Don't Need Now off.
+- Classrooms filter trigger and apply button display active filter count, e.g. `Filters 3` and `Apply Filters 3`.
 - Validation drawer includes severity checkboxes, issue type combo, and Detected Date combo.
   - Detected Date combo object: `StaffingV2FilterDetectedDate`.
   - Default detected date text: `Last 30 Days`.

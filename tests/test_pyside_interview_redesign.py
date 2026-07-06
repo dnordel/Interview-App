@@ -8908,8 +8908,10 @@ def test_pyside_staffing_v2_classrooms_dashboard_uses_new_shell_and_db_rows(
     classrooms_search = page.findChild(qt_widgets.QLineEdit, "StaffingV2ClassroomsSearch")
     assert classrooms_search.placeholderText() == "Search classrooms..."
     assert classrooms_search.actions()
-    assert page.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsMoreFilters").text() == "More Filters"
-    assert not page.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsMoreFilters").icon().isNull()
+    classrooms_filters = page.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsMoreFilters")
+    assert classrooms_filters.text() == "Filters 3"
+    assert classrooms_filters.property("staffingV2FilterActiveCount") == 3
+    assert not classrooms_filters.icon().isNull()
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsClear").text() == "Clear"
     metric_text = " ".join(_widget_text(card) for card in page.findChildren(qt_widgets.QFrame, "StaffingV2ClassroomsMetricCard"))
     assert "Total Classrooms 2" in metric_text
@@ -9044,12 +9046,15 @@ def test_pyside_staffing_v2_classrooms_filter_side_panel_filters_rows_without_mu
     assert not reset.icon().isNull()
     assert drawer.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsFilterClose").text() == ""
     apply_button = drawer.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsFilterApply")
-    assert apply_button.text() == "Apply Filters"
+    assert apply_button.text() == "Apply Filters 3"
+    assert apply_button.property("staffingV2FilterActiveCount") == 3
     assert not apply_button.icon().isNull()
     need_now = drawer.findChild(qt_widgets.QCheckBox, "StaffingV2ClassroomsFilterNeedNow")
     filled = drawer.findChild(qt_widgets.QCheckBox, "StaffingV2ClassroomsFilterFilled")
+    dont_need = drawer.findChild(qt_widgets.QCheckBox, "StaffingV2ClassroomsFilterDontNeed")
     assert need_now.isChecked()
     assert filled.isChecked()
+    assert not dont_need.isChecked()
     filled.setChecked(False)
     drawer.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsFilterApply").click()
     app.processEvents()

@@ -1023,14 +1023,14 @@ class StaffingDashboardV2Page:
         )
         self.classrooms_search.textChanged.connect(self._refresh_classrooms_filters)
         filters.addWidget(self.classrooms_search, 2)
-        more = self.QtWidgets.QPushButton("More Filters")
-        more.setObjectName("StaffingV2ClassroomsMoreFilters")
-        self._set_button_icon(more, "filter")
-        more.clicked.connect(self._open_classrooms_filter_drawer)
+        self.classrooms_more_filters_button = self.QtWidgets.QPushButton("Filters")
+        self.classrooms_more_filters_button.setObjectName("StaffingV2ClassroomsMoreFilters")
+        self._set_button_icon(self.classrooms_more_filters_button, "filter")
+        self.classrooms_more_filters_button.clicked.connect(self._open_classrooms_filter_drawer)
         clear = self.QtWidgets.QPushButton("Clear")
         clear.setObjectName("StaffingV2ClassroomsClear")
         clear.clicked.connect(self._clear_classrooms_filters)
-        filters.addWidget(more)
+        filters.addWidget(self.classrooms_more_filters_button)
         filters.addWidget(clear)
         filters_panel_layout.addLayout(filters)
         classrooms_root.addWidget(filters_panel)
@@ -1131,9 +1131,16 @@ class StaffingDashboardV2Page:
             self.classrooms_filter_need_now,
             self.classrooms_filter_coming,
             self.classrooms_filter_filled,
-            self.classrooms_filter_dont_need,
         ):
             checkbox.setChecked(True)
+        self.classrooms_filter_dont_need.setChecked(False)
+        for checkbox in (
+            self.classrooms_filter_need_now,
+            self.classrooms_filter_coming,
+            self.classrooms_filter_filled,
+            self.classrooms_filter_dont_need,
+        ):
+            checkbox.stateChanged.connect(self._refresh_classrooms_filters)
             self.classrooms_filter_drawer_layout.addWidget(checkbox)
         self.classrooms_filter_drawer_layout.addWidget(self._label("Open Positions", "StaffingV2SectionTitle"))
         self.classrooms_filter_open_positions = self._classrooms_filter_combo(
@@ -1150,12 +1157,12 @@ class StaffingDashboardV2Page:
         cancel = self.QtWidgets.QPushButton("Cancel")
         cancel.setObjectName("StaffingV2ClassroomsFilterCancel")
         cancel.clicked.connect(self.classrooms_filter_drawer.hide)
-        apply = self.QtWidgets.QPushButton("Apply Filters")
-        apply.setObjectName("StaffingV2ClassroomsFilterApply")
-        self._set_button_icon(apply, "filter")
-        apply.clicked.connect(self._apply_classrooms_filter_drawer)
+        self.classrooms_filter_apply_button = self.QtWidgets.QPushButton("Apply Filters")
+        self.classrooms_filter_apply_button.setObjectName("StaffingV2ClassroomsFilterApply")
+        self._set_button_icon(self.classrooms_filter_apply_button, "filter")
+        self.classrooms_filter_apply_button.clicked.connect(self._apply_classrooms_filter_drawer)
         footer.addWidget(cancel)
-        footer.addWidget(apply)
+        footer.addWidget(self.classrooms_filter_apply_button)
         self.classrooms_filter_drawer_layout.addLayout(footer)
 
     def _open_classrooms_filter_drawer(self) -> None:
@@ -1166,9 +1173,9 @@ class StaffingDashboardV2Page:
             self.classrooms_filter_need_now,
             self.classrooms_filter_coming,
             self.classrooms_filter_filled,
-            self.classrooms_filter_dont_need,
         ):
             checkbox.setChecked(True)
+        self.classrooms_filter_dont_need.setChecked(False)
         self.classrooms_filter_open_positions.setCurrentText("All")
         self.classrooms_filter_days_open.setCurrentText("All")
 
@@ -1255,6 +1262,7 @@ class StaffingDashboardV2Page:
             self.visible_classroom_management.append((key, rows))
         self._refresh_classrooms_metrics()
         self._refresh_classrooms_table()
+        self._refresh_classrooms_filter_count()
         if hasattr(self, "classrooms_result_count"):
             visible_count = len(self.visible_classroom_management)
             if visible_count:
@@ -1262,6 +1270,34 @@ class StaffingDashboardV2Page:
             else:
                 self.classrooms_result_count.setText("Showing 0 to 0 of 0 classrooms")
         self._refresh_classrooms_validation_panel()
+
+    def _refresh_classrooms_filter_count(self) -> None:
+        if not hasattr(self, "classrooms_filter_need_now"):
+            return
+        active_filter_count = sum(
+            1
+            for checkbox in (
+                self.classrooms_filter_need_now,
+                self.classrooms_filter_coming,
+                self.classrooms_filter_filled,
+                self.classrooms_filter_dont_need,
+            )
+            if checkbox.isChecked()
+        )
+        if self.classrooms_filter_open_positions.currentText() != "All":
+            active_filter_count += 1
+        if self.classrooms_filter_days_open.currentText() != "All":
+            active_filter_count += 1
+        if hasattr(self, "classrooms_more_filters_button"):
+            self.classrooms_more_filters_button.setText(f"Filters {active_filter_count}")
+            self.classrooms_more_filters_button.setProperty("staffingV2FilterActiveCount", active_filter_count)
+            self.classrooms_more_filters_button.style().unpolish(self.classrooms_more_filters_button)
+            self.classrooms_more_filters_button.style().polish(self.classrooms_more_filters_button)
+        if hasattr(self, "classrooms_filter_apply_button"):
+            self.classrooms_filter_apply_button.setText(f"Apply Filters {active_filter_count}")
+            self.classrooms_filter_apply_button.setProperty("staffingV2FilterActiveCount", active_filter_count)
+            self.classrooms_filter_apply_button.style().unpolish(self.classrooms_filter_apply_button)
+            self.classrooms_filter_apply_button.style().polish(self.classrooms_filter_apply_button)
 
     def _classrooms_allowed_statuses(self) -> set[str]:
         if not hasattr(self, "classrooms_filter_need_now"):
