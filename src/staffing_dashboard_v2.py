@@ -288,7 +288,9 @@ QPushButton#StaffingV2PeopleClear,
 QPushButton#StaffingV2HistoryExportButton,
 QPushButton#StaffingV2HistoryValidationButton,
 QPushButton#StaffingV2HistoryMoreFilters,
-QPushButton#StaffingV2HistoryClear {
+QPushButton#StaffingV2HistoryClear,
+QPushButton#StaffingV2ValidationExportButton,
+QPushButton#StaffingV2ValidationFiltersButton {
     background-color: #ffffff;
     color: #1e293b;
     border: 1px solid #cbd5e1;
@@ -1241,6 +1243,7 @@ class StaffingDashboardV2Page:
         header.addWidget(self._label("Last updated: May 8, 2025 9:41 AM", "StaffingV2Muted"))
         export = self.QtWidgets.QPushButton("Export Report")
         export.setObjectName("StaffingV2ValidationExportButton")
+        self._set_button_icon(export, "export")
         export.setEnabled(False)
         header.addWidget(export)
         main_layout.addLayout(header)
@@ -1253,10 +1256,12 @@ class StaffingDashboardV2Page:
         self.validation_search = self.QtWidgets.QLineEdit()
         self.validation_search.setObjectName("StaffingV2ValidationSearch")
         self.validation_search.setPlaceholderText("Search issues...")
+        self.validation_search.addAction(self._standard_icon("search"), self.QtWidgets.QLineEdit.ActionPosition.LeadingPosition)
         self.validation_search.textChanged.connect(self._refresh_validation_filters)
         controls.addWidget(self.validation_search, 1)
         filters = self.QtWidgets.QPushButton("Filters")
         filters.setObjectName("StaffingV2ValidationFiltersButton")
+        self._set_button_icon(filters, "filter")
         filters.clicked.connect(self._open_filter_drawer)
         controls.addWidget(filters)
         main_layout.addLayout(controls)

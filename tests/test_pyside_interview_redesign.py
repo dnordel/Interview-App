@@ -9911,15 +9911,19 @@ def test_pyside_staffing_v2_validation_dashboard_and_filter_drawer_use_existing_
     assert page.findChild(qt_widgets.QLabel, "StaffingV2ValidationTitle").text() == "Staffing Validation"
     assert "Review staffing compliance" in page.findChild(qt_widgets.QLabel, "StaffingV2ValidationSubtitle").text()
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2ValidationExportButton").text() == "Export Report"
+    assert not page.findChild(qt_widgets.QPushButton, "StaffingV2ValidationExportButton").icon().isNull()
     metric_text = " ".join(_widget_text(card) for card in page.findChildren(qt_widgets.QFrame, "StaffingV2ValidationMetricCard"))
     assert "Total Issues 3" in metric_text
     assert "Critical 1" in metric_text
     assert "Warning 1" in metric_text
     assert "Info 1" in metric_text
     assert "Overall Compliance" in metric_text
-    assert page.findChild(qt_widgets.QLineEdit, "StaffingV2ValidationSearch").placeholderText() == "Search issues..."
+    validation_search = page.findChild(qt_widgets.QLineEdit, "StaffingV2ValidationSearch")
+    assert validation_search.placeholderText() == "Search issues..."
+    assert validation_search.actions()
     filters = page.findChild(qt_widgets.QPushButton, "StaffingV2ValidationFiltersButton")
     assert filters.text() == "Filters"
+    assert not filters.icon().isNull()
     table = page.findChild(qt_widgets.QTableWidget, "StaffingV2ValidationTable")
     assert table.rowCount() == 3
     table_text = {
