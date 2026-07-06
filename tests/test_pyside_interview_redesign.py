@@ -9892,6 +9892,8 @@ def test_pyside_staffing_v2_assignment_history_dashboard_renders_history_from_db
     assert not page.findChild(qt_widgets.QPushButton, "StaffingV2HistoryMoreFilters").icon().isNull()
     table = page.findChild(qt_widgets.QTableWidget, "StaffingV2HistoryTable")
     assert table.rowCount() == 2
+    assert table.columnCount() == 10
+    assert table.horizontalHeaderItem(9).text() == "Actions"
     table_text = {
         table.item(row, column).text()
         for row in range(table.rowCount())
@@ -9916,6 +9918,12 @@ def test_pyside_staffing_v2_assignment_history_dashboard_renders_history_from_db
         "Emily Carter",
         "Healthy",
     } <= table_text
+    for row in range(table.rowCount()):
+        view_button = table.cellWidget(row, 9)
+        assert isinstance(view_button, qt_widgets.QPushButton)
+        assert view_button.text() == "View"
+        assert not view_button.icon().isNull()
+        assert not view_button.isEnabled()
     detail = page.findChild(qt_widgets.QFrame, "StaffingV2HistoryDetailPanel")
     detail_text = _widget_text(detail)
     assert f"Assignment ID: A-{open_id:04d}" in detail_text

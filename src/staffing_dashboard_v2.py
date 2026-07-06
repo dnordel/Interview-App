@@ -1943,7 +1943,7 @@ class StaffingDashboardV2Page:
 
         body = self.QtWidgets.QSplitter(self.QtCore.Qt.Orientation.Horizontal)
         body.setChildrenCollapsible(False)
-        self.history_table = self.QtWidgets.QTableWidget(0, 9)
+        self.history_table = self.QtWidgets.QTableWidget(0, 10)
         self.history_table.setObjectName("StaffingV2HistoryTable")
         self.history_table.setEditTriggers(self.QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         self.history_table.setSelectionBehavior(self.QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
@@ -1958,6 +1958,7 @@ class StaffingDashboardV2Page:
                 "Cycle Status",
                 "Employee",
                 "Data Integrity",
+                "Actions",
             ]
         )
         self.history_table.horizontalHeader().setStretchLastSection(True)
@@ -2079,6 +2080,12 @@ class StaffingDashboardV2Page:
                 if column == 0:
                     item.setData(self.QtCore.Qt.ItemDataRole.UserRole, record.id)
                 self.history_table.setItem(row_index, column, item)
+            view = self.QtWidgets.QPushButton("View")
+            view.setObjectName("StaffingV2HistoryRowView")
+            view.setProperty("historyId", record.id)
+            self._set_button_icon(view, "info")
+            view.setEnabled(False)
+            self.history_table.setCellWidget(row_index, 9, view)
         if self.history_table.rowCount():
             self.history_table.setCurrentCell(0, 0)
             self._select_history_record(0)
