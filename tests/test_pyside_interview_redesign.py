@@ -9098,6 +9098,10 @@ def test_pyside_staffing_v2_add_position_dialog_creates_need_now_position_throug
     assert "Don't Need Now" in dialog_text
     assert "Coming" in dialog_text
     assert "Filled" in dialog_text
+    close_button = dialog.findChild(qt_widgets.QPushButton, "StaffingV2AddPositionClose")
+    assert close_button is not None
+    assert close_button.text() == ""
+    assert not close_button.icon().isNull()
     assert dialog.findChild(qt_widgets.QComboBox, "StaffingV2AddPositionSchool").currentText() == "Hawthorne"
     assert dialog.findChild(qt_widgets.QComboBox, "StaffingV2AddPositionClassroom").currentText() == "Harmony 1"
     dialog.findChild(qt_widgets.QComboBox, "StaffingV2AddPositionType").setCurrentText("Teacher")
@@ -9303,6 +9307,10 @@ def test_pyside_staffing_v2_mark_coming_dialog_saves_through_service(
     assert "Validation / Requirements" in dialog_text
     assert "What will happen on save" in dialog_text
     assert "This action does not close the open assignment history cycle." in dialog_text
+    close_button = dialog.findChild(qt_widgets.QPushButton, "StaffingV2ComingClose")
+    assert close_button is not None
+    assert close_button.text() == ""
+    assert not close_button.icon().isNull()
     assert not dialog.findChild(qt_widgets.QPushButton, "StaffingV2ComingSelectPerson").icon().isNull()
     assert not dialog.findChild(qt_widgets.QPushButton, "StaffingV2ComingCreatePerson").icon().isNull()
     assert not dialog.findChild(qt_widgets.QPushButton, "StaffingV2ComingSubmit").icon().isNull()

@@ -328,7 +328,9 @@ QPushButton#StaffingV2ClassroomsFilterApply {
 }
 QPushButton#StaffingV2FilterCloseButton,
 QPushButton#StaffingV2ClassroomsFilterClose,
-QPushButton#StaffingV2DrawerClose {
+QPushButton#StaffingV2DrawerClose,
+QPushButton#StaffingV2AddPositionClose,
+QPushButton#StaffingV2ComingClose {
     background-color: transparent;
     color: #0f172a;
     border: none;
@@ -2465,7 +2467,9 @@ class StaffingDashboardV2Page:
         title_column.addWidget(self._label("Add Position", "StaffingV2DrawerTitle"))
         title_column.addWidget(self._label("Create a new position for a classroom.", "StaffingV2Muted"))
         header.addLayout(title_column, 1)
-        close = self.QtWidgets.QPushButton("X")
+        close = self.QtWidgets.QPushButton("")
+        close.setObjectName("StaffingV2AddPositionClose")
+        self._set_button_icon(close, "close")
         close.clicked.connect(dialog.close)
         header.addWidget(close)
         layout.addLayout(header)
@@ -2601,7 +2605,9 @@ class StaffingDashboardV2Page:
         title_block.addWidget(self._label("Mark Coming", "StaffingV2DrawerTitle"))
         title_block.addWidget(self._label("Assign a candidate and set a start date for this open position.", "StaffingV2Muted"))
         header.addLayout(title_block, 1)
-        close = self.QtWidgets.QPushButton("X")
+        close = self.QtWidgets.QPushButton("")
+        close.setObjectName("StaffingV2ComingClose")
+        self._set_button_icon(close, "close")
         close.clicked.connect(dialog.close)
         header.addWidget(close)
         root.addLayout(header)
