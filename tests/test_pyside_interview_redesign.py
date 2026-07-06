@@ -8675,8 +8675,10 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
     assert page.findChild(qt_widgets.QLineEdit, "StaffingV2Search").placeholderText() == "Search classrooms"
     assert page.findChild(qt_widgets.QLineEdit, "StaffingV2Search").actions()
     metric_text = " ".join(_widget_text(card) for card in page.findChildren(qt_widgets.QFrame, "StaffingV2MetricCard"))
-    assert "Schools 1" in metric_text
-    assert "Open positions 1" in metric_text
+    assert "Schools: 1" in metric_text
+    assert "Open positions: 1" in metric_text
+    assert "Avg fill time:" in metric_text
+    assert "Open > 7 days:" in metric_text
     assert "Validation healthy" in metric_text
     assert "20639" not in metric_text
     summary_chips = page.findChildren(qt_widgets.QFrame, "StaffingV2MetricCard")

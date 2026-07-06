@@ -3273,7 +3273,8 @@ class StaffingDashboardV2Page:
         row = self.QtWidgets.QHBoxLayout()
         row.setContentsMargins(2, 0, 2, 0)
         row.setSpacing(6)
-        label_widget = self._label(label, "StaffingV2SummaryLabel")
+        label_text = label if variant == "success" else f"{label}:"
+        label_widget = self._label(label_text, "StaffingV2SummaryLabel")
         label_widget.setProperty("staffingV2SummaryVariant", variant)
         row.addWidget(label_widget)
         value_widget = self._label(value, "StaffingV2SummaryValue")
