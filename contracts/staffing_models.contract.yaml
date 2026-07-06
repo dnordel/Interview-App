@@ -2,8 +2,8 @@ module:
   name: staffing_models
   language: python
   path: src/staffing_models.py
-  version: 0.6.0
-  description: Dataclasses and enum constants for local staffing dashboard transactions, metrics, and workbook-style display metadata.
+  version: 0.9.0
+  description: Dataclasses and enum constants for local staffing dashboard transactions, employee/person permit metadata, current assignment display data, assignment history dashboard records, metrics, and workbook-style display metadata.
 functions: []
 classes: []
 data_structures:
@@ -39,6 +39,39 @@ data_structures:
   - display_order
 - name: StaffingPerson
   type: dataclass
+  fields:
+  - id
+  - name
+  - permit_status
+  - role
+  - active
+  - permit_effective_date
+  - units
+  - permit_documentation_received
+  - permit_notes
+  - notice_given
+  - final_working_day
+  - assignment_school
+  - assignment_classroom
+  - assignment_position
+  - current_assignment
+  - updated_at
+- name: StaffingHistoryRecord
+  type: dataclass
+  fields:
+  - id
+  - assignment_id
+  - school
+  - classroom
+  - position_name
+  - opened_date
+  - filled_date
+  - days_to_fill
+  - cycle_status
+  - employee
+  - data_integrity
+  - closed_reason
+  - updated_at
 - name: StaffingTransitionResult
   type: dataclass
 - name: StaffingMetricRow

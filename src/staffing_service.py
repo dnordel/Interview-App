@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 
 
 STAFFING_NOTIFICATION_EVENTS = {
+    "add_position": "staffing.assignment.created",
     "open_position": "staffing.assignment.need_now",
     "mark_coming": "staffing.assignment.coming",
     "mark_filled": "staffing.assignment.filled",
@@ -42,6 +43,35 @@ class StaffingService:
             "open_position",
             {"assignment_id": int(assignment_id)},
             lambda: self._open_position_impl(assignment_id),
+        )
+
+    def add_position(
+        self,
+        *,
+        school: str,
+        classroom: str,
+        classroom_program: str = "",
+        licensed_capacity: int | None = None,
+        position_name: str,
+        position_type: str,
+        initial_status: str = "dont_need_now",
+        person_name: str = "",
+        permit_status: str = "unknown",
+        start_date: str = "",
+        notes: str = "",
+    ) -> StaffingTransitionResult:
+        return self._add_position_impl(
+            school=school,
+            classroom=classroom,
+            classroom_program=classroom_program,
+            licensed_capacity=licensed_capacity,
+            position_name=position_name,
+            position_type=position_type,
+            initial_status=initial_status,
+            person_name=person_name,
+            permit_status=permit_status,
+            start_date=start_date,
+            notes=notes,
         )
 
     def mark_coming(self, assignment_id: int, *, person_name: str, start_date: str) -> StaffingTransitionResult:
@@ -94,11 +124,34 @@ class StaffingService:
             lambda: self._mark_not_needed_impl(assignment_id, confirmed=confirmed),
         )
 
-    def update_permit_status(self, person_id: int, permit_status: str) -> StaffingTransitionResult:
+    def update_permit_status(
+        self,
+        person_id: int,
+        permit_status: str,
+        *,
+        effective_date: str | None = None,
+        units: float | int | None = None,
+        documentation_received: bool = False,
+        notes: str = "",
+    ) -> StaffingTransitionResult:
         return self._run_or_queue(
             "update_permit_status",
-            {"person_id": int(person_id), "permit_status": permit_status},
-            lambda: self._update_permit_status_impl(person_id, permit_status),
+            {
+                "person_id": int(person_id),
+                "permit_status": permit_status,
+                "effective_date": effective_date,
+                "units": units,
+                "documentation_received": bool(documentation_received),
+                "notes": notes,
+            },
+            lambda: self._update_permit_status_impl(
+                person_id,
+                permit_status,
+                effective_date=effective_date,
+                units=units,
+                documentation_received=documentation_received,
+                notes=notes,
+            ),
             assignment_id=0,
         )
 
@@ -161,6 +214,43 @@ class StaffingService:
                 notes=notes,
             ),
         )
+
+    def _add_position_impl(
+        self,
+        *,
+        school: str,
+        classroom: str,
+        classroom_program: str = "",
+        licensed_capacity: int | None = None,
+        position_name: str,
+        position_type: str,
+        initial_status: str = "dont_need_now",
+        person_name: str = "",
+        permit_status: str = "unknown",
+        start_date: str = "",
+        notes: str = "",
+    ) -> StaffingTransitionResult:
+        status = str(initial_status or "").strip() or "dont_need_now"
+        if status not in {"dont_need_now", "need_now", "coming", "filled", "replace"}:
+            raise ValueError("Unknown assignment status.")
+        now = self.clock()
+        assignment_id = self.store.create_assignment(
+            school=school,
+            classroom=classroom,
+            classroom_program=classroom_program,
+            licensed_capacity=licensed_capacity,
+            position_name=position_name,
+            position_type=position_type,
+            status=status,
+            person_name=person_name,
+            permit_status=permit_status,
+            start_date=start_date,
+            notes=notes,
+            now=now,
+        )
+        assignment = self.store.get_assignment(assignment_id)
+        self._emit_assignment_event("add_position", assignment)
+        return _result(assignment)
 
     def _open_position_impl(self, assignment_id: int) -> StaffingTransitionResult:
         now = self.clock()
@@ -228,6 +318,7 @@ class StaffingService:
             assignment = self.store.assignment_context(conn, assignment_id)
             if assignment.status != "coming" or assignment.person_id is None:
                 raise ValueError("Invalid transition.")
+            close_date = _valid_date(assignment.start_date, "Start date")
             self._require_active_history_count(conn, assignment_id, 1)
             history = conn.execute(
                 """
@@ -238,7 +329,7 @@ class StaffingService:
             ).fetchone()
             conn.execute(
                 "UPDATE assignments SET status = 'filled', current_filled_date = ?, updated_at = ? WHERE id = ?",
-                (now, now, assignment_id),
+                (close_date, now, assignment_id),
             )
             conn.execute(
                 """
@@ -246,7 +337,7 @@ class StaffingService:
                 SET filled_date = ?, days_to_fill = ?, closed_reason = 'filled', updated_at = ?
                 WHERE id = ?
                 """,
-                (now, _days_between(str(history["opened_date"]), now), now, int(history["id"])),
+                (close_date, _days_between(str(history["opened_date"]), close_date), now, int(history["id"])),
             )
             updated = self.store.assignment_context(conn, assignment_id)
         self._emit_assignment_event("mark_filled", updated)
@@ -326,15 +417,39 @@ class StaffingService:
         self._emit_assignment_event("mark_not_needed", updated)
         return _result(updated)
 
-    def _update_permit_status_impl(self, person_id: int, permit_status: str) -> StaffingTransitionResult:
+    def _update_permit_status_impl(
+        self,
+        person_id: int,
+        permit_status: str,
+        *,
+        effective_date: str | None = None,
+        units: float | int | None = None,
+        documentation_received: bool = False,
+        notes: str = "",
+    ) -> StaffingTransitionResult:
         now = self.clock()
         if permit_status not in PERMIT_STATUSES:
             raise ValueError("Unknown permit status.")
+        effective_date_text = "" if effective_date is None else _valid_date(effective_date, "Effective date")
+        units_value = None if units is None else float(units)
         with self.store.write_connection("update_permit_status") as conn:
             person = self.store.person_context(conn, person_id)
             conn.execute(
-                "UPDATE people SET permit_status = ?, updated_at = ? WHERE id = ?",
-                (permit_status, now, person.id),
+                """
+                UPDATE people
+                SET permit_status = ?, permit_effective_date = ?, units = ?,
+                    permit_documentation_received = ?, permit_notes = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (
+                    permit_status,
+                    effective_date_text,
+                    units_value,
+                    1 if documentation_received else 0,
+                    str(notes or "").strip(),
+                    now,
+                    person.id,
+                ),
             )
             assignment = replace(self._assignment_for_person(conn, person.id, now), updated_at=now)
         self._emit_person_event(person.id, assignment)
@@ -507,7 +622,9 @@ class StaffingService:
                 continue
             days_open = None
             if assignment.status in {"need_now", "replace"} and assignment.current_opened_date:
-                days_open = max(0, (today - _parse_timestamp(assignment.current_opened_date).date()).days)
+                opened_date = _parse_timestamp(assignment.current_opened_date).date()
+                if opened_date.year > 1971:
+                    days_open = max(0, (today - opened_date).days)
             rows.append(
                 StaffingMetricRow(
                     assignment_id=assignment.id,
@@ -539,9 +656,8 @@ class StaffingService:
         for row in rows:
             days_open = row.days_open
             if row.status in {"need_now", "replace"}:
-                days_open = 0 if days_open is None else days_open
                 open_count += 1
-                if days_open > 7:
+                if days_open is not None and days_open > 7:
                     open_over_7_days += 1
             else:
                 days_open = None
@@ -676,7 +792,14 @@ class StaffingService:
         elif operation == "mark_not_needed":
             self._mark_not_needed_impl(int(payload["assignment_id"]), confirmed=bool(payload.get("confirmed", False)))
         elif operation == "update_permit_status":
-            self._update_permit_status_impl(int(payload["person_id"]), str(payload["permit_status"]))
+            self._update_permit_status_impl(
+                int(payload["person_id"]),
+                str(payload["permit_status"]),
+                effective_date=str(payload["effective_date"]) if payload.get("effective_date") is not None else None,
+                units=payload.get("units"),
+                documentation_received=bool(payload.get("documentation_received", False)),
+                notes=str(payload.get("notes", "")),
+            )
         elif operation == "move_person":
             self._move_person_impl(
                 int(payload["source_assignment_id"]),

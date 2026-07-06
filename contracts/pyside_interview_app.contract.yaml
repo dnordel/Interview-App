@@ -2,10 +2,10 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.55.114
+  version: 1.56.1
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
-    content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, resizable splitter sections, school/classroom selectors, wider color-coded classroom list with per-classroom status-count overview, metric cards, positions table, fully editable right-side assignment/person details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics,
+    content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, resizable splitter sections, school/classroom selectors, wider color-coded classroom list with per-classroom status-count overview, metric cards, positions table, fully editable right-side assignment/person details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics, parallel Staffing v2 navigation/page shell with its own mockup-style staffing sidebar, People / Employee Management and Assignment History sub-dashboards for the mockup-driven rewrite backed by staffing_dashboard_v2 while the legacy Staffing page remains available,
     director staffing-only launch mode that keeps the full mockup navigation rail visible, filters to an assigned school when supplied, and reuses the same Staffing page,
     compact home draft actions beside the start action, guided review-then-apply Admin Studio backed by admin_studio
     with dashboard-first grouped admin-console navigation, standard icons on each
@@ -1764,6 +1764,17 @@ classes:
     side_effects: Mutates AdminStudioDraft notification rules, removes the selected
       notification card and table row, selects the next available rule or clears
       the editor, and refreshes Admin Studio status.
+  - name: _cancel_admin_notification_rule_editor
+    description: Restore the Notifications editor to the selected draft rule without
+      saving any partial field edits; if no selected rule remains, selects the first
+      available rule or clears into a blank draft rule state.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Re-populates visible notification editor fields and selected card
+      state from AdminStudioDraft notification rules.
   - name: _insert_admin_notification_variable
     description: Insert a notification template variable token at the current
       notification body editor cursor when edit mode has enabled the editor.
@@ -2967,6 +2978,25 @@ classes:
       type: None
     exceptions: []
     side_effects: Writes PySide draft JSON and changes visible tab.
+  - name: _select_main_nav_row
+    description: Switch the main PySide stack to the selected navigation row and hide the legacy Interview Assistant sidebar when the temporary Staffing v2 page is active so Staffing v2 can render its own mockup-style shell.
+    locked: false
+    inputs:
+      index:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Changes the visible stack index and toggles sidebar_panel visibility.
+  - name: _staffing_v2_page
+    description: Build the temporary parallel Staffing v2 page from staffing_dashboard_v2 so the mockup-driven rewrite can be developed beside the existing Staffing page.
+    locked: false
+    inputs: {}
+    returns:
+      type: QWidget
+    exceptions: []
+    side_effects: Creates a StaffingDashboardV2Page, stores it on the PySide window, and wires service-backed staffing actions from the existing StaffingService handlers.
   - name: _refresh_staffing_dashboard
     description: Initialize local staffing storage, import seed data when the staffing DB is empty or clearly missing seed assignments, compute metrics, and refresh the hidden compatibility metric label, school/classroom selectors, classroom list, metric cards, positions table, and hidden legacy school-tabbed workbook boards.
     locked: false
@@ -3670,6 +3700,7 @@ dependencies:
 - module: onboarding_operations
 - module: platform_services
 - module: scoring_reporting
+- module: staffing_dashboard_v2
 - module: staffing_service
 - module: staffing_store
 - module: PySide6

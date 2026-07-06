@@ -8,7 +8,7 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
-from staffing_models import ASSIGNMENT_STATUSES, PERMIT_STATUSES, StaffingAssignment, StaffingPerson
+from staffing_models import ASSIGNMENT_STATUSES, PERMIT_STATUSES, StaffingAssignment, StaffingHistoryRecord, StaffingPerson
 
 EDIT_LOCK_STALE_SECONDS = 15 * 60
 
@@ -71,6 +71,9 @@ class StaffingStore:
                     normalized_name TEXT NOT NULL,
                     role TEXT NOT NULL DEFAULT '',
                     permit_status TEXT NOT NULL DEFAULT 'unknown',
+                    permit_effective_date TEXT NOT NULL DEFAULT '',
+                    permit_documentation_received INTEGER NOT NULL DEFAULT 0,
+                    permit_notes TEXT NOT NULL DEFAULT '',
                     units REAL,
                     notice_given TEXT,
                     final_working_day TEXT,
@@ -122,6 +125,9 @@ class StaffingStore:
                 """
             )
             self._ensure_column(conn, "people", "units", "REAL")
+            self._ensure_column(conn, "people", "permit_effective_date", "TEXT NOT NULL DEFAULT ''")
+            self._ensure_column(conn, "people", "permit_documentation_received", "INTEGER NOT NULL DEFAULT 0")
+            self._ensure_column(conn, "people", "permit_notes", "TEXT NOT NULL DEFAULT ''")
             self._ensure_column(conn, "classrooms", "ratio_group", "TEXT NOT NULL DEFAULT ''")
             self._ensure_column(conn, "assignments", "slot_group", "TEXT NOT NULL DEFAULT ''")
             self._ensure_column(conn, "assignments", "notes", "TEXT NOT NULL DEFAULT ''")
@@ -268,6 +274,82 @@ class StaffingStore:
             )
             return int(cursor.lastrowid)
 
+    def create_assignment(
+        self,
+        *,
+        school: str,
+        classroom: str,
+        classroom_program: str = "",
+        licensed_capacity: int | None = None,
+        position_name: str,
+        position_type: str,
+        status: str = "dont_need_now",
+        person_name: str = "",
+        permit_status: str = "unknown",
+        start_date: str = "",
+        notes: str = "",
+        now: str,
+    ) -> int:
+        school = _required_text(school, "School")
+        classroom = _required_text(classroom, "Classroom")
+        position_name = _required_text(position_name, "Position name")
+        position_type = _required_text(position_type, "Position type")
+        if status not in ASSIGNMENT_STATUSES:
+            raise ValueError("Unknown assignment status.")
+        if permit_status not in PERMIT_STATUSES:
+            raise ValueError("Unknown permit status.")
+        if status in {"coming", "filled"} and not person_name.strip():
+            raise ValueError("Person name is required for assigned positions.")
+        if status == "coming" and not start_date.strip():
+            raise ValueError("Start date is required for coming positions.")
+        with self.write_connection("create_assignment") as conn:
+            school_id = self._ensure_school(conn, school)
+            classroom_id = self._ensure_classroom(
+                conn,
+                school_id,
+                classroom,
+                program=str(classroom_program or "").strip(),
+                licensed_capacity=licensed_capacity,
+            )
+            person_id = None
+            if person_name.strip():
+                person_id = self._ensure_person(conn, person_name, position_type, permit_status, now)
+            opened_date = now if status in {"need_now", "replace", "coming"} else None
+            filled_date = start_date.strip() if status == "filled" and start_date.strip() else None
+            cursor = conn.execute(
+                """
+                INSERT INTO assignments (
+                    classroom_id, person_id, position_name, position_type, status,
+                    current_opened_date, current_filled_date, start_date, notes,
+                    created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    classroom_id,
+                    person_id,
+                    position_name,
+                    position_type,
+                    status,
+                    opened_date,
+                    filled_date,
+                    start_date.strip() or None,
+                    str(notes or "").strip(),
+                    now,
+                    now,
+                ),
+            )
+            assignment_id = int(cursor.lastrowid)
+            if status in {"need_now", "replace", "coming"}:
+                conn.execute(
+                    """
+                    INSERT INTO assignment_history (
+                        assignment_id, classroom_id, position_name, opened_date, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (assignment_id, classroom_id, position_name, now, now, now),
+                )
+            return assignment_id
+
     def import_seed_file(self, seed_path: Path) -> dict[str, int]:
         data = json.loads(Path(seed_path).read_text(encoding="utf-8"))
         schools = _seed_schools(data)
@@ -307,6 +389,46 @@ class StaffingStore:
                 """
             ).fetchall()
             return [self.assignment_context(conn, int(row["id"])) for row in rows]
+
+    def list_people(self) -> list[StaffingPerson]:
+        with self.connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT p.*,
+                       s.name AS assignment_school,
+                       c.name AS assignment_classroom,
+                       a.position_name AS assignment_position
+                FROM people p
+                LEFT JOIN assignments a ON a.person_id = p.id AND a.active = 1
+                LEFT JOIN classrooms c ON c.id = a.classroom_id AND c.active = 1
+                LEFT JOIN schools s ON s.id = c.school_id AND s.active = 1
+                ORDER BY p.active DESC, p.name, a.id
+                """
+            ).fetchall()
+            people: dict[int, StaffingPerson] = {}
+            for row in rows:
+                person_id = int(row["id"])
+                if person_id in people:
+                    continue
+                people[person_id] = self._person_from_row(row)
+            return list(people.values())
+
+    def list_assignment_history(self) -> list[StaffingHistoryRecord]:
+        with self.connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT h.*, s.name AS school, c.name AS classroom,
+                       a.status AS assignment_status, p.name AS employee
+                FROM assignment_history h
+                JOIN classrooms c ON c.id = h.classroom_id
+                JOIN schools s ON s.id = c.school_id
+                LEFT JOIN assignments a ON a.id = h.assignment_id
+                LEFT JOIN people p ON p.id = a.person_id
+                WHERE c.active = 1 AND s.active = 1
+                ORDER BY h.opened_date DESC, h.id DESC
+                """
+            ).fetchall()
+            return [self._history_record_from_row(row) for row in rows]
 
     def closed_days_to_fill(self, *, school: str = "") -> list[int]:
         with self.connect() as conn:
@@ -398,6 +520,66 @@ class StaffingStore:
             id=int(row["id"]),
             name=str(row["name"] or ""),
             permit_status=str(row["permit_status"] or ""),
+            role=str(row["role"] or ""),
+            active=bool(row["active"]),
+            permit_effective_date=str(row["permit_effective_date"] or ""),
+            units=float(row["units"]) if row["units"] is not None else None,
+            permit_documentation_received=bool(row["permit_documentation_received"]),
+            permit_notes=str(row["permit_notes"] or ""),
+            notice_given=str(row["notice_given"] or ""),
+            final_working_day=str(row["final_working_day"] or ""),
+            updated_at=str(row["updated_at"] or ""),
+        )
+
+    def _person_from_row(self, row: sqlite3.Row) -> StaffingPerson:
+        school = str(row["assignment_school"] or "")
+        classroom = str(row["assignment_classroom"] or "")
+        position = str(row["assignment_position"] or "")
+        assignment = ""
+        if school and classroom and position:
+            assignment = f"{school}\n{classroom} - {position}"
+        return StaffingPerson(
+            id=int(row["id"]),
+            name=str(row["name"] or ""),
+            permit_status=str(row["permit_status"] or ""),
+            role=str(row["role"] or ""),
+            active=bool(row["active"]),
+            permit_effective_date=str(row["permit_effective_date"] or ""),
+            units=float(row["units"]) if row["units"] is not None else None,
+            permit_documentation_received=bool(row["permit_documentation_received"]),
+            permit_notes=str(row["permit_notes"] or ""),
+            notice_given=str(row["notice_given"] or ""),
+            final_working_day=str(row["final_working_day"] or ""),
+            assignment_school=school,
+            assignment_classroom=classroom,
+            assignment_position=position,
+            current_assignment=assignment,
+            updated_at=str(row["updated_at"] or ""),
+        )
+
+    def _history_record_from_row(self, row: sqlite3.Row) -> StaffingHistoryRecord:
+        filled_date = str(row["filled_date"] or "")
+        closed_reason = str(row["closed_reason"] or "")
+        cycle_status = "Open" if not filled_date and not closed_reason else "Closed"
+        employee = str(row["employee"] or "")
+        if not employee:
+            employee = "OPEN POSITION"
+        data_integrity = "Healthy"
+        if cycle_status == "Open" or closed_reason not in {"filled", "seed_closed", "moved"}:
+            data_integrity = "Warning"
+        return StaffingHistoryRecord(
+            id=int(row["id"]),
+            assignment_id=int(row["assignment_id"]),
+            school=str(row["school"] or ""),
+            classroom=str(row["classroom"] or ""),
+            position_name=str(row["position_name"] or ""),
+            opened_date=str(row["opened_date"] or ""),
+            filled_date=filled_date,
+            days_to_fill=int(row["days_to_fill"]) if row["days_to_fill"] is not None else None,
+            cycle_status=cycle_status,
+            employee=employee,
+            data_integrity=data_integrity,
+            closed_reason=closed_reason,
             updated_at=str(row["updated_at"] or ""),
         )
 

@@ -1,0 +1,395 @@
+module:
+  name: staffing_dashboard_v2
+  language: python
+  path: src/staffing_dashboard_v2.py
+  version: 0.13.0
+  description: Parallel PySide Staffing v2 dashboard page module for the mockup-driven rewrite; renders a standalone mockup-style staffing shell/sidebar with active nav state, main Staffing Dashboard filters, compact summary chips, classroom list, position table, dashed Add Position drop zone, status key, service-backed Add Position dialog, Classroom Management sub-dashboard with side filter drawer, Staffing Validation sub-dashboard with filter drawer, read-only position detail drawer, v2 Mark Coming / Mark Filled dialogs, v2 Manage Filled chooser, v2 Update Permit dialog, v2 Mark Need Now dialog, People / Employee Management sub-dashboard, and Assignment History sub-dashboard while the legacy Staffing page remains available.
+functions:
+- name: _classroom_priority_status
+  description: Return the Classroom Management priority label for a group of staffing metric rows, preferring Need Now, Replace, Coming, Filled / Healthy, then Don't Need.
+  locked: false
+  inputs:
+    rows:
+      type: list[StaffingMetricRow]
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _validation_issues_from_rows
+  description: Build Staffing Validation issue dictionaries from StaffingMetricRow data for coverage, upcoming start-date, and permit-status checks without mutating staffing data.
+  locked: false
+  inputs:
+    rows:
+      type: list[StaffingMetricRow]
+      required: true
+  returns:
+    type: list[dict[str, str]]
+  exceptions: []
+  side_effects: none
+- name: _status_from_label
+  description: Convert Add Position status combo labels to assignment status values used by StaffingService.
+  locked: false
+  inputs:
+    label:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+classes:
+- name: StaffingDashboardV2Page
+  description: Builds and refreshes the parallel Staffing v2 PySide shell/sidebar, dashboard, compact summary chips, service-backed Add Position dialog and drop zone, Classroom Management dashboard and filter drawer, Staffing Validation dashboard and filter drawer, read-only position detail drawer, Mark Coming / Mark Filled workflows, Manage Filled workflow chooser, Update Permit workflow, Mark Need Now replacement-clear workflow, People / Employee Management dashboard, and Assignment History dashboard from StaffingService metrics and StaffingStore data while keeping staffing mutations in StaffingService.
+  locked: false
+  methods:
+  - name: __init__
+    inputs:
+      QtCore:
+        type: Any
+        required: true
+      QtGui:
+        type: Any
+        required: true
+      QtWidgets:
+        type: Any
+        required: true
+      store:
+        type: StaffingStore
+        required: true
+      service_factory:
+        type: Callable[[], StaffingService]
+        required: true
+      actions:
+        type: dict[str, Callable[[int], None]] | None
+        required: false
+        default: null
+      school_filter:
+        type: str
+        required: false
+        default: ''
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Creates a PySide QWidget tree and reads staffing metrics through the supplied service factory.
+  - name: refresh
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Initializes staffing storage if needed, reads staffing metrics, people snapshots, and assignment history snapshots, and refreshes Staffing v2 visible selectors, cards, classroom list, positions table, Classroom Management widgets, Staffing Validation widgets, People dashboard widgets, and Assignment History dashboard widgets.
+  - name: _sidebar_button
+    inputs:
+      object_name:
+        type: str
+        required: true
+      text:
+        type: str
+        required: true
+    returns:
+      type: QPushButton
+    exceptions: []
+    side_effects: Creates a mockup-style Staffing v2 sidebar navigation button with stable objectName and minimum height.
+  - name: _set_active_nav
+    inputs:
+      active_button:
+        type: QPushButton
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates staffingV2ActiveNav properties and repolishes Staffing v2 sidebar buttons so the selected sub-dashboard uses the mockup active nav style.
+  - name: _show_dashboard_view
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Switches the v2 stack back to the main Staffing Dashboard view, marks the dashboard nav item active, and does not mutate staffing data.
+  - name: _show_classrooms_view
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Refreshes classroom management groups from StaffingService metric rows, marks the Classrooms nav item active, and switches the v2 stack to the Classroom Management dashboard without mutating staffing data.
+  - name: _show_validation_view
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Refreshes validation issues from StaffingService metric rows, marks the Validation nav item active, and switches the v2 stack to the Staffing Validation dashboard without mutating staffing data.
+  - name: _show_people_view
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Refreshes people snapshots from StaffingStore.list_people, marks the People nav item active, and switches the v2 stack to the People / Employee Management dashboard without mutating staffing data.
+  - name: _show_history_view
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Refreshes assignment history snapshots from StaffingStore.list_assignment_history, marks the Assignment History nav item active, and switches the v2 stack to the Assignment History dashboard without mutating staffing data.
+  - name: _build_classrooms_view
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Creates the Classroom Management dashboard widget tree, filters, side filter drawer, metric cards area, classroom table, detail panel, and validation health panel in the shared Staffing v2 shell.
+  - name: _build_classrooms_filter_drawer
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Populates the Classroom Management side filter drawer with status checkboxes, open-position controls, days-open controls, reset, cancel, and apply actions without mutating staffing data.
+  - name: _open_classrooms_filter_drawer
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Shows the Classroom Management side filter drawer without mutating staffing data.
+  - name: _reset_classrooms_filter_drawer
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Resets Classroom Management side drawer filters to include all statuses, open-position states, and days-open states without applying until requested.
+  - name: _apply_classrooms_filter_drawer
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Applies Classroom Management side drawer filters, refreshes visible classroom rows, and hides the drawer without mutating staffing data.
+  - name: _classrooms_filter_combo
+    inputs:
+      object_name:
+        type: str
+        required: true
+      values:
+        type: list[str]
+        required: true
+    returns:
+      type: QComboBox
+    exceptions: []
+    side_effects: Creates a Classroom Management filter combo and wires it to refresh visible classroom rows.
+  - name: _refresh_classrooms
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Groups StaffingMetricRow data by school/classroom, synchronizes Classroom Management filter choices, and refreshes filtered classroom rows without mutating staffing data.
+  - name: _clear_classrooms_filters
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Resets Classroom Management school, program, status, and search filters to their default values.
+  - name: _refresh_classrooms_filters
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Applies Classroom Management top filters and side drawer status/open-position/days-open filters, then refreshes metrics, table, detail, and validation panels.
+  - name: _classrooms_allowed_statuses
+    inputs: {}
+    returns:
+      type: set[str]
+    exceptions: []
+    side_effects: Reads Classroom Management side drawer status checkbox state and returns the allowed priority labels for filtering.
+  - name: _refresh_classrooms_metrics
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Rebuilds Classroom Management metric cards from grouped StaffingMetricRow data.
+  - name: _refresh_classrooms_table
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Rebuilds the read-only Classroom Management table from filtered classroom groups.
+  - name: _select_classroom_management
+    inputs:
+      row_index:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Selects a filtered Classroom Management row and refreshes the classroom detail panel.
+  - name: _render_classroom_management_detail
+    inputs:
+      rows:
+        type: list[StaffingMetricRow]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Rebuilds the Classroom Management detail panel for the selected classroom without mutating staffing data.
+  - name: _refresh_classrooms_validation_panel
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Rebuilds Classroom Management validation and health cards from grouped classroom data.
+  - name: _build_validation_view
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Creates the Staffing Validation dashboard widget tree, search/filter controls, metric cards, issue table, right summary panel, and hidden filter drawer in the shared Staffing v2 shell.
+  - name: _build_filter_drawer_contents
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Populates the Staffing v2 filter drawer with school, program, severity, issue type, cancel, reset, and apply controls.
+  - name: _validation_filter_combo
+    inputs:
+      object_name:
+        type: str
+        required: true
+      values:
+        type: list[str]
+        required: true
+    returns:
+      type: QComboBox
+    exceptions: []
+    side_effects: Creates a Staffing Validation filter combo with stable objectName.
+  - name: _open_filter_drawer
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Shows the Staffing v2 filter drawer without mutating staffing data.
+  - name: _reset_validation_filters
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Resets Staffing Validation filters, search text, and severity checkboxes to default values.
+  - name: _apply_validation_filters
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Applies Staffing Validation filter state, refreshes visible issue rows, and hides the filter drawer.
+  - name: _refresh_validation
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Builds validation issues from current StaffingMetricRow data, synchronizes filter choices, and refreshes visible validation widgets without mutating staffing data.
+  - name: _refresh_validation_filters
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Applies Staffing Validation search, school, program, issue type, and severity filters, then refreshes metrics, issue table, and right summary panel.
+  - name: _refresh_validation_metrics
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Rebuilds Staffing Validation metric cards from validation issue data.
+  - name: _refresh_validation_table
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Rebuilds the read-only Staffing Validation issue table from filtered validation issue data.
+  - name: _refresh_validation_right_panel
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Rebuilds Staffing Validation compliance summary, quick actions, and about cards.
+  - name: _show_position_drawer
+    inputs:
+      assignment_id:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Reads one staffing assignment, rebuilds the visible Staffing v2 read-only Position Detail drawer, and wires drawer action buttons to supplied service-backed callbacks without mutating staffing data during render.
+  - name: _open_add_position_dialog
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Opens the Staffing v2 Add Position dialog; on confirmation, calls StaffingService.add_position, refreshes the v2 dashboard, and opens the created position drawer.
+  - name: _open_mark_coming_dialog
+    inputs:
+      assignment_id:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Opens the Staffing v2 Mark Coming dialog for one Need Now assignment; on confirmation, calls StaffingService.mark_coming and optionally StaffingService.update_permit_status, refreshes the v2 dashboard, and reopens the position drawer.
+  - name: _open_mark_filled_dialog
+    inputs:
+      assignment_id:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Opens the Staffing v2 Mark Filled dialog for one Coming assignment; displays the assignment start date as the read-only filled date source, calls StaffingService.mark_filled on confirmation, refreshes the v2 dashboard, and reopens the position drawer.
+  - name: _open_manage_filled_dialog
+    inputs:
+      assignment_id:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Opens the Staffing v2 Manage Filled Position chooser for one Filled assignment, displays permit-update and replace-employee workflow options, and routes Continue to the selected callback without mutating staffing data in the chooser.
+  - name: _open_update_permit_dialog
+    inputs:
+      assignment_id:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Opens the Staffing v2 Update Permit dialog for one assigned position; on confirmation, calls StaffingService.update_permit_status with permit status, effective date, units, documentation flag, and notes, then refreshes the dashboard and drawer.
+  - name: _open_mark_need_now_dialog
+    inputs:
+      assignment_id:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Opens the Staffing v2 Mark Position as Need Now confirmation for one Replace assignment; on confirmation, calls StaffingService.clear_replacement, refreshes the dashboard, and reopens the position drawer.
+  - name: _summary_chip
+    inputs:
+      label:
+        type: str
+        required: true
+      value:
+        type: str
+        required: true
+      accessible_text:
+        type: str
+        required: true
+    returns:
+      type: QFrame
+    exceptions: []
+    side_effects: Creates a compact main-dashboard summary chip with stable objectName StaffingV2MetricCard and no staffing data mutation.
+  - name: _add_position_drop_zone
+    inputs: {}
+    returns:
+      type: QFrame
+    exceptions: []
+    side_effects: Creates the dashed mockup-style Add Position drop zone and wires its button to the service-backed Add Position dialog.
+data_structures:
+- name: APP_QSS
+  type: str
+- name: ActionCallback
+  type: Callable[[int], None]
+dependencies:
+- staffing_models
+- staffing_service
+- staffing_store

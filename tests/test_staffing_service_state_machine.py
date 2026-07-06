@@ -47,9 +47,39 @@ def test_basic_staffing_flow_opens_coming_and_fills_position(tmp_path: Path) -> 
     assert assignment.status == "filled"
     assert assignment.person_name == "Jane Doe"
     assert assignment.current_opened_date == "2026-07-01T09:00:00Z"
-    assert assignment.current_filled_date == "2026-07-04T10:00:00Z"
+    assert assignment.current_filled_date == "2026-07-02"
     assert store.active_history_count(assignment_id) == 0
-    assert store.closed_days_to_fill() == [3]
+    assert store.closed_days_to_fill() == [1]
+
+
+def test_mark_filled_uses_coming_start_date_as_filled_date(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    assignment_id = store.seed_assignment(
+        school="Hawthorne",
+        classroom="Harmony 1",
+        position_name="Teacher 1",
+        position_type="Teacher",
+    )
+    service = StaffingService(
+        store,
+        clock=_Clock(
+            [
+                "2026-07-01T09:00:00Z",
+                "2026-07-01T09:05:00Z",
+                "2026-07-12T10:00:00Z",
+            ]
+        ),
+    )
+    service.open_position(assignment_id)
+    service.mark_coming(assignment_id, person_name="Emily Carter", start_date="2026-07-10")
+
+    service.mark_filled(assignment_id)
+
+    assignment = store.get_assignment(assignment_id)
+    assert assignment.status == "filled"
+    assert assignment.current_filled_date == "2026-07-10"
+    assert store.closed_days_to_fill() == [9]
 
 
 def test_move_person_to_open_assignment_requires_confirmation_and_reopens_source(tmp_path: Path) -> None:
@@ -124,6 +154,70 @@ def test_update_assignment_details_edits_classroom_shift_and_permit(tmp_path: Pa
     assert assignment.shift_end == "17:00"
     assert assignment.permit_status == "teacher_permit_approved"
     assert assignment.notes == "Moved to lead role."
+
+
+def test_update_permit_status_records_effective_date_units_and_notes(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    assignment_id = store.seed_assignment(
+        school="Hawthorne",
+        classroom="Harmony 1",
+        position_name="Teacher 2",
+        position_type="Teacher",
+        status="filled",
+        person_name="Imgard",
+        permit_status="permit_in_process",
+    )
+    assignment = store.get_assignment(assignment_id)
+    service = StaffingService(store, clock=_Clock(["2026-07-05T10:00:00Z"]))
+
+    service.update_permit_status(
+        assignment.person_id or 0,
+        "teacher_permit_approved",
+        effective_date="2026-07-06",
+        units=24,
+        documentation_received=True,
+        notes="Permit file received.",
+    )
+
+    updated = store.get_assignment(assignment_id)
+    with store.connect() as conn:
+        person = store.person_context(conn, assignment.person_id or 0)
+    assert updated.status == "filled"
+    assert updated.permit_status == "teacher_permit_approved"
+    assert person.permit_effective_date == "2026-07-06"
+    assert person.units == 24
+    assert person.permit_documentation_received is True
+    assert person.permit_notes == "Permit file received."
+
+
+def test_add_position_creates_need_now_assignment_and_open_history(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    service = StaffingService(store, clock=_Clock(["2026-07-06T09:00:00Z"]))
+
+    result = service.add_position(
+        school="Hawthorne",
+        classroom="Harmony 1",
+        classroom_program="Preschool",
+        licensed_capacity=24,
+        position_name="Teacher 3",
+        position_type="Teacher",
+        initial_status="need_now",
+        notes="New classroom slot.",
+    )
+
+    assignment = store.get_assignment(result.assignment_id)
+    assert result.status == "need_now"
+    assert assignment.school == "Hawthorne"
+    assert assignment.classroom == "Harmony 1"
+    assert assignment.classroom_program == "Preschool"
+    assert assignment.classroom_capacity == 24
+    assert assignment.position_name == "Teacher 3"
+    assert assignment.position_type == "Teacher"
+    assert assignment.current_opened_date == "2026-07-06T09:00:00Z"
+    assert assignment.notes == "New classroom slot."
+    assert store.active_history_count(result.assignment_id) == 1
 
 
 def test_locked_staffing_action_queues_and_replays_when_db_unlocks(tmp_path: Path) -> None:

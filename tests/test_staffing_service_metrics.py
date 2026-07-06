@@ -60,7 +60,7 @@ def test_staffing_metrics_count_open_age_and_fill_time(tmp_path: Path) -> None:
 
     assert metrics.open_count == 2
     assert metrics.open_over_7_days == 1
-    assert metrics.avg_days_to_fill == 7.0
+    assert metrics.avg_days_to_fill == 6.0
     assert open_ages["Teacher 1"] == 4
     assert open_ages["Teacher 2"] == 20
 
@@ -109,6 +109,25 @@ def test_staffing_metrics_can_filter_to_one_school(tmp_path: Path) -> None:
 
     assert metrics.open_count == 1
     assert metrics.open_over_7_days == 1
-    assert metrics.avg_days_to_fill == 6.0
+    assert metrics.avg_days_to_fill == 5.0
     assert {row.school for row in metrics.rows} == {"Palmdale"}
     assert {row.position_name for row in metrics.rows} == {"Teacher 1", "Teacher 2"}
+
+
+def test_staffing_metrics_treat_seed_epoch_open_dates_as_unknown(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    store.seed_assignment(
+        school="Hawthorne",
+        classroom="Harmony 1",
+        position_name="Teacher 1",
+        position_type="Teacher",
+        status="need_now",
+    )
+    service = StaffingService(store)
+
+    metrics = service.staffing_metrics(today=date(2026, 7, 10))
+
+    assert metrics.open_count == 1
+    assert metrics.open_over_7_days == 0
+    assert metrics.rows[0].days_open is None

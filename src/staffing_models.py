@@ -45,6 +45,35 @@ class StaffingPerson:
     id: int
     name: str
     permit_status: str
+    role: str = ""
+    active: bool = True
+    permit_effective_date: str = ""
+    units: float | None = None
+    permit_documentation_received: bool = False
+    permit_notes: str = ""
+    notice_given: str = ""
+    final_working_day: str = ""
+    assignment_school: str = ""
+    assignment_classroom: str = ""
+    assignment_position: str = ""
+    current_assignment: str = ""
+    updated_at: str = ""
+
+
+@dataclass(frozen=True)
+class StaffingHistoryRecord:
+    id: int
+    assignment_id: int
+    school: str
+    classroom: str
+    position_name: str
+    opened_date: str
+    filled_date: str = ""
+    days_to_fill: int | None = None
+    cycle_status: str = ""
+    employee: str = ""
+    data_integrity: str = ""
+    closed_reason: str = ""
     updated_at: str = ""
 
 

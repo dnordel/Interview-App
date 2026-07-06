@@ -2,8 +2,8 @@ module:
   name: staffing_service
   language: python
   path: src/staffing_service.py
-  version: 0.7.0
-  description: Staffing assignment state machine, queued Dropbox edit handling, staffing dashboard metrics with pending-operation projection and workbook display metadata, confirmed person moves, editable assignment details, and post-commit notification emission for successful transactions.
+  version: 0.9.1
+  description: Staffing assignment state machine, service-backed position creation, queued Dropbox edit handling, staffing dashboard metrics with pending-operation projection and workbook display metadata, confirmed person moves, editable assignment details, person permit metadata updates, and post-commit notification emission for successful transactions.
 functions: []
 classes:
 - name: StaffingService
@@ -20,6 +20,54 @@ classes:
     exceptions:
     - ValueError
     side_effects: Updates assignment/history rows, then may emit staffing.assignment.need_now notification; if DB is locked, saves operation to pending queue and returns queued status.
+  - name: add_position
+    inputs:
+      school:
+        type: str
+        required: true
+      classroom:
+        type: str
+        required: true
+      classroom_program:
+        type: str
+        required: false
+        default: ''
+      licensed_capacity:
+        type: int | None
+        required: false
+        default: null
+      position_name:
+        type: str
+        required: true
+      position_type:
+        type: str
+        required: true
+      initial_status:
+        type: str
+        required: false
+        default: dont_need_now
+      person_name:
+        type: str
+        required: false
+        default: ''
+      permit_status:
+        type: str
+        required: false
+        default: unknown
+      start_date:
+        type: str
+        required: false
+        default: ''
+      notes:
+        type: str
+        required: false
+        default: ''
+    returns:
+      type: StaffingTransitionResult
+    exceptions:
+    - ValueError
+    - StaffingEditLock
+    side_effects: Creates school/classroom/person rows as needed, inserts one assignment, opens history for open/coming statuses, and may emit staffing.assignment.created notification.
   - name: mark_coming
     inputs:
       assignment_id:
@@ -55,7 +103,7 @@ classes:
       type: StaffingTransitionResult
     exceptions:
     - ValueError
-    side_effects: Closes assignment history, then may emit staffing.assignment.filled notification; if DB is locked, saves operation to pending queue and returns queued status.
+    side_effects: Closes assignment history using the Coming assignment start_date as current_filled_date and filled_date, then may emit staffing.assignment.filled notification; if DB is locked, saves operation to pending queue and returns queued status.
   - name: mark_replacing
     inputs:
       assignment_id:
@@ -104,11 +152,27 @@ classes:
       permit_status:
         type: str
         required: true
+      effective_date:
+        type: str | None
+        required: false
+        default: null
+      units:
+        type: float | int | None
+        required: false
+        default: null
+      documentation_received:
+        type: bool
+        required: false
+        default: false
+      notes:
+        type: str
+        required: false
+        default: ''
     returns:
       type: StaffingTransitionResult
     exceptions:
     - ValueError
-    side_effects: Updates person permit status, then may emit staffing.permit.updated notification; if DB is locked, saves operation to pending queue and returns queued status.
+    side_effects: Updates person permit status, effective date, units, documentation flag, and permit notes, then may emit staffing.permit.updated notification; if DB is locked, saves operation to pending queue and returns queued status.
   - name: move_person
     inputs:
       source_assignment_id:
@@ -191,7 +255,7 @@ classes:
     returns:
       type: StaffingMetrics
     exceptions: []
-    side_effects: Attempts to replay pending operations when unlocked, reads assignment, workbook display metadata, pending queue records, and filled-history rows from StaffingStore to compute dashboard metrics with queued changes projected for immediate UI feedback; when school is provided, returns metrics and rows only for that school.
+    side_effects: Attempts to replay pending operations when unlocked, reads assignment, workbook display metadata, pending queue records, and filled-history rows from StaffingStore to compute dashboard metrics with queued changes projected for immediate UI feedback; when school is provided, returns metrics and rows only for that school; ignores seed epoch placeholder open dates so default 1970-era dates do not create multi-decade days-open values.
   - name: flush_pending_operations
     inputs: {}
     returns:

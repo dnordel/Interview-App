@@ -72,12 +72,13 @@ from platform_services import (
 from scoring_reporting import OfferInput, OfferLetterService, ScoringEngine, build_offer_filename
 from scoring_reporting import build_integration_payload, serialize_integration_payload
 from scoring_reporting import CANONICAL_DEGREE_TYPES, CandidateQualification, validate_candidate_qualification
+from staffing_dashboard_v2 import StaffingDashboardV2Page
 from staffing_service import StaffingService
 from staffing_store import StaffingStore
 
 
 APP_TITLE = "Interview Assistant"
-NAVIGATION = ["Interviews", "Candidates", "Offers", "Staffing", "Onboarding", "Admin"]
+NAVIGATION = ["Interviews", "Candidates", "Offers", "Staffing", "Staffing v2", "Onboarding", "Admin"]
 DIRECTOR_STAFFING_NAVIGATION = ["Staffing"]
 SETUP_STEPS = ["Candidate", "Interview Plan", "Ready"]
 STAFFING_DB_PATH = DEFAULT_BASE_DIR / "staffing_dashboard.sqlite3"
@@ -1725,7 +1726,7 @@ class PySideInterviewWindow:
         if self.director_staffing_mode:
             self.sidebar.currentRowChanged.connect(lambda _index: self.stack.setCurrentIndex(0))
         else:
-            self.sidebar.currentRowChanged.connect(self.stack.setCurrentIndex)
+            self.sidebar.currentRowChanged.connect(self._select_main_nav_row)
         self.sidebar_panel = QtWidgets.QFrame()
         self.sidebar_panel.setObjectName("PySideSidebar")
         self.sidebar_panel.setMinimumWidth(160)
@@ -1756,6 +1757,7 @@ class PySideInterviewWindow:
             "Candidates": self._candidates_page,
             "Offers": self._offer_page,
             "Staffing": self._staffing_page,
+            "Staffing v2": self._staffing_v2_page,
             "Onboarding": self._onboarding_page,
             "Admin": self._admin_page,
         }
@@ -1766,6 +1768,15 @@ class PySideInterviewWindow:
         self._run_due_notifications_safely()
         self.sidebar.setCurrentRow(0)
         self._apply_responsive_layout()
+
+    def _select_main_nav_row(self, index: int) -> None:
+        if index < 0:
+            return
+        self.stack.setCurrentIndex(index)
+        item = self.sidebar.item(index) if hasattr(self, "sidebar") else None
+        nav_text = item.text() if item is not None else ""
+        if hasattr(self, "sidebar_panel"):
+            self.sidebar_panel.setVisible(nav_text != "Staffing v2")
 
     def show(self) -> None:
         self.window.show()
@@ -5310,7 +5321,10 @@ class PySideInterviewWindow:
         preview.setObjectName("AdminStudioNotificationPreviewButton")
         preview.clicked.connect(self._show_admin_notification_preview_dialog)
         actions.addWidget(preview)
-        actions.addWidget(self.QtWidgets.QPushButton("Cancel"))
+        cancel = self.QtWidgets.QPushButton("Cancel")
+        cancel.setObjectName("AdminStudioNotificationRuleCancel")
+        cancel.clicked.connect(self._cancel_admin_notification_rule_editor)
+        actions.addWidget(cancel)
         self.admin_notification_rule_save = self._primary_button("Save Changes")
         self.admin_notification_rule_save.setObjectName("AdminStudioNotificationRuleSave")
         self.admin_notification_rule_save.setProperty("adminRequiresEdit", True)
@@ -5705,6 +5719,20 @@ class PySideInterviewWindow:
             self.admin_notification_rule_body.clear()
             self._sync_admin_notification_rule_validation()
         self._sync_admin_status()
+
+    def _cancel_admin_notification_rule_editor(self) -> None:
+        rule_id = str(getattr(self, "admin_selected_notification_rule_id", "") or "").strip()
+        event_type = str(getattr(self, "admin_selected_notification_event", "") or "").strip()
+        for rule in self.admin_draft.notification_rules:
+            id_matches = bool(rule_id) and str(rule.id or "") == rule_id
+            event_matches = bool(event_type) and str(rule.event_type or "") == event_type
+            if id_matches or event_matches:
+                self._select_admin_notification_rule(rule)
+                return
+        if self.admin_draft.notification_rules:
+            self._select_admin_notification_rule(self.admin_draft.notification_rules[0])
+            return
+        self._create_admin_notification_rule_editor()
 
     def _insert_admin_notification_variable(self, token: str) -> None:
         if not self.admin_notification_rule_body.isEnabled():
@@ -8856,6 +8884,29 @@ class PySideInterviewWindow:
         layout.addWidget(tabs)
         self._refresh_staffing_dashboard()
         return page
+
+    def _staffing_v2_page(self) -> Any:
+        dashboard = StaffingDashboardV2Page(
+            QtCore=self.QtCore,
+            QtGui=self.QtGui,
+            QtWidgets=self.QtWidgets,
+            store=self.staffing_store,
+            service_factory=lambda: StaffingService(self.staffing_store, notification_service=self._notification_service()),
+            actions={
+                "open_position": self._open_staffing_position,
+                "mark_coming": self._mark_staffing_coming,
+                "mark_filled": self._mark_staffing_filled,
+                "mark_dont_need": self._mark_staffing_not_needed,
+                "revert_coming": self._revert_staffing_coming,
+                "clear_replacement": self._clear_staffing_replacement,
+                "update_permit": self._update_staffing_permit,
+                "replace_employee": self._mark_staffing_replacing,
+                "view_details": self._open_staffing_assignment_details,
+            },
+            school_filter=self.director_staffing_school,
+        )
+        self.staffing_v2_dashboard = dashboard
+        return dashboard.widget
 
     def _staffing_detail_drawer(self) -> Any:
         drawer = self.QtWidgets.QFrame()

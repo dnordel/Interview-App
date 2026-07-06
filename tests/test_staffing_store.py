@@ -178,6 +178,106 @@ def test_default_staffing_seed_imports_visible_excel_names(tmp_path: Path) -> No
     assert any(row.status == "need_now" and row.notes for row in rows)
 
 
+def test_list_people_returns_employee_dashboard_rows_with_current_assignment(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    assignment_id = store.seed_assignment(
+        school="Hawthorne",
+        classroom="Harmony 1",
+        position_name="Teacher 1",
+        position_type="Teacher",
+        status="filled",
+        person_name="Maria Gonzalez",
+        permit_status="teacher_permit_approved",
+    )
+    person_id = store.get_assignment(assignment_id).person_id
+    assert person_id is not None
+    with store.connect() as conn:
+        conn.execute("UPDATE people SET units = 18, updated_at = '2026-07-05T09:00:00Z' WHERE id = ?", (person_id,))
+
+    people = store.list_people()
+
+    assert len(people) == 1
+    person = people[0]
+    assert person.name == "Maria Gonzalez"
+    assert person.role == "Teacher"
+    assert person.permit_status == "teacher_permit_approved"
+    assert person.units == 18
+    assert person.active is True
+    assert person.assignment_school == "Hawthorne"
+    assert person.assignment_classroom == "Harmony 1"
+    assert person.assignment_position == "Teacher 1"
+    assert person.current_assignment == "Hawthorne\nHarmony 1 - Teacher 1"
+
+
+def test_list_assignment_history_returns_dashboard_records(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    closed_id = store.seed_assignment(
+        school="Hawthorne",
+        classroom="Harmony 1",
+        position_name="Teacher 1",
+        position_type="Teacher",
+    )
+    open_id = store.seed_assignment(
+        school="Hawthorne",
+        classroom="Quest",
+        position_name="Teacher 2",
+        position_type="Teacher",
+        status="need_now",
+    )
+    with store.connect() as conn:
+        person_id = store.ensure_person(conn, "Emily Carter", "Teacher", "permit_in_process", "2026-07-05T09:00:00Z")
+        classroom_id = conn.execute("SELECT classroom_id FROM assignments WHERE id = ?", (closed_id,)).fetchone()["classroom_id"]
+        conn.execute(
+            """
+            UPDATE assignments
+            SET person_id = ?, status = 'filled', current_opened_date = '2026-05-08',
+                current_filled_date = '2026-05-20'
+            WHERE id = ?
+            """,
+            (person_id, closed_id),
+        )
+        conn.execute(
+            """
+            INSERT INTO assignment_history (
+                assignment_id, classroom_id, position_name, opened_date, filled_date,
+                days_to_fill, closed_reason, created_at, updated_at
+            ) VALUES (?, ?, 'Teacher 1', '2026-05-08', '2026-05-20', 12, 'filled',
+                '2026-05-08T09:15:00Z', '2026-05-20T14:05:00Z')
+            """,
+            (closed_id, classroom_id),
+        )
+        open_classroom_id = conn.execute("SELECT classroom_id FROM assignments WHERE id = ?", (open_id,)).fetchone()["classroom_id"]
+        conn.execute(
+            """
+            INSERT INTO assignment_history (
+                assignment_id, classroom_id, position_name, opened_date, created_at, updated_at
+            ) VALUES (?, ?, 'Teacher 2', '2026-07-01', '2026-07-01T09:15:00Z', '2026-07-01T09:15:00Z')
+            """,
+            (open_id, open_classroom_id),
+        )
+
+    records = store.list_assignment_history()
+
+    assert [record.assignment_id for record in records] == [open_id, closed_id]
+    open_record = records[0]
+    assert open_record.school == "Hawthorne"
+    assert open_record.classroom == "Quest"
+    assert open_record.position_name == "Teacher 2"
+    assert open_record.cycle_status == "Open"
+    assert open_record.employee == "OPEN POSITION"
+    assert open_record.data_integrity == "Warning"
+    closed_record = records[1]
+    assert closed_record.classroom == "Harmony 1"
+    assert closed_record.employee == "Emily Carter"
+    assert closed_record.opened_date == "2026-05-08"
+    assert closed_record.filled_date == "2026-05-20"
+    assert closed_record.days_to_fill == 12
+    assert closed_record.cycle_status == "Closed"
+    assert closed_record.data_integrity == "Healthy"
+
+
 def test_import_seed_file_refuses_unknown_status_without_partial_write(tmp_path: Path) -> None:
     seed_path = tmp_path / "staffing_seed.json"
     seed_path.write_text(

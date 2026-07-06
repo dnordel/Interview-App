@@ -2,8 +2,8 @@ module:
   name: staffing_store
   language: python
   path: src/staffing_store.py
-  version: 0.5.0
-  description: SQLite persistence for staffing schools, classrooms, people including optional units, assignments with shift metadata, workbook display metadata, assignment history, Dropbox-visible edit locking, pending operation queueing, required staffing indexes, and deterministic seed imports.
+  version: 0.9.0
+  description: SQLite persistence for staffing schools, classrooms, people including optional units, active status, role, current assignment summary, and permit effective-date/documentation metadata, service-backed assignment creation, assignments with shift metadata, workbook display metadata, assignment history dashboard records, Dropbox-visible edit locking, pending operation queueing, required staffing indexes, and deterministic seed imports.
 functions: []
 classes:
 - name: StaffingEditLock
@@ -34,7 +34,7 @@ classes:
     inputs: {}
     returns:
       type: None
-    side_effects: Creates staffing tables/indexes when missing and migrates workbook display and shift metadata columns for existing databases.
+    side_effects: Creates staffing tables/indexes when missing and migrates workbook display, shift metadata, and person permit metadata columns for existing databases.
   - name: enqueue_pending_operation
     inputs:
       operation:
@@ -101,6 +101,57 @@ classes:
     exceptions:
     - ValueError
     side_effects: Inserts or reuses school/classroom/person rows and inserts one assignment row.
+  - name: create_assignment
+    inputs:
+      school:
+        type: str
+        required: true
+      classroom:
+        type: str
+        required: true
+      classroom_program:
+        type: str
+        required: false
+        default: ''
+      licensed_capacity:
+        type: int | None
+        required: false
+        default: null
+      position_name:
+        type: str
+        required: true
+      position_type:
+        type: str
+        required: true
+      status:
+        type: str
+        required: false
+        default: dont_need_now
+      person_name:
+        type: str
+        required: false
+        default: ''
+      permit_status:
+        type: str
+        required: false
+        default: unknown
+      start_date:
+        type: str
+        required: false
+        default: ''
+      notes:
+        type: str
+        required: false
+        default: ''
+      now:
+        type: str
+        required: true
+    returns:
+      type: int
+    exceptions:
+    - ValueError
+    - StaffingEditLock
+    side_effects: Uses a staffing write lock, inserts or updates school/classroom/person rows, inserts one assignment, and opens assignment_history for Need Now, Replace, and Coming positions.
   - name: import_seed_file
     inputs:
       seed_path:
@@ -117,6 +168,18 @@ classes:
       type: list[StaffingAssignment]
     exceptions: []
     side_effects: Reads staffing SQLite database.
+  - name: list_people
+    inputs: {}
+    returns:
+      type: list[StaffingPerson]
+    exceptions: []
+    side_effects: Reads staffing SQLite people and active assignment data for the employee management dashboard.
+  - name: list_assignment_history
+    inputs: {}
+    returns:
+      type: list[StaffingHistoryRecord]
+    exceptions: []
+    side_effects: Reads staffing SQLite assignment_history rows joined with schools, classrooms, assignments, and people for the Assignment History dashboard.
   - name: closed_days_to_fill
     inputs:
       school:

@@ -44,6 +44,12 @@ modules:
     - notification_service
     - staffing_models
     - staffing_store
+  staffing_dashboard_v2:
+    path: src/staffing_dashboard_v2.py
+    depends_on:
+    - staffing_models
+    - staffing_service
+    - staffing_store
   director_staffing_launcher:
     path: tools/generate_director_staffing_launchers.py
     depends_on:
@@ -102,6 +108,7 @@ modules:
     - onboarding_operations
     - platform_services
     - scoring_reporting
+    - staffing_dashboard_v2
     - staffing_service
     - staffing_store
     - ui_mode_switch

@@ -56,11 +56,12 @@ services:
     - notification_service
   staffing_dashboard_service:
     description: Local SQLite staffing assignment state machine, workbook-style school/classroom/slot display metadata, assignment history,
-      permit updates, metrics, seed import, and post-commit checkpoint notification hooks.
+      permit updates, metrics, seed import, post-commit checkpoint notification hooks, and parallel PySide Staffing v2 dashboard rewrite surface.
     modules:
     - staffing_models
     - staffing_store
     - staffing_service
+    - staffing_dashboard_v2
   director_staffing_dashboard_service:
     description: Director-facing generated Windows launch paths, one per staffing seed school, for the full PySide app in staffing-only mode; each launcher hides non-staffing dashboards, filters to its assigned school, and reuses the exact same staffing page, persistence, transitions, and setup path as the full app.
     modules:
@@ -112,6 +113,7 @@ services:
     modules:
     - admin_studio
     - pyside_interview_app
+    - staffing_dashboard_v2
     - notification_service
     - staffing_service
     - staffing_store
