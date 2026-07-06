@@ -311,6 +311,9 @@ Shell:
     - Neutral slate chip, object `StaffingV2HistoryAssignmentIdChip`, text like `A-1024`.
   - lifecycle events
   - validation/integrity checklist
+    - Each row uses object `StaffingV2HistoryValidationCheckRow`.
+    - Row property `staffingV2ValidationCheckStatus` is `pass` or `warning`.
+    - Rows include leading pass/warning icon, not plain paragraph text.
   - footer buttons View Assignment, Open Employee, Export Record
 - Data integrity badges: Healthy green, Warning orange, Critical red.
 

@@ -205,10 +205,14 @@ QFrame#StaffingV2DialogInfo,
 QFrame#StaffingV2DialogWarning,
 QFrame#StaffingV2AddPositionStatusCard,
 QFrame#StaffingV2ManagePermitCard,
-QFrame#StaffingV2ManageReplaceCard {
+QFrame#StaffingV2ManageReplaceCard,
+QFrame#StaffingV2HistoryValidationCheckRow {
     background-color: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
+}
+QFrame#StaffingV2HistoryValidationCheckRow {
+    border: none;
 }
 QFrame#StaffingV2DialogInfo {
     background-color: #eff6ff;
@@ -2261,9 +2265,22 @@ class StaffingDashboardV2Page:
 
         validation, validation_layout = self._panel("StaffingV2HistoryDetailCard")
         validation_layout.addWidget(self._label("Validation / Integrity", "StaffingV2SectionTitle"))
-        validation_layout.addWidget(self._label(f"History status: {record.data_integrity}"))
-        validation_layout.addWidget(self._label("Dates valid" if record.opened_date else "Missing opened date"))
-        validation_layout.addWidget(self._label("Duplicate active cycle" if record.data_integrity != "Healthy" else "No duplicate open cycles"))
+        check_rows = [
+            ("pass" if record.data_integrity == "Healthy" else "warning", f"History status: {record.data_integrity}"),
+            ("pass" if record.opened_date else "warning", "Dates valid" if record.opened_date else "Missing opened date"),
+            ("warning" if record.data_integrity != "Healthy" else "pass", "Duplicate active cycle" if record.data_integrity != "Healthy" else "No duplicate open cycles"),
+        ]
+        for status, text in check_rows:
+            row = self.QtWidgets.QFrame()
+            row.setObjectName("StaffingV2HistoryValidationCheckRow")
+            row.setProperty("staffingV2ValidationCheckStatus", status)
+            row_layout = self.QtWidgets.QHBoxLayout(row)
+            row_layout.setContentsMargins(0, 2, 0, 2)
+            row_layout.setSpacing(8)
+            row_layout.addWidget(self._icon_label("status_filled" if status == "pass" else "status_need", "StaffingV2ChipIcon"))
+            row_layout.addWidget(self._label(text))
+            row_layout.addStretch(1)
+            validation_layout.addWidget(row)
         self.history_detail_layout.addWidget(validation, 1)
 
         footer = self.QtWidgets.QHBoxLayout()

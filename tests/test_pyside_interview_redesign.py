@@ -9968,6 +9968,10 @@ def test_pyside_staffing_v2_assignment_history_dashboard_renders_history_from_db
     assert "Position opened" in detail_text
     assert "Validation / Integrity" in detail_text
     assert "Duplicate active cycle" in detail_text
+    validation_rows = page.findChildren(qt_widgets.QFrame, "StaffingV2HistoryValidationCheckRow")
+    assert len(validation_rows) >= 3
+    validation_statuses = {row.property("staffingV2ValidationCheckStatus") for row in validation_rows}
+    assert {"pass", "warning"} <= validation_statuses
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2HistoryViewAssignment").text() == "View Assignment"
     assert not page.findChild(qt_widgets.QPushButton, "StaffingV2HistoryViewAssignment").icon().isNull()
     assert not page.findChild(qt_widgets.QPushButton, "StaffingV2HistoryOpenEmployee").icon().isNull()
