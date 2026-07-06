@@ -17,6 +17,52 @@ QWidget#PySideStaffingV2Page {
 QFrame#StaffingV2Shell {
     background-color: #f8fafc;
 }
+QScrollBar:vertical {
+    background-color: #f8fafc;
+    width: 10px;
+    margin: 2px;
+    border: none;
+    border-radius: 5px;
+}
+QScrollBar::handle:vertical {
+    background-color: #cbd5e1;
+    min-height: 36px;
+    border-radius: 5px;
+}
+QScrollBar::handle:vertical:hover {
+    background-color: #94a3b8;
+}
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical,
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical {
+    background: transparent;
+    border: none;
+    height: 0px;
+}
+QScrollBar:horizontal {
+    background-color: #f8fafc;
+    height: 10px;
+    margin: 2px;
+    border: none;
+    border-radius: 5px;
+}
+QScrollBar::handle:horizontal {
+    background-color: #cbd5e1;
+    min-width: 36px;
+    border-radius: 5px;
+}
+QScrollBar::handle:horizontal:hover {
+    background-color: #94a3b8;
+}
+QScrollBar::add-line:horizontal,
+QScrollBar::sub-line:horizontal,
+QScrollBar::add-page:horizontal,
+QScrollBar::sub-page:horizontal {
+    background: transparent;
+    border: none;
+    width: 0px;
+}
 QFrame#StaffingV2DashboardHeaderTopRow,
 QFrame#StaffingV2DashboardHeaderActionRow {
     background-color: transparent;

@@ -8615,6 +8615,8 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
 
     assert window.sidebar_panel.isHidden()
     assert page.findChild(qt_widgets.QFrame, "StaffingV2Shell") is not None
+    assert "QScrollBar:vertical" in page.styleSheet()
+    assert "QScrollBar::handle:vertical" in page.styleSheet()
     staffing_sidebar = page.findChild(qt_widgets.QFrame, "StaffingV2Sidebar")
     assert staffing_sidebar is not None
     assert not staffing_sidebar.isHidden()
