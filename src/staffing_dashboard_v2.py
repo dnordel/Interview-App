@@ -1891,18 +1891,20 @@ class StaffingDashboardV2Page:
             values = [
                 row.position_name,
                 row.person_name or "OPEN POSITION",
-                _display_status(row.status),
                 row.start_date or "-",
                 "-" if row.days_open is None else str(row.days_open),
-                _display_permit(row.permit_status or "unknown"),
             ]
-            for column, value in enumerate(values):
+            for column, value in zip((0, 1, 3, 4), values, strict=True):
                 item = self.QtWidgets.QTableWidgetItem(value)
                 item.setToolTip(row.position_name)
                 item.setData(self.QtCore.Qt.ItemDataRole.UserRole, row.assignment_id)
-                if column == 2:
-                    item.setBackground(self.QtGui.QColor(_status_color(row.status)))
                 self.positions_table.setItem(row_index, column, item)
+            self.positions_table.setCellWidget(row_index, 2, self._chip(_display_status(row.status), row.status))
+            self.positions_table.setCellWidget(
+                row_index,
+                5,
+                self._chip(_display_permit(row.permit_status or "unknown"), _permit_chip_status(row.permit_status or "unknown")),
+            )
             self.positions_table.setCellWidget(row_index, 6, self._action_button(row))
         self.positions_table.resizeColumnsToContents()
 
@@ -3268,6 +3270,15 @@ def _display_permit(status: str) -> str:
 
 def _permit_label(status: str) -> str:
     return _display_permit(status or "unknown")
+
+
+def _permit_chip_status(status: str) -> str:
+    return {
+        "permit_in_process": "coming",
+        "teacher_permit_approved": "filled",
+        "no_units_needed": "filled",
+        "no_permit_or_application": "replace",
+    }.get(status or "unknown", "dont_need_now")
 
 
 def _format_units(units: float | None) -> str:

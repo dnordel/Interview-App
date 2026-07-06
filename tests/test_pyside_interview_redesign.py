@@ -8655,10 +8655,27 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
         for column in range(table.columnCount())
         if table.item(row, column) is not None
     }
+    table_widget_text = {
+        table.cellWidget(row, column).text()
+        if hasattr(table.cellWidget(row, column), "text")
+        else _widget_text(table.cellWidget(row, column))
+        for row in range(table.rowCount())
+        for column in range(table.columnCount())
+        if table.cellWidget(row, column) is not None
+    }
+    table_text |= table_widget_text
     assert {"Teacher 1", "OPEN POSITION", "Need Now", "Teacher 2", "Imgard", "Filled"} <= table_text
     assert "20639" not in table_text
     assert table.editTriggers() == qt_widgets.QAbstractItemView.EditTrigger.NoEditTriggers
-    assert table.cellWidget(_staffing_row_for_position(table, "Teacher 1"), table.columnCount() - 1).text() == "Mark Coming"
+    need_now_row = _staffing_row_for_position(table, "Teacher 1")
+    filled_row = _staffing_row_for_position(table, "Teacher 2")
+    assert table.cellWidget(need_now_row, 2).objectName() == "StaffingV2NeedNowChip"
+    assert table.cellWidget(filled_row, 2).objectName() == "StaffingV2FilledChip"
+    assert table.cellWidget(need_now_row, 5).objectName() == "StaffingV2NeutralChip"
+    assert table.cellWidget(filled_row, 5).objectName() == "StaffingV2ComingChip"
+    assert table.item(need_now_row, 2) is None
+    assert table.item(filled_row, 5) is None
+    assert table.cellWidget(need_now_row, table.columnCount() - 1).text() == "Mark Coming"
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2AddPositionButton").text() == "+  Add Position"
     assert page.findChild(qt_widgets.QFrame, "StaffingV2AddPositionDropZone") is not None
     assert page.findChild(qt_widgets.QLabel, "StaffingV2PriorityChip") is not None
