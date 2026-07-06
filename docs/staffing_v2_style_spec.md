@@ -308,6 +308,9 @@ Shell:
 - Metrics: Total Cycles, Open Cycles, Closed Cycles, Avg Days to Fill, Data Issues.
 - Filters: School, Classroom, Cycle Status, Date Range, Search, More Filters, Clear.
 - Table: Assignment ID, Classroom, Position, Opened Date, Filled Date, Days to Fill, Cycle Status, Employee, Data Integrity, Actions.
+- Pagination footer: result count on left, page controls centered/right, rows-per-page combo on far right.
+  - Result label object: `StaffingV2HistoryResultCount`.
+  - Rows-per-page combo object: `StaffingV2HistoryRowsPerPage`.
 - Detail panel:
   - History Record Detail
   - assignment ID chip

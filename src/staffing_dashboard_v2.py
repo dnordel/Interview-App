@@ -2128,6 +2128,29 @@ class StaffingDashboardV2Page:
         body.addWidget(self.history_detail_panel)
         body.setSizes([900, 380])
         history_root.addWidget(body, 1)
+        history_footer = self.QtWidgets.QHBoxLayout()
+        self.history_result_count = self.QtWidgets.QLabel("Showing 0 to 0 of 0 records")
+        self.history_result_count.setObjectName("StaffingV2HistoryResultCount")
+        history_footer.addWidget(self.history_result_count)
+        history_footer.addStretch(1)
+        previous_page = self.QtWidgets.QPushButton("‹")
+        previous_page.setObjectName("StaffingV2HistoryPreviousPage")
+        previous_page.setEnabled(False)
+        history_footer.addWidget(previous_page)
+        current_page = self.QtWidgets.QPushButton("1")
+        current_page.setObjectName("StaffingV2HistoryCurrentPage")
+        current_page.setEnabled(False)
+        history_footer.addWidget(current_page)
+        next_page = self.QtWidgets.QPushButton("›")
+        next_page.setObjectName("StaffingV2HistoryNextPage")
+        next_page.setEnabled(False)
+        history_footer.addWidget(next_page)
+        self.history_rows_per_page = self.QtWidgets.QComboBox()
+        self.history_rows_per_page.setObjectName("StaffingV2HistoryRowsPerPage")
+        self.history_rows_per_page.addItems(["10 / page", "25 / page", "50 / page"])
+        self.history_rows_per_page.setEnabled(False)
+        history_footer.addWidget(self.history_rows_per_page)
+        history_root.addLayout(history_footer)
 
     def _history_filter_combo(self, object_name: str, values: list[str]) -> Any:
         combo = self.QtWidgets.QComboBox()
@@ -2191,6 +2214,12 @@ class StaffingDashboardV2Page:
             self.visible_history_records.append(record)
         self._refresh_history_metrics()
         self._refresh_history_table()
+        if hasattr(self, "history_result_count"):
+            visible_count = len(self.visible_history_records)
+            if visible_count:
+                self.history_result_count.setText(f"Showing 1 to {visible_count} of {visible_count} records")
+            else:
+                self.history_result_count.setText("Showing 0 to 0 of 0 records")
 
     def _refresh_history_metrics(self) -> None:
         while self.history_metrics_layout.count():

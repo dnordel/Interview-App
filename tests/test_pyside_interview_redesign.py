@@ -9959,6 +9959,8 @@ def test_pyside_staffing_v2_assignment_history_dashboard_renders_history_from_db
         assert view_button.text() == "View"
         assert not view_button.icon().isNull()
         assert not view_button.isEnabled()
+    assert page.findChild(qt_widgets.QLabel, "StaffingV2HistoryResultCount").text() == "Showing 1 to 2 of 2 records"
+    assert page.findChild(qt_widgets.QComboBox, "StaffingV2HistoryRowsPerPage").currentText() == "10 / page"
     detail = page.findChild(qt_widgets.QFrame, "StaffingV2HistoryDetailPanel")
     detail_text = _widget_text(detail)
     assert f"Assignment ID: A-{open_id:04d}" in detail_text
