@@ -158,7 +158,8 @@ QLabel#StaffingV2PriorityChip {
     padding: 8px 14px;
     font-weight: 800;
 }
-QLabel#StaffingV2NeedNowChip {
+QLabel#StaffingV2NeedNowChip,
+QFrame#StaffingV2NeedNowChip {
     background-color: #fee2e2;
     color: #dc2626;
     border: 1px solid #fecaca;
@@ -166,7 +167,8 @@ QLabel#StaffingV2NeedNowChip {
     padding: 4px 10px;
     font-weight: 700;
 }
-QLabel#StaffingV2ReplaceChip {
+QLabel#StaffingV2ReplaceChip,
+QFrame#StaffingV2ReplaceChip {
     background-color: #ffedd5;
     color: #ea580c;
     border: 1px solid #fed7aa;
@@ -174,7 +176,8 @@ QLabel#StaffingV2ReplaceChip {
     padding: 4px 10px;
     font-weight: 700;
 }
-QLabel#StaffingV2ComingChip {
+QLabel#StaffingV2ComingChip,
+QFrame#StaffingV2ComingChip {
     background-color: #fef3c7;
     color: #b45309;
     border: 1px solid #fde68a;
@@ -183,7 +186,9 @@ QLabel#StaffingV2ComingChip {
     font-weight: 700;
 }
 QLabel#StaffingV2FilledChip,
-QLabel#StaffingV2HealthyChip {
+QLabel#StaffingV2HealthyChip,
+QFrame#StaffingV2FilledChip,
+QFrame#StaffingV2HealthyChip {
     background-color: #dcfce7;
     color: #15803d;
     border: 1px solid #bbf7d0;
@@ -191,13 +196,21 @@ QLabel#StaffingV2HealthyChip {
     padding: 4px 10px;
     font-weight: 700;
 }
-QLabel#StaffingV2NeutralChip {
+QLabel#StaffingV2NeutralChip,
+QFrame#StaffingV2NeutralChip {
     background-color: #f1f5f9;
     color: #475569;
     border: 1px solid #cbd5e1;
     border-radius: 8px;
     padding: 4px 10px;
     font-weight: 700;
+}
+QLabel#StaffingV2ChipText {
+    font-weight: 700;
+}
+QLabel#StaffingV2CardIcon,
+QLabel#StaffingV2ChipIcon {
+    background-color: transparent;
 }
 QPushButton#StaffingV2PrimaryButton {
     background-color: #2563eb;
@@ -660,9 +673,15 @@ class StaffingDashboardV2Page:
             "dashboard": pixmaps.SP_ComputerIcon,
             "export": pixmaps.SP_DialogSaveButton,
             "history": pixmaps.SP_BrowserReload,
+            "info": pixmaps.SP_MessageBoxInformation,
             "people": pixmaps.SP_FileDialogDetailedView,
             "search": pixmaps.SP_FileDialogContentsView,
             "settings": pixmaps.SP_FileDialogDetailedView,
+            "status_filled": pixmaps.SP_DialogApplyButton,
+            "status_need": pixmaps.SP_MessageBoxWarning,
+            "status_neutral": pixmaps.SP_DialogResetButton,
+            "status_pending": pixmaps.SP_BrowserReload,
+            "status_replace": pixmaps.SP_MessageBoxWarning,
             "validation": pixmaps.SP_MessageBoxInformation,
         }
         return self.widget.style().standardIcon(mapping.get(icon_key, pixmaps.SP_FileIcon))
@@ -3157,9 +3176,12 @@ class StaffingDashboardV2Page:
     def _metric_card(self, label: str, value: str, accessible_text: str, object_name: str = "StaffingV2MetricCard") -> Any:
         card, layout = self._panel(object_name)
         card.setAccessibleName(accessible_text)
-        label_widget = self._label(label, "StaffingV2Muted")
+        icon_row = self.QtWidgets.QHBoxLayout()
+        icon_row.setContentsMargins(0, 0, 0, 0)
+        icon_row.addWidget(self._icon_label(_metric_icon_key(label), "StaffingV2CardIcon"))
+        icon_row.addWidget(self._label(label, "StaffingV2Muted"), 1)
+        layout.addLayout(icon_row)
         value_widget = self._label(value, "StaffingV2MetricValue")
-        layout.addWidget(label_widget)
         layout.addWidget(value_widget)
         return card
 
@@ -3198,7 +3220,23 @@ class StaffingDashboardV2Page:
         return frame
 
     def _chip(self, text: str, status: str) -> Any:
-        label = self._label(text, _chip_object_name(status))
+        frame = self.QtWidgets.QFrame()
+        frame.setObjectName(_chip_object_name(status))
+        layout = self.QtWidgets.QHBoxLayout(frame)
+        layout.setContentsMargins(6, 2, 6, 2)
+        layout.setSpacing(4)
+        layout.addWidget(self._icon_label(_status_icon_key(status), "StaffingV2ChipIcon"))
+        label = self._label(text, "StaffingV2ChipText")
+        label.setWordWrap(False)
+        label.setAlignment(self.QtCore.Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(label)
+        return frame
+
+    def _icon_label(self, icon_key: str, object_name: str) -> Any:
+        label = self.QtWidgets.QLabel()
+        label.setObjectName(object_name)
+        label.setPixmap(self._standard_icon(icon_key).pixmap(16, 16))
+        label.setFixedSize(18, 18)
         label.setAlignment(self.QtCore.Qt.AlignmentFlag.AlignCenter)
         return label
 
@@ -3454,6 +3492,33 @@ def _permit_chip_status(status: str) -> str:
         "no_units_needed": "filled",
         "no_permit_or_application": "replace",
     }.get(status or "unknown", "dont_need_now")
+
+
+def _metric_icon_key(label: str) -> str:
+    normalized = str(label or "").casefold()
+    if "program" in normalized:
+        return "classrooms"
+    if "capacity" in normalized or "people" in normalized or "staff" in normalized:
+        return "people"
+    if "position" in normalized or "cycle" in normalized:
+        return "dashboard"
+    if "filled" in normalized or "active" in normalized or "compliance" in normalized:
+        return "status_filled"
+    if "open" in normalized or "days" in normalized or "warning" in normalized:
+        return "status_pending"
+    if "critical" in normalized or "issue" in normalized:
+        return "status_need"
+    return "info"
+
+
+def _status_icon_key(status: str) -> str:
+    return {
+        "need_now": "status_need",
+        "replace": "status_replace",
+        "coming": "status_pending",
+        "filled": "status_filled",
+        "dont_need_now": "status_neutral",
+    }.get(status or "dont_need_now", "status_neutral")
 
 
 def _format_units(units: float | None) -> str:

@@ -2,8 +2,8 @@ module:
   name: staffing_dashboard_v2
   language: python
   path: src/staffing_dashboard_v2.py
-  version: 0.13.4
-  description: Parallel PySide Staffing v2 dashboard page module for the mockup-driven rewrite; renders a standalone mockup-style staffing shell/sidebar with active nav state and Qt standard icons, main Staffing Dashboard filters, compact summary chips, custom classroom list rows with status dots and chevrons, position table with status and permit chips plus menu-style row actions, dashed Add Position drop zone, status key, service-backed Add Position dialog, Classroom Management sub-dashboard with side filter drawer, Staffing Validation sub-dashboard with filter drawer, read-only position detail drawer, v2 Mark Coming / Mark Filled dialogs, v2 Manage Filled chooser, v2 Update Permit dialog, v2 Mark Need Now dialog, People / Employee Management sub-dashboard, and Assignment History sub-dashboard while the legacy Staffing page remains available.
+  version: 0.13.5
+  description: Parallel PySide Staffing v2 dashboard page module for the mockup-driven rewrite; renders a standalone mockup-style staffing shell/sidebar with active nav state and Qt standard icons, main Staffing Dashboard filters, compact summary chips, icon-bearing overview cards, custom classroom list rows with status dots and chevrons, position table with icon-bearing status and permit chips plus menu-style row actions, dashed Add Position drop zone, status key, service-backed Add Position dialog, Classroom Management sub-dashboard with side filter drawer, Staffing Validation sub-dashboard with filter drawer, read-only position detail drawer, v2 Mark Coming / Mark Filled dialogs, v2 Manage Filled chooser, v2 Update Permit dialog, v2 Mark Need Now dialog, People / Employee Management sub-dashboard, and Assignment History sub-dashboard while the legacy Staffing page remains available.
 functions:
 - name: _classroom_priority_status
   description: Return the Classroom Management priority label for a group of staffing metric rows, preferring Need Now, Replace, Coming, Filled / Healthy, then Don't Need.
@@ -82,9 +82,31 @@ functions:
     type: list[tuple[str, str]]
   exceptions: []
   side_effects: none
+- name: _metric_icon_key
+  description: Return the Qt standard icon key used for Staffing v2 metric and overview card labels.
+  locked: false
+  inputs:
+    label:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _status_icon_key
+  description: Return the Qt standard icon key used for Staffing v2 status and permit chips.
+  locked: false
+  inputs:
+    status:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
 classes:
 - name: StaffingDashboardV2Page
-  description: Builds and refreshes the parallel Staffing v2 PySide shell/sidebar with Qt standard icons, dashboard, compact summary chips, custom classroom list item widgets, chip-based positions table with menu-style row actions, service-backed Add Position dialog and drop zone, Classroom Management dashboard and filter drawer, Staffing Validation dashboard and filter drawer, read-only position detail drawer, Mark Coming / Mark Filled workflows, Manage Filled workflow chooser, Update Permit workflow, Mark Need Now replacement-clear workflow, People / Employee Management dashboard, and Assignment History dashboard from StaffingService metrics and StaffingStore data while keeping staffing mutations in StaffingService.
+  description: Builds and refreshes the parallel Staffing v2 PySide shell/sidebar with Qt standard icons, dashboard, compact summary chips, icon-bearing overview cards, custom classroom list item widgets, icon-bearing chip-based positions table with menu-style row actions, service-backed Add Position dialog and drop zone, Classroom Management dashboard and filter drawer, Staffing Validation dashboard and filter drawer, read-only position detail drawer, Mark Coming / Mark Filled workflows, Manage Filled workflow chooser, Update Permit workflow, Mark Need Now replacement-clear workflow, People / Employee Management dashboard, and Assignment History dashboard from StaffingService metrics and StaffingStore data while keeping staffing mutations in StaffingService.
   locked: false
   methods:
   - name: __init__
@@ -465,6 +487,25 @@ classes:
       type: None
     exceptions: []
     side_effects: Opens the Staffing v2 Mark Position as Need Now confirmation for one Replace assignment; on confirmation, calls StaffingService.clear_replacement, refreshes the dashboard, and reopens the position drawer.
+  - name: _metric_card
+    inputs:
+      label:
+        type: str
+        required: true
+      value:
+        type: str
+        required: true
+      accessible_text:
+        type: str
+        required: true
+      object_name:
+        type: str
+        required: false
+        default: StaffingV2MetricCard
+    returns:
+      type: QFrame
+    exceptions: []
+    side_effects: Creates a mockup-style Staffing v2 metric or overview card with an icon-bearing label row and no staffing data mutation.
   - name: _summary_chip
     inputs:
       label:
@@ -486,6 +527,30 @@ classes:
       type: QFrame
     exceptions: []
     side_effects: Creates the dashed mockup-style Add Position drop zone and wires its button to the service-backed Add Position dialog.
+  - name: _chip
+    inputs:
+      text:
+        type: str
+        required: true
+      status:
+        type: str
+        required: true
+    returns:
+      type: QFrame
+    exceptions: []
+    side_effects: Creates an icon-bearing Staffing v2 status or permit chip widget with stable objectName styling and no staffing data mutation.
+  - name: _icon_label
+    inputs:
+      icon_key:
+        type: str
+        required: true
+      object_name:
+        type: str
+        required: true
+    returns:
+      type: QLabel
+    exceptions: []
+    side_effects: Creates a fixed-size label containing a Staffing v2 Qt standard icon pixmap for card labels and chips.
 data_structures:
 - name: APP_QSS
   type: str

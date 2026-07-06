@@ -8670,6 +8670,13 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
     )
     assert first_row_widget.findChild(qt_widgets.QLabel, "StaffingV2ClassroomItemChevron").text() == ">"
     assert page.findChild(qt_widgets.QLabel, "StaffingV2ClassroomTitle").text() == "Harmony 1"
+    overview_cards = page.findChildren(qt_widgets.QFrame, "StaffingV2OverviewCard")
+    assert len(overview_cards) == 6
+    for overview_card in overview_cards:
+        icon = overview_card.findChild(qt_widgets.QLabel, "StaffingV2CardIcon")
+        assert icon is not None
+        assert icon.pixmap() is not None
+        assert not icon.pixmap().isNull()
     table = page.findChild(qt_widgets.QTableWidget, "StaffingV2PositionsTable")
     assert table.maximumHeight() <= 230
     table_text = {
@@ -8679,9 +8686,9 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
         if table.item(row, column) is not None
     }
     table_widget_text = {
-        table.cellWidget(row, column).text()
+        table.cellWidget(row, column).text().strip()
         if hasattr(table.cellWidget(row, column), "text")
-        else _widget_text(table.cellWidget(row, column))
+        else _widget_text(table.cellWidget(row, column)).strip()
         for row in range(table.rowCount())
         for column in range(table.columnCount())
         if table.cellWidget(row, column) is not None
@@ -8696,6 +8703,14 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
     assert table.cellWidget(filled_row, 2).objectName() == "StaffingV2FilledChip"
     assert table.cellWidget(need_now_row, 5).objectName() == "StaffingV2NeutralChip"
     assert table.cellWidget(filled_row, 5).objectName() == "StaffingV2ComingChip"
+    for chip in (
+        table.cellWidget(need_now_row, 2),
+        table.cellWidget(filled_row, 2),
+        table.cellWidget(need_now_row, 5),
+        table.cellWidget(filled_row, 5),
+    ):
+        assert chip.findChild(qt_widgets.QLabel, "StaffingV2ChipIcon") is not None
+        assert chip.findChild(qt_widgets.QLabel, "StaffingV2ChipText") is not None
     assert table.item(need_now_row, 2) is None
     assert table.item(filled_row, 5) is None
     need_now_action = table.cellWidget(need_now_row, table.columnCount() - 1)
