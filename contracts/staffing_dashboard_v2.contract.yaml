@@ -2,8 +2,8 @@ module:
   name: staffing_dashboard_v2
   language: python
   path: src/staffing_dashboard_v2.py
-  version: 0.13.2
-  description: Parallel PySide Staffing v2 dashboard page module for the mockup-driven rewrite; renders a standalone mockup-style staffing shell/sidebar with active nav state, main Staffing Dashboard filters, compact summary chips, custom classroom list rows with status dots and chevrons, position table with status and permit chips, dashed Add Position drop zone, status key, service-backed Add Position dialog, Classroom Management sub-dashboard with side filter drawer, Staffing Validation sub-dashboard with filter drawer, read-only position detail drawer, v2 Mark Coming / Mark Filled dialogs, v2 Manage Filled chooser, v2 Update Permit dialog, v2 Mark Need Now dialog, People / Employee Management sub-dashboard, and Assignment History sub-dashboard while the legacy Staffing page remains available.
+  version: 0.13.3
+  description: Parallel PySide Staffing v2 dashboard page module for the mockup-driven rewrite; renders a standalone mockup-style staffing shell/sidebar with active nav state, main Staffing Dashboard filters, compact summary chips, custom classroom list rows with status dots and chevrons, position table with status and permit chips plus menu-style row actions, dashed Add Position drop zone, status key, service-backed Add Position dialog, Classroom Management sub-dashboard with side filter drawer, Staffing Validation sub-dashboard with filter drawer, read-only position detail drawer, v2 Mark Coming / Mark Filled dialogs, v2 Manage Filled chooser, v2 Update Permit dialog, v2 Mark Need Now dialog, People / Employee Management sub-dashboard, and Assignment History sub-dashboard while the legacy Staffing page remains available.
 functions:
 - name: _classroom_priority_status
   description: Return the Classroom Management priority label for a group of staffing metric rows, preferring Need Now, Replace, Coming, Filled / Healthy, then Don't Need.
@@ -71,9 +71,20 @@ functions:
     type: str
   exceptions: []
   side_effects: none
+- name: _action_menu_specs
+  description: Return display labels and action keys for the Staffing v2 positions-table Next Action menu for a given assignment status.
+  locked: false
+  inputs:
+    status:
+      type: str
+      required: true
+  returns:
+    type: list[tuple[str, str]]
+  exceptions: []
+  side_effects: none
 classes:
 - name: StaffingDashboardV2Page
-  description: Builds and refreshes the parallel Staffing v2 PySide shell/sidebar, dashboard, compact summary chips, custom classroom list item widgets, chip-based positions table, service-backed Add Position dialog and drop zone, Classroom Management dashboard and filter drawer, Staffing Validation dashboard and filter drawer, read-only position detail drawer, Mark Coming / Mark Filled workflows, Manage Filled workflow chooser, Update Permit workflow, Mark Need Now replacement-clear workflow, People / Employee Management dashboard, and Assignment History dashboard from StaffingService metrics and StaffingStore data while keeping staffing mutations in StaffingService.
+  description: Builds and refreshes the parallel Staffing v2 PySide shell/sidebar, dashboard, compact summary chips, custom classroom list item widgets, chip-based positions table with menu-style row actions, service-backed Add Position dialog and drop zone, Classroom Management dashboard and filter drawer, Staffing Validation dashboard and filter drawer, read-only position detail drawer, Mark Coming / Mark Filled workflows, Manage Filled workflow chooser, Update Permit workflow, Mark Need Now replacement-clear workflow, People / Employee Management dashboard, and Assignment History dashboard from StaffingService metrics and StaffingStore data while keeping staffing mutations in StaffingService.
   locked: false
   methods:
   - name: __init__
@@ -363,6 +374,21 @@ classes:
       type: None
     exceptions: []
     side_effects: Reads one staffing assignment, rebuilds the visible Staffing v2 read-only Position Detail drawer, and wires drawer action buttons to supplied service-backed callbacks without mutating staffing data during render.
+  - name: _wire_menu_action
+    inputs:
+      action:
+        type: QAction
+        required: true
+      action_key:
+        type: str
+        required: true
+      assignment_id:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Wires a Staffing v2 positions-table menu action to an implemented dialog/drawer workflow, supplied callback, or disables unsupported actions without mutating data during render.
   - name: _open_add_position_dialog
     inputs: {}
     returns:

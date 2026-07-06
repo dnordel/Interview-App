@@ -247,6 +247,28 @@ QPushButton#StaffingV2AddPositionSubmit {
     padding: 8px 14px;
     font-weight: 700;
 }
+QToolButton#StaffingV2ActionButton {
+    background-color: #ffffff;
+    color: #0f172a;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-weight: 700;
+}
+QMenu#StaffingV2ActionMenu {
+    background-color: #ffffff;
+    color: #0f172a;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 6px;
+}
+QMenu#StaffingV2ActionMenu::item {
+    padding: 6px 18px;
+}
+QMenu#StaffingV2ActionMenu::item:selected {
+    background-color: #eff6ff;
+    color: #2563eb;
+}
 QPushButton#StaffingV2ComingSelectPerson,
 QPushButton#StaffingV2ComingSaveDraft,
 QPushButton#StaffingV2ComingCancel,
@@ -2087,12 +2109,47 @@ class StaffingDashboardV2Page:
 
     def _action_button(self, row: StaffingMetricRow) -> Any:
         action_key, label = _primary_action(row.status)
-        button = self.QtWidgets.QPushButton(label)
+        button = self.QtWidgets.QToolButton()
+        button.setText(label)
         button.setObjectName("StaffingV2ActionButton")
         button.setProperty("staffingAssignmentId", row.assignment_id)
         button.setProperty("staffingAction", action_key)
+        button.setMinimumHeight(34)
+        button.setPopupMode(self.QtWidgets.QToolButton.ToolButtonPopupMode.MenuButtonPopup)
+        menu = self.QtWidgets.QMenu(button)
+        menu.setObjectName("StaffingV2ActionMenu")
+        for menu_label, menu_action_key in _action_menu_specs(row.status):
+            action = menu.addAction(menu_label)
+            action.setData(menu_action_key)
+            self._wire_menu_action(action, menu_action_key, row.assignment_id)
+        button.setMenu(menu)
         self._wire_action_button(button, action_key, row.assignment_id)
         return button
+
+    def _wire_menu_action(self, action: Any, action_key: str, assignment_id: int) -> None:
+        if action_key == "mark_coming":
+            action.triggered.connect(lambda _checked=False, item=assignment_id: self._open_mark_coming_dialog(item))
+            return
+        if action_key == "mark_filled":
+            action.triggered.connect(lambda _checked=False, item=assignment_id: self._open_mark_filled_dialog(item))
+            return
+        if action_key == "manage_filled":
+            action.triggered.connect(lambda _checked=False, item=assignment_id: self._open_manage_filled_dialog(item))
+            return
+        if action_key == "update_permit":
+            action.triggered.connect(lambda _checked=False, item=assignment_id: self._open_update_permit_dialog(item))
+            return
+        if action_key == "clear_replacement":
+            action.triggered.connect(lambda _checked=False, item=assignment_id: self._open_mark_need_now_dialog(item))
+            return
+        if action_key == "view_details":
+            action.triggered.connect(lambda _checked=False, item=assignment_id: self._show_position_drawer(item))
+            return
+        callback = self.actions.get(action_key)
+        if callback is None:
+            action.setEnabled(False)
+            return
+        action.triggered.connect(lambda _checked=False, item=assignment_id, cb=callback: cb(item))
 
     def _wire_action_button(self, button: Any, action_key: str, assignment_id: int) -> None:
         if action_key == "mark_coming":
@@ -3416,6 +3473,36 @@ def _primary_action(status: str) -> tuple[str, str]:
         "filled": ("manage_filled", "Manage Filled"),
         "replace": ("clear_replacement", "Mark Need Now"),
     }.get(status, ("view_details", "View"))
+
+
+def _action_menu_specs(status: str) -> list[tuple[str, str]]:
+    return {
+        "need_now": [
+            ("Mark Coming", "mark_coming"),
+            ("Mark Don't Need", "mark_dont_need"),
+            ("View Details", "view_details"),
+        ],
+        "coming": [
+            ("Mark Filled", "mark_filled"),
+            ("Revert Coming", "revert_coming"),
+            ("View Details", "view_details"),
+        ],
+        "filled": [
+            ("Manage Filled", "manage_filled"),
+            ("Replace", "manage_filled"),
+            ("Update Permit", "update_permit"),
+            ("View Details", "view_details"),
+        ],
+        "replace": [
+            ("Mark Need Now", "clear_replacement"),
+            ("Update Final Day", "view_details"),
+            ("View Details", "view_details"),
+        ],
+        "dont_need_now": [
+            ("Mark Need Now", "open_position"),
+            ("View Details", "view_details"),
+        ],
+    }.get(status, [("View Details", "view_details")])
 
 
 def _status_color(status: str) -> str:

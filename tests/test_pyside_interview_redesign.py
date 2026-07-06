@@ -8686,7 +8686,14 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
     assert table.cellWidget(filled_row, 5).objectName() == "StaffingV2ComingChip"
     assert table.item(need_now_row, 2) is None
     assert table.item(filled_row, 5) is None
-    assert table.cellWidget(need_now_row, table.columnCount() - 1).text() == "Mark Coming"
+    need_now_action = table.cellWidget(need_now_row, table.columnCount() - 1)
+    filled_action = table.cellWidget(filled_row, table.columnCount() - 1)
+    assert need_now_action.text() == "Mark Coming"
+    assert need_now_action.menu() is not None
+    assert [action.text() for action in need_now_action.menu().actions()] == ["Mark Coming", "Mark Don't Need", "View Details"]
+    assert filled_action.text() == "Manage Filled"
+    assert filled_action.menu() is not None
+    assert [action.text() for action in filled_action.menu().actions()] == ["Manage Filled", "Replace", "Update Permit", "View Details"]
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2AddPositionButton").text() == "+  Add Position"
     assert page.findChild(qt_widgets.QFrame, "StaffingV2AddPositionDropZone") is not None
     assert page.findChild(qt_widgets.QLabel, "StaffingV2PriorityChip") is not None
