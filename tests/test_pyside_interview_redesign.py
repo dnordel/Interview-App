@@ -8623,16 +8623,33 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
     assert "Launch Pad Learning" in sidebar_text
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2DashboardNavButton").text() == "Staffing Dashboard"
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2DashboardNavButton").property("staffingV2ActiveNav") is True
+    assert page.findChild(qt_widgets.QPushButton, "StaffingV2HomeNavButton").text() == "Dashboard"
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleNavButton").text() == "People"
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2HistoryNavButton").text() == "Assignment History"
+    assert page.findChild(qt_widgets.QPushButton, "StaffingV2AnalyticsNavButton").text() == "Analytics"
+    assert page.findChild(qt_widgets.QPushButton, "StaffingV2NotificationsNavButton").text() == "Notifications"
+    assert page.findChild(qt_widgets.QPushButton, "StaffingV2IntegrationsNavButton").text() == "Integrations"
     for object_name in (
+        "StaffingV2HomeNavButton",
         "StaffingV2DashboardNavButton",
         "StaffingV2ClassroomsNavButton",
         "StaffingV2PeopleNavButton",
         "StaffingV2HistoryNavButton",
+        "StaffingV2AnalyticsNavButton",
+        "StaffingV2NotificationsNavButton",
         "StaffingV2ValidationNavButton",
+        "StaffingV2IntegrationsNavButton",
+        "StaffingV2SettingsNavButton",
     ):
         assert not page.findChild(qt_widgets.QPushButton, object_name).icon().isNull()
+    for object_name in (
+        "StaffingV2HomeNavButton",
+        "StaffingV2AnalyticsNavButton",
+        "StaffingV2NotificationsNavButton",
+        "StaffingV2IntegrationsNavButton",
+        "StaffingV2SettingsNavButton",
+    ):
+        assert not page.findChild(qt_widgets.QPushButton, object_name).isEnabled()
     assert page.findChild(qt_widgets.QFrame, "StaffingV2TopTabBar") is None
     header_top_row = page.findChild(qt_widgets.QFrame, "StaffingV2DashboardHeaderTopRow")
     header_action_row = page.findChild(qt_widgets.QFrame, "StaffingV2DashboardHeaderActionRow")

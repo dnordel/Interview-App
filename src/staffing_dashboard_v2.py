@@ -37,10 +37,14 @@ QLabel#StaffingV2SidebarSection {
     font-weight: 800;
 }
 QPushButton#StaffingV2DashboardNavButton,
+QPushButton#StaffingV2HomeNavButton,
 QPushButton#StaffingV2ClassroomsNavButton,
 QPushButton#StaffingV2PeopleNavButton,
 QPushButton#StaffingV2HistoryNavButton,
+QPushButton#StaffingV2AnalyticsNavButton,
+QPushButton#StaffingV2NotificationsNavButton,
 QPushButton#StaffingV2ValidationNavButton,
+QPushButton#StaffingV2IntegrationsNavButton,
 QPushButton#StaffingV2SettingsNavButton {
     background-color: transparent;
     color: #334155;
@@ -49,6 +53,13 @@ QPushButton#StaffingV2SettingsNavButton {
     padding: 10px 12px;
     text-align: left;
     font-weight: 600;
+}
+QPushButton#StaffingV2HomeNavButton:disabled,
+QPushButton#StaffingV2AnalyticsNavButton:disabled,
+QPushButton#StaffingV2NotificationsNavButton:disabled,
+QPushButton#StaffingV2IntegrationsNavButton:disabled,
+QPushButton#StaffingV2SettingsNavButton:disabled {
+    color: #64748b;
 }
 QPushButton[staffingV2ActiveNav="true"] {
     background-color: #eaf2ff;
@@ -489,6 +500,8 @@ class StaffingDashboardV2Page:
         sidebar_layout.addWidget(self._label("Launch Pad Learning", "StaffingV2Brand"))
         sidebar_layout.addSpacing(18)
         sidebar_layout.addWidget(self._label("STAFFING", "StaffingV2SidebarSection"))
+        self.home_nav_button = self._sidebar_button("StaffingV2HomeNavButton", "Dashboard", "dashboard")
+        self.home_nav_button.setEnabled(False)
         self.dashboard_nav_button = self._sidebar_button("StaffingV2DashboardNavButton", "Staffing Dashboard", "dashboard")
         self.dashboard_nav_button.clicked.connect(self._show_dashboard_view)
         self.classrooms_nav_button = self._sidebar_button("StaffingV2ClassroomsNavButton", "Classrooms", "classrooms")
@@ -498,6 +511,7 @@ class StaffingDashboardV2Page:
         self.history_nav_button = self._sidebar_button("StaffingV2HistoryNavButton", "Assignment History", "history")
         self.history_nav_button.clicked.connect(self._show_history_view)
         for button in (
+            self.home_nav_button,
             self.dashboard_nav_button,
             self.classrooms_nav_button,
             self.people_nav_button,
@@ -505,12 +519,22 @@ class StaffingDashboardV2Page:
         ):
             sidebar_layout.addWidget(button)
         sidebar_layout.addSpacing(16)
+        self.analytics_nav_button = self._sidebar_button("StaffingV2AnalyticsNavButton", "Analytics", "analytics")
+        self.analytics_nav_button.setEnabled(False)
+        self.notifications_nav_button = self._sidebar_button("StaffingV2NotificationsNavButton", "Notifications", "notifications")
+        self.notifications_nav_button.setEnabled(False)
+        sidebar_layout.addWidget(self.analytics_nav_button)
+        sidebar_layout.addWidget(self.notifications_nav_button)
+        sidebar_layout.addSpacing(16)
         sidebar_layout.addWidget(self._label("SYSTEM", "StaffingV2SidebarSection"))
         self.validation_nav_button = self._sidebar_button("StaffingV2ValidationNavButton", "Validation", "validation")
         self.validation_nav_button.clicked.connect(self._show_validation_view)
+        self.integrations_nav_button = self._sidebar_button("StaffingV2IntegrationsNavButton", "Integrations", "integrations")
+        self.integrations_nav_button.setEnabled(False)
         self.settings_nav_button = self._sidebar_button("StaffingV2SettingsNavButton", "Settings", "settings")
         self.settings_nav_button.setEnabled(False)
         sidebar_layout.addWidget(self.validation_nav_button)
+        sidebar_layout.addWidget(self.integrations_nav_button)
         sidebar_layout.addWidget(self.settings_nav_button)
         sidebar_layout.addStretch(1)
         env_card, env_layout = self._panel("StaffingV2SidebarCard")
@@ -686,11 +710,14 @@ class StaffingDashboardV2Page:
         pixmaps = self.QtWidgets.QStyle.StandardPixmap
         mapping = {
             "add": pixmaps.SP_FileDialogNewFolder,
+            "analytics": pixmaps.SP_FileDialogInfoView,
             "classrooms": pixmaps.SP_DirHomeIcon,
             "dashboard": pixmaps.SP_ComputerIcon,
             "export": pixmaps.SP_DialogSaveButton,
             "history": pixmaps.SP_BrowserReload,
             "info": pixmaps.SP_MessageBoxInformation,
+            "integrations": pixmaps.SP_DriveNetIcon,
+            "notifications": pixmaps.SP_MessageBoxInformation,
             "people": pixmaps.SP_FileDialogDetailedView,
             "search": pixmaps.SP_FileDialogContentsView,
             "settings": pixmaps.SP_FileDialogDetailedView,
@@ -705,11 +732,15 @@ class StaffingDashboardV2Page:
 
     def _set_active_nav(self, active_button: Any) -> None:
         for button in (
+            self.home_nav_button,
             self.dashboard_nav_button,
             self.classrooms_nav_button,
             self.people_nav_button,
             self.history_nav_button,
+            self.analytics_nav_button,
+            self.notifications_nav_button,
             self.validation_nav_button,
+            self.integrations_nav_button,
             self.settings_nav_button,
         ):
             is_active = button is active_button
