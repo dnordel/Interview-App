@@ -9799,6 +9799,23 @@ def test_pyside_staffing_v2_people_dashboard_renders_employee_management_from_db
     assert "Harmony 1 - Teacher 1" in detail_text
     assert "Employment Status" in detail_text
     assert "Additional Information" in detail_text
+    people_tabs = page.findChild(qt_widgets.QFrame, "StaffingV2PeopleDetailTabs")
+    assert people_tabs is not None
+    overview_tab = page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleOverviewTab")
+    assignments_tab = page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleAssignmentsTab")
+    history_tab = page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleHistoryTab")
+    notes_tab = page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleNotesTab")
+    documents_tab = page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleDocumentsTab")
+    assert [tab.text() for tab in [overview_tab, assignments_tab, history_tab, notes_tab, documents_tab]] == [
+        "Overview",
+        "Assignments",
+        "History",
+        "Notes",
+        "Documents",
+    ]
+    assert overview_tab.property("staffingV2ActivePeopleTab") is True
+    for inactive_tab in [assignments_tab, history_tab, notes_tab, documents_tab]:
+        assert inactive_tab.property("staffingV2ActivePeopleTab") is False
     deactivate_button = page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleDeactivateButton")
     assert deactivate_button.text() == "Deactivate Employee"
     assert not deactivate_button.icon().isNull()

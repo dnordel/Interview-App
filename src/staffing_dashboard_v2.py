@@ -132,6 +132,23 @@ QPushButton[staffingV2ActiveValidationTab="true"] {
     color: #2563eb;
     border-bottom: 2px solid #2563eb;
 }
+QPushButton#StaffingV2PeopleOverviewTab,
+QPushButton#StaffingV2PeopleAssignmentsTab,
+QPushButton#StaffingV2PeopleHistoryTab,
+QPushButton#StaffingV2PeopleNotesTab,
+QPushButton#StaffingV2PeopleDocumentsTab {
+    background-color: transparent;
+    color: #475569;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0px;
+    padding: 8px 10px;
+    font-weight: 700;
+}
+QPushButton[staffingV2ActivePeopleTab="true"] {
+    color: #2563eb;
+    border-bottom: 2px solid #2563eb;
+}
 QFrame#StaffingV2SidebarCard {
     background-color: #ffffff;
     border: 1px solid #e2e8f0;
@@ -1909,10 +1926,25 @@ class StaffingDashboardV2Page:
         top.addWidget(self._chip("Active" if person.active else "Inactive", "filled" if person.active else "dont_need_now"))
         self.people_detail_layout.addLayout(top)
 
-        tabs = self.QtWidgets.QHBoxLayout()
-        for text in ["Overview", "Assignments", "History", "Notes", "Documents"]:
-            tabs.addWidget(self._label(text, "StaffingV2Muted"))
-        self.people_detail_layout.addLayout(tabs)
+        tabs = self.QtWidgets.QFrame()
+        tabs.setObjectName("StaffingV2PeopleDetailTabs")
+        tabs_layout = self.QtWidgets.QHBoxLayout(tabs)
+        tabs_layout.setContentsMargins(0, 6, 0, 6)
+        tabs_layout.setSpacing(8)
+        tab_specs = [
+            ("StaffingV2PeopleOverviewTab", "Overview", True),
+            ("StaffingV2PeopleAssignmentsTab", "Assignments", False),
+            ("StaffingV2PeopleHistoryTab", "History", False),
+            ("StaffingV2PeopleNotesTab", "Notes", False),
+            ("StaffingV2PeopleDocumentsTab", "Documents", False),
+        ]
+        for object_name, text, is_active in tab_specs:
+            tab = self.QtWidgets.QPushButton(text)
+            tab.setObjectName(object_name)
+            tab.setProperty("staffingV2ActivePeopleTab", is_active)
+            tabs_layout.addWidget(tab)
+        tabs_layout.addStretch(1)
+        self.people_detail_layout.addWidget(tabs)
 
         info, info_layout = self._panel("StaffingV2PeopleDetailCard")
         info_layout.addWidget(self._label("Employee Information", "StaffingV2SectionTitle"))

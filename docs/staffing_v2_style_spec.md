@@ -286,6 +286,9 @@ Shell:
   - initials/avatar + name/role/contact
   - Active chip
   - tabs: Overview, Assignments, History, Notes, Documents
+    - Overview active by default with blue text and 2 px blue underline.
+    - Inactive tabs are transparent slate text with no filled button chrome.
+    - PySide implementation marks tabs with `staffingV2ActivePeopleTab` for QSS and tests.
   - Employee Information
   - Current Assignment
   - Employment Status
