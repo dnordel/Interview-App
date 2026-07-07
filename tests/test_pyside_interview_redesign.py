@@ -1042,6 +1042,8 @@ def test_pyside_window_runs_due_notification_schedule_on_startup(tmp_path: Path,
     )
 
     window = pyside_interview_app.PySideInterviewWindow(model)
+    window._schedule_startup_notifications()
+    app.processEvents()
 
     assert runs == ["ran"]
     window.window.close()
@@ -4066,8 +4068,8 @@ def test_pyside_initial_window_fits_available_screen_after_display_scaling(tmp_p
 
     assert window.window.width() <= max(640, available.width() - 40)
     assert window.window.height() <= max(480, available.height() - 40)
-    assert window.window.maximumWidth() <= max(640, available.width())
-    assert window.window.maximumHeight() <= max(480, available.height())
+    assert window.window.maximumWidth() == 16777215
+    assert window.window.maximumHeight() == 16777215
     assert window.window.isMaximized() is False
     assert all(button.text() != "Switch to Tk UI" for button in window.window.findChildren(qt_widgets.QPushButton))
     window.window.close()
@@ -8343,6 +8345,210 @@ def test_pyside_window_uses_native_title_minimize_and_maximize_controls() -> Non
     assert flags & FakeWindowType.WindowMaximizeButtonHint
     assert flags & FakeWindowType.WindowCloseButtonHint
     assert not flags & FakeWindowType.FramelessWindowHint
+
+
+def test_pyside_window_show_opens_main_window_maximized() -> None:
+    window = pyside_interview_app.PySideInterviewWindow.__new__(pyside_interview_app.PySideInterviewWindow)
+    calls: list[str] = []
+
+    class FakeWindow:
+        def showMaximized(self) -> None:
+            calls.append("showMaximized")
+
+    window.window = FakeWindow()
+    window._fit_window_to_available_screen = lambda: calls.append("fit")
+    window._schedule_startup_notifications = lambda: calls.append("schedule_notifications")
+
+    window.show()
+
+    assert calls == ["fit", "showMaximized", "schedule_notifications"]
+
+
+def test_pyside_window_schedules_startup_notifications_once_after_show() -> None:
+    window = pyside_interview_app.PySideInterviewWindow.__new__(pyside_interview_app.PySideInterviewWindow)
+    calls: list[str] = []
+
+    class FakeTimer:
+        @staticmethod
+        def singleShot(delay_ms: int, callback) -> None:
+            calls.append(f"timer:{delay_ms}")
+            callback()
+
+    class FakeQtCore:
+        QTimer = FakeTimer
+
+    window.QtCore = FakeQtCore
+    window._startup_notifications_scheduled = False
+    window._run_due_notifications_safely = lambda: calls.append("notifications")
+
+    window._schedule_startup_notifications()
+    window._schedule_startup_notifications()
+
+    assert calls == ["timer:0", "notifications"]
+
+
+def test_pyside_window_can_defer_secondary_pages_until_navigation(tmp_path: Path, monkeypatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    built: list[str] = []
+
+    def page(name: str):
+        def build(self):
+            built.append(name)
+            widget = qt_widgets.QWidget()
+            widget.setObjectName(f"{name}Page")
+            return widget
+
+        return build
+
+    monkeypatch.setattr(pyside_interview_app.PySideInterviewWindow, "_interviews_page", page("Interviews"))
+    monkeypatch.setattr(pyside_interview_app.PySideInterviewWindow, "_candidates_page", page("Candidates"))
+    monkeypatch.setattr(pyside_interview_app.PySideInterviewWindow, "_admin_page", page("Admin"))
+    monkeypatch.setattr(pyside_interview_app.PySideInterviewWindow, "_run_due_notifications_safely", lambda self: None)
+    model = pyside_interview_app.InterviewRedesignModel(
+        app_title="Test",
+        navigation=["Interviews", "Candidates", "Admin"],
+        setup_steps=[],
+        school_options=[],
+        track_labels={},
+        readiness_checks=[],
+        home=pyside_interview_app.HomeModel(
+            primary_action="Start",
+            continue_action="Continue",
+            admin_visible_on_home=False,
+            recent_interviews=[],
+            history_rows=[],
+        ),
+        flows={},
+        rubric={},
+        history_path=tmp_path / "history.json",
+    )
+
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+
+    assert built == ["Interviews"]
+    assert window.stack.count() == 3
+    assert window.stack.widget(0).objectName() == "InterviewsPage"
+
+    window._select_main_nav_row(2)
+    window._select_main_nav_row(2)
+
+    assert built == ["Interviews", "Admin"]
+    assert window.stack.currentWidget().objectName() == "AdminPage"
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_window_fit_keeps_maximized_state_intact() -> None:
+    window = pyside_interview_app.PySideInterviewWindow.__new__(pyside_interview_app.PySideInterviewWindow)
+
+    class FakeWindow:
+        def __init__(self) -> None:
+            self.maximum_size_calls = 0
+            self.resize_calls = 0
+            self.move_calls = 0
+
+        def isMaximized(self) -> bool:
+            return True
+
+        def isFullScreen(self) -> bool:
+            return False
+
+        def screen(self):
+            raise AssertionError("maximized windows should not be clamped")
+
+        def setMaximumSize(self, *_args) -> None:
+            self.maximum_size_calls += 1
+
+        def resize(self, *_args) -> None:
+            self.resize_calls += 1
+
+        def move(self, *_args) -> None:
+            self.move_calls += 1
+
+    fake_window = FakeWindow()
+    window.window = fake_window
+
+    window._fit_window_to_available_screen()
+
+    assert fake_window.maximum_size_calls == 0
+    assert fake_window.resize_calls == 0
+    assert fake_window.move_calls == 0
+
+
+def test_pyside_window_fit_does_not_cap_normal_window_maximum_size() -> None:
+    window = pyside_interview_app.PySideInterviewWindow.__new__(pyside_interview_app.PySideInterviewWindow)
+
+    class FakeRect:
+        def __init__(self, width: int, height: int) -> None:
+            self._width = width
+            self._height = height
+
+        def width(self) -> int:
+            return self._width
+
+        def height(self) -> int:
+            return self._height
+
+        def x(self) -> int:
+            return 0
+
+        def y(self) -> int:
+            return 0
+
+        def right(self) -> int:
+            return self._width - 1
+
+        def bottom(self) -> int:
+            return self._height - 1
+
+    class FakeScreen:
+        def availableGeometry(self) -> FakeRect:
+            return FakeRect(1200, 800)
+
+    class FakeWindow:
+        def __init__(self) -> None:
+            self.maximum_size_calls = 0
+            self.resize_calls = 0
+            self.move_calls = 0
+            self._geometry = FakeRect(1180, 760)
+
+        def isMaximized(self) -> bool:
+            return False
+
+        def isFullScreen(self) -> bool:
+            return False
+
+        def screen(self) -> FakeScreen:
+            return FakeScreen()
+
+        def setMaximumSize(self, *_args) -> None:
+            self.maximum_size_calls += 1
+
+        def width(self) -> int:
+            return 1180
+
+        def height(self) -> int:
+            return 760
+
+        def resize(self, *_args) -> None:
+            self.resize_calls += 1
+
+        def geometry(self) -> FakeRect:
+            return self._geometry
+
+        def move(self, *_args) -> None:
+            self.move_calls += 1
+
+    fake_window = FakeWindow()
+    window.window = fake_window
+
+    window._fit_window_to_available_screen()
+
+    assert fake_window.maximum_size_calls == 0
+    assert fake_window.resize_calls == 0
+    assert fake_window.move_calls == 1
 
 
 def test_pyside_history_generate_offer_button_prefills_offer_wizard(tmp_path: Path) -> None:

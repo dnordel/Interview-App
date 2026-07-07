@@ -2,7 +2,7 @@ module:
   name: setup_and_run
   language: powershell
   path: setup_and_run.ps1
-  version: 1.10.0
+  version: 1.10.1
   description: Windows launcher bootstrap that checks prerequisites, installs Python
     3.11 when needed, provisions a per-user virtual environment that can reuse system
     site packages under LOCALAPPDATA instead of the repository folder, installs
@@ -73,7 +73,9 @@ functions:
   returns:
     type: pscustomobject
   exceptions: []
-  side_effects: may mutate the provided configuration object in memory
+  side_effects: may mutate the provided configuration object in memory, including
+    dependency fingerprints used to skip unchanged dependency installs on healthy
+    cached environments
 - name: Resolve-PreferredInterviewAppFile
   description: Resolve the selected UI mode to the matching interview app entrypoint,
     defaulting invalid or missing modes to the Tk app.
@@ -451,10 +453,12 @@ functions:
   side_effects: reads requirements.txt metadata and contents
 - name: Ensure-VenvAndDeps
   description: Create or repair the per-user virtual environment under LOCALAPPDATA
-    with system site packages enabled, fingerprint requirements.txt for setup
-    versioning, install requirements, add optional NVIDIA GPU dependencies only when
-    supported, install OpenVINO GenAI dependencies on Intel GPU systems, and remove
-    NVIDIA-only Python wheels on non-NVIDIA systems.
+    with system site packages enabled, fingerprint requirements files for setup
+    versioning, skip unchanged dependency installs on healthy cached environments,
+    install base requirements only when changed or after venv recreation, add optional
+    NVIDIA GPU dependencies only when supported and changed, install OpenVINO GenAI
+    dependencies on Intel GPU systems only when changed, and remove NVIDIA-only Python
+    wheels on non-NVIDIA systems.
   locked: false
   inputs:
     PyExe:
@@ -465,7 +469,8 @@ functions:
   exceptions:
   - Exception
   side_effects: creates or recreates the per-user virtual environment, may install
-    pip packages for unsatisfied requirements, and writes launcher log entries
+    pip packages for unsatisfied or changed requirements, updates dependency fingerprints
+    in setup_config.json, and writes launcher log entries
 - name: Ensure-RequiredDepsInstalled
   description: Validate required Python modules inside the virtual environment and
     install missing packages individually, including PySide6 for the redesigned GUI.

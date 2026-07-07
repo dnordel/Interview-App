@@ -168,6 +168,20 @@ def test_setup_and_run_versions_requirements_and_checks_pyside_dependency() -> N
     assert '@{ Package = "PySide6"; Module = "PySide6" }' in script_text
 
 
+def test_setup_and_run_skips_dependency_installs_when_fingerprints_are_unchanged() -> None:
+    script_text = SETUP_SCRIPT.read_text(encoding="utf-8")
+    contract = yaml.safe_load(SETUP_CONTRACT.read_text(encoding="utf-8"))
+    descriptions = " ".join(item["description"] for item in contract["functions"])
+
+    assert "Requirements fingerprint unchanged and venv healthy; skipping base dependency install." in script_text
+    assert "GPU requirements fingerprint unchanged and venv healthy; skipping GPU dependency install." in script_text
+    assert "OpenVINO requirements fingerprint unchanged and venv healthy; skipping OpenVINO dependency install." in script_text
+    assert "$baseDepsNeedInstall = $needRecreate -or ($cfg.Tools.RequirementsFingerprint -ne $requirementsFingerprint)" in script_text
+    assert "$gpuDepsNeedInstall = $needRecreate -or ($cfg.Tools.GpuRequirementsFingerprint -ne $gpuRequirementsFingerprint)" in script_text
+    assert "$openVinoDepsNeedInstall = $needRecreate -or ($cfg.Tools.OpenVinoRequirementsFingerprint -ne $openVinoRequirementsFingerprint)" in script_text
+    assert "skip unchanged dependency installs on healthy cached environments" in descriptions
+
+
 def test_setup_and_run_keeps_nvidia_packages_out_of_base_requirements() -> None:
     requirements_text = Path("requirements.txt").read_text(encoding="utf-8").lower()
     gpu_requirements_text = Path("requirements-gpu.txt").read_text(encoding="utf-8").lower()

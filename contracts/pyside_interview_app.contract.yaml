@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.57.3
+  version: 1.57.5
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, resizable splitter sections, school/classroom selectors, wider color-coded classroom list with per-classroom status-count overview, metric cards, positions table, fully editable right-side assignment/person details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics, parallel Staffing v2 navigation/page shell with its own mockup-style staffing sidebar, People / Employee Management and Assignment History sub-dashboards for the mockup-driven rewrite backed by staffing_dashboard_v2 while the legacy Staffing page remains available,
@@ -251,7 +251,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: launch_pyside_interview_app
-  description: Launch the PySide6 redesigned desktop shell using the supplied model or current repository configuration, optionally in director staffing-only mode.
+  description: Launch the PySide6 redesigned desktop shell using the supplied model or current repository configuration, optionally in director staffing-only mode, showing the first navigation page before secondary pages are built.
   locked: false
   inputs:
     model:
@@ -270,7 +270,8 @@ functions:
     type: int
   exceptions:
   - PySide6UnavailableError
-  side_effects: Creates a QApplication and opens the redesigned desktop window.
+  side_effects: Creates a QApplication, opens the redesigned desktop window, and
+    defers secondary page construction until navigation.
 - name: parse_args
   description: Parse PySide app CLI arguments including director staffing-only mode and optional director school filter.
   locked: false
@@ -574,15 +575,27 @@ classes:
       type: QPushButton | None
     admin_sidebar_rail:
       type: QFrame | None
+    _main_nav_page_names:
+      type: list[str]
+    _main_nav_pages_built:
+      type: set[int]
   methods:
   - name: show
-    description: Clamp the redesigned PySide6 main window to current usable screen geometry and show it.
+    description: Fit the redesigned PySide6 main window to current usable screen geometry before showing it maximized, then schedule startup notification draining after first paint.
     locked: false
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Updates QMainWindow maximum size and position, then displays the QMainWindow.
+    side_effects: Updates QMainWindow position before displaying the QMainWindow maximized and scheduling startup notification draining.
+  - name: _schedule_startup_notifications
+    description: Schedule the best-effort due-notification drain once through the Qt event loop after the main window has been shown so notification I/O does not block first paint.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Uses QTimer.singleShot to call _run_due_notifications_safely once per window.
   - name: _initial_window_size
     description: Calculate startup QMainWindow size from current primary-screen
       available logical geometry so Windows display scaling does not open the app
@@ -594,13 +607,13 @@ classes:
     exceptions: []
     side_effects: Reads QApplication primary screen geometry.
   - name: _fit_window_to_available_screen
-    description: Cap the PySide main window maximum size to the current screen's available geometry, resize it down when needed, and keep the visible window inside the taskbar-safe work area.
+    description: Resize the PySide main window down to the current screen's available geometry when needed and keep the visible non-maximized window inside the taskbar-safe work area while preserving maximized or fullscreen state and user maximization.
     locked: false
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Reads QScreen available geometry, updates QMainWindow maximum size, size, and position.
+    side_effects: Reads QMainWindow state and QScreen available geometry, then updates QMainWindow size and position only for non-maximized windows.
   - name: _apply_responsive_layout
     description: Adjust main and Admin Studio sidebar width constraints from current
       window breakpoints and live font metrics so Windows text/display scaling
@@ -3036,7 +3049,7 @@ classes:
     exceptions: []
     side_effects: Writes PySide draft JSON and changes visible tab.
   - name: _select_main_nav_row
-    description: Switch the main PySide stack to the selected navigation row and hide the legacy Interview Assistant sidebar when the temporary Staffing v2 page is active so Staffing v2 can render its own mockup-style shell.
+    description: Ensure a deferred main navigation page is built, switch the main PySide stack to the selected navigation row, and hide the legacy Interview Assistant sidebar when the temporary Staffing v2 page is active so Staffing v2 can render its own mockup-style shell.
     locked: false
     inputs:
       index:
@@ -3045,7 +3058,31 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Changes the visible stack index and toggles sidebar_panel visibility.
+    side_effects: May build and replace one deferred stack page, changes the visible
+      stack index, and toggles sidebar_panel visibility.
+  - name: _deferred_main_nav_page
+    description: Return a lightweight placeholder widget for a secondary main navigation page so launcher startup can show the first page before heavier pages are constructed.
+    locked: false
+    inputs:
+      name:
+        type: str
+        required: true
+    returns:
+      type: QWidget
+    exceptions: []
+    side_effects: Creates a lightweight QWidget placeholder.
+  - name: _ensure_main_nav_page
+    description: Build one deferred main navigation page on first use and replace its placeholder without rebuilding pages already loaded.
+    locked: false
+    inputs:
+      index:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: May construct one page widget, replace the matching stacked-widget
+      placeholder, and mark that navigation index as loaded.
   - name: _staffing_v2_page
     description: Build the Staffing v2 page from staffing_dashboard_v2 for the mockup-driven rewrite and director staffing-only launch surface, passing the shared notification rules store path and shared notification service factory into the V2 Notifications dashboard.
     locked: false

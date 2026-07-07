@@ -111,6 +111,8 @@ function Load-Config {
         LastCheckedUtc = $null
       }
       RequirementsFingerprint = $null
+      GpuRequirementsFingerprint = $null
+      OpenVinoRequirementsFingerprint = $null
     }
     App = [pscustomobject]@{
       InterviewAppPath = $null
@@ -162,6 +164,12 @@ function Ensure-ConfigShape($cfg) {
   }
   if ($cfg.Tools.PSObject.Properties.Name -notcontains "RequirementsFingerprint") {
     $cfg.Tools | Add-Member -NotePropertyName RequirementsFingerprint -NotePropertyValue $null -Force
+  }
+  if ($cfg.Tools.PSObject.Properties.Name -notcontains "GpuRequirementsFingerprint") {
+    $cfg.Tools | Add-Member -NotePropertyName GpuRequirementsFingerprint -NotePropertyValue $null -Force
+  }
+  if ($cfg.Tools.PSObject.Properties.Name -notcontains "OpenVinoRequirementsFingerprint") {
+    $cfg.Tools | Add-Member -NotePropertyName OpenVinoRequirementsFingerprint -NotePropertyValue $null -Force
   }
 
   if (-not $cfg.Tools.VBCable) {
@@ -1265,10 +1273,6 @@ function Ensure-VenvAndDeps([string]$PyExe) {
     if ($ec -ne 0) { throw "venv creation failed (exit code $ec)" }
   }
 
-  Write-Log "Upgrading pip/setuptools/wheel..."
-  $ec = Run-Proc -File $VenvPy -Args @("-m","pip","install","--upgrade","pip","setuptools","wheel")
-  if ($ec -ne 0) { throw "pip bootstrap upgrade failed (exit code $ec)" }
-
   $req = Join-Path $AppDir "requirements.txt"
   if (-not (Test-Path $req)) {
     throw "requirements.txt not found in app folder: $req"
@@ -1276,17 +1280,26 @@ function Ensure-VenvAndDeps([string]$PyExe) {
 
   $requirementsFingerprint = Get-RequirementsFingerprint -RequirementsPath $req
   $cfg = Ensure-ConfigShape (Load-Config)
-  if ($cfg.Tools.RequirementsFingerprint -ne $requirementsFingerprint) {
+  $baseDepsNeedInstall = $needRecreate -or ($cfg.Tools.RequirementsFingerprint -ne $requirementsFingerprint)
+  if ($baseDepsNeedInstall) {
     Write-Log "Requirements fingerprint changed; installing dependencies. Old=$($cfg.Tools.RequirementsFingerprint); New=$requirementsFingerprint"
-    $cfg.Tools.RequirementsFingerprint = $requirementsFingerprint
-    Save-Config $cfg
   } else {
     Write-Log "Requirements fingerprint unchanged: $requirementsFingerprint"
   }
 
-  Write-Log "Installing base dependencies from $req..."
-  $ec = Run-Proc -File $VenvPy -Args @("-m","pip","install","-r",$req)
-  if ($ec -ne 0) { throw "pip install failed (exit code $ec)" }
+  if ($baseDepsNeedInstall) {
+    Write-Log "Upgrading pip/setuptools/wheel..."
+    $ec = Run-Proc -File $VenvPy -Args @("-m","pip","install","--upgrade","pip","setuptools","wheel")
+    if ($ec -ne 0) { throw "pip bootstrap upgrade failed (exit code $ec)" }
+
+    Write-Log "Installing base dependencies from $req..."
+    $ec = Run-Proc -File $VenvPy -Args @("-m","pip","install","-r",$req)
+    if ($ec -ne 0) { throw "pip install failed (exit code $ec)" }
+    $cfg.Tools.RequirementsFingerprint = $requirementsFingerprint
+    Save-Config $cfg
+  } else {
+    Write-Log "Requirements fingerprint unchanged and venv healthy; skipping base dependency install."
+  }
 
   $gpuProfile = Get-GpuVendorProfile
   Set-GpuVendorEnvironment -Profile $gpuProfile
@@ -1297,15 +1310,23 @@ function Ensure-VenvAndDeps([string]$PyExe) {
   $gpuReq = Join-Path $AppDir "requirements-gpu.txt"
 
   if ((Test-Path $gpuReq) -and $gpuProfile.Nvidia) {
-    Write-Log "NVIDIA GPU detected. Attempting GPU dependency install..."
+    $gpuRequirementsFingerprint = Get-RequirementsFingerprint -RequirementsPath $gpuReq
+    $gpuDepsNeedInstall = $needRecreate -or ($cfg.Tools.GpuRequirementsFingerprint -ne $gpuRequirementsFingerprint)
+    if ($gpuDepsNeedInstall) {
+      Write-Log "NVIDIA GPU detected. Attempting GPU dependency install..."
 
-    $gpuEc = Run-Proc -File $VenvPy -Args @("-m","pip","install","-r",$gpuReq)
+      $gpuEc = Run-Proc -File $VenvPy -Args @("-m","pip","install","-r",$gpuReq)
 
-    if ($gpuEc -ne 0) {
-      Write-Log "GPU dependency install failed. Falling back to CPU mode."
-    }
-    else {
-      Write-Log "GPU dependencies installed successfully."
+      if ($gpuEc -ne 0) {
+        Write-Log "GPU dependency install failed. Falling back to CPU mode."
+      }
+      else {
+        Write-Log "GPU dependencies installed successfully."
+        $cfg.Tools.GpuRequirementsFingerprint = $gpuRequirementsFingerprint
+        Save-Config $cfg
+      }
+    } else {
+      Write-Log "GPU requirements fingerprint unchanged and venv healthy; skipping GPU dependency install."
     }
   } else {
     Write-Log "Skipping GPU dependency install because no NVIDIA GPU was detected."
@@ -1320,12 +1341,21 @@ function Ensure-VenvAndDeps([string]$PyExe) {
 
   $openVinoReq = Join-Path $AppDir "requirements-openvino.txt"
   if ((Test-Path $openVinoReq) -and $gpuProfile.Intel) {
-    Write-Log "Intel GPU detected. Installing OpenVINO GenAI transcription dependencies..."
-    $openVinoEc = Run-Proc -File $VenvPy -Args @("-m","pip","install","-r",$openVinoReq)
-    if ($openVinoEc -ne 0) {
-      Write-Log "OpenVINO dependency install failed. Falling back to faster-whisper CPU mode."
-      $env:INTERVIEW_WHISPER_BACKEND = "faster_whisper"
-      Remove-Item Env:\INTERVIEW_OPENVINO_WHISPER_MODEL -ErrorAction SilentlyContinue
+    $openVinoRequirementsFingerprint = Get-RequirementsFingerprint -RequirementsPath $openVinoReq
+    $openVinoDepsNeedInstall = $needRecreate -or ($cfg.Tools.OpenVinoRequirementsFingerprint -ne $openVinoRequirementsFingerprint)
+    if ($openVinoDepsNeedInstall) {
+      Write-Log "Intel GPU detected. Installing OpenVINO GenAI transcription dependencies..."
+      $openVinoEc = Run-Proc -File $VenvPy -Args @("-m","pip","install","-r",$openVinoReq)
+      if ($openVinoEc -ne 0) {
+        Write-Log "OpenVINO dependency install failed. Falling back to faster-whisper CPU mode."
+        $env:INTERVIEW_WHISPER_BACKEND = "faster_whisper"
+        Remove-Item Env:\INTERVIEW_OPENVINO_WHISPER_MODEL -ErrorAction SilentlyContinue
+      } else {
+        $cfg.Tools.OpenVinoRequirementsFingerprint = $openVinoRequirementsFingerprint
+        Save-Config $cfg
+      }
+    } else {
+      Write-Log "OpenVINO requirements fingerprint unchanged and venv healthy; skipping OpenVINO dependency install."
     }
   }
 

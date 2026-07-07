@@ -1699,7 +1699,7 @@ def _apply_styles(app: Any) -> None:
 
 
 class PySideInterviewWindow:
-    def __init__(self, model: InterviewRedesignModel) -> None:
+    def __init__(self, model: InterviewRedesignModel, *, defer_secondary_pages: bool = False) -> None:
         QtCore, QtGui, QtWidgets = _import_qt()
         self.QtCore = QtCore
         self.QtGui = QtGui
@@ -1750,6 +1750,7 @@ class PySideInterviewWindow:
         self._pyside_deepseek_progress_timer: Any | None = None
         self._history_table_widgets: dict[str, Any] = {}
         self._overwrite_next_live_timestamp = False
+        self._startup_notifications_scheduled = False
         class ResponsiveMainWindow(QtWidgets.QMainWindow):
             def resize(inner_self, *args: Any) -> None:
                 super().resize(*args)
@@ -1819,29 +1820,65 @@ class PySideInterviewWindow:
             "Onboarding": self._onboarding_page,
             "Admin": self._admin_page,
         }
-        for name in model.navigation:
+        self._main_nav_page_builders = page_builders
+        self._main_nav_page_names = list(model.navigation)
+        self._main_nav_pages_built: set[int] = set()
+        for index, name in enumerate(model.navigation):
             builder = page_builders.get(name)
             if builder is not None:
-                self.stack.addWidget(builder())
+                should_build_now = (not defer_secondary_pages) or index == 0 or self.director_staffing_mode
+                if should_build_now:
+                    self.stack.addWidget(builder())
+                    self._main_nav_pages_built.add(index)
+                else:
+                    self.stack.addWidget(self._deferred_main_nav_page(name))
         if self.director_staffing_mode:
             self.sidebar_panel.hide()
-        self._run_due_notifications_safely()
         self.sidebar.setCurrentRow(0)
         self._apply_responsive_layout()
 
     def _select_main_nav_row(self, index: int) -> None:
         if index < 0:
             return
+        self._ensure_main_nav_page(index)
         self.stack.setCurrentIndex(index)
         item = self.sidebar.item(index) if hasattr(self, "sidebar") else None
         nav_text = item.text() if item is not None else ""
         if hasattr(self, "sidebar_panel"):
             self.sidebar_panel.setVisible(nav_text != "Staffing v2")
 
+    def _deferred_main_nav_page(self, name: str) -> Any:
+        page = self.QtWidgets.QWidget()
+        page.setObjectName(f"PySideDeferred{name.replace(' ', '')}Page")
+        return page
+
+    def _ensure_main_nav_page(self, index: int) -> None:
+        if index in self._main_nav_pages_built:
+            return
+        if index < 0 or index >= len(self._main_nav_page_names):
+            return
+        name = self._main_nav_page_names[index]
+        builder = self._main_nav_page_builders.get(name)
+        if builder is None:
+            self._main_nav_pages_built.add(index)
+            return
+        previous = self.stack.widget(index)
+        replacement = builder()
+        self.stack.removeWidget(previous)
+        previous.deleteLater()
+        self.stack.insertWidget(index, replacement)
+        self._main_nav_pages_built.add(index)
+
     def show(self) -> None:
         self._fit_window_to_available_screen()
-        self.window.show()
-        self._fit_window_to_available_screen()
+        self.window.showMaximized()
+        self._schedule_startup_notifications()
+
+    def _schedule_startup_notifications(self) -> None:
+        if self._startup_notifications_scheduled:
+            return
+        self._startup_notifications_scheduled = True
+        self.QtCore.QTimer.singleShot(0, self._run_due_notifications_safely)
 
     def _initial_window_size(self) -> tuple[int, int]:
         screen = self.QtWidgets.QApplication.primaryScreen()
@@ -1857,13 +1894,14 @@ class PySideInterviewWindow:
         return (width, height)
 
     def _fit_window_to_available_screen(self) -> None:
+        if self.window.isMaximized() or self.window.isFullScreen():
+            return
         screen = self.window.screen() or self.QtWidgets.QApplication.primaryScreen()
         if screen is None:
             return
         available = screen.availableGeometry()
         max_width = max(640, int(available.width()))
         max_height = max(480, int(available.height()))
-        self.window.setMaximumSize(max_width, max_height)
         if self.window.width() > max_width or self.window.height() > max_height:
             self.window.resize(min(self.window.width(), max_width), min(self.window.height(), max_height))
         geometry = self.window.geometry()
@@ -9966,7 +10004,7 @@ def launch_pyside_interview_app(
     active_model = model or build_interview_redesign_model()
     if director_staffing:
         active_model = build_director_staffing_model(active_model, school=director_school)
-    window = PySideInterviewWindow(active_model)
+    window = PySideInterviewWindow(active_model, defer_secondary_pages=True)
     window.show()
     return app.exec()
 
