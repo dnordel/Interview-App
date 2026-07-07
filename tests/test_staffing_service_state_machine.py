@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from datetime import date
+import pytest
 
 from staffing_service import StaffingService
 from staffing_store import StaffingStore
@@ -262,6 +263,50 @@ def test_add_position_creates_need_now_assignment_and_open_history(tmp_path: Pat
     assert assignment.current_opened_date == "2026-07-06T09:00:00Z"
     assert assignment.notes == "New classroom slot."
     assert store.active_history_count(result.assignment_id) == 1
+
+
+def test_delete_position_removes_mistaken_unassigned_position(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    service = StaffingService(
+        store,
+        clock=_Clock(["2026-07-06T09:00:00Z", "2026-07-06T09:05:00Z"]),
+    )
+    result = service.add_position(
+        school="Hawthorne",
+        classroom="Office",
+        classroom_program="Support",
+        position_name="Director",
+        position_type="Director",
+        initial_status="need_now",
+    )
+
+    deleted = service.delete_position(result.assignment_id, confirmed=True)
+
+    assert deleted.assignment_id == result.assignment_id
+    assert deleted.status == "deleted"
+    assert store.list_assignments() == []
+    assert service.staffing_metrics(today=date(2026, 7, 6)).open_count == 0
+
+
+def test_delete_position_rejects_assigned_position(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    assignment_id = store.seed_assignment(
+        school="Hawthorne",
+        classroom="Office",
+        position_name="Director",
+        position_type="Director",
+        status="filled",
+        person_name="Violet",
+    )
+    service = StaffingService(store, clock=_Clock(["2026-07-06T09:00:00Z"]))
+
+    with pytest.raises(ValueError, match="assigned person"):
+        service.delete_position(assignment_id, confirmed=True)
+
+    assert store.get_assignment(assignment_id).status == "filled"
+    assert len(store.list_assignments()) == 1
 
 
 def test_locked_staffing_action_queues_and_replays_when_db_unlocks(tmp_path: Path) -> None:

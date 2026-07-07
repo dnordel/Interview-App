@@ -1768,6 +1768,7 @@ class PySideInterviewWindow:
         self.window.setWindowFlags(standard_window_control_flags(QtCore))
         self.window.setWindowTitle(model.app_title)
         self.window.resize(*self._initial_window_size())
+        self._fit_window_to_available_screen()
         self.stack = QtWidgets.QStackedWidget()
         self.sidebar = QtWidgets.QListWidget()
         self.sidebar.setObjectName("PySideSidebarNavigation")
@@ -1838,7 +1839,9 @@ class PySideInterviewWindow:
             self.sidebar_panel.setVisible(nav_text != "Staffing v2")
 
     def show(self) -> None:
+        self._fit_window_to_available_screen()
         self.window.show()
+        self._fit_window_to_available_screen()
 
     def _initial_window_size(self) -> tuple[int, int]:
         screen = self.QtWidgets.QApplication.primaryScreen()
@@ -1852,6 +1855,25 @@ class PySideInterviewWindow:
         width = min(width, max(640, available_width - 40))
         height = min(height, max(480, available_height - 40))
         return (width, height)
+
+    def _fit_window_to_available_screen(self) -> None:
+        screen = self.window.screen() or self.QtWidgets.QApplication.primaryScreen()
+        if screen is None:
+            return
+        available = screen.availableGeometry()
+        max_width = max(640, int(available.width()))
+        max_height = max(480, int(available.height()))
+        self.window.setMaximumSize(max_width, max_height)
+        if self.window.width() > max_width or self.window.height() > max_height:
+            self.window.resize(min(self.window.width(), max_width), min(self.window.height(), max_height))
+        geometry = self.window.geometry()
+        min_x = int(available.x())
+        min_y = int(available.y())
+        max_x = int(available.right()) - int(geometry.width()) + 1
+        max_y = int(available.bottom()) - int(geometry.height()) + 1
+        x = min_x if max_x < min_x else min(max(int(geometry.x()), min_x), max_x)
+        y = min_y if max_y < min_y else min(max(int(geometry.y()), min_y), max_y)
+        self.window.move(x, y)
 
     def _apply_responsive_layout(self) -> None:
         if not hasattr(self, "sidebar_panel"):

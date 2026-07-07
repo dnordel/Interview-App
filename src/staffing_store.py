@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+from dataclasses import replace
 from datetime import datetime, timezone
 import json
 import os
@@ -448,6 +449,40 @@ class StaffingStore:
                 active=False,
                 display_order=classroom.display_order,
             )
+
+    def delete_assignment(self, assignment_id: int, *, now: str) -> StaffingAssignment:
+        with self.write_connection("delete_assignment") as conn:
+            assignment = self.assignment_context(conn, int(assignment_id))
+            if assignment.person_id is not None:
+                raise ValueError("Cannot delete a position with an assigned person.")
+            if assignment.status in {"coming", "filled", "replace"}:
+                raise ValueError("Cannot delete a position with assignment history.")
+            closed_history = conn.execute(
+                """
+                SELECT COUNT(*) FROM assignment_history
+                WHERE assignment_id = ? AND closed_reason IN ('filled', 'replaced')
+                """,
+                (int(assignment_id),),
+            ).fetchone()[0]
+            if int(closed_history) > 0:
+                raise ValueError("Cannot delete a position with completed history.")
+            conn.execute(
+                """
+                UPDATE assignment_history
+                SET closed_reason = 'deleted', updated_at = ?
+                WHERE assignment_id = ? AND filled_date IS NULL AND closed_reason IS NULL
+                """,
+                (now, int(assignment_id)),
+            )
+            conn.execute(
+                """
+                UPDATE assignments
+                SET active = 0, person_id = NULL, updated_at = ?
+                WHERE id = ?
+                """,
+                (now, int(assignment_id)),
+            )
+            return replace(assignment, updated_at=now)
 
     def import_seed_file(self, seed_path: Path) -> dict[str, int]:
         data = json.loads(Path(seed_path).read_text(encoding="utf-8"))

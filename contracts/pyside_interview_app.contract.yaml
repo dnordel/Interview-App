@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.57.2
+  version: 1.57.3
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, resizable splitter sections, school/classroom selectors, wider color-coded classroom list with per-classroom status-count overview, metric cards, positions table, fully editable right-side assignment/person details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics, parallel Staffing v2 navigation/page shell with its own mockup-style staffing sidebar, People / Employee Management and Assignment History sub-dashboards for the mockup-driven rewrite backed by staffing_dashboard_v2 while the legacy Staffing page remains available,
@@ -13,7 +13,7 @@ module:
     icon-labeled Admin Dashboard cards with wired Quick Links shortcuts including edit-mode notification rule creation, inline
     clickable Validation Review blocker list, refreshed Draft Changes file summaries,
     Publishing Readiness checklist rows, and validation-gated Publish Changes action,
-    screen-aware initial window sizing, adaptive resize behavior for narrow and desktop widths, font-metric-aware responsive navigation/action sizing for Windows text/display scaling, viewport-clamped main pages that allow vertical overflow without forcing a hard page width, horizontally scrollable workspace action bars,
+    screen-aware initial window sizing and available-screen maximum-size clamping, adaptive resize behavior for narrow and desktop widths, font-metric-aware responsive navigation/action sizing for Windows text/display scaling, viewport-clamped main pages that allow vertical overflow without forcing a hard page width, horizontally scrollable workspace action bars,
     workspace action buttons, edit-gated model choice cards, no generic concept
     scaffolding panels in modern Admin Studio pages, hidden backing tables
     for legacy draft capture, dashboard panels, sectioned
@@ -576,13 +576,13 @@ classes:
       type: QFrame | None
   methods:
   - name: show
-    description: Show the redesigned PySide6 main window.
+    description: Clamp the redesigned PySide6 main window to current usable screen geometry and show it.
     locked: false
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Displays the QMainWindow.
+    side_effects: Updates QMainWindow maximum size and position, then displays the QMainWindow.
   - name: _initial_window_size
     description: Calculate startup QMainWindow size from current primary-screen
       available logical geometry so Windows display scaling does not open the app
@@ -593,6 +593,14 @@ classes:
       type: tuple[int, int]
     exceptions: []
     side_effects: Reads QApplication primary screen geometry.
+  - name: _fit_window_to_available_screen
+    description: Cap the PySide main window maximum size to the current screen's available geometry, resize it down when needed, and keep the visible window inside the taskbar-safe work area.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Reads QScreen available geometry, updates QMainWindow maximum size, size, and position.
   - name: _apply_responsive_layout
     description: Adjust main and Admin Studio sidebar width constraints from current
       window breakpoints and live font metrics so Windows text/display scaling

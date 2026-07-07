@@ -15,7 +15,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-06T23:35:09.118878+00:00'
+generated_at_utc: '2026-07-07T00:10:42.155650+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -10715,6 +10715,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._fit_window_to_available_screen
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._go_back_live_question
   kind: method
   tests:
@@ -15107,6 +15116,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/staffing_dashboard_v2.contract.yaml
+  symbol: staffing_dashboard_v2.StaffingDashboardV2Page._open_delete_position_dialog
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_v2.contract.yaml
   symbol: staffing_dashboard_v2.StaffingDashboardV2Page._open_filter_drawer
   kind: method
   tests:
@@ -16151,6 +16169,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/staffing_service.contract.yaml
+  symbol: staffing_service.StaffingService.delete_position
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_service.contract.yaml
   symbol: staffing_service.StaffingService.flush_pending_operations
   kind: method
   tests:
@@ -16341,6 +16368,15 @@ entries:
     - return_type
 - contract: contracts/staffing_store.contract.yaml
   symbol: staffing_store.StaffingStore.deactivate_classroom
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_store.contract.yaml
+  symbol: staffing_store.StaffingStore.delete_assignment
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py

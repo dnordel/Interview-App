@@ -4776,6 +4776,9 @@ class StaffingDashboardV2Page:
         if action_key == "clear_replacement":
             action.triggered.connect(lambda _checked=False, item=assignment_id: self._open_mark_need_now_dialog(item))
             return
+        if action_key == "delete_position":
+            action.triggered.connect(lambda _checked=False, item=assignment_id: self._open_delete_position_dialog(item))
+            return
         if action_key == "view_history":
             action.triggered.connect(lambda _checked=False: self._show_history_view())
             return
@@ -4803,6 +4806,9 @@ class StaffingDashboardV2Page:
             return
         if action_key == "clear_replacement":
             button.clicked.connect(lambda _checked=False, item=assignment_id: self._open_mark_need_now_dialog(item))
+            return
+        if action_key == "delete_position":
+            button.clicked.connect(lambda _checked=False, item=assignment_id: self._open_delete_position_dialog(item))
             return
         if action_key == "view_history":
             button.clicked.connect(lambda _checked=False: self._show_history_view())
@@ -4877,6 +4883,7 @@ class StaffingDashboardV2Page:
         layout.addWidget(status_card)
 
         error = self._label("", "StaffingV2NeedNowChip")
+        error.setObjectName("StaffingV2NeedNowError")
         error.hide()
         layout.addWidget(error)
         layout.addStretch(1)
@@ -4955,6 +4962,75 @@ class StaffingDashboardV2Page:
         sync_classrooms()
         sync_status_card()
         submit.clicked.connect(save)
+        dialog.show()
+
+    def _open_delete_position_dialog(self, assignment_id: int) -> None:
+        try:
+            assignment = self.store.get_assignment(assignment_id)
+        except ValueError:
+            return
+        dialog = self.QtWidgets.QDialog(self.widget)
+        dialog.setObjectName("StaffingV2DeletePositionDialog")
+        dialog.setWindowTitle("Delete Position")
+        dialog.setModal(False)
+        dialog.setStyleSheet(APP_QSS)
+        dialog.setAttribute(self.QtCore.Qt.WidgetAttribute.WA_DeleteOnClose, True)
+        dialog.resize(560, 300)
+        layout = self.QtWidgets.QVBoxLayout(dialog)
+        layout.setContentsMargins(22, 18, 22, 18)
+        layout.setSpacing(12)
+
+        header = self.QtWidgets.QHBoxLayout()
+        title_column = self.QtWidgets.QVBoxLayout()
+        title_column.addWidget(self._label("Delete Position", "StaffingV2DrawerTitle"))
+        title_column.addWidget(
+            self._label(f"{assignment.position_name} - {assignment.classroom} - {assignment.school}", "StaffingV2Muted")
+        )
+        header.addLayout(title_column, 1)
+        close = self.QtWidgets.QPushButton("")
+        close.setObjectName("StaffingV2DeletePositionClose")
+        self._set_button_icon(close, "close")
+        close.clicked.connect(dialog.close)
+        header.addWidget(close)
+        layout.addLayout(header)
+
+        summary, summary_layout = self._dialog_section("StaffingV2DialogWarning")
+        summary_layout.addWidget(self._label("This removes the position from the active staffing dashboard."))
+        summary_layout.addWidget(self._label("Only unassigned mistaken positions can be deleted."))
+        layout.addWidget(summary)
+
+        error = self._label("", "StaffingV2NeedNowChip")
+        error.setObjectName("StaffingV2DeletePositionError")
+        error.hide()
+        layout.addWidget(error)
+        layout.addStretch(1)
+
+        footer = self.QtWidgets.QHBoxLayout()
+        cancel = self.QtWidgets.QPushButton("Cancel")
+        cancel.setObjectName("StaffingV2DeletePositionCancel")
+        cancel.clicked.connect(dialog.close)
+        confirm = self.QtWidgets.QPushButton("Delete Position")
+        confirm.setObjectName("StaffingV2DeletePositionConfirm")
+        self._set_button_icon(confirm, "close")
+        footer.addStretch(1)
+        footer.addWidget(cancel)
+        footer.addWidget(confirm)
+        layout.addLayout(footer)
+
+        def delete_position() -> None:
+            confirm.setEnabled(False)
+            try:
+                self.service_factory().delete_position(assignment_id, confirmed=True)
+            except Exception as exc:  # noqa: BLE001 - show service validation error in dialog.
+                error.setText(_safe_staffing_error(exc))
+                error.show()
+                confirm.setEnabled(True)
+                return
+            dialog.close()
+            self.drawer.hide()
+            self.refresh()
+
+        confirm.clicked.connect(delete_position)
         dialog.show()
 
     def _open_mark_coming_dialog(self, assignment_id: int) -> None:
@@ -5748,15 +5824,27 @@ class StaffingDashboardV2Page:
         root.addLayout(footer)
 
         def save() -> None:
+            submit.setEnabled(False)
             if not clear_person.isChecked():
                 error.setText("Clear assigned person is required for this transition.")
                 error.show()
+                submit.setEnabled(True)
                 return
             try:
                 self.service_factory().clear_replacement(assignment_id)
             except Exception as exc:  # noqa: BLE001 - show service validation error in dialog.
+                try:
+                    current = self.store.get_assignment(assignment_id)
+                except Exception:
+                    current = None
+                if current is not None and current.status == "need_now":
+                    dialog.close()
+                    self.refresh()
+                    self._show_position_drawer(assignment_id)
+                    return
                 error.setText(_safe_staffing_error(exc))
                 error.show()
+                submit.setEnabled(True)
                 return
             dialog.close()
             self.refresh()
@@ -6144,6 +6232,7 @@ def _drawer_actions(status: str) -> list[tuple[str, str, str]]:
         return [
             ("StaffingV2DrawerMarkComing", "Mark Coming", "mark_coming"),
             ("StaffingV2DrawerMarkDontNeed", "Mark Not Needed", "mark_dont_need"),
+            ("StaffingV2DrawerDeletePosition", "Delete Position", "delete_position"),
             ("StaffingV2DrawerEditPosition", "Edit Position", "view_details"),
             ("StaffingV2DrawerViewHistory", "View Full History", "view_history"),
         ]
@@ -6170,6 +6259,7 @@ def _drawer_actions(status: str) -> list[tuple[str, str, str]]:
         ]
     return [
         ("StaffingV2DrawerMarkNeedNow", "Mark Need Now", "open_position"),
+        ("StaffingV2DrawerDeletePosition", "Delete Position", "delete_position"),
         ("StaffingV2DrawerEditPosition", "Edit Position", "view_details"),
         ("StaffingV2DrawerViewHistory", "View Full History", "view_history"),
     ]
@@ -6178,7 +6268,7 @@ def _drawer_actions(status: str) -> list[tuple[str, str, str]]:
 def _drawer_action_icon_key(action_key: str) -> str:
     if action_key in {"mark_coming", "mark_filled", "revert_coming"}:
         return "status_pending"
-    if action_key in {"mark_dont_need", "clear_replacement", "open_position"}:
+    if action_key in {"mark_dont_need", "clear_replacement", "open_position", "delete_position"}:
         return "status_need"
     if action_key in {"manage_filled", "update_permit"}:
         return "status_filled"
@@ -6681,6 +6771,7 @@ def _action_menu_specs(status: str) -> list[tuple[str, str]]:
         "need_now": [
             ("Mark Coming", "mark_coming"),
             ("Mark Not Needed", "mark_dont_need"),
+            ("Delete Position", "delete_position"),
             ("View Details", "view_details"),
         ],
         "coming": [
@@ -6701,6 +6792,7 @@ def _action_menu_specs(status: str) -> list[tuple[str, str]]:
         ],
         "dont_need_now": [
             ("Mark Need Now", "open_position"),
+            ("Delete Position", "delete_position"),
             ("View Details", "view_details"),
         ],
     }.get(status, [("View Details", "view_details")])

@@ -2,8 +2,8 @@ module:
   name: staffing_service
   language: python
   path: src/staffing_service.py
-  version: 0.12.0
-  description: Staffing assignment state machine, service-backed classroom, position, and person creation, queued Dropbox edit handling, staffing dashboard metrics with pending-operation projection and workbook display metadata, confirmed person moves, editable assignment details, person permit metadata updates, and post-commit notification emission for successful transactions.
+  version: 0.13.0
+  description: Staffing assignment state machine, service-backed classroom, position, person creation, and mistaken-position deletion, queued Dropbox edit handling, staffing dashboard metrics with pending-operation projection and workbook display metadata, confirmed person moves, editable assignment details, person permit metadata updates, and post-commit notification emission for successful transactions.
 functions: []
 classes:
 - name: StaffingService
@@ -236,6 +236,20 @@ classes:
     exceptions:
     - ValueError
     side_effects: Cancels active history, clears assignment, then may emit staffing.assignment.not_needed notification; if DB is locked, saves operation to pending queue and returns queued status.
+  - name: delete_position
+    inputs:
+      assignment_id:
+        type: int
+        required: true
+      confirmed:
+        type: bool
+        required: false
+        default: false
+    returns:
+      type: StaffingTransitionResult
+    exceptions:
+    - ValueError
+    side_effects: Requires explicit confirmation, soft-deactivates one unassigned mistaken position, closes any active open history as deleted, returns deleted status, and if DB is locked saves operation to pending queue and returns queued status.
   - name: update_permit_status
     inputs:
       person_id:

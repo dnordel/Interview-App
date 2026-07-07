@@ -4066,6 +4066,8 @@ def test_pyside_initial_window_fits_available_screen_after_display_scaling(tmp_p
 
     assert window.window.width() <= max(640, available.width() - 40)
     assert window.window.height() <= max(480, available.height() - 40)
+    assert window.window.maximumWidth() <= max(640, available.width())
+    assert window.window.maximumHeight() <= max(480, available.height())
     assert window.window.isMaximized() is False
     assert all(button.text() != "Switch to Tk UI" for button in window.window.findChildren(qt_widgets.QPushButton))
     window.window.close()
@@ -8936,7 +8938,12 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
     filled_action = table.cellWidget(filled_row, table.columnCount() - 1)
     assert need_now_action.text() == "Mark Coming"
     assert need_now_action.menu() is not None
-    assert [action.text() for action in need_now_action.menu().actions()] == ["Mark Coming", "Mark Not Needed", "View Details"]
+    assert [action.text() for action in need_now_action.menu().actions()] == [
+        "Mark Coming",
+        "Mark Not Needed",
+        "Delete Position",
+        "View Details",
+    ]
     assert filled_action.text() == "Manage Filled"
     assert filled_action.menu() is not None
     assert [action.text() for action in filled_action.menu().actions()] == ["Manage Filled", "Replace", "Update Permit", "View Details"]
@@ -9960,6 +9967,83 @@ def test_pyside_staffing_v2_add_position_submit_immediately_shows_created_positi
     app.processEvents()
 
 
+def test_pyside_staffing_v2_delete_position_removes_accidental_director(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    seed_path = tmp_path / "staffing_seed.json"
+    seed_path.write_text(
+        json.dumps(
+            {
+                "schools": [
+                    {
+                        "name": "Hawthorne",
+                        "classrooms": [
+                            {
+                                "name": "Office",
+                                "program": "Support",
+                                "slots": [
+                                    {"position_name": "Office", "position_type": "Office", "status": "filled", "person_name": "Violet"}
+                                ],
+                            }
+                        ],
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    db_path = tmp_path / "staffing.sqlite3"
+    store = pyside_interview_app.StaffingStore(db_path)
+    store.initialize()
+    store.import_seed_file(seed_path)
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", db_path)
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", tmp_path / "missing_seed.json")
+    full_model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.json",
+        school_options=["Hawthorne"],
+    )
+    director_model = pyside_interview_app.build_director_staffing_model(full_model, school="Hawthorne")
+    window = pyside_interview_app.PySideInterviewWindow(director_model)
+    page = window.stack.widget(0)
+
+    page.findChild(qt_widgets.QPushButton, "StaffingV2AddPositionButton").click()
+    app.processEvents()
+    add_dialog = window.window.findChild(qt_widgets.QDialog, "StaffingV2AddPositionDialog")
+    add_dialog.findChild(qt_widgets.QComboBox, "StaffingV2AddPositionType").setCurrentText("Director")
+    add_dialog.findChild(qt_widgets.QLineEdit, "StaffingV2AddPositionName").setText("Director")
+    add_dialog.findChild(qt_widgets.QComboBox, "StaffingV2AddPositionInitialStatus").setCurrentText("Need Now")
+    add_dialog.findChild(qt_widgets.QPushButton, "StaffingV2AddPositionSubmit").click()
+    app.processEvents()
+
+    table = page.findChild(qt_widgets.QTableWidget, "StaffingV2PositionsTable")
+    director_button = _staffing_button_for_position(table, "Director")
+    delete_action = next(action for action in director_button.menu().actions() if action.text() == "Delete Position")
+    delete_action.trigger()
+    app.processEvents()
+    delete_dialog = window.window.findChild(qt_widgets.QDialog, "StaffingV2DeletePositionDialog")
+    assert delete_dialog is not None
+    assert "Director" in _widget_text(delete_dialog)
+    delete_dialog.findChild(qt_widgets.QPushButton, "StaffingV2DeletePositionConfirm").click()
+    app.processEvents()
+
+    assert [row.position_name for row in store.list_assignments()] == ["Office"]
+    refreshed_table = page.findChild(qt_widgets.QTableWidget, "StaffingV2PositionsTable")
+    refreshed_text = {
+        refreshed_table.item(row, column).text()
+        for row in range(refreshed_table.rowCount())
+        for column in range(refreshed_table.columnCount())
+        if refreshed_table.item(row, column) is not None
+    }
+    assert "Director" not in refreshed_text
+    window.window.close()
+    app.processEvents()
+
+
 def test_pyside_staffing_v2_position_detail_drawer_opens_from_position_row(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -10373,6 +10457,25 @@ def test_pyside_staffing_v2_manage_filled_dialog_selects_next_workflow(
     assert replaced.person_name == before.person_name
     assert replaced.notice_given == "2026-08-01"
     assert replaced.final_working_day == "2026-08-15"
+    page.findChild(qt_widgets.QPushButton, "StaffingV2DrawerMarkNeedNow").click()
+    app.processEvents()
+    need_now_dialog = window.window.findChild(qt_widgets.QDialog, "StaffingV2MarkNeedNowDialog")
+    assert need_now_dialog is not None
+    need_now_submit = need_now_dialog.findChild(qt_widgets.QPushButton, "StaffingV2NeedNowSubmit")
+    need_now_submit.click()
+    need_now_submit.click()
+    app.processEvents()
+    reopened = store.get_assignment(assignment_id)
+    assert reopened.status == "need_now"
+    assert reopened.person_id is None
+    assert reopened.person_name == ""
+    assert reopened.start_date == ""
+    assert need_now_dialog.isHidden()
+    refreshed_table = page.findChild(qt_widgets.QTableWidget, "StaffingV2PositionsTable")
+    assert _staffing_button_for_position(refreshed_table, "Teacher 2").text() == "Mark Coming"
+    drawer = page.findChild(qt_widgets.QFrame, "StaffingV2PositionDrawer")
+    assert drawer is not None
+    assert "Need Now" in _widget_text(drawer)
     window.window.close()
     app.processEvents()
 

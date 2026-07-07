@@ -193,6 +193,13 @@ class StaffingService:
             lambda: self._mark_not_needed_impl(assignment_id, confirmed=confirmed),
         )
 
+    def delete_position(self, assignment_id: int, *, confirmed: bool = False) -> StaffingTransitionResult:
+        return self._run_or_queue(
+            "delete_position",
+            {"assignment_id": int(assignment_id), "confirmed": bool(confirmed)},
+            lambda: self._delete_position_impl(assignment_id, confirmed=confirmed),
+        )
+
     def update_permit_status(
         self,
         person_id: int,
@@ -516,6 +523,17 @@ class StaffingService:
             updated = self.store.assignment_context(conn, assignment_id)
         self._emit_assignment_event("mark_not_needed", updated)
         return _result(updated)
+
+    def _delete_position_impl(self, assignment_id: int, *, confirmed: bool = False) -> StaffingTransitionResult:
+        if not confirmed:
+            raise ValueError("Confirmation is required.")
+        deleted = self.store.delete_assignment(int(assignment_id), now=self.clock())
+        return StaffingTransitionResult(
+            assignment_id=deleted.id,
+            status="deleted",
+            person_id=None,
+            updated_at=deleted.updated_at,
+        )
 
     def _update_permit_status_impl(
         self,
@@ -891,6 +909,8 @@ class StaffingService:
             self._clear_replacement_impl(int(payload["assignment_id"]))
         elif operation == "mark_not_needed":
             self._mark_not_needed_impl(int(payload["assignment_id"]), confirmed=bool(payload.get("confirmed", False)))
+        elif operation == "delete_position":
+            self._delete_position_impl(int(payload["assignment_id"]), confirmed=bool(payload.get("confirmed", False)))
         elif operation == "update_permit_status":
             self._update_permit_status_impl(
                 int(payload["person_id"]),
@@ -952,6 +972,8 @@ class StaffingService:
                 projected[assignment_id] = replace(row, status="need_now", person_name="", start_date="")
             elif operation == "mark_not_needed":
                 projected[assignment_id] = replace(row, status="dont_need_now", person_name="", start_date="")
+            elif operation == "delete_position":
+                projected.pop(assignment_id, None)
             elif operation == "update_assignment_details":
                 projected[assignment_id] = replace(
                     row,

@@ -2,8 +2,8 @@ module:
   name: staffing_store
   language: python
   path: src/staffing_store.py
-  version: 0.11.0
-  description: SQLite persistence for staffing schools, classrooms, people including optional units, active status, role, current assignment summary, and permit effective-date/documentation metadata, service-backed assignment creation, assignments with shift metadata, workbook display metadata, assignment history dashboard records, Dropbox-visible edit locking, pending operation queueing, required staffing indexes, and deterministic seed imports.
+  version: 0.12.0
+  description: SQLite persistence for staffing schools, classrooms, people including optional units, active status, role, current assignment summary, and permit effective-date/documentation metadata, service-backed assignment creation and mistaken-position soft deletion, assignments with shift metadata, workbook display metadata, assignment history dashboard records, Dropbox-visible edit locking, pending operation queueing, required staffing indexes, and deterministic seed imports.
 functions: []
 classes:
 - name: StaffingEditLock
@@ -235,6 +235,20 @@ classes:
     - ValueError
     - StaffingEditLock
     side_effects: Uses a staffing write lock to set one classroom active flag to false and returns the deactivated classroom without deleting or mutating assignments or assignment_history.
+  - name: delete_assignment
+    inputs:
+      assignment_id:
+        type: int
+        required: true
+      now:
+        type: str
+        required: true
+    returns:
+      type: StaffingAssignment
+    exceptions:
+    - ValueError
+    - StaffingEditLock
+    side_effects: Uses a staffing write lock to soft-deactivate one unassigned assignment, close any active open history with closed_reason deleted, reject assigned/coming/filled/replacement/completed-history positions, and return the prior assignment with updated_at set to now.
   - name: import_seed_file
     inputs:
       seed_path:
