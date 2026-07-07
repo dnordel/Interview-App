@@ -20108,3 +20108,48 @@ entries:
     - behavior
     - parameter_validation
     - return_type
+- contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime.parse_indeed_transcript_text
+  kind: function
+  tests:
+  - path: tests/test_pyside_interview_redesign.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime.infer_indeed_interviewer_speaker
+  kind: function
+  tests:
+  - path: tests/test_pyside_interview_redesign.py
+    focus:
+    - behavior
+    - return_type
+- contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime.map_indeed_transcript_to_questions
+  kind: function
+  tests:
+  - path: tests/test_pyside_interview_redesign.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewSession.import_indeed_transcript_file
+  kind: method
+  tests:
+  - path: tests/test_pyside_interview_redesign.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewSession.import_indeed_transcript_text
+  kind: method
+  tests:
+  - path: tests/test_pyside_interview_redesign.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type

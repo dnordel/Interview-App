@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.57.5
+  version: 1.58.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, resizable splitter sections, school/classroom selectors, wider color-coded classroom list with per-classroom status-count overview, metric cards, positions table, fully editable right-side assignment/person details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics, parallel Staffing v2 navigation/page shell with its own mockup-style staffing sidebar, People / Employee Management and Assignment History sub-dashboards for the mockup-driven rewrite backed by staffing_dashboard_v2 while the legacy Staffing page remains available,
@@ -403,6 +403,31 @@ classes:
       type: None
     exceptions: []
     side_effects: Writes PySide draft JSON.
+  - name: import_indeed_transcript_file
+    description: Import an Indeed-generated .txt transcript into the session, split answers by configured question prompts, infer interviewer/candidate speakers, mark unasked questions skipped, and leave scored answers unrated for operator review.
+    locked: false
+    inputs:
+      path:
+        type: Path
+        required: true
+    returns:
+      type: IndeedTranscriptImportResult
+    exceptions:
+    - ValueError
+    - OSError
+    side_effects: Reads a local .txt transcript file, updates answers/transcript maps, and writes PySide draft JSON.
+  - name: import_indeed_transcript_text
+    description: Import Indeed transcript text into the session, split candidate answer transcripts onto matching questions, infer speakers, mark unmatched questions skipped, and move to the first imported scored answer that still needs a rating.
+    locked: false
+    inputs:
+      text:
+        type: str
+        required: true
+    returns:
+      type: IndeedTranscriptImportResult
+    exceptions:
+    - ValueError
+    side_effects: Updates answers, flow_candidate_transcripts, flow_recordings, current_index, and writes PySide draft JSON.
   - name: review_summary
     description: Evaluate completed PySide trait scores with existing scoring rules and return review-screen summary data.
     locked: false

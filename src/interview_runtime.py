@@ -18,6 +18,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import nullcontext
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
+from difflib import SequenceMatcher
 from functools import lru_cache
 from importlib import import_module
 from pathlib import Path
@@ -885,6 +886,203 @@ def _match_window_index(start_seconds: float, windows: list[tuple[int, float, fl
         if window_start <= start_seconds < window_end:
             return flow_index
     return None
+
+
+@dataclass(frozen=True)
+class IndeedTranscriptTurn:
+    speaker: str
+    text: str
+
+
+@dataclass(frozen=True)
+class IndeedTranscriptQuestionMatch:
+    flow_index: int
+    question_id: str
+    prompt: str
+    interviewer_text: str
+    candidate_transcript: str
+
+
+@dataclass(frozen=True)
+class IndeedTranscriptImportResult:
+    interviewer_speaker: str
+    candidate_speaker: str
+    mapped_count: int
+    unmatched_question_ids: list[str]
+    matches: list[IndeedTranscriptQuestionMatch]
+
+
+_INDEED_SPEAKER_RE = re.compile(r"^\s*(Speaker\s+\d+)\s*:\s*(.*)$", re.IGNORECASE)
+_QUESTION_MATCH_STOP_WORDS = {
+    "about",
+    "and",
+    "are",
+    "did",
+    "for",
+    "how",
+    "our",
+    "that",
+    "the",
+    "what",
+    "when",
+    "why",
+    "with",
+    "would",
+    "you",
+    "your",
+}
+
+
+def parse_indeed_transcript_text(text: str, *, max_chars: int = 750_000) -> list[IndeedTranscriptTurn]:
+    raw = str(text or "")
+    if len(raw) > max_chars:
+        raise ValueError("Indeed transcript is too large to import.")
+    turns: list[IndeedTranscriptTurn] = []
+    current_speaker = ""
+    current_lines: list[str] = []
+    for line in raw.splitlines():
+        match = _INDEED_SPEAKER_RE.match(line)
+        if match:
+            if current_speaker and current_lines:
+                joined = " ".join(part.strip() for part in current_lines if part.strip()).strip()
+                if joined:
+                    turns.append(IndeedTranscriptTurn(speaker=current_speaker, text=joined))
+            current_speaker = f"Speaker {match.group(1).split()[-1]}"
+            current_lines = [match.group(2).strip()]
+            continue
+        if current_speaker:
+            current_lines.append(line.strip())
+    if current_speaker and current_lines:
+        joined = " ".join(part.strip() for part in current_lines if part.strip()).strip()
+        if joined:
+            turns.append(IndeedTranscriptTurn(speaker=current_speaker, text=joined))
+    if not turns:
+        raise ValueError("No Indeed speaker turns found.")
+    return turns
+
+
+def _question_match_tokens(value: Any) -> set[str]:
+    tokens = set(re.findall(r"[a-z0-9]+", str(value or "").lower()))
+    return {token for token in tokens if len(token) > 2 and token not in _QUESTION_MATCH_STOP_WORDS}
+
+
+def _question_prompt_score(prompt: str, spoken: str) -> float:
+    prompt_tokens = _question_match_tokens(prompt)
+    spoken_tokens = _question_match_tokens(spoken)
+    if not prompt_tokens or not spoken_tokens:
+        return 0.0
+    overlap = len(prompt_tokens & spoken_tokens) / max(1, min(len(prompt_tokens), len(spoken_tokens)))
+    partial_overlap = sum(
+        1
+        for prompt_token in prompt_tokens
+        if any(prompt_token in spoken_token or spoken_token in prompt_token for spoken_token in spoken_tokens)
+    ) / max(1, len(prompt_tokens))
+    exact = 1.0 if str(prompt).lower().strip() and str(prompt).lower().strip() in str(spoken).lower() else 0.0
+    compact_prompt = " ".join(sorted(prompt_tokens))
+    compact_spoken = " ".join(sorted(spoken_tokens))
+    fuzzy = SequenceMatcher(None, compact_prompt, compact_spoken).ratio() if (overlap or partial_overlap) else 0.0
+    return max(overlap, partial_overlap, exact, fuzzy)
+
+
+def infer_indeed_interviewer_speaker(
+    turns: Sequence[IndeedTranscriptTurn],
+    questions: Sequence[Mapping[str, Any]],
+) -> str:
+    prompts = [str(item.get("prompt") or "").strip() for item in questions if str(item.get("prompt") or "").strip()]
+    scores: dict[str, float] = {}
+    for turn in turns:
+        best = max((_question_prompt_score(prompt, turn.text) for prompt in prompts), default=0.0)
+        scores[turn.speaker] = scores.get(turn.speaker, 0.0) + best
+    if not scores:
+        raise ValueError("Could not infer interviewer speaker from transcript.")
+    speaker, score = max(scores.items(), key=lambda item: item[1])
+    if score <= 0:
+        raise ValueError("Could not infer interviewer speaker from transcript.")
+    return speaker
+
+
+def map_indeed_transcript_to_questions(
+    turns: Sequence[IndeedTranscriptTurn],
+    questions: Sequence[Mapping[str, Any]],
+    *,
+    interviewer_speaker: str | None = None,
+    min_question_score: float = 0.25,
+) -> IndeedTranscriptImportResult:
+    cleaned_questions = [
+        {
+            "flow_index": int(item.get("flow_index", index)),
+            "question_id": str(item.get("question_id") or item.get("id") or "").strip(),
+            "prompt": str(item.get("prompt") or "").strip(),
+        }
+        for index, item in enumerate(questions)
+        if str(item.get("question_id") or item.get("id") or "").strip() and str(item.get("prompt") or "").strip()
+    ]
+    if not cleaned_questions:
+        raise ValueError("No interview questions are available for transcript import.")
+    interviewer = str(interviewer_speaker or "").strip() or infer_indeed_interviewer_speaker(turns, cleaned_questions)
+    candidate = next((turn.speaker for turn in turns if turn.speaker != interviewer), "")
+    if not candidate:
+        raise ValueError("Could not infer candidate speaker from transcript.")
+
+    used_question_ids: set[str] = set()
+    matches: list[IndeedTranscriptQuestionMatch] = []
+    active_question: dict[str, Any] | None = None
+    active_interviewer_text = ""
+    active_candidate_parts: list[str] = []
+
+    def flush_active() -> None:
+        nonlocal active_question, active_interviewer_text, active_candidate_parts
+        if active_question is None:
+            return
+        transcript = " ".join(part.strip() for part in active_candidate_parts if part.strip()).strip()
+        if transcript:
+            question_id = str(active_question["question_id"])
+            used_question_ids.add(question_id)
+            matches.append(
+                IndeedTranscriptQuestionMatch(
+                    flow_index=int(active_question["flow_index"]),
+                    question_id=question_id,
+                    prompt=str(active_question["prompt"]),
+                    interviewer_text=active_interviewer_text,
+                    candidate_transcript=transcript,
+                )
+            )
+        active_question = None
+        active_interviewer_text = ""
+        active_candidate_parts = []
+
+    for turn in turns:
+        if turn.speaker == interviewer:
+            best_question: dict[str, Any] | None = None
+            best_score = 0.0
+            for question in cleaned_questions:
+                question_id = str(question["question_id"])
+                if question_id in used_question_ids:
+                    continue
+                score = _question_prompt_score(str(question["prompt"]), turn.text)
+                if score > best_score:
+                    best_score = score
+                    best_question = question
+            if best_question is not None and best_score >= min_question_score:
+                flush_active()
+                active_question = best_question
+                used_question_ids.add(str(best_question["question_id"]))
+                active_interviewer_text = turn.text
+                active_candidate_parts = []
+            continue
+        if active_question is not None and turn.speaker == candidate:
+            active_candidate_parts.append(turn.text)
+    flush_active()
+
+    matched_ids = {match.question_id for match in matches}
+    unmatched = [str(item["question_id"]) for item in cleaned_questions if str(item["question_id"]) not in matched_ids]
+    return IndeedTranscriptImportResult(
+        interviewer_speaker=interviewer,
+        candidate_speaker=candidate,
+        mapped_count=len(matches),
+        unmatched_question_ids=unmatched,
+        matches=matches,
+    )
 
 
 _SUMMARY_UNAVAILABLE_PREFIX = "Summary unavailable:"

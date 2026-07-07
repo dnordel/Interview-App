@@ -34,13 +34,16 @@ from interview_runtime import (
     DEEPSEEK_PROMPTS_CONFIG_PATH,
     DEFAULT_DEEPSEEK_PROGRESS_TASKS,
     FinalizeGateways,
+    IndeedTranscriptImportResult,
     build_finalize_progress_tasks,
     build_finalize_context,
     build_flow_time_windows,
     enqueue_deepseek_finalize_job,
     format_finalize_progress_tasks,
+    map_indeed_transcript_to_questions,
     load_candidate_segments,
     map_segments_to_flow_indices,
+    parse_indeed_transcript_text,
     regenerate_interview_notes_job,
     resolve_deepseek_regeneration_job_path,
     resolve_default_windows_system_device,
@@ -304,6 +307,74 @@ class PySideInterviewSession:
     def skip_active_question(self, *, notes: str = "", quick_actions: Sequence[str] = ()) -> None:
         self.save_answer_and_advance(notes=notes, score="", quick_actions=quick_actions, skipped=True)
 
+    def import_indeed_transcript_file(self, path: Path) -> IndeedTranscriptImportResult:
+        source = Path(path)
+        if source.suffix.lower() != ".txt":
+            raise ValueError("Indeed transcript import accepts .txt files only.")
+        text = source.read_text(encoding="utf-8")
+        return self.import_indeed_transcript_text(text)
+
+    def import_indeed_transcript_text(self, text: str) -> IndeedTranscriptImportResult:
+        questions = [
+            {"flow_index": index, "question_id": item.question_id, "prompt": item.prompt}
+            for index, item in enumerate(self._workflow_items())
+            if item.kind != "intro"
+        ]
+        result = map_indeed_transcript_to_questions(parse_indeed_transcript_text(text), questions)
+        matched_ids = {match.question_id for match in result.matches}
+        by_id = {item.question_id: (index, item) for index, item in enumerate(self._workflow_items())}
+        for match in result.matches:
+            _flow_index, item = by_id.get(match.question_id, (match.flow_index, None))
+            if item is None:
+                continue
+            self.answers[item.question_id] = {
+                "kind": item.kind,
+                "title": item.title,
+                "prompt": item.prompt,
+                "notes": match.candidate_transcript,
+                "score": "",
+                "quick_actions": [],
+                "imported_transcript": True,
+            }
+            self.flow_candidate_transcripts[match.flow_index] = match.candidate_transcript
+            self.flow_recordings[match.flow_index] = {
+                "flow_index": match.flow_index,
+                "candidate_transcript": match.candidate_transcript,
+                "source": "indeed_transcript_import",
+            }
+        for question_id, (flow_index, item) in by_id.items():
+            if item.kind == "intro" or question_id in matched_ids:
+                continue
+            self.answers[question_id] = {
+                "kind": item.kind,
+                "title": item.title,
+                "prompt": item.prompt,
+                "notes": "",
+                "score": "",
+                "quick_actions": [],
+                "skipped": True,
+                "skip_reason": "not_found_in_indeed_transcript",
+                "imported_transcript": True,
+            }
+            self.flow_candidate_transcripts.pop(flow_index, None)
+            self.flow_recordings.pop(flow_index, None)
+        first_unrated = next(
+            (
+                index
+                for index, item in enumerate(self._workflow_items())
+                if item.kind == "trait"
+                and item.question_id in matched_ids
+                and not str(self.answers.get(item.question_id, {}).get("score") or "").strip()
+            ),
+            None,
+        )
+        if first_unrated is not None:
+            self.current_index = first_unrated
+        else:
+            self.current_index = len(self._workflow_items())
+        self.save_draft()
+        return result
+
     def review_summary(self) -> PySideReviewSummary:
         flow = self.model.flows.get(self.track_key)
         trait_inputs: dict[str, dict[str, Any]] = {}
@@ -326,6 +397,17 @@ class PySideInterviewSession:
             raw_score = _coerce_session_score(answer.get("score"))
             notes = str(answer.get("notes", "") or "").strip()
             quick_actions = [str(action) for action in answer.get("quick_actions", []) or []]
+            if answer.get("skipped"):
+                trait_inputs[item.question_id] = {
+                    "raw_score": None,
+                    "question_notes": notes,
+                    "trait_notes": notes,
+                    "absolute_disqualifier": False,
+                    "no_example_after_followups": False,
+                    "skipped": True,
+                    "skip_reason": str(answer.get("skip_reason") or "skipped"),
+                }
+                continue
             trait_inputs[item.question_id] = {
                 "raw_score": raw_score,
                 "question_notes": notes,
@@ -448,7 +530,10 @@ class PySideInterviewSession:
     def _transcript_metadata(self) -> dict[str, Any]:
         total = len(self._workflow_items())
         missing: list[int] = []
+        items = self._workflow_items()
         for flow_idx in range(total):
+            if flow_idx < len(items) and self.answers.get(items[flow_idx].question_id, {}).get("skipped"):
+                continue
             transcript = str(self.flow_candidate_transcripts.get(flow_idx, "") or "").strip()
             recording = self.flow_recordings.get(flow_idx, {}) or {}
             if transcript or str(recording.get("candidate_transcript") or "").strip():
@@ -595,7 +680,8 @@ class _PySideFinalizeAdapter:
                     "id": question.question_id,
                     "question": question.prompt,
                     "answer": str(answer.get("notes", "") or ""),
-                    "skipped": False,
+                    "skipped": bool(answer.get("skipped")),
+                    "skip_reason": str(answer.get("skip_reason") or "") if answer.get("skipped") else "",
                 }
             )
         return custom_answers
@@ -614,6 +700,8 @@ class _PySideFinalizeAdapter:
                     "prompt": question.prompt,
                     "candidate_transcript": notes,
                     "evaluator_notes": notes,
+                    "skipped": bool(answer.get("skipped")),
+                    "skip_reason": str(answer.get("skip_reason") or "") if answer.get("skipped") else "",
                 }
             )
         return transcript
@@ -656,14 +744,16 @@ class _PySideFinalizeAdapter:
             answer = self.session.answers.get(question.question_id, {})
             quick_actions = [str(action) for action in answer.get("quick_actions", []) or []]
             notes = str(answer.get("notes", "") or "")
+            skipped = bool(answer.get("skipped"))
             inputs[question.question_id] = {
-                "raw_score": _coerce_session_score(answer.get("score")),
+                "raw_score": None if skipped else _coerce_session_score(answer.get("score")),
                 "question_notes": notes,
                 "trait_notes": notes,
                 "verbatim_notes": notes,
-                "absolute_disqualifier": "Disqualifier observed" in quick_actions,
-                "no_example_after_followups": "Candidate gave no example" in quick_actions,
-                "skipped": False,
+                "absolute_disqualifier": False if skipped else "Disqualifier observed" in quick_actions,
+                "no_example_after_followups": False if skipped else "Candidate gave no example" in quick_actions,
+                "skipped": skipped,
+                "skip_reason": str(answer.get("skip_reason") or "") if skipped else "",
             }
         return inputs
 
@@ -676,7 +766,8 @@ class _PySideFinalizeAdapter:
             custom[question.question_id] = {
                 "question_text": question.prompt,
                 "answer": str(answer.get("notes", "") or ""),
-                "skipped": False,
+                "skipped": bool(answer.get("skipped")),
+                "skip_reason": str(answer.get("skip_reason") or "") if answer.get("skipped") else "",
             }
         return custom
 
@@ -2086,6 +2177,10 @@ class PySideInterviewWindow:
         begin = self._primary_button("Begin Interview")
         begin.clicked.connect(self._begin_selected_interview)
         action_row.addWidget(begin, 2)
+        import_button = self.QtWidgets.QPushButton("Import Indeed Transcript")
+        import_button.setObjectName("ImportIndeedTranscriptButton")
+        import_button.clicked.connect(self._import_indeed_transcript_from_home)
+        action_row.addWidget(import_button, 2)
         continue_button = self.QtWidgets.QPushButton("Continue")
         self.home_continue_button = continue_button
         continue_button.setEnabled(latest_draft is not None)
@@ -2397,6 +2492,45 @@ class PySideInterviewWindow:
         self._render_offer_page()
         self.interview_tabs.setCurrentIndex(2)
 
+    def _import_indeed_transcript_from_home(self) -> None:
+        label = self.home_role_combo.currentText() if hasattr(self, "home_role_combo") else ""
+        track_key = self._track_key_for_label(label)
+        candidate_name = self.home_candidate_input.text().strip() if hasattr(self, "home_candidate_input") else ""
+        school = self.home_school_combo.currentText().strip() if hasattr(self, "home_school_combo") else ""
+        if not candidate_name:
+            self.QtWidgets.QMessageBox.warning(self.window, "Indeed Transcript", "Enter candidate name before importing.")
+            return
+        file_name, _filter = self.QtWidgets.QFileDialog.getOpenFileName(
+            self.window,
+            "Import Indeed Transcript",
+            str(Path.home()),
+            "Text files (*.txt)",
+        )
+        if not file_name:
+            return
+        draft_path = self._default_draft_path(candidate_name or "Candidate")
+        session = PySideInterviewSession(model=self.model, draft_path=draft_path)
+        try:
+            session.start(candidate_name=candidate_name, school=school, track_key=track_key)
+            result = session.import_indeed_transcript_file(Path(file_name))
+        except Exception as exc:  # noqa: BLE001
+            self.QtWidgets.QMessageBox.warning(self.window, "Indeed Transcript", f"Could not import transcript: {exc}")
+            return
+        self.session = session
+        self.session_track_key = session.track_key
+        self.session_index = session.current_index
+        self.session_answers = dict(session.answers)
+        skipped_count = len(result.unmatched_question_ids)
+        self._render_live_question_page()
+        self._render_review_page()
+        self._render_offer_page()
+        self._refresh_home_draft_panel()
+        self.interview_tabs.setCurrentIndex(2 if session.active_question() is not None else 3)
+        if hasattr(self, "home_draft_label"):
+            self.home_draft_label.setText(
+                f"Imported Indeed transcript: {result.mapped_count} answers split, {skipped_count} questions marked skipped."
+            )
+
     def _continue_latest_draft(self) -> None:
         draft_path = latest_pyside_draft_path()
         if draft_path is None:
@@ -2702,7 +2836,9 @@ class PySideInterviewWindow:
         notes = self.QtWidgets.QTextEdit()
         notes.setPlaceholderText("Type optional notes here...")
         self.live_notes = notes
-        left_layout.addWidget(self._label("Manual Notes"))
+        stored_answer = self.session.answers.get(item.question_id, {}) if self.session is not None else {}
+        notes_label = "Imported Answer Transcript" if stored_answer.get("imported_transcript") else "Manual Notes"
+        left_layout.addWidget(self._label(notes_label))
         left_layout.addWidget(notes, 1)
         split.addWidget(left, 2)
 

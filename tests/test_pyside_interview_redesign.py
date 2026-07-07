@@ -27,6 +27,66 @@ from pyside_interview_app import (
 from scoring_reporting import CandidateQualification
 
 
+def test_pyside_session_imports_indeed_transcript_for_rating_review(tmp_path: Path) -> None:
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
+    session.start(candidate_name="Miriam", school="Palmdale", track_key="preschool")
+
+    result = session.import_indeed_transcript_text(
+        """
+Speaker 1: So, Miriam, why are you applying specifically to our company, Launchpad?
+
+Speaker 0: You are closer to home and the ratios look safe and intentional.
+
+Speaker 1: Tell me about a time a child was having a hard moment emotionally.
+
+Speaker 0: I got low, helped them breathe, and supported words for what happened.
+""",
+    )
+
+    assert result.interviewer_speaker == "Speaker 1"
+    assert result.candidate_speaker == "Speaker 0"
+    assert result.mapped_count == 2
+    assert session.answers["Why-LPL"]["notes"].startswith("You are closer")
+    assert session.answers["trait_1"]["notes"].startswith("I got low")
+    assert session.answers["trait_1"]["score"] == ""
+    assert session.flow_candidate_transcripts[2].startswith("I got low")
+    assert session.active_question().question_id == "trait_1"
+
+
+def test_pyside_session_imports_indeed_transcript_when_speaker_numbers_flip(tmp_path: Path) -> None:
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
+    session.start(candidate_name="Chantelle", school="Palmdale", track_key="preschool")
+
+    result = session.import_indeed_transcript_text(
+        """
+Speaker 0: Why are you applying specifically to our company, Launchpad?
+
+Speaker 1: The school feels aligned with my experience and commute.
+
+Speaker 0: Tell me about a time a child was having a hard moment emotionally.
+
+Speaker 1: I noticed frustration, paused, and helped the child use words.
+""",
+    )
+
+    assert result.interviewer_speaker == "Speaker 0"
+    assert result.candidate_speaker == "Speaker 1"
+    assert session.answers["trait_1"]["notes"].startswith("I noticed frustration")
+    assert session.answers["trait_1"]["score"] == ""
+
+
 def _widget_text(widget) -> str:
     from PySide6 import QtWidgets
 
@@ -686,6 +746,45 @@ def test_pyside_live_footer_blocks_unrated_scored_next_and_keeps_skip_enabled(tm
     app.processEvents()
 
     assert footer_buttons["finalize"].isEnabled()
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_home_import_indeed_transcript_opens_rating_flow(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    transcript_path = tmp_path / "indeed.txt"
+    transcript_path.write_text(
+        """
+Speaker 1: Tell me about a time a child was having a hard moment emotionally.
+
+Speaker 0: I noticed the child was upset and helped them name the feeling.
+""",
+        encoding="utf-8",
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    window.home_candidate_input.setText("Miriam")
+    monkeypatch.setattr(
+        window.QtWidgets.QFileDialog,
+        "getOpenFileName",
+        lambda *_args, **_kwargs: (str(transcript_path), "Text files (*.txt)"),
+    )
+    window._start_pyside_interview_recording = lambda: (_ for _ in ()).throw(AssertionError("recording should not start"))
+
+    window._import_indeed_transcript_from_home()
+
+    assert window.session is not None
+    assert window.session.active_question().question_id == "trait_1"
+    assert "helped them name" in window.live_notes.toPlainText()
+    assert not window.live_next_button.isEnabled()
+    assert window.interview_tabs.currentIndex() == 2
     window.window.close()
     app.processEvents()
 

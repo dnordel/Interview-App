@@ -2,7 +2,7 @@ module:
   name: interview_runtime
   language: python
   path: src/interview_runtime.py
-  version: 0.30.0
+  version: 0.31.0
   description: Flattened public interface for interview state, session management,
     audio/transcription runtime, transcript summary seam, controllers, history, and
     finalize pipeline; only active legacy adapters remain in the compatibility module
@@ -220,6 +220,60 @@ functions:
   returns:
     type: dict[int, str]
   exceptions: []
+  side_effects: none
+- name: parse_indeed_transcript_text
+  description: Parse an Indeed-generated plain-text transcript into ordered speaker turns, accepting Speaker N labels and rejecting oversized or label-free input without echoing transcript text in errors.
+  locked: false
+  inputs:
+    text:
+      type: str
+      required: true
+    max_chars:
+      type: int
+      required: false
+      default: 750000
+  returns:
+    type: list[IndeedTranscriptTurn]
+  exceptions:
+  - ValueError
+  side_effects: none
+- name: infer_indeed_interviewer_speaker
+  description: Infer which Indeed speaker is the interviewer by matching speaker turns against configured interview question prompts.
+  locked: false
+  inputs:
+    turns:
+      type: Sequence[IndeedTranscriptTurn]
+      required: true
+    questions:
+      type: Sequence[Mapping[str, Any]]
+      required: true
+  returns:
+    type: str
+  exceptions:
+  - ValueError
+  side_effects: none
+- name: map_indeed_transcript_to_questions
+  description: Map parsed Indeed speaker turns onto configured interview questions, returning candidate answer transcripts, inferred interviewer/candidate speakers, and unmatched question ids that callers should treat as skipped.
+  locked: false
+  inputs:
+    turns:
+      type: Sequence[IndeedTranscriptTurn]
+      required: true
+    questions:
+      type: Sequence[Mapping[str, Any]]
+      required: true
+    interviewer_speaker:
+      type: str | None
+      required: false
+      default: null
+    min_question_score:
+      type: float
+      required: false
+      default: 0.25
+  returns:
+    type: IndeedTranscriptImportResult
+  exceptions:
+  - ValueError
   side_effects: none
 - name: write_merged_timestamped_transcript
   description: Write a timestamped interleaved transcript text file from segment records.
@@ -2440,6 +2494,15 @@ data_structures:
   type: TypedDict
 - name: FinalizeTranscriptMetadata
   type: TypedDict
+- name: IndeedTranscriptTurn
+  type: dataclass
+  description: One parsed Indeed transcript speaker turn with normalized Speaker N label and joined text.
+- name: IndeedTranscriptQuestionMatch
+  type: dataclass
+  description: One mapped Indeed transcript answer for a configured interview flow question.
+- name: IndeedTranscriptImportResult
+  type: dataclass
+  description: Result of Indeed transcript import mapping, including inferred speakers, mapped answer count, unmatched skipped question ids, and mapped question matches.
 - name: TranscriptionJobStatusEvent
   type: dataclass
 - name: RuntimeConfig
