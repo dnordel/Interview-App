@@ -802,6 +802,34 @@ Speaker 0: I noticed the child was upset and helped them name the feeling.
     app.processEvents()
 
 
+def test_pyside_show_schedules_recording_interface_preload_once(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    scheduled = []
+
+    def _single_shot(_delay, callback):
+        scheduled.append(callback)
+
+    monkeypatch.setattr(window.QtCore.QTimer, "singleShot", _single_shot)
+    monkeypatch.setattr(window.window, "showMaximized", lambda: None)
+
+    window.show()
+    window.show()
+
+    assert window._preload_recording_interface_async in scheduled
+    assert scheduled.count(window._preload_recording_interface_async) == 1
+    window.window.close()
+    app.processEvents()
+
+
 def test_pyside_home_delete_saved_draft_requires_confirmation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -8434,10 +8462,11 @@ def test_pyside_window_show_opens_main_window_maximized() -> None:
     window.window = FakeWindow()
     window._fit_window_to_available_screen = lambda: calls.append("fit")
     window._schedule_startup_notifications = lambda: calls.append("schedule_notifications")
+    window._schedule_recording_interface_preload = lambda: calls.append("schedule_recording_preload")
 
     window.show()
 
-    assert calls == ["fit", "showMaximized", "schedule_notifications"]
+    assert calls == ["fit", "showMaximized", "schedule_notifications", "schedule_recording_preload"]
 
 
 def test_pyside_window_schedules_startup_notifications_once_after_show() -> None:
@@ -9238,6 +9267,8 @@ def test_pyside_staffing_v2_dashboard_scrollbars_have_scrollable_range(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_core = pytest.importorskip("PySide6.QtCore")
+    qt_gui = pytest.importorskip("PySide6.QtGui")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
     app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
     seed_path = tmp_path / "staffing_seed.json"
@@ -9296,6 +9327,35 @@ def test_pyside_staffing_v2_dashboard_scrollbars_have_scrollable_range(
         if isinstance(scroll_area, qt_widgets.QAbstractItemView):
             assert scroll_area.verticalScrollMode() == qt_widgets.QAbstractItemView.ScrollMode.ScrollPerPixel
             assert scroll_area.horizontalScrollMode() == qt_widgets.QAbstractItemView.ScrollMode.ScrollPerPixel
+
+    assignment_id = store.list_assignments()[0].id
+    window.staffing_v2_dashboard._show_position_drawer(assignment_id)
+    for index in range(24):
+        window.staffing_v2_dashboard.drawer_layout.addWidget(qt_widgets.QLabel(f"Wheel relay row {index}"))
+    window.staffing_v2_dashboard.drawer_panel.show_overlay()
+    app.processEvents()
+    drawer_scroll = page.findChild(qt_widgets.QScrollArea, "StaffingV2PositionDrawerScroll")
+    drawer_scroll.widget().setMinimumHeight(1400)
+    window.staffing_v2_dashboard.drawer_panel.show_overlay()
+    app.processEvents()
+    assert drawer_scroll.verticalScrollBar().maximum() > 0
+    wheel_target = drawer_scroll.widget().findChildren(qt_widgets.QLabel)[-1]
+    drawer_scroll.verticalScrollBar().setValue(0)
+    center = wheel_target.rect().center()
+    wheel_event = qt_gui.QWheelEvent(
+        qt_core.QPointF(center),
+        qt_core.QPointF(wheel_target.mapToGlobal(center)),
+        qt_core.QPoint(0, 0),
+        qt_core.QPoint(0, -120),
+        qt_core.Qt.MouseButton.NoButton,
+        qt_core.Qt.KeyboardModifier.NoModifier,
+        qt_core.Qt.ScrollPhase.ScrollUpdate,
+        False,
+    )
+
+    app.sendEvent(wheel_target, wheel_event)
+
+    assert drawer_scroll.verticalScrollBar().value() > 0
 
     window.window.close()
     app.processEvents()

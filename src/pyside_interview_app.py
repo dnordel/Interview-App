@@ -2056,6 +2056,7 @@ class PySideInterviewWindow:
         self._history_table_widgets: dict[str, Any] = {}
         self._overwrite_next_live_timestamp = False
         self._startup_notifications_scheduled = False
+        self._recording_interface_preload_started = False
         class ResponsiveMainWindow(QtWidgets.QMainWindow):
             def resize(inner_self, *args: Any) -> None:
                 super().resize(*args)
@@ -2178,12 +2179,39 @@ class PySideInterviewWindow:
         self._fit_window_to_available_screen()
         self.window.showMaximized()
         self._schedule_startup_notifications()
+        self._schedule_recording_interface_preload()
 
     def _schedule_startup_notifications(self) -> None:
         if self._startup_notifications_scheduled:
             return
         self._startup_notifications_scheduled = True
         self.QtCore.QTimer.singleShot(0, self._run_due_notifications_safely)
+
+    def _schedule_recording_interface_preload(self) -> None:
+        if getattr(self, "_recording_interface_preload_started", False):
+            return
+        self._recording_interface_preload_started = True
+        self.QtCore.QTimer.singleShot(0, self._preload_recording_interface_async)
+
+    def _recording_runtime_settings(self) -> dict[str, str]:
+        return {
+            "whisper_model": "large-v3",
+            "whisper_device": "cuda",
+            "whisper_compute_type": "float16",
+            "whisper_openvino_model": "OpenVINO/whisper-small-int8-ov",
+        }
+
+    def _preload_recording_interface_async(self) -> None:
+        worker = threading.Thread(target=self._preload_recording_interface, daemon=True)
+        worker.start()
+
+    def _preload_recording_interface(self) -> None:
+        try:
+            resolve_runtime(self._recording_runtime_settings())
+            if sys.platform.startswith("win"):
+                resolve_default_windows_system_device()
+        except Exception as exc:
+            self.recording_warning = f"Recording preload unavailable: {exc}"
 
     def _initial_window_size(self) -> tuple[int, int]:
         screen = self.QtWidgets.QApplication.primaryScreen()
@@ -2879,14 +2907,7 @@ class PySideInterviewWindow:
         try:
             from interview_audio_recorder import start_recording
 
-            runtime_config = resolve_runtime(
-                {
-                    "whisper_model": "large-v3",
-                    "whisper_device": "cuda",
-                    "whisper_compute_type": "float16",
-                    "whisper_openvino_model": "OpenVINO/whisper-small-int8-ov",
-                }
-            )
+            runtime_config = resolve_runtime(self._recording_runtime_settings())
             self.recording_session = start_recording(
                 os_name="windows" if sys.platform.startswith("win") else "linux",
                 output_dir=DEFAULT_BASE_DIR,
@@ -4185,7 +4206,7 @@ class PySideInterviewWindow:
     def _configure_admin_v2_scroll_areas(self) -> None:
         for root in (getattr(self, "admin_sidebar_rail", None), getattr(self, "admin_stack", None)):
             if root is not None:
-                configure_v2_scroll_areas(self.QtWidgets, root)
+                configure_v2_scroll_areas(self.QtWidgets, root, self.QtCore)
 
     def _admin_section_page(self, key: str, title: str, description: str) -> Any:
         tab, tab_layout = self._page()

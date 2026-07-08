@@ -2,7 +2,7 @@ module:
   name: interview_runtime
   language: python
   path: src/interview_runtime.py
-  version: 0.31.2
+  version: 0.31.3
   description: Flattened public interface for interview state, session management,
     audio/transcription runtime, transcript summary seam, controllers, history, and
     finalize pipeline; only active legacy adapters remain in the compatibility module
@@ -794,7 +794,8 @@ functions:
   exceptions: []
   side_effects: Mutates runtime settings.
 - name: list_windows_dshow_audio_devices
-  description: Probe ffmpeg DirectShow devices and return detected audio device names.
+  description: Probe ffmpeg DirectShow devices once per ffmpeg executable path and
+    return cached detected audio device names on later calls.
   locked: false
   inputs:
     ffmpeg_exe:
@@ -804,7 +805,8 @@ functions:
   returns:
     type: list[str]
   exceptions: []
-  side_effects: Executes ffmpeg subprocess for device enumeration.
+  side_effects: Executes ffmpeg subprocess for device enumeration on first use per
+    ffmpeg executable path and caches detected names in memory.
 - name: resolve_preferred_windows_audio_device
   description: Resolve the best available Windows audio device using preferred name
     and alias candidates.

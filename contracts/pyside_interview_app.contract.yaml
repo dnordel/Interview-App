@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.60.0
+  version: 1.61.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, resizable splitter sections, school/classroom selectors, wider color-coded classroom list with per-classroom status-count overview, metric cards, positions table, fully editable right-side assignment/person details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics, parallel Staffing v2 navigation/page shell with its own mockup-style staffing sidebar, People / Employee Management and Assignment History sub-dashboards for the mockup-driven rewrite backed by staffing_dashboard_v2 while the legacy Staffing page remains available,
@@ -646,13 +646,13 @@ classes:
       type: set[int]
   methods:
   - name: show
-    description: Fit the redesigned PySide6 main window to current usable screen geometry before showing it maximized, then schedule startup notification draining after first paint.
+    description: Fit the redesigned PySide6 main window to current usable screen geometry before showing it maximized, then schedule startup notification draining and recording-interface preload after first paint.
     locked: false
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Updates QMainWindow position before displaying the QMainWindow maximized and scheduling startup notification draining.
+    side_effects: Updates QMainWindow position before displaying the QMainWindow maximized and scheduling startup notification draining plus recording-interface preload.
   - name: _schedule_startup_notifications
     description: Schedule the best-effort due-notification drain once through the Qt event loop after the main window has been shown so notification I/O does not block first paint.
     locked: false
@@ -661,6 +661,45 @@ classes:
       type: None
     exceptions: []
     side_effects: Uses QTimer.singleShot to call _run_due_notifications_safely once per window.
+  - name: _schedule_recording_interface_preload
+    description: Schedule a one-time post-startup warmup for recording runtime and
+      Windows audio device probing so Begin Interview can reuse cached recorder
+      setup.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Uses QTimer.singleShot to call _preload_recording_interface_async
+      once per window.
+  - name: _recording_runtime_settings
+    description: Return PySide recording runtime settings shared by startup preload
+      and Begin Interview recording startup.
+    locked: false
+    inputs: {}
+    returns:
+      type: dict[str, str]
+    exceptions: []
+    side_effects: none
+  - name: _preload_recording_interface_async
+    description: Start a daemon thread that warms the recording runtime interface
+      without blocking first paint or Begin Interview UI responsiveness.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Starts a daemon thread.
+  - name: _preload_recording_interface
+    description: Resolve the configured recording runtime and warm the cached Windows
+      system-audio device lookup without starting a recording session.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: May run ffmpeg device enumeration through interview_runtime cache
+      and stores a non-blocking recording warning if preload fails.
   - name: _initial_window_size
     description: Calculate startup QMainWindow size from current primary-screen
       available logical geometry so Windows display scaling does not open the app
@@ -2966,13 +3005,13 @@ classes:
   - name: _configure_admin_v2_scroll_areas
     description: Apply the shared Staffing v2 scroll behavior helper to Admin Studio
       sidebar and section-stack scroll areas so wheel movement, per-pixel item scrolling,
-      and scrollbar page/single-step values match the v2 dashboard surfaces.
+      child-widget wheel relay, and scrollbar page/single-step values match the v2 dashboard surfaces.
     locked: false
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Updates Admin Studio descendant scroll-area behavior.
+    side_effects: Updates Admin Studio descendant scroll-area behavior and installs retained child-widget wheel relay filters.
   - name: _refresh_widget_style
     description: Re-polish one widget after dynamic Admin Studio QSS properties change.
     locked: false
@@ -3025,8 +3064,8 @@ classes:
     side_effects: Updates Admin Studio table item baseline data.
   - name: _start_pyside_interview_recording
     description: Start optional continuous PySide interview recording using the shared
-      local recorder, or record a non-blocking warning when recording dependencies
-      are unavailable.
+      local recorder and the same runtime settings warmed after startup, or record
+      a non-blocking warning when recording dependencies are unavailable.
     locked: false
     inputs: {}
     returns:

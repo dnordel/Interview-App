@@ -82,6 +82,8 @@ _WINDOWS_AUDIO_DEVICE_ALIASES = (
     "CABLE Output (VB-Audio Virtual Cable)",
     "CABLE Input (VB-Audio Virtual Cable)",
 )
+_WINDOWS_DSHOW_AUDIO_DEVICE_CACHE: dict[str, list[str]] = {}
+_WINDOWS_DSHOW_AUDIO_DEVICE_CACHE_LOCK = threading.Lock()
 
 
 def _utc_timestamp() -> str:
@@ -3361,6 +3363,11 @@ def list_windows_dshow_audio_devices(ffmpeg_exe: str | None = None) -> list[str]
     ffmpeg = ffmpeg_exe or shutil.which("ffmpeg")
     if not ffmpeg:
         return []
+    cache_key = str(ffmpeg)
+    with _WINDOWS_DSHOW_AUDIO_DEVICE_CACHE_LOCK:
+        cached = _WINDOWS_DSHOW_AUDIO_DEVICE_CACHE.get(cache_key)
+    if cached is not None:
+        return list(cached)
     cmd = [ffmpeg, "-hide_banner", "-list_devices", "true", "-f", "dshow", "-i", "dummy"]
     try:
         completed = subprocess.run(cmd, capture_output=True, text=True, check=False)
@@ -3369,7 +3376,10 @@ def list_windows_dshow_audio_devices(ffmpeg_exe: str | None = None) -> list[str]
         return []
 
     stderr_text = completed.stderr or ""
-    return _extract_dshow_audio_device_names(stderr_text)
+    devices = _extract_dshow_audio_device_names(stderr_text)
+    with _WINDOWS_DSHOW_AUDIO_DEVICE_CACHE_LOCK:
+        _WINDOWS_DSHOW_AUDIO_DEVICE_CACHE[cache_key] = list(devices)
+    return devices
 
 
 def resolve_preferred_windows_audio_device(

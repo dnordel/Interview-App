@@ -2,7 +2,7 @@ module:
   name: interview_app_audio_devices
   language: python
   path: src/interview_app/audio_devices.py
-  version: 1.0.1
+  version: 1.0.2
   description: Deprecated compatibility wrapper for Windows audio-device probing and
     fallback resolution implemented by interview_runtime.
 functions:
@@ -18,7 +18,8 @@ functions:
   exceptions: []
   side_effects: none
 - name: list_windows_dshow_audio_devices
-  description: Probe ffmpeg DirectShow devices and return detected audio device names.
+  description: Probe ffmpeg DirectShow devices once per ffmpeg executable path and
+    return cached detected audio device names on later calls.
   locked: false
   inputs:
     ffmpeg_exe:
@@ -28,7 +29,8 @@ functions:
   returns:
     type: list[str]
   exceptions: []
-  side_effects: executes ffmpeg subprocess for device enumeration
+  side_effects: executes ffmpeg subprocess for device enumeration on first use per
+    ffmpeg executable path and returns cached detected names afterward
 - name: resolve_preferred_windows_audio_device
   description: Resolve the best available device using preferred name and alias candidates.
   locked: false

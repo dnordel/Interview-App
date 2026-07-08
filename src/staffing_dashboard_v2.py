@@ -21,7 +21,7 @@ from staffing_service import StaffingService
 from staffing_store import StaffingStore
 
 
-def configure_v2_scroll_areas(QtWidgets: Any, root: Any) -> None:
+def configure_v2_scroll_areas(QtWidgets: Any, root: Any, QtCore: Any | None = None) -> None:
     """Apply v2 per-pixel wheel/scrollbar behavior under a widget root."""
     for scroll_area in root.findChildren(QtWidgets.QAbstractScrollArea):
         if isinstance(scroll_area, QtWidgets.QAbstractItemView):
@@ -34,6 +34,80 @@ def configure_v2_scroll_areas(QtWidgets: Any, root: Any) -> None:
         horizontal_bar.setSingleStep(24)
         vertical_bar.setPageStep(max(80, scroll_area.viewport().height() - 48))
         horizontal_bar.setPageStep(max(80, scroll_area.viewport().width() - 48))
+        if QtCore is not None:
+            _install_v2_wheel_relay(QtCore, QtWidgets, root, scroll_area)
+
+
+def _install_v2_wheel_relay(QtCore: Any, QtWidgets: Any, root: Any, scroll_area: Any) -> None:
+    if not hasattr(scroll_area, "widget"):
+        return
+    content = scroll_area.widget()
+    if content is None:
+        return
+
+    relays = getattr(root, "_staffing_v2_wheel_relays", None)
+    if relays is None:
+        relays = {}
+        setattr(root, "_staffing_v2_wheel_relays", relays)
+    relay_key = id(scroll_area)
+    relay = relays.get(relay_key)
+    if relay is None:
+        relay = _StaffingV2WheelRelay(QtCore, QtWidgets, root, scroll_area)
+        relays[relay_key] = relay
+
+    for target in [content, *content.findChildren(QtWidgets.QWidget)]:
+        if target is scroll_area.viewport() or isinstance(target, QtWidgets.QAbstractScrollArea):
+            continue
+        if target.property("staffingV2WheelRelayInstalled"):
+            continue
+        target.installEventFilter(relay)
+        target.setProperty("staffingV2WheelRelayInstalled", True)
+
+
+class _StaffingV2WheelRelay:
+    def __new__(cls, QtCore: Any, QtWidgets: Any, root: Any, scroll_area: Any) -> Any:
+        class WheelRelay(QtCore.QObject):
+            def __init__(self) -> None:
+                super().__init__(root)
+                self.QtCore = QtCore
+                self.QtWidgets = QtWidgets
+                self.scroll_area = scroll_area
+
+            def eventFilter(self, watched: Any, event: Any) -> bool:  # noqa: N802
+                if event.type() != self.QtCore.QEvent.Type.Wheel:
+                    return False
+                if not self.scroll_area.isVisible() or not self._contains_watched(watched):
+                    return False
+                return self._scroll(event)
+
+            def _contains_watched(self, watched: Any) -> bool:
+                content = self.scroll_area.widget()
+                while watched is not None:
+                    if watched is content:
+                        return True
+                    watched = watched.parentWidget()
+                return False
+
+            def _scroll(self, event: Any) -> bool:
+                bar = self.scroll_area.verticalScrollBar()
+                if bar.maximum() <= bar.minimum():
+                    return False
+                before = bar.value()
+                pixel_delta = event.pixelDelta()
+                angle_delta = event.angleDelta()
+                if pixel_delta.y():
+                    delta = pixel_delta.y()
+                elif angle_delta.y():
+                    delta = int(angle_delta.y() / 120 * bar.singleStep() * 3)
+                else:
+                    return False
+                bar.setValue(before - delta)
+                if bar.value() == before:
+                    return False
+                event.accept()
+                return True
+
+        return WheelRelay()
 
 
 APP_QSS = """
@@ -781,6 +855,8 @@ class _StaffingV2OverlayPanel:
         self.reposition()
         self.frame.show()
         self.frame.raise_()
+        self.body.adjustSize()
+        configure_v2_scroll_areas(self.QtWidgets, self.frame, self.QtCore)
 
     def reposition(self) -> None:
         height = max(self.parent.height(), 640)
@@ -3707,7 +3783,7 @@ class StaffingDashboardV2Page:
             scroll_widget.verticalScrollBar().setPageStep(max(80, scroll_widget.viewport().height() - 48))
 
     def _configure_staffing_v2_scroll_areas(self) -> None:
-        configure_v2_scroll_areas(self.QtWidgets, self.widget)
+        configure_v2_scroll_areas(self.QtWidgets, self.widget, self.QtCore)
 
     def _notification_store(self) -> NotificationStore:
         return NotificationStore(self.notification_store_path)

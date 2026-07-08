@@ -1,5 +1,6 @@
 from interview_app.audio_devices import (
     _extract_dshow_audio_device_names,
+    list_windows_dshow_audio_devices,
     resolve_default_windows_system_device,
     resolve_preferred_windows_audio_device,
 )
@@ -31,3 +32,21 @@ def test_resolve_preferred_windows_audio_device_uses_alias_match():
 def test_resolve_default_windows_system_device_falls_back_to_preferred_when_probe_empty(monkeypatch):
     monkeypatch.setattr("interview_app.audio_devices.list_windows_dshow_audio_devices", lambda: [])
     assert resolve_default_windows_system_device() == "VB-Audio Virtual Cable (CABLE Input)"
+
+
+def test_list_windows_dshow_audio_devices_reuses_cached_probe(monkeypatch):
+    calls = []
+
+    class _Completed:
+        stderr = '[dshow @ 0000]   "CABLE Output (VB-Audio Virtual Cable)"\n'
+
+    def _run(cmd, **_kwargs):
+        calls.append(cmd)
+        return _Completed()
+
+    monkeypatch.setattr("interview_runtime.subprocess.run", _run)
+
+    ffmpeg = "C:/test/ffmpeg-cache-once.exe"
+    assert list_windows_dshow_audio_devices(ffmpeg) == ["CABLE Output (VB-Audio Virtual Cable)"]
+    assert list_windows_dshow_audio_devices(ffmpeg) == ["CABLE Output (VB-Audio Virtual Cable)"]
+    assert len(calls) == 1
