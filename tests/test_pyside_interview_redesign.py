@@ -12,7 +12,7 @@ from data_store import InterviewHistoryStore
 from docx import Document
 from notification_models import NotificationRecipient, NotificationRule, NotificationSendResult
 from notification_store import NotificationStore
-from staffing_dashboard_v2 import _display_date, _validation_issues_from_rows
+from staffing_dashboard_v2 import _display_date, _validation_issues_from_rows, configure_v2_scroll_areas
 from staffing_models import StaffingMetricRow
 
 from onboarding_operations import Employee, EmployeeTask
@@ -137,6 +137,93 @@ def test_staffing_v2_validation_helpers_hide_seed_dates_and_build_worklist() -> 
     }
     assert {issue["type"] for issue in issues} == {"Coverage", "Lifecycle", "Compliance"}
     assert issues[0]["severity"] == "Critical"
+
+
+def test_staffing_v2_scroll_helper_relays_wheel_events_from_child_widgets() -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_core = pytest.importorskip("PySide6.QtCore")
+    qt_gui = pytest.importorskip("PySide6.QtGui")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    root = qt_widgets.QWidget()
+    root_layout = qt_widgets.QVBoxLayout(root)
+    scroll = qt_widgets.QScrollArea()
+    scroll.setWidgetResizable(True)
+    content = qt_widgets.QWidget()
+    content_layout = qt_widgets.QVBoxLayout(content)
+    first_child = qt_widgets.QLabel("Top row")
+    content_layout.addWidget(first_child)
+    for index in range(40):
+        content_layout.addWidget(qt_widgets.QLabel(f"Scrollable row {index}"))
+    scroll.setWidget(content)
+    scroll.resize(220, 120)
+    root_layout.addWidget(scroll)
+    root.show()
+    app.processEvents()
+
+    configure_v2_scroll_areas(qt_widgets, root, qt_core)
+    wheel = qt_gui.QWheelEvent(
+        qt_core.QPointF(10, 10),
+        qt_core.QPointF(10, 10),
+        qt_core.QPoint(0, 0),
+        qt_core.QPoint(0, -120),
+        qt_core.Qt.MouseButton.NoButton,
+        qt_core.Qt.KeyboardModifier.NoModifier,
+        qt_core.Qt.ScrollPhase.ScrollUpdate,
+        False,
+    )
+    app.sendEvent(first_child, wheel)
+    app.processEvents()
+
+    assert scroll.verticalScrollBar().value() > 0
+    assert wheel.isAccepted()
+    root.close()
+    app.processEvents()
+
+
+def test_staffing_v2_scroll_helper_relays_from_nested_item_view_without_range() -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_core = pytest.importorskip("PySide6.QtCore")
+    qt_gui = pytest.importorskip("PySide6.QtGui")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    root = qt_widgets.QWidget()
+    root_layout = qt_widgets.QVBoxLayout(root)
+    scroll = qt_widgets.QScrollArea()
+    scroll.setWidgetResizable(True)
+    content = qt_widgets.QWidget()
+    content_layout = qt_widgets.QVBoxLayout(content)
+    table = qt_widgets.QTableWidget(1, 1)
+    table.setItem(0, 0, qt_widgets.QTableWidgetItem("Visible table row"))
+    table.setFixedHeight(90)
+    content_layout.addWidget(table)
+    for index in range(40):
+        content_layout.addWidget(qt_widgets.QLabel(f"Scrollable row {index}"))
+    scroll.setWidget(content)
+    scroll.resize(260, 140)
+    root_layout.addWidget(scroll)
+    root.show()
+    app.processEvents()
+
+    configure_v2_scroll_areas(qt_widgets, root, qt_core)
+    wheel = qt_gui.QWheelEvent(
+        qt_core.QPointF(10, 10),
+        qt_core.QPointF(10, 10),
+        qt_core.QPoint(0, 0),
+        qt_core.QPoint(0, -120),
+        qt_core.Qt.MouseButton.NoButton,
+        qt_core.Qt.KeyboardModifier.NoModifier,
+        qt_core.Qt.ScrollPhase.ScrollUpdate,
+        False,
+    )
+    app.sendEvent(table.viewport(), wheel)
+    app.processEvents()
+
+    assert table.verticalScrollBar().maximum() == 0
+    assert scroll.verticalScrollBar().value() > 0
+    assert wheel.isAccepted()
+    root.close()
+    app.processEvents()
 
 
 def test_redesign_model_prioritizes_guided_interview_workflow(tmp_path: Path) -> None:
@@ -431,9 +518,38 @@ def test_pyside_history_filters_read_latest_rows_from_sqlite(tmp_path: Path) -> 
         window.history_table.item(row, 1).text()
         for row in range(window.history_table.rowCount())
     ]
-    assert visible_candidates == ["Latoya Nugent", "Fresh Candidate"]
+    assert visible_candidates == ["Fresh Candidate", "Latoya Nugent"]
     window.window.close()
     app.processEvents()
+
+
+def test_pyside_history_rows_show_newest_interviews_first(tmp_path: Path) -> None:
+    history_path = tmp_path / "interview_history.sqlite3"
+    store = InterviewHistoryStore(history_path)
+    store.append(
+        {
+            "history_id": "hist-old",
+            "candidate_name": "Old Candidate",
+            "interview_date": "2026-07-07",
+        }
+    )
+    store.append(
+        {
+            "history_id": "hist-today",
+            "candidate_name": "Today Candidate",
+            "interview_date": "2026-07-08",
+        }
+    )
+
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Palmdale"],
+    )
+
+    assert [row.candidate for row in model.home.history_rows] == ["Today Candidate", "Old Candidate"]
+    assert model.home.recent_interviews[0].candidate == "Today Candidate"
 
 
 def test_pyside_history_grid_shows_date_and_open_notes_action(tmp_path: Path) -> None:
@@ -514,8 +630,8 @@ def test_pyside_history_grid_shows_processing_until_deepseek_finishes(tmp_path: 
     )
     window = pyside_interview_app.PySideInterviewWindow(model)
 
-    processing_button = window.history_table.cellWidget(0, 6)
-    failed_button = window.history_table.cellWidget(1, 6)
+    failed_button = window.history_table.cellWidget(0, 6)
+    processing_button = window.history_table.cellWidget(1, 6)
 
     assert processing_button.text() == "Processing"
     assert not processing_button.isEnabled()
@@ -571,11 +687,11 @@ def test_pyside_history_grid_filters_fuzzy_search_school_outcome_and_colors_rows
 
     assert window.history_school_filter.itemText(0) == "All schools"
     assert [window.history_table.item(row, 1).text() for row in range(window.history_table.rowCount())] == [
-        "Latoya Nugent",
-        "Dalia Gaspar",
         "Mina Patel",
+        "Dalia Gaspar",
+        "Latoya Nugent",
     ]
-    hire_brush = window.history_table.item(0, 5).data(qt_core.Qt.ItemDataRole.BackgroundRole)
+    hire_brush = window.history_table.item(2, 5).data(qt_core.Qt.ItemDataRole.BackgroundRole)
     no_hire_brush = window.history_table.item(1, 5).data(qt_core.Qt.ItemDataRole.BackgroundRole)
     assert hire_brush.color().name() != no_hire_brush.color().name()
 
@@ -1214,7 +1330,7 @@ def test_pyside_session_generates_interview_notes_document(tmp_path: Path) -> No
     assert not (tmp_path / "notes" / "interview_history.json").exists()
 
 
-def test_pyside_finalize_uses_desktop_artifacts_history_and_deepseek_queue(tmp_path: Path, monkeypatch) -> None:
+def test_pyside_finalize_writes_basic_notes_without_deepseek_queue(tmp_path: Path, monkeypatch) -> None:
     model = build_interview_redesign_model(
         rubric_path=_write_test_rubric(tmp_path),
         overrides_path=_write_test_overrides(tmp_path),
@@ -1227,16 +1343,10 @@ def test_pyside_finalize_uses_desktop_artifacts_history_and_deepseek_queue(tmp_p
     session.save_answer_and_advance(notes="Values aligned.", score="")
     session.save_answer_and_advance(notes="Warm child-centered example.", score="5")
     history_path = tmp_path / "interview_history.sqlite3"
-    queued_jobs: list[tuple[str, str]] = []
+    def _fail_enqueue(*_args, **_kwargs) -> Path:
+        raise AssertionError("DeepSeek must only run from candidate history Generate")
 
-    def _fake_enqueue(_app, _context, out_path: str, history_id: str) -> Path:
-        queued_jobs.append((str(out_path), history_id))
-        job_path = tmp_path / "deepseek_jobs" / f"deepseek-finalize-{history_id}.json"
-        job_path.parent.mkdir(parents=True, exist_ok=True)
-        job_path.write_text("{}", encoding="utf-8")
-        return job_path
-
-    monkeypatch.setattr(pyside_interview_app, "enqueue_deepseek_finalize_job", _fake_enqueue)
+    monkeypatch.setattr(pyside_interview_app, "enqueue_deepseek_finalize_job", _fail_enqueue)
 
     result = session.finalize_interview(base_dir=tmp_path, history_path=history_path)
 
@@ -1247,11 +1357,19 @@ def test_pyside_finalize_uses_desktop_artifacts_history_and_deepseek_queue(tmp_p
     assert report_path.exists()
     assert integration_path.exists()
     assert "pyside_notes" not in str(report_path)
+    rendered = _docx_text(report_path)
+    assert "Basic Interview Notes" in rendered
+    assert "Interview Transcript" in rendered
+    assert "Interviewer Ratings" in rendered
+    assert "Warm child-centered example." in rendered
+    assert "Overall Score" in rendered
+    assert "Hiring Decision" in rendered
+    assert "Consolidated Answer Summaries" not in rendered
     assert rows[0]["candidate_name"] == "Latoya Nugent"
     assert Path(rows[0]["interview_notes_path"]) == report_path
-    assert rows[0]["deepseek_processing_status"] == "processing"
-    assert queued_jobs == [(str(report_path), rows[0]["history_id"])]
-    assert result["deepseek_job_path"].endswith(f"deepseek-finalize-{rows[0]['history_id']}.json")
+    assert rows[0]["deepseek_processing_status"] == "not_started"
+    assert result["deepseek_job_path"] == ""
+    assert result["deepseek_progress_path"] == ""
 
 
 def test_pyside_finalize_writes_interview_notes_to_school_dropbox_folder(tmp_path: Path, monkeypatch) -> None:
@@ -1339,7 +1457,7 @@ def test_pyside_admin_school_folder_settings_review_confirm_persists(tmp_path: P
     window.window.close()
 
 
-def test_pyside_finalize_preserves_transcribed_audio_for_deepseek_job(tmp_path: Path, monkeypatch) -> None:
+def test_pyside_finalize_preserves_transcribed_audio_in_basic_notes(tmp_path: Path, monkeypatch) -> None:
     model = build_interview_redesign_model(
         rubric_path=_write_test_rubric(tmp_path),
         overrides_path=_write_test_overrides(tmp_path),
@@ -1369,27 +1487,16 @@ def test_pyside_finalize_preserves_transcribed_audio_for_deepseek_job(tmp_path: 
         1: "Candidate gave custom answer.",
         2: "Candidate described a warm child-centered example.",
     }
-    queued_payloads: list[dict[str, object]] = []
-
-    def _fake_enqueue(_app, context, out_path: str, history_id: str) -> Path:
-        queued_payloads.append(context.payload)
-        job_path = tmp_path / "deepseek_jobs" / f"deepseek-finalize-{history_id}.json"
-        job_path.parent.mkdir(parents=True, exist_ok=True)
-        job_path.write_text("{}", encoding="utf-8")
-        return job_path
-
-    monkeypatch.setattr(pyside_interview_app, "enqueue_deepseek_finalize_job", _fake_enqueue)
-
     result = session.finalize_interview(base_dir=tmp_path, history_path=tmp_path / "interview_history.sqlite3")
 
     assert result["transcript_complete"] is True
-    assert queued_payloads
-    payload = queued_payloads[0]
-    assert payload["flow_recordings"] == session.flow_recordings
-    assert payload["flow_transcript"][2]["candidate_transcript"] == (
-        "Candidate described a warm child-centered example."
-    )
-    assert payload["summary_status"] == "processing"
+    rendered = _docx_text(Path(result["out_path"]))
+    assert "Candidate heard the intro." in rendered
+    assert "Candidate gave custom answer." in rendered
+    assert "Candidate described a warm child-centered example." in rendered
+    rows = InterviewHistoryStore(tmp_path / "interview_history.sqlite3").load()
+    assert rows[0]["flow_recordings"] == list(session.flow_recordings.values())
+    assert rows[0]["deepseek_processing_status"] == "not_started"
 
 
 def test_pyside_last_question_footer_finalizes_and_shows_complete_home(tmp_path: Path, monkeypatch) -> None:
@@ -2246,7 +2353,8 @@ def test_pyside_history_delete_requires_confirmation(tmp_path: Path, monkeypatch
     assert [row["history_id"] for row in InterviewHistoryStore(history_path).load()] == ["hist-1", "hist-2"]
 
     monkeypatch.setattr(window.QtWidgets.QMessageBox, "question", lambda *_args, **_kwargs: yes)
-    window._delete_history_row(model.home.history_rows[0])
+    hist_1_row = next(row for row in window.model.home.history_rows if row.row_key == "hist-1")
+    window._delete_history_row(hist_1_row)
     assert [row["history_id"] for row in InterviewHistoryStore(history_path).load()] == ["hist-2"]
     window.window.close()
     app.processEvents()
@@ -9137,9 +9245,13 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
     first_row_widget = classroom_list.itemWidget(classroom_list.item(0))
     assert first_row_widget is not None
     assert first_row_widget.objectName() == "StaffingV2ClassroomListItem"
+    assert first_row_widget.testAttribute(qt_core.Qt.WidgetAttribute.WA_TransparentForMouseEvents)
     assert first_row_widget.findChild(qt_widgets.QFrame, "StaffingV2ClassroomStatusDot") is not None
     assert first_row_widget.findChild(qt_widgets.QFrame, "StaffingV2ClassroomStatusDot").property("staffingV2Status") == "need_now"
     assert first_row_widget.findChild(qt_widgets.QLabel, "StaffingV2ClassroomItemTitle").text() == "Harmony 1"
+    assert first_row_widget.findChild(qt_widgets.QLabel, "StaffingV2ClassroomItemTitle").testAttribute(
+        qt_core.Qt.WidgetAttribute.WA_TransparentForMouseEvents
+    )
     assert first_row_widget.findChild(qt_widgets.QLabel, "StaffingV2ClassroomItemCounts").text() == (
         "Need 1 · Replace 0 · Coming 0 · Filled 1 · Don't Need 0"
     )
@@ -9327,6 +9439,79 @@ def test_pyside_staffing_v2_dashboard_scrollbars_have_scrollable_range(
         if isinstance(scroll_area, qt_widgets.QAbstractItemView):
             assert scroll_area.verticalScrollMode() == qt_widgets.QAbstractItemView.ScrollMode.ScrollPerPixel
             assert scroll_area.horizontalScrollMode() == qt_widgets.QAbstractItemView.ScrollMode.ScrollPerPixel
+
+    classroom_list.verticalScrollBar().setValue(0)
+    list_center = classroom_list.viewport().rect().center()
+    classroom_wheel = qt_gui.QWheelEvent(
+        qt_core.QPointF(list_center),
+        qt_core.QPointF(classroom_list.viewport().mapToGlobal(list_center)),
+        qt_core.QPoint(0, 0),
+        qt_core.QPoint(0, -120),
+        qt_core.Qt.MouseButton.NoButton,
+        qt_core.Qt.KeyboardModifier.NoModifier,
+        qt_core.Qt.ScrollPhase.ScrollUpdate,
+        False,
+    )
+    app.sendEvent(classroom_list.viewport(), classroom_wheel)
+    assert classroom_list.verticalScrollBar().value() > 0
+
+    classroom_list.verticalScrollBar().setValue(0)
+    routed_item_wheel = qt_gui.QWheelEvent(
+        qt_core.QPointF(page.mapFromGlobal(classroom_list.viewport().mapToGlobal(list_center))),
+        qt_core.QPointF(classroom_list.viewport().mapToGlobal(list_center)),
+        qt_core.QPoint(0, 0),
+        qt_core.QPoint(0, -120),
+        qt_core.Qt.MouseButton.NoButton,
+        qt_core.Qt.KeyboardModifier.NoModifier,
+        qt_core.Qt.ScrollPhase.ScrollUpdate,
+        False,
+    )
+    app.sendEvent(page, routed_item_wheel)
+    assert classroom_list.verticalScrollBar().value() > 0
+
+    classroom_list.verticalScrollBar().setValue(0)
+    window_item_wheel = qt_gui.QWheelEvent(
+        qt_core.QPointF(window.window.mapFromGlobal(classroom_list.viewport().mapToGlobal(list_center))),
+        qt_core.QPointF(classroom_list.viewport().mapToGlobal(list_center)),
+        qt_core.QPoint(0, 0),
+        qt_core.QPoint(0, -120),
+        qt_core.Qt.MouseButton.NoButton,
+        qt_core.Qt.KeyboardModifier.NoModifier,
+        qt_core.Qt.ScrollPhase.ScrollUpdate,
+        False,
+    )
+    app.sendEvent(window.window, window_item_wheel)
+    assert classroom_list.verticalScrollBar().value() > 0
+
+    detail_scroll.verticalScrollBar().setValue(0)
+    detail_target = detail_scroll.widget().findChildren(qt_widgets.QLabel)[-1]
+    detail_center = detail_target.rect().center()
+    detail_wheel = qt_gui.QWheelEvent(
+        qt_core.QPointF(detail_center),
+        qt_core.QPointF(detail_target.mapToGlobal(detail_center)),
+        qt_core.QPoint(0, 0),
+        qt_core.QPoint(0, -120),
+        qt_core.Qt.MouseButton.NoButton,
+        qt_core.Qt.KeyboardModifier.NoModifier,
+        qt_core.Qt.ScrollPhase.ScrollUpdate,
+        False,
+    )
+    app.sendEvent(detail_target, detail_wheel)
+    assert detail_scroll.verticalScrollBar().value() > 0
+
+    detail_scroll.verticalScrollBar().setValue(0)
+    window_detail_wheel = qt_gui.QWheelEvent(
+        qt_core.QPointF(window.window.mapFromGlobal(detail_target.mapToGlobal(detail_center))),
+        qt_core.QPointF(detail_target.mapToGlobal(detail_center)),
+        qt_core.QPoint(0, 0),
+        qt_core.QPoint(0, -120),
+        qt_core.Qt.MouseButton.NoButton,
+        qt_core.Qt.KeyboardModifier.NoModifier,
+        qt_core.Qt.ScrollPhase.ScrollUpdate,
+        False,
+    )
+    app.sendEvent(window.window, window_detail_wheel)
+    assert detail_scroll.verticalScrollBar().value() > 0
 
     assignment_id = store.list_assignments()[0].id
     window.staffing_v2_dashboard._show_position_drawer(assignment_id)
@@ -9859,6 +10044,10 @@ def test_pyside_staffing_v2_classrooms_dashboard_uses_new_shell_and_db_rows(
     assert detail_scroll is not None
     assert detail_scroll.widgetResizable()
     assert detail_scroll.verticalScrollBarPolicy() == qt_core.Qt.ScrollBarPolicy.ScrollBarAlwaysOn
+    detail_viewport_width = detail_scroll.viewport().width()
+    first_classroom_card = detail.findChild(qt_widgets.QFrame, "StaffingV2ClassroomsDetailCard")
+    assert first_classroom_card.y() < 160
+    assert first_classroom_card.width() <= detail_viewport_width
     assert detail_scroll.widget().findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsSaveButton") is None
     classroom_close = detail.findChild(qt_widgets.QPushButton, "StaffingV2ClassroomsDetailClose")
     assert classroom_close is not None
@@ -11188,6 +11377,10 @@ def test_pyside_staffing_v2_people_dashboard_renders_employee_management_from_db
     people_detail_scroll = detail.findChild(qt_widgets.QScrollArea, "StaffingV2PeopleDetailPanelScroll")
     assert people_detail_scroll is not None
     assert people_detail_scroll.verticalScrollBarPolicy() == qt_core.Qt.ScrollBarPolicy.ScrollBarAlwaysOn
+    people_tabs = page.findChild(qt_widgets.QFrame, "StaffingV2PeopleDetailTabs")
+    assert people_tabs is not None
+    assert people_tabs.y() < 160
+    assert people_tabs.width() <= people_detail_scroll.viewport().width()
     assert people_detail_scroll.widget().findChild(qt_widgets.QPushButton, "StaffingV2PeopleEditButton") is None
     people_detail_close = detail.findChild(qt_widgets.QPushButton, "StaffingV2PeopleDetailClose")
     assert people_detail_close is not None
@@ -11210,8 +11403,6 @@ def test_pyside_staffing_v2_people_dashboard_renders_employee_management_from_db
     assert "Additional Information" in detail_text
     for detail_card in detail.findChildren(qt_widgets.QFrame, "StaffingV2PeopleDetailCard"):
         assert detail_card.sizePolicy().verticalPolicy() == qt_widgets.QSizePolicy.Policy.Maximum
-    people_tabs = page.findChild(qt_widgets.QFrame, "StaffingV2PeopleDetailTabs")
-    assert people_tabs is not None
     overview_tab = page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleOverviewTab")
     assignments_tab = page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleAssignmentsTab")
     history_tab = page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleHistoryTab")
@@ -11459,6 +11650,9 @@ def test_pyside_staffing_v2_assignment_history_dashboard_renders_history_from_db
     history_detail_scroll = closed_detail_panel.findChild(qt_widgets.QScrollArea, "StaffingV2HistoryDetailPanelScroll")
     assert history_detail_scroll is not None
     assert history_detail_scroll.verticalScrollBarPolicy() == qt_core.Qt.ScrollBarPolicy.ScrollBarAlwaysOn
+    first_history_card = closed_detail_panel.findChild(qt_widgets.QFrame, "StaffingV2HistoryDetailCard")
+    assert first_history_card.y() < 160
+    assert first_history_card.width() <= history_detail_scroll.viewport().width()
     assert history_detail_scroll.widget().findChild(qt_widgets.QPushButton, "StaffingV2HistoryExportRecord") is None
     history_detail_close = closed_detail_panel.findChild(qt_widgets.QPushButton, "StaffingV2HistoryDetailClose")
     assert history_detail_close is not None
@@ -13258,6 +13452,109 @@ def test_staffing_v2_director_interviews_sync_pending_history_and_record_complet
     assignment = next(row for row in window.staffing_store.list_assignments() if row.school == "Hawthorne")
     assert assignment.status == "need_now"
     assert assignment.person_name == ""
+    window.window.close()
+    app.processEvents()
+
+
+def test_staffing_v2_director_interviews_backfill_passed_history_rows(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_core = pytest.importorskip("PySide6.QtCore")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    history_path = tmp_path / "interview_history.sqlite3"
+    history_store = InterviewHistoryStore(history_path)
+    history_store.append(
+        {
+            "history_id": "hist-hire",
+            "candidate_name": "Hire Candidate",
+            "candidate_email": "hire@example.org",
+            "school": "Palmdale",
+            "position": "Teacher",
+            "interview_date": "2026-07-08",
+            "outcome": "Hire",
+            "score": "88%",
+        }
+    )
+    history_store.append(
+        {
+            "history_id": "hist-borderline",
+            "candidate_name": "Borderline Candidate",
+            "school": "Palmdale",
+            "position": "Assistant Teacher",
+            "interview_date": "2026-07-08",
+            "outcome": "Borderline",
+            "score": "72%",
+        }
+    )
+    history_store.append(
+        {
+            "history_id": "hist-no-hire",
+            "candidate_name": "No Hire Candidate",
+            "school": "Palmdale",
+            "position": "Teacher",
+            "interview_date": "2026-07-08",
+            "outcome": "No Hire",
+            "score": "42%",
+        }
+    )
+    history_store.append(
+        {
+            "history_id": "hist-other-school",
+            "candidate_name": "Other School Candidate",
+            "school": "Hawthorne",
+            "position": "Teacher",
+            "interview_date": "2026-07-08",
+            "outcome": "Hire",
+            "score": "90%",
+        }
+    )
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", tmp_path / "staffing.sqlite3")
+    store = pyside_interview_app.StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    model = pyside_interview_app.build_director_staffing_model(
+        build_interview_redesign_model(
+            rubric_path=_write_test_rubric(tmp_path),
+            overrides_path=_write_test_overrides(tmp_path),
+            history_path=history_path,
+            school_options=["Palmdale", "Hawthorne"],
+        ),
+        school="Palmdale",
+    )
+
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    table = window.window.findChild(qt_widgets.QTableWidget, "StaffingV2DirectorInterviewPendingTable")
+    delete_selected = window.window.findChild(qt_widgets.QPushButton, "StaffingV2DirectorInterviewDeleteSelected")
+
+    rendered_candidates = [
+        table.item(row, 0).text()
+        for row in range(table.rowCount())
+        if table.item(row, 0) is not None
+    ]
+    assert rendered_candidates == ["Borderline Candidate", "Hire Candidate"]
+    monkeypatch.setattr(
+        qt_widgets.QMessageBox,
+        "question",
+        lambda *_args, **_kwargs: qt_widgets.QMessageBox.StandardButton.Yes,
+    )
+    selection_model = table.selectionModel()
+    for row in range(table.rowCount()):
+        selection_model.select(
+            table.model().index(row, 0),
+            qt_core.QItemSelectionModel.SelectionFlag.Select | qt_core.QItemSelectionModel.SelectionFlag.Rows,
+        )
+    delete_selected.click()
+    app.processEvents()
+
+    assert table.rowCount() == 0
+    window.window.close()
+    app.processEvents()
+
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    table = window.window.findChild(qt_widgets.QTableWidget, "StaffingV2DirectorInterviewPendingTable")
+    assert table.rowCount() == 0
+    assert len(InterviewHistoryStore(history_path).load()) == 4
     window.window.close()
     app.processEvents()
 

@@ -2,7 +2,7 @@ module:
   name: deepseek_finalize_worker
   language: python
   path: src/deepseek_finalize_worker.py
-  version: 1.9.2
+  version: 1.9.3
   description: Detached local DeepSeek finalize worker that refreshes interview notes
     documents and history status after the GUI finalize flow returns, keeping DeepSeek
     signal scoring advisory and human raw scores final. Workers serialize processing
@@ -392,6 +392,24 @@ functions:
   - OSError
   side_effects: Writes DOCX output, may create and remove a temporary retry directory,
     and may move regenerated output to a sibling report path.
+- name: _delete_superseded_basic_notes
+  description: Delete the prior same-folder Basic Interview Notes DOCX after a richer
+    DeepSeek interview notes document has been successfully generated at a distinct
+    path.
+  locked: false
+  inputs:
+    original_path:
+      type: Path
+      required: true
+    generated_path:
+      type: Path
+      required: true
+  returns:
+    type: None
+  exceptions: []
+  side_effects: May delete one sibling DOCX file whose name contains Basic Interview
+    Notes; filesystem delete failures are ignored so history still points at the
+    generated DeepSeek document.
 - name: _run_job_unlocked
   description: Execute one already-lock-protected DeepSeek finalize job, generating
     or resuming advisory trait suggestions/scoring and recomputed scoring before
@@ -416,7 +434,8 @@ functions:
   - OSError
   - RuntimeError
   side_effects: May start and call local Ollama except in document-only rerun mode,
-    writes DOCX output, and updates interview history through InterviewHistoryStore.
+    writes DOCX output, deletes a superseded same-folder basic notes DOCX after successful
+    rich export, and updates interview history through InterviewHistoryStore.
 - name: run_job
   description: Load one persisted DeepSeek finalize job, acquire the per-job-directory
     DeepSeek lock, generate advisory trait signal/scoring output through local Ollama,
@@ -436,7 +455,8 @@ functions:
   - ValueError
   - OSError
   side_effects: Reads job JSON, creates/removes the DeepSeek lock, may start and call
-    local Ollama, writes DOCX output, and updates interview history through InterviewHistoryStore.
+    local Ollama, writes DOCX output, deletes a superseded same-folder basic notes
+    DOCX after successful rich export, and updates interview history through InterviewHistoryStore.
 - name: main
   description: CLI entrypoint for running one detached DeepSeek finalize job.
   locked: false

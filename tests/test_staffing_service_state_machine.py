@@ -375,6 +375,10 @@ def test_director_interview_completion_is_school_scoped_and_does_not_fill_positi
     assert assignment.status == "need_now"
     assert assignment.person_name == ""
     assert assignment.classroom == "Harmony 1"
+    palmdale_pending = service.list_pending_director_interviews(school="Palmdale")
+    assert service.delete_pending_director_interviews([palmdale_pending[0].id, result.referral_id]) == 1
+    assert service.list_pending_director_interviews(school="Palmdale") == []
+    assert service.list_completed_director_interviews(school="Hawthorne")[0].candidate_name == "Jordan Lee"
 
 
 def test_director_interview_validation_requires_notes_and_hire_shift_details(tmp_path: Path) -> None:

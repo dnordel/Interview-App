@@ -36,13 +36,32 @@ def configure_v2_scroll_areas(QtWidgets: Any, root: Any, QtCore: Any | None = No
         horizontal_bar.setPageStep(max(80, scroll_area.viewport().width() - 48))
         if QtCore is not None:
             _install_v2_wheel_relay(QtCore, QtWidgets, root, scroll_area)
+    if QtCore is not None:
+        _install_v2_application_wheel_router(QtCore, QtWidgets, root)
+
+
+def _install_v2_application_wheel_router(QtCore: Any, QtWidgets: Any, root: Any) -> None:
+    app = QtWidgets.QApplication.instance()
+    if app is None:
+        return
+    routers = getattr(app, "_staffing_v2_application_wheel_routers", None)
+    if routers is None:
+        routers = {}
+        setattr(app, "_staffing_v2_application_wheel_routers", routers)
+    router_key = id(root)
+    router = routers.get(router_key)
+    if router is None:
+        router = _StaffingV2ApplicationWheelRouter(QtCore, QtWidgets, root)
+        routers[router_key] = router
+        app.installEventFilter(router)
+    setattr(root, "_staffing_v2_application_wheel_router", router)
 
 
 def _install_v2_wheel_relay(QtCore: Any, QtWidgets: Any, root: Any, scroll_area: Any) -> None:
-    if not hasattr(scroll_area, "widget"):
-        return
-    content = scroll_area.widget()
-    if content is None:
+    content = scroll_area.widget() if hasattr(scroll_area, "widget") else None
+    viewport = scroll_area.viewport() if hasattr(scroll_area, "viewport") else None
+    target_roots = [target for target in (root, content, viewport) if target is not None]
+    if not target_roots:
         return
 
     relays = getattr(root, "_staffing_v2_wheel_relays", None)
@@ -55,13 +74,17 @@ def _install_v2_wheel_relay(QtCore: Any, QtWidgets: Any, root: Any, scroll_area:
         relay = _StaffingV2WheelRelay(QtCore, QtWidgets, root, scroll_area)
         relays[relay_key] = relay
 
-    for target in [content, *content.findChildren(QtWidgets.QWidget)]:
-        if target is scroll_area.viewport() or isinstance(target, QtWidgets.QAbstractScrollArea):
+    targets: list[Any] = []
+    for target_root in target_roots:
+        targets.extend([target_root, *target_root.findChildren(QtWidgets.QWidget)])
+    for target in targets:
+        if isinstance(target, QtWidgets.QAbstractScrollArea):
             continue
-        if target.property("staffingV2WheelRelayInstalled"):
+        installed = getattr(target, "_staffing_v2_wheel_relay_ids", set())
+        if relay_key in installed:
             continue
         target.installEventFilter(relay)
-        target.setProperty("staffingV2WheelRelayInstalled", True)
+        setattr(target, "_staffing_v2_wheel_relay_ids", {*installed, relay_key})
 
 
 class _StaffingV2WheelRelay:
@@ -76,38 +99,96 @@ class _StaffingV2WheelRelay:
             def eventFilter(self, watched: Any, event: Any) -> bool:  # noqa: N802
                 if event.type() != self.QtCore.QEvent.Type.Wheel:
                     return False
-                if not self.scroll_area.isVisible() or not self._contains_watched(watched):
+                if not self.scroll_area.isVisible() or not self._contains_watched(watched, event):
                     return False
                 return self._scroll(event)
 
-            def _contains_watched(self, watched: Any) -> bool:
-                content = self.scroll_area.widget()
-                while watched is not None:
-                    if watched is content:
+            def _contains_watched(self, watched: Any, event: Any) -> bool:
+                content = self.scroll_area.widget() if hasattr(self.scroll_area, "widget") else None
+                viewport = self.scroll_area.viewport() if hasattr(self.scroll_area, "viewport") else None
+                current = watched
+                while current is not None:
+                    if current is self.scroll_area:
                         return True
-                    watched = watched.parentWidget()
-                return False
+                    if current is content or current is viewport:
+                        return True
+                    current = current.parentWidget()
+                if viewport is None:
+                    return False
+                global_position = event.globalPosition().toPoint() if hasattr(event, "globalPosition") else event.globalPos()
+                local_position = viewport.mapFromGlobal(global_position)
+                return viewport.rect().contains(local_position)
 
             def _scroll(self, event: Any) -> bool:
-                bar = self.scroll_area.verticalScrollBar()
-                if bar.maximum() <= bar.minimum():
-                    return False
-                before = bar.value()
-                pixel_delta = event.pixelDelta()
-                angle_delta = event.angleDelta()
-                if pixel_delta.y():
-                    delta = pixel_delta.y()
-                elif angle_delta.y():
-                    delta = int(angle_delta.y() / 120 * bar.singleStep() * 3)
-                else:
-                    return False
-                bar.setValue(before - delta)
-                if bar.value() == before:
-                    return False
-                event.accept()
-                return True
+                return _scroll_v2_area_from_wheel(self.scroll_area, event)
 
         return WheelRelay()
+
+
+class _StaffingV2ApplicationWheelRouter:
+    def __new__(cls, QtCore: Any, QtWidgets: Any, root: Any) -> Any:
+        class ApplicationWheelRouter(QtCore.QObject):
+            def __init__(self) -> None:
+                super().__init__(root)
+                self.QtWidgets = QtWidgets
+                self.root = root
+
+            def eventFilter(self, watched: Any, event: Any) -> bool:  # noqa: N802
+                if event.type() != QtCore.QEvent.Type.Wheel or not self.root.isVisible():
+                    return False
+                global_position = _v2_wheel_global_position(event)
+                if not self.root.rect().contains(self.root.mapFromGlobal(global_position)):
+                    return False
+                for scroll_area in self._scroll_areas_at(global_position):
+                    if _scroll_v2_area_from_wheel(scroll_area, event):
+                        return True
+                return False
+
+            def _scroll_areas_at(self, global_position: Any) -> list[Any]:
+                candidates = []
+                for scroll_area in self.root.findChildren(self.QtWidgets.QAbstractScrollArea):
+                    if not scroll_area.isVisible():
+                        continue
+                    viewport = scroll_area.viewport() if hasattr(scroll_area, "viewport") else None
+                    if viewport is None:
+                        continue
+                    if not viewport.rect().contains(viewport.mapFromGlobal(global_position)):
+                        continue
+                    candidates.append(scroll_area)
+                return sorted(candidates, key=_v2_scroll_area_viewport_area)
+
+        return ApplicationWheelRouter()
+
+
+def _v2_scroll_area_viewport_area(scroll_area: Any) -> int:
+    viewport = scroll_area.viewport()
+    return max(1, viewport.width()) * max(1, viewport.height())
+
+
+def _v2_wheel_global_position(event: Any) -> Any:
+    if hasattr(event, "globalPosition"):
+        return event.globalPosition().toPoint()
+    return event.globalPos()
+
+
+def _scroll_v2_area_from_wheel(scroll_area: Any, event: Any) -> bool:
+    bar = scroll_area.verticalScrollBar()
+    if bar.maximum() <= bar.minimum():
+        return False
+    before = bar.value()
+    pixel_delta = event.pixelDelta()
+    angle_delta = event.angleDelta()
+    if pixel_delta.y():
+        delta = pixel_delta.y()
+    elif angle_delta.y():
+        delta = int(angle_delta.y() / 120 * bar.singleStep() * 3)
+    else:
+        return False
+    bar.setValue(before - delta)
+    if bar.value() == before:
+        return False
+    event.accept()
+    return True
 
 
 APP_QSS = """
@@ -786,17 +867,25 @@ class _StaffingV2OverlayPanel:
 
         self.body = QtWidgets.QWidget()
         self.body.setObjectName(f"{object_name}Body")
+        self.body.setMinimumWidth(0)
+        self.body.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Ignored,
+            QtWidgets.QSizePolicy.Policy.Preferred,
+        )
         self.body_layout = QtWidgets.QVBoxLayout(self.body)
         self.body_layout.setContentsMargins(14, 12, 14, 12)
         self.body_layout.setSpacing(8)
+        self.body_layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         self.scroll_area.setWidget(self.body)
         root.addWidget(self.scroll_area, 1)
 
         self.footer = QtWidgets.QWidget()
         self.footer.setObjectName(f"{object_name}Footer")
+        self.footer.setMinimumWidth(0)
         self.footer_layout = QtWidgets.QVBoxLayout(self.footer)
         self.footer_layout.setContentsMargins(14, 8, 14, 12)
         self.footer_layout.setSpacing(8)
+        self.footer_layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         root.addWidget(self.footer)
 
         class ResizeFilter(QtCore.QObject):
@@ -853,8 +942,10 @@ class _StaffingV2OverlayPanel:
 
     def show_overlay(self) -> None:
         self.reposition()
+        self._sync_body_width()
         self.frame.show()
         self.frame.raise_()
+        self._sync_body_width()
         self.body.adjustSize()
         configure_v2_scroll_areas(self.QtWidgets, self.frame, self.QtCore)
 
@@ -864,6 +955,12 @@ class _StaffingV2OverlayPanel:
         x = max(0, self.parent.width() - width)
         self.frame.setFixedWidth(width)
         self.frame.setGeometry(x, 0, width, height)
+        self._sync_body_width()
+
+    def _sync_body_width(self) -> None:
+        viewport_width = self.scroll_area.viewport().width()
+        if viewport_width > 0:
+            self.body.setFixedWidth(viewport_width)
 
     def _clear_layout(self, layout: Any) -> None:
         while layout.count():
@@ -1098,6 +1195,7 @@ class StaffingDashboardV2Page:
         self.classroom_list.setHorizontalScrollBarPolicy(self.QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.classroom_list.setVerticalScrollMode(self.QtWidgets.QAbstractItemView.ScrollMode.ScrollPerPixel)
         self.classroom_list.setSizeAdjustPolicy(self.QtWidgets.QAbstractScrollArea.SizeAdjustPolicy.AdjustIgnored)
+        self.classroom_list.setWordWrap(True)
         self.classroom_list.setSizePolicy(
             self.QtWidgets.QSizePolicy.Policy.Expanding,
             self.QtWidgets.QSizePolicy.Policy.Ignored,
@@ -4739,6 +4837,8 @@ class StaffingDashboardV2Page:
         chevron = self._label(">", "StaffingV2ClassroomItemChevron")
         chevron.setAlignment(self.QtCore.Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(chevron)
+        for widget in [frame, *frame.findChildren(self.QtWidgets.QWidget)]:
+            widget.setAttribute(self.QtCore.Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         return frame
 
     def _director_interview_panel(self) -> Any:
@@ -4748,6 +4848,11 @@ class StaffingDashboardV2Page:
         header.addStretch(1)
         self.director_interview_status = self._label("", "StaffingV2Muted")
         header.addWidget(self.director_interview_status)
+        self.director_interview_delete_selected = self.QtWidgets.QPushButton("Delete Selected")
+        self.director_interview_delete_selected.setObjectName("StaffingV2DirectorInterviewDeleteSelected")
+        self._set_button_icon(self.director_interview_delete_selected, "delete")
+        self.director_interview_delete_selected.clicked.connect(self._delete_selected_director_referrals)
+        header.addWidget(self.director_interview_delete_selected)
         layout.addLayout(header)
 
         layout.addWidget(self._label("Pending", "StaffingV2Muted"))
@@ -4755,6 +4860,7 @@ class StaffingDashboardV2Page:
         self.director_interview_pending_table.setObjectName("StaffingV2DirectorInterviewPendingTable")
         self.director_interview_pending_table.setEditTriggers(self.QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         self.director_interview_pending_table.setSelectionBehavior(self.QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
+        self.director_interview_pending_table.setSelectionMode(self.QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
         self.director_interview_pending_table.setHorizontalHeaderLabels(
             ["Candidate", "Outcome", "First Interview Score", "Interview Date", "Position", "Referral", "Action"]
         )
@@ -4798,6 +4904,7 @@ class StaffingDashboardV2Page:
         self.director_interview_status.setText(
             f"{len(self.pending_director_candidates)} pending / {len(self.completed_director_interviews)} completed"
         )
+        self.director_interview_delete_selected.setEnabled(bool(self.pending_director_candidates))
 
     def _refresh_director_pending_table(self) -> None:
         table = self.director_interview_pending_table
@@ -4823,6 +4930,33 @@ class StaffingDashboardV2Page:
             button.clicked.connect(lambda _checked=False, item=candidate.id: self._open_director_interview_dialog(item))
             table.setCellWidget(row_index, 6, button)
         table.resizeColumnsToContents()
+
+    def _delete_selected_director_referrals(self) -> None:
+        table = self.director_interview_pending_table
+        referral_ids = {
+            int(item.data(self.QtCore.Qt.ItemDataRole.UserRole))
+            for item in table.selectedItems()
+            if item.data(self.QtCore.Qt.ItemDataRole.UserRole)
+        }
+        if not referral_ids:
+            self.director_interview_status.setText(
+                f"{len(self.pending_director_candidates)} pending / {len(self.completed_director_interviews)} completed"
+            )
+            return
+        response = self.QtWidgets.QMessageBox.question(
+            self.widget,
+            "Delete Director Referrals",
+            f"Delete {len(referral_ids)} pending director referral(s)?",
+            self.QtWidgets.QMessageBox.StandardButton.Yes | self.QtWidgets.QMessageBox.StandardButton.No,
+            self.QtWidgets.QMessageBox.StandardButton.No,
+        )
+        if response != self.QtWidgets.QMessageBox.StandardButton.Yes:
+            return
+        deleted = self.service_factory().delete_pending_director_interviews(sorted(referral_ids))
+        self._refresh_director_interviews()
+        self.director_interview_status.setText(
+            f"{deleted} deleted / {len(self.pending_director_candidates)} pending / {len(self.completed_director_interviews)} completed"
+        )
 
     def _refresh_director_history_table(self) -> None:
         table = self.director_interview_history_table

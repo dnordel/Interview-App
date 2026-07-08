@@ -4,7 +4,7 @@ from collections.abc import Callable
 from dataclasses import replace
 from datetime import date, datetime, timezone
 import json
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Sequence
 
 from staffing_models import (
     DIRECTOR_INTERVIEW_DECISIONS,
@@ -334,6 +334,9 @@ class StaffingService:
 
     def list_completed_director_interviews(self, *, school: str = "") -> list[StaffingDirectorInterview]:
         return self.store.list_director_interviews(school=school)
+
+    def delete_pending_director_interviews(self, referral_ids: Sequence[int]) -> int:
+        return self.store.delete_pending_director_referrals(referral_ids)
 
     def record_director_interview(
         self,

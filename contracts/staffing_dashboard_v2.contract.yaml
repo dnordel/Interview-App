@@ -2,13 +2,14 @@ module:
   name: staffing_dashboard_v2
   language: python
   path: src/staffing_dashboard_v2.py
-  version: 0.20.5
-  description: Parallel PySide Staffing v2 dashboard page module for the mockup-driven rewrite; renders a standalone mockup-style staffing shell/sidebar with active nav state, Qt icons plus custom primary-blue add and person-add icons, styled scrollbars, and disabled placeholder nav entries for unimplemented mockup destinations, main Staffing Dashboard with stable dashboard objectName, labeled filters/icon-owned Add Position and a shared selected-school summary/action row containing semantic compact icon-bearing summary chips plus Export/View History actions, validation worklist chip drilldown, mockup colon labels, icon-bearing overview cards, icon-bearing classroom priority chip, custom always-scrollable classroom list rows with status dots and chevrons, icon-only classroom list filter dialog for status/permit/open-days filters, classroom list footer count, vertically scrollable classroom detail area with refresh-synced scroll range, page-wide per-pixel Qt scroll behavior for Staffing v2 lists/tables/text edits/scroll areas, position table with explicit row-number column, normalized date/program display, icon-bearing status and permit chips plus menu-style row actions including mistaken-position deletion for unassigned positions, icon-bearing dashed Add Position drop zone, director-interview pending/completed section for new hire/borderline referrals with first-interview score visibility and hire-only proposed shift/classroom capture, status key, service-backed Add Position dialog with first-class Director position type and icon-only close, filtered Export read-only preview dialog, shared overlay side-panel template with scrollable body and fixed footer plus shared compact detail-card builder, Classroom Management sub-dashboard with icon-owned Add Classroom header action, service-backed Add Classroom dialog, Export read-only filtered-classrooms preview dialog, pagination footer, readable fixed-width table columns with status/active chips, icon-bearing compact detail/metric/health cards, row View detail selection, always-visible-scrollbar classroom detail overlay with pinned Save Changes/Deactivate controls, and an overlay side filter drawer with draft-only controls and active-count badges, Staffing Validation sub-dashboard with metric cards, active-state issue severity tabs, lifecycle/permit/date worklist issues, pagination footer, icon-bearing export/filter/search/table-row/detail-footer actions, row View drawer navigation, Run Full Validation refresh action, Export Validation Report read-only filtered-issues preview dialog, View Validation Rules read-only dialog, and icon-bearing overlay filter/right-panel controls, read-only position detail overlay drawer with icon-only close, normalized date/program display, icon-bearing action buttons including Delete Position for unassigned positions, icon-bearing related-person placeholder action, and icon-bearing footer actions, v2 Mark Coming / Mark Filled dialogs with Director role preservation, icon-only close, and icon-bearing footer actions, v2 Manage Filled chooser with icon-only close, v2 Update Permit dialog with icon-only close, v2 Mark Need Now dialog with icon-only close, v2 Delete Position confirmation dialog, People / Employee Management sub-dashboard with icon-owned Add Person action text, Director role filtering/addition, active-state detail tabs, pagination footer, icon-bearing header/filter/search/table-row/detail/footer actions, row View detail selection, service-backed Add Person dialog, and icon-bearing overlay detail/filter controls with compact reusable cards, full Staffing v2 Notifications dashboard with editable free-form events, filters, sorting, list/grid toggle, recipient chips, template variables, preview, test send, validation, sanitized audit errors, scheduled counts, save/cancel/delete backed by NotificationStore and NotificationService, and Assignment History sub-dashboard with icon-bearing header/date-range/table-row/detail-footer actions, View Validation navigation, View Assignment drawer navigation, Open Employee navigation, header Export read-only filtered-records preview dialog, Export Record read-only preview dialog, pagination footer, overlay detail panel with compact reusable cards, a neutral assignment-ID detail chip, icon-bearing lifecycle event rows, and validation checklist rows while the legacy Staffing page remains available.
+  version: 0.21.0
+  description: Parallel PySide Staffing v2 dashboard page module for the mockup-driven rewrite; renders a standalone mockup-style staffing shell/sidebar with active nav state, Qt icons plus custom primary-blue add and person-add icons, styled scrollbars, and disabled placeholder nav entries for unimplemented mockup destinations, main Staffing Dashboard with stable dashboard objectName, labeled filters/icon-owned Add Position and a shared selected-school summary/action row containing semantic compact icon-bearing summary chips plus Export/View History actions, validation worklist chip drilldown, mockup colon labels, icon-bearing overview cards, icon-bearing classroom priority chip, custom always-scrollable classroom list rows with status dots and chevrons, icon-only classroom list filter dialog for status/permit/open-days filters, classroom list footer count, vertically scrollable classroom detail area with refresh-synced scroll range, page-wide per-pixel Qt scroll behavior for Staffing v2 lists/tables/text edits/scroll areas, position table with explicit row-number column, normalized date/program display, icon-bearing status and permit chips plus menu-style row actions including mistaken-position deletion for unassigned positions, icon-bearing dashed Add Position drop zone, director-interview pending/completed section for new hire/borderline referrals with first-interview score visibility and hire-only proposed shift/classroom capture, status key, service-backed Add Position dialog with first-class Director position type and icon-only close, filtered Export read-only preview dialog, shared overlay side-panel template with top-aligned viewport-width-clamped scrollable body and fixed footer plus shared compact detail-card builder, Classroom Management sub-dashboard with icon-owned Add Classroom header action, service-backed Add Classroom dialog, Export read-only filtered-classrooms preview dialog, pagination footer, readable fixed-width table columns with status/active chips, icon-bearing compact detail/metric/health cards, row View detail selection, always-visible-scrollbar classroom detail overlay with pinned Save Changes/Deactivate controls, and an overlay side filter drawer with draft-only controls and active-count badges, Staffing Validation sub-dashboard with metric cards, active-state issue severity tabs, lifecycle/permit/date worklist issues, pagination footer, icon-bearing export/filter/search/table-row/detail-footer actions, row View drawer navigation, Run Full Validation refresh action, Export Validation Report read-only filtered-issues preview dialog, View Validation Rules read-only dialog, and icon-bearing overlay filter/right-panel controls, read-only position detail overlay drawer with icon-only close, normalized date/program display, icon-bearing action buttons including Delete Position for unassigned positions, icon-bearing related-person placeholder action, and icon-bearing footer actions, v2 Mark Coming / Mark Filled dialogs with Director role preservation, icon-only close, and icon-bearing footer actions, v2 Manage Filled chooser with icon-only close, v2 Update Permit dialog with icon-only close, v2 Mark Need Now dialog with icon-only close, v2 Delete Position confirmation dialog, People / Employee Management sub-dashboard with icon-owned Add Person action text, Director role filtering/addition, active-state detail tabs, pagination footer, icon-bearing header/filter/search/table-row/detail/footer actions, row View detail selection, service-backed Add Person dialog, and icon-bearing overlay detail/filter controls with compact reusable cards, full Staffing v2 Notifications dashboard with editable free-form events, filters, sorting, list/grid toggle, recipient chips, template variables, preview, test send, validation, sanitized audit errors, scheduled counts, save/cancel/delete backed by NotificationStore and NotificationService, and Assignment History sub-dashboard with icon-bearing header/date-range/table-row/detail-footer actions, View Validation navigation, View Assignment drawer navigation, Open Employee navigation, header Export read-only filtered-records preview dialog, Export Record read-only preview dialog, pagination footer, overlay detail panel with compact reusable cards, a neutral assignment-ID detail chip, icon-bearing lifecycle event rows, and validation checklist rows while the legacy Staffing page remains available.
 functions:
 - name: configure_v2_scroll_areas
-  description: Apply shared v2 per-pixel wheel scrolling, child-widget wheel relay,
-    ignored size-adjust policy, and practical scrollbar step/page values to all
-    QAbstractScrollArea descendants under a supplied PySide widget root.
+  description: Apply shared v2 per-pixel wheel scrolling, root/global-position,
+    child-widget, and item-view viewport wheel relay, ignored size-adjust policy,
+    and practical scrollbar step/page values to all QAbstractScrollArea descendants
+    under a supplied PySide widget root.
   locked: false
   inputs:
     QtWidgets:
@@ -24,9 +25,26 @@ functions:
   returns:
     type: None
   exceptions: []
-  side_effects: Updates scroll behavior for descendant scroll areas and item views, and when QtCore is supplied installs retained event filters that relay child-widget wheel events to the owning scroll area.
+  side_effects: Updates scroll behavior for descendant scroll areas and item views, and when QtCore is supplied installs retained child-widget relays plus a reusable QApplication-level wheel router that sends top-window wheel events to the native scroll viewport under the cursor.
+- name: _install_v2_application_wheel_router
+  description: Install one retained QApplication-level Staffing v2 wheel router for a supplied widget root so wheel events delivered to the top-level app/window still scroll the native scroll viewport under the cursor.
+  locked: false
+  inputs:
+    QtCore:
+      type: Any
+      required: true
+    QtWidgets:
+      type: Any
+      required: true
+    root:
+      type: QWidget
+      required: true
+  returns:
+    type: None
+  exceptions: []
+  side_effects: Stores the router on QApplication and the supplied root, installs it as an application event filter, and leaves unrelated app areas alone unless the event global position is inside the root.
 - name: _install_v2_wheel_relay
-  description: Install one retained wheel-event relay for a QScrollArea content widget and its child widgets, skipping item views and already-wired targets.
+  description: Install one retained wheel-event relay per scroll area for the supplied root, QScrollArea content widgets, item-view viewports, and their child widgets, skipping already-wired target/scroll-area pairs.
   locked: false
   inputs:
     QtCore:
@@ -44,7 +62,43 @@ functions:
   returns:
     type: None
   exceptions: []
-  side_effects: Stores relay filters on the supplied root and installs event filters on eligible child widgets so wheel movement scrolls the owning QScrollArea.
+  side_effects: Stores relay filters on the supplied root and installs event filters on eligible root, content, viewport, and child widgets so wheel movement scrolls the owning QAbstractScrollArea while still allowing nested scroll areas to handle their own range first.
+- name: _v2_scroll_area_viewport_area
+  description: Return the viewport area for a scroll area so nested native scroll surfaces can be tried from smallest/deepest to largest/parent.
+  locked: false
+  inputs:
+    scroll_area:
+      type: QAbstractScrollArea
+      required: true
+  returns:
+    type: int
+  exceptions: []
+  side_effects: none
+- name: _v2_wheel_global_position
+  description: Return a QPoint global cursor position from either Qt6 globalPosition or older globalPos wheel-event APIs.
+  locked: false
+  inputs:
+    event:
+      type: QWheelEvent
+      required: true
+  returns:
+    type: QPoint
+  exceptions: []
+  side_effects: none
+- name: _scroll_v2_area_from_wheel
+  description: Apply one wheel event delta to a scroll area's vertical scrollbar, accepting the event only when the scrollbar moves.
+  locked: false
+  inputs:
+    scroll_area:
+      type: QAbstractScrollArea
+      required: true
+    event:
+      type: QWheelEvent
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: Moves the supplied scroll area's vertical scrollbar and accepts the wheel event only after a successful movement.
 - name: _classroom_priority_status
   description: Return the Classroom Management priority label for a group of staffing metric rows, preferring Need Now, Replace, Coming, Filled, then Don't Need.
   locked: false
@@ -366,7 +420,7 @@ functions:
   side_effects: none
 classes:
 - name: _StaffingV2WheelRelay
-  description: Factory for a retained Qt event-filter object that converts wheel events over non-scroll child widgets into vertical scrollbar movement on the owning Staffing v2 QScrollArea.
+  description: Factory for a retained Qt event-filter object that converts wheel events over the supplied root, non-scroll child widgets, custom item widgets, and viewports into vertical scrollbar movement on the owning Staffing v2 QAbstractScrollArea when the event global position sits over that scroll area.
   locked: false
   methods:
   - name: __new__
@@ -386,9 +440,28 @@ classes:
     returns:
       type: QObject
     exceptions: []
-    side_effects: Creates a QObject child of root that handles wheel events for one scroll area.
+    side_effects: Creates a QObject child of root that handles wheel events for one scroll area by parent-chain or global-position match, returning false when that scroll area has no usable range so parent relays can continue.
+- name: _StaffingV2ApplicationWheelRouter
+  description: Factory for a retained QApplication-level event-filter object that routes wheel events delivered to the top-level app/window into the smallest visible Staffing v2 QAbstractScrollArea viewport under the cursor.
+  locked: false
+  methods:
+  - name: __new__
+    inputs:
+      QtCore:
+        type: Any
+        required: true
+      QtWidgets:
+        type: Any
+        required: true
+      root:
+        type: QWidget
+        required: true
+    returns:
+      type: QObject
+    exceptions: []
+    side_effects: Creates a QObject child of root that handles application-level wheel events for all visible descendant scroll areas under the supplied Staffing v2 root, preferring smaller native viewports such as tables before parent detail scroll areas.
 - name: _StaffingV2OverlayPanel
-  description: Internal PySide helper that creates a right-aligned Staffing v2 overlay panel with a preserved root objectName, reusable title/subtitle/close header builder, scrollable body layout, fixed footer layout, resize-aware positioning, and no participation in the parent dashboard layout.
+  description: Internal PySide helper that creates a right-aligned Staffing v2 overlay panel with a preserved root objectName, reusable title/subtitle/close header builder, top-aligned viewport-width-clamped scrollable body layout, fixed footer layout, resize-aware positioning, and no participation in the parent dashboard layout.
   locked: false
   methods:
   - name: __init__
@@ -411,7 +484,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Creates a hidden QFrame child of the supplied parent, installs a parent resize event filter, and creates body/footer layouts.
+    side_effects: Creates a hidden QFrame child of the supplied parent, installs a parent resize event filter, and creates top-aligned body/footer layouts whose scroll body can shrink to the viewport width.
   - name: clear
     inputs: {}
     returns:
@@ -456,13 +529,19 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Repositions, shows, raises the overlay frame without resizing the parent dashboard layout, adjusts the dynamic body size, and reapplies shared scroll-area behavior so rebuilt overlay child widgets relay wheel events to the scroll area.
+    side_effects: Repositions, clamps the scroll body to the current viewport width, shows, raises the overlay frame without resizing the parent dashboard layout, adjusts the dynamic body size, and reapplies shared scroll-area behavior so rebuilt overlay child widgets relay wheel events to the scroll area.
   - name: reposition
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Updates overlay geometry to right-align inside the parent.
+    side_effects: Updates overlay geometry to right-align inside the parent and clamps the scroll body to the current viewport width.
+  - name: _sync_body_width
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Fixes the scroll body width to the current viewport width when the viewport has been laid out, preventing overlay detail content from creating clipped horizontal overflow.
   - name: _clear_layout
     inputs:
       layout:
@@ -473,7 +552,7 @@ classes:
     exceptions: []
     side_effects: Recursively detaches and schedules deletion of layout children.
 - name: StaffingDashboardV2Page
-  description: Builds and refreshes the parallel Staffing v2 PySide shell/sidebar with Qt icons plus custom primary-blue add and person-add icons, styled scrollbars, mockup nav placeholders, dashboard with mockup-style header controls and one shared selected-school summary/action row containing Export/View History beside semantic compact icon-bearing summary chips with visible colon labels, icon-bearing overview cards and priority chip, custom classroom list item widgets, classroom list footer count, and icon-only filter affordance, explicit-numbered chip-based positions table with menu-style row actions, service-backed Add Position dialog with first-class Director position type, icon-only close, and icon-bearing drop zone, Export read-only preview dialog, shared overlay panels for side drawers/detail cards with scrollable bodies and fixed footers, Classroom Management dashboard with icon-owned Add Classroom action text, Export read-only filtered-classrooms preview dialog, pagination footer, icon-bearing header/filter/search/table-row/detail-footer actions, row View detail selection, and icon-bearing overlay filter drawer active-count controls, Notifications dashboard with rule cards, filters, sorting, list/grid toggle, editable free-form event combo, recipient chips, template toolbar/variables, preview dialog, send-test action, audit/scheduled panel, validation, save/cancel/delete backed by NotificationStore and NotificationService, Staffing Validation dashboard with metric cards, active-state issue severity tabs, pagination footer, icon-bearing export/filter/search/table-row/detail-footer actions, row View drawer navigation, Run Full Validation refresh action, Export Validation Report read-only filtered-issues preview dialog, View Validation Rules read-only dialog, and icon-bearing overlay filter/right-panel controls, read-only position detail overlay drawer with icon-only close, icon-bearing action buttons, icon-bearing related-person placeholder action, and icon-bearing footer actions, Mark Coming and Mark Filled workflows with Director role preservation, icon-only close, and icon-bearing footer actions, Manage Filled workflow chooser with icon-only close, Update Permit workflow with icon-only close, Mark Need Now replacement-clear workflow with icon-only close, People / Employee Management dashboard with icon-owned Add Person action text, Director role filtering/addition, service-backed Add Person dialog, active-state detail tabs, pagination footer, icon-bearing header/filter/search/table-row actions, row View detail selection, and icon-bearing overlay detail/filter controls, and Assignment History dashboard with icon-bearing header/date-range/table-row/detail-footer actions, row View detail selection, View Validation navigation, View Assignment drawer navigation, Open Employee navigation, header Export read-only filtered-records preview dialog, Export Record read-only preview dialog, pagination footer, overlay detail panel, neutral assignment-ID detail chip, lifecycle event rows, and validation checklist rows from StaffingService metrics and StaffingStore data while keeping staffing mutations in StaffingService.
+  description: Builds and refreshes the parallel Staffing v2 PySide shell/sidebar with Qt icons plus custom primary-blue add and person-add icons, styled scrollbars, mockup nav placeholders, dashboard with mockup-style header controls and one shared selected-school summary/action row containing Export/View History beside semantic compact icon-bearing summary chips with visible colon labels, icon-bearing overview cards and priority chip, custom classroom list item widgets, classroom list footer count, and icon-only filter affordance, explicit-numbered chip-based positions table with menu-style row actions, service-backed Add Position dialog with first-class Director position type, icon-only close, and icon-bearing drop zone, Export read-only preview dialog, shared overlay panels for side drawers/detail cards with scrollable bodies and fixed footers, multi-select pending director interview table with delete-selected cleanup, Classroom Management dashboard with icon-owned Add Classroom action text, Export read-only filtered-classrooms preview dialog, pagination footer, icon-bearing header/filter/search/table-row/detail-footer actions, row View detail selection, and icon-bearing overlay filter drawer active-count controls, Notifications dashboard with rule cards, filters, sorting, list/grid toggle, editable free-form event combo, recipient chips, template toolbar/variables, preview dialog, send-test action, audit/scheduled panel, validation, save/cancel/delete backed by NotificationStore and NotificationService, Staffing Validation dashboard with metric cards, active-state issue severity tabs, pagination footer, icon-bearing export/filter/search/table-row/detail-footer actions, row View drawer navigation, Run Full Validation refresh action, Export Validation Report read-only dialog, View Validation Rules read-only dialog, and icon-bearing overlay filter/right-panel controls, read-only position detail overlay drawer with icon-only close, icon-bearing action buttons, icon-bearing related-person placeholder action, and icon-bearing footer actions, Mark Coming and Mark Filled workflows with Director role preservation, icon-only close, and icon-bearing footer actions, Manage Filled workflow chooser with icon-only close, Update Permit workflow with icon-only close, Mark Need Now replacement-clear workflow with icon-only close, People / Employee Management dashboard with icon-owned Add Person action text, Director role filtering/addition, service-backed Add Person dialog, active-state detail tabs, pagination footer, icon-bearing header/filter/search/table-row actions, row View detail selection, and icon-bearing overlay detail/filter controls, and Assignment History dashboard with icon-bearing header/date-range/table-row/detail-footer actions, row View detail selection, View Validation navigation, View Assignment drawer navigation, Open Employee navigation, header Export read-only filtered-records preview dialog, Export Record read-only preview dialog, pagination footer, overlay detail panel, neutral assignment-ID detail chip, lifecycle event rows, and validation checklist rows from StaffingService metrics and StaffingStore data while keeping staffing mutations in StaffingService.
   locked: false
   methods:
   - name: __init__
@@ -536,7 +615,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Applies per-pixel scrolling, child-widget wheel relay, ignored size-adjust policy, and practical page/single-step values to every QAbstractScrollArea descendant under the Staffing v2 page.
+    side_effects: Applies per-pixel scrolling, root/global-position, child-widget, and item-view viewport wheel relay, ignored size-adjust policy, and practical page/single-step values to every QAbstractScrollArea descendant under the Staffing v2 page.
   - name: _refresh_selected_school_metrics
     inputs: {}
     returns:
@@ -554,7 +633,7 @@ classes:
     returns:
       type: QFrame
     exceptions: []
-    side_effects: Creates one mockup-style main dashboard classroom list row widget with status dot, title, count text, and chevron without mutating staffing data.
+    side_effects: Creates one mockup-style main dashboard classroom list row widget with status dot, title, count text, and chevron, marking the custom row widget tree transparent for mouse events so the underlying QListWidget keeps v1-style native click and wheel scrolling, without mutating staffing data.
   - name: _director_interview_panel
     inputs: {}
     returns:
@@ -573,6 +652,12 @@ classes:
       type: None
     exceptions: []
     side_effects: Rebuilds the pending director interview table with candidate, outcome, first-interview score, and Record Interview actions.
+  - name: _delete_selected_director_referrals
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Confirms and deletes the selected pending director interview referrals through StaffingService, preserving interview history rows and completed director interview records, then refreshes the director interview tables.
   - name: _refresh_director_history_table
     inputs: {}
     returns:

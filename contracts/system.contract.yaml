@@ -300,7 +300,7 @@ module_metadata:
     - Requires interview_notes_document_path as the only canonical document artifact field.
   interview_app_finalize_pipeline:
     constraints:
-    - Finalize processing produces one merged interview-notes artifact referenced by interview_notes_document_path.
+    - Finalize processing produces one basic merged interview-notes artifact referenced by interview_notes_document_path without starting DeepSeek.
   interview_app_finalize_gateways:
     constraints:
     - Referral/integration dispatches must read interview_notes_document_path from finalize context payloads.
@@ -308,9 +308,9 @@ module_metadata:
     constraints:
     - Acts as the single PySide desktop parity surface for desktop GUI responsibilities.
     - Delegates Admin Studio draft editing, validation, backups, and confirmed JSON persistence to admin_studio.
-    - Finalize progress is user-closable and does not cancel background transcription, finalize, or DeepSeek work.
+    - Finalize progress is user-closable and does not cancel background transcription or finalize work.
     - Finalize progress renders sanitized task rows with right-side statuses limited to Processing, Finished, Timed-out, or Queued.
-    - Home and Candidates history tables refresh after finalize and show Processing in the Notes column until detached DeepSeek work completes or fails.
+    - Home and Candidates history tables refresh after finalize, open the basic notes document immediately, and expose history Generate as the only GUI path that launches detached DeepSeek processing.
   scoring_reporting:
     constraints:
     - Referral payload document attachment path must resolve from interview_notes_document_path.

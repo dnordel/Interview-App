@@ -7,7 +7,7 @@ import json
 import os
 import sqlite3
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 
 from staffing_models import (
     ASSIGNMENT_STATUSES,
@@ -161,6 +161,10 @@ class StaffingStore:
                     owner_approval_status TEXT NOT NULL DEFAULT 'pending_owner_approval',
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS director_referral_dismissals (
+                    history_id TEXT PRIMARY KEY,
+                    dismissed_at TEXT NOT NULL
                 );
                 CREATE INDEX IF NOT EXISTS idx_director_referrals_school ON director_candidate_referrals(school);
                 CREATE INDEX IF NOT EXISTS idx_director_interviews_referral_id ON director_interviews(referral_id);
@@ -635,6 +639,51 @@ class StaffingStore:
                 tuple(params),
             ).fetchall()
             return [self.director_candidate_context(conn, int(row["id"])) for row in rows]
+
+    def delete_pending_director_referrals(self, referral_ids: Sequence[int]) -> int:
+        ids = sorted({int(referral_id) for referral_id in referral_ids if int(referral_id) > 0})
+        if not ids:
+            return 0
+        placeholders = ",".join("?" for _ in ids)
+        with self.write_connection("director_candidate_referral_delete") as conn:
+            history_rows = conn.execute(
+                f"""
+                SELECT r.history_id
+                FROM director_candidate_referrals r
+                LEFT JOIN director_interviews i ON i.referral_id = r.id
+                WHERE r.id IN ({placeholders})
+                  AND i.id IS NULL
+                """,
+                tuple(ids),
+            ).fetchall()
+            now = _utc_now_iso()
+            conn.executemany(
+                """
+                INSERT INTO director_referral_dismissals (history_id, dismissed_at)
+                VALUES (?, ?)
+                ON CONFLICT(history_id) DO UPDATE SET dismissed_at = excluded.dismissed_at
+                """,
+                [(str(row["history_id"]), now) for row in history_rows],
+            )
+            cursor = conn.execute(
+                f"""
+                DELETE FROM director_candidate_referrals
+                WHERE id IN ({placeholders})
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM director_interviews i
+                      WHERE i.referral_id = director_candidate_referrals.id
+                  )
+                """,
+                tuple(ids),
+            )
+            return int(cursor.rowcount or 0)
+
+    def list_dismissed_director_referral_history_ids(self) -> set[str]:
+        self.initialize()
+        with self.connect() as conn:
+            rows = conn.execute("SELECT history_id FROM director_referral_dismissals").fetchall()
+        return {str(row["history_id"]) for row in rows}
 
     def record_director_interview(
         self,

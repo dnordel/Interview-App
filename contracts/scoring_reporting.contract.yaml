@@ -2,7 +2,7 @@ module:
   name: scoring_reporting
   language: python
   path: src/scoring_reporting.py
-  version: 0.18.13
+  version: 0.19.0
   description: Flattened public interface for scoring, reporting, trait signals, exports,
     referrals, email safety, offers, and templates, including DeepSeek-only advisory
     signal scoring; only active legacy adapters remain in the compatibility module
@@ -1607,6 +1607,28 @@ classes:
       type: str
     exceptions: []
     side_effects: none
+  - name: export_basic_interview_notes
+    description: Generate a lightweight non-DeepSeek interview notes DOCX containing
+      candidate header details, overall interviewer score, hiring decision, interviewer
+      rating table, and interview transcript text without AI-generated summaries
+      or advisory scoring sections.
+    locked: false
+    inputs:
+      rubric:
+        type: dict[str, Any]
+        required: true
+      payload:
+        type: dict[str, Any]
+        required: true
+      scoring:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: Path
+    exceptions:
+    - ReportingValidationError
+    - OSError
+    side_effects: Writes a Basic Interview Notes DOCX file to disk.
   - name: export
     description: |-
       Generate a director-ready finalized interview decision brief DOCX using the

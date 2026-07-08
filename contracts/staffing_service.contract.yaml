@@ -422,6 +422,16 @@ classes:
       type: list[StaffingDirectorInterview]
     exceptions: []
     side_effects: Reads completed director interviews, optionally scoped to one school.
+  - name: delete_pending_director_interviews
+    inputs:
+      referral_ids:
+        type: Sequence[int]
+        required: true
+    returns:
+      type: int
+    exceptions:
+    - StaffingEditLock
+    side_effects: Deletes and dismisses selected pending director interview referrals without deleting completed director interviews, staffing assignments, or interview history rows.
   - name: record_director_interview
     inputs:
       referral_id:

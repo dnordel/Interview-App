@@ -946,6 +946,73 @@ class DocxExporter:
 
         return "\n\n".join(transcript_segments).strip()
 
+    def export_basic_interview_notes(self, rubric: dict[str, Any], payload: dict[str, Any], scoring: dict[str, Any]) -> Path:
+        candidate = self._require_candidate(payload)
+        cname = self._require_candidate_field(candidate, "name")
+        interview_date = self._require_candidate_field(candidate, "interview_date")
+        track_key = self._require_candidate_field(candidate, "track")
+        school = str(candidate.get("school", "") or "").strip()
+        track_cfg = ScoringEngine._get_track_config(rubric, track_key)
+        track_label = str(track_cfg.get("label") or track_key)
+
+        doc = Document()
+        styles = doc.styles
+        styles["Normal"].font.name = "Arial"
+        styles["Normal"].font.size = Pt(12)
+
+        title = doc.add_heading("Basic Interview Notes", level=0)
+        title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        subtitle = doc.add_paragraph(f"{cname} | {school or 'Unknown school'} | {track_label} | {interview_date}")
+        subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        doc.add_heading("Overall Score", level=1)
+        percent = scoring.get("percent_of_max", 0)
+        doc.add_paragraph(
+            f"Score: {scoring.get('weighted_total', 0)} / {scoring.get('max_weighted_total', 0)} ({percent}%)."
+        )
+        doc.add_paragraph(f"Hiring Decision: {scoring.get('outcome', 'Incomplete')}")
+        doc.add_paragraph(f"Final Outcome: {scoring.get('outcome', 'Incomplete')}")
+
+        doc.add_heading("Interviewer Ratings", level=1)
+        rating_rows = [row for row in scoring.get("rows", []) or [] if isinstance(row, dict) and not row.get("skipped", False)]
+        if rating_rows:
+            table = doc.add_table(rows=1, cols=5)
+            table.style = "Table Grid"
+            headers = table.rows[0].cells
+            headers[0].text = "Trait"
+            headers[1].text = "Priority"
+            headers[2].text = "Rating"
+            headers[3].text = "Weighted Score"
+            headers[4].text = "Interviewer Notes"
+            for row in rating_rows:
+                cells = table.add_row().cells
+                cells[0].text = str(row.get("trait_name") or row.get("trait_id") or "")
+                cells[1].text = str(row.get("priority") or "")
+                raw_score = row.get("raw_score")
+                cells[2].text = "N/A" if raw_score is None else str(raw_score)
+                cells[3].text = str(row.get("weighted_score", ""))
+                cells[4].text = str(row.get("verbatim_notes") or row.get("trait_notes") or "")
+        else:
+            doc.add_paragraph("No interviewer ratings recorded.")
+
+        doc.add_heading("Interview Transcript", level=1)
+        flow_transcript = [item for item in payload.get("flow_transcript", []) or [] if isinstance(item, dict)]
+        if flow_transcript:
+            for item in flow_transcript:
+                question = str(item.get("question") or item.get("prompt") or item.get("title") or "Question").strip()
+                answer = str(item.get("candidate_transcript") or item.get("answer") or "").strip()
+                doc.add_paragraph(question, style="List Bullet")
+                doc.add_paragraph(answer or "No transcript captured.")
+        else:
+            transcript = self._extract_full_candidate_transcript(payload)
+            doc.add_paragraph(transcript or "No transcript captured.")
+
+        school_part = sanitize_filename(school) if school else "UnknownSchool"
+        filename = f"{interview_date} - {school_part} - {sanitize_filename(cname)} - Basic Interview Notes.docx"
+        out_path = self.output_dir / filename
+        doc.save(out_path)
+        return out_path
+
     def export(self, rubric: dict[str, Any], payload: dict[str, Any], scoring: dict[str, Any]) -> Path:
         candidate = self._require_candidate(payload)
         cname = self._require_candidate_field(candidate, "name")

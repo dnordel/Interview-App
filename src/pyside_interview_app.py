@@ -504,13 +504,15 @@ class PySideInterviewSession:
         transcript_metadata = self._transcript_metadata()
         context = build_finalize_context(adapter, scoring, warnings, transcript_metadata, run_deepseek=False)
         active_gateways = gateways or FinalizeGateways()
-        out_path = active_gateways.export_report(adapter, context)
+        export_basic_report = getattr(active_gateways, "export_basic_report", None)
+        out_path = (
+            export_basic_report(adapter, context)
+            if callable(export_basic_report)
+            else active_gateways.export_report(adapter, context)
+        )
         integration_path = active_gateways.export_integration(adapter, context)
         director_packet, comm_log_path = active_gateways.send_referral(adapter, context, out_path, integration_path)
         history_id = active_gateways.persist_finalize_history(adapter, context, out_path)
-        deepseek_job_path = enqueue_deepseek_finalize_job(adapter, context, out_path, history_id)
-        deepseek_job_available = bool(getattr(deepseek_job_path, "name", ""))
-        deepseek_progress_path = deepseek_job_path.with_suffix(".progress.json") if deepseek_job_available else Path()
         return {
             "scoring": scoring,
             "out_path": str(out_path),
@@ -522,8 +524,8 @@ class PySideInterviewSession:
             "transcript_complete": transcript_metadata["transcript_complete"],
             "transcript_completeness_status": transcript_metadata["transcript_completeness_status"],
             "remaining_question_indices": transcript_metadata["remaining_question_indices"],
-            "deepseek_job_path": str(deepseek_job_path) if deepseek_job_available else "",
-            "deepseek_progress_path": str(deepseek_progress_path) if deepseek_job_available else "",
+            "deepseek_job_path": "",
+            "deepseek_progress_path": "",
             "history_id": history_id,
         }
 
@@ -846,6 +848,8 @@ def _director_referral_rating(score: str) -> float | None:
         return None
     if 1 <= value <= 10:
         return value
+    if 10 < value <= 100:
+        return round(value / 10, 2)
     return None
 
 
@@ -1129,7 +1133,7 @@ def _pyside_history_rows_from_payloads(rows: Sequence[dict[str, Any]], store: In
                 deepseek_processing_warning=_history_text(row, "deepseek_processing_warning", default=""),
             )
         )
-    return history_rows
+    return list(reversed(history_rows))
 
 
 def _recent_interviews_from_history_rows(history_rows: Sequence[PySideHistoryRow], *, limit: int = 6) -> list[RecentInterview]:
@@ -2622,11 +2626,12 @@ class PySideInterviewWindow:
             notes_button.setToolTip(notes_tooltip)
         notes_button.clicked.connect(lambda _checked=False, item=row: self._open_history_notes(item))
         table.setCellWidget(row_index, 6, notes_button)
-        regenerate_button = self.QtWidgets.QPushButton("Regenerate")
+        generate_label = "Generate" if row.deepseek_processing_status.strip().lower() == "not_started" else "Regenerate"
+        regenerate_button = self.QtWidgets.QPushButton(generate_label)
         regenerate_button.setMaximumWidth(105)
         regenerate_button.setProperty("history_row_key", row.row_key)
         regenerate_button.setEnabled(bool(row.row_key) and row.deepseek_processing_status.strip().lower() != "processing")
-        regenerate_button.setToolTip("Regenerate interview notes from saved data or rerun local DeepSeek first.")
+        regenerate_button.setToolTip("Generate or regenerate DeepSeek interview notes from saved interview data.")
         regenerate_button.clicked.connect(lambda _checked=False, item=row: self._retry_history_deepseek(item))
         table.setCellWidget(row_index, 7, regenerate_button)
         offer_button = self.QtWidgets.QPushButton(row.offer_action)
@@ -3721,7 +3726,7 @@ class PySideInterviewWindow:
         )
 
     def _retry_history_deepseek(self, row: PySideHistoryRow) -> None:
-        mode = self._choose_pyside_notes_regeneration_mode(row)
+        mode = "full" if row.deepseek_processing_status.strip().lower() == "not_started" else self._choose_pyside_notes_regeneration_mode(row)
         if mode is None:
             return
         job_path = self._deepseek_retry_job_path_for_row(row)
@@ -9518,6 +9523,7 @@ class PySideInterviewWindow:
                     seed_assignment_count += len(support_row.get("slots", support_row.get("positions", [])))
             if len(existing_assignments) < seed_assignment_count:
                 self.staffing_store.import_seed_file(STAFFING_SEED_PATH)
+        self._sync_staffing_director_referrals_from_history()
         dashboard = StaffingDashboardV2Page(
             QtCore=self.QtCore,
             QtGui=self.QtGui,
@@ -9541,6 +9547,35 @@ class PySideInterviewWindow:
         )
         self.staffing_v2_dashboard = dashboard
         return dashboard.widget
+
+    def _sync_staffing_director_referrals_from_history(self) -> None:
+        if not hasattr(self, "staffing_store"):
+            return
+        school_filter = str(self.director_staffing_school or "").strip()
+        service = StaffingService(self.staffing_store, notification_service=self._notification_service())
+        dismissed_history_ids = self.staffing_store.list_dismissed_director_referral_history_ids()
+        for row in self.model.home.history_rows:
+            outcome = _director_referral_outcome(row.status)
+            if not outcome:
+                continue
+            if school_filter and row.school != school_filter:
+                continue
+            history_id = row.row_key or f"{row.candidate}:{row.interview_date}"
+            if history_id in dismissed_history_ids:
+                continue
+            try:
+                service.upsert_director_candidate_referral(
+                    history_id=history_id,
+                    candidate_name=row.candidate,
+                    school=row.school,
+                    position=row.position,
+                    interviewer_rating=_director_referral_rating(row.score),
+                    interviewer_outcome=outcome,
+                    interview_date=row.interview_date,
+                    candidate_email=row.candidate_email,
+                )
+            except (OSError, ValueError):
+                continue
 
     def _record_staffing_director_referral_from_finalize_result(self, result: dict[str, Any]) -> None:
         if not hasattr(self, "staffing_store") or self.session is None or not isinstance(result, dict):

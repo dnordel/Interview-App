@@ -2,7 +2,7 @@ module:
   name: interview_runtime
   language: python
   path: src/interview_runtime.py
-  version: 0.31.3
+  version: 0.32.0
   description: Flattened public interface for interview state, session management,
     audio/transcription runtime, transcript summary seam, controllers, history, and
     finalize pipeline; only active legacy adapters remain in the compatibility module
@@ -2363,6 +2363,23 @@ classes:
       type: str
     exceptions: []
     side_effects: Writes report document and updates referral packet state.
+  - name: export_basic_report
+    description: Export the non-DeepSeek basic interview notes document and store
+      the canonical interview notes path, using app._interview_notes_output_dir()
+      when available and otherwise falling back to base_dir/Indeed Interview Notes.
+    locked: false
+    inputs:
+      app:
+        type: Any
+        required: true
+      context:
+        type: FinalizeContext
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: Writes a basic interview notes document and updates referral packet
+      state.
   - name: export_integration
     description: Build and serialize integration payload including flow slices.
     locked: false
@@ -2378,9 +2395,9 @@ classes:
     exceptions: []
     side_effects: Writes integration export file.
   - name: persist_finalize_history
-    description: Append finalized interview history entry with generated notes path
-      flow recording metadata, and DeepSeek processing status; returns row id used
-      by detached worker updates.
+    description: Append finalized interview history entry with generated basic notes
+      path, flow recording metadata, and not-started DeepSeek processing status;
+      returns row id used by later history-triggered detached worker updates.
     locked: false
     inputs:
       app:
@@ -2451,9 +2468,9 @@ classes:
     side_effects: Updates UI state and may show operator dialogs.
   - name: run_finalize_pipeline
     description: Run synchronous finalize scoring, stop/split the continuous interview
-      recording when active, merge transcript text, export processing-placeholder
-      report/integration artifacts, build/send referral, persist history, and enqueue
-      detached DeepSeek work.
+      recording when active, merge transcript text, export basic notes/integration
+      artifacts, build/send referral, and persist history without enqueueing detached
+      DeepSeek work.
     locked: false
     inputs: {}
     returns:

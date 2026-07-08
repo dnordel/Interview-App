@@ -1251,6 +1251,67 @@ def test_deepseek_finalize_worker_updates_history_status(tmp_path, monkeypatch: 
     assert row["interview_notes_path"] == str(tmp_path / "updated.docx")
 
 
+def test_deepseek_finalize_worker_replaces_basic_notes_with_deepseek_notes(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _disable_local_deepseek_runtime(monkeypatch)
+    history_path = tmp_path / "history.sqlite3"
+    store = InterviewHistoryStore(history_path)
+    store.append(
+        {
+            "history_id": "hist-1",
+            "candidate_name": "Ada",
+            "interview_date": "2026-02-20",
+            "saved_at": "2026-02-20T00:00:00Z",
+            "interview_notes_path": str(tmp_path / "2026-02-20 - Palmdale - Ada - Basic Interview Notes.docx"),
+            "deepseek_processing_status": "processing",
+        }
+    )
+    basic_notes = tmp_path / "2026-02-20 - Palmdale - Ada - Basic Interview Notes.docx"
+    basic_notes.write_text("basic notes", encoding="utf-8")
+    deepseek_notes = tmp_path / "2026-02-20 - Palmdale - Ada - Interview.docx"
+
+    class _Exporter:
+        def __init__(self, output_dir):
+            self.output_dir = Path(output_dir)
+
+        def export(self, _rubric, _payload, _scoring):
+            deepseek_notes.write_text("deepseek notes", encoding="utf-8")
+            return deepseek_notes
+
+    monkeypatch.setattr(deepseek_finalize_worker, "generate_deepseek_interview_summaries", lambda *_args, **_kwargs: {"summary_status": "generated"})
+    monkeypatch.setattr(
+        deepseek_finalize_worker,
+        "generate_deepseek_trait_signal_suggestions",
+        lambda *_args, **_kwargs: {"model_suggestion_status": "generated", "model_scoring_status": "generated"},
+    )
+    monkeypatch.setattr(deepseek_finalize_worker, "DocxExporter", _Exporter)
+    monkeypatch.setattr(deepseek_finalize_worker.ScoringEngine, "evaluate", staticmethod(lambda *_args, **_kwargs: {"percent_of_max": 88, "outcome": "Hire"}))
+    job_path = tmp_path / "job.json"
+    job_path.write_text(
+        json.dumps(
+            {
+                "history_id": "hist-1",
+                "history_path": str(history_path),
+                "report_path": str(basic_notes),
+                "rubric": {},
+                "payload": {"candidate": {"track": "lead"}, "flow_transcript": [], "trait_inputs": {}},
+                "scoring": {},
+                "deepseek_settings": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    deepseek_finalize_worker.run_job(job_path)
+
+    row = store.load()[0]
+    assert not basic_notes.exists()
+    assert deepseek_notes.read_text(encoding="utf-8") == "deepseek notes"
+    assert row["interview_notes_path"] == str(deepseek_notes)
+
+
 def test_deepseek_finalize_worker_uses_regenerated_notes_path_when_report_is_locked(
     tmp_path,
     monkeypatch: pytest.MonkeyPatch,

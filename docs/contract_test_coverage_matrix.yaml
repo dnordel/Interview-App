@@ -1,4 +1,4 @@
-last_updated: '2026-07-07'
+last_updated: '2026-07-08'
 sections:
 - name: interview_app
   tests:
@@ -12,7 +12,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-08T03:11:28.694160+00:00'
+generated_at_utc: '2026-07-08T22:40:15.258885+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -1179,6 +1179,15 @@ entries:
     - return_type
 - contract: contracts/deepseek_finalize_worker.contract.yaml
   symbol: deepseek_finalize_worker._deepseek_worker_lock
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/deepseek_finalize_worker.contract.yaml
+  symbol: deepseek_finalize_worker._delete_superseded_basic_notes
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -3097,6 +3106,16 @@ entries:
     - security_leakage_prevention
 - contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime.DashboardController.refresh_dashboard
+  kind: method
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime.FinalizeGateways.export_basic_report
   kind: method
   tests:
   - path: tests/test_interview_root_contracts.py
@@ -10478,6 +10497,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._sync_staffing_director_referrals_from_history
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._test_admin_email_connection
   kind: method
   tests:
@@ -11470,6 +11498,16 @@ entries:
     - security_controls
 - contract: contracts/scoring_reporting.contract.yaml
   symbol: scoring_reporting.DocxExporter.export
+  kind: method
+  tests:
+  - path: tests/test_shared_module_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_controls
+- contract: contracts/scoring_reporting.contract.yaml
+  symbol: scoring_reporting.DocxExporter.export_basic_interview_notes
   kind: method
   tests:
   - path: tests/test_shared_module_contract_interfaces.py
@@ -13330,6 +13368,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/staffing_dashboard_v2.contract.yaml
+  symbol: staffing_dashboard_v2.StaffingDashboardV2Page._delete_selected_director_referrals
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_v2.contract.yaml
   symbol: staffing_dashboard_v2.StaffingDashboardV2Page._detail_panel_card
   kind: method
   tests:
@@ -14230,6 +14277,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/staffing_dashboard_v2.contract.yaml
+  symbol: staffing_dashboard_v2._StaffingV2ApplicationWheelRouter.__new__
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_v2.contract.yaml
   symbol: staffing_dashboard_v2._StaffingV2OverlayPanel.__init__
   kind: method
   tests:
@@ -14240,6 +14296,15 @@ entries:
     - return_type
 - contract: contracts/staffing_dashboard_v2.contract.yaml
   symbol: staffing_dashboard_v2._StaffingV2OverlayPanel._clear_layout
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_v2.contract.yaml
+  symbol: staffing_dashboard_v2._StaffingV2OverlayPanel._sync_body_width
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -14357,6 +14422,15 @@ entries:
     - return_type
 - contract: contracts/staffing_dashboard_v2.contract.yaml
   symbol: staffing_dashboard_v2._format_notification_recipients
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_v2.contract.yaml
+  symbol: staffing_dashboard_v2._install_v2_application_wheel_router
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -14536,6 +14610,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/staffing_dashboard_v2.contract.yaml
+  symbol: staffing_dashboard_v2._scroll_v2_area_from_wheel
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_v2.contract.yaml
   symbol: staffing_dashboard_v2._show_rule_in_staffing_v2_notifications
   kind: function
   tests:
@@ -14555,6 +14638,24 @@ entries:
     - return_type
 - contract: contracts/staffing_dashboard_v2.contract.yaml
   symbol: staffing_dashboard_v2._status_icon_key
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_v2.contract.yaml
+  symbol: staffing_dashboard_v2._v2_scroll_area_viewport_area
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_v2.contract.yaml
+  symbol: staffing_dashboard_v2._v2_wheel_global_position
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -14618,6 +14719,15 @@ entries:
     - return_type
 - contract: contracts/staffing_service.contract.yaml
   symbol: staffing_service.StaffingService.deactivate_classroom
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_service.contract.yaml
+  symbol: staffing_service.StaffingService.delete_pending_director_interviews
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -14878,6 +14988,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/staffing_store.contract.yaml
+  symbol: staffing_store.StaffingStore.delete_pending_director_referrals
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_store.contract.yaml
   symbol: staffing_store.StaffingStore.enqueue_pending_operation
   kind: method
   tests:
@@ -14960,6 +15079,15 @@ entries:
     - return_type
 - contract: contracts/staffing_store.contract.yaml
   symbol: staffing_store.StaffingStore.list_director_interviews
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_store.contract.yaml
+  symbol: staffing_store.StaffingStore.list_dismissed_director_referral_history_ids
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py

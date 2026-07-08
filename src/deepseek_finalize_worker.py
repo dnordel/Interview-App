@@ -369,6 +369,21 @@ def _export_interview_notes(
             shutil.rmtree(temp_dir, ignore_errors=True)
 
 
+def _delete_superseded_basic_notes(original_path: Path, generated_path: Path) -> None:
+    original = Path(original_path)
+    generated = Path(generated_path)
+    if original == generated or original.suffix.lower() != ".docx":
+        return
+    if original.parent != generated.parent:
+        return
+    if "basic interview notes" not in original.name.lower():
+        return
+    try:
+        original.unlink(missing_ok=True)
+    except OSError:
+        return
+
+
 def _run_job_unlocked(job: dict[str, Any], job_path: Path) -> None:
     payload = dict(job.get("payload", {}) or {})
     scoring = dict(job.get("scoring", {}) or {})
@@ -440,6 +455,9 @@ def _run_job_unlocked(job: dict[str, Any], job_path: Path) -> None:
 
     _write_progress(job, "Updating interview notes document")
     out_path = _export_interview_notes(job, job_path, rubric, payload, scoring)
+    report_path = Path(str(job.get("report_path", "")).strip())
+    if str(report_path):
+        _delete_superseded_basic_notes(report_path, out_path)
     processing_status, processing_warning = _deepseek_history_status(payload)
     _update_history(
         job,

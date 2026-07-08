@@ -37,6 +37,17 @@ def pytest_configure() -> None:
         raise
 
 
+def pytest_xdist_auto_num_workers(config: pytest.Config) -> int | None:
+    """Keep xdist defaulted on, but avoid worker startup for one explicit test."""
+
+    cli_args = list(config.invocation_params.args)
+    user_set_xdist = any(arg == "-n" or arg.startswith("-n") or arg.startswith("--numprocesses") for arg in cli_args)
+    explicit_targets = [arg for arg in config.args if "::" in arg]
+    if not user_set_xdist and len(config.args) == 1 and len(explicit_targets) == 1:
+        return 0
+    return None
+
+
 @pytest.fixture()
 def src_cwd(monkeypatch: pytest.MonkeyPatch) -> Path:
     """Run a test from src while preserving repository import paths."""

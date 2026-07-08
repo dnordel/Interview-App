@@ -51,6 +51,9 @@ Use semantic versioning in module contracts:
 - For every new or changed function/class method, add or update at least one unit test under `tests/`.
 - Verify behavior, validation, and return types where applicable.
 - If a change is documentation-only, tests are not required.
+- Use the managed AppData Python environment and run pytest in parallel by default:
+  `%LOCALAPPDATA%\LPL_InterviewTool\py311\.venv\Scripts\python.exe -m pytest -n auto`.
+  Use serial pytest only when debugging one focused failure or when a test is known to be order/concurrency sensitive.
 
 ## Documentation and Output
 - Keep contracts machine-readable and complete.

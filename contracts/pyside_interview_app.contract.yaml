@@ -2,11 +2,11 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.61.0
+  version: 1.61.1
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, resizable splitter sections, school/classroom selectors, wider color-coded classroom list with per-classroom status-count overview, metric cards, positions table, fully editable right-side assignment/person details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics, parallel Staffing v2 navigation/page shell with its own mockup-style staffing sidebar, People / Employee Management and Assignment History sub-dashboards for the mockup-driven rewrite backed by staffing_dashboard_v2 while the legacy Staffing page remains available,
-    director staffing-only launch mode that opens the Staffing v2 dashboard, keeps the full mockup navigation rail visible, filters to an assigned school when supplied, reuses the same Staffing v2 page, and records new hire/borderline finalized interviews into StaffingService director-interview referrals going forward without backfilling past history rows,
+    director staffing-only launch mode that opens the Staffing v2 dashboard, keeps the full mockup navigation rail visible, filters to an assigned school when supplied, reuses the same Staffing v2 page, and records or syncs hire/borderline finalized interviews into StaffingService director-interview referrals while honoring dismissed pending referrals,
     compact home draft actions beside the start action, guided review-then-apply Admin Studio backed by admin_studio
     with dashboard-first grouped admin-console navigation, standard icons on each
     selectable Admin Studio nav item, Environment/User cards at the bottom of the Admin Studio rail, distinct status pills,
@@ -218,7 +218,7 @@ functions:
   exceptions: []
   side_effects: Reads interview history through InterviewHistoryStore and may import legacy JSON when the store is initialized.
 - name: _pyside_history_rows_from_payloads
-  description: Convert raw persisted history payload dictionaries into display-ready PySideHistoryRow values using existing score, status, offer, notes, and DeepSeek-processing normalization.
+  description: Convert raw persisted history payload dictionaries into newest-first display-ready PySideHistoryRow values using existing score, status, offer, notes, and DeepSeek-processing normalization.
   locked: false
   inputs:
     rows:
@@ -533,12 +533,13 @@ classes:
       type: Path
     exceptions:
     - OSError
-    side_effects: Writes generated interview-notes DOCX, integration export, SQLite
-      history row, and queued DeepSeek job metadata under the selected output directory.
+    side_effects: Writes basic interview-notes DOCX, integration export, and SQLite
+      history row under the selected output directory without queueing DeepSeek.
   - name: finalize_interview
-    description: Finalize the completed PySide session using shared Tk desktop runtime
-      contracts for scoring, DocxExporter report generation, integration export,
-      transcript metadata, history persistence, and detached DeepSeek processing.
+    description: Finalize the completed PySide session using shared desktop runtime
+      contracts for scoring, basic DocxExporter notes generation, integration export,
+      transcript metadata, and history persistence; DeepSeek processing is not started
+      by finalize and is only launched later from the candidate history Generate action.
     locked: false
     inputs:
       base_dir:
@@ -558,11 +559,10 @@ classes:
     exceptions:
     - ReportingValidationError
     - OSError
-    side_effects: Writes interview-notes DOCX to the resolved per-school Dropbox
+    side_effects: Writes basic interview-notes DOCX to the resolved per-school Dropbox
       candidate folder when configured, writes integration export, finalized interview
-      history row, and detached DeepSeek job/progress files under the base output
-      root when history persistence has a path; includes any PySide recording/transcript
-      payload in the queued DeepSeek job.
+      history row with not-started DeepSeek status, and preserves any PySide recording/transcript
+      payload in history/session data for later history-triggered DeepSeek generation.
   - name: _transcript_metadata
     description: Build complete/partial transcript metadata from PySide flow transcript
       and recording state for finalize/history payloads.
@@ -3309,13 +3309,21 @@ classes:
     side_effects: May construct one page widget, replace the matching stacked-widget
       placeholder, and mark that navigation index as loaded.
   - name: _staffing_v2_page
-    description: Build the Staffing v2 page from staffing_dashboard_v2 for the mockup-driven rewrite and director staffing-only launch surface, passing the shared notification rules store path and shared notification service factory into the V2 Notifications dashboard; past interview history is not backfilled into director-interview referrals.
+    description: Build the Staffing v2 page from staffing_dashboard_v2 for the mockup-driven rewrite and director staffing-only launch surface, passing the shared notification rules store path and shared notification service factory into the V2 Notifications dashboard; syncs hire/borderline interview history rows into pending director-interview referrals while skipping dismissed referrals.
     locked: false
     inputs: {}
     returns:
       type: QWidget
     exceptions: []
-    side_effects: Initializes local staffing storage, imports staffing seed data when the DB is empty or clearly missing seed assignments, creates a StaffingDashboardV2Page, stores it on the PySide window, wires service-backed staffing actions from the existing StaffingService handlers, and connects the V2 Notifications dashboard to the shared notification rules SQLite path and shared email notification service.
+    side_effects: Initializes local staffing storage, imports staffing seed data when the DB is empty or clearly missing seed assignments, syncs eligible interview history into pending director referrals, creates a StaffingDashboardV2Page, stores it on the PySide window, wires service-backed staffing actions from the existing StaffingService handlers, and connects the V2 Notifications dashboard to the shared notification rules SQLite path and shared email notification service.
+  - name: _sync_staffing_director_referrals_from_history
+    description: Upsert non-dismissed Hire and Borderline PySide history rows into StaffingService pending director-interview referrals, scoped to the director launch school when supplied.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Reads dismissed director referral history ids from StaffingStore and upserts eligible history rows into staffing director candidate referrals without mutating assignments.
   - name: _record_staffing_director_referral_from_finalize_result
     description: Create or update one director-interview referral for a newly finalized Hire or Borderline interview result only, leaving existing past history rows unexposed unless a referral already exists in the staffing database.
     locked: false
