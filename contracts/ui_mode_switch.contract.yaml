@@ -2,12 +2,12 @@ module:
   name: ui_mode_switch
   language: python
   path: src/ui_mode_switch.py
-  version: 1.1.0
-  description: Shared Tk/PySide UI-mode preference and relaunch helper for switching
-    desktop UI shells without rerunning setup prompts.
+  version: 2.0.0
+  description: PySide-only UI-mode preference and relaunch helper kept for setup-config
+    compatibility without rerunning setup prompts.
 functions:
 - name: normalize_ui_mode
-  description: Normalize an arbitrary UI-mode value to tk or pyside, defaulting to tk.
+  description: Normalize any legacy or arbitrary UI-mode value to pyside.
   locked: false
   inputs:
     value:
@@ -26,7 +26,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: read_preferred_ui_mode
-  description: Read the persisted UI mode from setup config, returning tk on missing
+  description: Read the persisted UI mode from setup config, returning pyside on missing
     or invalid config.
   locked: false
   inputs:

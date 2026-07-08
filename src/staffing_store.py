@@ -14,6 +14,8 @@ from staffing_models import (
     PERMIT_STATUSES,
     StaffingAssignment,
     StaffingClassroom,
+    StaffingDirectorCandidate,
+    StaffingDirectorInterview,
     StaffingHistoryRecord,
     StaffingPerson,
 )
@@ -130,6 +132,38 @@ class StaffingStore:
                 CREATE UNIQUE INDEX IF NOT EXISTS idx_history_one_active
                     ON assignment_history(assignment_id)
                     WHERE filled_date IS NULL AND closed_reason IS NULL;
+                CREATE TABLE IF NOT EXISTS director_candidate_referrals (
+                    id INTEGER PRIMARY KEY,
+                    history_id TEXT NOT NULL UNIQUE,
+                    candidate_name TEXT NOT NULL,
+                    school TEXT NOT NULL,
+                    position TEXT NOT NULL DEFAULT '',
+                    interviewer_rating REAL,
+                    interviewer_outcome TEXT NOT NULL,
+                    interview_date TEXT NOT NULL DEFAULT '',
+                    candidate_email TEXT NOT NULL DEFAULT '',
+                    referral_date TEXT NOT NULL DEFAULT '',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS director_interviews (
+                    id INTEGER PRIMARY KEY,
+                    referral_id INTEGER NOT NULL UNIQUE REFERENCES director_candidate_referrals(id),
+                    director_name TEXT NOT NULL DEFAULT '',
+                    completed_date TEXT NOT NULL,
+                    rating REAL NOT NULL,
+                    decision TEXT NOT NULL,
+                    decision_notes TEXT NOT NULL,
+                    proposed_shift_start TEXT NOT NULL DEFAULT '',
+                    proposed_shift_end TEXT NOT NULL DEFAULT '',
+                    proposed_classroom TEXT NOT NULL DEFAULT '',
+                    follow_up_needed INTEGER NOT NULL DEFAULT 0,
+                    owner_approval_status TEXT NOT NULL DEFAULT 'pending_owner_approval',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS idx_director_referrals_school ON director_candidate_referrals(school);
+                CREATE INDEX IF NOT EXISTS idx_director_interviews_referral_id ON director_interviews(referral_id);
                 """
             )
             self._ensure_column(conn, "people", "units", "REAL")
@@ -141,6 +175,14 @@ class StaffingStore:
             self._ensure_column(conn, "assignments", "notes", "TEXT NOT NULL DEFAULT ''")
             self._ensure_column(conn, "assignments", "shift_start", "TEXT NOT NULL DEFAULT ''")
             self._ensure_column(conn, "assignments", "shift_end", "TEXT NOT NULL DEFAULT ''")
+            self._ensure_column(conn, "director_candidate_referrals", "candidate_email", "TEXT NOT NULL DEFAULT ''")
+            self._ensure_column(conn, "director_candidate_referrals", "referral_date", "TEXT NOT NULL DEFAULT ''")
+            self._ensure_column(
+                conn,
+                "director_interviews",
+                "owner_approval_status",
+                "TEXT NOT NULL DEFAULT 'pending_owner_approval'",
+            )
 
     def _ensure_column(self, conn: sqlite3.Connection, table: str, column: str, definition: str) -> None:
         existing = {str(row["name"]) for row in conn.execute(f"PRAGMA table_info({table})").fetchall()}
@@ -510,6 +552,167 @@ class StaffingStore:
             ),
         }
 
+    def upsert_director_candidate_referral(
+        self,
+        *,
+        history_id: str,
+        candidate_name: str,
+        school: str,
+        position: str = "",
+        interviewer_rating: float | None = None,
+        interviewer_outcome: str,
+        interview_date: str = "",
+        candidate_email: str = "",
+        referral_date: str = "",
+        now: str,
+    ) -> StaffingDirectorCandidate:
+        history_id = _required_text(history_id, "History ID")
+        candidate_name = _required_text(candidate_name, "Candidate name")
+        school = _required_text(school, "School")
+        with self.write_connection("director_candidate_referral") as conn:
+            conn.execute(
+                """
+                INSERT INTO director_candidate_referrals (
+                    history_id, candidate_name, school, position, interviewer_rating,
+                    interviewer_outcome, interview_date, candidate_email, referral_date,
+                    created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(history_id) DO UPDATE SET
+                    candidate_name = excluded.candidate_name,
+                    school = excluded.school,
+                    position = excluded.position,
+                    interviewer_rating = excluded.interviewer_rating,
+                    interviewer_outcome = excluded.interviewer_outcome,
+                    interview_date = excluded.interview_date,
+                    candidate_email = excluded.candidate_email,
+                    referral_date = excluded.referral_date,
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    history_id,
+                    candidate_name,
+                    school,
+                    str(position or "").strip(),
+                    interviewer_rating,
+                    interviewer_outcome,
+                    str(interview_date or "").strip(),
+                    str(candidate_email or "").strip(),
+                    str(referral_date or "").strip(),
+                    now,
+                    now,
+                ),
+            )
+            row = conn.execute(
+                "SELECT id FROM director_candidate_referrals WHERE history_id = ?",
+                (history_id,),
+            ).fetchone()
+            return self.director_candidate_context(conn, int(row["id"]))
+
+    def list_director_candidate_referrals(
+        self,
+        *,
+        school: str = "",
+        include_completed: bool = False,
+    ) -> list[StaffingDirectorCandidate]:
+        school_filter = str(school or "").strip()
+        clauses = []
+        params: list[Any] = []
+        if school_filter:
+            clauses.append("r.school = ?")
+            params.append(school_filter)
+        if not include_completed:
+            clauses.append("i.id IS NULL")
+        where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        with self.connect() as conn:
+            rows = conn.execute(
+                f"""
+                SELECT r.id
+                FROM director_candidate_referrals r
+                LEFT JOIN director_interviews i ON i.referral_id = r.id
+                {where}
+                ORDER BY r.referral_date DESC, r.interview_date DESC, r.candidate_name
+                """,
+                tuple(params),
+            ).fetchall()
+            return [self.director_candidate_context(conn, int(row["id"])) for row in rows]
+
+    def record_director_interview(
+        self,
+        referral_id: int,
+        *,
+        director_name: str,
+        completed_date: str,
+        rating: float,
+        decision: str,
+        decision_notes: str,
+        proposed_shift_start: str = "",
+        proposed_shift_end: str = "",
+        proposed_classroom: str = "",
+        follow_up_needed: bool = False,
+        owner_approval_status: str = "pending_owner_approval",
+        now: str,
+    ) -> StaffingDirectorInterview:
+        with self.write_connection("director_interview") as conn:
+            self.director_candidate_context(conn, int(referral_id))
+            conn.execute(
+                """
+                INSERT INTO director_interviews (
+                    referral_id, director_name, completed_date, rating, decision, decision_notes,
+                    proposed_shift_start, proposed_shift_end, proposed_classroom, follow_up_needed,
+                    owner_approval_status, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(referral_id) DO UPDATE SET
+                    director_name = excluded.director_name,
+                    completed_date = excluded.completed_date,
+                    rating = excluded.rating,
+                    decision = excluded.decision,
+                    decision_notes = excluded.decision_notes,
+                    proposed_shift_start = excluded.proposed_shift_start,
+                    proposed_shift_end = excluded.proposed_shift_end,
+                    proposed_classroom = excluded.proposed_classroom,
+                    follow_up_needed = excluded.follow_up_needed,
+                    owner_approval_status = excluded.owner_approval_status,
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    int(referral_id),
+                    str(director_name or "").strip(),
+                    completed_date,
+                    float(rating),
+                    decision,
+                    decision_notes,
+                    proposed_shift_start,
+                    proposed_shift_end,
+                    proposed_classroom,
+                    1 if follow_up_needed else 0,
+                    owner_approval_status,
+                    now,
+                    now,
+                ),
+            )
+            row = conn.execute(
+                "SELECT id FROM director_interviews WHERE referral_id = ?",
+                (int(referral_id),),
+            ).fetchone()
+            return self.director_interview_context(conn, int(row["id"]))
+
+    def list_director_interviews(self, *, school: str = "") -> list[StaffingDirectorInterview]:
+        school_filter = str(school or "").strip()
+        where = "WHERE r.school = ?" if school_filter else ""
+        params: tuple[Any, ...] = (school_filter,) if school_filter else ()
+        with self.connect() as conn:
+            rows = conn.execute(
+                f"""
+                SELECT i.id
+                FROM director_interviews i
+                JOIN director_candidate_referrals r ON r.id = i.referral_id
+                {where}
+                ORDER BY i.completed_date DESC, i.id DESC
+                """,
+                params,
+            ).fetchall()
+            return [self.director_interview_context(conn, int(row["id"])) for row in rows]
+
     def list_assignments(self) -> list[StaffingAssignment]:
         with self.connect() as conn:
             rows = conn.execute(
@@ -612,6 +815,67 @@ class StaffingStore:
                     (assignment_id,),
                 ).fetchone()[0]
             )
+
+    def director_candidate_context(self, conn: sqlite3.Connection, referral_id: int) -> StaffingDirectorCandidate:
+        row = conn.execute(
+            """
+            SELECT r.*, i.completed_date AS director_interview_completed_at
+            FROM director_candidate_referrals r
+            LEFT JOIN director_interviews i ON i.referral_id = r.id
+            WHERE r.id = ?
+            """,
+            (int(referral_id),),
+        ).fetchone()
+        if row is None:
+            raise ValueError("Director candidate referral not found.")
+        return StaffingDirectorCandidate(
+            id=int(row["id"]),
+            history_id=str(row["history_id"] or ""),
+            candidate_name=str(row["candidate_name"] or ""),
+            school=str(row["school"] or ""),
+            position=str(row["position"] or ""),
+            interviewer_rating=float(row["interviewer_rating"]) if row["interviewer_rating"] is not None else None,
+            interviewer_outcome=str(row["interviewer_outcome"] or ""),
+            interview_date=str(row["interview_date"] or ""),
+            candidate_email=str(row["candidate_email"] or ""),
+            referral_date=str(row["referral_date"] or ""),
+            director_interview_completed_at=str(row["director_interview_completed_at"] or ""),
+            updated_at=str(row["updated_at"] or ""),
+        )
+
+    def director_interview_context(self, conn: sqlite3.Connection, interview_id: int) -> StaffingDirectorInterview:
+        row = conn.execute(
+            """
+            SELECT i.*, r.candidate_name, r.school, r.position, r.interviewer_rating, r.interviewer_outcome
+            FROM director_interviews i
+            JOIN director_candidate_referrals r ON r.id = i.referral_id
+            WHERE i.id = ?
+            """,
+            (int(interview_id),),
+        ).fetchone()
+        if row is None:
+            raise ValueError("Director interview not found.")
+        return StaffingDirectorInterview(
+            id=int(row["id"]),
+            referral_id=int(row["referral_id"]),
+            candidate_name=str(row["candidate_name"] or ""),
+            school=str(row["school"] or ""),
+            position=str(row["position"] or ""),
+            interviewer_rating=float(row["interviewer_rating"]) if row["interviewer_rating"] is not None else None,
+            interviewer_outcome=str(row["interviewer_outcome"] or ""),
+            director_name=str(row["director_name"] or ""),
+            completed_date=str(row["completed_date"] or ""),
+            rating=float(row["rating"]),
+            decision=str(row["decision"] or ""),
+            decision_notes=str(row["decision_notes"] or ""),
+            proposed_shift_start=str(row["proposed_shift_start"] or ""),
+            proposed_shift_end=str(row["proposed_shift_end"] or ""),
+            proposed_classroom=str(row["proposed_classroom"] or ""),
+            follow_up_needed=bool(row["follow_up_needed"]),
+            owner_approval_status=str(row["owner_approval_status"] or ""),
+            created_at=str(row["created_at"] or ""),
+            updated_at=str(row["updated_at"] or ""),
+        )
 
     def assignment_context(self, conn: sqlite3.Connection, assignment_id: int) -> StaffingAssignment:
         row = conn.execute(

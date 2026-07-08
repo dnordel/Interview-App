@@ -11,6 +11,7 @@ from urllib.request import Request, urlopen
 
 import pytest
 
+from data_store import InterviewHistoryStore
 from web_app_backend import (
     WebAppBackendError,
     build_handler,
@@ -128,7 +129,7 @@ def test_finalize_web_draft_writes_report_to_school_interview_notes_dir(tmp_path
     monkeypatch.setattr(web_app_backend, "SCHOOL_OFFER_SETTINGS_PATH", settings_path)
     monkeypatch.setattr(web_app_backend, "DEFAULT_RUBRIC_PATH", rubric_path)
     monkeypatch.setattr(web_app_backend, "QUESTIONS_OVERRIDE_PATH", tmp_path / "question_overrides.json")
-    monkeypatch.setattr(web_app_backend, "INTERVIEW_HISTORY_PATH", tmp_path / "interview_history.json")
+    monkeypatch.setattr(web_app_backend, "INTERVIEW_HISTORY_PATH", tmp_path / "interview_history.sqlite3")
     monkeypatch.setattr(
         web_app_backend.ScoringEngine,
         "evaluate",
@@ -176,20 +177,15 @@ def test_finalize_web_draft_writes_report_to_school_interview_notes_dir(tmp_path
 
 
 def test_update_history_offer_status_updates_existing_history_row(tmp_path, monkeypatch):
-    history_path = tmp_path / "interview_history.json"
-    history_path.write_text(
-        json.dumps(
-            [
-                {
-                    "history_id": "hist_1",
-                    "candidate_name": "Candidate One",
-                    "interview_date": "2026-06-17",
-                    "saved_at": "2026-06-17T12:00:00Z",
-                    "offer_status": "not_generated",
-                }
-            ]
-        ),
-        encoding="utf-8",
+    history_path = tmp_path / "interview_history.sqlite3"
+    InterviewHistoryStore(history_path).append(
+        {
+            "history_id": "hist_1",
+            "candidate_name": "Candidate One",
+            "interview_date": "2026-06-17",
+            "saved_at": "2026-06-17T12:00:00Z",
+            "offer_status": "not_generated",
+        }
     )
     monkeypatch.setattr(web_app_backend, "INTERVIEW_HISTORY_PATH", history_path)
 
@@ -201,14 +197,27 @@ def test_update_history_offer_status_updates_existing_history_row(tmp_path, monk
 
 
 def test_update_history_offer_status_rejects_missing_row_without_candidate_echo(tmp_path, monkeypatch):
-    history_path = tmp_path / "interview_history.json"
-    history_path.write_text(json.dumps([{"history_id": "hist_1", "candidate_name": "Private Candidate"}]), encoding="utf-8")
+    history_path = tmp_path / "interview_history.sqlite3"
+    InterviewHistoryStore(history_path).append({"history_id": "hist_1", "candidate_name": "Private Candidate"})
     monkeypatch.setattr(web_app_backend, "INTERVIEW_HISTORY_PATH", history_path)
 
     with pytest.raises(WebAppBackendError, match="not found") as exc_info:
         update_history_offer_status("missing", "offer_sent")
 
     assert "Private Candidate" not in str(exc_info.value)
+
+
+def test_load_history_rows_filters_through_sqlite_columns(tmp_path, monkeypatch):
+    history_path = tmp_path / "interview_history.sqlite3"
+    store = InterviewHistoryStore(history_path)
+    store.append({"history_id": "hist_1", "candidate_name": "A", "school": "Palmdale", "outcome": "Hire"})
+    store.append({"history_id": "hist_2", "candidate_name": "B", "school": "Hawthorne", "outcome": "Borderline"})
+    store.append({"history_id": "hist_3", "candidate_name": "Lead Candidate", "school": "Palmdale", "outcome": "No Hire"})
+    monkeypatch.setattr(web_app_backend, "INTERVIEW_HISTORY_PATH", history_path)
+
+    assert [row["history_id"] for row in load_history_rows(school="Palmdale")] == ["hist_1", "hist_3"]
+    assert [row["history_id"] for row in load_history_rows(outcome="borderline")] == ["hist_2"]
+    assert [row["history_id"] for row in load_history_rows(search="lead", limit=1)] == ["hist_3"]
 
 
 def test_normalize_web_draft_payload_maps_browser_fields_to_desktop_draft_shape():
@@ -274,7 +283,8 @@ def test_score_web_draft_preview_rejects_bad_payload_without_note_echo(tmp_path,
 def test_finalize_web_draft_exports_docx_and_appends_history(tmp_path, monkeypatch):
     monkeypatch.setattr(web_app_backend, "DEFAULT_RUBRIC_PATH", write_preview_rubric(tmp_path))
     monkeypatch.setattr(web_app_backend, "QUESTIONS_OVERRIDE_PATH", tmp_path / "question_overrides.json")
-    monkeypatch.setattr(web_app_backend, "INTERVIEW_HISTORY_PATH", tmp_path / "interview_history.json")
+    history_path = tmp_path / "interview_history.sqlite3"
+    monkeypatch.setattr(web_app_backend, "INTERVIEW_HISTORY_PATH", history_path)
 
     result = finalize_web_draft(
         {
@@ -311,6 +321,8 @@ def test_finalize_web_draft_exports_docx_and_appends_history(tmp_path, monkeypat
     assert history[0]["integration_export_path"] == str(integration_path)
     assert history[0]["flow_recordings"][0]["audio_path"] == "saved.webm"
     assert history[0]["offer_status"] == "not_generated"
+    assert history_path.exists()
+    assert not history_path.with_suffix(".json").exists()
     stored_export = json.loads(integration_path.read_text(encoding="utf-8"))
     assert stored_export["candidate"]["name"] == "Finalize Candidate"
     assert stored_export["decision"] == "hire"
@@ -432,9 +444,9 @@ def test_backend_serves_health_static_and_draft_api(tmp_path):
     old_rubric_path = web_app_backend.DEFAULT_RUBRIC_PATH
     web_app_backend.QUESTIONS_OVERRIDE_PATH = overrides_path
     web_app_backend.SCHOOL_OFFER_SETTINGS_PATH = offer_settings_path
-    web_app_backend.INTERVIEW_HISTORY_PATH = tmp_path / "interview_history.json"
+    web_app_backend.INTERVIEW_HISTORY_PATH = tmp_path / "interview_history.sqlite3"
     web_app_backend.DEFAULT_RUBRIC_PATH = write_preview_rubric(tmp_path)
-    web_app_backend.INTERVIEW_HISTORY_PATH.write_text(
+    web_app_backend.INTERVIEW_HISTORY_PATH.with_suffix(".json").write_text(
         json.dumps([{"history_id": "hist_1", "candidate_name": "Web Candidate", "offer_status": "not_generated"}]),
         encoding="utf-8",
     )
@@ -481,6 +493,8 @@ def test_backend_serves_health_static_and_draft_api(tmp_path):
 
             loaded_history = read_json(f"{base_url}/api/history")
             assert loaded_history["history"][0]["offer_status"] == "offer_sent"
+            filtered_history = read_json(f"{base_url}/api/history?school=Hawthorne")
+            assert filtered_history["history"] == []
 
             recording_request = Request(
                 f"{base_url}/api/recordings",

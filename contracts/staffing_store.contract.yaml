@@ -2,8 +2,8 @@ module:
   name: staffing_store
   language: python
   path: src/staffing_store.py
-  version: 0.12.0
-  description: SQLite persistence for staffing schools, classrooms, people including optional units, active status, role, current assignment summary, and permit effective-date/documentation metadata, service-backed assignment creation and mistaken-position soft deletion, assignments with shift metadata, workbook display metadata, assignment history dashboard records, Dropbox-visible edit locking, pending operation queueing, required staffing indexes, and deterministic seed imports.
+  version: 0.13.0
+  description: SQLite persistence for staffing schools, classrooms, people including optional units, active status, role, current assignment summary, and permit effective-date/documentation metadata, service-backed assignment creation and mistaken-position soft deletion, assignments with shift metadata, workbook display metadata, assignment history dashboard records, director candidate referral/interview completion records, Dropbox-visible edit locking, pending operation queueing, required staffing indexes, and deterministic seed imports.
 functions: []
 classes:
 - name: StaffingEditLock
@@ -11,7 +11,7 @@ classes:
   locked: false
   methods: []
 - name: StaffingStore
-  description: Opens staffing SQLite connections, initializes schema, manages Dropbox-visible edit locks and pending operation queue files, seeds test/bootstrap assignments, and reads assignment/person snapshots.
+  description: Opens staffing SQLite connections, initializes schema, manages Dropbox-visible edit locks and pending operation queue files, seeds test/bootstrap assignments, and reads assignment/person/director-interview snapshots.
   locked: false
   methods:
   - name: connect
@@ -265,6 +265,122 @@ classes:
       type: list[StaffingAssignment]
     exceptions: []
     side_effects: Reads staffing SQLite database.
+  - name: upsert_director_candidate_referral
+    inputs:
+      history_id:
+        type: str
+        required: true
+      candidate_name:
+        type: str
+        required: true
+      school:
+        type: str
+        required: true
+      position:
+        type: str
+        required: false
+        default: ''
+      interviewer_rating:
+        type: float | None
+        required: false
+        default: null
+      interviewer_outcome:
+        type: str
+        required: true
+      interview_date:
+        type: str
+        required: false
+        default: ''
+      candidate_email:
+        type: str
+        required: false
+        default: ''
+      referral_date:
+        type: str
+        required: false
+        default: ''
+      now:
+        type: str
+        required: true
+    returns:
+      type: StaffingDirectorCandidate
+    exceptions:
+    - ValueError
+    - StaffingEditLock
+    side_effects: Upserts one director candidate referral keyed by interview history id without mutating assignments or assignment_history.
+  - name: list_director_candidate_referrals
+    inputs:
+      school:
+        type: str
+        required: false
+        default: ''
+      include_completed:
+        type: bool
+        required: false
+        default: false
+    returns:
+      type: list[StaffingDirectorCandidate]
+    exceptions: []
+    side_effects: Reads director candidate referrals, optionally school-scoped and excluding completed director interviews.
+  - name: record_director_interview
+    inputs:
+      referral_id:
+        type: int
+        required: true
+      director_name:
+        type: str
+        required: true
+      completed_date:
+        type: str
+        required: true
+      rating:
+        type: float
+        required: true
+      decision:
+        type: str
+        required: true
+      decision_notes:
+        type: str
+        required: true
+      proposed_shift_start:
+        type: str
+        required: false
+        default: ''
+      proposed_shift_end:
+        type: str
+        required: false
+        default: ''
+      proposed_classroom:
+        type: str
+        required: false
+        default: ''
+      follow_up_needed:
+        type: bool
+        required: false
+        default: false
+      owner_approval_status:
+        type: str
+        required: false
+        default: pending_owner_approval
+      now:
+        type: str
+        required: true
+    returns:
+      type: StaffingDirectorInterview
+    exceptions:
+    - ValueError
+    - StaffingEditLock
+    side_effects: Inserts or updates one completed director interview for a referral without mutating assignments, classrooms, people, or assignment_history.
+  - name: list_director_interviews
+    inputs:
+      school:
+        type: str
+        required: false
+        default: ''
+    returns:
+      type: list[StaffingDirectorInterview]
+    exceptions: []
+    side_effects: Reads completed director interview records, optionally school-scoped.
   - name: list_classrooms
     inputs: {}
     returns:

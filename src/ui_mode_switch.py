@@ -8,12 +8,10 @@ from pathlib import Path
 from typing import Any
 
 
-UI_MODE_TK = "tk"
 UI_MODE_PYSIDE = "pyside"
-DEFAULT_UI_MODE = UI_MODE_TK
-VALID_UI_MODES = {UI_MODE_TK, UI_MODE_PYSIDE}
+DEFAULT_UI_MODE = UI_MODE_PYSIDE
+VALID_UI_MODES = {UI_MODE_PYSIDE}
 UI_MODE_APP_FILES = {
-    UI_MODE_TK: "interview_app.pyw",
     UI_MODE_PYSIDE: "pyside_interview_app.py",
 }
 
@@ -57,7 +55,7 @@ def write_preferred_ui_mode(config_path: Path | None, mode: str) -> str:
     if not isinstance(app, dict):
         app = {}
     app["PreferredUiMode"] = selected
-    app["PreferredInterviewAppFile"] = "pyside_interview_app.py" if selected == UI_MODE_PYSIDE else "interview_app.pyw"
+    app["PreferredInterviewAppFile"] = "pyside_interview_app.py"
     app["InterviewAppPath"] = None
     payload["App"] = app
     path.parent.mkdir(parents=True, exist_ok=True)

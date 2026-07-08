@@ -2,14 +2,18 @@ module:
   name: staffing_models
   language: python
   path: src/staffing_models.py
-  version: 0.10.0
-  description: Dataclasses and enum constants for local staffing dashboard transactions, classroom records, employee/person permit metadata, current assignment display data, assignment history dashboard records, metrics, and workbook-style display metadata.
+  version: 0.11.0
+  description: Dataclasses and enum constants for local staffing dashboard transactions, classroom records, employee/person permit metadata, current assignment display data, assignment history dashboard records, metrics, workbook-style display metadata, and director interview referral/completion tracking.
 functions: []
 classes: []
 data_structures:
 - name: ASSIGNMENT_STATUSES
   type: tuple[str, ...]
 - name: PERMIT_STATUSES
+  type: tuple[str, ...]
+- name: DIRECTOR_REFERRAL_OUTCOMES
+  type: tuple[str, ...]
+- name: DIRECTOR_INTERVIEW_DECISIONS
   type: tuple[str, ...]
 - name: StaffingAssignment
   type: dataclass
@@ -108,4 +112,41 @@ data_structures:
   - display_order
 - name: StaffingMetrics
   type: dataclass
+- name: StaffingDirectorCandidate
+  type: dataclass
+  fields:
+  - id
+  - history_id
+  - candidate_name
+  - school
+  - position
+  - interviewer_rating
+  - interviewer_outcome
+  - interview_date
+  - candidate_email
+  - referral_date
+  - director_interview_completed_at
+  - updated_at
+- name: StaffingDirectorInterview
+  type: dataclass
+  fields:
+  - id
+  - referral_id
+  - candidate_name
+  - school
+  - position
+  - interviewer_rating
+  - interviewer_outcome
+  - director_name
+  - completed_date
+  - rating
+  - decision
+  - decision_notes
+  - proposed_shift_start
+  - proposed_shift_end
+  - proposed_classroom
+  - follow_up_needed
+  - owner_approval_status
+  - created_at
+  - updated_at
 dependencies: []

@@ -11,8 +11,6 @@ from pathlib import Path
 import re
 import subprocess
 import sys
-import tkinter as tk
-from tkinter import ttk
 from types import ModuleType
 from typing import Any, Final, Iterable, Optional
 from urllib import error, request
@@ -405,24 +403,29 @@ def render_template(
     return PLACEHOLDER_PATTERN.sub(_replace, text)
 
 
-def insert_token_into_widget(widget: tk.Misc, token: str) -> bool:
-    if isinstance(widget, tk.Text):
-        widget.insert(tk.INSERT, token)
-        widget.focus_set()
-        return True
-    if isinstance(widget, ttk.Entry):
-        widget.insert(widget.index(tk.INSERT), token)
-        widget.focus_set()
-        return True
-    if isinstance(widget, tk.Entry):
-        widget.insert(widget.index(tk.INSERT), token)
-        widget.focus_set()
-        return True
-    return False
+def insert_token_into_widget(widget: Any, token: str) -> bool:
+    insert = getattr(widget, "insert", None)
+    if not callable(insert):
+        return False
+    index = getattr(widget, "index", None)
+    cursor = "insert"
+    if callable(index):
+        try:
+            cursor = index("insert")
+        except Exception:
+            cursor = "insert"
+    insert(cursor, token)
+    focus_set = getattr(widget, "focus_set", None)
+    if callable(focus_set):
+        focus_set()
+    return True
 
 
-def insert_token_into_focused_widget(root: tk.Misc, token: str, allowed_widgets: Iterable[tk.Misc]) -> bool:
-    focused = root.focus_get()
+def insert_token_into_focused_widget(root: Any, token: str, allowed_widgets: Iterable[Any]) -> bool:
+    focus_get = getattr(root, "focus_get", None)
+    if not callable(focus_get):
+        return False
+    focused = focus_get()
     if focused in set(allowed_widgets):
         return insert_token_into_widget(focused, token)
     return False

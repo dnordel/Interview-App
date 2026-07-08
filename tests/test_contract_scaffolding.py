@@ -23,15 +23,15 @@ def _module_name_for_path(path: Path, source_root: Path) -> str:
     return ".".join(rel.with_suffix("").parts)
 
 
-def test_init_module_and_sibling_pyw_have_distinct_names():
+def test_init_module_and_sibling_py_have_distinct_names():
     source_root = Path("src")
 
     init_name = _module_name_for_path(Path("src/interview_app/__init__.py"), source_root)
-    pyw_name = _module_name_for_path(Path("src/interview_app.pyw"), source_root)
+    py_name = _module_name_for_path(Path("src/pyside_interview_app.py"), source_root)
 
     assert init_name == "interview_app.__init__"
-    assert pyw_name == "interview_app"
-    assert init_name != pyw_name
+    assert py_name == "pyside_interview_app"
+    assert init_name != py_name
 
 
 def test_regular_module_name_mapping_drops_suffix_only():

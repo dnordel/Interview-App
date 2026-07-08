@@ -33,7 +33,7 @@ def test_scheduler_status_text_uses_result_error_message_then_fallback():
 
 
 def test_scheduler_command_example_renders_windows_task_command():
-    script_path = Path("C:/Apps/onboarding_app.pyw")
+    script_path = Path("C:/Apps/onboarding_reminder_runner.py")
 
     command = onboarding_operations.scheduler_command_example(script_path)
 

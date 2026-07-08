@@ -3,7 +3,7 @@ param(
   [switch]$DebugMode,
   [switch]$DirectorStaffingMode,
   [string]$DirectorSchool = "",
-  [ValidateSet("tk", "pyside")]
+  [ValidateSet("pyside")]
   [string]$UiMode = ""
 )
 
@@ -41,8 +41,8 @@ if ($env:DEEPSEEK_SUMMARY_MODEL -and $env:DEEPSEEK_SUMMARY_MODEL.Trim()) {
   }
 }
 $OllamaBaseUrl = "http://127.0.0.1:11434"
-$DefaultUiMode = "tk"
-$DefaultInterviewAppFile = "interview_app.pyw"
+$DefaultUiMode = "pyside"
+$DefaultInterviewAppFile = "pyside_interview_app.py"
 $PySideInterviewAppFile = "pyside_interview_app.py"
 
 # -------------------------
@@ -209,10 +209,10 @@ function Ensure-ConfigShape($cfg) {
   elseif ($UiMode) {
     $cfg.App.PreferredUiMode = $UiMode
   }
-  elseif ($env:INTERVIEW_APP_UI_MODE -in @("tk", "pyside")) {
+  elseif ($env:INTERVIEW_APP_UI_MODE -eq "pyside") {
     $cfg.App.PreferredUiMode = $env:INTERVIEW_APP_UI_MODE
   }
-  elseif ($cfg.App.PreferredUiMode -notin @("tk", "pyside")) {
+  elseif ($cfg.App.PreferredUiMode -ne "pyside") {
     Write-Log "Invalid preferred UI mode '$($cfg.App.PreferredUiMode)'; using '$DefaultUiMode'."
     $cfg.App.PreferredUiMode = $DefaultUiMode
   }
@@ -233,11 +233,7 @@ function Ensure-ConfigShape($cfg) {
 function Resolve-PreferredInterviewAppFile {
   param([Parameter(Mandatory=$true)]$Cfg)
 
-  $uiMode = [string]($Cfg.App.PreferredUiMode)
-  switch ($uiMode) {
-    "pyside" { return $PySideInterviewAppFile }
-    default { return $DefaultInterviewAppFile }
-  }
+  return $PySideInterviewAppFile
 }
 
 # -------------------------
@@ -1399,32 +1395,24 @@ function Ensure-SelectedUiModeAvailable {
     [Parameter(Mandatory=$true)][string]$VenvPy
   )
 
-  if ([string]$Cfg.App.PreferredUiMode -ne "pyside") {
-    return $Cfg
-  }
-
   $ec = Run-Proc -File $VenvPy -Args @("-c", "import PySide6")
   if ($ec -eq 0) {
     return $Cfg
   }
 
-  Write-Log "PySide UI is unavailable; falling back to Tk UI."
+  Write-Log "PySide UI is unavailable; setup cannot launch the deprecated Tk UI."
   try {
     Add-Type -AssemblyName System.Windows.Forms
     [System.Windows.Forms.MessageBox]::Show(
-      "PySide UI is unavailable; falling back to Tk UI.",
+      "PySide UI is unavailable. Install PySide6 or rerun setup; the deprecated Tk UI has been removed.",
       "PySide UI unavailable",
       [System.Windows.Forms.MessageBoxButtons]::OK,
-      [System.Windows.Forms.MessageBoxIcon]::Warning
+      [System.Windows.Forms.MessageBoxIcon]::Error
     ) | Out-Null
   } catch {
-    Write-Log "Could not display PySide fallback message: $($_.Exception.Message)"
+    Write-Log "Could not display PySide error message: $($_.Exception.Message)"
   }
-  $Cfg.App.PreferredUiMode = $DefaultUiMode
-  $Cfg.App.PreferredInterviewAppFile = Resolve-PreferredInterviewAppFile -Cfg $Cfg
-  $Cfg.App.InterviewAppPath = $null
-  Save-Config $Cfg
-  return $Cfg
+  throw "PySide6 is required; deprecated Tk UI fallback has been removed."
 }
 
 # -------------------------
@@ -1436,7 +1424,7 @@ function Find-AppFile {
   $preferredAppFile = Resolve-PreferredInterviewAppFile -Cfg $Cfg
   $Cfg.App.PreferredInterviewAppFile = $preferredAppFile
 
-  # 1) Try cached path first, but invalidate stale Tk/legacy paths after entrypoint changes.
+  # 1) Try cached path first, but invalidate stale or legacy paths after entrypoint changes.
   if ($Cfg.App.InterviewAppPath -and (Test-Path $Cfg.App.InterviewAppPath)) {
     $cachedLeaf = Split-Path $Cfg.App.InterviewAppPath -Leaf
     if ($cachedLeaf -ieq $preferredAppFile) {
@@ -1450,20 +1438,7 @@ function Find-AppFile {
   Write-Log "Cached app path missing or invalid."
 
   # 2) Try auto-detect in src folder.
-  $candidates = @(
-    "interview_app.pyw",
-    "pyside_interview_app.py",
-    "Initial Teacher Interview Guide.pyw",
-    "Initial Teacher Interview Guide_UPDATED.pyw"
-  )
-  if ($preferredAppFile -ieq $PySideInterviewAppFile) {
-    $candidates = @(
-      "pyside_interview_app.py",
-      "interview_app.pyw",
-      "Initial Teacher Interview Guide.pyw",
-      "Initial Teacher Interview Guide_UPDATED.pyw"
-    )
-  }
+  $candidates = @("pyside_interview_app.py")
 
   foreach ($name in $candidates) {
     $p = Join-Path (Join-Path $AppDir "src") $name

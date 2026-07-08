@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from ui_composition import QuestionSettingsService
+from question_settings_service import QuestionSettingsService
 
 
 def _rubric() -> dict:

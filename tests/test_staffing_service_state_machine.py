@@ -309,6 +309,119 @@ def test_delete_position_rejects_assigned_position(tmp_path: Path) -> None:
     assert len(store.list_assignments()) == 1
 
 
+def test_director_interview_completion_is_school_scoped_and_does_not_fill_position(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    assignment_id = store.seed_assignment(
+        school="Hawthorne",
+        classroom="Harmony 1",
+        position_name="Teacher 2",
+        position_type="Teacher",
+        status="need_now",
+    )
+    service = StaffingService(
+        store,
+        clock=_Clock(
+            [
+                "2026-07-06T09:00:00Z",
+                "2026-07-06T09:05:00Z",
+                "2026-07-06T09:10:00Z",
+            ]
+        ),
+    )
+    service.upsert_director_candidate_referral(
+        history_id="hist-1",
+        candidate_name="Jordan Lee",
+        school="Hawthorne",
+        position="Teacher",
+        interviewer_rating=8.5,
+        interviewer_outcome="hire",
+        interview_date="2026-07-05",
+        candidate_email="jordan@example.org",
+    )
+    service.upsert_director_candidate_referral(
+        history_id="hist-2",
+        candidate_name="Riley Park",
+        school="Palmdale",
+        position="Teacher",
+        interviewer_rating=7.0,
+        interviewer_outcome="borderline",
+        interview_date="2026-07-05",
+    )
+
+    pending_hawthorne = service.list_pending_director_interviews(school="Hawthorne")
+    result = service.record_director_interview(
+        pending_hawthorne[0].id,
+        director_name="Avery Director",
+        completed_date="2026-07-06",
+        rating=9.0,
+        decision="hire",
+        decision_notes="Strong classroom presence.",
+        proposed_shift_start="8:00 AM",
+        proposed_shift_end="5:00 PM",
+        proposed_classroom="Harmony 1",
+        follow_up_needed=True,
+    )
+
+    assignment = store.get_assignment(assignment_id)
+    assert [candidate.candidate_name for candidate in pending_hawthorne] == ["Jordan Lee"]
+    assert service.list_pending_director_interviews(school="Hawthorne") == []
+    assert [candidate.candidate_name for candidate in service.list_pending_director_interviews(school="Palmdale")] == [
+        "Riley Park"
+    ]
+    assert result.decision == "hire"
+    assert result.owner_approval_status == "pending_owner_approval"
+    assert result.proposed_shift_start == "8:00 AM"
+    assert assignment.status == "need_now"
+    assert assignment.person_name == ""
+    assert assignment.classroom == "Harmony 1"
+
+
+def test_director_interview_validation_requires_notes_and_hire_shift_details(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    service = StaffingService(
+        store,
+        clock=_Clock(
+            [
+                "2026-07-06T09:00:00Z",
+                "2026-07-06T09:05:00Z",
+                "2026-07-06T09:10:00Z",
+            ]
+        ),
+    )
+    referral = service.upsert_director_candidate_referral(
+        history_id="hist-1",
+        candidate_name="Jordan Lee",
+        school="Hawthorne",
+        position="Teacher",
+        interviewer_rating=8.5,
+        interviewer_outcome="borderline",
+        interview_date="2026-07-05",
+    )
+
+    with pytest.raises(ValueError, match="Decision notes are required"):
+        service.record_director_interview(
+            referral.id,
+            director_name="Avery Director",
+            completed_date="2026-07-06",
+            rating=5,
+            decision="no_hire",
+            decision_notes="",
+        )
+    with pytest.raises(ValueError, match="Shift start is required"):
+        service.record_director_interview(
+            referral.id,
+            director_name="Avery Director",
+            completed_date="2026-07-06",
+            rating=8,
+            decision="hire",
+            decision_notes="Hire if schedule works.",
+            proposed_classroom="Harmony 1",
+        )
+    assert service.list_pending_director_interviews(school="Hawthorne") == [referral]
+
+
 def test_locked_staffing_action_queues_and_replays_when_db_unlocks(tmp_path: Path) -> None:
     db_path = tmp_path / "staffing.sqlite3"
     lock_owner = StaffingStore(db_path)

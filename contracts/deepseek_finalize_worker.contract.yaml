@@ -2,7 +2,7 @@ module:
   name: deepseek_finalize_worker
   language: python
   path: src/deepseek_finalize_worker.py
-  version: 1.9.1
+  version: 1.9.2
   description: Detached local DeepSeek finalize worker that refreshes interview notes
     documents and history status after the GUI finalize flow returns, keeping DeepSeek
     signal scoring advisory and human raw scores final. Workers serialize processing
@@ -60,7 +60,7 @@ functions:
   returns:
     type: None
   exceptions: []
-  side_effects: Writes interview history JSON when a row matches.
+  side_effects: Updates interview history through InterviewHistoryStore when a row matches.
 - name: _write_progress
   description: Write sanitized detached DeepSeek progress state for the GUI progress
     popup, using only step/status/task-list/timestamp metadata and no transcript
@@ -416,7 +416,7 @@ functions:
   - OSError
   - RuntimeError
   side_effects: May start and call local Ollama except in document-only rerun mode,
-    writes DOCX output, and updates interview history JSON.
+    writes DOCX output, and updates interview history through InterviewHistoryStore.
 - name: run_job
   description: Load one persisted DeepSeek finalize job, acquire the per-job-directory
     DeepSeek lock, generate advisory trait signal/scoring output through local Ollama,
@@ -436,7 +436,7 @@ functions:
   - ValueError
   - OSError
   side_effects: Reads job JSON, creates/removes the DeepSeek lock, may start and call
-    local Ollama, writes DOCX output, and updates interview history JSON.
+    local Ollama, writes DOCX output, and updates interview history through InterviewHistoryStore.
 - name: main
   description: CLI entrypoint for running one detached DeepSeek finalize job.
   locked: false

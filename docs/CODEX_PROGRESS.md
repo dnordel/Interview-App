@@ -1,5 +1,27 @@
 # Codex Progress
 
+## Current Checkpoint: Delete Legacy Tk GUI and Tk Tests
+
+- Status: Done
+- Updated: 2026-07-07
+- Current desktop direction: PySide only; web remains the future migration target.
+- What changed:
+  - Deleted legacy Tk interview/onboarding entry points, Tk wrappers, Tk-only tests, and obsolete Tk contracts.
+  - Moved shared non-GUI question/runtime/feedback helpers into neutral modules.
+  - Updated setup/runtime switching so `pyside` is the only desktop UI mode and PySide6 absence fails closed.
+  - Kept PySide staffing v2 notification functionality and service-layer notification behavior.
+  - Updated contracts, coverage matrix, README, handoff, and web migration guidance for PySide-only desktop direction.
+- Validation performed:
+  - `python -m pytest -n auto`
+  - `python tools/check_contract_review.py`
+  - Static import/search audits for removed Tk entry points and modules under `src`, `tests`, `contracts`, launch scripts, README, requirements, and web README.
+- Result:
+  - Full pytest: `1690 passed`.
+  - Contract review: `[PASS] baseline`, `[PASS] locked`, `[PASS] schema`, `[PASS] coverage-matrix`.
+  - Static active-code/import audits found no remaining Tk launch paths or removed Tk module imports.
+- Note:
+  - Older progress entries below retain historical references to deleted Tk modules. Those references are audit history only, not current source-of-truth architecture.
+
 ## Goal
 
 Continue the post-flattening roadmap in `docs/CODEX_HANDOFF.md` using controlled checkpoints, preserving existing behavior except where the feature checkpoint explicitly changes it.

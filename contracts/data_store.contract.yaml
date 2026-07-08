@@ -2,9 +2,9 @@ module:
   name: data_store
   language: python
   path: src/data_store.py
-  version: 1.3.1
-  description: JSON-backed stores and loaders for interview runtime and onboarding
-    settings.
+  version: 1.7.1
+  description: SQLite-backed interview history store plus JSON-backed stores and
+    loaders for interview runtime and onboarding settings.
 functions:
 - name: default_school_offer_settings
   description: Return default per-school offer settings with full-time, part-time,
@@ -241,19 +241,55 @@ classes:
     returns:
       type: None
 - name: InterviewHistoryStore
-  description: Persists finalized interview history entries and reads legacy root-level
-    history rows when the canonical user_artifacts history path is used.
+  description: Persists finalized interview history entries to a sibling SQLite
+    database with queryable metadata columns, row-level write/update/delete operations,
+    and read-only legacy JSON import.
   locked: false
-  attributes: {}
+  attributes:
+    json_path:
+      type: Path
+    db_path:
+      type: Path
   methods:
   - name: load
-    description: Load canonical history rows merged after legacy root-level rows,
-      deduplicating by stable row key when both files contain the same interview.
+    description: Load finalized interview history rows from SQLite, importing canonical
+      and legacy JSON rows only when the SQLite table is empty; constructor accepts
+      either the DB path or the legacy JSON path.
     inputs: {}
     returns:
       type: list[dict[str, Any]]
-    side_effects: Reads user_artifacts/interview_history.json and, when using that
-      canonical path, may also read interview_history.json from the repository root.
+    side_effects: Creates/reads interview_history.sqlite3 and may import rows from
+      user_artifacts/interview_history.json plus root-level interview_history.json.
+  - name: load_filtered
+    description: Load finalized interview history payload rows using indexed SQLite
+      metadata filters for school, outcome, offer status, text search across metadata
+      plus stored payload JSON, and optional limit.
+    inputs:
+      school:
+        type: str
+        required: false
+        default: ""
+      outcome:
+        type: str
+        required: false
+        default: ""
+      offer_status:
+        type: str
+        required: false
+        default: ""
+      search:
+        type: str
+        required: false
+        default: ""
+      limit:
+        type: int | None
+        required: false
+        default: null
+    returns:
+      type: list[dict[str, Any]]
+    side_effects: Creates/reads interview_history.sqlite3, imports legacy JSON rows
+      only if the DB is empty, and queries payload rows through SQLite metadata columns
+      plus payload JSON text.
   - name: _load_from_path
     inputs:
       path:
@@ -282,6 +318,8 @@ classes:
         required: true
     returns:
       type: None
+    side_effects: Inserts one row into the interview_history SQLite database without
+      rewriting existing rows or mutating legacy JSON history files.
   - name: update_row
     inputs:
       row_key:
@@ -292,6 +330,8 @@ classes:
         required: true
     returns:
       type: bool
+    side_effects: Updates one interview_history SQLite row when the row exists without
+      rewriting unrelated rows.
   - name: delete_row
     description: Delete one finalized interview history row by stable row key/history
       id.
@@ -301,7 +341,8 @@ classes:
         required: true
     returns:
       type: bool
-    side_effects: Writes interview history JSON when the row is found.
+    side_effects: Deletes one interview_history SQLite row when the row is found without
+      rewriting unrelated rows.
   - name: update_offer_state
     description: Update one history row's offer status and optional offer letter
       path using the row key/history id.
@@ -318,7 +359,8 @@ classes:
         default: ""
     returns:
       type: bool
-    side_effects: Writes interview history JSON when the row is found.
+    side_effects: Updates one interview_history SQLite row when the row is found without
+      rewriting unrelated rows.
   - name: repair_interview_notes_links
     description: Repair missing or broken interview-notes path fields by matching
       history row candidate/date/school metadata to DOCX filenames in an interview
@@ -329,7 +371,8 @@ classes:
         required: true
     returns:
       type: int
-    side_effects: Writes interview history JSON when one or more rows are repaired.
+    side_effects: Writes the interview_history SQLite database when one or more rows
+      are repaired.
   - name: _interview_notes_index
     description: Build normalized candidate/date/school lookup keys from interview
       notes filenames shaped like YYYY-MM-DD - School - Candidate - Interview.docx.
@@ -356,6 +399,90 @@ classes:
         required: true
     returns:
       type: bool
+  - name: _save
+    inputs:
+      items:
+        type: list[dict[str, Any]]
+        required: true
+    returns:
+      type: None
+    side_effects: Replaces interview_history SQLite table contents with normalized
+      row-keyed JSON payload records plus queryable metadata columns.
+  - name: _write_history_row
+    inputs:
+      conn:
+        type: sqlite3.Connection
+        required: true
+      row_key:
+        type: str
+        required: true
+      sort_order:
+        type: int
+        required: true
+      row:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: None
+    side_effects: Upserts one interview_history SQLite row payload plus queryable
+      metadata columns, preserving created_at for existing rows.
+  - name: _next_sort_order
+    inputs:
+      conn:
+        type: sqlite3.Connection
+        required: true
+    returns:
+      type: int
+  - name: _ensure_db
+    inputs: {}
+    returns:
+      type: None
+    side_effects: Creates or migrates the sibling interview_history SQLite database,
+      history table, query columns, and indexes when missing.
+  - name: _ensure_query_columns
+    inputs:
+      conn:
+        type: sqlite3.Connection
+        required: true
+    returns:
+      type: None
+    side_effects: Adds missing queryable metadata columns to existing interview_history
+      SQLite tables without dropping rows.
+  - name: _load_from_db
+    inputs: {}
+    returns:
+      type: list[dict[str, Any]]
+    side_effects: Reads JSON payload rows from the interview_history SQLite database.
+  - name: _payloads_from_rows
+    inputs:
+      rows:
+        type: list[Any]
+        required: true
+    returns:
+      type: list[dict[str, Any]]
+  - name: _import_json_rows_if_needed
+    inputs: {}
+    returns:
+      type: int
+    side_effects: Imports canonical and legacy JSON history rows into SQLite only
+      when no SQLite history rows exist.
+  - name: _history_text
+    inputs:
+      row:
+        type: dict[str, Any]
+        required: true
+      keys:
+        type: tuple[str, ...]
+        required: true
+    returns:
+      type: str
+  - name: _history_score
+    inputs:
+      row:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: float | None
 - name: SchoolOfferSettingsStore
   description: Stores per-school full-time, part-time, contractor offer template
     settings and interview-note output folder settings.

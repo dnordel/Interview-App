@@ -3,8 +3,7 @@ module:
   language: python
   path: src/onboarding_operations.py
   version: 0.19.1
-  description: Flattened public interface for onboarding models, storage, scheduling,
-    reminders, notifications, dashboard actions, and onboarding UI composition helpers.
+  description: Flattened public interface for onboarding models, storage, scheduling, reminders, notifications, dashboard actions, and onboarding UI composition helpers.
 functions:
 - name: resolve_smtp_password
   description: Resolve SMTP password from environment override keys or stored password.
@@ -111,8 +110,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: onboarding_action_sections
-  description: Returns intent-grouped onboarding action sections ordered for daily
-    operator workflows.
+  description: Returns intent-grouped onboarding action sections ordered for daily operator workflows.
   locked: false
   inputs: {}
   returns:
@@ -149,8 +147,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: _derive_result
-  description: Derive the scheduler result code from reminder run summary counts and
-    outcomes.
+  description: Derive the scheduler result code from reminder run summary counts and outcomes.
   locked: false
   inputs:
     summary:
@@ -503,8 +500,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: first_matching_navigation
-  description: Return the first deterministic employee/task navigation target matching
-    a filter.
+  description: Return the first deterministic employee/task navigation target matching a filter.
   locked: false
   inputs:
     employees:
@@ -521,8 +517,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: kpi_navigation_target
-  description: Resolve a dashboard KPI to the first matching employee/task navigation
-    target.
+  description: Resolve a dashboard KPI to the first matching employee/task navigation target.
   locked: false
   inputs:
     employees:
@@ -555,95 +550,8 @@ functions:
     type: int
   exceptions: []
   side_effects: none
-- name: build_scrollable_canvas_area
-  description: Creates a frame containing a canvas, a vertical scrollbar, and an interior
-    frame hosted in a canvas window.
-  locked: false
-  inputs:
-    parent:
-      type: tk.Misc
-      required: true
-    interior_padding:
-      type: int | tuple[int, int, int, int]
-      required: false
-      default: 0
-    canvas_kwargs:
-      type: dict[str, object] | None
-      required: false
-      default: null
-  returns:
-    type: ScrollableCanvasArea
-  exceptions: []
-  side_effects: Creates Tkinter widgets for a reusable scrollable canvas area.
-- name: bind_canvas_mousewheel
-  description: Binds cross-platform mouse-wheel handlers while the pointer or focus
-    remains within the scrollable canvas area.
-  locked: false
-  inputs:
-    canvas:
-      type: tk.Canvas
-      required: true
-    activate_widgets:
-      type: Sequence[tk.Misc]
-      required: true
-    release_widgets:
-      type: Sequence[tk.Misc]
-      required: false
-      default: []
-  returns:
-    type: None
-  exceptions: []
-  side_effects: Registers and removes global Tkinter wheel bindings tied to the supplied
-    canvas.
-- name: scroll_widget_into_view
-  description: Adjusts a canvas scroll position so a child widget becomes visible
-    within the viewport.
-  locked: false
-  inputs:
-    canvas:
-      type: tk.Canvas
-      required: true
-    widget:
-      type: tk.Misc
-      required: true
-    padding:
-      type: int
-      required: false
-      default: 12
-  returns:
-    type: None
-  exceptions: []
-  side_effects: Updates the canvas y-view when the target widget is off-screen.
-- name: build_scrollable_modal_container
-  description: Creates a modal shell with a scrollable canvas-backed body and a pinned
-    button bar.
-  locked: false
-  inputs:
-    parent:
-      type: tk.Misc
-      required: true
-    title:
-      type: str
-      required: true
-    body_padding:
-      type: int | tuple[int, int, int, int]
-      required: false
-      default: 10
-    button_padding:
-      type: tuple[int, int, int, int]
-      required: false
-      default:
-      - 10
-      - 0
-      - 10
-      - 10
-  returns:
-    type: ScrollableModalContainer
-  exceptions: []
-  side_effects: Creates Tkinter widgets and mouse-wheel bindings for a dialog.
 - name: build_launch_context
-  description: Build a normalized onboarding launch payload with optional candidate
-    seed metadata.
+  description: Build a normalized onboarding launch payload with optional candidate seed metadata.
   locked: false
   inputs:
     employee_id:
@@ -663,8 +571,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: write_launch_context_file
-  description: Persist onboarding launch metadata to a temporary json file for subprocess
-    use.
+  description: Persist onboarding launch metadata to a temporary json file for subprocess use.
   locked: false
   inputs:
     payload:
@@ -686,8 +593,7 @@ functions:
   exceptions: []
   side_effects: reads a json file from disk when available
 - name: extract_employee_seed
-  description: Recover a LaunchEmployeeSeed from a launch payload when prefill content
-    exists.
+  description: Recover a LaunchEmployeeSeed from a launch payload when prefill content exists.
   locked: false
   inputs:
     payload:
@@ -698,8 +604,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: scheduler_opt_in
-  description: Resolve whether the onboarding reminder scheduler is enabled from current
-    or legacy settings.
+  description: Resolve whether the onboarding reminder scheduler is enabled from current or legacy settings.
   locked: false
   inputs:
     settings:
@@ -710,8 +615,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: scheduler_expected_interval_hours
-  description: Resolve the expected reminder scheduler interval in hours from current
-    or legacy settings.
+  description: Resolve the expected reminder scheduler interval in hours from current or legacy settings.
   locked: false
   inputs:
     settings:
@@ -771,8 +675,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: split_and_validate_recipients
-  description: Split a comma-delimited recipient string into valid and invalid email
-    address lists.
+  description: Split a comma-delimited recipient string into valid and invalid email address lists.
   locked: false
   inputs:
     raw:
@@ -783,8 +686,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: recipient_warning_text
-  description: Build fail-closed operator warning text for missing or malformed reminder
-    recipients.
+  description: Build fail-closed operator warning text for missing or malformed reminder recipients.
   locked: false
   inputs:
     raw:
@@ -809,8 +711,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: reminder_send_estimate
-  description: Estimate reminder, escalation, and in-app message counts for a reminder
-    run result.
+  description: Estimate reminder, escalation, and in-app message counts for a reminder run result.
   locked: false
   inputs:
     result:
@@ -832,8 +733,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: evaluate_onboarding_reminder_health
-  description: Evaluate whether onboarding reminder automation is healthy, overdue,
-    or missing a valid run timestamp.
+  description: Evaluate whether onboarding reminder automation is healthy, overdue, or missing a valid run timestamp.
   locked: false
   inputs:
     last_reminder_run_at:
@@ -887,8 +787,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: _coerce_now
-  description: Coerce a supplied current time or return the current UTC time as a
-    normalized datetime.
+  description: Coerce a supplied current time or return the current UTC time as a normalized datetime.
   locked: false
   inputs:
     now:
@@ -946,8 +845,7 @@ functions:
   exceptions: []
   side_effects: Mutates employee.tasks by appending EmployeeTask records.
 - name: calculate_due_date
-  description: Calculate the due date for an employee task template using start, acceptance,
-    monthly, or fixed-date anchors.
+  description: Calculate the due date for an employee task template using start, acceptance, monthly, or fixed-date anchors.
   locked: false
   inputs:
     employee:
@@ -964,8 +862,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: _monthly_anchor_date
-  description: Calculate the monthly anchor date for an employee based on the current
-    month and employee start date.
+  description: Calculate the monthly anchor date for an employee based on the current month and employee start date.
   locked: false
   inputs:
     employee:
@@ -979,8 +876,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: task_should_remind
-  description: Determine whether a task should receive a reminder for the current
-    date and cadence.
+  description: Determine whether a task should receive a reminder for the current date and cadence.
   locked: false
   inputs:
     task:
@@ -1000,8 +896,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: dependency_blocked
-  description: Determine whether an incomplete dependency relationship blocks a task
-    reminder.
+  description: Determine whether an incomplete dependency relationship blocks a task reminder.
   locked: false
   inputs:
     task:
@@ -1066,8 +961,7 @@ functions:
   exceptions: []
   side_effects: Mutates task.last_reminder_sent.
 - name: backfill_onboarding_metadata
-  description: Backfill canonical onboarding template/task metadata and task created_at
-    fields in raw persisted state data.
+  description: Backfill canonical onboarding template/task metadata and task created_at fields in raw persisted state data.
   locked: false
   inputs:
     state_data:
@@ -1100,8 +994,7 @@ functions:
   exceptions: []
   side_effects: Mutates nested task dictionaries.
 - name: _backfill_task_created_at
-  description: Backfill created_at values on raw employee task dictionaries from due_date,
-    completed_at, or None.
+  description: Backfill created_at values on raw employee task dictionaries from due_date, completed_at, or None.
   locked: false
   inputs:
     employees:
@@ -1192,9 +1085,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: _send_email_message
-  description: Build and send one SMTP email message for onboarding reminders,
-    honoring EmailSettings smtp_encryption values for STARTTLS, SSL/TLS, or no
-    transport encryption.
+  description: Build and send one SMTP email message for onboarding reminders, honoring EmailSettings smtp_encryption values for STARTTLS, SSL/TLS, or no transport encryption.
   locked: false
   inputs:
     settings:
@@ -1218,11 +1109,9 @@ functions:
   exceptions:
   - smtplib.SMTPException
   - OSError
-  side_effects: Reads optional attachment files, opens an SMTP or SMTP_SSL connection,
-    and sends an email message without logging credentials.
+  side_effects: Reads optional attachment files, opens an SMTP or SMTP_SSL connection, and sends an email message without logging credentials.
 - name: verify_email_connection
-  description: Verify the configured SMTP transport and optional login without
-    sending an email message.
+  description: Verify the configured SMTP transport and optional login without sending an email message.
   locked: false
   inputs:
     settings:
@@ -1233,11 +1122,9 @@ functions:
   exceptions:
   - smtplib.SMTPException
   - OSError
-  side_effects: Opens an SMTP or SMTP_SSL connection and authenticates when a username
-    is configured; does not send mail or log credentials.
+  side_effects: Opens an SMTP or SMTP_SSL connection and authenticates when a username is configured; does not send mail or log credentials.
 - name: _smtp_transport
-  description: Resolve the SMTP constructor and STARTTLS flag from EmailSettings
-    encryption fields.
+  description: Resolve the SMTP constructor and STARTTLS flag from EmailSettings encryption fields.
   locked: false
   inputs:
     settings:
@@ -1248,8 +1135,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: _validate_missing_values
-  description: Raise when reminder templates reference placeholders without runtime
-    values.
+  description: Raise when reminder templates reference placeholders without runtime values.
   locked: false
   inputs:
     context:
@@ -1339,8 +1225,7 @@ functions:
   - OSError
   side_effects: Sends an SMTP email when recipients and SMTP settings are configured.
 - name: available_modules
-  description: Return legacy onboarding modules currently exposed through this flattened
-    facade.
+  description: Return legacy onboarding modules currently exposed through this flattened facade.
   locked: false
   inputs: {}
   returns:
@@ -1360,8 +1245,7 @@ functions:
   - AttributeError
   side_effects: Imports the requested module.
 - name: module_ownership
-  description: Return the ownership map from each legacy onboarding module to the
-    flattened onboarding_operations module.
+  description: Return the ownership map from each legacy onboarding module to the flattened onboarding_operations module.
   locked: false
   inputs: {}
   returns:
@@ -1369,8 +1253,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: wrapper_policy
-  description: Return the compatibility wrapper policy for legacy onboarding modules
-    during flattening.
+  description: Return the compatibility wrapper policy for legacy onboarding modules during flattening.
   locked: false
   inputs: {}
   returns:
@@ -1378,8 +1261,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: public_symbols
-  description: Return public symbols exposed by one legacy onboarding module or by
-    all onboarding modules.
+  description: Return public symbols exposed by one legacy onboarding module or by all onboarding modules.
   locked: false
   inputs:
     module_name:
@@ -1404,8 +1286,7 @@ functions:
   - AttributeError
   side_effects: Imports legacy modules until the symbol is found.
 - name: __dir__
-  description: Return module attributes plus flattened public compatibility symbols
-    for editor and agent discovery.
+  description: Return module attributes plus flattened public compatibility symbols for editor and agent discovery.
   locked: false
   inputs: {}
   returns:
@@ -1578,8 +1459,7 @@ classes:
     exceptions: []
     side_effects: none
 - name: LaunchEmployeeSeed
-  description: Candidate/employee prefill payload passed from interview finalization
-    into onboarding launch context.
+  description: Candidate/employee prefill payload passed from interview finalization into onboarding launch context.
   locked: false
   attributes:
     name:
@@ -1622,8 +1502,7 @@ classes:
     exceptions: []
     side_effects: none
 - name: EmailSettings
-  description: Shared SMTP/IMAP account settings and reminder email settings for
-    app notification communications.
+  description: Shared SMTP/IMAP account settings and reminder email settings for app notification communications.
   locked: false
   attributes:
     account_label:
@@ -1674,8 +1553,7 @@ classes:
       type: str
   methods:
   - name: from_dict
-    description: Build email settings from persisted data, mapping legacy use_tls
-      values into smtp_encryption when no explicit encryption value is present.
+    description: Build email settings from persisted data, mapping legacy use_tls values into smtp_encryption when no explicit encryption value is present.
     locked: false
     inputs:
       cls:
@@ -1697,8 +1575,7 @@ classes:
     exceptions: []
     side_effects: none
 - name: ActionItemSpec
-  description: Immutable action button metadata including command routing and helper
-    copy.
+  description: Immutable action button metadata including command routing and helper copy.
   locked: false
   attributes:
     label:
@@ -2088,14 +1965,12 @@ classes:
       type: dict[str, str]
   methods: []
 - name: OnboardingReminderRunner
-  description: Runs onboarding reminder preview and live send workflows using injectable
-    delivery adapters.
+  description: Runs onboarding reminder preview and live send workflows using injectable delivery adapters.
   locked: false
   attributes: {}
   methods:
   - name: __init__
-    description: Initialize the reminder runner with employees, templates, email settings,
-      delivery adapters, runtime values, and optional metrics logger.
+    description: Initialize the reminder runner with employees, templates, email settings, delivery adapters, runtime values, and optional metrics logger.
     locked: false
     inputs:
       employees:
@@ -2128,8 +2003,7 @@ classes:
     exceptions: []
     side_effects: none
   - name: preview
-    description: Run the reminder workflow in dry-run mode without sending or mutating
-      task reminder state.
+    description: Run the reminder workflow in dry-run mode without sending or mutating task reminder state.
     locked: false
     inputs:
       now_date:
@@ -2145,8 +2019,7 @@ classes:
     exceptions: []
     side_effects: Emits metrics when configured.
   - name: run
-    description: Run the reminder workflow, optionally as a dry run, and mark reminders
-      sent only after a successful reminder phase.
+    description: Run the reminder workflow, optionally as a dry run, and mark reminders sent only after a successful reminder phase.
     locked: false
     inputs:
       now_date:
@@ -2164,8 +2037,7 @@ classes:
     returns:
       type: ReminderRunResult
     exceptions: []
-    side_effects: Sends reminder/escalation email via adapters, mutates last_reminder_sent
-      after successful live reminder sends, and emits metrics when configured.
+    side_effects: Sends reminder/escalation email via adapters, mutates last_reminder_sent after successful live reminder sends, and emits metrics when configured.
 - name: AppState
   description: In-memory onboarding application state loaded from JSON storage.
   locked: false
@@ -2204,15 +2076,13 @@ classes:
     exceptions: []
     side_effects: Creates the root directory when missing.
   - name: load
-    description: Load onboarding state and settings JSON, apply metadata migrations,
-      and coerce persisted values into AppState.
+    description: Load onboarding state and settings JSON, apply metadata migrations, and coerce persisted values into AppState.
     locked: false
     inputs: {}
     returns:
       type: AppState
     exceptions: []
-    side_effects: Reads JSON files and writes migrated state JSON when migrations
-      apply.
+    side_effects: Reads JSON files and writes migrated state JSON when migrations apply.
   - name: save
     description: Persist onboarding state and email settings JSON.
     locked: false
@@ -2282,38 +2152,6 @@ classes:
       type: list[dict[str, Any]]
     exceptions: []
     side_effects: none
-- name: ScrollableCanvasArea
-  description: Container object that exposes the reusable widgets for a scrollable
-    canvas region.
-  locked: false
-  attributes:
-    shell:
-      type: ttk.Frame
-    canvas:
-      type: tk.Canvas
-    interior:
-      type: ttk.Frame
-    scrollbar:
-      type: ttk.Scrollbar
-    window_id:
-      type: int
-  methods: []
-- name: ScrollableModalContainer
-  description: Container object holding the dialog, scrollable body, and pinned button
-    bar widgets.
-  locked: false
-  attributes:
-    dialog:
-      type: tk.Toplevel
-    canvas:
-      type: tk.Canvas
-    interior:
-      type: ttk.Frame
-    button_bar:
-      type: ttk.Frame
-    scrollbar:
-      type: ttk.Scrollbar
-  methods: []
 data_structures:
 - name: DATE_FMT
   description: Date format used for onboarding date-only strings.

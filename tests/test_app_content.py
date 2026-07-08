@@ -18,4 +18,6 @@ def test_app_content_helpers_preserve_behavior():
     assert re.match(r"\d{8}_\d{6}", platform_services.now_stamp())
     assert platform_services.USER_ARTIFACTS_DIR == platform_services.REPO_ROOT / "user_artifacts"
     assert platform_services.DEFAULT_BASE_DIR == platform_services.USER_ARTIFACTS_DIR / "interviews"
-    assert platform_services.INTERVIEW_HISTORY_PATH == platform_services.USER_ARTIFACTS_DIR / "interview_history.json"
+    assert platform_services.INTERVIEW_HISTORY_PATH == platform_services.USER_ARTIFACTS_DIR / "interview_history.sqlite3"
+    assert platform_services.INTERVIEW_HISTORY_DB_PATH == platform_services.INTERVIEW_HISTORY_PATH
+    assert platform_services.INTERVIEW_HISTORY_LEGACY_JSON_PATH == platform_services.USER_ARTIFACTS_DIR / "interview_history.json"

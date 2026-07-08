@@ -12,7 +12,6 @@ import pytest
 import deepseek_finalize_worker
 import interview_runtime
 from data_store import InterviewHistoryStore
-from interview_app.bootstrap import build_default_settings
 from interview_runtime import (
     DeepSeekSummaryConfig,
     build_finalize_context,
@@ -71,16 +70,14 @@ def test_request_deepseek_chat_completion_uses_native_ollama_json(monkeypatch: p
     assert response["choices"][0]["message"]["content"] == '{"ok":true}'
 
 
-def test_default_tk_settings_enable_local_deepseek_summary() -> None:
-    settings = build_default_settings()
-
+def test_default_pyside_launch_settings_enable_local_deepseek_summary() -> None:
     config = build_deepseek_summary_config(
         {
-            "DEEPSEEK_SUMMARY_ENABLED": str(settings["deepseek_summary_enabled"]),
-            "DEEPSEEK_API_KEY": str(settings["deepseek_api_key"]),
-            "DEEPSEEK_API_BASE_URL": str(settings["deepseek_api_base_url"]),
-            "DEEPSEEK_SUMMARY_MODEL": str(settings["deepseek_summary_model"]),
-            "DEEPSEEK_SUMMARY_TIMEOUT_SECONDS": str(settings["deepseek_summary_timeout_seconds"]),
+            "DEEPSEEK_SUMMARY_ENABLED": "1",
+            "DEEPSEEK_API_KEY": "ollama",
+            "DEEPSEEK_API_BASE_URL": "http://127.0.0.1:11434/v1",
+            "DEEPSEEK_SUMMARY_MODEL": "deepseek-r1:8b",
+            "DEEPSEEK_SUMMARY_TIMEOUT_SECONDS": "600",
         }
     )
 
@@ -917,7 +914,7 @@ def test_enqueue_deepseek_finalize_job_writes_job_and_launches_worker(tmp_path, 
             calls.append({"args": args, "kwargs": kwargs})
 
     monkeypatch.setattr(interview_runtime.subprocess, "Popen", _Popen)
-    history_store = InterviewHistoryStore(tmp_path / "history.json")
+    history_store = InterviewHistoryStore(tmp_path / "history.sqlite3")
     history_store.append({"history_id": "hist-1", "candidate_name": "Ada"})
     app = SimpleNamespace(
         settings={"base_dir": str(tmp_path), "deepseek_summary_enabled": True},
@@ -944,19 +941,14 @@ def test_enqueue_deepseek_finalize_job_writes_job_and_launches_worker(tmp_path, 
 
 def test_retry_deepseek_finalize_job_marks_history_processing_and_relaunches(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[Path] = []
-    history_path = tmp_path / "history.json"
-    history_path.write_text(
-        json.dumps(
-            [
-                {
-                    "history_id": "hist-1",
-                    "candidate_name": "Ada",
-                    "deepseek_processing_status": "failed",
-                    "deepseek_processing_warning": "DeepSeek processing failed.",
-                }
-            ]
-        ),
-        encoding="utf-8",
+    history_path = tmp_path / "history.sqlite3"
+    InterviewHistoryStore(history_path).append(
+        {
+            "history_id": "hist-1",
+            "candidate_name": "Ada",
+            "deepseek_processing_status": "failed",
+            "deepseek_processing_warning": "DeepSeek processing failed.",
+        }
     )
     job_path = tmp_path / "deepseek_jobs" / "deepseek-finalize-hist-1.json"
     job_path.parent.mkdir()
@@ -976,7 +968,7 @@ def test_retry_deepseek_finalize_job_marks_history_processing_and_relaunches(tmp
 
     assert progress_path == job_path.with_suffix(".progress.json")
     assert calls == [job_path]
-    row = json.loads(history_path.read_text(encoding="utf-8"))[0]
+    row = InterviewHistoryStore(history_path).load()[0]
     assert row["deepseek_processing_status"] == "processing"
     assert row["deepseek_processing_warning"] == ""
     progress = json.loads(progress_path.read_text(encoding="utf-8"))
@@ -1008,8 +1000,8 @@ def test_regenerate_interview_notes_job_document_only_marks_mode_and_relaunches(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     calls: list[Path] = []
-    history_path = tmp_path / "history.json"
-    history_path.write_text(json.dumps([{"history_id": "hist-1", "deepseek_processing_status": "complete"}]), encoding="utf-8")
+    history_path = tmp_path / "history.sqlite3"
+    InterviewHistoryStore(history_path).append({"history_id": "hist-1", "deepseek_processing_status": "complete"})
     job_path = tmp_path / "deepseek-finalize-hist-1.json"
     job_path.write_text(
         json.dumps(
@@ -1030,7 +1022,7 @@ def test_regenerate_interview_notes_job_document_only_marks_mode_and_relaunches(
     assert progress_path == job_path.with_suffix(".progress.json")
     job = json.loads(job_path.read_text(encoding="utf-8"))
     assert job["rerun_mode"] == "document_only"
-    row = json.loads(history_path.read_text(encoding="utf-8"))[0]
+    row = InterviewHistoryStore(history_path).load()[0]
     assert row["deepseek_processing_status"] == "processing"
     progress = json.loads(progress_path.read_text(encoding="utf-8"))
     assert progress["step"] == "Regenerating interview notes document"
@@ -1096,17 +1088,12 @@ def test_regenerate_interview_notes_job_full_mode_resets_deepseek_checkpoints(
 def test_deepseek_finalize_worker_resumes_from_checkpointed_trait_output(
     tmp_path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    history_path = tmp_path / "history.json"
-    history_path.write_text(
-        json.dumps(
-            [
-                {
-                    "history_id": "hist-1",
-                    "deepseek_processing_status": "failed",
-                }
-            ]
-        ),
-        encoding="utf-8",
+    history_path = tmp_path / "history.sqlite3"
+    InterviewHistoryStore(history_path).append(
+        {
+            "history_id": "hist-1",
+            "deepseek_processing_status": "failed",
+        }
     )
     report_path = tmp_path / "notes.docx"
     progress_path = tmp_path / "deepseek.progress.json"
@@ -1162,7 +1149,7 @@ def test_deepseek_finalize_worker_resumes_from_checkpointed_trait_output(
 
     deepseek_finalize_worker.run_job(job_path)
 
-    row = json.loads(history_path.read_text(encoding="utf-8"))[0]
+    row = InterviewHistoryStore(history_path).load()[0]
     assert row["deepseek_processing_status"] == "complete"
 
 
@@ -1211,7 +1198,7 @@ def test_deepseek_finalize_worker_starts_local_ollama_and_reports_specific_steps
 
 def test_deepseek_finalize_worker_updates_history_status(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
     _disable_local_deepseek_runtime(monkeypatch)
-    history_path = tmp_path / "history.json"
+    history_path = tmp_path / "history.sqlite3"
     store = InterviewHistoryStore(history_path)
     store.append(
         {
@@ -1269,7 +1256,7 @@ def test_deepseek_finalize_worker_uses_regenerated_notes_path_when_report_is_loc
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _disable_local_deepseek_runtime(monkeypatch)
-    history_path = tmp_path / "history.json"
+    history_path = tmp_path / "history.sqlite3"
     store = InterviewHistoryStore(history_path)
     store.append(
         {
@@ -1344,7 +1331,7 @@ def test_deepseek_finalize_worker_document_only_rerun_skips_deepseek_generation(
     tmp_path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    history_path = tmp_path / "history.json"
+    history_path = tmp_path / "history.sqlite3"
     store = InterviewHistoryStore(history_path)
     store.append(
         {
@@ -1457,7 +1444,7 @@ def test_deepseek_finalize_worker_fails_without_export_when_deepseek_outputs_are
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _disable_local_deepseek_runtime(monkeypatch)
-    history_path = tmp_path / "history.json"
+    history_path = tmp_path / "history.sqlite3"
     store = InterviewHistoryStore(history_path)
     store.append(
         {
@@ -1631,7 +1618,7 @@ def test_finalize_progress_tasks_mark_ordered_prior_queued_steps_finished() -> N
 
 def test_deepseek_finalize_worker_marks_failed_when_no_deepseek_outputs_generate(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
     _disable_local_deepseek_runtime(monkeypatch)
-    history_path = tmp_path / "history.json"
+    history_path = tmp_path / "history.sqlite3"
     store = InterviewHistoryStore(history_path)
     store.append(
         {
@@ -1696,7 +1683,7 @@ def test_deepseek_finalize_worker_exports_partial_when_trait_advisory_has_no_tra
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _disable_local_deepseek_runtime(monkeypatch)
-    history_path = tmp_path / "history.json"
+    history_path = tmp_path / "history.sqlite3"
     store = InterviewHistoryStore(history_path)
     store.append(
         {
@@ -1762,7 +1749,7 @@ def test_deepseek_finalize_worker_exports_partial_when_trait_suggestions_are_par
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _disable_local_deepseek_runtime(monkeypatch)
-    history_path = tmp_path / "history.json"
+    history_path = tmp_path / "history.sqlite3"
     store = InterviewHistoryStore(history_path)
     store.append(
         {

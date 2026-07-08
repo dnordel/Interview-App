@@ -6,6 +6,7 @@ import threading
 from pathlib import Path
 from types import SimpleNamespace
 
+from data_store import InterviewHistoryStore
 from interview_app.audio_runtime import AudioRuntimeController
 from interview_app.finalize_pipeline import FinalizePipelineController
 from interview_app.history_controller import HistoryController
@@ -117,10 +118,43 @@ def test_history_controller_refresh_renders_rows() -> None:
     assert shared.history_rows[0]["candidate_name"] == "Test"
 
 
+def test_history_controller_refresh_uses_db_search_when_available() -> None:
+    row = {
+        "history_id": "abc",
+        "candidate_name": "Test",
+        "school": "Palmdale",
+        "interview_date": "2026-01-01",
+    }
+    calls: list[object] = []
+
+    class _SearchStore:
+        def load(self):
+            raise AssertionError("load should not run when filtered DB search is available")
+
+        def load_filtered(self, *, search: str = "", **_kwargs):
+            calls.append(search)
+            return [row]
+
+    app = SimpleNamespace()
+    app.history_store = _SearchStore()
+    app.history_search_var = SimpleNamespace(get=lambda: "Palmdale")
+    app.history_sort_column = "interview_date"
+    app.history_sort_desc = True
+    shared = AppSharedState()
+    controller = HistoryController(app, shared, grid_factory=_FakeGrid)
+    controller.history_grid = _FakeGrid(None)
+
+    controller.refresh_history_tree()
+
+    assert calls == ["Palmdale"]
+    assert controller.history_grid.filter_text == ""
+    assert shared.history_rows == [row]
+
+
 def test_history_controller_regenerates_missing_notes_with_selected_mode(tmp_path, monkeypatch) -> None:
     calls: list[object] = []
-    history_path = tmp_path / "interview_history.json"
-    history_path.write_text("[]", encoding="utf-8")
+    history_path = tmp_path / "interview_history.sqlite3"
+    InterviewHistoryStore(history_path).load()
     job_path = tmp_path / "deepseek_jobs" / "deepseek-finalize-hist-1.json"
     job_path.parent.mkdir()
     job_path.write_text("{}", encoding="utf-8")
@@ -154,8 +188,8 @@ def test_history_controller_can_regenerate_existing_notes(tmp_path, monkeypatch)
     calls: list[object] = []
     notes_path = tmp_path / "notes.docx"
     notes_path.write_text("docx", encoding="utf-8")
-    history_path = tmp_path / "interview_history.json"
-    history_path.write_text("[]", encoding="utf-8")
+    history_path = tmp_path / "interview_history.sqlite3"
+    InterviewHistoryStore(history_path).load()
     job_path = tmp_path / "deepseek_jobs" / "deepseek-finalize-hist-1.json"
     job_path.parent.mkdir()
     job_path.write_text("{}", encoding="utf-8")
@@ -193,7 +227,7 @@ def test_history_controller_open_notes_opens_existing_document_without_prompt(tm
     notes_path.write_text("docx", encoding="utf-8")
     app = SimpleNamespace(
         settings={"base_dir": str(tmp_path)},
-        history_store=SimpleNamespace(path=tmp_path / "interview_history.json"),
+        history_store=SimpleNamespace(path=tmp_path / "interview_history.sqlite3"),
         _open_path_in_default_app=lambda path: calls.append(f"open:{path}"),
     )
     controller = HistoryController(app, AppSharedState())
@@ -215,7 +249,7 @@ def test_history_controller_regenerate_prompts_before_missing_job_warning(tmp_pa
     calls: list[str] = []
     app = SimpleNamespace(
         settings={"base_dir": str(tmp_path)},
-        history_store=SimpleNamespace(path=tmp_path / "interview_history.json"),
+        history_store=SimpleNamespace(path=tmp_path / "interview_history.sqlite3"),
     )
     monkeypatch.setattr(interview_runtime.messagebox, "showwarning", lambda title, message: calls.append(f"warning:{message}"))
     controller = HistoryController(app, AppSharedState())
@@ -233,22 +267,17 @@ def test_history_controller_regenerate_prompts_before_missing_job_warning(tmp_pa
 
 def test_history_controller_regenerates_from_saved_session_when_job_is_missing(tmp_path, monkeypatch) -> None:
     calls: list[object] = []
-    history_path = tmp_path / "user_artifacts" / "interview_history.json"
+    history_path = tmp_path / "user_artifacts" / "interview_history.sqlite3"
     history_path.parent.mkdir()
-    history_path.write_text(
-        json.dumps(
-            [
-                {
-                    "history_id": "hist-1",
-                    "candidate_name": "Ada Lovelace",
-                    "interview_date": "2026-01-02",
-                    "school": "Palmdale",
-                    "track": "infant_toddler",
-                    "interview_notes_path": str(tmp_path / "missing.docx"),
-                }
-            ]
-        ),
-        encoding="utf-8",
+    InterviewHistoryStore(history_path).append(
+        {
+            "history_id": "hist-1",
+            "candidate_name": "Ada Lovelace",
+            "interview_date": "2026-01-02",
+            "school": "Palmdale",
+            "track": "infant_toddler",
+            "interview_notes_path": str(tmp_path / "missing.docx"),
+        }
     )
     session_dir = history_path.parent / "interviews" / "interview_sessions"
     session_dir.mkdir(parents=True)
@@ -321,7 +350,7 @@ def test_history_controller_regeneration_mode_uses_explicit_selector(tmp_path) -
     calls: list[str] = []
     app = SimpleNamespace(
         settings={"base_dir": str(tmp_path)},
-        history_store=SimpleNamespace(path=tmp_path / "interview_history.json"),
+        history_store=SimpleNamespace(path=tmp_path / "interview_history.sqlite3"),
     )
     controller = HistoryController(app, AppSharedState())
     controller._show_notes_regeneration_mode_dialog = lambda candidate: calls.append(candidate) or "full"

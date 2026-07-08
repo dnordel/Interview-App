@@ -123,6 +123,14 @@ Optional standardized dev setup:
 pip install -r requirements-dev.txt
 ```
 
+Run the complete automated test suite faster with parallel workers:
+
+```bash
+pytest -q -n auto
+```
+
+Use plain `pytest -q` when you need strict serial execution for debugging.
+
 ## Quick Start
 
 ### Launch Interview App
@@ -130,32 +138,25 @@ pip install -r requirements-dev.txt
 **Windows (recommended for non-technical users):**
 
 - Double-click `Start Preschool Teacher Interview Guide.bat` in the repository root.
-- This starts the setup/launch flow without needing to open PowerShell manually and defaults to the full-feature Tk desktop UI.
+- This starts the setup/launch flow without needing to open PowerShell manually and launches the PySide desktop UI.
 - For debugger logging/console mode, run `.\setup_and_run.ps1 -DebugMode`.
-- Use the top **Current UI / Switch to ... UI** control inside the desktop app to relaunch into the other UI.
-- `setup_and_run.ps1` tracks a requirements fingerprint and selected UI mode in the per-user setup config, invalidates stale cached app paths, and rechecks PySide6 when requirements change. In-app UI switching relaunches the selected desktop UI directly so setup prompts do not repeat.
+- `setup_and_run.ps1` tracks a requirements fingerprint and PySide app path in the per-user setup config, invalidates stale cached app paths, and fails closed when PySide6 is unavailable.
 
 **Direct Python launch (advanced):**
-
-```bash
-pythonw src/interview_app.pyw
-```
-
-PySide6 redesign shell:
 
 ```bash
 python src/pyside_interview_app.py
 ```
 
-The PySide6 shell uses the same rubric and question-flow JSON as the existing app. Finalize, history, DOCX generation, and DeepSeek processing use the shared desktop runtime contracts.
+The PySide6 shell is the only supported desktop GUI. Finalize, history, DOCX generation, and DeepSeek processing use shared runtime services while the project prepares for a future web GUI.
 
 ### Launch Onboarding App
 
 ```bash
-pythonw src/onboarding_app.pyw
+python src/pyside_interview_app.py
 ```
 
-On first use, the left-side **Actions** area is organized by intent so daily work is front-loaded:
+Open the Onboarding tab inside the PySide desktop app. The old standalone Tk onboarding app has been removed.
 
 1. **Daily workflow** (primary: **Run Reminders Now**)
 2. **Candidate management**
@@ -250,7 +251,8 @@ Role-sensitive visibility expectations for manual QA:
 - `config/disqualifier_signals.json`: disqualifier cues for evaluation.
 - `user_artifacts/interviews/onboarding_data.json`: onboarding records (created by onboarding app).
 - `user_artifacts/interviews/onboarding_settings.json`: onboarding email/reminder settings (created by onboarding app).
-- `user_artifacts/interview_history.json`: finalized interview history rows (created by interview app).
+- `user_artifacts/interview_history.sqlite3`: finalized interview history rows (created by interview app).
+- `user_artifacts/interview_history.json`: legacy finalized interview history rows imported into SQLite when the DB is empty.
 - `user_artifacts/school_offer_settings.json`: local offer-template settings (created by interview app).
 - `user_artifacts/interview_app_settings.json`: local app settings, including output folder preference.
 
@@ -270,7 +272,8 @@ For existing installs, move or copy prior generated files from `./interviews/`,
 `./interview_history.json`, `./school_offer_settings.json`,
 `./school_email_template_settings.json`, and `./interview_app_settings.json`
 into matching paths under `./user_artifacts/` before pulling branch updates that
-stop tracking generated artifacts.
+stop tracking generated artifacts. On first interview-history load, existing
+history JSON rows are copied into `user_artifacts/interview_history.sqlite3`.
 
 ## Security and Privacy Considerations
 
@@ -329,7 +332,7 @@ pip install -r requirements.txt
 - Relaunch:
 
 ```bash
-pythonw src/interview_app.pyw
+python src/pyside_interview_app.py
 ```
 
 ### 3) Audio/transcription features unavailable
@@ -348,14 +351,12 @@ Open **Edit Questions** and ensure the selected role track has at least one acti
 
 ## Project Structure
 
-- `src/pyside_interview_app.py`: preferred interview app entry point.
-- `src/interview_app.pyw`: legacy Tk interview app entry point.
-- `src/Initial Teacher Interview Guide.pyw`: legacy wrapper forwarding to `src/interview_app.pyw`.
+- `src/pyside_interview_app.py`: supported desktop interview app entry point.
 - `src/app_content.py`: shared constants and helper content.
 - `src/data_store.py`: rubric/question persistence.
 - `src/reporting.py`: scoring, draft management, DOCX export.
 - `src/interview_audio_recorder.py`: optional recording/transcription integration.
-- `src/onboarding_app.pyw`: onboarding tracker desktop app.
+- `src/onboarding_operations.py`: onboarding scheduling, reminders, and dashboard operations used by PySide.
 - `config/rubric.json`: interview rubric configuration.
 - `config/disqualifier_signals.json`: disqualifier cue definitions.
 
@@ -383,11 +384,7 @@ Documentation contribution standards are defined in [`docs/CONTRIBUTING_DOCS.md`
 
 ## Compatibility Notes
 
-Legacy launch name remains available for one release cycle:
-
-- `src/Initial Teacher Interview Guide.pyw` -> forwards to `src/interview_app.pyw`
-
-This legacy name is scheduled for removal in the following release cycle.
+The legacy Tk desktop GUI and standalone Tk onboarding app have been removed. Use `src/pyside_interview_app.py` or the root launchers, which pass `-UiMode pyside`.
 
 ## Developer Validation Checklist
 
@@ -400,7 +397,7 @@ python tools/check_docx_environment.py
 The check prints the resolved `docx.__file__` path and fails if it appears to come from an incompatible `docx` package instead of `python-docx`.
 
 ```bash
-python -m compileall src/interview_app.pyw src/onboarding_app.pyw src/app_content.py src/data_store.py src/reporting.py
+python -m compileall src/pyside_interview_app.py src/app_content.py src/data_store.py src/reporting.py
 ```
 
 ```bash

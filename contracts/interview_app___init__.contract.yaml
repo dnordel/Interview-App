@@ -2,14 +2,13 @@ module:
   name: interview_app___init__
   language: python
   path: src/interview_app/__init__.py
-  version: 1.3.0
-  description: Contracts for __init__ module.
+  version: 2.0.0
+  description: Headless interview controller package exports; legacy Tk UI exports removed.
 functions: []
 classes: []
 data_structures: []
 dependencies:
 - module: interview_app_audio_runtime
-- module: interview_app_bootstrap
 - module: interview_app_dashboard_controller
 - module: interview_app_finalize_context
 - module: interview_app_finalize_gateways
@@ -22,8 +21,5 @@ dependencies:
 - module: interview_app_transcription_executor
 - module: interview_app_transcription_queue
 - module: interview_app_types
-- module: interview_app_ui_router
-- module: interview_app_ui_shell
 - module: interview_app_whisper_runtime_policy
-- module: interview_app_views
 - module: interview_app_session_manager

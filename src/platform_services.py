@@ -43,7 +43,9 @@ DEFAULT_SIGNALS_PATH = CONFIG_DIR / "disqualifier_signals.json"
 
 # Stores GUI edits (trait order, trait question overrides, custom questions, and mixed flow)
 QUESTIONS_OVERRIDE_PATH = CONFIG_DIR / "question_overrides.json"
-INTERVIEW_HISTORY_PATH = USER_ARTIFACTS_DIR / "interview_history.json"
+INTERVIEW_HISTORY_DB_PATH = USER_ARTIFACTS_DIR / "interview_history.sqlite3"
+INTERVIEW_HISTORY_LEGACY_JSON_PATH = USER_ARTIFACTS_DIR / "interview_history.json"
+INTERVIEW_HISTORY_PATH = INTERVIEW_HISTORY_DB_PATH
 SCHOOL_OFFER_SETTINGS_PATH = USER_ARTIFACTS_DIR / "school_offer_settings.json"
 SCHOOL_EMAIL_TEMPLATE_SETTINGS_PATH = USER_ARTIFACTS_DIR / "school_email_template_settings.json"
 INTERVIEW_APP_SETTINGS_PATH = USER_ARTIFACTS_DIR / "interview_app_settings.json"
@@ -318,17 +320,17 @@ MAX_CONFIG_BYTES = 2_000_000
 CONFIG_ASSET_REGISTRY: dict[str, dict[str, Any]] = {
     "rubric.json": {
         "owner": "interview_runtime_service",
-        "consumers": ["data_store", "ui_composition", "interview_app"],
+        "consumers": ["data_store", "pyside_interview_app"],
         "schema": "object(metadata, scoring, tracks, traits[], absolute_disqualifiers[])",
     },
     "disqualifier_signals.json": {
         "owner": "interview_runtime_service",
-        "consumers": ["data_store", "interview_app"],
+        "consumers": ["data_store", "pyside_interview_app"],
         "schema": "object(questions[])",
     },
     "question_overrides.json": {
         "owner": "interview_runtime_service",
-        "consumers": ["data_store", "interview_app", "ui_composition"],
+        "consumers": ["data_store", "pyside_interview_app", "question_settings_service"],
         "schema": "object(track_trait_order, trait_question_overrides, custom_questions, track_question_flow)",
     },
     "interview_output.schema.json": {
@@ -1204,7 +1206,6 @@ def main(argv: list[str] | None = None) -> int:
     app_root = _resolve_app_root(target_path, args.app_root)
     log_paths = _configure_runtime_logging(app_root)
     _install_global_exception_hooks(app_root, log_paths["runtime_log"])
-    _install_tk_callback_hook(app_root, log_paths["runtime_log"])
     _enable_faulthandler(log_paths["fault_log"])
 
     debug_enabled = bool(args.debug or _env_debug_enabled())
@@ -1312,33 +1313,6 @@ def _install_global_exception_hooks(app_root: Path, runtime_log_path: Path) -> N
 
     sys.excepthook = _sys_hook
     threading.excepthook = _thread_hook
-
-
-def _install_tk_callback_hook(app_root: Path, runtime_log_path: Path) -> None:
-    try:
-        import tkinter as tk
-    except Exception:
-        logging.getLogger("runtime_wrapper").debug("tkinter_not_available")
-        return
-
-    original = tk.Tk.report_callback_exception
-
-    def _wrapped(self: Any, exc: type[BaseException], val: BaseException, tb: TracebackType | None) -> None:
-        report = write_wrapper_crash_report(
-            app_root=app_root,
-            source="tk_callback_global",
-            exc_type=exc,
-            exc_value=val,
-            exc_traceback=tb,
-        )
-        logging.getLogger("runtime_wrapper").error(
-            "tk_global_callback_exception",
-            extra={"report": str(report) if report else "", "runtime_log": str(runtime_log_path)},
-            exc_info=(exc, val, tb),
-        )
-        original(self, exc, val, tb)
-
-    tk.Tk.report_callback_exception = _wrapped
 
 
 def _install_trace_logging(app_root: Path, trace_path: Path) -> None:

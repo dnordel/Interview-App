@@ -6,7 +6,6 @@ modules:
     - platform_services
     - scoring_reporting
     - transformers
-    - ui_composition
     - interview_audio_recorder
     - interview_app_audio_runtime
     - interview_app_finalize_pipeline
@@ -66,7 +65,6 @@ modules:
     depends_on:
     - runtime_wrapper
     - pyside_interview_app
-    - interview_app
   staffing_store:
     path: src/staffing_store.py
     depends_on:
@@ -85,22 +83,9 @@ modules:
     depends_on:
     - platform_services
     - trait_scoring_adapter
-  ui_composition:
-    path: src/ui_composition.py
-    depends_on:
-    - platform_services
-    - scoring_reporting
-    - ui_windows
-    - interview_app_ui_router
-    - interview_app_ui_shell
-    - interview_app_view_protocols
-    - interview_app_views
-    - tk_theme
-    - ui_mode_switch
   question_settings_service:
     path: src/question_settings_service.py
-    depends_on:
-    - ui_composition
+    depends_on: []
   pyside_interview_app:
     path: src/pyside_interview_app.py
     depends_on:
@@ -140,7 +125,7 @@ modules:
     depends_on:
     - config_rubric_json
     - question_overrides_json
-    - interview_history_json
+    - interview_history_db
     - school_offer_settings_json
     - trait_based_scoring_json
     - web_app_backend
@@ -165,6 +150,9 @@ modules:
   interview_history_json:
     path: user_artifacts/interview_history.json
     depends_on: []
+  interview_history_db:
+    path: user_artifacts/interview_history.sqlite3
+    depends_on: []
   legacy_interview_history_json:
     path: interview_history.json
     depends_on: []
@@ -185,29 +173,15 @@ modules:
     path: src/data_store.py
     depends_on:
     - platform_services
-    - interview_history_json
+    - interview_history_db
     - legacy_interview_history_json
   docx_compat:
     path: src/docx_compat.py
     depends_on: []
-  initial_teacher_interview_guide:
-    path: src/Initial Teacher Interview Guide.pyw
-    depends_on: []
-  interview_app:
-    path: src/interview_app.pyw
-    depends_on:
-    - platform_services
-    - scoring_reporting
-    - interview_runtime
-    - onboarding_operations
-    - ui_composition
-    - tk_theme
-    - ui_mode_switch
   interview_app___init__:
     path: src/interview_app/__init__.py
     depends_on:
     - interview_app_audio_runtime
-    - interview_app_bootstrap
     - interview_app_dashboard_controller
     - interview_app_finalize_context
     - interview_app_finalize_gateways
@@ -219,9 +193,6 @@ modules:
     - interview_app_transcript_writer
     - interview_app_transcription_executor
     - interview_app_transcription_queue
-    - interview_app_ui_router
-    - interview_app_ui_shell
-    - interview_app_views
     - interview_app_whisper_runtime_policy
     - interview_app_session_manager
   interview_app_audio_devices:
@@ -232,20 +203,6 @@ modules:
     path: src/interview_app/audio_runtime.py
     depends_on:
     - interview_runtime
-  interview_app_bootstrap:
-    path: src/interview_app/bootstrap.py
-    depends_on:
-    - interview_app_audio_runtime
-    - interview_app_dashboard_controller
-    - interview_app_finalize_pipeline
-    - interview_app_flow_controller
-    - interview_app_history_controller
-    - interview_runtime
-    - interview_app_transcript_writer
-    - interview_app_views
-    - platform_services
-    - scoring_reporting
-    - ui_composition
   interview_app_dashboard_controller:
     path: src/interview_app/dashboard_controller.py
     depends_on:
@@ -309,35 +266,6 @@ modules:
     path: src/interview_app/types.py
     depends_on:
     - interview_runtime
-  interview_app_ui_router:
-    path: src/interview_app/ui_router.py
-    depends_on:
-    - ui_composition
-  interview_app_ui_shell:
-    path: src/interview_app/ui_shell.py
-    depends_on:
-    - ui_composition
-  interview_app_view_protocols:
-    path: src/interview_app/view_protocols.py
-    depends_on:
-    - ui_composition
-  interview_app_views:
-    path: src/interview_app/views/__init__.py
-    depends_on:
-    - interview_app_views_candidate_setup_view
-    - interview_app_views_signal_reference_view
-    - interview_app_views_start_screen_view
-  interview_app_views_candidate_setup_view:
-    path: src/interview_app/views/candidate_setup_view.py
-    depends_on: []
-  interview_app_views_signal_reference_view:
-    path: src/interview_app/views/signal_reference_view.py
-    depends_on: []
-  interview_app_views_start_screen_view:
-    path: src/interview_app/views/start_screen_view.py
-    depends_on:
-    - onboarding_operations
-    - platform_services
   interview_app_whisper_runtime_policy:
     path: src/interview_app/whisper_runtime_policy.py
     depends_on:
@@ -346,30 +274,12 @@ modules:
     path: src/interview_audio_recorder.py
     depends_on:
     - interview_runtime
-  onboarding_app:
-    path: src/onboarding_app.py
-    depends_on:
-    - onboarding_operations
-    - platform_services
-    - scoring_reporting
-    - ui_composition
-    - tk_theme
   runtime_wrapper:
     path: src/runtime_wrapper.py
     depends_on:
     - platform_services
   storage_utils:
     path: src/storage_utils.py
-    depends_on: []
-  ui_windows:
-    path: src/ui_windows.py
-    depends_on:
-    - platform_services
-    - scoring_reporting
-    - ui_composition
-    - tk_theme
-  tk_theme:
-    path: src/tk_theme.py
     depends_on: []
   interview_app_session_manager:
     path: src/interview_app/session_manager.py
@@ -378,45 +288,33 @@ modules:
 module_metadata:
   interview_question_flow:
     constraints:
-    - Interview question order and question identity are driven by config/rubric.json
-      plus config/question_overrides.json.
+    - Interview question order and question identity are driven by config/rubric.json plus config/question_overrides.json.
     - Scored and custom question screens share one persistent footer contract.
     - Recording/transcription is owned by interview runtime and is question-type agnostic.
   document_flow_rule:
     canonical_field_name: interview_notes_document_path
     merged_interview_notes_contract: true
-    description: Finalize, referral, and integration modules must exchange one merged
-      interview-notes artifact that already includes transcription content.
+    description: Finalize, referral, and integration modules must exchange one merged interview-notes artifact that already includes transcription content.
   interview_app_finalize_context:
     constraints:
-    - Requires interview_notes_document_path as the only canonical document artifact
-      field.
+    - Requires interview_notes_document_path as the only canonical document artifact field.
   interview_app_finalize_pipeline:
     constraints:
-    - Finalize processing produces one merged interview-notes artifact referenced
-      by interview_notes_document_path.
+    - Finalize processing produces one merged interview-notes artifact referenced by interview_notes_document_path.
   interview_app_finalize_gateways:
     constraints:
-    - Referral/integration dispatches must read interview_notes_document_path from
-      finalize context payloads.
+    - Referral/integration dispatches must read interview_notes_document_path from finalize context payloads.
   pyside_interview_app:
     constraints:
-    - Acts as the single PySide desktop parity surface for Tk-bearing desktop contracts.
-    - Delegates Admin Studio draft editing, validation, backups, and confirmed JSON
-      persistence to admin_studio.
-    - Finalize progress is user-closable and does not cancel background transcription,
-      finalize, or DeepSeek work.
-    - Finalize progress renders sanitized task rows with right-side statuses limited
-      to Processing, Finished, Timed-out, or Queued.
-    - Home and Candidates history tables refresh after finalize and show Processing
-      in the Notes column until detached DeepSeek work completes or fails.
+    - Acts as the single PySide desktop parity surface for desktop GUI responsibilities.
+    - Delegates Admin Studio draft editing, validation, backups, and confirmed JSON persistence to admin_studio.
+    - Finalize progress is user-closable and does not cancel background transcription, finalize, or DeepSeek work.
+    - Finalize progress renders sanitized task rows with right-side statuses limited to Processing, Finished, Timed-out, or Queued.
+    - Home and Candidates history tables refresh after finalize and show Processing in the Notes column until detached DeepSeek work completes or fails.
   scoring_reporting:
     constraints:
     - Referral payload document attachment path must resolve from interview_notes_document_path.
-    - Integration payload document references must use interview_notes_document_path
-      as canonical path.
+    - Integration payload document references must use interview_notes_document_path as canonical path.
   trait_based_scoring_json:
     constraints:
-    - Runtime weighted signal source includes preschool teacher signals and Behavior
-      Support Specialist role signals while preserving existing preschool signal
-      identifiers.
+    - Runtime weighted signal source includes preschool teacher signals and Behavior Support Specialist role signals while preserving existing preschool signal identifiers.

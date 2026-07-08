@@ -75,7 +75,7 @@ from platform_services import (
 from scoring_reporting import OfferInput, OfferLetterService, ScoringEngine, build_offer_filename
 from scoring_reporting import build_integration_payload, serialize_integration_payload
 from scoring_reporting import CANONICAL_DEGREE_TYPES, CandidateQualification, validate_candidate_qualification
-from staffing_dashboard_v2 import StaffingDashboardV2Page
+from staffing_dashboard_v2 import StaffingDashboardV2Page, configure_v2_scroll_areas
 from staffing_service import StaffingService
 from staffing_store import StaffingStore
 
@@ -487,7 +487,7 @@ class PySideInterviewSession:
     def generate_interview_notes_document(self, *, output_dir: Path) -> Path:
         result = self.finalize_interview(
             base_dir=Path(output_dir),
-            history_path=Path(output_dir) / "interview_history.json",
+            history_path=Path(output_dir) / "interview_history.sqlite3",
         )
         return Path(result["out_path"])
 
@@ -827,6 +827,28 @@ def _history_status_from_score(row: dict[str, Any], score: Any, status: Any) -> 
     return "No Hire"
 
 
+def _director_referral_outcome(status: str) -> str:
+    normalized = _normalize_history_search(status).replace("-", " ")
+    if normalized == "hire":
+        return "hire"
+    if normalized == "borderline":
+        return "borderline"
+    return ""
+
+
+def _director_referral_rating(score: str) -> float | None:
+    text = str(score or "").strip().replace("%", "")
+    if not text:
+        return None
+    try:
+        value = float(text)
+    except ValueError:
+        return None
+    if 1 <= value <= 10:
+        return value
+    return None
+
+
 def _history_offer_action(offer_status: str) -> str:
     status = str(offer_status or "not_generated").strip().lower() or "not_generated"
     if status == "not_generated":
@@ -1061,9 +1083,23 @@ def _ensure_offer_pdf_path(offer_path: str) -> str:
     return str(pdf_path) if pdf_path.is_file() else ""
 
 
-def _build_pyside_history_rows(history_path: Path) -> list[PySideHistoryRow]:
+def _build_pyside_history_rows(
+    history_path: Path,
+    *,
+    school: str = "",
+    outcome: str = "",
+    search: str = "",
+    limit: int | None = None,
+) -> list[PySideHistoryRow]:
     store = InterviewHistoryStore(Path(history_path))
-    rows = store.load()
+    if any(str(value or "").strip() for value in (school, outcome, search)) or limit:
+        rows = store.load_filtered(school=school, outcome=outcome, search=search, limit=limit)
+    else:
+        rows = store.load()
+    return _pyside_history_rows_from_payloads(rows, store)
+
+
+def _pyside_history_rows_from_payloads(rows: Sequence[dict[str, Any]], store: InterviewHistoryStore) -> list[PySideHistoryRow]:
     history_rows: list[PySideHistoryRow] = []
     for row in rows:
         row_key = store.build_row_key(row)
@@ -1479,8 +1515,8 @@ def build_pyside_candidate_board(history_rows: Sequence[dict[str, Any] | PySideH
     )
 
 
-def latest_pyside_draft_path(drafts_dir: Path = DEFAULT_BASE_DIR / "pyside_drafts") -> Path | None:
-    folder = Path(drafts_dir)
+def latest_pyside_draft_path(drafts_dir: Path | None = None) -> Path | None:
+    folder = Path(drafts_dir) if drafts_dir is not None else DEFAULT_BASE_DIR / "pyside_drafts"
     try:
         candidates = [path for path in folder.glob("*.json") if path.is_file()]
     except OSError:
@@ -1671,25 +1707,68 @@ def _apply_styles(app: Any) -> None:
         }
         QListWidget#AdminStudioSectionList {
             background: #ffffff;
-            border: 1px solid #d9dee7;
-            border-radius: 8px;
-            padding: 8px;
+            border: 0;
+            padding: 10px 8px;
         }
         QListWidget#AdminStudioSectionList::item {
-            padding: 9px 10px;
+            padding: 11px 12px;
             border-radius: 6px;
-            color: #172033;
+            color: #0f172a;
         }
         QListWidget#AdminStudioSectionList::item:disabled {
-            color: #667085;
+            color: #475569;
             font-weight: 700;
-            padding-top: 14px;
+            padding-top: 18px;
             background: transparent;
         }
         QListWidget#AdminStudioSectionList::item:selected {
             background: #eaf2ff;
-            color: #075dde;
+            color: #2563eb;
             border-left: 4px solid #2563eb;
+        }
+        QFrame#AdminStudioSidebarRail {
+            background: #ffffff;
+            border-right: 1px solid #e2e8f0;
+        }
+        QFrame#AdminStudioWorkspace {
+            background: #f8fafc;
+            border: 0;
+        }
+        QFrame#AdminStudioSidebarBrandCard {
+            background: #ffffff;
+            border: 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        QScrollArea#AdminStudioToolbarScroll {
+            background: #ffffff;
+            border: 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        QLabel#AdminStudioWorkspaceActionsLabel {
+            color: #475569;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 2px 12px;
+            font-size: 12px;
+        }
+        QLabel#AdminStudioPageTitle {
+            color: #0f172a;
+            font-size: 26px;
+            font-weight: 800;
+        }
+        QLabel#AdminStudioPageSubtitle {
+            color: #475569;
+            font-size: 14px;
+        }
+        QFrame#AdminStudioPageHeader {
+            background: transparent;
+            border: 0;
+        }
+        QFrame#AdminStudioMetricStrip,
+        QFrame#AdminStudioToolbarCard {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
         }
         QFrame#AdminStudioConceptPanel {
             background: #ffffff;
@@ -1705,6 +1784,12 @@ def _apply_styles(app: Any) -> None:
             font-size: 16px;
             font-weight: 700;
         }
+        QLabel#AdminStudioRubricEditorTitle,
+        QLabel#AdminStudioSignalDetailTitle {
+            font-size: 20px;
+            font-weight: 800;
+            color: #0f172a;
+        }
         QLabel#AdminStudioChip {
             color: #0f3f8c;
             background: #eaf2ff;
@@ -1713,9 +1798,138 @@ def _apply_styles(app: Any) -> None:
             padding: 4px 9px;
             font-size: 12px;
         }
+        QLabel#AdminStudioChip[adminChipVariant="success"] {
+            color: #15803d;
+            background: #dcfce7;
+            border-color: #bbf7d0;
+        }
+        QLabel#AdminStudioChip[adminChipVariant="warning"] {
+            color: #b45309;
+            background: #fef3c7;
+            border-color: #fde68a;
+        }
+        QLabel#AdminStudioChip[adminChipVariant="danger"] {
+            color: #dc2626;
+            background: #fee2e2;
+            border-color: #fecaca;
+        }
+        QLabel#AdminStudioChip[adminChipVariant="neutral"] {
+            color: #475569;
+            background: #f1f5f9;
+            border-color: #e2e8f0;
+        }
+        QLabel#AdminStudioTracksPill,
+        QLabel#AdminStudioQuestionsPill,
+        QLabel#AdminStudioUnsavedPill,
+        QLabel#AdminStudioValidationPill {
+            color: #1d4ed8;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-weight: 650;
+        }
+        QLabel#AdminStudioValidationPill[adminStatus="blocked"] {
+            color: #dc2626;
+            background: #fee2e2;
+            border-color: #fecaca;
+        }
+        QLabel#AdminStudioValidationPill[adminStatus="ready"] {
+            color: #15803d;
+            background: #dcfce7;
+            border-color: #bbf7d0;
+        }
+        QLabel#AdminStudioUnsavedPill[adminStatus="dirty"] {
+            color: #b45309;
+            background: #fef3c7;
+            border-color: #fde68a;
+        }
         QLabel#AdminStudioValidationSeverity {
-            color: #9a3412;
+            color: #dc2626;
             font-weight: 700;
+        }
+        QFrame#AdminStudioDashboardCard,
+        QFrame#AdminStudioDraftChangesPanel,
+        QFrame#AdminStudioPublishingReadinessPanel,
+        QFrame#AdminStudioValidationReviewPanel,
+        QFrame#AdminStudioQuickLinksPanel,
+        QFrame#AdminStudioQuestionFlowSection,
+        QFrame#AdminStudioQuestionCard,
+        QFrame#AdminStudioQuestionEditDrawer,
+        QFrame#AdminStudioRubricTraitCardsPanel,
+        QFrame#AdminStudioTraitDetailPanel,
+        QFrame#AdminStudioSignalHintListPanel,
+        QFrame#AdminStudioSignalDetailPanel,
+        QFrame#AdminStudioNotificationRuleListPanel,
+        QFrame#AdminStudioNotificationEditPanel,
+        QFrame#AdminStudioPromptTemplateListPanel,
+        QFrame#AdminStudioPromptEditorPanel,
+        QFrame#AdminStudioPromptInspectorPanel,
+        QFrame#AdminStudioPromptRightInspectorPanel,
+        QFrame#AdminStudioSchoolFolderCardsPanel,
+        QFrame#AdminStudioSchoolDetailDrawer,
+        QFrame#AdminStudioOfferTemplateHealthPanel,
+        QFrame#AdminStudioJsonFilesPanel,
+        QFrame#AdminStudioJsonFileDetailPanel,
+        QFrame#AdminStudioSelectedModelPanel,
+        QFrame#AdminStudioModelOptionCard,
+        QFrame#AdminStudioValidationSummaryCard,
+        QFrame#AdminStudioPublishAvailabilityPanel,
+        QFrame#AdminStudioEnvironmentCard,
+        QFrame#AdminStudioUserCard {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+        QFrame#AdminStudioDashboardCard:hover,
+        QFrame#AdminStudioQuestionCard:hover,
+        QFrame#AdminStudioTraitCard:hover,
+        QFrame#AdminStudioSchoolFolderCard:hover,
+        QFrame#AdminStudioNotificationRuleCard:hover,
+        QFrame#AdminStudioPromptTemplateCard:hover {
+            border-color: #93c5fd;
+            background: #f8fbff;
+        }
+        QFrame#AdminStudioValidationBlockedBanner {
+            background: #fff1f2;
+            border: 1px solid #fca5a5;
+            border-radius: 8px;
+        }
+        QPushButton[adminButtonRole="primary"] {
+            color: #ffffff;
+            background: #2563eb;
+            border: 1px solid #2563eb;
+            border-radius: 6px;
+            font-weight: 700;
+        }
+        QPushButton[adminButtonRole="secondary"] {
+            color: #2563eb;
+            background: #ffffff;
+            border: 1px solid #bfdbfe;
+            border-radius: 6px;
+            font-weight: 650;
+        }
+        QPushButton[adminButtonRole="danger"] {
+            color: #dc2626;
+            background: #ffffff;
+            border: 1px solid #fca5a5;
+            border-radius: 6px;
+            font-weight: 650;
+        }
+        QPushButton:disabled {
+            color: #94a3b8;
+            background: #f8fafc;
+            border-color: #e2e8f0;
+        }
+        QLineEdit, QTextEdit, QPlainTextEdit, QComboBox, QSpinBox {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 7px;
+            color: #0f172a;
+        }
+        QPlainTextEdit[readOnly="true"] {
+            background: #f8fafc;
         }
         QListWidget#PySideStaffingClassroomList {
             background: #ffffff;
@@ -2095,9 +2309,67 @@ class PySideInterviewWindow:
         layout.setSpacing(10)
         return frame, layout
 
+    def _admin_panel(self, object_name: str, *, margins: tuple[int, int, int, int] = (16, 14, 16, 14), spacing: int = 10) -> tuple[Any, Any]:
+        frame, layout = self._surface()
+        frame.setObjectName(object_name)
+        layout.setContentsMargins(*margins)
+        layout.setSpacing(spacing)
+        return frame, layout
+
+    def _admin_chip(self, text: str, variant: str = "info", object_name: str = "AdminStudioChip") -> Any:
+        chip = self._label(text, object_name)
+        chip.setWordWrap(False)
+        chip.setProperty("adminChipVariant", variant)
+        return chip
+
+    def _admin_action_button(self, text: str, object_name: str, *, role: str = "secondary") -> Any:
+        if role == "primary":
+            button = self._primary_button(text)
+        else:
+            button = self.QtWidgets.QPushButton(text)
+            self._make_button_readable(button)
+        button.setObjectName(object_name)
+        button.setProperty("adminButtonRole", role)
+        return button
+
+    def _admin_page_header(self, title: str, description: str) -> Any:
+        header, layout = self._admin_panel("AdminStudioPageHeader", margins=(0, 0, 0, 4), spacing=4)
+        layout.addWidget(self._label(title, "AdminStudioPageTitle"))
+        if description:
+            layout.addWidget(self._label(description, "AdminStudioPageSubtitle"))
+        return header
+
+    def _admin_metric_strip(self, specs: list[tuple[str, str, str]]) -> Any:
+        strip, layout = self._admin_panel("AdminStudioMetricStrip", margins=(14, 10, 14, 10), spacing=10)
+        row = self.QtWidgets.QHBoxLayout()
+        row.setContentsMargins(0, 0, 0, 0)
+        row.setSpacing(10)
+        for label, value, variant in specs:
+            row.addWidget(self._admin_chip(f"{label}: {value}", variant))
+        row.addStretch(1)
+        layout.addLayout(row)
+        return strip
+
+    def _admin_backing_table_container(self, table: Any) -> Any:
+        container = self.QtWidgets.QWidget()
+        container.setObjectName(f"{table.objectName()}Container")
+        container.setProperty("adminBackingField", True)
+        container.setMaximumHeight(0)
+        layout = self.QtWidgets.QVBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(table)
+        return container
+
+    def _refresh_widget_style(self, widget: Any) -> None:
+        style = widget.style()
+        style.unpolish(widget)
+        style.polish(widget)
+        widget.update()
+
     def _primary_button(self, text: str) -> Any:
         button = self.QtWidgets.QPushButton(text)
         button.setObjectName("PrimaryButton")
+        button.setProperty("adminButtonRole", "primary")
         self._make_button_readable(button)
         return button
 
@@ -2165,7 +2437,7 @@ class PySideInterviewWindow:
         form.addRow("Role", role)
         setup_layout.addLayout(form)
 
-        latest_draft = latest_pyside_draft_path()
+        latest_draft = latest_pyside_draft_path(self._drafts_dir())
         self.home_draft_label = self._label(
             f"Saved draft: {latest_draft.name}" if latest_draft else "No saved draft available."
         )
@@ -2244,15 +2516,15 @@ class PySideInterviewWindow:
         self._refresh_history_table()
 
     def _filtered_history_rows(self) -> list[PySideHistoryRow]:
-        rows = self.model.home.history_rows
-        school = self.history_school_filter_text.lower()
-        outcome = self.history_outcome_filter_text.lower()
+        rows = _build_pyside_history_rows(
+            self.model.history_path,
+            school=self.history_school_filter_text,
+            outcome=self.history_outcome_filter_text,
+        )
+        if not self.history_search_text:
+            return rows
         filtered: list[PySideHistoryRow] = []
         for row in rows:
-            if school and row.school.lower() != school:
-                continue
-            if outcome and row.status.lower() != outcome:
-                continue
             if not self._history_row_matches_search(row, self.history_search_text):
                 continue
             filtered.append(row)
@@ -2532,7 +2804,7 @@ class PySideInterviewWindow:
             )
 
     def _continue_latest_draft(self) -> None:
-        draft_path = latest_pyside_draft_path()
+        draft_path = latest_pyside_draft_path(self._drafts_dir())
         if draft_path is None:
             return
         try:
@@ -2548,7 +2820,7 @@ class PySideInterviewWindow:
         self.interview_tabs.setCurrentIndex(2 if self.session.active_question() is not None else 3)
 
     def _refresh_home_draft_panel(self) -> None:
-        latest_draft = latest_pyside_draft_path()
+        latest_draft = latest_pyside_draft_path(self._drafts_dir())
         if latest_draft is not None and not Path(latest_draft).exists():
             latest_draft = None
         label = getattr(self, "home_draft_label", None)
@@ -2563,7 +2835,7 @@ class PySideInterviewWindow:
             delete_button.setEnabled(latest_draft is not None)
 
     def _delete_latest_draft(self) -> None:
-        draft_path = latest_pyside_draft_path()
+        draft_path = latest_pyside_draft_path(self._drafts_dir())
         if draft_path is None or not Path(draft_path).exists():
             self._refresh_home_draft_panel()
             return
@@ -3065,7 +3337,13 @@ class PySideInterviewWindow:
 
     def _default_draft_path(self, candidate_name: str) -> Path:
         safe_name = "".join(ch if ch.isalnum() else "_" for ch in candidate_name).strip("_") or "Candidate"
-        return DEFAULT_BASE_DIR / "pyside_drafts" / f"{safe_name}.json"
+        return self._drafts_dir() / f"{safe_name}.json"
+
+    def _drafts_dir(self) -> Path:
+        history_path = Path(getattr(self.model, "history_path", "") or "")
+        if str(history_path):
+            return history_path.parent / "pyside_drafts"
+        return DEFAULT_BASE_DIR / "pyside_drafts"
 
     def _generate_interview_notes_from_session(self) -> None:
         if self.session is None:
@@ -3116,6 +3394,7 @@ class PySideInterviewWindow:
         warning = f" {warning_text}" if warning_text else ""
         self.review_status_label.setText(f"Interview finalized: {output_path}{warning}")
         self._emit_pyside_rating_notification(result)
+        self._record_staffing_director_referral_from_finalize_result(result)
         self._reload_history_model()
         if isinstance(result, dict) and result.get("deepseek_progress_path"):
             self._watch_pyside_deepseek_finalize_progress(result.get("deepseek_progress_path"))
@@ -3257,12 +3536,9 @@ class PySideInterviewWindow:
         if self.pyside_finalize_deepseek_progress_path is not None:
             return
         history_path = Path(getattr(self.model, "history_path", ""))
-        try:
-            rows = json.loads(history_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+        if not str(history_path):
             return
-        if not isinstance(rows, list):
-            return
+        rows = InterviewHistoryStore(history_path).load()
         allowed_dirs = {
             (history_path.parent / "deepseek_jobs").resolve(),
             (history_path.parent / "interviews" / "deepseek_jobs").resolve(),
@@ -3714,7 +3990,6 @@ class PySideInterviewWindow:
 
     def _admin_page(self) -> Any:
         page, layout = self._page()
-        layout.addWidget(self._label("Admin Studio", "Title"))
         self.admin_studio = AdminStudio.load(self._admin_studio_paths())
         self.admin_draft = self.admin_studio.create_draft()
         self.admin_edit_mode = False
@@ -3723,6 +3998,8 @@ class PySideInterviewWindow:
         self._admin_syncing_table_edits = False
 
         toolbar = self.QtWidgets.QHBoxLayout()
+        toolbar.setContentsMargins(8, 6, 8, 6)
+        toolbar.setSpacing(10)
         self.admin_status_label = self._label("", "AdminStudioStatus")
         self.admin_status_label.setVisible(False)
         toolbar.addWidget(self.admin_status_label, 1)
@@ -3743,23 +4020,15 @@ class PySideInterviewWindow:
         action_label.setAlignment(self.QtCore.Qt.AlignmentFlag.AlignCenter)
         action_group.addWidget(action_label)
         action_buttons = self.QtWidgets.QHBoxLayout()
-        self.admin_edit_button = self.QtWidgets.QPushButton("Start Editing")
-        self.admin_edit_button.setObjectName("AdminStudioEditButton")
-        self._make_button_readable(self.admin_edit_button)
+        self.admin_edit_button = self._admin_action_button("Start Editing", "AdminStudioEditButton")
         self.admin_edit_button.clicked.connect(lambda: self._set_admin_editing_enabled(True))
-        self.admin_save_draft_button = self.QtWidgets.QPushButton("Save Draft")
-        self.admin_save_draft_button.setObjectName("AdminStudioSaveDraftButton")
-        self._make_button_readable(self.admin_save_draft_button)
+        self.admin_save_draft_button = self._admin_action_button("Save Draft", "AdminStudioSaveDraftButton")
         self.admin_save_draft_button.clicked.connect(self._save_admin_draft)
-        self.admin_review_button = self._primary_button("Review Changes")
-        self.admin_review_button.setObjectName("AdminStudioReviewButton")
+        self.admin_review_button = self._admin_action_button("Review Changes", "AdminStudioReviewButton")
         self.admin_review_button.clicked.connect(self._show_admin_review_changes_dialog)
-        self.admin_publish_button = self._primary_button("Publish Changes")
-        self.admin_publish_button.setObjectName("AdminStudioPublishButton")
+        self.admin_publish_button = self._admin_action_button("Publish Changes", "AdminStudioPublishButton", role="primary")
         self.admin_publish_button.clicked.connect(self._show_admin_publish_confirmation_dialog)
-        self.admin_discard_button = self.QtWidgets.QPushButton("Discard")
-        self.admin_discard_button.setObjectName("AdminStudioDiscardButton")
-        self._make_button_readable(self.admin_discard_button)
+        self.admin_discard_button = self._admin_action_button("Discard", "AdminStudioDiscardButton", role="danger")
         self.admin_discard_button.clicked.connect(self._show_admin_discard_confirmation_dialog)
         action_buttons.addWidget(self.admin_edit_button)
         action_buttons.addWidget(self.admin_save_draft_button)
@@ -3780,6 +4049,10 @@ class PySideInterviewWindow:
         admin_rail_layout = self.QtWidgets.QVBoxLayout(self.admin_sidebar_rail)
         admin_rail_layout.setContentsMargins(0, 0, 0, 0)
         admin_rail_layout.setSpacing(10)
+        brand, brand_layout = self._admin_panel("AdminStudioSidebarBrandCard", margins=(18, 16, 18, 12), spacing=2)
+        brand_layout.addWidget(self._label("Admin Studio", "AdminStudioConceptTitle"))
+        brand_layout.addWidget(self._label("Staffing Management", "AdminStudioPageSubtitle"))
+        admin_rail_layout.addWidget(brand)
         self.admin_section_list = self.QtWidgets.QListWidget()
         self.admin_section_list.setObjectName("AdminStudioSectionList")
         self.admin_section_list.setHorizontalScrollBarPolicy(self.QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -3810,7 +4083,7 @@ class PySideInterviewWindow:
         environment_card, environment_layout = self._surface()
         environment_card.setObjectName("AdminStudioEnvironmentCard")
         environment_layout.addWidget(self._label("Environment", "AdminStudioConceptTitle"))
-        environment_layout.addWidget(self._label("Production", "AdminStudioChip"))
+        environment_layout.addWidget(self._admin_chip("Production", "success"))
         environment_layout.addWidget(self._label("v1.4.0"))
         admin_rail_layout.addWidget(environment_card)
         user_card, user_layout = self._surface()
@@ -3825,6 +4098,7 @@ class PySideInterviewWindow:
         self.admin_section_list.setCurrentRow(1)
         self._set_admin_editing_enabled(False)
         self._sync_admin_status()
+        self._configure_admin_v2_scroll_areas()
         return page
 
     def _admin_nav_icon(self, key: str) -> Any:
@@ -3858,6 +4132,7 @@ class PySideInterviewWindow:
         if item and item.data(self.QtCore.Qt.ItemDataRole.UserRole) == "validation":
             self._refresh_admin_validation_page()
         self.admin_stack.setCurrentIndex(stack_index)
+        self.QtCore.QTimer.singleShot(0, self._configure_admin_v2_scroll_areas)
 
     def _refresh_admin_dashboard_page(self) -> None:
         container = getattr(self, "admin_dashboard_container", None)
@@ -3876,6 +4151,7 @@ class PySideInterviewWindow:
         replacement = self._admin_dashboard_page()
         self.admin_dashboard_page_widget = replacement
         layout.insertWidget(index, replacement, 1)
+        self._configure_admin_v2_scroll_areas()
 
     def _refresh_admin_validation_page(self) -> None:
         container = getattr(self, "admin_validation_container", None)
@@ -3894,6 +4170,7 @@ class PySideInterviewWindow:
         replacement = self._admin_validation_content()
         self.admin_validation_page_widget = replacement
         layout.insertWidget(index, replacement, 1)
+        self._configure_admin_v2_scroll_areas()
 
     def _admin_studio_paths(self) -> AdminStudioPaths:
         return AdminStudioPaths(
@@ -3905,10 +4182,14 @@ class PySideInterviewWindow:
             notification_rules_path=NOTIFICATION_RULES_PATH,
         )
 
+    def _configure_admin_v2_scroll_areas(self) -> None:
+        for root in (getattr(self, "admin_sidebar_rail", None), getattr(self, "admin_stack", None)):
+            if root is not None:
+                configure_v2_scroll_areas(self.QtWidgets, root)
+
     def _admin_section_page(self, key: str, title: str, description: str) -> Any:
         tab, tab_layout = self._page()
-        tab_layout.addWidget(self._label(title, "SectionTitle"))
-        tab_layout.addWidget(self._label(description))
+        tab_layout.addWidget(self._admin_page_header(title, description))
         if key == "dashboard":
             self.admin_dashboard_container = tab_layout.parentWidget()
             self.admin_dashboard_page_widget = self._admin_dashboard_page()
@@ -3919,7 +4200,7 @@ class PySideInterviewWindow:
             self.admin_questions_flow_widget = self._admin_questions_flow_cards()
             tab_layout.addWidget(self.admin_questions_flow_widget, 2)
             table = self._admin_questions_table()
-            tab_layout.addWidget(table, 1)
+            tab_layout.addWidget(self._admin_backing_table_container(table))
             return tab
         if key == "rubrics":
             self.admin_rubrics_layout = tab_layout
@@ -3927,7 +4208,7 @@ class PySideInterviewWindow:
             tab_layout.addWidget(self.admin_rubrics_trait_widget, 2)
             table = self._admin_rubrics_table()
             self.admin_rubrics_table_widget = table
-            tab_layout.addWidget(table, 1)
+            tab_layout.addWidget(self._admin_backing_table_container(table))
             return tab
         if key == "signals":
             tab_layout.addWidget(self._admin_signal_hint_cards(), 1)
@@ -3935,7 +4216,7 @@ class PySideInterviewWindow:
         if key == "templates":
             tab_layout.addWidget(self._admin_templates_cards(), 2)
             table = self._admin_school_settings_table()
-            tab_layout.addWidget(table, 1)
+            tab_layout.addWidget(self._admin_backing_table_container(table))
             return tab
         if key == "notifications":
             self.admin_notifications_layout = tab_layout
@@ -3950,7 +4231,7 @@ class PySideInterviewWindow:
             controls.addStretch(1)
             tab_layout.addLayout(controls)
             table = self._admin_notifications_table()
-            tab_layout.addWidget(table, 1)
+            tab_layout.addWidget(self._admin_backing_table_container(table))
             return tab
         if key == "deepseek_model":
             tab_layout.addWidget(self._admin_model_option_cards(), 2)
@@ -3960,7 +4241,7 @@ class PySideInterviewWindow:
             tab_layout.addWidget(self._admin_prompt_summary_strip())
             tab_layout.addWidget(self._admin_prompt_editor_cards(), 2)
             table = self._admin_prompts_table()
-            tab_layout.addWidget(table, 1)
+            tab_layout.addWidget(self._admin_backing_table_container(table))
             return tab
         if key == "advanced":
             tab_layout.addWidget(self._admin_advanced_json_cards(), 2)
@@ -3984,13 +4265,22 @@ class PySideInterviewWindow:
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(14)
         summary = self.admin_studio.summary(self.admin_draft)
+        layout.addWidget(
+            self._admin_metric_strip(
+                [
+                    ("Tracks", str(summary.track_count), "info"),
+                    ("Questions", str(summary.question_count), "info"),
+                    ("Unsaved changes", str(summary.dirty_count), "warning" if summary.dirty_count else "neutral"),
+                    ("Validation blocked", f"{len(summary.validation_errors)} issues", "danger" if summary.validation_errors else "success"),
+                ]
+            )
+        )
         cards = self.QtWidgets.QGridLayout()
         cards.setSpacing(12)
         for index, section in enumerate(summary.sections):
             if section.key == "dashboard":
                 continue
-            card, card_layout = self._surface()
-            card.setObjectName("AdminStudioDashboardCard")
+            card, card_layout = self._admin_panel("AdminStudioDashboardCard")
             title_row = self.QtWidgets.QHBoxLayout()
             icon_label = self.QtWidgets.QLabel()
             icon_label.setObjectName("AdminStudioDashboardCardIcon")
@@ -4004,8 +4294,13 @@ class PySideInterviewWindow:
                 chip_text = f"{summary.track_count} tracks · {summary.question_count} questions"
             if section.key == "validation":
                 chip_text = f"{len(summary.validation_errors)} blocking issues"
-            card_layout.addWidget(self._label(chip_text, "AdminStudioChip"))
-            button = self.QtWidgets.QPushButton("Review Issues" if section.key == "validation" else "Open")
+            chip_variant = "danger" if section.key == "validation" and summary.validation_errors else "info"
+            card_layout.addWidget(self._admin_chip(chip_text, chip_variant))
+            button = self._admin_action_button(
+                "Review Issues" if section.key == "validation" else "Open",
+                f"AdminStudioDashboardOpen_{self._admin_object_suffix(section.key)}",
+                role="danger" if section.key == "validation" and summary.validation_errors else "secondary",
+            )
             button.clicked.connect(lambda _checked=False, key=section.key: self._select_admin_section_by_key(key))
             card_layout.addWidget(button)
             cards.addWidget(card, index // 3, index % 3)
@@ -4030,18 +4325,16 @@ class PySideInterviewWindow:
             ],
         ), 1, 1)
         layout.addLayout(panels)
-        history_button = self.QtWidgets.QPushButton("View Version History")
-        history_button.setObjectName("AdminStudioGlobalVersionHistoryButton")
+        history_button = self._admin_action_button("View Version History", "AdminStudioGlobalVersionHistoryButton")
         history_button.clicked.connect(self._show_admin_global_version_history_dialog)
         layout.addWidget(history_button)
         layout.addStretch(1)
         return page
 
     def _admin_dashboard_draft_changes_panel(self, summary: Any) -> Any:
-        panel, panel_layout = self._surface()
-        panel.setObjectName("AdminStudioDraftChangesPanel")
+        panel, panel_layout = self._admin_panel("AdminStudioDraftChangesPanel")
         panel_layout.addWidget(self._label("Draft Changes", "AdminStudioConceptTitle"))
-        panel_layout.addWidget(self._label(f"{summary.dirty_count} Unsaved", "AdminStudioChip"))
+        panel_layout.addWidget(self._admin_chip(f"{summary.dirty_count} Unsaved", "warning" if summary.dirty_count else "neutral"))
         change_summary = self.admin_draft.change_summary()
         if not change_summary.changed_files:
             panel_layout.addWidget(self._label("No unsaved changes at this time."))
@@ -4064,25 +4357,22 @@ class PySideInterviewWindow:
                     for line in self._admin_review_payload_diff_lines(filename, before_after[0], before_after[1])[:2]:
                         row_layout.addWidget(self._label(line))
                 panel_layout.addWidget(row)
-        button = self.QtWidgets.QPushButton("View Change History")
-        button.setObjectName("AdminStudioDraftChangesPanel_View_Change_History")
+        button = self._admin_action_button("View Change History", "AdminStudioDraftChangesPanel_View_Change_History")
         button.clicked.connect(self._show_admin_review_changes_dialog)
         panel_layout.addWidget(button)
         return panel
 
     def _admin_dashboard_publishing_readiness_panel(self, summary: Any) -> Any:
-        panel, panel_layout = self._surface()
-        panel.setObjectName("AdminStudioPublishingReadinessPanel")
+        panel, panel_layout = self._admin_panel("AdminStudioPublishingReadinessPanel")
         panel_layout.addWidget(self._label("Publishing Readiness", "AdminStudioConceptTitle"))
-        panel_layout.addWidget(self._label("Blocked" if summary.validation_errors else "Ready", "AdminStudioChip"))
+        panel_layout.addWidget(self._admin_chip("Blocked" if summary.validation_errors else "Ready", "danger" if summary.validation_errors else "success"))
         checks = self._admin_dashboard_publishing_readiness_checks(summary.validation_errors)
         for label, status in checks:
             row, row_layout = self._surface()
             row.setObjectName("AdminStudioPublishingReadinessRow")
             row_layout.addWidget(self._label(f"{label}: {status}"))
             panel_layout.addWidget(row)
-        button = self.QtWidgets.QPushButton("View System Health")
-        button.setObjectName("AdminStudioPublishingReadinessPanel_View_System_Health")
+        button = self._admin_action_button("View System Health", "AdminStudioPublishingReadinessPanel_View_System_Health")
         button.clicked.connect(lambda _checked=False: self._select_admin_section_by_key("advanced"))
         panel_layout.addWidget(button)
         return panel
@@ -4101,39 +4391,33 @@ class PySideInterviewWindow:
         ]
 
     def _admin_dashboard_validation_panel(self, validation_errors: list[str]) -> Any:
-        panel, panel_layout = self._surface()
-        panel.setObjectName("AdminStudioValidationReviewPanel")
+        panel, panel_layout = self._admin_panel("AdminStudioValidationReviewPanel")
         panel_layout.addWidget(self._label("Validation Review", "AdminStudioConceptTitle"))
-        panel_layout.addWidget(self._label(f"{len(validation_errors)} Blocking Issues", "AdminStudioChip"))
+        panel_layout.addWidget(self._admin_chip(f"{len(validation_errors)} Blocking Issues", "danger" if validation_errors else "success"))
         panel_layout.addWidget(self._label("These issues are blocking publishing." if validation_errors else "All current admin settings pass validation."))
         for error in validation_errors[:3]:
             target_key = self._admin_validation_target_key(error)
             row, row_layout = self._surface()
             row.setObjectName("AdminStudioValidationReviewIssueRow")
             row_layout.addWidget(self._label(error, "AdminStudioValidationReviewIssueText"), 1)
-            issue = self.QtWidgets.QPushButton(error)
-            issue.setObjectName("AdminStudioValidationReviewIssue")
+            issue = self._admin_action_button(error, "AdminStudioValidationReviewIssue", role="danger")
             issue.setToolTip("Open affected admin section")
             issue.setProperty("adminValidationTarget", target_key)
             issue.clicked.connect(lambda _checked=False, issue_text=error, key=target_key: self._route_admin_validation_issue(issue_text, key))
-            self._make_button_readable(issue)
             row_layout.addWidget(issue)
             panel_layout.addWidget(row)
-        button = self.QtWidgets.QPushButton("Review All Issues")
-        button.setObjectName("AdminStudioValidationReviewPanel_Review_All_Issues")
+        button = self._admin_action_button("Review All Issues", "AdminStudioValidationReviewPanel_Review_All_Issues", role="danger" if validation_errors else "secondary")
         button.clicked.connect(lambda _checked=False: self._select_admin_section_by_key("validation"))
         panel_layout.addWidget(button)
         return panel
 
     def _admin_named_panel(self, object_name: str, title: str, badge: str, body: str, actions: list[str]) -> Any:
-        panel, panel_layout = self._surface()
-        panel.setObjectName(object_name)
+        panel, panel_layout = self._admin_panel(object_name)
         panel_layout.addWidget(self._label(title, "AdminStudioConceptTitle"))
-        panel_layout.addWidget(self._label(badge, "AdminStudioChip"))
+        panel_layout.addWidget(self._admin_chip(badge, "neutral"))
         panel_layout.addWidget(self._label(body))
         for action in actions:
-            button = self.QtWidgets.QPushButton(action)
-            button.setObjectName(f"{object_name}_{self._admin_object_suffix(action)}")
+            button = self._admin_action_button(action, f"{object_name}_{self._admin_object_suffix(action)}")
             target_key = self._admin_dashboard_action_target(action)
             if target_key:
                 button.clicked.connect(lambda _checked=False, key=target_key, action_text=action: self._run_admin_dashboard_action(action_text, key))
@@ -8616,14 +8900,15 @@ class PySideInterviewWindow:
         self.admin_tracks_pill.setText(f"Tracks: {summary.track_count}")
         self.admin_questions_pill.setText(f"Questions: {summary.question_count}")
         self.admin_unsaved_pill.setText(f"Unsaved changes: {summary.dirty_count}")
+        self.admin_unsaved_pill.setProperty("adminStatus", "dirty" if summary.dirty_count else "clean")
         if summary.validation_errors:
             self.admin_validation_pill.setText(f"Validation blocked: {len(summary.validation_errors)} issues")
-            self.admin_validation_pill.setStyleSheet("color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 6px 10px;")
+            self.admin_validation_pill.setProperty("adminStatus", "blocked")
         else:
             self.admin_validation_pill.setText("Validation: ready")
-            self.admin_validation_pill.setStyleSheet("color: #047857; background: #ecfdf5; border: 1px solid #bbf7d0; border-radius: 8px; padding: 6px 10px;")
-        for pill in (self.admin_tracks_pill, self.admin_questions_pill, self.admin_unsaved_pill):
-            pill.setStyleSheet("color: #172033; background: #ffffff; border: 1px solid #d9dee7; border-radius: 8px; padding: 6px 10px;")
+            self.admin_validation_pill.setProperty("adminStatus", "ready")
+        for pill in (self.admin_tracks_pill, self.admin_questions_pill, self.admin_unsaved_pill, self.admin_validation_pill):
+            self._refresh_widget_style(pill)
         status = f"Tracks: {summary.track_count}    Questions: {summary.question_count}    Unsaved changes: {summary.dirty_count}"
         if summary.validation_errors:
             status = f"{status}    Validation blocked: {len(summary.validation_errors)} issues"
@@ -9235,6 +9520,32 @@ class PySideInterviewWindow:
         )
         self.staffing_v2_dashboard = dashboard
         return dashboard.widget
+
+    def _record_staffing_director_referral_from_finalize_result(self, result: dict[str, Any]) -> None:
+        if not hasattr(self, "staffing_store") or self.session is None or not isinstance(result, dict):
+            return
+        scoring = result.get("scoring", {})
+        if not isinstance(scoring, dict):
+            return
+        outcome = _director_referral_outcome(str(scoring.get("outcome", "") or ""))
+        if not outcome:
+            return
+        rating_source = scoring.get("interviewer_rating", scoring.get("rating", scoring.get("percent_of_max", "")))
+        self.staffing_store.initialize()
+        service = StaffingService(self.staffing_store, notification_service=self._notification_service())
+        try:
+            service.upsert_director_candidate_referral(
+                history_id=str(result.get("history_id", "") or f"{self.session.candidate_name}:{self.session.interview_date}"),
+                candidate_name=self.session.candidate_name,
+                school=self.session.school,
+                position=self.session.position,
+                interviewer_rating=_director_referral_rating(str(rating_source)),
+                interviewer_outcome=outcome,
+                interview_date=self.session.interview_date,
+                candidate_email="",
+            )
+        except (OSError, ValueError):
+            return
 
     def _staffing_detail_drawer(self) -> Any:
         drawer = self.QtWidgets.QFrame()

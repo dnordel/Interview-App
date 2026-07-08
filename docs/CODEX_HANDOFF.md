@@ -1,6 +1,32 @@
 # Codex Handoff
 
-Updated: 2026-06-18
+Updated: 2026-07-07
+
+## Current Handoff: PySide-Only Desktop GUI
+
+Current desktop direction is PySide only. The legacy Tk interview GUI, standalone Tk onboarding app, Tk UI wrappers, Tk-specific tests, and Tk contracts have been removed. Future GUI migration work should target the web shell after PySide parity, not resurrect Tk paths.
+
+Current launch state:
+
+- `setup_and_run.ps1` accepts and launches only `-UiMode pyside`.
+- `src/pyside_interview_app.py` is the supported desktop GUI entry point.
+- `src/ui_mode_switch.py` normalizes missing, invalid, or legacy values to `pyside`.
+- Missing PySide6 is a hard setup failure; there is no Tk fallback.
+- Staffing v2 and notification rule/test-send UI remain in PySide and shared staffing services.
+
+Validation from this cleanup:
+
+```powershell
+python -m pytest -n auto
+python tools/check_contract_review.py
+```
+
+Results:
+
+- Full pytest: `1690 passed`.
+- Contract review: `[PASS] baseline`, `[PASS] locked`, `[PASS] schema`, `[PASS] coverage-matrix`.
+
+Historical notes below may mention removed Tk modules as past implementation history only. They are not current architecture or valid import paths.
 
 ## Latest Handoff: Weighted Trait Scoring and Checkbox Removal
 

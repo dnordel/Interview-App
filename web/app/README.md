@@ -28,9 +28,9 @@ Current migration coverage:
 
 Safety and rollout notes:
 
-- Tk desktop app remains the main point of entry.
+- PySide is the supported desktop entry point.
 - No launch scripts are changed by this web migration shell.
 - Candidate/interview data stays in browser memory until explicitly exported.
-- The web app reads local JSON config/history when served from repository root.
+- The web app reads local JSON config when served statically; interview history is loaded from the optional local backend using the SQLite history store.
 - The optional local backend can save drafts, save explicit per-question browser audio recordings, edit question/offer settings, update offer status, calculate a score preview, generate a DOCX interview report, write a JSON integration export, and build a director referral packet preview.
-- Reminder sends, director referral posting/email delivery, and audio transcription remain desktop-only.
+- Reminder sends, director referral posting/email delivery, and audio transcription remain PySide desktop-only.

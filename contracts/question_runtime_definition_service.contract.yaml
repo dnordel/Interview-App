@@ -2,8 +2,8 @@ module:
   name: question_runtime_definition_service
   language: python
   path: src/question_runtime_definition_service.py
-  version: 1.0.1
-  description: Compatibility wrapper for trait runtime signal-definition helpers now implemented by ui_composition.
+  version: 2.0.0
+  description: Trait runtime signal-definition helpers used by PySide Admin Studio and scoring configuration.
 functions:
   - name: default_runtime_definition
     description: Build an empty normalized runtime definition payload for a rubric trait.
@@ -365,4 +365,5 @@ data_structures:
       signals:
         type: list[RuntimeSignalRecord]
 dependencies:
-  - ui_composition
+  - platform_services
+  - scoring_reporting

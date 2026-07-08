@@ -27,9 +27,6 @@ from types import ModuleType
 from typing import Any, Callable, Deque, Mapping, Optional, Sequence, TypedDict
 from uuid import uuid4
 
-import tkinter as tk
-from tkinter import messagebox
-
 from data_store import InterviewHistoryStore, RubricLoader
 from scoring_reporting import (
     CandidateQualification,
@@ -50,7 +47,27 @@ from scoring_reporting import (
     serialize_integration_payload,
     write_canonical_model_signal_suggestions,
 )
-from ui_composition import TRANSCRIPTION_PARTIAL_WARNING_COPY
+from ui_feedback import TRANSCRIPTION_PARTIAL_WARNING_COPY
+
+
+class _RuntimeMessageBox:
+    def showwarning(self, *_args: Any, **_kwargs: Any) -> None:
+        return None
+
+    def showerror(self, *_args: Any, **_kwargs: Any) -> None:
+        return None
+
+    def showinfo(self, *_args: Any, **_kwargs: Any) -> None:
+        return None
+
+    def askyesnocancel(self, *_args: Any, **_kwargs: Any) -> bool | None:
+        return True
+
+    def askretrycancel(self, *_args: Any, **_kwargs: Any) -> bool:
+        return False
+
+
+messagebox = _RuntimeMessageBox()
 from platform_services import EVENT_INTERVIEW_FINALIZED, atomic_write_json, is_valid_date_yyyy_mm_dd
 
 
@@ -3609,14 +3626,11 @@ class DashboardController:
         self.app._refresh_dashboard_snapshot()
 
 
-def _history_data_grid_factory() -> Any:
-    from ui_composition import HistoryDataGrid
-
-    return HistoryDataGrid
-
-
 def _history_path_exists(path_value: str) -> bool:
-    return bool(_history_data_grid_factory()._path_exists(path_value))
+    try:
+        return Path(str(path_value)).is_file()
+    except (OSError, ValueError):
+        return False
 
 
 class HistoryController:
@@ -3628,14 +3642,13 @@ class HistoryController:
     ) -> None:
         self.app = app
         self.shared_state = shared_state
-        self._grid_factory = grid_factory or _history_data_grid_factory()
+        self._grid_factory = grid_factory
         self.history_grid: Any | None = None
 
     def build_history_table(self, parent: Any) -> None:
-        from tkinter import ttk
-
-        box = ttk.LabelFrame(parent, text="Interview History")
-        box.pack(fill="both", expand=True)
+        if self._grid_factory is None:
+            raise RuntimeError("Legacy history table UI has been removed; use the PySide history view.")
+        box = parent
         self.history_grid = self._grid_factory(
             box,
             on_offer_action=self._on_offer_action,
@@ -3654,8 +3667,14 @@ class HistoryController:
     def refresh_history_tree(self) -> None:
         if self.history_grid is None:
             return
-        self.history_grid.set_rows(self.app.history_store.load())
-        self.history_grid.set_filter_text(self.app.history_search_var.get())
+        search_text = str(self.app.history_search_var.get() or "")
+        load_filtered = getattr(self.app.history_store, "load_filtered", None)
+        if callable(load_filtered) and search_text.strip():
+            self.history_grid.set_rows(load_filtered(search=search_text))
+            self.history_grid.set_filter_text("")
+        else:
+            self.history_grid.set_rows(self.app.history_store.load())
+            self.history_grid.set_filter_text(search_text)
         rows = self.history_grid.visible_rows()
         self.app.history_rows = rows
         self.shared_state.history_rows = rows
@@ -3727,72 +3746,14 @@ class HistoryController:
         return self._show_notes_regeneration_mode_dialog(candidate)
 
     def _show_notes_regeneration_mode_dialog(self, candidate: str) -> str | None:
-        root = self.app.winfo_toplevel() if hasattr(self.app, "winfo_toplevel") else self.app
-        result: dict[str, str | None] = {"mode": None}
-        try:
-            dialog = tk.Toplevel(root if hasattr(root, "tk") else None)
-            dialog.title("Regenerate Notes")
-            dialog.resizable(False, False)
-            dialog.attributes("-topmost", True)
-            if hasattr(dialog, "transient") and hasattr(root, "winfo_exists"):
-                dialog.transient(root)
-            body = tk.Frame(dialog, padx=18, pady=14)
-            body.pack(fill="both", expand=True)
-            tk.Label(
-                body,
-                text=f"Regenerate interview notes for {candidate}?",
-                font=("Segoe UI", 10, "bold"),
-                anchor="w",
-                justify="left",
-            ).pack(fill="x", pady=(0, 8))
-            tk.Label(
-                body,
-                text=(
-                    "Choose full DeepSeek rerun when prompts changed.\n"
-                    "Choose document-only when layout or document formatting changed."
-                ),
-                anchor="w",
-                justify="left",
-                wraplength=420,
-            ).pack(fill="x", pady=(0, 14))
-            buttons = tk.Frame(body)
-            buttons.pack(fill="x")
-
-            def choose(mode: str | None) -> None:
-                result["mode"] = mode
-                dialog.destroy()
-
-            tk.Button(buttons, text="Full DeepSeek + Document", command=lambda: choose("full"), width=24).pack(
-                side="left",
-                padx=(0, 8),
-            )
-            tk.Button(buttons, text="Document Only", command=lambda: choose("document_only"), width=16).pack(
-                side="left",
-                padx=(0, 8),
-            )
-            tk.Button(buttons, text="Cancel", command=lambda: choose(None), width=10).pack(side="right")
-            dialog.protocol("WM_DELETE_WINDOW", lambda: choose(None))
-            dialog.update_idletasks()
-            if hasattr(root, "winfo_rootx") and hasattr(root, "winfo_rooty"):
-                x = int(root.winfo_rootx()) + 80
-                y = int(root.winfo_rooty()) + 80
-                dialog.geometry(f"+{x}+{y}")
-            dialog.grab_set()
-            dialog.focus_force()
-            dialog.after(250, lambda: dialog.attributes("-topmost", False))
-            dialog.wait_window()
-            return result["mode"]
-        except tk.TclError:
-            parent = root if hasattr(root, "tk") else None
-            choice = messagebox.askyesnocancel(
-                "Regenerate Notes",
-                "Regenerate interview notes for "
-                f"{candidate}?\n\n"
-                "Yes: rerun local DeepSeek and rebuild the document.\n"
-                "No: rebuild only the document from saved data.\n"
-                "Cancel: do nothing.",
-                parent=parent,
-            )
+        choice = messagebox.askyesnocancel(
+            "Regenerate Notes",
+            "Regenerate interview notes for "
+            f"{candidate}?\n\n"
+            "Yes: rerun local DeepSeek and rebuild the document.\n"
+            "No: rebuild only the document from saved data.\n"
+            "Cancel: do nothing.",
+        )
         if choice is True:
             return "full"
         if choice is False:
@@ -4837,7 +4798,6 @@ _COMPAT_MODULES: tuple[str, ...] = (
     "interview_audio_recorder",
     "interview_app.audio_devices",
     "interview_app.audio_runtime",
-    "interview_app.bootstrap",
     "interview_app.dashboard_controller",
     "interview_app.finalize_context",
     "interview_app.finalize_gateways",

@@ -1,6 +1,13 @@
 from __future__ import annotations
 
-from tkinter import messagebox
+from types import SimpleNamespace
+
+
+messagebox = SimpleNamespace(
+    showinfo=lambda *_args, **_kwargs: None,
+    showerror=lambda *_args, **_kwargs: None,
+    askretrycancel=lambda *_args, **_kwargs: False,
+)
 
 from scoring_reporting import ReportingValidationError, ScoringEngine
 from interview_runtime import (

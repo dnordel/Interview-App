@@ -386,11 +386,11 @@ functions:
   - ValueError
   side_effects: none
 - name: insert_token_into_widget
-  description: Insert token text into a supported Tk widget.
+  description: Insert token text into a widget-like object that exposes insert.
   locked: false
   inputs:
     widget:
-      type: tk.Misc
+      type: Any
       required: true
     token:
       type: str
@@ -400,17 +400,17 @@ functions:
   exceptions: []
   side_effects: Mutates widget text content.
 - name: insert_token_into_focused_widget
-  description: Insert token into focused widget when widget type is allowed.
+  description: Insert token into focused widget-like object when it is in the allowed set.
   locked: false
   inputs:
     root:
-      type: tk.Misc
+      type: Any
       required: true
     token:
       type: str
       required: true
     allowed_widgets:
-      type: Iterable[tk.Misc]
+      type: Iterable[Any]
       required: false
       default: ()
   returns:

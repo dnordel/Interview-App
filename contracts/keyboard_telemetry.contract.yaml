@@ -2,8 +2,8 @@ module:
   name: keyboard_telemetry
   language: python
   path: src/keyboard_telemetry.py
-  version: 1.0.0
-  description: Compatibility wrapper for keyboard-path telemetry helper implemented by ui_composition.
+  version: 2.0.0
+  description: Toolkit-neutral keyboard-path telemetry helper.
 functions: []
 classes:
 - name: KeyboardPathSession
@@ -22,11 +22,11 @@ classes:
       type: float
   methods:
   - name: bind
-    description: Bind keypress tracking to a Tk widget.
+    description: Bind keypress tracking to a widget-like object when it exposes bind.
     locked: false
     inputs:
       widget:
-        type: tk.Misc
+        type: Any
         required: true
     returns:
       type: None
@@ -37,7 +37,7 @@ classes:
     locked: false
     inputs:
       _event:
-        type: tk.Event
+        type: Any
         required: true
     returns:
       type: None
@@ -84,5 +84,4 @@ classes:
     exceptions: []
     side_effects: none
 data_structures: []
-dependencies:
-- ui_composition
+dependencies: []

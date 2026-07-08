@@ -6,8 +6,8 @@ module:
   description: Windows launcher bootstrap that checks prerequisites, installs Python
     3.11 when needed, provisions a per-user virtual environment that can reuse system
     site packages under LOCALAPPDATA instead of the repository folder, installs
-    local DeepSeek through Ollama, persists a selected UI mode, starts the Tk
-    interview app by default through the runtime wrapper, and can launch the full
+    local DeepSeek through Ollama, persists PySide as the selected UI mode, starts the
+    PySide interview app through the runtime wrapper, and can launch the full
     PySide app in director staffing-only mode filtered to one school while reusing
     the same setup path.
 functions:
@@ -64,7 +64,7 @@ functions:
   description: Normalize the configuration object so required nested properties exist
     before later setup steps run, including one-time audio routing instruction state,
     selected UI mode, director staffing forced PySide mode, director school forwarding,
-    the preferred app entrypoint, and the requirements fingerprint.
+    the PySide app entrypoint, and the requirements fingerprint.
   locked: false
   inputs:
     cfg:
@@ -77,8 +77,7 @@ functions:
     dependency fingerprints used to skip unchanged dependency installs on healthy
     cached environments
 - name: Resolve-PreferredInterviewAppFile
-  description: Resolve the selected UI mode to the matching interview app entrypoint,
-    defaulting invalid or missing modes to the Tk app.
+  description: Resolve the selected UI mode to the PySide interview app entrypoint.
   locked: false
   inputs:
     Cfg:
@@ -486,8 +485,8 @@ functions:
   side_effects: executes package checks, may install required packages, and writes
     launcher log entries
 - name: Ensure-SelectedUiModeAvailable
-  description: Verify PySide6 can import when PySide mode is selected; otherwise
-    warn, persist Tk mode, clear stale app path, and continue with the Tk UI.
+  description: Verify PySide6 can import before launch; otherwise fail setup because
+    the deprecated Tk UI fallback has been removed.
   locked: false
   inputs:
     Cfg:
@@ -561,4 +560,3 @@ data_structures: []
 dependencies:
 - module: runtime_wrapper
 - module: pyside_interview_app
-- module: interview_app

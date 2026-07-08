@@ -129,19 +129,6 @@ def _mapping_rules() -> list[Rule]:
                 }
             ],
         ),
-        Rule(
-            predicate=lambda symbol, contract: contract
-            in {
-                "contracts/ui_composition.contract.yaml",
-                "contracts/ui_windows.contract.yaml",
-            },
-            tests=[
-                {
-                    "path": "tests/test_ui_contract_interfaces.py",
-                    "focus": ["behavior", "parameter_validation", "return_type", "security_validation"],
-                }
-            ],
-        ),
     ]
 
 
@@ -188,7 +175,6 @@ def build_matrix() -> dict[str, Any]:
         "sections": [
             {"name": "interview_app", "tests": ["tests/test_interview_app_contract_interfaces.py"]},
             {"name": "onboarding", "tests": ["tests/test_onboarding_contract_interfaces.py"]},
-            {"name": "ui", "tests": ["tests/test_ui_contract_interfaces.py"]},
             {"name": "shared", "tests": ["tests/test_shared_module_contract_interfaces.py"]},
             {"name": "root", "tests": ["tests/test_interview_root_contracts.py"]},
         ],
@@ -197,7 +183,6 @@ def build_matrix() -> dict[str, Any]:
         "security_test_mapping": {
             "validation": [
                 "tests/test_onboarding_contract_interfaces.py",
-                "tests/test_ui_contract_interfaces.py",
                 "tests/test_shared_module_contract_interfaces.py",
             ],
             "auth_expectations": [

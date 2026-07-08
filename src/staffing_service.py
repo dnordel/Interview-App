@@ -7,9 +7,13 @@ import json
 from typing import TYPE_CHECKING, Any
 
 from staffing_models import (
+    DIRECTOR_INTERVIEW_DECISIONS,
+    DIRECTOR_REFERRAL_OUTCOMES,
     PERMIT_STATUSES,
     StaffingAssignment,
     StaffingClassroom,
+    StaffingDirectorCandidate,
+    StaffingDirectorInterview,
     StaffingMetricRow,
     StaffingMetrics,
     StaffingPerson,
@@ -289,6 +293,92 @@ class StaffingService:
                 permit_status=permit_status,
                 notes=notes,
             ),
+        )
+
+    def upsert_director_candidate_referral(
+        self,
+        *,
+        history_id: str,
+        candidate_name: str,
+        school: str,
+        position: str = "",
+        interviewer_rating: float | int | str | None = None,
+        interviewer_outcome: str,
+        interview_date: str = "",
+        candidate_email: str = "",
+        referral_date: str = "",
+    ) -> StaffingDirectorCandidate:
+        outcome = str(interviewer_outcome or "").strip().lower()
+        if outcome not in DIRECTOR_REFERRAL_OUTCOMES:
+            raise ValueError("Director referral outcome must be hire or borderline.")
+        rating = _optional_rating(interviewer_rating, "Interviewer rating")
+        clean_interview_date = "" if not str(interview_date or "").strip() else _valid_date(str(interview_date), "Interview date")
+        clean_referral_date = str(referral_date or "").strip() or clean_interview_date
+        if clean_referral_date:
+            clean_referral_date = _valid_date(clean_referral_date, "Referral date")
+        return self.store.upsert_director_candidate_referral(
+            history_id=history_id,
+            candidate_name=candidate_name,
+            school=school,
+            position=position,
+            interviewer_rating=rating,
+            interviewer_outcome=outcome,
+            interview_date=clean_interview_date,
+            candidate_email=candidate_email,
+            referral_date=clean_referral_date,
+            now=self.clock(),
+        )
+
+    def list_pending_director_interviews(self, *, school: str = "") -> list[StaffingDirectorCandidate]:
+        return self.store.list_director_candidate_referrals(school=school, include_completed=False)
+
+    def list_completed_director_interviews(self, *, school: str = "") -> list[StaffingDirectorInterview]:
+        return self.store.list_director_interviews(school=school)
+
+    def record_director_interview(
+        self,
+        referral_id: int,
+        *,
+        director_name: str,
+        completed_date: str,
+        rating: float | int | str,
+        decision: str,
+        decision_notes: str,
+        proposed_shift_start: str = "",
+        proposed_shift_end: str = "",
+        proposed_classroom: str = "",
+        follow_up_needed: bool = False,
+    ) -> StaffingDirectorInterview:
+        clean_date = _valid_date(completed_date, "Director interview date")
+        clean_rating = _required_rating(rating, "Director rating")
+        clean_decision = str(decision or "").strip().lower()
+        if clean_decision not in DIRECTOR_INTERVIEW_DECISIONS:
+            raise ValueError("Director decision must be hire or no_hire.")
+        notes = str(decision_notes or "").strip()
+        if not notes:
+            raise ValueError("Decision notes are required.")
+        shift_start = ""
+        shift_end = ""
+        classroom = ""
+        if clean_decision == "hire":
+            shift_start = _valid_shift_time(proposed_shift_start, "Shift start")
+            shift_end = _valid_shift_time(proposed_shift_end, "Shift end")
+            classroom = str(proposed_classroom or "").strip()
+            if not classroom:
+                raise ValueError("Proposed classroom is required for hire decisions.")
+        return self.store.record_director_interview(
+            int(referral_id),
+            director_name=director_name,
+            completed_date=clean_date,
+            rating=clean_rating,
+            decision=clean_decision,
+            decision_notes=notes,
+            proposed_shift_start=shift_start,
+            proposed_shift_end=shift_end,
+            proposed_classroom=classroom,
+            follow_up_needed=follow_up_needed,
+            owner_approval_status="pending_owner_approval",
+            now=self.clock(),
         )
 
     def _add_position_impl(
@@ -1078,6 +1168,35 @@ def _valid_time_or_blank(value: str, label: str) -> str:
     except ValueError as exc:
         raise ValueError(f"{label} must be HH:MM.") from exc
     return text
+
+
+def _optional_rating(value: float | int | str | None, label: str) -> float | None:
+    if value is None or str(value).strip() == "":
+        return None
+    return _required_rating(value, label)
+
+
+def _required_rating(value: float | int | str, label: str) -> float:
+    try:
+        rating = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{label} must be a number from 1 to 10.") from exc
+    if rating < 1 or rating > 10:
+        raise ValueError(f"{label} must be from 1 to 10.")
+    return rating
+
+
+def _valid_shift_time(value: str, label: str) -> str:
+    text = str(value or "").strip()
+    if not text:
+        raise ValueError(f"{label} is required for hire decisions.")
+    for fmt in ("%I:%M %p", "%I %p", "%H:%M"):
+        try:
+            parsed = datetime.strptime(text.upper(), fmt)
+        except ValueError:
+            continue
+        return parsed.strftime("%I:%M %p").lstrip("0")
+    raise ValueError(f"{label} must be a time like 8:00 AM.")
 
 
 def _days_between(start: str, end: str) -> int:

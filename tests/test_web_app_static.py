@@ -37,11 +37,11 @@ def test_web_app_loads_existing_local_configuration_sources():
     for source_path in (
         "../../config/rubric.json",
         "../../config/question_overrides.json",
-        "../../user_artifacts/interview_history.json",
         "../../user_artifacts/school_offer_settings.json",
         "../../Trait-Based%20Scoring/preschool_teacher_interview_signals_weighted.json",
     ):
         assert source_path in data_js
+    assert "../../user_artifacts/interview_history.json" not in data_js
 
 
 def test_web_app_uses_data_adapter_for_domain_operations():
@@ -122,17 +122,17 @@ def test_web_app_does_not_use_browser_storage_for_candidate_text():
     assert "sessionStorage" not in app_js + data_js
 
 
-def test_web_app_readme_keeps_tk_as_main_entry_point():
+def test_web_app_readme_keeps_pyside_as_main_entry_point():
     readme = (WEB_DIR / "README.md").read_text(encoding="utf-8")
 
-    assert "Tk desktop app remains the main point of entry." in readme
+    assert "PySide is the supported desktop entry point." in readme
     assert "No launch scripts are changed" in readme
     assert "score preview" in readme
     assert "generate a DOCX interview report" in readme
     assert "JSON integration export" in readme
     assert "director referral packet preview" in readme
     assert "browser audio recordings" in readme
-    assert "audio transcription remain desktop-only" in readme
+    assert "audio transcription remain PySide desktop-only" in readme
 
 
 def test_web_app_css_covers_focus_and_responsive_stacked_layout():
@@ -149,7 +149,7 @@ def test_web_app_contracts_are_registered():
     architecture = yaml.safe_load((ROOT / "contracts" / "architecture.contract.yaml").read_text(encoding="utf-8"))
 
     assert contract["module"]["name"] == "web_app"
-    assert contract["module"]["version"] == "0.11.0"
+    assert contract["module"]["version"] == "0.11.1"
     assert {item["name"] for item in contract["functions"]} >= {
         "createInitialState",
         "loadApplicationData",
@@ -167,8 +167,11 @@ def test_web_app_contracts_are_registered():
     }
     assert system["modules"]["web_app"]["path"] == "web/app/"
     assert "question_overrides_json" in system["modules"]["web_app"]["depends_on"]
-    assert "interview_history_json" in system["modules"]["web_app"]["depends_on"]
+    assert "interview_history_db" in system["modules"]["web_app"]["depends_on"]
     assert "school_offer_settings_json" in system["modules"]["web_app"]["depends_on"]
+    assert "interview_history_db" in system["modules"]["data_store"]["depends_on"]
+    assert "legacy_interview_history_json" in system["modules"]["data_store"]["depends_on"]
+    assert "interview_history_json" not in system["modules"]["data_store"]["depends_on"]
     assert "web_app_backend" in system["modules"]
     modules = {
         module_name

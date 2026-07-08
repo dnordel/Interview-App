@@ -11,6 +11,8 @@ PERMIT_STATUSES = (
     "teacher_permit_approved",
     "no_units_needed",
 )
+DIRECTOR_REFERRAL_OUTCOMES = ("hire", "borderline")
+DIRECTOR_INTERVIEW_DECISIONS = ("hire", "no_hire")
 
 
 @dataclass(frozen=True)
@@ -125,3 +127,42 @@ class StaffingMetrics:
     avg_days_to_fill: float
     open_over_7_days: int
     rows: list[StaffingMetricRow]
+
+
+@dataclass(frozen=True)
+class StaffingDirectorCandidate:
+    id: int
+    history_id: str
+    candidate_name: str
+    school: str
+    position: str
+    interviewer_rating: float | None
+    interviewer_outcome: str
+    interview_date: str
+    candidate_email: str = ""
+    referral_date: str = ""
+    director_interview_completed_at: str = ""
+    updated_at: str = ""
+
+
+@dataclass(frozen=True)
+class StaffingDirectorInterview:
+    id: int
+    referral_id: int
+    candidate_name: str
+    school: str
+    position: str
+    interviewer_rating: float | None
+    interviewer_outcome: str
+    director_name: str
+    completed_date: str
+    rating: float
+    decision: str
+    decision_notes: str
+    proposed_shift_start: str = ""
+    proposed_shift_end: str = ""
+    proposed_classroom: str = ""
+    follow_up_needed: bool = False
+    owner_approval_status: str = "pending_owner_approval"
+    created_at: str = ""
+    updated_at: str = ""

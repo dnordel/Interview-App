@@ -2,21 +2,22 @@ module:
   name: web_app_backend
   language: python
   path: src/web_app_backend.py
-  version: 0.10.2
+  version: 0.10.4
   description: Opt-in local HTTP backend for the web migration shell. It exposes
     repository-local configuration bootstrap data, serves the web app static files,
-    and saves browser draft payloads through the existing DraftManager while Tk
+    and saves browser draft payloads through the existing DraftManager while PySide
     remains the production entry point.
 functions:
 - name: load_bootstrap_payload
-  description: Load rubric, question overrides, interview history, and offer settings
-    from existing repository JSON files.
+  description: Load rubric, question overrides, SQLite-backed interview history,
+    and offer settings from existing repository stores/files.
   locked: false
   inputs: {}
   returns:
     type: dict[str, Any]
   exceptions: []
-  side_effects: Reads repository-local JSON files.
+  side_effects: Reads repository-local JSON files and InterviewHistoryStore-backed
+    SQLite interview history.
 - name: load_question_overrides
   description: Load normalized question override configuration from the existing
     question_overrides.json path.
@@ -64,13 +65,35 @@ functions:
   side_effects: Writes user_artifacts/school_offer_settings.json.
 - name: load_history_rows
   description: Load finalized interview history rows from the existing interview
-    history store.
+    history store, optionally using SQLite metadata filters.
   locked: false
-  inputs: {}
+  inputs:
+    school:
+      type: str
+      required: false
+      default: ""
+    outcome:
+      type: str
+      required: false
+      default: ""
+    offer_status:
+      type: str
+      required: false
+      default: ""
+    search:
+      type: str
+      required: false
+      default: ""
+    limit:
+      type: int | None
+      required: false
+      default: null
   returns:
     type: list[dict[str, Any]]
   exceptions: []
-  side_effects: Reads user_artifacts/interview_history.json.
+  side_effects: Reads user_artifacts/interview_history.sqlite3 through InterviewHistoryStore,
+    importing legacy JSON rows if needed, and may apply school/outcome/offer/search/limit
+    filters.
 - name: update_history_offer_status
   description: Update one finalized interview history row's offer_status by row key
     or history id without echoing candidate notes or transcripts in errors.
@@ -90,7 +113,34 @@ functions:
     type: dict[str, Any]
   exceptions:
   - WebAppBackendError
-  side_effects: Writes user_artifacts/interview_history.json when the row exists.
+  side_effects: Writes user_artifacts/interview_history.sqlite3 through InterviewHistoryStore
+    when the row exists.
+- name: _query_value
+  description: Return the first cleaned query string value for one key.
+  locked: false
+  inputs:
+    query:
+      type: dict[str, list[str]]
+      required: true
+    key:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+- name: _query_int
+  description: Return a positive integer query value or None.
+  locked: false
+  inputs:
+    query:
+      type: dict[str, list[str]]
+      required: true
+    key:
+      type: str
+      required: true
+  returns:
+    type: int | None
+  exceptions: []
 - name: score_web_draft_preview
   description: Validate a browser draft payload and return a report-compatible scoring
     preview through ScoringEngine without writing files or logging candidate text.
@@ -128,7 +178,7 @@ functions:
     the configured school interview-notes directory for the default app base or
     explicit offer settings, otherwise under base_dir/Indeed Interview Notes;
     writes one JSON export under base_dir/integration_exports, and appends one
-    row to user_artifacts/interview_history.json.
+    row to user_artifacts/interview_history.sqlite3 through InterviewHistoryStore.
 - name: normalize_web_draft_payload
   description: Convert browser draft payload field names into the desktop draft
     shape expected by session hydration and reporting.

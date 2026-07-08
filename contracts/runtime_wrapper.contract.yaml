@@ -85,20 +85,6 @@ functions:
     type: None
   exceptions: []
   side_effects: Mutates sys.excepthook and threading.excepthook.
-- name: _install_tk_callback_hook
-  description: Forward to platform_services._install_tk_callback_hook.
-  locked: false
-  inputs:
-    app_root:
-      type: Path
-      required: true
-    runtime_log_path:
-      type: Path
-      required: true
-  returns:
-    type: None
-  exceptions: []
-  side_effects: May mutate tk.Tk.report_callback_exception.
 - name: _install_trace_logging
   description: Forward to platform_services._install_trace_logging.
   locked: false

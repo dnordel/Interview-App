@@ -2,8 +2,8 @@ module:
   name: question_settings_service
   language: python
   path: src/question_settings_service.py
-  version: 1.0.1
-  description: Compatibility wrapper for rubric question-settings service implemented by ui_composition.
+  version: 2.0.0
+  description: Rubric question-settings service used by PySide Admin Studio and headless tests.
 functions: []
 classes:
   - name: QuestionSettingsService
@@ -92,4 +92,5 @@ classes:
           type: dict[str, Any]
 data_structures: []
 dependencies:
-  - ui_composition
+  - platform_services
+  - question_runtime_definition_service

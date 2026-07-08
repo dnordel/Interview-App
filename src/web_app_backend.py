@@ -8,7 +8,7 @@ import json
 import mimetypes
 from pathlib import Path
 from typing import Any
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 from uuid import uuid4
 
 from data_store import (
@@ -60,7 +60,7 @@ def load_bootstrap_payload() -> dict[str, Any]:
     return {
         "rubric": safe_read_json(DEFAULT_RUBRIC_PATH, {}, dict),
         "overrides": safe_read_json(QUESTIONS_OVERRIDE_PATH, {}, dict),
-        "history": safe_read_json(INTERVIEW_HISTORY_PATH, [], list),
+        "history": load_history_rows(),
         "offerSettings": safe_read_json(SCHOOL_OFFER_SETTINGS_PATH, {}, dict),
     }
 
@@ -93,8 +93,24 @@ def save_offer_settings(payload: dict[str, Any]) -> dict[str, dict[str, str]]:
     return normalized
 
 
-def load_history_rows() -> list[dict[str, Any]]:
-    return InterviewHistoryStore(INTERVIEW_HISTORY_PATH).load()
+def load_history_rows(
+    *,
+    school: str = "",
+    outcome: str = "",
+    offer_status: str = "",
+    search: str = "",
+    limit: int | None = None,
+) -> list[dict[str, Any]]:
+    store = InterviewHistoryStore(INTERVIEW_HISTORY_PATH)
+    if any(str(value or "").strip() for value in (school, outcome, offer_status, search)) or limit:
+        return store.load_filtered(
+            school=school,
+            outcome=outcome,
+            offer_status=offer_status,
+            search=search,
+            limit=limit,
+        )
+    return store.load()
 
 
 def update_history_offer_status(row_key: str, offer_status: str, offer_letter_path: str = "") -> dict[str, Any]:
@@ -299,7 +315,9 @@ def build_handler(*, base_dir: Path = DEFAULT_BASE_DIR) -> type[BaseHTTPRequestH
         server_version = "InterviewWebAppBackend/0.1"
 
         def do_GET(self) -> None:
-            route = urlparse(self.path).path
+            parsed_url = urlparse(self.path)
+            route = parsed_url.path
+            query = parse_qs(parsed_url.query)
             if route == "/api/health":
                 self._send_json({"ok": True})
                 return
@@ -313,7 +331,17 @@ def build_handler(*, base_dir: Path = DEFAULT_BASE_DIR) -> type[BaseHTTPRequestH
                 self._send_json({"offerSettings": load_offer_settings()})
                 return
             if route == "/api/history":
-                self._send_json({"history": load_history_rows()})
+                self._send_json(
+                    {
+                        "history": load_history_rows(
+                            school=_query_value(query, "school"),
+                            outcome=_query_value(query, "outcome"),
+                            offer_status=_query_value(query, "offer_status"),
+                            search=_query_value(query, "search"),
+                            limit=_query_int(query, "limit"),
+                        )
+                    }
+                )
                 return
             if route == "/api/drafts":
                 self._send_json({"drafts": list_web_drafts(base_dir=base_dir)})
@@ -472,6 +500,22 @@ def run_server(*, host: str = "127.0.0.1", port: int = 8766, base_dir: Path = DE
 
 def _clean_text(value: Any) -> str:
     return str(value or "").strip()
+
+
+def _query_value(query: dict[str, list[str]], key: str) -> str:
+    values = query.get(key) or []
+    return _clean_text(values[0] if values else "")
+
+
+def _query_int(query: dict[str, list[str]], key: str) -> int | None:
+    value = _query_value(query, key)
+    if not value:
+        return None
+    try:
+        parsed = int(value)
+    except ValueError:
+        return None
+    return parsed if parsed > 0 else None
 
 
 def _mapping_or_empty(value: Any) -> dict[str, Any]:

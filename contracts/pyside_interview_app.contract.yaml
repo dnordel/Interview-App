@@ -2,11 +2,11 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.58.0
+  version: 1.60.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, resizable splitter sections, school/classroom selectors, wider color-coded classroom list with per-classroom status-count overview, metric cards, positions table, fully editable right-side assignment/person details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics, parallel Staffing v2 navigation/page shell with its own mockup-style staffing sidebar, People / Employee Management and Assignment History sub-dashboards for the mockup-driven rewrite backed by staffing_dashboard_v2 while the legacy Staffing page remains available,
-    director staffing-only launch mode that opens the Staffing v2 dashboard, keeps the full mockup navigation rail visible, filters to an assigned school when supplied, and reuses the same Staffing v2 page,
+    director staffing-only launch mode that opens the Staffing v2 dashboard, keeps the full mockup navigation rail visible, filters to an assigned school when supplied, reuses the same Staffing v2 page, and records new hire/borderline finalized interviews into StaffingService director-interview referrals going forward without backfilling past history rows,
     compact home draft actions beside the start action, guided review-then-apply Admin Studio backed by admin_studio
     with dashboard-first grouped admin-console navigation, standard icons on each
     selectable Admin Studio nav item, Environment/User cards at the bottom of the Admin Studio rail, distinct status pills,
@@ -45,12 +45,11 @@ module:
     validation-blocked apply, interview notes
     regeneration actions, user-closable
     finalize progress with immediate ordered task/status rows in a compact scrollable
-    dialog, successful-completion auto-close, live history refresh, and single-surface parity documentation
-    for desktop Tk contracts while preserving Tk-owned finalize, history, document,
-    and DeepSeek runtime contracts.
+    dialog, successful-completion auto-close, live history refresh, and single supported desktop GUI documentation
+    while preserving shared finalize, history, document, and DeepSeek runtime services.
 functions:
 - name: build_interview_redesign_model
-  description: Build workflow-first home, setup, live interview, review, offer, classroom-detail staffing, onboarding, and admin view data from rubric, intro script, question flow, and merged canonical plus legacy history JSON.
+  description: Build workflow-first home, setup, live interview, review, offer, classroom-detail staffing, onboarding, and admin view data from rubric, intro script, question flow, and InterviewHistoryStore rows, importing legacy JSON only through the store when applicable.
   locked: false
   inputs:
     rubric_path:
@@ -73,7 +72,7 @@ functions:
     type: InterviewRedesignModel
   exceptions:
   - ValueError
-  side_effects: Reads local rubric, question override, user_artifacts history JSON, and root-level legacy history JSON when the canonical history path is used; may normalize question flow through QuestionOverridesStore.
+  side_effects: Reads local rubric, question override, and InterviewHistoryStore data; may import legacy JSON into the SQLite history store and may normalize question flow through QuestionOverridesStore.
 - name: build_director_staffing_model
   description: Return a director staffing-only PySide model that keeps full app data/contracts but exposes only the Staffing v2 content surface, optional assigned school filter, and mockup-style full navigation rail display.
   locked: false
@@ -191,14 +190,55 @@ functions:
     type: str
   exceptions: []
   side_effects: May read a DOCX offer letter and write a same-stem PDF; suppresses conversion errors so notification send can block cleanly.
+- name: _build_pyside_history_rows
+  description: Build PySide history row view models from InterviewHistoryStore, using DB-backed filtered reads when school, outcome, search, or limit filters are supplied.
+  locked: false
+  inputs:
+    history_path:
+      type: Path
+      required: true
+    school:
+      type: str
+      required: false
+      default: ''
+    outcome:
+      type: str
+      required: false
+      default: ''
+    search:
+      type: str
+      required: false
+      default: ''
+    limit:
+      type: int | None
+      required: false
+      default: null
+  returns:
+    type: list[PySideHistoryRow]
+  exceptions: []
+  side_effects: Reads interview history through InterviewHistoryStore and may import legacy JSON when the store is initialized.
+- name: _pyside_history_rows_from_payloads
+  description: Convert raw persisted history payload dictionaries into display-ready PySideHistoryRow values using existing score, status, offer, notes, and DeepSeek-processing normalization.
+  locked: false
+  inputs:
+    rows:
+      type: Sequence[dict[str, Any]]
+      required: true
+    store:
+      type: InterviewHistoryStore
+      required: true
+  returns:
+    type: list[PySideHistoryRow]
+  exceptions: []
+  side_effects: none
 - name: latest_pyside_draft_path
   description: Return the newest PySide draft JSON path from the draft directory, if one exists.
   locked: false
   inputs:
     drafts_dir:
-      type: Path
+      type: Path | None
       required: false
-      default: DEFAULT_BASE_DIR / "pyside_drafts"
+      default: null
   returns:
     type: Path | None
   exceptions: []
@@ -493,8 +533,8 @@ classes:
       type: Path
     exceptions:
     - OSError
-    side_effects: Writes generated interview-notes DOCX, integration export, history
-      row, and queued DeepSeek job metadata under the selected output directory.
+    side_effects: Writes generated interview-notes DOCX, integration export, SQLite
+      history row, and queued DeepSeek job metadata under the selected output directory.
   - name: finalize_interview
     description: Finalize the completed PySide session using shared Tk desktop runtime
       contracts for scoring, DocxExporter report generation, integration export,
@@ -2823,6 +2863,127 @@ classes:
     exceptions: []
     side_effects: Creates AdminStudio*Table widget with adminBackingField property,
       hidden collapsed display state, item baselines, and dirty-cell signal wiring.
+  - name: _admin_panel
+    description: Build a reusable Admin Studio v2 card/panel frame with stable objectName,
+      margins, and spacing so dashboard cards, drawers, strips, and side panels share
+      one construction path.
+    locked: false
+    inputs:
+      object_name:
+        type: str
+        required: true
+      margins:
+        type: tuple[int, int, int, int]
+        required: false
+        default: (16, 14, 16, 14)
+      spacing:
+        type: int
+        required: false
+        default: 10
+    returns:
+      type: tuple[QFrame, QVBoxLayout]
+    exceptions: []
+    side_effects: Creates one styled Admin Studio frame and layout.
+  - name: _admin_chip
+    description: Build a reusable Admin Studio v2 status chip label with a variant
+      property consumed by shared QSS.
+    locked: false
+    inputs:
+      text:
+        type: str
+        required: true
+      variant:
+        type: str
+        required: false
+        default: info
+      object_name:
+        type: str
+        required: false
+        default: AdminStudioChip
+    returns:
+      type: QLabel
+    exceptions: []
+    side_effects: Creates one styled label.
+  - name: _admin_action_button
+    description: Build a reusable Admin Studio v2 action button with primary, secondary,
+      or danger styling metadata while preserving readable sizing behavior.
+    locked: false
+    inputs:
+      text:
+        type: str
+        required: true
+      object_name:
+        type: str
+        required: true
+      role:
+        type: str
+        required: false
+        default: secondary
+    returns:
+      type: QPushButton
+    exceptions: []
+    side_effects: Creates one styled button.
+  - name: _admin_page_header
+    description: Build the reusable Admin Studio v2 page title/subtitle header used
+      by every admin section page.
+    locked: false
+    inputs:
+      title:
+        type: str
+        required: true
+      description:
+        type: str
+        required: true
+    returns:
+      type: QFrame
+    exceptions: []
+    side_effects: Creates one header widget.
+  - name: _admin_metric_strip
+    description: Build the reusable Admin Studio v2 horizontal metric/status chip
+      strip used by dashboard and summary surfaces.
+    locked: false
+    inputs:
+      specs:
+        type: list[tuple[str, str, str]]
+        required: true
+    returns:
+      type: QFrame
+    exceptions: []
+    side_effects: Creates one metric strip widget.
+  - name: _admin_backing_table_container
+    description: Wrap a hidden Admin Studio backing table in a collapsed container
+      so legacy draft-capture tables remain available for sync/tests without appearing
+      as raw UI fallback.
+    locked: false
+    inputs:
+      table:
+        type: QTableWidget
+        required: true
+    returns:
+      type: QWidget
+    exceptions: []
+    side_effects: Creates one collapsed backing-field container.
+  - name: _configure_admin_v2_scroll_areas
+    description: Apply the shared Staffing v2 scroll behavior helper to Admin Studio
+      sidebar and section-stack scroll areas so wheel movement, per-pixel item scrolling,
+      and scrollbar page/single-step values match the v2 dashboard surfaces.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates Admin Studio descendant scroll-area behavior.
+  - name: _refresh_widget_style
+    description: Re-polish one widget after dynamic Admin Studio QSS properties change.
+    locked: false
+    inputs:
+      widget:
+        type: QWidget
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Refreshes widget style and schedules repaint.
   - name: _mark_admin_cell_dirty
     description: Mark edited Admin Studio cells with unsaved-change affordances
       and status text until review/apply or discard.
@@ -3000,8 +3161,8 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: May read local interview history JSON and updates visible progress
-      label text.
+    side_effects: May read local InterviewHistoryStore rows and updates visible
+      progress label text.
   - name: _attach_latest_deepseek_progress_from_history
     description: Attach the newest safe local detached DeepSeek progress JSON path
       from a processing history row so an open finalize progress dialog can show
@@ -3013,8 +3174,8 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Reads local interview history JSON and may set the active PySide
-      finalize DeepSeek progress path.
+    side_effects: Reads local InterviewHistoryStore rows and may set the active
+      PySide finalize DeepSeek progress path.
   - name: _read_pyside_deepseek_progress_step
     description: Read local detached DeepSeek progress JSON produced by the finalize
       queue and return sanitized step/status text.
@@ -3109,13 +3270,24 @@ classes:
     side_effects: May construct one page widget, replace the matching stacked-widget
       placeholder, and mark that navigation index as loaded.
   - name: _staffing_v2_page
-    description: Build the Staffing v2 page from staffing_dashboard_v2 for the mockup-driven rewrite and director staffing-only launch surface, passing the shared notification rules store path and shared notification service factory into the V2 Notifications dashboard.
+    description: Build the Staffing v2 page from staffing_dashboard_v2 for the mockup-driven rewrite and director staffing-only launch surface, passing the shared notification rules store path and shared notification service factory into the V2 Notifications dashboard; past interview history is not backfilled into director-interview referrals.
     locked: false
     inputs: {}
     returns:
       type: QWidget
     exceptions: []
     side_effects: Initializes local staffing storage, imports staffing seed data when the DB is empty or clearly missing seed assignments, creates a StaffingDashboardV2Page, stores it on the PySide window, wires service-backed staffing actions from the existing StaffingService handlers, and connects the V2 Notifications dashboard to the shared notification rules SQLite path and shared email notification service.
+  - name: _record_staffing_director_referral_from_finalize_result
+    description: Create or update one director-interview referral for a newly finalized Hire or Borderline interview result only, leaving existing past history rows unexposed unless a referral already exists in the staffing database.
+    locked: false
+    inputs:
+      result:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Upserts one staffing director candidate referral through StaffingService for new finalized interviews without mutating assignments or classroom status.
   - name: _refresh_staffing_dashboard
     description: Initialize local staffing storage, import seed data when the staffing DB is empty or clearly missing seed assignments, compute metrics, and refresh the hidden compatibility metric label, school/classroom selectors, classroom list, metric cards, positions table, and hidden legacy school-tabbed workbook boards.
     locked: false
@@ -3568,7 +3740,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Writes interview history JSON, emits notification, reloads visible history model, and shows status-bar message.
+    side_effects: Writes interview history through InterviewHistoryStore, emits notification, reloads visible history model, and shows status-bar message.
   - name: _update_pyside_offer_status
     description: Update one PySide history row offer status and optionally emit notification.
     locked: false
@@ -3590,7 +3762,7 @@ classes:
     returns:
       type: bool
     exceptions: []
-    side_effects: Writes interview history JSON and may emit notification.
+    side_effects: Writes interview history through InterviewHistoryStore and may emit notification.
   - name: _emit_pyside_session_offer_generated
     description: Emit generic offer.generated notification for an active PySide
       interview session offer document, including candidate aliases, school code/location,
@@ -3770,7 +3942,7 @@ data_structures:
 - name: InterviewRedesignModel
   type: dataclass
   description: Headless UI model for navigation, setup readiness, interview flows,
-    home dashboard/history data, rubric data, and the history JSON path used for
+    home dashboard/history data, rubric data, and the history store path used for
     offer-status persistence; director_staffing_school optionally filters the Staffing
     v2 page to one assigned school in director mode.
 - name: PySideHistoryRow
@@ -3803,15 +3975,12 @@ data_structures:
 - name: PySideCandidateBoard
   type: dataclass
   description: Candidate list rows, shared history-grid rows, and summary count for PySide candidate view.
-- name: tk_contract_parity
-  type: documented_parity_map
-  description: Single-surface PySide desktop parity marker for Tk-bearing contracts
-    including interview_app, ui_composition, ui_windows, question_settings_window,
-    question_screens, onboarding_app, onboarding_scrollable_modal, onboarding_scroll_helpers,
-    ui_feedback, tk_theme, keyboard_telemetry, template_placeholders, runtime_wrapper,
-    and setup_and_run. PySide is the supported desktop surface and implements matching interview finalize/history behavior
-    directly and documents partial/existing onboarding, admin, settings, validation,
-    path-safety, and UI-mode surfaces here rather than creating mirrored PySide modules.
+- name: pyside_desktop_surface
+  type: documented_surface_map
+  description: Single supported desktop GUI surface. PySide implements interview finalize/history,
+    onboarding, Admin Studio, settings, validation, notification editing, path-safety,
+    and UI-mode behavior directly with setup_and_run/runtime_wrapper launch support while
+    shared runtime/services remain toolkit-neutral.
 dependencies:
 - module: admin_studio
 - module: data_store

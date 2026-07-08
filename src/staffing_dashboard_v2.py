@@ -9,9 +9,31 @@ from typing import Any
 from notification_models import NotificationRecipient, NotificationRule
 from notification_service import EXECUTIVE_DIRECTOR_EMAIL, HIRING_MANAGER_EMAIL, NOTIFICATION_TEMPLATE_FIELDS, NotificationService
 from notification_store import NotificationStore
-from staffing_models import StaffingClassroom, StaffingHistoryRecord, StaffingMetricRow, StaffingPerson
+from staffing_models import (
+    StaffingClassroom,
+    StaffingDirectorCandidate,
+    StaffingDirectorInterview,
+    StaffingHistoryRecord,
+    StaffingMetricRow,
+    StaffingPerson,
+)
 from staffing_service import StaffingService
 from staffing_store import StaffingStore
+
+
+def configure_v2_scroll_areas(QtWidgets: Any, root: Any) -> None:
+    """Apply v2 per-pixel wheel/scrollbar behavior under a widget root."""
+    for scroll_area in root.findChildren(QtWidgets.QAbstractScrollArea):
+        if isinstance(scroll_area, QtWidgets.QAbstractItemView):
+            scroll_area.setVerticalScrollMode(QtWidgets.QAbstractItemView.ScrollMode.ScrollPerPixel)
+            scroll_area.setHorizontalScrollMode(QtWidgets.QAbstractItemView.ScrollMode.ScrollPerPixel)
+        scroll_area.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.SizeAdjustPolicy.AdjustIgnored)
+        vertical_bar = scroll_area.verticalScrollBar()
+        horizontal_bar = scroll_area.horizontalScrollBar()
+        vertical_bar.setSingleStep(24)
+        horizontal_bar.setSingleStep(24)
+        vertical_bar.setPageStep(max(80, scroll_area.viewport().height() - 48))
+        horizontal_bar.setPageStep(max(80, scroll_area.viewport().width() - 48))
 
 
 APP_QSS = """
@@ -721,6 +743,37 @@ class _StaffingV2OverlayPanel:
         self._clear_layout(self.body_layout)
         self._clear_layout(self.footer_layout)
 
+    def add_header(
+        self,
+        *,
+        title: str,
+        title_object_name: str,
+        close_object_name: str,
+        close_icon: Any | None = None,
+        subtitle: str = "",
+        subtitle_object_name: str = "StaffingV2Muted",
+    ) -> Any:
+        header = self.QtWidgets.QHBoxLayout()
+        title_column = self.QtWidgets.QVBoxLayout()
+        title_label = self.QtWidgets.QLabel(title)
+        title_label.setObjectName(title_object_name)
+        title_column.addWidget(title_label)
+        if subtitle:
+            subtitle_label = self.QtWidgets.QLabel(subtitle)
+            subtitle_label.setObjectName(subtitle_object_name)
+            title_column.addWidget(subtitle_label)
+        header.addLayout(title_column, 1)
+        close = self.QtWidgets.QPushButton("")
+        close.setObjectName(close_object_name)
+        if close_icon is not None:
+            close.setIcon(close_icon)
+            close.setIconSize(self.QtCore.QSize(18, 18))
+        close.setFixedSize(32, 32)
+        close.clicked.connect(self.hide)
+        header.addWidget(close)
+        self.body_layout.addLayout(header)
+        return close
+
     def hide(self) -> None:
         self.frame.hide()
 
@@ -784,6 +837,8 @@ class StaffingDashboardV2Page:
         self.visible_people: list[StaffingPerson] = []
         self.history_records: list[StaffingHistoryRecord] = []
         self.visible_history_records: list[StaffingHistoryRecord] = []
+        self.pending_director_candidates: list[StaffingDirectorCandidate] = []
+        self.completed_director_interviews: list[StaffingDirectorInterview] = []
         self.classroom_management_rows: dict[str, list[StaffingMetricRow]] = {}
         self.visible_classroom_management: list[tuple[str, list[StaffingMetricRow]]] = []
         self.classrooms_current_page = 1
@@ -795,6 +850,7 @@ class StaffingDashboardV2Page:
         self.widget = QtWidgets.QWidget()
         self.widget.setObjectName("PySideStaffingV2Page")
         self.widget.setStyleSheet(APP_QSS)
+        self._dashboard_scroll_widgets: list[Any] = []
         self._build()
         self.refresh()
 
@@ -962,14 +1018,36 @@ class StaffingDashboardV2Page:
         classroom_layout.addLayout(list_header)
         self.classroom_list = self.QtWidgets.QListWidget()
         self.classroom_list.setObjectName("StaffingV2ClassroomList")
+        self.classroom_list.setVerticalScrollBarPolicy(self.QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        self.classroom_list.setHorizontalScrollBarPolicy(self.QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.classroom_list.setVerticalScrollMode(self.QtWidgets.QAbstractItemView.ScrollMode.ScrollPerPixel)
+        self.classroom_list.setSizeAdjustPolicy(self.QtWidgets.QAbstractScrollArea.SizeAdjustPolicy.AdjustIgnored)
+        self.classroom_list.setSizePolicy(
+            self.QtWidgets.QSizePolicy.Policy.Expanding,
+            self.QtWidgets.QSizePolicy.Policy.Ignored,
+        )
         self.classroom_list.currentRowChanged.connect(self._select_classroom)
         classroom_layout.addWidget(self.classroom_list, 1)
         self.classroom_list_footer = self._label("", "StaffingV2ClassroomListFooter")
         classroom_layout.addWidget(self.classroom_list_footer)
         main.addWidget(self.classroom_panel)
 
-        self.detail_panel, detail_layout = self._panel()
+        self.detail_panel, detail_outer_layout = self._panel()
         self.detail_panel.setMinimumWidth(620)
+        self.detail_scroll = self.QtWidgets.QScrollArea()
+        self.detail_scroll.setObjectName("StaffingV2DashboardDetailScroll")
+        self.detail_scroll.setWidgetResizable(True)
+        self.detail_scroll.setFrameShape(self.QtWidgets.QFrame.Shape.NoFrame)
+        self.detail_scroll.setVerticalScrollBarPolicy(self.QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        self.detail_scroll.setHorizontalScrollBarPolicy(self.QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.detail_content = self.QtWidgets.QWidget()
+        self.detail_content.setObjectName("StaffingV2DashboardDetailContent")
+        detail_layout = self.QtWidgets.QVBoxLayout(self.detail_content)
+        detail_layout.setContentsMargins(0, 0, 0, 0)
+        detail_layout.setSpacing(14)
+        detail_layout.setSizeConstraint(self.QtWidgets.QLayout.SizeConstraint.SetMinimumSize)
+        self.detail_scroll.setWidget(self.detail_content)
+        detail_outer_layout.addWidget(self.detail_scroll, 1)
         self.classroom_title = self._label("", "StaffingV2ClassroomTitle")
         self.classroom_subtitle = self._label("", "StaffingV2Muted")
         detail_header = self.QtWidgets.QHBoxLayout()
@@ -1008,8 +1086,11 @@ class StaffingDashboardV2Page:
         self.positions_table.setMaximumHeight(220)
         detail_layout.addWidget(self.positions_table)
         detail_layout.addWidget(self._add_position_drop_zone())
+        self.director_interview_panel = self._director_interview_panel()
+        detail_layout.addWidget(self.director_interview_panel)
         detail_layout.addStretch(1)
         detail_layout.addWidget(self._status_key())
+        self._dashboard_scroll_widgets = [self.detail_scroll, self.classroom_list]
         main.addWidget(self.detail_panel)
         self.drawer_panel = _StaffingV2OverlayPanel(
             QtCore=self.QtCore,
@@ -2016,8 +2097,7 @@ class StaffingDashboardV2Page:
     def _render_classroom_management_detail(self, key: str, rows: list[StaffingMetricRow]) -> None:
         self._mark_layout_widgets_stale(self.classrooms_detail_layout)
         self._mark_layout_widgets_stale(self.classrooms_detail_footer_layout)
-        self._clear_layout(self.classrooms_detail_layout)
-        self._clear_layout(self.classrooms_detail_footer_layout)
+        self.classrooms_detail_overlay.clear()
         if not key:
             self.classrooms_detail_layout.addWidget(self._label("No classroom selected", "StaffingV2Muted"))
             self.classrooms_detail_overlay.hide()
@@ -2025,7 +2105,12 @@ class StaffingDashboardV2Page:
         self.selected_classroom_management_key = key
         info = self._classroom_group_info(key, rows)
         record = getattr(self, "classroom_records_by_key", {}).get(key)
-        self.classrooms_detail_layout.addWidget(self._label("Classroom Detail", "StaffingV2SectionTitle"))
+        self.classrooms_detail_overlay.add_header(
+            title="Classroom Detail",
+            title_object_name="StaffingV2SectionTitle",
+            close_object_name="StaffingV2ClassroomsDetailClose",
+            close_icon=self._standard_icon("close"),
+        )
         self.classrooms_detail_layout.addWidget(self._label(str(info["classroom"]), "StaffingV2ClassroomsDetailName"))
         overview, overview_layout = self._detail_panel_card("StaffingV2ClassroomsDetailCard")
         school = self.QtWidgets.QComboBox()
@@ -3592,11 +3677,37 @@ class StaffingDashboardV2Page:
         self.rows = list(metrics.rows)
         self._sync_selectors()
         self._refresh_filters()
+        self._refresh_director_interviews()
         self._refresh_classrooms()
         self._refresh_people()
         self._refresh_history()
         self._refresh_notifications()
         self._refresh_validation()
+        self._schedule_dashboard_scroll_sync()
+
+    def _schedule_dashboard_scroll_sync(self) -> None:
+        if not self._dashboard_scroll_widgets:
+            return
+        self.QtCore.QTimer.singleShot(0, self._sync_staffing_v2_scroll_ranges)
+
+    def _sync_staffing_v2_scroll_ranges(self) -> None:
+        self._configure_staffing_v2_scroll_areas()
+        if not hasattr(self, "detail_content"):
+            return
+        self.detail_content.setMinimumHeight(0)
+        self.detail_content.adjustSize()
+        content_height = max(self.detail_content.minimumSizeHint().height(), self.detail_content.sizeHint().height())
+        self.detail_content.setMinimumHeight(content_height)
+        self.detail_scroll.widget().resize(
+            max(self.detail_scroll.viewport().width(), self.detail_content.sizeHint().width()),
+            content_height,
+        )
+        for scroll_widget in self._dashboard_scroll_widgets:
+            scroll_widget.verticalScrollBar().setSingleStep(24)
+            scroll_widget.verticalScrollBar().setPageStep(max(80, scroll_widget.viewport().height() - 48))
+
+    def _configure_staffing_v2_scroll_areas(self) -> None:
+        configure_v2_scroll_areas(self.QtWidgets, self.widget)
 
     def _notification_store(self) -> NotificationStore:
         return NotificationStore(self.notification_store_path)
@@ -3769,13 +3880,18 @@ class StaffingDashboardV2Page:
         self._render_person_detail(self.visible_people[row_index])
 
     def _render_person_detail(self, person: StaffingPerson | None) -> None:
-        self._clear_layout(self.people_detail_layout)
-        self._clear_layout(self.people_detail_footer_layout)
+        self.people_detail_overlay.clear()
         if person is None:
             self.people_detail_layout.addWidget(self._label("No employee selected", "StaffingV2Muted"))
             self.people_detail_overlay.hide()
             return
 
+        self.people_detail_overlay.add_header(
+            title="Employee Detail",
+            title_object_name="StaffingV2SectionTitle",
+            close_object_name="StaffingV2PeopleDetailClose",
+            close_icon=self._standard_icon("close"),
+        )
         top = self.QtWidgets.QHBoxLayout()
         initials = self._label(_initials(person.name), "StaffingV2PeopleInitials")
         top.addWidget(initials)
@@ -4114,13 +4230,17 @@ class StaffingDashboardV2Page:
         self._render_history_detail(self.visible_history_records[row_index])
 
     def _render_history_detail(self, record: StaffingHistoryRecord | None) -> None:
-        self._clear_layout(self.history_detail_layout)
-        self._clear_layout(self.history_detail_footer_layout)
+        self.history_detail_overlay.clear()
         if record is None:
             self.history_detail_layout.addWidget(self._label("No history record selected", "StaffingV2Muted"))
             self.history_detail_overlay.hide()
             return
-        self.history_detail_layout.addWidget(self._label("History Record Detail", "StaffingV2HistoryDetailTitle"))
+        self.history_detail_overlay.add_header(
+            title="History Record Detail",
+            title_object_name="StaffingV2HistoryDetailTitle",
+            close_object_name="StaffingV2HistoryDetailClose",
+            close_icon=self._standard_icon("close"),
+        )
         assignment_id_row = self.QtWidgets.QHBoxLayout()
         assignment_id_row.addWidget(self._label("Assignment ID:", "StaffingV2SectionTitle"))
         assignment_id_chip = self.QtWidgets.QFrame()
@@ -4545,6 +4665,228 @@ class StaffingDashboardV2Page:
         layout.addWidget(chevron)
         return frame
 
+    def _director_interview_panel(self) -> Any:
+        panel, layout = self._panel("StaffingV2DirectorInterviewPanel")
+        header = self.QtWidgets.QHBoxLayout()
+        header.addWidget(self._label("Director Interviews", "StaffingV2SectionTitle"))
+        header.addStretch(1)
+        self.director_interview_status = self._label("", "StaffingV2Muted")
+        header.addWidget(self.director_interview_status)
+        layout.addLayout(header)
+
+        layout.addWidget(self._label("Pending", "StaffingV2Muted"))
+        self.director_interview_pending_table = self.QtWidgets.QTableWidget(0, 7)
+        self.director_interview_pending_table.setObjectName("StaffingV2DirectorInterviewPendingTable")
+        self.director_interview_pending_table.setEditTriggers(self.QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.director_interview_pending_table.setSelectionBehavior(self.QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
+        self.director_interview_pending_table.setHorizontalHeaderLabels(
+            ["Candidate", "Outcome", "First Interview Score", "Interview Date", "Position", "Referral", "Action"]
+        )
+        self.director_interview_pending_table.verticalHeader().hide()
+        self.director_interview_pending_table.horizontalHeader().setStretchLastSection(True)
+        self.director_interview_pending_table.setMaximumHeight(170)
+        layout.addWidget(self.director_interview_pending_table)
+
+        layout.addWidget(self._label("Completed", "StaffingV2Muted"))
+        self.director_interview_history_table = self.QtWidgets.QTableWidget(0, 8)
+        self.director_interview_history_table.setObjectName("StaffingV2DirectorInterviewHistoryTable")
+        self.director_interview_history_table.setEditTriggers(self.QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.director_interview_history_table.setSelectionBehavior(self.QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
+        self.director_interview_history_table.setHorizontalHeaderLabels(
+            [
+                "Candidate",
+                "First Interview Score",
+                "Date",
+                "Director Rating",
+                "Decision",
+                "Proposed Classroom",
+                "Proposed Shift",
+                "Owner Status",
+            ]
+        )
+        self.director_interview_history_table.verticalHeader().hide()
+        self.director_interview_history_table.horizontalHeader().setStretchLastSection(True)
+        self.director_interview_history_table.setMaximumHeight(150)
+        layout.addWidget(self.director_interview_history_table)
+        return panel
+
+    def _refresh_director_interviews(self) -> None:
+        if not hasattr(self, "director_interview_pending_table"):
+            return
+        school = self.school_selector.currentText().strip() if self.school_selector.count() else self.school_filter
+        service = self.service_factory()
+        self.pending_director_candidates = service.list_pending_director_interviews(school=school)
+        self.completed_director_interviews = service.list_completed_director_interviews(school=school)
+        self._refresh_director_pending_table()
+        self._refresh_director_history_table()
+        self.director_interview_status.setText(
+            f"{len(self.pending_director_candidates)} pending / {len(self.completed_director_interviews)} completed"
+        )
+
+    def _refresh_director_pending_table(self) -> None:
+        table = self.director_interview_pending_table
+        table.setRowCount(0)
+        for candidate in self.pending_director_candidates:
+            row_index = table.rowCount()
+            table.insertRow(row_index)
+            values = [
+                candidate.candidate_name,
+                candidate.interviewer_outcome.title(),
+                "" if candidate.interviewer_rating is None else f"{candidate.interviewer_rating:g}",
+                candidate.interview_date or "-",
+                candidate.position or "-",
+                candidate.referral_date or "-",
+            ]
+            for column, value in enumerate(values):
+                item = self.QtWidgets.QTableWidgetItem(value)
+                item.setData(self.QtCore.Qt.ItemDataRole.UserRole, candidate.id)
+                table.setItem(row_index, column, item)
+            button = self.QtWidgets.QPushButton("Record Interview")
+            button.setObjectName("StaffingV2DirectorInterviewRecordButton")
+            self._set_button_icon(button, "status_filled")
+            button.clicked.connect(lambda _checked=False, item=candidate.id: self._open_director_interview_dialog(item))
+            table.setCellWidget(row_index, 6, button)
+        table.resizeColumnsToContents()
+
+    def _refresh_director_history_table(self) -> None:
+        table = self.director_interview_history_table
+        table.setRowCount(0)
+        for interview in self.completed_director_interviews:
+            row_index = table.rowCount()
+            table.insertRow(row_index)
+            shift = ""
+            if interview.proposed_shift_start and interview.proposed_shift_end:
+                shift = f"{interview.proposed_shift_start} - {interview.proposed_shift_end}"
+            values = [
+                interview.candidate_name,
+                "" if interview.interviewer_rating is None else f"{interview.interviewer_rating:g}",
+                interview.completed_date,
+                f"{interview.rating:g}",
+                interview.decision.replace("_", "-").title(),
+                interview.proposed_classroom or "-",
+                shift or "-",
+                interview.owner_approval_status.replace("_", " ").title(),
+            ]
+            for column, value in enumerate(values):
+                item = self.QtWidgets.QTableWidgetItem(value)
+                item.setData(self.QtCore.Qt.ItemDataRole.UserRole, interview.id)
+                table.setItem(row_index, column, item)
+        table.resizeColumnsToContents()
+
+    def _open_director_interview_dialog(self, referral_id: int) -> None:
+        candidate = next((item for item in self.pending_director_candidates if item.id == referral_id), None)
+        if candidate is None:
+            return
+        dialog = self.QtWidgets.QDialog(self.widget)
+        dialog.setObjectName("StaffingV2DirectorInterviewDialog")
+        dialog.setWindowTitle("Record Director Interview")
+        dialog.setModal(False)
+        dialog.setStyleSheet(APP_QSS)
+        dialog.resize(620, 640)
+        layout = self.QtWidgets.QVBoxLayout(dialog)
+        layout.setContentsMargins(22, 18, 22, 18)
+        layout.setSpacing(12)
+
+        header = self.QtWidgets.QHBoxLayout()
+        title_column = self.QtWidgets.QVBoxLayout()
+        title_column.addWidget(self._label("Record Director Interview", "StaffingV2DrawerTitle"))
+        title_column.addWidget(self._label(f"{candidate.candidate_name} · {candidate.school} · {candidate.position}", "StaffingV2Muted"))
+        header.addLayout(title_column, 1)
+        close = self.QtWidgets.QPushButton("")
+        close.setObjectName("StaffingV2DirectorInterviewClose")
+        self._set_button_icon(close, "close")
+        close.clicked.connect(dialog.close)
+        header.addWidget(close)
+        layout.addLayout(header)
+
+        form, form_layout = self._dialog_section("StaffingV2DialogSection")
+        director_name = self.QtWidgets.QLineEdit()
+        director_name.setObjectName("StaffingV2DirectorInterviewDirectorName")
+        completed_date = self.QtWidgets.QLineEdit(date.today().isoformat())
+        completed_date.setObjectName("StaffingV2DirectorInterviewDate")
+        rating = self.QtWidgets.QDoubleSpinBox()
+        rating.setObjectName("StaffingV2DirectorInterviewRating")
+        rating.setRange(1.0, 10.0)
+        rating.setDecimals(1)
+        rating.setSingleStep(0.5)
+        rating.setValue(8.0)
+        decision = self.QtWidgets.QComboBox()
+        decision.setObjectName("StaffingV2DirectorInterviewDecision")
+        decision.addItems(["Hire", "No-Hire"])
+        shift_start = self.QtWidgets.QLineEdit("8:00 AM")
+        shift_start.setObjectName("StaffingV2DirectorInterviewShiftStartText")
+        shift_end = self.QtWidgets.QLineEdit("5:00 PM")
+        shift_end.setObjectName("StaffingV2DirectorInterviewShiftEndText")
+        classroom = self.QtWidgets.QComboBox()
+        classroom.setObjectName("StaffingV2DirectorInterviewClassroom")
+        classroom.setEditable(True)
+        classroom_names = sorted({row.classroom for row in self.rows if row.school == candidate.school and row.classroom})
+        classroom.addItems(classroom_names or [""])
+        notes = self.QtWidgets.QTextEdit()
+        notes.setObjectName("StaffingV2DirectorInterviewNotes")
+        notes.setPlaceholderText("Required decision notes")
+        notes.setMaximumHeight(100)
+        follow_up = self.QtWidgets.QCheckBox("Follow-up needed")
+        follow_up.setObjectName("StaffingV2DirectorInterviewFollowUp")
+        form_layout.addLayout(self._labeled_control("Director", director_name))
+        form_layout.addLayout(self._labeled_control("Interview Date", completed_date))
+        form_layout.addLayout(self._labeled_control("Rating", rating))
+        form_layout.addLayout(self._labeled_control("Decision", decision))
+        form_layout.addLayout(self._labeled_control("Proposed Shift Start", shift_start))
+        form_layout.addLayout(self._labeled_control("Proposed Shift End", shift_end))
+        form_layout.addLayout(self._labeled_control("Proposed Classroom", classroom))
+        form_layout.addWidget(follow_up)
+        form_layout.addLayout(self._labeled_control("Decision Notes", notes))
+        layout.addWidget(form)
+
+        info, info_layout = self._dialog_section("StaffingV2DialogInfo")
+        info_layout.addWidget(self._label("Hire decisions store proposed classroom and shift only."))
+        info_layout.addWidget(self._label("Position status and classroom assignment stay unchanged until offer approval/acceptance."))
+        layout.addWidget(info)
+
+        error = self._label("", "StaffingV2NeedNowChip")
+        error.setObjectName("StaffingV2DirectorInterviewError")
+        error.hide()
+        layout.addWidget(error)
+        layout.addStretch(1)
+
+        footer = self.QtWidgets.QHBoxLayout()
+        footer.addStretch(1)
+        cancel = self.QtWidgets.QPushButton("Cancel")
+        cancel.setObjectName("StaffingV2DirectorInterviewCancel")
+        cancel.clicked.connect(dialog.close)
+        save = self.QtWidgets.QPushButton("Save")
+        save.setObjectName("StaffingV2DirectorInterviewSave")
+        self._set_button_icon(save, "status_filled")
+        footer.addWidget(cancel)
+        footer.addWidget(save)
+        layout.addLayout(footer)
+
+        def save_interview() -> None:
+            error.hide()
+            try:
+                self.service_factory().record_director_interview(
+                    referral_id,
+                    director_name=director_name.text(),
+                    completed_date=completed_date.text(),
+                    rating=rating.value(),
+                    decision="hire" if decision.currentText() == "Hire" else "no_hire",
+                    decision_notes=notes.toPlainText(),
+                    proposed_shift_start=shift_start.text(),
+                    proposed_shift_end=shift_end.text(),
+                    proposed_classroom=classroom.currentText(),
+                    follow_up_needed=follow_up.isChecked(),
+                )
+            except Exception as exc:  # noqa: BLE001 - service validation is user-facing here.
+                error.setText(_safe_staffing_error(exc))
+                error.show()
+                return
+            dialog.close()
+            self.refresh()
+
+        save.clicked.connect(save_interview)
+        dialog.show()
+
     def _sync_classroom_list_selection(self) -> None:
         current_row = self.classroom_list.currentRow()
         for index in range(self.classroom_list.count()):
@@ -4628,21 +4970,14 @@ class StaffingDashboardV2Page:
         except ValueError:
             return
         metric_row = next((row for row in self.rows if row.assignment_id == assignment_id), None)
-        self._clear_layout(self.drawer_layout)
-        self._clear_layout(self.drawer_footer_layout)
-
-        header = self.QtWidgets.QHBoxLayout()
-        title_column = self.QtWidgets.QVBoxLayout()
-        title_column.addWidget(self._label("Position Detail", "StaffingV2DrawerTitle"))
-        title_column.addWidget(self._label(f"{assignment.classroom} · {assignment.school} · Assignment ID #{assignment.id}", "StaffingV2Muted"))
-        header.addLayout(title_column, 1)
-        close = self.QtWidgets.QPushButton("")
-        close.setObjectName("StaffingV2DrawerClose")
-        self._set_button_icon(close, "close")
-        close.setFixedSize(32, 32)
-        close.clicked.connect(self.drawer.hide)
-        header.addWidget(close)
-        self.drawer_layout.addLayout(header)
+        self.drawer_panel.clear()
+        self.drawer_panel.add_header(
+            title="Position Detail",
+            title_object_name="StaffingV2DrawerTitle",
+            subtitle=f"{assignment.classroom} · {assignment.school} · Assignment ID #{assignment.id}",
+            close_object_name="StaffingV2DrawerClose",
+            close_icon=self._standard_icon("close"),
+        )
 
         summary, summary_layout = self._panel("StaffingV2DrawerSection")
         summary_row = self.QtWidgets.QHBoxLayout()

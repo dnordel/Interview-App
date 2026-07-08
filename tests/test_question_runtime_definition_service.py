@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from ui_composition import (
+from question_runtime_definition_service import (
     QuestionRuntimeDefinitionService,
     build_runtime_trait_id,
     default_runtime_definition,

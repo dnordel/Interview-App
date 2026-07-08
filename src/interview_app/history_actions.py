@@ -1,7 +1,13 @@
 from __future__ import annotations
 
 from datetime import date
-from tkinter import messagebox
+from types import SimpleNamespace
+
+
+messagebox = SimpleNamespace(
+    showinfo=lambda *_args, **_kwargs: None,
+    askyesno=lambda *_args, **_kwargs: False,
+)
 from pathlib import Path
 from typing import Any
 

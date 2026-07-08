@@ -2,7 +2,7 @@ module:
   name: interview_runtime
   language: python
   path: src/interview_runtime.py
-  version: 0.31.0
+  version: 0.31.2
   description: Flattened public interface for interview state, session management,
     audio/transcription runtime, transcript summary seam, controllers, history, and
     finalize pipeline; only active legacy adapters remain in the compatibility module
@@ -1184,8 +1184,9 @@ functions:
   - ValueError
   - OSError
   side_effects: Reads a local job JSON/progress/lock file, may remove a failed same-job
-    lock, updates interview history JSON when identifiers are present, writes sanitized
-    retry progress JSON, and starts a detached Python worker without shell interpolation.
+    lock, updates interview history through InterviewHistoryStore when identifiers
+    are present, writes sanitized retry progress JSON, and starts a detached Python
+    worker without shell interpolation.
 - name: regenerate_interview_notes_job
   description: Relaunch an existing persisted DeepSeek finalize job in either full
     local-DeepSeek-plus-document mode or document-only mode; full mode resets saved
@@ -1207,8 +1208,9 @@ functions:
   - OSError
   side_effects: Reads and rewrites local job JSON with rerun mode, may reset saved
     DeepSeek payload checkpoint fields and current prompt templates, updates interview
-    history JSON to processing, seeds sanitized progress JSON, may remove a failed
-    same-job lock, and starts a detached Python worker without shell interpolation.
+    history through InterviewHistoryStore to processing, seeds sanitized progress
+    JSON, may remove a failed same-job lock, and starts a detached Python worker
+    without shell interpolation.
 - name: _mark_deepseek_history_processing
   description: Mark the history row referenced by a persisted DeepSeek job as processing,
     clearing warning and completion timestamp fields when both history path and history
@@ -1222,7 +1224,7 @@ functions:
     type: None
   exceptions:
   - OSError
-  side_effects: May update interview history JSON on disk.
+  side_effects: May update interview history through InterviewHistoryStore on disk.
 - name: raise_legacy_finalize_guardrail
   description: Fail closed when the disabled legacy finalize path is invoked.
   locked: false
@@ -2267,13 +2269,16 @@ classes:
     exceptions: []
     side_effects: Updates in-memory UI state.
   - name: refresh_history_tree
-    description: Refresh row data and filtering for the history grid.
+    description: Refresh row data and filtering for the history grid, using the history
+      store's DB-backed filtered search when available and falling back to grid filtering
+      for compatibility stores.
     locked: false
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Updates in-memory row state.
+    side_effects: May query DB-backed history search, updates grid rows/filter text,
+      and updates in-memory row state.
   - name: selected_history_row
     description: Return the currently selected history row from the grid.
     locked: false
@@ -2535,12 +2540,11 @@ data_structures:
 dependencies:
 - module: data_store
 - module: platform_services
-- module: ui_composition
+- module: ui_feedback
 - module: scoring_reporting
 - module: interview_audio_recorder
 - module: interview_app_audio_devices
 - module: interview_app_audio_runtime
-- module: interview_app_bootstrap
 - module: interview_app_finalize_pipeline
 - module: interview_app_history_actions
 - module: interview_app_session_manager

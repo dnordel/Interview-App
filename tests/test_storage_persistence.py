@@ -1,4 +1,5 @@
 import json
+import sqlite3
 from datetime import date
 from pathlib import Path
 
@@ -48,6 +49,183 @@ def test_interview_history_store_append_persists_list(tmp_path: Path):
         {"candidate": "A", "score": 90},
         {"candidate": "B", "score": 88},
     ]
+    assert store.db_path == tmp_path / "interview_history.sqlite3"
+    assert store.db_path.exists()
+
+
+def test_interview_history_store_imports_existing_json_once_then_uses_sqlite(tmp_path: Path):
+    path = tmp_path / "interview_history.json"
+    path.write_text(json.dumps([{"history_id": "old", "candidate_name": "Old Candidate"}]), encoding="utf-8")
+    store = InterviewHistoryStore(path)
+
+    assert store.load() == [{"history_id": "old", "candidate_name": "Old Candidate"}]
+    store.append({"history_id": "new", "candidate_name": "New Candidate"})
+
+    assert [row["history_id"] for row in store.load()] == ["old", "new"]
+    assert json.loads(path.read_text(encoding="utf-8")) == [{"history_id": "old", "candidate_name": "Old Candidate"}]
+
+
+def test_interview_history_store_persists_queryable_columns(tmp_path: Path):
+    store = InterviewHistoryStore(tmp_path / "interview_history.sqlite3")
+
+    store.append(
+        {
+            "history_id": "hist-1",
+            "candidate_name": "Latoya Nugent",
+            "candidate_email": "latoya@example.com",
+            "school": "Palmdale",
+            "position": "Preschool Teacher",
+            "interview_date": "2026-03-11",
+            "outcome": "Hire",
+            "percent_of_max": 88.5,
+            "offer_status": "not_generated",
+            "deepseek_processing_status": "queued",
+        }
+    )
+    store.update_offer_state("hist-1", "offer_sent", "offer.docx")
+    store.update_row("hist-1", {"deepseek_processing_status": "complete"})
+
+    with sqlite3.connect(store.db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            """
+            SELECT row_key, history_id, candidate_name, candidate_email, school, position,
+                   interview_date, outcome, score, offer_status, deepseek_processing_status
+            FROM interview_history
+            WHERE row_key = ?
+            """,
+            ("hist-1",),
+        ).fetchone()
+
+    assert dict(row) == {
+        "row_key": "hist-1",
+        "history_id": "hist-1",
+        "candidate_name": "Latoya Nugent",
+        "candidate_email": "latoya@example.com",
+        "school": "Palmdale",
+        "position": "Preschool Teacher",
+        "interview_date": "2026-03-11",
+        "outcome": "Hire",
+        "score": 88.5,
+        "offer_status": "offer_sent",
+        "deepseek_processing_status": "complete",
+    }
+
+
+def test_interview_history_store_adds_queryable_columns_to_existing_db(tmp_path: Path):
+    db_path = tmp_path / "interview_history.sqlite3"
+    with sqlite3.connect(db_path) as conn:
+        conn.execute(
+            """
+            CREATE TABLE interview_history (
+                row_key TEXT PRIMARY KEY,
+                sort_order INTEGER NOT NULL DEFAULT 0,
+                payload_json TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        conn.execute(
+            "INSERT INTO interview_history (row_key, sort_order, payload_json) VALUES (?, ?, ?)",
+            (
+                "hist-old",
+                0,
+                json.dumps(
+                    {
+                        "history_id": "hist-old",
+                        "candidate_name": "Existing Candidate",
+                        "school": "Hawthorne",
+                        "percent_of_max": 77,
+                    }
+                ),
+            ),
+        )
+        conn.commit()
+
+    store = InterviewHistoryStore(db_path)
+    assert store.load()[0]["candidate_name"] == "Existing Candidate"
+    store.update_row("hist-old", {"offer_status": "generated"})
+
+    with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            "SELECT candidate_name, school, score, offer_status FROM interview_history WHERE row_key = ?",
+            ("hist-old",),
+        ).fetchone()
+
+    assert dict(row) == {
+        "candidate_name": "Existing Candidate",
+        "school": "Hawthorne",
+        "score": 77.0,
+        "offer_status": "generated",
+    }
+
+
+def test_interview_history_store_row_updates_preserve_existing_created_at(tmp_path: Path):
+    store = InterviewHistoryStore(tmp_path / "interview_history.sqlite3")
+    store.append({"history_id": "keep-created", "candidate_name": "A", "offer_status": "not_generated"})
+
+    with sqlite3.connect(store.db_path) as conn:
+        conn.execute(
+            "UPDATE interview_history SET created_at = ? WHERE row_key = ?",
+            ("2026-01-01 00:00:00", "keep-created"),
+        )
+        conn.commit()
+
+    store.update_offer_state("keep-created", "offer_sent")
+    store.append({"history_id": "new-row", "candidate_name": "B"})
+
+    with sqlite3.connect(store.db_path) as conn:
+        rows = conn.execute(
+            "SELECT row_key, created_at FROM interview_history ORDER BY sort_order"
+        ).fetchall()
+
+    assert rows == [
+        ("keep-created", "2026-01-01 00:00:00"),
+        ("new-row", rows[1][1]),
+    ]
+
+
+def test_interview_history_store_load_filtered_uses_query_columns(tmp_path: Path):
+    store = InterviewHistoryStore(tmp_path / "interview_history.sqlite3")
+    store.append(
+        {
+            "history_id": "hist-1",
+            "candidate_name": "Latoya Nugent",
+            "school": "Palmdale",
+            "position": "Preschool Teacher",
+            "outcome": "Hire",
+            "offer_status": "offer_sent",
+        }
+    )
+    store.append(
+        {
+            "history_id": "hist-2",
+            "candidate_name": "Dana Teacher",
+            "school": "Hawthorne",
+            "position": "Infant Teacher",
+            "outcome": "Borderline",
+            "offer_status": "not_generated",
+        }
+    )
+    store.append(
+        {
+            "history_id": "hist-3",
+            "candidate_name": "Morgan Lead",
+            "school": "Palmdale",
+            "position": "Lead Teacher",
+            "outcome": "No Hire",
+            "offer_status": "not_generated",
+            "interview_notes_path": str(tmp_path / "Morgan_Lead_notes.docx"),
+        }
+    )
+
+    assert [row["history_id"] for row in store.load_filtered(school="Palmdale")] == ["hist-1", "hist-3"]
+    assert [row["history_id"] for row in store.load_filtered(outcome="hire")] == ["hist-1"]
+    assert [row["history_id"] for row in store.load_filtered(offer_status="not_generated", limit=1)] == ["hist-2"]
+    assert [row["history_id"] for row in store.load_filtered(search="lead")] == ["hist-3"]
+    assert [row["history_id"] for row in store.load_filtered(search="notes.docx")] == ["hist-3"]
 
 
 def test_interview_history_store_loads_legacy_root_history(tmp_path: Path):

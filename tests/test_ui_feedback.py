@@ -1,7 +1,4 @@
-import tkinter as tk
-
-from ui_composition import (
-    MainGuiWarningPresenter,
+from ui_feedback import (
     TRANSCRIPTION_PARTIAL_WARNING_COPY,
     VALIDATION_SEVERITY_WARNING,
     format_guidance,
@@ -18,6 +15,14 @@ class FakeInlineValidation:
 
     def show(self, **kwargs):
         self.kwargs = kwargs
+
+
+class FakePresenter:
+    def __init__(self):
+        self.calls = []
+
+    def show(self, message, **kwargs):
+        self.calls.append((message, kwargs))
 
 
 def test_format_guidance_returns_short_cause_and_action():
@@ -68,144 +73,10 @@ def test_sanitize_user_error_replaces_technical_payload():
     assert sanitize_user_error('Traceback File "app.py" line 12 ValueError') == "An unexpected system issue occurred."
 
 
-class _FakeWidget:
-    def __init__(self, manager):
-        self._manager = manager
-
-    def winfo_manager(self):
-        return self._manager
-
-
-class _FakeParent:
-    def __init__(self, children=None):
-        self.calls = []
-        self.children = children or []
-
-    def after(self, delay_ms, callback):
-        self.calls.append(("after", delay_ms))
-        self.callback = callback
-        return "timer-1"
-
-    def after_cancel(self, timer_id):
-        self.calls.append(("after_cancel", timer_id))
-
-    def winfo_children(self):
-        return self.children
-
-
-class _FakeFrame:
-    def __init__(self):
-        self._mapped = False
-        self.pack_kwargs = None
-
-    def pack(self, **kwargs):
-        self.pack_kwargs = kwargs
-        self._mapped = True
-
-    def pack_forget(self):
-        self._mapped = False
-
-    def winfo_ismapped(self):
-        return self._mapped
-
-
-class _FakeVar:
-    def __init__(self):
-        self.value = ""
-
-    def set(self, value):
-        self.value = value
-
-
-def test_main_gui_warning_presenter_can_show_and_dismiss_without_blocking():
-    frame = _FakeFrame()
-    parent = _FakeParent(children=[frame, _FakeWidget("grid"), _FakeWidget("pack")])
-    message_var = _FakeVar()
-    presenter = MainGuiWarningPresenter(
-        parent=parent,
-        frame=frame,
-        message_var=message_var,
-        message_label=object(),
-        dismiss_button=object(),
-    )
-
-    presenter.show("Heads up", auto_expire_ms=1500)
-    assert frame.winfo_ismapped() is True
-    assert message_var.value == "Heads up"
-    assert presenter._after_id == "timer-1"
-    assert frame.pack_kwargs["before"] is parent.children[2]
-
-    presenter.dismiss()
-    assert frame.winfo_ismapped() is False
-    assert message_var.value == ""
-
-
 def test_present_transcription_partial_warning_uses_exact_copy() -> None:
-    frame = _FakeFrame()
-    parent = _FakeParent(children=[_FakeWidget("grid"), frame])
-    message_var = _FakeVar()
-    presenter = MainGuiWarningPresenter(
-        parent=parent,
-        frame=frame,
-        message_var=message_var,
-        message_label=object(),
-        dismiss_button=object(),
-    )
+    presenter = FakePresenter()
 
     shown = present_transcription_partial_warning(presenter, auto_expire_ms=500)
 
     assert shown == TRANSCRIPTION_PARTIAL_WARNING_COPY
-    assert message_var.value == TRANSCRIPTION_PARTIAL_WARNING_COPY
-
-
-def test_main_gui_warning_presenter_packs_without_before_when_no_pack_sibling() -> None:
-    frame = _FakeFrame()
-    parent = _FakeParent(children=[frame, _FakeWidget("grid")])
-    message_var = _FakeVar()
-    presenter = MainGuiWarningPresenter(
-        parent=parent,
-        frame=frame,
-        message_var=message_var,
-        message_label=object(),
-        dismiss_button=object(),
-    )
-
-    presenter.show("Heads up", auto_expire_ms=None)
-
-    assert "before" not in frame.pack_kwargs
-
-
-class _FakePackTarget(_FakeWidget):
-    def __init__(self, manager, *, packed=True):
-        super().__init__(manager)
-        self._packed = packed
-
-
-class _StrictPackFrame(_FakeFrame):
-    def pack(self, **kwargs):
-        before = kwargs.get("before")
-        if before is not None and not getattr(before, "_packed", True):
-            raise tk.TclError("pack target is not packed")
-        super().pack(**kwargs)
-
-
-def test_main_gui_warning_presenter_finalize_warning_packing_falls_back_when_before_unpacked() -> None:
-    frame = _StrictPackFrame()
-    unpacked_target = _FakePackTarget("pack", packed=False)
-    parent = _FakeParent(children=[frame, unpacked_target])
-    message_var = _FakeVar()
-    presenter = MainGuiWarningPresenter(
-        parent=parent,
-        frame=frame,
-        message_var=message_var,
-        message_label=object(),
-        dismiss_button=object(),
-    )
-
-    presenter.show("Finalize warning", auto_expire_ms=777)
-
-    assert frame.winfo_ismapped() is True
-    assert frame.pack_kwargs["fill"] == "x"
-    assert "before" not in frame.pack_kwargs
-    assert message_var.value == "Finalize warning"
-    assert presenter._after_id == "timer-1"
+    assert presenter.calls == [(TRANSCRIPTION_PARTIAL_WARNING_COPY, {"auto_expire_ms": 500})]

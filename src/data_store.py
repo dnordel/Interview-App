@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import datetime
+import sqlite3
+from datetime import datetime, timezone
 from pathlib import Path
 from pathlib import PureWindowsPath
 from typing import Any, Optional
@@ -375,19 +376,91 @@ class QuestionOverridesStore:
 
 
 class InterviewHistoryStore:
-    """Persists finalized interview history to a dedicated JSON file."""
+    """Persists finalized interview history to SQLite, importing legacy JSON rows."""
+
+    _QUERY_COLUMNS: dict[str, str] = {
+        "history_id": "TEXT",
+        "candidate_name": "TEXT",
+        "candidate_email": "TEXT",
+        "school": "TEXT",
+        "position": "TEXT",
+        "interview_date": "TEXT",
+        "outcome": "TEXT",
+        "score": "REAL",
+        "offer_status": "TEXT",
+        "deepseek_processing_status": "TEXT",
+    }
 
     def __init__(self, path: Path):
         self.path = Path(path)
+        if self.path.suffix.casefold() == ".sqlite3":
+            self.db_path = self.path
+            self.json_path = self.path.with_suffix(".json")
+        else:
+            self.json_path = self.path
+            self.db_path = self.path.with_suffix(".sqlite3")
 
     def load(self) -> list[dict[str, Any]]:
-        rows = self._load_from_path(self.path)
-        legacy_rows = self._load_from_path(self._legacy_root_path())
-        if not rows:
-            return legacy_rows
-        if not legacy_rows:
+        self._ensure_db()
+        rows = self._load_from_db()
+        if rows:
             return rows
-        return self._merge_history_rows(legacy_rows, rows)
+        imported = self._import_json_rows_if_needed()
+        if imported:
+            return self._load_from_db()
+        return []
+
+    def load_filtered(
+        self,
+        *,
+        school: str = "",
+        outcome: str = "",
+        offer_status: str = "",
+        search: str = "",
+        limit: int | None = None,
+    ) -> list[dict[str, Any]]:
+        self._ensure_db()
+        self._import_json_rows_if_needed()
+        where: list[str] = []
+        params: list[Any] = []
+        school_text = str(school or "").strip()
+        outcome_text = str(outcome or "").strip()
+        offer_text = str(offer_status or "").strip()
+        search_text = str(search or "").strip()
+        if school_text:
+            where.append("LOWER(school) = LOWER(?)")
+            params.append(school_text)
+        if outcome_text:
+            where.append("LOWER(outcome) = LOWER(?)")
+            params.append(outcome_text)
+        if offer_text:
+            where.append("LOWER(offer_status) = LOWER(?)")
+            params.append(offer_text)
+        if search_text:
+            like = f"%{search_text.lower()}%"
+            where.append(
+                """
+                (
+                    LOWER(candidate_name) LIKE ?
+                    OR LOWER(candidate_email) LIKE ?
+                    OR LOWER(school) LIKE ?
+                    OR LOWER(position) LIKE ?
+                    OR LOWER(outcome) LIKE ?
+                    OR LOWER(payload_json) LIKE ?
+                )
+                """
+            )
+            params.extend([like, like, like, like, like, like])
+        query = "SELECT payload_json FROM interview_history"
+        if where:
+            query += " WHERE " + " AND ".join(where)
+        query += " ORDER BY sort_order ASC, created_at ASC"
+        if limit is not None and int(limit) > 0:
+            query += " LIMIT ?"
+            params.append(int(limit))
+        with sqlite3.connect(self.db_path) as conn:
+            rows = conn.execute(query, params).fetchall()
+        return self._payloads_from_rows(rows)
 
     def _load_from_path(self, path: Path | None) -> list[dict[str, Any]]:
         if path is None or not path.exists():
@@ -395,17 +468,17 @@ class InterviewHistoryStore:
         try:
             with path.open("r", encoding="utf-8") as f:
                 data = json.load(f)
-        except (json.JSONDecodeError, OSError):
+        except (UnicodeDecodeError, json.JSONDecodeError, OSError):
             return []
         if not isinstance(data, list):
             return []
         return [item for item in data if isinstance(item, dict)]
 
     def _legacy_root_path(self) -> Path | None:
-        if self.path.parent.name != "user_artifacts":
+        if self.json_path.parent.name != "user_artifacts":
             return None
-        legacy_path = self.path.parent.parent / self.path.name
-        if legacy_path == self.path:
+        legacy_path = self.json_path.parent.parent / self.json_path.name
+        if legacy_path == self.json_path:
             return None
         return legacy_path
 
@@ -427,9 +500,15 @@ class InterviewHistoryStore:
         return merged
 
     def append(self, entry: dict[str, Any]) -> None:
-        items = self.load()
-        items.append(entry)
-        self._save(items)
+        if not isinstance(entry, dict):
+            return
+        self._ensure_db()
+        self._import_json_rows_if_needed()
+        with sqlite3.connect(self.db_path) as conn:
+            sort_order = self._next_sort_order(conn)
+            row_key = self.build_row_key(entry) or f"row_{sort_order}"
+            self._write_history_row(conn, row_key, sort_order, entry)
+            conn.commit()
 
     @staticmethod
     def build_row_key(entry: dict[str, Any]) -> str:
@@ -447,25 +526,37 @@ class InterviewHistoryStore:
         key = str(row_key).strip()
         if not key or not updates:
             return False
-        items = self.load()
-        for item in items:
-            if self.build_row_key(item) != key:
-                continue
-            item.update(updates)
-            self._save(items)
+        self._ensure_db()
+        self._import_json_rows_if_needed()
+        with sqlite3.connect(self.db_path) as conn:
+            row = conn.execute(
+                "SELECT sort_order, payload_json FROM interview_history WHERE row_key = ?",
+                (key,),
+            ).fetchone()
+            if row is None:
+                return False
+            sort_order = int(row[0])
+            try:
+                payload = json.loads(str(row[1]))
+            except json.JSONDecodeError:
+                payload = {}
+            if not isinstance(payload, dict):
+                payload = {}
+            payload.update(updates)
+            self._write_history_row(conn, key, sort_order, payload)
+            conn.commit()
             return True
-        return False
 
     def delete_row(self, row_key: str) -> bool:
         key = str(row_key).strip()
         if not key:
             return False
-        items = self.load()
-        kept = [item for item in items if self.build_row_key(item) != key]
-        if len(kept) == len(items):
-            return False
-        self._save(kept)
-        return True
+        self._ensure_db()
+        self._import_json_rows_if_needed()
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute("DELETE FROM interview_history WHERE row_key = ?", (key,))
+            conn.commit()
+            return cursor.rowcount > 0
 
     def update_offer_state(self, row_key: str, offer_status: str, offer_letter_path: str = "") -> bool:
         key = str(row_key).strip()
@@ -479,7 +570,7 @@ class InterviewHistoryStore:
         return self.update_row(key, payload)
 
     def repair_interview_notes_links(self, notes_dir: Path) -> int:
-        rows = self._load_from_path(self.path)
+        rows = self.load()
         if not rows:
             return 0
         notes_index = self._interview_notes_index(Path(notes_dir))
@@ -535,7 +626,151 @@ class InterviewHistoryStore:
         return False
 
     def _save(self, items: list[dict[str, Any]]) -> None:
-        atomic_write_json(self.path, items, indent=2, ensure_ascii=False)
+        self._ensure_db()
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("DELETE FROM interview_history")
+            for index, row in enumerate(items):
+                if not isinstance(row, dict):
+                    continue
+                row_key = self.build_row_key(row) or f"row_{index}"
+                self._write_history_row(conn, row_key, index, row)
+            conn.commit()
+
+    def _write_history_row(self, conn: sqlite3.Connection, row_key: str, sort_order: int, row: dict[str, Any]) -> None:
+        conn.execute(
+            """
+            INSERT INTO interview_history (
+                row_key, sort_order, payload_json, history_id, candidate_name,
+                candidate_email, school, position, interview_date, outcome, score,
+                offer_status, deepseek_processing_status, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(row_key) DO UPDATE SET
+                sort_order = excluded.sort_order,
+                payload_json = excluded.payload_json,
+                history_id = excluded.history_id,
+                candidate_name = excluded.candidate_name,
+                candidate_email = excluded.candidate_email,
+                school = excluded.school,
+                position = excluded.position,
+                interview_date = excluded.interview_date,
+                outcome = excluded.outcome,
+                score = excluded.score,
+                offer_status = excluded.offer_status,
+                deepseek_processing_status = excluded.deepseek_processing_status,
+                updated_at = excluded.updated_at
+            """,
+            (
+                row_key,
+                sort_order,
+                json.dumps(row, ensure_ascii=False, sort_keys=True),
+                self._history_text(row, "history_id"),
+                self._history_text(row, "candidate_name", "candidate", "name"),
+                self._history_text(row, "candidate_email", "email", "candidateEmail"),
+                self._history_text(row, "school"),
+                self._history_text(row, "position", "candidate_position", "role", "track"),
+                self._history_text(row, "interview_date", "date"),
+                self._history_text(row, "outcome", "status", "interview_status", "determination"),
+                self._history_score(row),
+                self._history_text(row, "offer_status"),
+                self._history_text(row, "deepseek_processing_status"),
+                datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+            ),
+        )
+
+    @staticmethod
+    def _next_sort_order(conn: sqlite3.Connection) -> int:
+        row = conn.execute("SELECT COALESCE(MAX(sort_order), -1) + 1 FROM interview_history").fetchone()
+        return int(row[0] if row is not None else 0)
+
+    def _ensure_db(self) -> None:
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS interview_history (
+                    row_key TEXT PRIMARY KEY,
+                    sort_order INTEGER NOT NULL DEFAULT 0,
+                    payload_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_interview_history_sort ON interview_history(sort_order)")
+            self._ensure_query_columns(conn)
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_interview_history_candidate ON interview_history(candidate_name)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_interview_history_school ON interview_history(school)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_interview_history_date ON interview_history(interview_date)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_interview_history_offer ON interview_history(offer_status)")
+            conn.commit()
+
+    def _ensure_query_columns(self, conn: sqlite3.Connection) -> None:
+        existing = {row[1] for row in conn.execute("PRAGMA table_info(interview_history)").fetchall()}
+        for name, column_type in self._QUERY_COLUMNS.items():
+            if name not in existing:
+                conn.execute(f"ALTER TABLE interview_history ADD COLUMN {name} {column_type}")
+
+    def _load_from_db(self) -> list[dict[str, Any]]:
+        if not self.db_path.exists():
+            return []
+        with sqlite3.connect(self.db_path) as conn:
+            rows = conn.execute(
+                "SELECT payload_json FROM interview_history ORDER BY sort_order ASC, created_at ASC"
+            ).fetchall()
+        return self._payloads_from_rows(rows)
+
+    @staticmethod
+    def _payloads_from_rows(rows: list[Any]) -> list[dict[str, Any]]:
+        output: list[dict[str, Any]] = []
+        for (payload_json,) in rows:
+            try:
+                payload = json.loads(str(payload_json))
+            except json.JSONDecodeError:
+                continue
+            if isinstance(payload, dict):
+                output.append(payload)
+        return output
+
+    def _import_json_rows_if_needed(self) -> int:
+        self._ensure_db()
+        with sqlite3.connect(self.db_path) as conn:
+            row = conn.execute("SELECT COUNT(*) FROM interview_history").fetchone()
+            if row is not None and int(row[0]) > 0:
+                return 0
+        canonical_rows = self._load_from_path(self.json_path)
+        legacy_rows = self._load_from_path(self._legacy_root_path())
+        if canonical_rows and legacy_rows:
+            rows = self._merge_history_rows(legacy_rows, canonical_rows)
+        else:
+            rows = canonical_rows or legacy_rows
+        if not rows:
+            return 0
+        self._save(rows)
+        return len(rows)
+
+    @staticmethod
+    def _history_text(row: dict[str, Any], *keys: str) -> str:
+        for key in keys:
+            value = row.get(key)
+            if value is None:
+                continue
+            text = str(value).strip()
+            if text:
+                return text
+        return ""
+
+    @classmethod
+    def _history_score(cls, row: dict[str, Any]) -> float | None:
+        for key in ("percent_of_max", "score", "overall_score", "interview_score"):
+            value = row.get(key)
+            if value in (None, ""):
+                continue
+            try:
+                return float(value)
+            except (TypeError, ValueError):
+                continue
+        return None
 
 
 class SchoolOfferSettingsStore:

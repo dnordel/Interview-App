@@ -2,7 +2,7 @@ module:
   name: interview_app_history_controller
   language: python
   path: src/interview_app/history_controller.py
-  version: 1.4.0
+  version: 1.4.1
   description: Deprecated compatibility wrapper for interview history table controller
     implemented by interview_runtime.
 functions: []
@@ -26,13 +26,14 @@ classes:
     exceptions: []
     side_effects: updates in-memory state
   - name: refresh_history_tree
-    description: Refreshes row data and filtering for the history grid.
+    description: Refreshes row data and filtering for the history grid, using DB-backed
+      filtered search when the history store exposes it.
     locked: false
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: updates in-memory state
+    side_effects: may query DB-backed history search; updates in-memory state
   - name: selected_history_row
     description: Returns the currently selected history row from the grid.
     locked: false
@@ -187,8 +188,7 @@ classes:
     returns:
       type: str | None
     exceptions: []
-    side_effects: creates and destroys a modal tkinter dialog, falling back to a parented
-      messagebox if tkinter cannot create the custom dialog
+    side_effects: asks a messagebox-compatible adapter for regeneration mode
   - name: _deepseek_job_path_for_row
     description: Resolve the persisted DeepSeek job JSON path from a safe stored
       deepseek_job_path when available, otherwise from safe history row id and configured

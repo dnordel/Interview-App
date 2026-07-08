@@ -70,7 +70,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: shows tkinter informational dialog
+    side_effects: may notify caller through messagebox-compatible adapter
   - name: handle_delete_for_row
     description: Confirm with the operator, delete one selected finalized interview
       history row by stable row key, and refresh the history UI when deletion succeeds.
@@ -82,7 +82,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: shows tkinter confirmation dialog, may update persisted history,
+    side_effects: asks for confirmation through messagebox-compatible adapter, may update persisted history,
       and refreshes history UI
   - name: _row_key
     description: Build a stable history row key using the configured history store.

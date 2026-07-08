@@ -2,7 +2,7 @@ module:
   name: platform_services
   language: python
   path: src/platform_services.py
-  version: 0.10.2
+  version: 0.10.3
   description: Flattened public interface for shared content, logging, config, persistence,
     path, runtime, document, cleanup, and UX metrics helpers; only active legacy adapters
     remain in the compatibility module inventory.
@@ -385,20 +385,6 @@ functions:
     type: None
   exceptions: []
   side_effects: Mutates sys.excepthook and threading.excepthook.
-- name: _install_tk_callback_hook
-  description: Install Tk callback exception hook when tkinter is available.
-  locked: false
-  inputs:
-    app_root:
-      type: Path
-      required: true
-    runtime_log_path:
-      type: Path
-      required: true
-  returns:
-    type: None
-  exceptions: []
-  side_effects: May mutate tk.Tk.report_callback_exception.
 - name: _install_trace_logging
   description: Install call tracing to a runtime trace file for app-root code.
   locked: false
@@ -999,6 +985,10 @@ data_structures:
 - name: DEFAULT_SIGNALS_PATH
   type: Path
 - name: QUESTIONS_OVERRIDE_PATH
+  type: Path
+- name: INTERVIEW_HISTORY_DB_PATH
+  type: Path
+- name: INTERVIEW_HISTORY_LEGACY_JSON_PATH
   type: Path
 - name: INTERVIEW_HISTORY_PATH
   type: Path

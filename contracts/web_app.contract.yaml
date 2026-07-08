@@ -2,11 +2,11 @@ module:
   name: web_app
   language: html_css_javascript
   path: web/app/
-  version: 0.11.0
+  version: 0.11.1
   description: Dependency-free browser migration shell for the full interview tool
     workflow, covering start, candidate setup, interview, onboarding, settings,
-    question editor, and history screens while Tk remains the production entry
-    point.
+    question editor, and history screens while PySide remains the current desktop
+    entry point.
 functions:
 - name: createInitialState
   module: web/app/data.js
@@ -15,8 +15,8 @@ functions:
 - name: loadApplicationData
   module: web/app/data.js
   signature: "loadApplicationData() -> Promise[web_app_application_data]"
-  description: Reads local rubric, question overrides, interview history, and offer
-    settings from known repository-relative JSON paths with safe fallback data.
+  description: Reads local rubric, question overrides, DB-backed interview history
+    from the backend when available, and offer settings with safe fallback data.
 - name: loadSignalDefinition
   module: web/app/data.js
   signature: "loadSignalDefinition(item: web_app_flow_item) -> Promise[dict | null]"
@@ -142,7 +142,8 @@ data_structures:
     message: string
     messageType: string
 - name: web_app_application_data
-  description: Local JSON data bundle loaded for browser migration shell rendering.
+  description: Local data bundle loaded for browser migration shell rendering; history
+    is populated only from the backend DB bootstrap, not static JSON.
   fields:
     rubric: dict
     overrides: dict
@@ -239,7 +240,7 @@ data_structures:
 dependencies:
 - module: config_rubric_json
 - module: question_overrides_json
-- module: interview_history_json
+- module: interview_history_db
 - module: school_offer_settings_json
 - module: trait_based_scoring_json
 - module: web_app_backend

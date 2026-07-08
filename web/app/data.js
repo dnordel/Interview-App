@@ -1,7 +1,6 @@
 export const urls = {
   rubric: "../../config/rubric.json",
   overrides: "../../config/question_overrides.json",
-  history: "../../user_artifacts/interview_history.json",
   offerSettings: "../../user_artifacts/school_offer_settings.json",
   weightedSignals: "../../Trait-Based%20Scoring/preschool_teacher_interview_signals_weighted.json",
 };
@@ -115,13 +114,12 @@ export async function loadApplicationData() {
       offerSettings: apiPayload.offerSettings || {},
     };
   }
-  const [rubric, overrides, history, offerSettings] = await Promise.all([
+  const [rubric, overrides, offerSettings] = await Promise.all([
     loadJson(urls.rubric, fallbackRubric),
     loadJson(urls.overrides, fallbackOverrides),
-    loadJson(urls.history, []),
     loadJson(urls.offerSettings, {}),
   ]);
-  return { rubric, overrides, history, offerSettings };
+  return { rubric, overrides, history: [], offerSettings };
 }
 
 export async function loadDraftsFromBackend() {
