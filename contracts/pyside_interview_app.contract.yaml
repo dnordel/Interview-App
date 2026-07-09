@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.62.1
+  version: 1.63.2
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, resizable splitter sections, school/classroom selectors, wider color-coded classroom list with per-classroom status-count overview, metric cards, positions table, fully editable right-side assignment/person details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics, parallel Staffing v2 navigation/page shell with its own mockup-style staffing sidebar, People / Employee Management and Assignment History sub-dashboards for the mockup-driven rewrite backed by staffing_dashboard_v2 while the legacy Staffing page remains available,
@@ -355,7 +355,7 @@ functions:
   side_effects: Launches the PySide6 desktop UI.
 classes:
 - name: PySideInterviewSession
-  description: Autosaved PySide interview session state for guided question flow and draft resume.
+  description: Autosaved PySide interview session state for guided question flow, draft resume, and canonical interview_sessions transcript snapshots used by history-triggered DeepSeek generation.
   locked: false
   attributes:
     model:
@@ -363,6 +363,8 @@ classes:
     draft_path:
       type: Path
     candidate_name:
+      type: str
+    interview_date:
       type: str
     school:
       type: str
@@ -382,7 +384,7 @@ classes:
       type: dict[int, dict[str, Any]]
   methods:
   - name: start
-    description: Start a new guided interview session at the school-specific intro script and persist initial draft state.
+    description: Start a new guided interview session at the school-specific intro script, assign the current interview date, and persist initial draft/session state.
     locked: false
     inputs:
       candidate_name:
@@ -398,7 +400,7 @@ classes:
       type: None
     exceptions:
     - ValueError
-    side_effects: Writes PySide draft JSON.
+    side_effects: Writes PySide draft JSON and initializes canonical interview_sessions storage when answer/transcript data is present.
   - name: active_question
     description: Return the current intro, custom, or scored question, or None when the session has reached review.
     locked: false
@@ -408,7 +410,7 @@ classes:
     exceptions: []
     side_effects: none
   - name: save_answer_and_advance
-    description: Save one answer, score, optional skipped state, and quick-action set, advance to the next question, and autosave the draft.
+    description: Save one answer, score, optional skipped state, and quick-action set, advance to the next question, autosave the draft, and mirror answer/transcript data to interview_sessions.
     locked: false
     inputs:
       notes:
@@ -433,7 +435,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Writes PySide draft JSON.
+    side_effects: Writes PySide draft JSON and canonical interview_sessions question snapshots.
   - name: go_back
     description: Move the guided PySide session back to the previous question without deleting saved answers and autosave the draft.
     locked: false
@@ -441,7 +443,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Writes PySide draft JSON.
+    side_effects: Writes PySide draft JSON and canonical interview_sessions question snapshots.
   - name: skip_active_question
     description: Save the active question as intentionally skipped with optional notes and quick actions, leave score blank, advance to the next question, and autosave the draft.
     locked: false
@@ -457,7 +459,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Writes PySide draft JSON.
+    side_effects: Writes PySide draft JSON and canonical interview_sessions question snapshots.
   - name: import_indeed_transcript_file
     description: Import an Indeed-generated .txt transcript into the session, split answers by configured question prompts, infer interviewer/candidate speakers, mark unasked questions skipped, and leave scored answers unrated for operator review.
     locked: false
@@ -470,7 +472,7 @@ classes:
     exceptions:
     - ValueError
     - OSError
-    side_effects: Reads a local .txt transcript file, updates answers/transcript maps, and writes PySide draft JSON.
+    side_effects: Reads a local .txt transcript file, updates answers/transcript maps, writes PySide draft JSON, and writes canonical interview_sessions question snapshots.
   - name: import_indeed_transcript_text
     description: Import Indeed transcript text into the session, split candidate answer transcripts onto matching questions, infer speakers, mark unmatched questions skipped, and move to the first imported scored answer that still needs a rating.
     locked: false
@@ -482,7 +484,7 @@ classes:
       type: IndeedTranscriptImportResult
     exceptions:
     - ValueError
-    side_effects: Updates answers, flow_candidate_transcripts, flow_recordings, current_index, and writes PySide draft JSON.
+    side_effects: Updates answers, flow_candidate_transcripts, flow_recordings, current_index, writes PySide draft JSON, and writes canonical interview_sessions question snapshots.
   - name: review_summary
     description: Evaluate completed PySide trait scores with existing scoring rules and return review-screen summary data.
     locked: false
@@ -590,7 +592,7 @@ classes:
     exceptions: []
     side_effects: none
   - name: to_draft
-    description: Serialize the session as versioned draft JSON data.
+    description: Serialize the session as versioned draft JSON data including interview_date.
     locked: false
     inputs: {}
     returns:
@@ -598,14 +600,45 @@ classes:
     exceptions: []
     side_effects: none
   - name: save_draft
-    description: Atomically write current session state to the configured draft path.
+    description: Atomically write current session state to the configured draft path and mirror answered/transcribed questions to interview_sessions.
     locked: false
     inputs: {}
     returns:
       type: None
     exceptions:
     - OSError
-    side_effects: Writes PySide draft JSON.
+    side_effects: Writes PySide draft JSON and canonical interview_sessions question snapshots.
+  - name: _save_interview_session_snapshots
+    description: Mirror answered or transcribed PySide flow items to canonical InterviewSessionStore JSON so history Generate can synthesize a DeepSeek job after transcript-only finalize.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions:
+    - OSError
+    side_effects: Creates or updates interview_sessions JSON under DEFAULT_BASE_DIR.
+  - name: _interview_session_id
+    description: Return a path-safe canonical PySide interview session id based on candidate name and interview date.
+    locked: false
+    inputs: {}
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _session_snapshot_notes
+    description: Convert one PySide answer and flow question into InterviewSessionStore notes metadata, preserving prompt text, score, skip flags, notes, and quick-action-derived scoring flags.
+    locked: false
+    inputs:
+      item:
+        type: FlowQuestion
+        required: true
+      answer:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: none
   - name: load
     description: Load and validate a versioned PySide interview draft.
     locked: false
@@ -624,15 +657,20 @@ classes:
 - name: PySideInterviewWindow
   description: Main PySide6 window with navigation for Interviews, Candidates, Offers,
     Onboarding, Admin Studio, top-level Tk/PySide UI switching, and scrollable
-    live/review interview panes with wrapped long question and score text. The
+    live interview panes with wrapped long question and score text, plus an
+    interviewer-facing review closeout that shows immediate manual scoring,
+    missing/skipped checks, and question score status without DeepSeek analysis,
+    AI scoring text, transcript text, or offer/finalize actions. The
     home start panel places Continue/Delete Saved Draft actions beside Begin Interview
     so the Home history grid remains visually prioritized; home and Candidates history grids share the same Date, Candidate, School, Position, Score, Status,
     Interview Notes, Regenerate, Offer, and confirmed Delete actions; supports column sorting, fuzzy search,
     school/outcome filters, hiring-outcome row color, content-sized text columns,
     compact notes/offer/delete action columns, Processing notes state during detached
-    DeepSeek work, and live refresh after finalize; Open Notes opens the selected
-    interview notes file and Generate Offer opens the PySide offer wizard from
-    either the selected history row or completed review screen; Admin Studio exposes
+    DeepSeek work, and live refresh after finalize; the completed review screen
+    omits manual Finalize Interview and Generate Offer actions because finalize
+    runs from the final live question and offers are generated after director
+    interview review; Open Notes opens the selected interview notes file and
+    Generate Offer opens the PySide offer wizard from selected history rows; Admin Studio exposes
     checkpoint notification rule rows for editable custom event types, active/delete
     flags, date-offset trigger fields, templates, recipients, and an allowlisted
     local DeepSeek model choice controlled by card actions with only a hidden
@@ -3162,6 +3200,20 @@ classes:
       type: None
     exceptions: []
     side_effects: Updates visible live-interview footer button state.
+  - name: _render_review_page
+    description: Render the interviewer-facing closeout screen from already-available
+      session data, including saved/background report status text, manual score,
+      determination, next step, missing/skipped checks, and a question score table
+      that only exposes whether notes exist. It must not display DeepSeek output,
+      AI analysis/scoring text, transcript text, Finalize Interview, or Generate
+      Offer actions.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Rebuilds visible review widgets without launching finalize,
+      transcript, analysis, or offer workflows.
   - name: _poll_pyside_finalize_worker
     description: Poll background PySide finalize events/results, drain progress updates,
       refresh history/candidate tables as soon as history is persisted, and update
@@ -3911,9 +3963,10 @@ classes:
     exceptions: []
     side_effects: May read notification settings and write notification audit/send email.
   - name: _open_session_offer
-    description: Route the completed active PySide session from the review screen
-      to the Offers wizard, clearing any selected history offer row so fields are
-      prefilled from current session answers.
+    description: Route a completed active PySide session to the Offers wizard,
+      clearing any selected history offer row so fields are prefilled from current
+      session answers. This helper is not exposed as a completed-review-screen
+      action because offers occur after director interview review.
     locked: false
     inputs: {}
     returns:
@@ -4038,7 +4091,7 @@ data_structures:
   type: dataclass
   description: Render-ready finalized interview history row with stable row key,
     interview date, candidate, school, position, score, status, offer status/action,
-    notes path, report path, candidate email, offer path, and detached DeepSeek processing state/warning for the
+    notes path, report path, DeepSeek job/progress paths, candidate email, offer path, and detached DeepSeek processing state/warning for the
     searchable, filterable, sortable, outcome-colored, content-sized PySide history
     grid and offer workflow. Status must follow score display thresholds when a
     numeric score is present unless explicit no-hire override metadata or an

@@ -572,6 +572,7 @@ class StaffingService:
         now = self.clock()
         notice_given = _valid_date(notice_given, "Notice given")
         final_working_day = _valid_date(final_working_day, "Final working day")
+        target_status = "need_now" if date.fromisoformat(final_working_day) <= _parse_timestamp(now).date() else "replace"
         with self.store.write_connection("mark_replacing") as conn:
             assignment = self.store.assignment_context(conn, assignment_id)
             if assignment.status != "filled" or assignment.person_id is None:
@@ -587,14 +588,17 @@ class StaffingService:
             conn.execute(
                 """
                 UPDATE assignments
-                SET status = 'replace', current_opened_date = ?, current_filled_date = NULL, updated_at = ?
+                SET status = ?, person_id = CASE WHEN ? = 'need_now' THEN NULL ELSE person_id END,
+                    current_opened_date = ?, current_filled_date = NULL,
+                    start_date = CASE WHEN ? = 'need_now' THEN NULL ELSE start_date END,
+                    updated_at = ?
                 WHERE id = ?
                 """,
-                (now, now, assignment_id),
+                (target_status, target_status, now, target_status, now, assignment_id),
             )
             self._create_history(conn, assignment_id, now)
             updated = self.store.assignment_context(conn, assignment_id)
-        self._emit_assignment_event("mark_replacing", updated)
+        self._emit_assignment_event("open_position" if updated.status == "need_now" else "mark_replacing", updated)
         return _result(updated)
 
     def _clear_replacement_impl(self, assignment_id: int) -> StaffingTransitionResult:
@@ -797,7 +801,9 @@ class StaffingService:
                     position_name = COALESCE(?, position_name),
                     position_type = COALESCE(?, position_type),
                     status = COALESCE(?, status),
-                    start_date = COALESCE(?, start_date),
+                    person_id = CASE WHEN ? = 'need_now' THEN NULL ELSE person_id END,
+                    start_date = CASE WHEN ? = 'need_now' THEN NULL ELSE COALESCE(?, start_date) END,
+                    current_filled_date = CASE WHEN ? = 'need_now' THEN NULL ELSE current_filled_date END,
                     shift_start = ?,
                     shift_end = ?,
                     notes = COALESCE(?, notes),
@@ -809,7 +815,10 @@ class StaffingService:
                     position_name,
                     position_type,
                     status,
+                    status,
+                    status,
                     start_date,
+                    status,
                     shift_start,
                     shift_end,
                     notes,
@@ -817,7 +826,9 @@ class StaffingService:
                     assignment_id,
                 ),
             )
-            if assignment.person_id is not None:
+            if status == "need_now":
+                pass
+            elif assignment.person_id is not None:
                 if person_name:
                     conn.execute(
                         """

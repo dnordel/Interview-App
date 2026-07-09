@@ -4901,7 +4901,7 @@ class StaffingDashboardV2Page:
         header.setStretchLastSection(False)
         header.setDefaultAlignment(self.QtCore.Qt.AlignmentFlag.AlignCenter)
         header.setMinimumHeight(54)
-        for column, width in enumerate([220, 96, 124, 112, 220, 112, 156]):
+        for column, width in enumerate([220, 84, 64, 92, 188, 112, 156]):
             table.setColumnWidth(column, width)
             header.setSectionResizeMode(column, self.QtWidgets.QHeaderView.ResizeMode.Fixed)
 
@@ -4936,6 +4936,7 @@ class StaffingDashboardV2Page:
             for column, value in enumerate(values):
                 item = self.QtWidgets.QTableWidgetItem(value)
                 item.setData(self.QtCore.Qt.ItemDataRole.UserRole, candidate.id)
+                item.setToolTip(value)
                 table.setItem(row_index, column, item)
                 if column == 0:
                     checkbox = self.QtWidgets.QCheckBox(value)
@@ -5354,14 +5355,23 @@ class StaffingDashboardV2Page:
         return button
 
     def _wire_menu_action(self, action: Any, action_key: str, assignment_id: int) -> None:
+        if action_key == "open_position":
+            action.triggered.connect(lambda _checked=False, item=assignment_id: self._open_position_from_drawer(item))
+            return
         if action_key == "mark_coming":
             action.triggered.connect(lambda _checked=False, item=assignment_id: self._open_mark_coming_dialog(item))
             return
         if action_key == "mark_filled":
             action.triggered.connect(lambda _checked=False, item=assignment_id: self._open_mark_filled_dialog(item))
             return
+        if action_key == "revert_coming":
+            action.triggered.connect(lambda _checked=False, item=assignment_id: self._revert_coming_from_drawer(item))
+            return
         if action_key == "manage_filled":
             action.triggered.connect(lambda _checked=False, item=assignment_id: self._open_manage_filled_dialog(item))
+            return
+        if action_key == "replace_employee":
+            action.triggered.connect(lambda _checked=False, item=assignment_id: self._open_replace_employee_dialog(item))
             return
         if action_key == "update_permit":
             action.triggered.connect(lambda _checked=False, item=assignment_id: self._open_update_permit_dialog(item))
@@ -5385,14 +5395,23 @@ class StaffingDashboardV2Page:
         action.triggered.connect(lambda _checked=False, item=assignment_id, cb=callback: cb(item))
 
     def _wire_action_button(self, button: Any, action_key: str, assignment_id: int) -> None:
+        if action_key == "open_position":
+            button.clicked.connect(lambda _checked=False, item=assignment_id: self._open_position_from_drawer(item))
+            return
         if action_key == "mark_coming":
             button.clicked.connect(lambda _checked=False, item=assignment_id: self._open_mark_coming_dialog(item))
             return
         if action_key == "mark_filled":
             button.clicked.connect(lambda _checked=False, item=assignment_id: self._open_mark_filled_dialog(item))
             return
+        if action_key == "revert_coming":
+            button.clicked.connect(lambda _checked=False, item=assignment_id: self._revert_coming_from_drawer(item))
+            return
         if action_key == "manage_filled":
             button.clicked.connect(lambda _checked=False, item=assignment_id: self._open_manage_filled_dialog(item))
+            return
+        if action_key == "replace_employee":
+            button.clicked.connect(lambda _checked=False, item=assignment_id: self._open_replace_employee_dialog(item))
             return
         if action_key == "update_permit":
             button.clicked.connect(lambda _checked=False, item=assignment_id: self._open_update_permit_dialog(item))
@@ -5406,12 +5425,160 @@ class StaffingDashboardV2Page:
         if action_key == "view_history":
             button.clicked.connect(lambda _checked=False: self._show_history_view())
             return
+        if action_key == "view_details":
+            button.clicked.connect(lambda _checked=False, item=assignment_id: self._open_position_edit_dialog(item))
+            return
         callback = self.actions.get(action_key)
         if callback is None:
             button.setEnabled(False)
             button.setToolTip("Action dialog will be implemented in a later mockup slice.")
             return
         button.clicked.connect(lambda _checked=False, item=assignment_id, cb=callback: cb(item))
+
+    def _open_position_from_drawer(self, assignment_id: int) -> None:
+        self._run_position_transition(
+            assignment_id,
+            lambda service: service.open_position(assignment_id),
+        )
+
+    def _revert_coming_from_drawer(self, assignment_id: int) -> None:
+        self._run_position_transition(
+            assignment_id,
+            lambda service: service.revert_coming(assignment_id),
+        )
+
+    def _run_position_transition(self, assignment_id: int, action: Callable[[StaffingService], Any]) -> None:
+        try:
+            result = action(self.service_factory())
+        except Exception:
+            self._show_position_drawer(assignment_id)
+            return
+        refreshed_id = int(getattr(result, "assignment_id", assignment_id) or assignment_id)
+        self.refresh()
+        self._show_position_drawer(refreshed_id)
+
+    def _open_position_edit_dialog(self, assignment_id: int) -> None:
+        try:
+            assignment = self.store.get_assignment(assignment_id)
+        except ValueError:
+            return
+        dialog = self.QtWidgets.QDialog(self.widget)
+        dialog.setObjectName("StaffingV2EditPositionDialog")
+        dialog.setWindowTitle("Edit Position")
+        dialog.setModal(False)
+        dialog.setStyleSheet(APP_QSS)
+        dialog.setAttribute(self.QtCore.Qt.WidgetAttribute.WA_DeleteOnClose, True)
+        dialog.resize(680, 560)
+        layout = self.QtWidgets.QVBoxLayout(dialog)
+        layout.setContentsMargins(22, 18, 22, 18)
+        layout.setSpacing(12)
+
+        header = self.QtWidgets.QHBoxLayout()
+        title_column = self.QtWidgets.QVBoxLayout()
+        title_column.addWidget(self._label("Edit Position", "StaffingV2DrawerTitle"))
+        title_column.addWidget(
+            self._label(
+                f"{assignment.classroom} · {assignment.school} · Assignment ID #{assignment.id}",
+                "StaffingV2Muted",
+            )
+        )
+        header.addLayout(title_column, 1)
+        close = self.QtWidgets.QPushButton("")
+        close.setObjectName("StaffingV2EditPositionClose")
+        self._set_button_icon(close, "close")
+        close.clicked.connect(dialog.close)
+        header.addWidget(close)
+        layout.addLayout(header)
+
+        form = self.QtWidgets.QFormLayout()
+        classroom = self.QtWidgets.QComboBox()
+        classroom.setObjectName("StaffingV2EditPositionClassroom")
+        classroom_values = sorted({row.classroom for row in self.rows if row.school == assignment.school and row.classroom})
+        classroom.addItems(classroom_values or [assignment.classroom])
+        classroom.setEditable(True)
+        classroom.setCurrentText(assignment.classroom)
+        program = self.QtWidgets.QComboBox()
+        program.setObjectName("StaffingV2EditPositionProgram")
+        program_values = [assignment.classroom_program, "Preschool", "Infant", "Toddler", "School Age", "Support"]
+        program.addItems([value for index, value in enumerate(program_values) if value and value not in program_values[:index]])
+        program.setEditable(True)
+        program.setCurrentText(assignment.classroom_program or "Preschool")
+        position_name = self.QtWidgets.QLineEdit(assignment.position_name)
+        position_name.setObjectName("StaffingV2EditPositionName")
+        position_type = self.QtWidgets.QComboBox()
+        position_type.setObjectName("StaffingV2EditPositionType")
+        type_values = [assignment.position_type, "Director", "Teacher", "Aide", "Floater", "Chef", "Other"]
+        position_type.addItems([value for index, value in enumerate(type_values) if value and value not in type_values[:index]])
+        position_type.setEditable(True)
+        position_type.setCurrentText(assignment.position_type)
+        status = self.QtWidgets.QComboBox()
+        status.setObjectName("StaffingV2EditPositionStatus")
+        for value, label in (
+            ("dont_need_now", "Don't Need"),
+            ("need_now", "Need Now"),
+            ("coming", "Coming"),
+            ("filled", "Filled"),
+            ("replace", "Replace"),
+        ):
+            status.addItem(label, value)
+        status_index = status.findData(assignment.status)
+        status.setCurrentIndex(max(0, status_index))
+        notes = self.QtWidgets.QTextEdit()
+        notes.setObjectName("StaffingV2EditPositionNotes")
+        notes.setPlainText(assignment.notes)
+        notes.setMaximumHeight(110)
+        form.addRow("Classroom *", classroom)
+        form.addRow("Program", program)
+        form.addRow("Position Label / Name *", position_name)
+        form.addRow("Position Type *", position_type)
+        form.addRow("Status", status)
+        form.addRow("Notes", notes)
+        layout.addLayout(form)
+
+        error = self._label("", "StaffingV2NeedNowChip")
+        error.setObjectName("StaffingV2EditPositionError")
+        error.hide()
+        layout.addWidget(error)
+        layout.addStretch(1)
+
+        footer = self.QtWidgets.QHBoxLayout()
+        footer.addStretch(1)
+        cancel = self.QtWidgets.QPushButton("Cancel")
+        cancel.setObjectName("StaffingV2EditPositionCancel")
+        cancel.clicked.connect(dialog.close)
+        submit = self.QtWidgets.QPushButton("Save Changes")
+        submit.setObjectName("StaffingV2EditPositionSubmit")
+        footer.addWidget(cancel)
+        footer.addWidget(submit)
+        layout.addLayout(footer)
+
+        def save() -> None:
+            error.hide()
+            try:
+                result = self.service_factory().update_assignment_details(
+                    assignment.id,
+                    classroom=classroom.currentText(),
+                    classroom_program=program.currentText(),
+                    position_name=position_name.text(),
+                    position_type=position_type.currentText(),
+                    status=str(status.currentData() or assignment.status),
+                    person_name=assignment.person_name,
+                    start_date=assignment.start_date,
+                    shift_start=assignment.shift_start,
+                    shift_end=assignment.shift_end,
+                    permit_status=assignment.permit_status or "unknown",
+                    notes=notes.toPlainText(),
+                )
+            except Exception as exc:  # noqa: BLE001 - show service/store validation to user.
+                error.setText(_safe_staffing_error(exc))
+                error.show()
+                return
+            dialog.close()
+            self.refresh()
+            self._show_position_drawer(int(getattr(result, "assignment_id", assignment.id) or assignment.id))
+
+        submit.clicked.connect(save)
+        dialog.show()
 
     def _open_add_position_dialog(self) -> None:
         dialog = self.QtWidgets.QDialog(self.widget)

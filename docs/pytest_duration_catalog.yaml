@@ -3377,6 +3377,10 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_session_writes_interview_session_snapshots
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_session_imports_indeed_transcript_when_speaker_numbers_flip
   duration_seconds_n2: 0.001
   gui_heavy: false
@@ -3493,7 +3497,11 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_review_generate_offer_button_opens_session_offer_wizard
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_review_screen_hides_finalize_and_offer_actions
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_review_screen_shows_interviewer_closeout_without_slow_outputs
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
@@ -3585,6 +3593,10 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: true
   placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_retry_uses_persisted_deepseek_job_path
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_existing_notes_can_be_regenerated
   duration_seconds_n2: 0.001
   gui_heavy: false
@@ -4109,6 +4121,10 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_position_drawer_wires_open_and_edit_actions
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_mark_coming_dialog_saves_through_service
   duration_seconds_n2: 0.001
   gui_heavy: false
@@ -4121,6 +4137,10 @@ entries:
   duration_seconds_n2: 25.68
   gui_heavy: true
   placement: gui_wave_2
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_replace_today_reopens_need_now_and_clears_person
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_update_permit_dialog_saves_people_permit_details
   duration_seconds_n2: 22.81
   gui_heavy: true
@@ -4186,6 +4206,10 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_director_candidates_follow_admin_school_selector
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_staffing_v2_director_pending_table_uses_compact_readable_columns
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
@@ -5914,6 +5938,18 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_staffing_service_state_machine.py::test_mark_filled_uses_coming_start_date_as_filled_date
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_staffing_service_state_machine.py::test_mark_replacing_with_future_final_day_keeps_replace_until_final_day
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_staffing_service_state_machine.py::test_mark_replacing_with_final_day_today_reopens_need_now_and_clears_person
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_staffing_service_state_machine.py::test_update_assignment_details_need_now_clears_previously_assigned_person
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast

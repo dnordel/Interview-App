@@ -83,6 +83,94 @@ def test_mark_filled_uses_coming_start_date_as_filled_date(tmp_path: Path) -> No
     assert store.closed_days_to_fill() == [9]
 
 
+def test_mark_replacing_with_future_final_day_keeps_replace_until_final_day(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    assignment_id = store.seed_assignment(
+        school="Hawthorne",
+        classroom="Harmony 1",
+        position_name="Teacher 1",
+        position_type="Teacher",
+        status="filled",
+        person_name="Jane Doe",
+    )
+    service = StaffingService(store, clock=_Clock(["2026-07-05T09:00:00Z"]))
+
+    result = service.mark_replacing(
+        assignment_id,
+        notice_given="2026-07-01",
+        final_working_day="2026-07-12",
+    )
+
+    assignment = store.get_assignment(assignment_id)
+    assert result.status == "replace"
+    assert assignment.status == "replace"
+    assert assignment.person_name == "Jane Doe"
+    assert assignment.current_opened_date == "2026-07-05T09:00:00Z"
+    assert store.active_history_count(assignment_id) == 1
+
+
+def test_mark_replacing_with_final_day_today_reopens_need_now_and_clears_person(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    assignment_id = store.seed_assignment(
+        school="Hawthorne",
+        classroom="Harmony 1",
+        position_name="Teacher 1",
+        position_type="Teacher",
+        status="filled",
+        person_name="Jane Doe",
+    )
+    service = StaffingService(store, clock=_Clock(["2026-07-05T09:00:00Z"]))
+
+    result = service.mark_replacing(
+        assignment_id,
+        notice_given="2026-07-01",
+        final_working_day="2026-07-05",
+    )
+
+    assignment = store.get_assignment(assignment_id)
+    assert result.status == "need_now"
+    assert result.person_id is None
+    assert assignment.status == "need_now"
+    assert assignment.person_id is None
+    assert assignment.person_name == ""
+    assert assignment.start_date == ""
+    assert assignment.current_opened_date == "2026-07-05T09:00:00Z"
+    assert assignment.current_filled_date == ""
+    assert store.active_history_count(assignment_id) == 1
+
+
+def test_update_assignment_details_need_now_clears_previously_assigned_person(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    assignment_id = store.seed_assignment(
+        school="Hawthorne",
+        classroom="Harmony 1",
+        position_name="Teacher 1",
+        position_type="Teacher",
+        status="filled",
+        person_name="Jane Doe",
+    )
+    service = StaffingService(store, clock=_Clock(["2026-07-05T09:00:00Z"]))
+
+    result = service.update_assignment_details(
+        assignment_id,
+        classroom="Harmony 1",
+        status="need_now",
+        person_name="Jane Doe",
+        start_date="2026-07-01",
+    )
+
+    assignment = store.get_assignment(assignment_id)
+    assert result.status == "need_now"
+    assert result.person_id is None
+    assert assignment.status == "need_now"
+    assert assignment.person_id is None
+    assert assignment.person_name == ""
+    assert assignment.start_date == ""
+
+
 def test_move_person_to_open_assignment_requires_confirmation_and_reopens_source(tmp_path: Path) -> None:
     store = StaffingStore(tmp_path / "staffing.sqlite3")
     store.initialize()

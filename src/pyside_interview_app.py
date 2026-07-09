@@ -36,6 +36,7 @@ from interview_runtime import (
     DEFAULT_DEEPSEEK_PROGRESS_TASKS,
     FinalizeGateways,
     IndeedTranscriptImportResult,
+    InterviewSessionStore,
     build_finalize_progress_tasks,
     build_finalize_context,
     build_flow_time_windows,
@@ -135,6 +136,8 @@ class PySideHistoryRow:
     offer_action: str
     notes_path: str
     report_path: str
+    deepseek_job_path: str = ""
+    deepseek_progress_path: str = ""
     candidate_email: str = ""
     offer_path: str = ""
     deepseek_processing_status: str = ""
@@ -228,6 +231,7 @@ class PySideInterviewSession:
     model: InterviewRedesignModel
     draft_path: Path
     candidate_name: str = ""
+    interview_date: str = ""
     school: str = ""
     track_key: str = ""
     current_index: int = 0
@@ -241,6 +245,7 @@ class PySideInterviewSession:
         if track_key not in self.model.flows:
             raise ValueError(f"Unknown track: {track_key}")
         self.candidate_name = candidate_name.strip()
+        self.interview_date = date.today().isoformat()
         self.school = school.strip()
         self.track_key = track_key
         self.current_index = 0
@@ -564,6 +569,7 @@ class PySideInterviewSession:
         return {
             "schema": "pyside_interview_draft.v1",
             "candidate_name": self.candidate_name,
+            "interview_date": self.interview_date,
             "school": self.school,
             "track_key": self.track_key,
             "current_index": self.current_index,
@@ -576,6 +582,59 @@ class PySideInterviewSession:
 
     def save_draft(self) -> None:
         atomic_write_json(Path(self.draft_path), self.to_draft(), indent=2, ensure_ascii=False)
+        self._save_interview_session_snapshots()
+
+    def _save_interview_session_snapshots(self) -> None:
+        if not self.candidate_name.strip() or not self.interview_date.strip() or not self.track_key.strip():
+            return
+        interview_id = self._interview_session_id()
+        snapshots: list[tuple[int, FlowQuestion, dict[str, Any], str]] = []
+        for flow_idx, item in enumerate(self._workflow_items()):
+            answer = self.answers.get(item.question_id, {})
+            transcript = str(self.flow_candidate_transcripts.get(flow_idx) or "").strip()
+            if not transcript:
+                transcript = str((self.flow_recordings.get(flow_idx) or {}).get("candidate_transcript") or "").strip()
+            if not answer and not transcript:
+                continue
+            snapshots.append((flow_idx, item, answer, transcript))
+        if not snapshots:
+            return
+        store = InterviewSessionStore(DEFAULT_BASE_DIR)
+        for flow_idx, item, answer, transcript in snapshots:
+            store.save_question_snapshot(
+                interview_id=interview_id,
+                candidate_name=self.candidate_name,
+                interview_date=self.interview_date,
+                flow_idx=flow_idx,
+                item_type=item.kind,
+                item_id=item.question_id,
+                notes=self._session_snapshot_notes(item, answer),
+                candidate_transcript=transcript,
+            )
+
+    def _interview_session_id(self) -> str:
+        raw = f"Candidate_{self.candidate_name}_{self.interview_date}"
+        safe = "".join(ch if ch.isalnum() else "_" for ch in raw).strip("_")
+        return safe or "Candidate"
+
+    def _session_snapshot_notes(self, item: FlowQuestion, answer: dict[str, Any]) -> dict[str, Any]:
+        notes_text = str(answer.get("notes") or "")
+        skipped = bool(answer.get("skipped", False))
+        quick_actions = [str(action) for action in answer.get("quick_actions", []) or []]
+        return {
+            "question_text": str(answer.get("prompt") or item.prompt),
+            "title": str(answer.get("title") or item.title),
+            "answer": notes_text,
+            "raw_score": None if skipped else _coerce_session_score(answer.get("score")),
+            "question_notes": notes_text,
+            "trait_notes": notes_text,
+            "verbatim_notes": notes_text,
+            "absolute_disqualifier": False if skipped else "Disqualifier observed" in quick_actions,
+            "no_example_after_followups": False if skipped else "Candidate gave no example" in quick_actions,
+            "skipped": skipped,
+            "skip_reason": str(answer.get("skip_reason") or "") if skipped else "",
+            "selected_signal_ids": [],
+        }
 
     @classmethod
     def load(cls, *, model: InterviewRedesignModel, draft_path: Path) -> PySideInterviewSession:
@@ -608,6 +667,7 @@ class PySideInterviewSession:
             model=model,
             draft_path=Path(draft_path),
             candidate_name=str(payload.get("candidate_name", "")).strip(),
+            interview_date=str(payload.get("interview_date", "") or date.today().isoformat()).strip(),
             school=str(payload.get("school", "")).strip(),
             track_key=track_key,
             current_index=max(0, current_index),
@@ -742,7 +802,7 @@ class _PySideFinalizeAdapter:
             "candidate": {
                 "name": self.session.candidate_name,
                 "candidate_name": self.session.candidate_name,
-                "interview_date": date.today().isoformat(),
+                "interview_date": self.session.interview_date,
                 "school": self.session.school,
                 "track": self.session.track_key,
                 "position": track.label if track is not None else self.session.track_key,
@@ -1216,6 +1276,8 @@ def _pyside_history_rows_from_payloads(rows: Sequence[dict[str, Any]], store: In
                 offer_action=_history_offer_action(offer_status),
                 notes_path=_history_text(row, "interview_notes_path", "saved_report_path", "notes_path", default=""),
                 report_path=_history_text(row, "saved_report_path", "report_path", "interview_notes_path", default=""),
+                deepseek_job_path=_history_text(row, "deepseek_job_path", default=""),
+                deepseek_progress_path=_history_text(row, "deepseek_progress_path", default=""),
                 candidate_email=_history_text(row, "candidate_email", "email", "candidateEmail", default=""),
                 offer_path=_history_text(row, "offer_letter_path", "offer_path", default=""),
                 deepseek_processing_status=_history_text(row, "deepseek_processing_status", default="").strip().lower(),
@@ -2991,7 +3053,8 @@ class PySideInterviewWindow:
         self._refresh_home_draft_panel()
 
     def _safe_base_name(self) -> str:
-        raw = f"{self.session.candidate_name if self.session else 'Candidate'}_{date.today().isoformat()}"
+        raw_date = self.session.interview_date if self.session and self.session.interview_date else date.today().isoformat()
+        raw = f"{self.session.candidate_name if self.session else 'Candidate'}_{raw_date}"
         safe = "".join(ch if ch.isalnum() else "_" for ch in raw).strip("_")
         return safe or "Candidate"
 
@@ -3401,53 +3464,82 @@ class PySideInterviewWindow:
         if layout is None:
             return
         self._clear_layout(layout)
-        flow = self._current_flow()
-        total = len(flow.items) if flow is not None else 0
+        workflow_items = self.session._workflow_items() if self.session is not None else []
+        total = len(workflow_items)
         answers = self.session.answers if self.session is not None else self.session_answers
         answered = len(answers)
         summary, summary_layout = self._surface()
-        summary_layout.addWidget(self._label("Interview Complete", "Title"))
+        summary_layout.addWidget(self._label("Interviewer Closeout", "Title"))
+        if self.session is not None:
+            track = self.model.flows.get(self.session.track_key)
+            candidate_details = [
+                f"Candidate: {self.session.candidate_name or 'Unknown'}",
+                f"School: {self.session.school or 'Unknown'}",
+                f"Position: {track.label if track is not None else self.session.track_key}",
+            ]
+            summary_layout.addWidget(self._label(" | ".join(candidate_details)))
+        summary_layout.addWidget(self._label("Interview saved"))
+        summary_layout.addWidget(self._label("Report files are being prepared in the background. You can return Home."))
         summary_layout.addWidget(self._label(f"Captured {answered} of {total} configured interview responses."))
         review = self.session.review_summary() if self.session is not None else None
         if review is not None:
-            summary_layout.addWidget(
-                self._label(
-                    f"Overall Score: {review.percent_of_max}%\n"
-                    f"Determination: {review.outcome}\n"
-                    f"Recommended Next Action: {review.next_action}",
-                    "SectionTitle",
-                )
-            )
-            if review.missing_scores:
-                missing = self.QtWidgets.QListWidget()
-                missing.addItems(review.missing_scores)
-                summary_layout.addWidget(self._label("Missing Scores"))
-                summary_layout.addWidget(missing)
-            if review.strongest_evidence:
-                strengths = self.QtWidgets.QListWidget()
-                strengths.addItems(review.strongest_evidence)
-                summary_layout.addWidget(self._label("Strongest Evidence"))
-                summary_layout.addWidget(strengths)
-            if review.concerns:
-                concerns = self.QtWidgets.QListWidget()
-                concerns.addItems(review.concerns)
-                summary_layout.addWidget(self._label("Concerns"))
-                summary_layout.addWidget(concerns)
-        if answers:
-            answer_list = self.QtWidgets.QListWidget()
-            for answer in answers.values():
-                score = f" | score {answer['score']}" if answer.get("score") else ""
-                answer_list.addItem(f"{answer['title']}{score}")
-            summary_layout.addWidget(answer_list)
-        else:
-            summary_layout.addWidget(self._label("Overall score, determination, missing items, flagged answers, strongest evidence, and concerns appear here after interview completion."))
+            summary_layout.addWidget(self._label(f"Manual Score: {review.percent_of_max}%", "SectionTitle"))
+            summary_layout.addWidget(self._label(f"Determination: {review.outcome}"))
+            summary_layout.addWidget(self._label(f"Next Step: {review.next_action}"))
+        checklist = self.QtWidgets.QListWidget()
+        checklist.setObjectName("PySideReviewNeedsList")
+        missing_scores = review.missing_scores if review is not None else []
+        skipped_items = [
+            str(answer.get("title") or question_id)
+            for question_id, answer in answers.items()
+            if isinstance(answer, dict) and answer.get("skipped")
+        ]
+        for item in missing_scores:
+            checklist.addItem(f"Missing score: {item}")
+        for item in skipped_items:
+            checklist.addItem(f"Skipped: {item}")
+        if checklist.count() == 0:
+            checklist.addItem("No missing scores or skipped questions.")
+        summary_layout.addWidget(self._label("Needs Review", "SectionTitle"))
+        summary_layout.addWidget(checklist)
+
+        question_table = self.QtWidgets.QTableWidget(0, 4)
+        question_table.setObjectName("PySideReviewQuestionTable")
+        question_table.setHorizontalHeaderLabels(["Question", "Score", "Notes", "Flags"])
+        question_table.verticalHeader().setVisible(False)
+        question_table.setEditTriggers(self.QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+        question_table.setSelectionBehavior(self.QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
+        question_table.horizontalHeader().setStretchLastSection(True)
+        for row, item in enumerate(workflow_items):
+            answer = answers.get(item.question_id, {})
+            if not isinstance(answer, dict):
+                answer = {}
+            question_table.insertRow(row)
+            score_value = str(answer.get("score") or "").strip()
+            skipped = bool(answer.get("skipped"))
+            if skipped:
+                score_text = "Skipped"
+            elif item.kind == "trait" and not score_value:
+                score_text = "Missing"
+            else:
+                score_text = score_value or "Not scored"
+            note_text = "Yes" if str(answer.get("notes") or "").strip() else "No"
+            flags: list[str] = []
+            quick_actions = [str(action) for action in answer.get("quick_actions", []) or []]
+            if skipped:
+                flags.append("Skipped")
+            if "Disqualifier observed" in quick_actions:
+                flags.append("Disqualifier")
+            if "Candidate gave no example" in quick_actions:
+                flags.append("No example")
+            values = [item.title, score_text, note_text, ", ".join(flags) or "-"]
+            for column, value in enumerate(values):
+                question_table.setItem(row, column, self.QtWidgets.QTableWidgetItem(value))
+        question_table.resizeColumnsToContents()
+        summary_layout.addWidget(self._label("Question Score Review", "SectionTitle"))
+        summary_layout.addWidget(question_table)
+        summary_layout.addWidget(self._label("Send candidate to director interview if required by your hiring workflow."))
         actions = self.QtWidgets.QHBoxLayout()
-        notes_button = self._primary_button("Finalize Interview")
-        notes_button.clicked.connect(self._generate_interview_notes_from_session)
-        actions.addWidget(notes_button)
-        offer_button = self._primary_button("Generate Offer")
-        offer_button.clicked.connect(self._open_session_offer)
-        actions.addWidget(offer_button)
         home_button = self.QtWidgets.QPushButton("Home")
         home_button.clicked.connect(lambda: self.interview_tabs.setCurrentIndex(0))
         actions.addWidget(home_button)
@@ -3827,6 +3919,8 @@ class PySideInterviewWindow:
                 "school": row.school,
                 "track": row.position,
                 "interview_notes_path": row.notes_path,
+                "deepseek_job_path": row.deepseek_job_path,
+                "deepseek_progress_path": row.deepseek_progress_path,
             },
             history_path=self.model.history_path,
             base_dir=self.model.history_path.parent / "interviews"

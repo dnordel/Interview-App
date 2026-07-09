@@ -2,7 +2,7 @@ module:
   name: staffing_service
   language: python
   path: src/staffing_service.py
-  version: 0.15.0
+  version: 0.15.1
   description: Staffing assignment state machine, service-backed classroom, position, person creation, director interview referral/completion tracking with optional pending-queue fallback, mistaken-position deletion, queued Dropbox edit handling, staffing dashboard metrics with pending-operation projection and workbook display metadata, confirmed person moves, editable assignment details, person permit metadata updates, and post-commit notification emission for successful transactions.
 functions: []
 classes:
@@ -211,7 +211,7 @@ classes:
       type: StaffingTransitionResult
     exceptions:
     - ValueError
-    side_effects: Marks current person inactive, opens replacement history, then may emit staffing.assignment.replace notification; if DB is locked, saves operation to pending queue and returns queued status.
+    side_effects: Marks current person inactive, opens replacement history, changes assignment to Replace for future final working days, changes assignment immediately to Need Now and clears the assigned person/start date when final working day is today or earlier, then may emit staffing.assignment.replace or staffing.assignment.need_now notification; if DB is locked, saves operation to pending queue and returns queued status.
   - name: clear_replacement
     inputs:
       assignment_id:
@@ -348,7 +348,7 @@ classes:
       type: StaffingTransitionResult
     exceptions:
     - ValueError
-    side_effects: Updates assignment classroom/program, position name/type/status/start date/shift/notes fields, assigned or newly named person details, and assigned person's permit status when present; may emit staffing.permit.updated notification; if DB is locked, saves operation to pending queue and returns queued status.
+    side_effects: Updates assignment classroom/program, position name/type/status/start date/shift/notes fields, assigned or newly named person details, and assigned person's permit status when present; when status is changed to need_now, clears assigned person, start date, and current filled date instead of retaining or creating a person; may emit staffing.permit.updated notification; if DB is locked, saves operation to pending queue and returns queued status.
   - name: staffing_metrics
     inputs:
       today:
