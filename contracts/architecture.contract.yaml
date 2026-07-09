@@ -82,6 +82,8 @@ services:
     - runtime_wrapper
     - storage_utils
     - check_contract_review
+    - split_pytest_runner
+    - pytest_duration_catalog
     - interview_app_session_context
     - ui_mode_switch
   deepseek_finalize_worker_service:

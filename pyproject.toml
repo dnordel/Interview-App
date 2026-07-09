@@ -27,4 +27,7 @@ gpu = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src", "."]
-addopts = ["-n", "auto"]
+markers = [
+  "pyside_gui: tests that construct real PySide widgets or windows",
+  "slow_pyside: full-window or high-memory PySide tests best run with a capped worker count",
+]

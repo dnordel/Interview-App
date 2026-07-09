@@ -1930,6 +1930,8 @@ def test_pyside_finalize_reload_history_after_queueing_deepseek(tmp_path: Path, 
     app.processEvents()
 
 
+@pytest.mark.pyside_gui
+@pytest.mark.slow_pyside
 def test_pyside_history_grid_shows_failed_retry_for_failed_deepseek_row(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -1963,6 +1965,8 @@ def test_pyside_history_grid_shows_failed_retry_for_failed_deepseek_row(tmp_path
     app.processEvents()
 
 
+@pytest.mark.pyside_gui
+@pytest.mark.slow_pyside
 def test_pyside_failed_retry_button_requeues_deepseek_job(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -4209,6 +4213,8 @@ def test_pyside_admin_layout_keeps_controls_readable_on_narrow_windows(tmp_path:
     app.processEvents()
 
 
+@pytest.mark.pyside_gui
+@pytest.mark.slow_pyside
 def test_pyside_admin_layout_uses_font_metrics_for_windows_text_scaling(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -4263,6 +4269,8 @@ def test_pyside_admin_layout_uses_font_metrics_for_windows_text_scaling(tmp_path
         app.setFont(original_font)
 
 
+@pytest.mark.pyside_gui
+@pytest.mark.slow_pyside
 def test_pyside_initial_window_fits_available_screen_after_display_scaling(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -4288,6 +4296,8 @@ def test_pyside_initial_window_fits_available_screen_after_display_scaling(tmp_p
     app.processEvents()
 
 
+@pytest.mark.pyside_gui
+@pytest.mark.slow_pyside
 def test_pyside_admin_rubrics_editor_matches_mockup_and_saves_draft(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -5201,6 +5211,8 @@ def test_pyside_admin_notifications_editor_shows_mockup_status_panels(tmp_path: 
     app.processEvents()
 
 
+@pytest.mark.pyside_gui
+@pytest.mark.slow_pyside
 def test_pyside_admin_notifications_recipient_chips_remove_and_save(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -9854,6 +9866,8 @@ def test_pyside_staffing_v2_notifications_editor_saves_rule_changes(
     app.processEvents()
 
 
+@pytest.mark.pyside_gui
+@pytest.mark.slow_pyside
 def test_pyside_staffing_v2_classrooms_dashboard_uses_new_shell_and_db_rows(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -11431,6 +11445,8 @@ def test_pyside_staffing_v2_people_dashboard_renders_employee_management_from_db
     app.processEvents()
 
 
+@pytest.mark.pyside_gui
+@pytest.mark.slow_pyside
 def test_pyside_staffing_v2_add_person_dialog_creates_person_through_service(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -11493,6 +11509,8 @@ def test_pyside_staffing_v2_add_person_dialog_creates_person_through_service(
     app.processEvents()
 
 
+@pytest.mark.pyside_gui
+@pytest.mark.slow_pyside
 def test_pyside_staffing_v2_assignment_history_dashboard_renders_history_from_db(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -11749,6 +11767,8 @@ def test_pyside_staffing_v2_assignment_history_dashboard_renders_history_from_db
     app.processEvents()
 
 
+@pytest.mark.pyside_gui
+@pytest.mark.slow_pyside
 def test_pyside_staffing_v2_validation_dashboard_and_filter_drawer_use_existing_staffing_data(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -12015,6 +12035,8 @@ def test_pyside_staffing_v2_validation_dashboard_and_filter_drawer_use_existing_
     app.processEvents()
 
 
+@pytest.mark.pyside_gui
+@pytest.mark.slow_pyside
 def test_pyside_history_offer_actions_advance_generated_and_approved_rows(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -13456,6 +13478,8 @@ def test_staffing_v2_director_interviews_sync_pending_history_and_record_complet
     app.processEvents()
 
 
+@pytest.mark.pyside_gui
+@pytest.mark.slow_pyside
 def test_staffing_v2_director_interviews_backfill_passed_history_rows(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -13548,12 +13572,10 @@ def test_staffing_v2_director_interviews_backfill_passed_history_rows(
     app.processEvents()
 
     assert table.rowCount() == 0
-    window.window.close()
-    app.processEvents()
-
-    window = pyside_interview_app.PySideInterviewWindow(model)
-    table = window.window.findChild(qt_widgets.QTableWidget, "StaffingV2DirectorInterviewPendingTable")
-    assert table.rowCount() == 0
+    dismissed_history_ids = store.list_dismissed_director_referral_history_ids()
+    assert {"hist-borderline", "hist-hire"} <= dismissed_history_ids
+    assert "hist-no-hire" not in dismissed_history_ids
+    assert "hist-other-school" not in dismissed_history_ids
     assert len(InterviewHistoryStore(history_path).load()) == 4
     window.window.close()
     app.processEvents()

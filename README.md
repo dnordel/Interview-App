@@ -123,13 +123,32 @@ Optional standardized dev setup:
 pip install -r requirements-dev.txt
 ```
 
-Run the complete automated test suite faster with parallel workers:
+Run the complete automated test suite:
 
 ```bash
-pytest -q -n auto
+python -m pytest
 ```
 
-Use plain `pytest -q` when you need strict serial execution for debugging.
+For the fastest full-suite run on the current Windows dev workstation, use a capped worker count:
+
+```bash
+python -m pytest -n 24
+```
+
+The test configuration spreads measured heavy PySide GUI tests through the collected test list when xdist is active, using measured durations so several heavy tests run in parallel without clustering the longest cases.
+
+For faster local feedback, run non-heavy tests in parallel, then run heavy PySide GUI tests with a capped worker count:
+
+```bash
+python -m pytest -m "not slow_pyside" -n auto
+python -m pytest -m slow_pyside -n 16
+```
+
+To experiment with separate worker pools for GUI-heavy and non-heavy groups:
+
+```bash
+python tools/split_pytest_runner.py --gui-workers 8 --other-workers 12
+```
 
 ## Quick Start
 
@@ -407,6 +426,23 @@ python -m json.tool config/disqualifier_signals.json > /dev/null
 
 ```bash
 python -m pip check
+```
+
+```bash
+python -m pytest
+```
+
+For local iteration, split heavy PySide GUI coverage from parallel-safe tests:
+
+```bash
+python -m pytest -m "not slow_pyside" -n auto
+python -m pytest -m slow_pyside -n 16
+```
+
+To run both split groups concurrently:
+
+```bash
+python tools/split_pytest_runner.py --gui-workers 8 --other-workers 12
 ```
 
 These checks confirm the Python modules compile, core JSON configuration remains valid, and dependency metadata is consistent.

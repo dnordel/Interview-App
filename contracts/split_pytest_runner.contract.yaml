@@ -1,0 +1,66 @@
+module:
+  name: split_pytest_runner
+  language: python
+  path: tools/split_pytest_runner.py
+  version: 1.0.0
+  description: Runs slow PySide and non-slow pytest groups concurrently with separate xdist worker budgets.
+functions:
+- name: build_split_pytest_commands
+  description: Build subprocess argument lists for slow PySide and non-slow pytest groups.
+  locked: false
+  inputs:
+    python_executable:
+      type: str
+      required: false
+    gui_workers:
+      type: int
+      required: false
+    other_workers:
+      type: int
+      required: false
+    extra_pytest_args:
+      type: Sequence[str]
+      required: false
+  returns:
+    type: list[list[str]]
+  exceptions: []
+  side_effects: none
+- name: run_split_pytest
+  description: Launch both pytest groups before waiting and return a non-zero status if either group fails.
+  locked: false
+  inputs:
+    python_executable:
+      type: str
+      required: false
+    gui_workers:
+      type: int
+      required: false
+    other_workers:
+      type: int
+      required: false
+    extra_pytest_args:
+      type: Sequence[str]
+      required: false
+    popen:
+      type: Callable[[list[str]], subprocess.Popen]
+      required: false
+  returns:
+    type: int
+  exceptions: []
+  side_effects: launches pytest subprocesses
+- name: main
+  description: Parse CLI options and run the split pytest workflow.
+  locked: false
+  inputs:
+    argv:
+      type: Sequence[str] | None
+      required: false
+  returns:
+    type: int
+  exceptions: []
+  side_effects: launches pytest subprocesses and returns a process-style exit code
+classes: []
+data_structures: []
+dependencies:
+- module: pytest
+- module: pytest-xdist

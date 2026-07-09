@@ -169,6 +169,12 @@ modules:
   check_contract_review:
     path: tools/check_contract_review.py
     depends_on: []
+  split_pytest_runner:
+    path: tools/split_pytest_runner.py
+    depends_on: []
+  pytest_duration_catalog:
+    path: tools/pytest_duration_catalog.py
+    depends_on: []
   data_store:
     path: src/data_store.py
     depends_on:

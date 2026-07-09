@@ -12,7 +12,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-08T22:40:15.258885+00:00'
+generated_at_utc: '2026-07-09T01:04:38.029005+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -10748,6 +10748,78 @@ entries:
     - behavior
     - parameter_validation
     - return_type
+- contract: contracts/pytest_duration_catalog.contract.yaml
+  symbol: pytest_duration_catalog.catalog_entries_by_nodeid
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pytest_duration_catalog.contract.yaml
+  symbol: pytest_duration_catalog.collect_nodeids
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pytest_duration_catalog.contract.yaml
+  symbol: pytest_duration_catalog.determine_placement
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pytest_duration_catalog.contract.yaml
+  symbol: pytest_duration_catalog.load_catalog
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pytest_duration_catalog.contract.yaml
+  symbol: pytest_duration_catalog.main
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pytest_duration_catalog.contract.yaml
+  symbol: pytest_duration_catalog.normalize_catalog
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pytest_duration_catalog.contract.yaml
+  symbol: pytest_duration_catalog.refresh_catalog_from_collection
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pytest_duration_catalog.contract.yaml
+  symbol: pytest_duration_catalog.write_catalog
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
 - contract: contracts/question_runtime_definition_service.contract.yaml
   symbol: question_runtime_definition_service.QuestionRuntimeDefinitionService.add_core_signal
   kind: method
@@ -13027,6 +13099,33 @@ entries:
     - return_type
 - contract: contracts/setup_and_run.contract.yaml
   symbol: setup_and_run.Write-Log
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/split_pytest_runner.contract.yaml
+  symbol: split_pytest_runner.build_split_pytest_commands
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/split_pytest_runner.contract.yaml
+  symbol: split_pytest_runner.main
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/split_pytest_runner.contract.yaml
+  symbol: split_pytest_runner.run_split_pytest
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py

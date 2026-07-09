@@ -1,0 +1,110 @@
+module:
+  name: pytest_duration_catalog
+  language: python
+  path: tools/pytest_duration_catalog.py
+  version: 1.0.0
+  description: Maintains collected pytest node ids, n=2 durations, GUI-heavy classification, and scheduler placement metadata.
+functions:
+- name: determine_placement
+  description: Classify a test into a scheduler placement bucket from measured n=2 duration and GUI-heavy status.
+  locked: false
+  inputs:
+    duration_seconds_n2:
+      type: float
+      required: true
+    gui_heavy:
+      type: bool
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: load_catalog
+  description: Load the pytest duration catalog payload.
+  locked: false
+  inputs:
+    path:
+      type: Path
+      required: false
+  returns:
+    type: dict[str, Any]
+  exceptions: []
+  side_effects: reads docs/pytest_duration_catalog.yaml
+- name: catalog_entries_by_nodeid
+  description: Return catalog entries keyed by collected pytest node id.
+  locked: false
+  inputs:
+    path:
+      type: Path
+      required: false
+  returns:
+    type: dict[str, dict[str, Any]]
+  exceptions: []
+  side_effects: reads docs/pytest_duration_catalog.yaml
+- name: collect_nodeids
+  description: Collect current pytest node ids through pytest collect-only.
+  locked: false
+  inputs:
+    python_executable:
+      type: str
+      required: false
+  returns:
+    type: list[str]
+  exceptions:
+  - RuntimeError
+  side_effects: launches pytest collect-only subprocess
+- name: normalize_catalog
+  description: Build a normalized catalog payload from collected node ids and existing entries.
+  locked: false
+  inputs:
+    nodeids:
+      type: list[str]
+      required: true
+    existing_entries:
+      type: dict[str, dict[str, Any]]
+      required: true
+  returns:
+    type: dict[str, Any]
+  exceptions: []
+  side_effects: none
+- name: write_catalog
+  description: Write a normalized pytest duration catalog.
+  locked: false
+  inputs:
+    payload:
+      type: dict[str, Any]
+      required: true
+    path:
+      type: Path
+      required: false
+  returns:
+    type: None
+  exceptions: []
+  side_effects: writes docs/pytest_duration_catalog.yaml
+- name: refresh_catalog_from_collection
+  description: Refresh catalog coverage from current pytest collection while preserving known metadata.
+  locked: false
+  inputs:
+    path:
+      type: Path
+      required: false
+  returns:
+    type: None
+  exceptions: []
+  side_effects: launches pytest collect-only and writes docs/pytest_duration_catalog.yaml
+- name: main
+  description: Parse CLI options for catalog maintenance.
+  locked: false
+  inputs:
+    argv:
+      type: list[str] | None
+      required: false
+  returns:
+    type: int
+  exceptions: []
+  side_effects: optionally refreshes docs/pytest_duration_catalog.yaml
+classes: []
+data_structures: []
+dependencies:
+- module: docs/pytest_duration_catalog.yaml
+- module: pytest
