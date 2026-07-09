@@ -464,3 +464,45 @@ def test_locked_staffing_action_queues_and_replays_when_db_unlocks(tmp_path: Pat
     assert applied == 1
     assert not store.pending_operations_path.exists()
     assert store.get_assignment(assignment_id).status == "need_now"
+
+
+def test_locked_director_referral_queues_and_replays_when_db_unlocks(tmp_path: Path) -> None:
+    db_path = tmp_path / "staffing.sqlite3"
+    store = StaffingStore(db_path)
+    store.initialize()
+    lock_path = db_path.with_suffix(db_path.suffix + ".editing.lock")
+    lock_path.write_text(
+        '{"owner": "other-director", "created_at": "2099-01-01T00:00:00Z"}',
+        encoding="utf-8",
+    )
+    service = StaffingService(
+        store,
+        clock=_Clock(["2026-07-01T09:00:00Z", "2026-07-01T09:01:00Z"]),
+    )
+
+    queued = service.upsert_director_candidate_referral(
+        history_id="hist-queued",
+        candidate_name="Queued Candidate",
+        school="Hawthorne",
+        position="Teacher",
+        interviewer_rating=8.8,
+        interviewer_outcome="hire",
+        interview_date="2026-07-01",
+        candidate_email="queued@example.org",
+        queue_on_lock=True,
+    )
+
+    assert queued.id == 0
+    assert queued.history_id == "hist-queued"
+    assert queued.updated_at == "2026-07-01T09:00:00Z"
+    assert service.list_pending_director_interviews(school="Hawthorne") == []
+    assert store.pending_operations_path.exists()
+
+    lock_path.unlink()
+    applied = service.flush_pending_operations()
+
+    assert applied == 1
+    assert not store.pending_operations_path.exists()
+    pending = service.list_pending_director_interviews(school="Hawthorne")
+    assert [candidate.candidate_name for candidate in pending] == ["Queued Candidate"]
+    assert pending[0].interviewer_rating == 8.8

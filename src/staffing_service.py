@@ -307,6 +307,7 @@ class StaffingService:
         interview_date: str = "",
         candidate_email: str = "",
         referral_date: str = "",
+        queue_on_lock: bool = False,
     ) -> StaffingDirectorCandidate:
         outcome = str(interviewer_outcome or "").strip().lower()
         if outcome not in DIRECTOR_REFERRAL_OUTCOMES:
@@ -316,18 +317,42 @@ class StaffingService:
         clean_referral_date = str(referral_date or "").strip() or clean_interview_date
         if clean_referral_date:
             clean_referral_date = _valid_date(clean_referral_date, "Referral date")
-        return self.store.upsert_director_candidate_referral(
-            history_id=history_id,
-            candidate_name=candidate_name,
-            school=school,
-            position=position,
-            interviewer_rating=rating,
-            interviewer_outcome=outcome,
-            interview_date=clean_interview_date,
-            candidate_email=candidate_email,
-            referral_date=clean_referral_date,
-            now=self.clock(),
-        )
+        now = self.clock()
+        payload = {
+            "history_id": str(history_id),
+            "candidate_name": str(candidate_name),
+            "school": str(school),
+            "position": str(position or ""),
+            "interviewer_rating": rating,
+            "interviewer_outcome": outcome,
+            "interview_date": clean_interview_date,
+            "candidate_email": str(candidate_email or ""),
+            "referral_date": clean_referral_date,
+        }
+        if queue_on_lock and not self._replaying_pending_operations:
+            self.flush_pending_operations()
+        try:
+            return self.store.upsert_director_candidate_referral(
+                **payload,
+                now=now,
+            )
+        except StaffingEditLock:
+            if not queue_on_lock:
+                raise
+            self.store.enqueue_pending_operation("director_candidate_referral", payload)
+            return StaffingDirectorCandidate(
+                id=0,
+                history_id=payload["history_id"],
+                candidate_name=payload["candidate_name"],
+                school=payload["school"],
+                position=payload["position"],
+                interviewer_rating=rating,
+                interviewer_outcome=outcome,
+                interview_date=clean_interview_date,
+                candidate_email=payload["candidate_email"],
+                referral_date=clean_referral_date,
+                updated_at=now,
+            )
 
     def list_pending_director_interviews(self, *, school: str = "") -> list[StaffingDirectorCandidate]:
         return self.store.list_director_candidate_referrals(school=school, include_completed=False)
@@ -1027,6 +1052,18 @@ class StaffingService:
                 shift_start=str(payload.get("shift_start", "")),
                 shift_end=str(payload.get("shift_end", "")),
                 permit_status=str(permit_status) if permit_status is not None else None,
+            )
+        elif operation == "director_candidate_referral":
+            self.upsert_director_candidate_referral(
+                history_id=str(payload["history_id"]),
+                candidate_name=str(payload["candidate_name"]),
+                school=str(payload["school"]),
+                position=str(payload.get("position", "")),
+                interviewer_rating=payload.get("interviewer_rating"),
+                interviewer_outcome=str(payload["interviewer_outcome"]),
+                interview_date=str(payload.get("interview_date", "")),
+                candidate_email=str(payload.get("candidate_email", "")),
+                referral_date=str(payload.get("referral_date", "")),
             )
         else:
             raise ValueError("Unknown pending staffing operation.")

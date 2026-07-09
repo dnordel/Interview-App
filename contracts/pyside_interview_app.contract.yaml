@@ -2,11 +2,11 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.61.1
+  version: 1.62.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, resizable splitter sections, school/classroom selectors, wider color-coded classroom list with per-classroom status-count overview, metric cards, positions table, fully editable right-side assignment/person details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics, parallel Staffing v2 navigation/page shell with its own mockup-style staffing sidebar, People / Employee Management and Assignment History sub-dashboards for the mockup-driven rewrite backed by staffing_dashboard_v2 while the legacy Staffing page remains available,
-    director staffing-only launch mode that opens the Staffing v2 dashboard, keeps the full mockup navigation rail visible, filters to an assigned school when supplied, reuses the same Staffing v2 page, and records or syncs hire/borderline finalized interviews into StaffingService director-interview referrals while honoring dismissed pending referrals,
+    director staffing-only launch mode that opens the Staffing v2 dashboard, keeps the full mockup navigation rail visible, filters to an assigned school when supplied, reuses the same Staffing v2 page, stores school-scoped director staffing data in school-specific SQLite files bootstrapped from the existing shared staffing DB on first use, imports queued hire/borderline interview referral events into the matching school staffing database on launch and on a live timer, and records finalized interview referral events to a central JSONL bridge queue instead of writing staffing databases directly,
     compact home draft actions beside the start action, guided review-then-apply Admin Studio backed by admin_studio
     with dashboard-first grouped admin-console navigation, standard icons on each
     selectable Admin Studio nav item, Environment/User cards at the bottom of the Admin Studio rail, distinct status pills,
@@ -90,6 +90,21 @@ functions:
   exceptions:
   - ValueError
   side_effects: May read local app config/history when no model is supplied.
+- name: staffing_db_path_for_school
+  description: Return the school-specific staffing SQLite path for a director school using a path-safe slug suffix, or the base staffing path when no school is supplied.
+  locked: false
+  inputs:
+    school:
+      type: str
+      required: true
+    base_path:
+      type: Path | None
+      required: false
+      default: null
+  returns:
+    type: Path
+  exceptions: []
+  side_effects: none
 - name: build_pyside_onboarding_board
   description: Build PySide onboarding dashboard counts and employee next-task rows from existing onboarding state.
   locked: false
@@ -3309,21 +3324,45 @@ classes:
     side_effects: May construct one page widget, replace the matching stacked-widget
       placeholder, and mark that navigation index as loaded.
   - name: _staffing_v2_page
-    description: Build the Staffing v2 page from staffing_dashboard_v2 for the mockup-driven rewrite and director staffing-only launch surface, passing the shared notification rules store path and shared notification service factory into the V2 Notifications dashboard; syncs hire/borderline interview history rows into pending director-interview referrals while skipping dismissed referrals.
+    description: Build the Staffing v2 page from staffing_dashboard_v2 for the mockup-driven rewrite and director staffing-only launch surface, passing the shared notification rules store path and shared notification service factory into the V2 Notifications dashboard; imports queued referral events for the current director school, syncs hire/borderline interview history rows into pending director-interview referrals while skipping dismissed referrals, and starts live referral queue polling.
     locked: false
     inputs: {}
     returns:
       type: QWidget
     exceptions: []
-    side_effects: Initializes local staffing storage, imports staffing seed data when the DB is empty or clearly missing seed assignments, syncs eligible interview history into pending director referrals, creates a StaffingDashboardV2Page, stores it on the PySide window, wires service-backed staffing actions from the existing StaffingService handlers, and connects the V2 Notifications dashboard to the shared notification rules SQLite path and shared email notification service.
-  - name: _sync_staffing_director_referrals_from_history
-    description: Upsert non-dismissed Hire and Borderline PySide history rows into StaffingService pending director-interview referrals, scoped to the director launch school when supplied.
+    side_effects: Initializes local or school-specific staffing storage, with first-use school DB copies from the existing shared staffing DB when present; imports staffing seed data when the DB is empty or clearly missing seed assignments, imports queued director referral events, syncs eligible interview history into pending director referrals, creates a StaffingDashboardV2Page, stores it on the PySide window, wires service-backed staffing actions from the existing StaffingService handlers, starts periodic queue polling, and connects the V2 Notifications dashboard to the shared notification rules SQLite path and shared email notification service.
+  - name: _start_staffing_referral_queue_polling
+    description: Start one PySide timer that periodically imports central referral queue records for the current director school.
     locked: false
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Reads dismissed director referral history ids from StaffingStore and upserts eligible history rows into staffing director candidate referrals without mutating assignments.
+    side_effects: Creates and starts a QTimer owned by the main window when no queue timer is active.
+  - name: _poll_staffing_referral_queue
+    description: Import queued referral records and refresh the Staffing v2 dashboard when new rows were applied.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Reads and may rewrite the central referral queue file, writes matching referrals to the active staffing database, and refreshes StaffingDashboardV2Page.
+  - name: _import_queued_staffing_director_referrals
+    description: Move central referral queue records for the current director school into the active StaffingService director-referral store.
+    locked: false
+    inputs: {}
+    returns:
+      type: int
+    exceptions: []
+    side_effects: Reads and may rewrite the central referral queue file; upserts matching referral payloads into the active staffing database or queues them on that database if its edit lock is held.
+  - name: _sync_staffing_director_referrals_from_history
+    description: Upsert non-dismissed Hire and Borderline PySide history rows into StaffingService pending director-interview referrals, scoped to the director launch school when supplied, and queue rows that cannot be written because the staffing database edit lock is currently held.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Reads dismissed director referral history ids from StaffingStore and upserts or queues eligible history rows into staffing director candidate referrals without mutating assignments.
   - name: _record_staffing_director_referral_from_finalize_result
     description: Create or update one director-interview referral for a newly finalized Hire or Borderline interview result only, leaving existing past history rows unexposed unless a referral already exists in the staffing database.
     locked: false
@@ -3334,7 +3373,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Upserts one staffing director candidate referral through StaffingService for new finalized interviews without mutating assignments or classroom status.
+    side_effects: Appends one sanitized director candidate referral event to the central staffing referral queue JSONL file without opening or mutating staffing databases.
   - name: _refresh_staffing_dashboard
     description: Initialize local staffing storage, import seed data when the staffing DB is empty or clearly missing seed assignments, compute metrics, and refresh the hidden compatibility metric label, school/classroom selectors, classroom list, metric cards, positions table, and hidden legacy school-tabbed workbook boards.
     locked: false

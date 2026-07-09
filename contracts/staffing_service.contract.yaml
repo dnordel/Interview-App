@@ -2,8 +2,8 @@ module:
   name: staffing_service
   language: python
   path: src/staffing_service.py
-  version: 0.14.0
-  description: Staffing assignment state machine, service-backed classroom, position, person creation, director interview referral/completion tracking, mistaken-position deletion, queued Dropbox edit handling, staffing dashboard metrics with pending-operation projection and workbook display metadata, confirmed person moves, editable assignment details, person permit metadata updates, and post-commit notification emission for successful transactions.
+  version: 0.15.0
+  description: Staffing assignment state machine, service-backed classroom, position, person creation, director interview referral/completion tracking with optional pending-queue fallback, mistaken-position deletion, queued Dropbox edit handling, staffing dashboard metrics with pending-operation projection and workbook display metadata, confirmed person moves, editable assignment details, person permit metadata updates, and post-commit notification emission for successful transactions.
 functions: []
 classes:
 - name: StaffingService
@@ -396,12 +396,16 @@ classes:
         type: str
         required: false
         default: ''
+      queue_on_lock:
+        type: bool
+        required: false
+        default: false
     returns:
       type: StaffingDirectorCandidate
     exceptions:
     - ValueError
     - StaffingEditLock
-    side_effects: Validates a new hire/borderline first-interview referral and upserts it without mutating staffing assignments.
+    side_effects: Validates a new hire/borderline first-interview referral and upserts it without mutating staffing assignments; when queue_on_lock is true and the staffing edit lock is held, appends a director_candidate_referral pending operation and returns a placeholder StaffingDirectorCandidate with id 0.
   - name: list_pending_director_interviews
     inputs:
       school:

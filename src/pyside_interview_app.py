@@ -5,6 +5,7 @@ import json
 import os
 import queue
 import re
+import shutil
 import subprocess
 import sys
 import threading
@@ -77,7 +78,7 @@ from scoring_reporting import build_integration_payload, serialize_integration_p
 from scoring_reporting import CANONICAL_DEGREE_TYPES, CandidateQualification, validate_candidate_qualification
 from staffing_dashboard_v2 import StaffingDashboardV2Page, configure_v2_scroll_areas
 from staffing_service import StaffingService
-from staffing_store import StaffingStore
+from staffing_store import StaffingEditLock, StaffingStore
 
 
 APP_TITLE = "Interview Assistant"
@@ -85,6 +86,7 @@ NAVIGATION = ["Interviews", "Candidates", "Offers", "Staffing", "Staffing v2", "
 DIRECTOR_STAFFING_NAVIGATION = ["Staffing v2"]
 SETUP_STEPS = ["Candidate", "Interview Plan", "Ready"]
 STAFFING_DB_PATH = DEFAULT_BASE_DIR / "staffing_dashboard.sqlite3"
+STAFFING_REFERRAL_QUEUE_PATH = DEFAULT_BASE_DIR / "staffing_referrals.pending.jsonl"
 STAFFING_SEED_PATH = CONFIG_DIR / "staffing_seed.json"
 STAFFING_PERMIT_VALUES = [
     "unknown",
@@ -851,6 +853,83 @@ def _director_referral_rating(score: str) -> float | None:
     if 10 < value <= 100:
         return round(value / 10, 2)
     return None
+
+
+def _staffing_school_slug(school: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "_", str(school or "").strip().lower()).strip("_")
+    return slug
+
+
+def staffing_db_path_for_school(school: str, *, base_path: Path | None = None) -> Path:
+    resolved_base = Path(base_path or STAFFING_DB_PATH)
+    slug = _staffing_school_slug(school)
+    if not slug:
+        return resolved_base
+    return resolved_base.with_name(f"{resolved_base.stem}_{slug}{resolved_base.suffix}")
+
+
+def _bootstrap_school_staffing_db_from_base(school: str, school_path: Path, *, base_path: Path | None = None) -> None:
+    if not str(school or "").strip():
+        return
+    source = Path(base_path or STAFFING_DB_PATH)
+    target = Path(school_path)
+    if source == target or target.exists() or not source.exists():
+        return
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, target)
+    for suffix in ("-wal", "-shm"):
+        sidecar = source.with_name(f"{source.name}{suffix}")
+        if sidecar.exists():
+            shutil.copy2(sidecar, target.with_name(f"{target.name}{suffix}"))
+
+
+def _append_staffing_referral_queue(payload: dict[str, Any], *, queue_path: Path | None = None) -> None:
+    target = Path(queue_path or STAFFING_REFERRAL_QUEUE_PATH)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    record = {
+        "operation": "director_candidate_referral",
+        "payload": payload,
+        "queued_at": datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
+    }
+    with target.open("a", encoding="utf-8") as file:
+        file.write(json.dumps(record, ensure_ascii=True, sort_keys=True) + "\n")
+
+
+def _pop_staffing_referral_queue_for_school(school: str, *, queue_path: Path | None = None) -> list[dict[str, Any]]:
+    target = Path(queue_path or STAFFING_REFERRAL_QUEUE_PATH)
+    if not target.exists():
+        return []
+    school_filter = str(school or "").strip()
+    matched: list[dict[str, Any]] = []
+    remaining: list[dict[str, Any]] = []
+    for line in target.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError:
+            remaining.append({"raw": line})
+            continue
+        if not isinstance(record, dict):
+            continue
+        payload = record.get("payload", {})
+        if not isinstance(payload, dict):
+            continue
+        if school_filter and str(payload.get("school", "")).strip() != school_filter:
+            remaining.append(record)
+            continue
+        matched.append(payload)
+    if remaining:
+        with target.open("w", encoding="utf-8") as file:
+            for record in remaining:
+                raw = record.get("raw") if isinstance(record, dict) else None
+                if raw is not None:
+                    file.write(str(raw) + "\n")
+                else:
+                    file.write(json.dumps(record, ensure_ascii=True, sort_keys=True) + "\n")
+    else:
+        target.unlink()
+    return matched
 
 
 def _history_offer_action(offer_status: str) -> str:
@@ -2023,7 +2102,14 @@ class PySideInterviewWindow:
         self.selected_history_offer_row: PySideHistoryRow | None = None
         self.history_store = InterviewHistoryStore(model.history_path)
         self.school_offer_store = SchoolOfferSettingsStore(SCHOOL_OFFER_SETTINGS_PATH)
-        self.staffing_store = StaffingStore(STAFFING_DB_PATH)
+        staffing_db_path = (
+            staffing_db_path_for_school(self.director_staffing_school)
+            if self.director_staffing_mode
+            else STAFFING_DB_PATH
+        )
+        _bootstrap_school_staffing_db_from_base(self.director_staffing_school, staffing_db_path)
+        self.staffing_store = StaffingStore(staffing_db_path)
+        self._staffing_referral_queue_timer: Any | None = None
         self.staffing_status_label: Any | None = None
         self.staffing_metrics_label: Any | None = None
         self.staffing_table: Any | None = None
@@ -9523,6 +9609,7 @@ class PySideInterviewWindow:
                     seed_assignment_count += len(support_row.get("slots", support_row.get("positions", [])))
             if len(existing_assignments) < seed_assignment_count:
                 self.staffing_store.import_seed_file(STAFFING_SEED_PATH)
+        self._import_queued_staffing_director_referrals()
         self._sync_staffing_director_referrals_from_history()
         dashboard = StaffingDashboardV2Page(
             QtCore=self.QtCore,
@@ -9546,7 +9633,52 @@ class PySideInterviewWindow:
             notification_service_factory=self._notification_service,
         )
         self.staffing_v2_dashboard = dashboard
+        self._start_staffing_referral_queue_polling()
         return dashboard.widget
+
+    def _start_staffing_referral_queue_polling(self) -> None:
+        if self._staffing_referral_queue_timer is not None:
+            return
+        timer = self.QtCore.QTimer(self.window)
+        timer.setInterval(5000)
+        timer.timeout.connect(self._poll_staffing_referral_queue)
+        timer.start()
+        self._staffing_referral_queue_timer = timer
+
+    def _poll_staffing_referral_queue(self) -> None:
+        imported = self._import_queued_staffing_director_referrals()
+        if imported and getattr(self, "staffing_v2_dashboard", None) is not None:
+            self.staffing_v2_dashboard.refresh()
+
+    def _import_queued_staffing_director_referrals(self) -> int:
+        if not hasattr(self, "staffing_store"):
+            return 0
+        try:
+            payloads = _pop_staffing_referral_queue_for_school(self.director_staffing_school)
+        except OSError:
+            return 0
+        if not payloads:
+            return 0
+        service = StaffingService(self.staffing_store, notification_service=self._notification_service())
+        imported = 0
+        for payload in payloads:
+            try:
+                service.upsert_director_candidate_referral(
+                    history_id=str(payload["history_id"]),
+                    candidate_name=str(payload["candidate_name"]),
+                    school=str(payload["school"]),
+                    position=str(payload.get("position", "")),
+                    interviewer_rating=payload.get("interviewer_rating"),
+                    interviewer_outcome=str(payload["interviewer_outcome"]),
+                    interview_date=str(payload.get("interview_date", "")),
+                    candidate_email=str(payload.get("candidate_email", "")),
+                    referral_date=str(payload.get("referral_date", "")),
+                    queue_on_lock=True,
+                )
+            except (OSError, ValueError, StaffingEditLock, KeyError):
+                continue
+            imported += 1
+        return imported
 
     def _sync_staffing_director_referrals_from_history(self) -> None:
         if not hasattr(self, "staffing_store"):
@@ -9573,8 +9705,9 @@ class PySideInterviewWindow:
                     interviewer_outcome=outcome,
                     interview_date=row.interview_date,
                     candidate_email=row.candidate_email,
+                    queue_on_lock=True,
                 )
-            except (OSError, ValueError):
+            except (OSError, ValueError, StaffingEditLock):
                 continue
 
     def _record_staffing_director_referral_from_finalize_result(self, result: dict[str, Any]) -> None:
@@ -9587,20 +9720,21 @@ class PySideInterviewWindow:
         if not outcome:
             return
         rating_source = scoring.get("interviewer_rating", scoring.get("rating", scoring.get("percent_of_max", "")))
-        self.staffing_store.initialize()
-        service = StaffingService(self.staffing_store, notification_service=self._notification_service())
         try:
-            service.upsert_director_candidate_referral(
-                history_id=str(result.get("history_id", "") or f"{self.session.candidate_name}:{self.session.interview_date}"),
-                candidate_name=self.session.candidate_name,
-                school=self.session.school,
-                position=self.session.position,
-                interviewer_rating=_director_referral_rating(str(rating_source)),
-                interviewer_outcome=outcome,
-                interview_date=self.session.interview_date,
-                candidate_email="",
+            _append_staffing_referral_queue(
+                {
+                    "history_id": str(result.get("history_id", "") or f"{self.session.candidate_name}:{self.session.interview_date}"),
+                    "candidate_name": self.session.candidate_name,
+                    "school": self.session.school,
+                    "position": self.session.position,
+                    "interviewer_rating": _director_referral_rating(str(rating_source)),
+                    "interviewer_outcome": outcome,
+                    "interview_date": self.session.interview_date,
+                    "candidate_email": "",
+                    "referral_date": self.session.interview_date,
+                }
             )
-        except (OSError, ValueError):
+        except OSError:
             return
 
     def _staffing_detail_drawer(self) -> Any:

@@ -4157,6 +4157,26 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_staffing_db_path_for_school_uses_safe_school_specific_names
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_school_specific_staffing_db_bootstraps_from_existing_base_db
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_director_staffing_mode_uses_school_specific_db_when_other_school_locked
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_interview_finalize_queues_director_referral_without_staffing_db_write
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_director_staffing_poll_imports_queued_referral_and_refreshes_gui
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_summary_cards_follow_selected_school
   duration_seconds_n2: 0.001
   gui_heavy: false
@@ -4225,6 +4245,10 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: true
   placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_director_staffing_launch_queues_history_backfill_when_edit_lock_exists
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_pytest_collection_order.py::test_spread_slow_pyside_items_interleaves_gui_heavy_tests
   duration_seconds_n2: 0.001
   gui_heavy: false
@@ -5922,6 +5946,10 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_staffing_service_state_machine.py::test_locked_staffing_action_queues_and_replays_when_db_unlocks
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_staffing_service_state_machine.py::test_locked_director_referral_queues_and_replays_when_db_unlocks
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast

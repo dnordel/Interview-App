@@ -928,7 +928,7 @@ def test_pyside_show_schedules_recording_interface_preload_once(tmp_path: Path, 
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     scheduled = []
 
     def _single_shot(_delay, callback):
@@ -10560,7 +10560,7 @@ def test_pyside_staffing_v2_add_position_submit_immediately_shows_created_positi
     assert page.findChild(qt_widgets.QLineEdit, "StaffingV2Search").text() == ""
     assert "Director" in visible_text
     assert page.findChild(qt_widgets.QLabel, "StaffingV2DrawerPositionName").text() == "Director"
-    created = next(row for row in store.list_assignments() if row.position_name == "Director")
+    created = next(row for row in window.staffing_store.list_assignments() if row.position_name == "Director")
     assert created.position_type == "Director"
     page.findChild(qt_widgets.QPushButton, "StaffingV2DrawerMarkComing").click()
     app.processEvents()
@@ -12269,6 +12269,196 @@ def test_pyside_director_staffing_mode_filters_to_assigned_school(
     app.processEvents()
 
 
+def test_staffing_db_path_for_school_uses_safe_school_specific_names(tmp_path: Path) -> None:
+    base_path = tmp_path / "staffing_dashboard.sqlite3"
+
+    assert pyside_interview_app.staffing_db_path_for_school("Hawthorne", base_path=base_path) == (
+        tmp_path / "staffing_dashboard_hawthorne.sqlite3"
+    )
+    assert pyside_interview_app.staffing_db_path_for_school("Long Beach / Bixby", base_path=base_path) == (
+        tmp_path / "staffing_dashboard_long_beach_bixby.sqlite3"
+    )
+    assert pyside_interview_app.staffing_db_path_for_school("", base_path=base_path) == base_path
+
+
+def test_school_specific_staffing_db_bootstraps_from_existing_base_db(tmp_path: Path) -> None:
+    base_path = tmp_path / "staffing_dashboard.sqlite3"
+    base_store = pyside_interview_app.StaffingStore(base_path)
+    base_store.initialize()
+    base_store.seed_assignment(
+        school="Palmdale",
+        classroom="Harmony",
+        position_name="Existing Palmdale Teacher",
+        position_type="Teacher",
+        status="need_now",
+    )
+    school_path = pyside_interview_app.staffing_db_path_for_school("Palmdale", base_path=base_path)
+
+    pyside_interview_app._bootstrap_school_staffing_db_from_base("Palmdale", school_path, base_path=base_path)
+
+    school_store = pyside_interview_app.StaffingStore(school_path)
+    assignments = school_store.list_assignments()
+    assert school_path.exists()
+    assert [assignment.position_name for assignment in assignments] == ["Existing Palmdale Teacher"]
+
+
+@pytest.mark.pyside_gui
+@pytest.mark.slow_pyside
+def test_pyside_director_staffing_mode_uses_school_specific_db_when_other_school_locked(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    seed_path = tmp_path / "staffing_seed.json"
+    seed_path.write_text(
+        json.dumps(
+            {
+                "schools": [
+                    {
+                        "name": "Hawthorne",
+                        "classrooms": [
+                            {
+                                "name": "Tranquility",
+                                "positions": [{"position_name": "Hawthorne Teacher", "position_type": "Teacher"}],
+                            }
+                        ],
+                    },
+                    {
+                        "name": "Palmdale",
+                        "classrooms": [
+                            {
+                                "name": "Harmony",
+                                "positions": [{"position_name": "Palmdale Teacher", "position_type": "Teacher"}],
+                            }
+                        ],
+                    },
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    base_path = tmp_path / "staffing.sqlite3"
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", base_path)
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", seed_path)
+    hawthorne_path = pyside_interview_app.staffing_db_path_for_school("Hawthorne", base_path=base_path)
+    hawthorne_path.parent.mkdir(parents=True, exist_ok=True)
+    hawthorne_path.with_suffix(hawthorne_path.suffix + ".editing.lock").write_text(
+        '{"owner": "hawthorne-director", "created_at": "2099-01-01T00:00:00Z"}',
+        encoding="utf-8",
+    )
+    full_model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.sqlite3",
+        school_options=["Hawthorne", "Palmdale"],
+    )
+
+    director_model = pyside_interview_app.build_director_staffing_model(full_model, school="Palmdale")
+    window = pyside_interview_app.PySideInterviewWindow(director_model)
+    table = window.window.findChild(qt_widgets.QTableWidget, "StaffingV2PositionsTable")
+
+    assert window.staffing_store.path == pyside_interview_app.staffing_db_path_for_school("Palmdale", base_path=base_path)
+    assert table.rowCount() == 1
+    assert "Palmdale Teacher" in _widget_text(window.window)
+    assert "Hawthorne Teacher" not in _widget_text(window.window)
+    window.window.close()
+    app.processEvents()
+
+
+@pytest.mark.pyside_gui
+def test_interview_finalize_queues_director_referral_without_staffing_db_write(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    staffing_path = tmp_path / "staffing.sqlite3"
+    referral_queue_path = tmp_path / "staffing_referrals.pending.jsonl"
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", staffing_path)
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_REFERRAL_QUEUE_PATH", referral_queue_path)
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.sqlite3",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    window.session = SimpleNamespace(
+        candidate_name="Queued Candidate",
+        school="Palmdale",
+        position="Teacher",
+        interview_date="2026-07-08",
+    )
+
+    window._record_staffing_director_referral_from_finalize_result(
+        {
+            "history_id": "hist-queued",
+            "scoring": {"outcome": "Hire", "interviewer_rating": 8.8},
+        }
+    )
+
+    assert not staffing_path.exists()
+    assert referral_queue_path.exists()
+    queued = [json.loads(line) for line in referral_queue_path.read_text(encoding="utf-8").splitlines()]
+    assert queued[0]["payload"]["history_id"] == "hist-queued"
+    assert queued[0]["payload"]["school"] == "Palmdale"
+    window.window.close()
+    app.processEvents()
+
+
+@pytest.mark.pyside_gui
+@pytest.mark.slow_pyside
+def test_director_staffing_poll_imports_queued_referral_and_refreshes_gui(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    seed_path = tmp_path / "staffing_seed.json"
+    seed_path.write_text(
+        json.dumps({"schools": [{"name": "Palmdale", "classrooms": [{"name": "Harmony", "positions": []}]}]}),
+        encoding="utf-8",
+    )
+    base_path = tmp_path / "staffing.sqlite3"
+    referral_queue_path = tmp_path / "staffing_referrals.pending.jsonl"
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", base_path)
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", seed_path)
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_REFERRAL_QUEUE_PATH", referral_queue_path)
+    full_model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.sqlite3",
+        school_options=["Palmdale"],
+    )
+    director_model = pyside_interview_app.build_director_staffing_model(full_model, school="Palmdale")
+    window = pyside_interview_app.PySideInterviewWindow(director_model)
+    table = window.window.findChild(qt_widgets.QTableWidget, "StaffingV2DirectorInterviewPendingTable")
+    assert table.rowCount() == 0
+    pyside_interview_app._append_staffing_referral_queue(
+        {
+            "history_id": "hist-live",
+            "candidate_name": "Live Queue Candidate",
+            "school": "Palmdale",
+            "position": "Teacher",
+            "interviewer_rating": 8.5,
+            "interviewer_outcome": "hire",
+            "interview_date": "2026-07-09",
+            "candidate_email": "",
+            "referral_date": "2026-07-09",
+        }
+    )
+
+    window._poll_staffing_referral_queue()
+    app.processEvents()
+
+    assert table.rowCount() == 1
+    assert table.item(0, 0).text() == "Live Queue Candidate"
+    assert not referral_queue_path.exists()
+    window.window.close()
+    app.processEvents()
+
+
 def test_pyside_staffing_v2_summary_cards_follow_selected_school(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -13534,8 +13724,11 @@ def test_staffing_v2_director_interviews_backfill_passed_history_rows(
             "score": "90%",
         }
     )
-    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", tmp_path / "staffing.sqlite3")
-    store = pyside_interview_app.StaffingStore(tmp_path / "staffing.sqlite3")
+    staffing_path = tmp_path / "staffing.sqlite3"
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", staffing_path)
+    store = pyside_interview_app.StaffingStore(
+        pyside_interview_app.staffing_db_path_for_school("Palmdale", base_path=staffing_path)
+    )
     store.initialize()
     model = pyside_interview_app.build_director_staffing_model(
         build_interview_redesign_model(
@@ -13579,6 +13772,67 @@ def test_staffing_v2_director_interviews_backfill_passed_history_rows(
     assert len(InterviewHistoryStore(history_path).load()) == 4
     window.window.close()
     app.processEvents()
+
+
+@pytest.mark.pyside_gui
+@pytest.mark.slow_pyside
+def test_director_staffing_launch_queues_history_backfill_when_edit_lock_exists(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    history_path = tmp_path / "interview_history.sqlite3"
+    history_store = InterviewHistoryStore(history_path)
+    history_store.append(
+        {
+            "history_id": "hist-locked",
+            "candidate_name": "Locked Candidate",
+            "school": "Palmdale",
+            "position": "Teacher",
+            "interview_date": "2026-07-08",
+            "outcome": "Hire",
+            "score": "88%",
+        }
+    )
+    staffing_path = tmp_path / "staffing.sqlite3"
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", staffing_path)
+    school_staffing_path = pyside_interview_app.staffing_db_path_for_school("Palmdale", base_path=staffing_path)
+    store = pyside_interview_app.StaffingStore(school_staffing_path)
+    store.initialize()
+    lock_path = school_staffing_path.with_suffix(school_staffing_path.suffix + ".editing.lock")
+    lock_path.write_text(
+        json.dumps(
+            {
+                "owner": "other-director",
+                "created_at": "2099-01-01T00:00:00Z",
+                "database": str(school_staffing_path),
+            }
+        ),
+        encoding="utf-8",
+    )
+    model = pyside_interview_app.build_director_staffing_model(
+        build_interview_redesign_model(
+            rubric_path=_write_test_rubric(tmp_path),
+            overrides_path=_write_test_overrides(tmp_path),
+            history_path=history_path,
+            school_options=["Palmdale"],
+        ),
+        school="Palmdale",
+    )
+
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    table = window.window.findChild(qt_widgets.QTableWidget, "StaffingV2DirectorInterviewPendingTable")
+
+    assert table is not None
+    assert table.rowCount() == 0
+    window.window.close()
+    app.processEvents()
+    assert store.pending_operations_path.exists()
+    lock_path.unlink()
+    assert pyside_interview_app.StaffingService(store).flush_pending_operations() == 1
+    pending = store.list_director_candidate_referrals(school="Palmdale")
+    assert [candidate.candidate_name for candidate in pending] == ["Locked Candidate"]
 
 
 def _staffing_row_for_position(table, position_name: str) -> int:
