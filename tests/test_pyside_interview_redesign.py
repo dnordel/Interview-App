@@ -1056,6 +1056,65 @@ def test_pyside_back_reentry_overwrites_existing_flow_timestamp(tmp_path: Path) 
     app.processEvents()
 
 
+def test_pyside_back_reentry_overwrites_existing_flow_end_timestamp(tmp_path: Path, monkeypatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
+    session.start(candidate_name="Latoya Nugent", school="Palmdale", track_key="preschool")
+    window.session = session
+    window.recording_started_monotonic = 100.0
+    session.flow_time_marks = [{"flow_index": 1, "t": 2.0, "end_t": 5.0}]
+    window._overwrite_next_live_boundary_timestamp = True
+    monkeypatch.setattr(pyside_interview_app.time, "monotonic", lambda: 112.0)
+
+    assert window._close_flow_timestamp(1) == 12.0
+    assert session.flow_time_marks == [{"flow_index": 1, "t": 2.0, "end_t": 12.0}]
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_back_reentry_next_overwrites_following_question_start(tmp_path: Path, monkeypatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    monkeypatch.setattr(window, "_start_pyside_interview_recording", lambda: None)
+    monkeypatch.setattr(pyside_interview_app.time, "monotonic", lambda: 112.0)
+    session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
+    session.start(candidate_name="Latoya Nugent", school="Palmdale", track_key="preschool")
+    session.current_index = 1
+    session.flow_time_marks = [
+        {"flow_index": 1, "t": 2.0, "end_t": 5.0},
+        {"flow_index": 2, "t": 5.0},
+    ]
+    window.session = session
+    window.recording_started_monotonic = 100.0
+    window._overwrite_next_live_boundary_timestamp = True
+
+    window._save_and_next()
+
+    assert session.flow_time_marks == [
+        {"flow_index": 1, "t": 2.0, "end_t": 12.0},
+        {"flow_index": 2, "t": 12.0},
+    ]
+    window.window.close()
+    app.processEvents()
+
+
 def test_pyside_session_enforces_intro_custom_scored_final_custom_workflow(tmp_path: Path) -> None:
     model = build_interview_redesign_model(
         rubric_path=_write_test_rubric(tmp_path),
@@ -1733,7 +1792,7 @@ def test_pyside_review_table_shows_generated_transcripts(tmp_path: Path) -> None
     app.processEvents()
 
 
-def test_pyside_stops_recording_after_last_scored_question_before_final_custom(tmp_path: Path) -> None:
+def test_pyside_keeps_recording_active_after_last_scored_question_navigation(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
     app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
@@ -1754,7 +1813,50 @@ def test_pyside_stops_recording_after_last_scored_question_before_final_custom(t
     trait_index = next(index for index, item in enumerate(workflow) if item.kind == "trait")
 
     assert window._should_stop_recording_after_question(first_custom_index, workflow[first_custom_index]) is False
-    assert window._should_stop_recording_after_question(trait_index, workflow[trait_index]) is True
+    assert window._should_stop_recording_after_question(trait_index, workflow[trait_index]) is False
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_last_scored_question_routes_to_review_before_transcription(tmp_path: Path, monkeypatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    monkeypatch.setattr(window, "_start_pyside_interview_recording", lambda: None)
+    window.home_candidate_input.setText("Latoya Nugent")
+    window._begin_selected_interview()
+
+    while window.session is not None and window.session.active_question() is not None:
+        question = window.session.active_question()
+        window.live_notes.setPlainText(f"notes for {question.question_id}")
+        if question.score_cards:
+            window.score_group.buttons()[0].setChecked(True)
+        if question == window.session._workflow_items()[-1]:
+            break
+        window._save_and_next()
+
+    stopped: list[bool] = []
+
+    class BlockingRecordingSession:
+        def stop_and_transcribe(self, **_kwargs):
+            stopped.append(True)
+            raise AssertionError("recording stop must run from finalize worker")
+
+    window.recording_session = BlockingRecordingSession()
+    monkeypatch.setattr(window, "_generate_interview_notes_from_session", lambda: None)
+    window._save_and_next(finalize=True)
+
+    assert stopped == []
+    assert window.interview_tabs.currentIndex() == 3
+    assert "Interviewer Closeout" in window.interview_tabs.currentWidget().findChild(qt_widgets.QLabel, "Title").text()
+    assert window.recording_session is not None
     window.window.close()
     app.processEvents()
 

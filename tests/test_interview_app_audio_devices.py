@@ -1,6 +1,7 @@
 from interview_app.audio_devices import (
     _extract_dshow_audio_device_names,
     list_windows_dshow_audio_devices,
+    resolve_default_windows_microphone_device,
     resolve_default_windows_system_device,
     resolve_preferred_windows_audio_device,
 )
@@ -32,6 +33,15 @@ def test_resolve_preferred_windows_audio_device_uses_alias_match():
 def test_resolve_default_windows_system_device_falls_back_to_preferred_when_probe_empty(monkeypatch):
     monkeypatch.setattr("interview_app.audio_devices.list_windows_dshow_audio_devices", lambda: [])
     assert resolve_default_windows_system_device() == "VB-Audio Virtual Cable (CABLE Input)"
+
+
+def test_resolve_default_windows_microphone_device_uses_available_local_mic(monkeypatch):
+    monkeypatch.setattr(
+        "interview_app.audio_devices.list_windows_dshow_audio_devices",
+        lambda: ["Microphone Array (Intel Smart Sound Technology)", "CABLE Output (VB-Audio Virtual Cable)"],
+    )
+
+    assert resolve_default_windows_microphone_device() == "Microphone Array (Intel Smart Sound Technology)"
 
 
 def test_list_windows_dshow_audio_devices_reuses_cached_probe(monkeypatch):

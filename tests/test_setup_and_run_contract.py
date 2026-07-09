@@ -217,19 +217,19 @@ def test_setup_and_run_detects_amd_intel_without_installing_nvidia_wheels() -> N
     assert '$name -match "Intel|Arc|Iris|UHD Graphics"' in script_text
     assert (
         "AMD GPU detected. Ollama may use supported ROCm/Vulkan acceleration; "
-        "Whisper transcription remains CPU unless an external Vulkan whisper.cpp backend is configured."
+        "Whisper transcription will use OpenVINO GenAI unless an external Vulkan whisper.cpp backend is configured."
     ) in script_text
     assert "Intel GPU detected. OpenVINO GenAI will be used for Whisper transcription" in script_text
 
 
-def test_setup_and_run_installs_openvino_packages_for_intel_gpu() -> None:
+def test_setup_and_run_installs_openvino_packages_for_transcription_default() -> None:
     script_text = SETUP_SCRIPT.read_text(encoding="utf-8")
     openvino_requirements = Path("requirements-openvino.txt").read_text(encoding="utf-8")
 
     assert "openvino-genai" in openvino_requirements
     assert "openvino-tokenizers" in openvino_requirements
     assert '$openVinoReq = Join-Path $AppDir "requirements-openvino.txt"' in script_text
-    assert 'if ((Test-Path $openVinoReq) -and $gpuProfile.Intel)' in script_text
+    assert 'if (Test-Path $openVinoReq)' in script_text
     assert 'Run-Proc -File $VenvPy -Args @("-m","pip","install","-r",$openVinoReq)' in script_text
     assert '$env:INTERVIEW_WHISPER_BACKEND = "openvino_genai"' in script_text
     assert '$env:INTERVIEW_OPENVINO_WHISPER_MODEL = "OpenVINO/whisper-small-int8-ov"' in script_text

@@ -693,6 +693,10 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_interview_app_audio_devices.py::test_resolve_default_windows_microphone_device_uses_available_local_mic
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_interview_app_audio_devices.py::test_list_windows_dshow_audio_devices_reuses_cached_probe
   duration_seconds_n2: 0.001
   gui_heavy: false
@@ -717,495 +721,503 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_audio_runtime.contract.yaml-src/interview_app/audio_runtime.py-__init__-contract_inputs4-AudioRuntimeController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_audio_devices.contract.yaml-src/interview_app/audio_devices.py-resolve_default_windows_microphone_device-contract_inputs4-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_audio_runtime.contract.yaml-src/interview_app/audio_runtime.py-wait_for_pending_transcriptions-contract_inputs5-AudioRuntimeController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_audio_runtime.contract.yaml-src/interview_app/audio_runtime.py-__init__-contract_inputs5-AudioRuntimeController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_audio_runtime.contract.yaml-src/interview_app/audio_runtime.py-background_transcribe_question-contract_inputs6-AudioRuntimeController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_audio_runtime.contract.yaml-src/interview_app/audio_runtime.py-wait_for_pending_transcriptions-contract_inputs6-AudioRuntimeController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_audio_runtime.contract.yaml-src/interview_app/audio_runtime.py-_stop_and_transcribe_with_timeout-contract_inputs7-AudioRuntimeController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_audio_runtime.contract.yaml-src/interview_app/audio_runtime.py-background_transcribe_question-contract_inputs7-AudioRuntimeController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_audio_runtime.contract.yaml-src/interview_app/audio_runtime.py-start_recording_session-contract_inputs8-AudioRuntimeController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_audio_runtime.contract.yaml-src/interview_app/audio_runtime.py-_stop_and_transcribe_with_timeout-contract_inputs8-AudioRuntimeController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_audio_runtime.contract.yaml-src/interview_app/audio_runtime.py-start_recording_with_runtime_fallback-contract_inputs9-AudioRuntimeController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_audio_runtime.contract.yaml-src/interview_app/audio_runtime.py-start_recording_session-contract_inputs9-AudioRuntimeController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_audio_runtime.contract.yaml-src/interview_app/audio_runtime.py-_cleanup_canceled_result-contract_inputs10-AudioRuntimeController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_audio_runtime.contract.yaml-src/interview_app/audio_runtime.py-start_recording_with_runtime_fallback-contract_inputs10-AudioRuntimeController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_audio_runtime.contract.yaml-src/interview_app/audio_runtime.py-_build_payload-contract_inputs11-AudioRuntimeController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_audio_runtime.contract.yaml-src/interview_app/audio_runtime.py-_cleanup_canceled_result-contract_inputs11-AudioRuntimeController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_dashboard_controller.contract.yaml-src/interview_app/dashboard_controller.py-refresh_dashboard-contract_inputs12-DashboardController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_audio_runtime.contract.yaml-src/interview_app/audio_runtime.py-_build_payload-contract_inputs12-AudioRuntimeController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_context.contract.yaml-src/interview_app/finalize_context.py-build_finalize_context-contract_inputs13-None]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_dashboard_controller.contract.yaml-src/interview_app/dashboard_controller.py-refresh_dashboard-contract_inputs13-DashboardController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_gateways.contract.yaml-src/interview_app/finalize_gateways.py-_app_module_symbol-contract_inputs14-None]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_context.contract.yaml-src/interview_app/finalize_context.py-build_finalize_context-contract_inputs14-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_gateways.contract.yaml-src/interview_app/finalize_gateways.py-export_report-contract_inputs15-FinalizeGateways]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_gateways.contract.yaml-src/interview_app/finalize_gateways.py-_app_module_symbol-contract_inputs15-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_gateways.contract.yaml-src/interview_app/finalize_gateways.py-export_integration-contract_inputs16-FinalizeGateways]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_gateways.contract.yaml-src/interview_app/finalize_gateways.py-export_report-contract_inputs16-FinalizeGateways]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_gateways.contract.yaml-src/interview_app/finalize_gateways.py-persist_finalize_history-contract_inputs17-FinalizeGateways]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_gateways.contract.yaml-src/interview_app/finalize_gateways.py-export_integration-contract_inputs17-FinalizeGateways]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_gateways.contract.yaml-src/interview_app/finalize_gateways.py-send_referral-contract_inputs18-FinalizeGateways]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_gateways.contract.yaml-src/interview_app/finalize_gateways.py-persist_finalize_history-contract_inputs18-FinalizeGateways]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_gateways.contract.yaml-src/interview_app/finalize_gateways.py-_referral_dedupe_key-contract_inputs19-FinalizeGateways]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_gateways.contract.yaml-src/interview_app/finalize_gateways.py-send_referral-contract_inputs19-FinalizeGateways]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-raise_legacy_finalize_guardrail-contract_inputs20-None]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_gateways.contract.yaml-src/interview_app/finalize_gateways.py-_referral_dedupe_key-contract_inputs20-FinalizeGateways]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-validate_before_finalize-contract_inputs21-None]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-raise_legacy_finalize_guardrail-contract_inputs21-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-finalize_interview-contract_inputs22-FinalizePipelineController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-validate_before_finalize-contract_inputs22-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-run_finalize_pipeline-contract_inputs23-FinalizePipelineController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-finalize_interview-contract_inputs23-FinalizePipelineController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_dispatch_finalize_work-contract_inputs24-FinalizePipelineController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-run_finalize_pipeline-contract_inputs24-FinalizePipelineController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_start_finalize_worker_non_blocking-contract_inputs25-FinalizePipelineController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_dispatch_finalize_work-contract_inputs25-FinalizePipelineController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_restore_main_window_focus-contract_inputs26-FinalizePipelineController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_start_finalize_worker_non_blocking-contract_inputs26-FinalizePipelineController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_warn_if_finalize_starts_with_pending_transcriptions-contract_inputs27-FinalizePipelineController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_restore_main_window_focus-contract_inputs27-FinalizePipelineController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_build_transcript_metadata-contract_inputs28-FinalizePipelineController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_warn_if_finalize_starts_with_pending_transcriptions-contract_inputs28-FinalizePipelineController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_pending_transcription_indices-contract_inputs29-FinalizePipelineController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_build_transcript_metadata-contract_inputs29-FinalizePipelineController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_pending_transcription_snapshot-contract_inputs30-FinalizePipelineController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_pending_transcription_indices-contract_inputs30-FinalizePipelineController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_collect_pending_flow_indices-contract_inputs31-FinalizePipelineController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_pending_transcription_snapshot-contract_inputs31-FinalizePipelineController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_safe_int_indices-contract_inputs32-FinalizePipelineController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_collect_pending_flow_indices-contract_inputs32-FinalizePipelineController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-poll_finalize_worker-contract_inputs33-FinalizePipelineController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_safe_int_indices-contract_inputs33-FinalizePipelineController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_handle_finalize_success-contract_inputs34-FinalizePipelineController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-poll_finalize_worker-contract_inputs34-FinalizePipelineController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_handle_finalize_failure-contract_inputs35-FinalizePipelineController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_handle_finalize_success-contract_inputs35-FinalizePipelineController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_flow_controller.contract.yaml-src/interview_app/flow_controller.py-__init__-contract_inputs36-FlowController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_handle_finalize_failure-contract_inputs36-FinalizePipelineController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_flow_controller.contract.yaml-src/interview_app/flow_controller.py-go_next-contract_inputs37-FlowController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_flow_controller.contract.yaml-src/interview_app/flow_controller.py-__init__-contract_inputs37-FlowController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_flow_controller.contract.yaml-src/interview_app/flow_controller.py-go_back-contract_inputs38-FlowController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_flow_controller.contract.yaml-src/interview_app/flow_controller.py-go_next-contract_inputs38-FlowController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_flow_controller.contract.yaml-src/interview_app/flow_controller.py-active_flow-contract_inputs39-FlowController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_flow_controller.contract.yaml-src/interview_app/flow_controller.py-go_back-contract_inputs39-FlowController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_actions.contract.yaml-src/interview_app/history_actions.py-offer_transition-contract_inputs40-HistoryActionsService]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_flow_controller.contract.yaml-src/interview_app/flow_controller.py-active_flow-contract_inputs40-FlowController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_actions.contract.yaml-src/interview_app/history_actions.py-update_history_offer_status-contract_inputs41-HistoryActionsService]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_actions.contract.yaml-src/interview_app/history_actions.py-offer_transition-contract_inputs41-HistoryActionsService]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_actions.contract.yaml-src/interview_app/history_actions.py-handle_offer_action_for_row-contract_inputs42-HistoryActionsService]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_actions.contract.yaml-src/interview_app/history_actions.py-update_history_offer_status-contract_inputs42-HistoryActionsService]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_actions.contract.yaml-src/interview_app/history_actions.py-handle_retranscribe_for_row-contract_inputs43-HistoryActionsService]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_actions.contract.yaml-src/interview_app/history_actions.py-handle_offer_action_for_row-contract_inputs43-HistoryActionsService]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_actions.contract.yaml-src/interview_app/history_actions.py-handle_delete_for_row-contract_inputs44-HistoryActionsService]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_actions.contract.yaml-src/interview_app/history_actions.py-handle_retranscribe_for_row-contract_inputs44-HistoryActionsService]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_actions.contract.yaml-src/interview_app/history_actions.py-_row_key-contract_inputs45-HistoryActionsService]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_actions.contract.yaml-src/interview_app/history_actions.py-handle_delete_for_row-contract_inputs45-HistoryActionsService]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-build_history_table-contract_inputs46-HistoryController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_actions.contract.yaml-src/interview_app/history_actions.py-_row_key-contract_inputs46-HistoryActionsService]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-refresh_history_tree-contract_inputs47-HistoryController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-build_history_table-contract_inputs47-HistoryController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-selected_history_row-contract_inputs48-HistoryController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-refresh_history_tree-contract_inputs48-HistoryController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-_on_sort_changed-contract_inputs49-HistoryController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-selected_history_row-contract_inputs49-HistoryController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-_on_row_selected-contract_inputs50-HistoryController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-_on_sort_changed-contract_inputs50-HistoryController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-_on_offer_action-contract_inputs51-HistoryController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-_on_row_selected-contract_inputs51-HistoryController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-_on_retranscribe_action-contract_inputs52-HistoryController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-_on_offer_action-contract_inputs52-HistoryController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-_on_delete_action-contract_inputs53-HistoryController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-_on_retranscribe_action-contract_inputs53-HistoryController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-_on_open_transcript_link-contract_inputs54-HistoryController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-_on_delete_action-contract_inputs54-HistoryController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-_on_open_notes_link-contract_inputs55-HistoryController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-_on_open_transcript_link-contract_inputs55-HistoryController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-_on_regenerate_notes_action-contract_inputs56-HistoryController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-_on_open_notes_link-contract_inputs56-HistoryController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-_open_history_link-contract_inputs57-HistoryController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-_on_regenerate_notes_action-contract_inputs57-HistoryController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-_regenerate_history_notes-contract_inputs58-HistoryController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-_open_history_link-contract_inputs58-HistoryController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-_choose_notes_regeneration_mode-contract_inputs59-HistoryController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-_regenerate_history_notes-contract_inputs59-HistoryController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-_show_notes_regeneration_mode_dialog-contract_inputs60-HistoryController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-_choose_notes_regeneration_mode-contract_inputs60-HistoryController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-_deepseek_job_path_for_row-contract_inputs61-HistoryController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-_show_notes_regeneration_mode_dialog-contract_inputs61-HistoryController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_session_context.contract.yaml-src/interview_app/session_context.py-__init__-contract_inputs62-InterviewSessionContext]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_controller.contract.yaml-src/interview_app/history_controller.py-_deepseek_job_path_for_row-contract_inputs62-HistoryController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_session_context.contract.yaml-src/interview_app/session_context.py-safe_interview_date-contract_inputs63-InterviewSessionContext]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_session_context.contract.yaml-src/interview_app/session_context.py-__init__-contract_inputs63-InterviewSessionContext]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_session_context.contract.yaml-src/interview_app/session_context.py-safe_base_name-contract_inputs64-InterviewSessionContext]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_session_context.contract.yaml-src/interview_app/session_context.py-safe_interview_date-contract_inputs64-InterviewSessionContext]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_session_context.contract.yaml-src/interview_app/session_context.py-active_session_key-contract_inputs65-InterviewSessionContext]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_session_context.contract.yaml-src/interview_app/session_context.py-safe_base_name-contract_inputs65-InterviewSessionContext]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_session_context.contract.yaml-src/interview_app/session_context.py-validate_runtime_base_dir-contract_inputs66-InterviewSessionContext]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_session_context.contract.yaml-src/interview_app/session_context.py-active_session_key-contract_inputs66-InterviewSessionContext]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_session_context.contract.yaml-src/interview_app/session_context.py-runtime_init_log_path-contract_inputs67-InterviewSessionContext]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_session_context.contract.yaml-src/interview_app/session_context.py-validate_runtime_base_dir-contract_inputs67-InterviewSessionContext]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_session_manager.contract.yaml-src/interview_app/session_manager.py-__init__-contract_inputs68-InterviewSessionManager]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_session_context.contract.yaml-src/interview_app/session_context.py-runtime_init_log_path-contract_inputs68-InterviewSessionContext]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_session_manager.contract.yaml-src/interview_app/session_manager.py-load_draft_payload-contract_inputs69-InterviewSessionManager]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_session_manager.contract.yaml-src/interview_app/session_manager.py-__init__-contract_inputs69-InterviewSessionManager]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_session_manager.contract.yaml-src/interview_app/session_manager.py-load_session_payload-contract_inputs70-InterviewSessionManager]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_session_manager.contract.yaml-src/interview_app/session_manager.py-load_draft_payload-contract_inputs70-InterviewSessionManager]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_session_manager.contract.yaml-src/interview_app/session_manager.py-normalize_payload-contract_inputs71-InterviewSessionManager]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_session_manager.contract.yaml-src/interview_app/session_manager.py-load_session_payload-contract_inputs71-InterviewSessionManager]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_session_manager.contract.yaml-src/interview_app/session_manager.py-normalize_session_payload-contract_inputs72-InterviewSessionManager]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_session_manager.contract.yaml-src/interview_app/session_manager.py-normalize_payload-contract_inputs72-InterviewSessionManager]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_session_manager.contract.yaml-src/interview_app/session_manager.py-hydrate_state-contract_inputs73-InterviewSessionManager]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_session_manager.contract.yaml-src/interview_app/session_manager.py-normalize_session_payload-contract_inputs73-InterviewSessionManager]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_session_manager.contract.yaml-src/interview_app/session_manager.py-hydrate_state_from_session_payload-contract_inputs74-InterviewSessionManager]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_session_manager.contract.yaml-src/interview_app/session_manager.py-hydrate_state-contract_inputs74-InterviewSessionManager]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_session_manager.contract.yaml-src/interview_app/session_manager.py-build_resume_instruction-contract_inputs75-InterviewSessionManager]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_session_manager.contract.yaml-src/interview_app/session_manager.py-hydrate_state_from_session_payload-contract_inputs75-InterviewSessionManager]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_processor.contract.yaml-src/interview_app/transcript_processor.py-normalize_label-contract_inputs76-None]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_session_manager.contract.yaml-src/interview_app/session_manager.py-build_resume_instruction-contract_inputs76-InterviewSessionManager]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_processor.contract.yaml-src/interview_app/transcript_processor.py-extract_candidate_text_from_jsonl-contract_inputs77-None]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_processor.contract.yaml-src/interview_app/transcript_processor.py-normalize_label-contract_inputs77-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_processor.contract.yaml-src/interview_app/transcript_processor.py-load_candidate_segments-contract_inputs78-None]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_processor.contract.yaml-src/interview_app/transcript_processor.py-extract_candidate_text_from_jsonl-contract_inputs78-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_processor.contract.yaml-src/interview_app/transcript_processor.py-load_jsonl_segments_for_merge-contract_inputs79-None]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_processor.contract.yaml-src/interview_app/transcript_processor.py-load_candidate_segments-contract_inputs79-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_processor.contract.yaml-src/interview_app/transcript_processor.py-build_flow_time_windows-contract_inputs80-None]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_processor.contract.yaml-src/interview_app/transcript_processor.py-load_jsonl_segments_for_merge-contract_inputs80-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_processor.contract.yaml-src/interview_app/transcript_processor.py-map_segments_to_flow_indices-contract_inputs81-None]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_processor.contract.yaml-src/interview_app/transcript_processor.py-build_flow_time_windows-contract_inputs81-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_processor.contract.yaml-src/interview_app/transcript_processor.py-write_merged_timestamped_transcript-contract_inputs82-None]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_processor.contract.yaml-src/interview_app/transcript_processor.py-map_segments_to_flow_indices-contract_inputs82-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_processor.contract.yaml-src/interview_app/transcript_processor.py-format_seconds_for_transcript-contract_inputs83-None]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_processor.contract.yaml-src/interview_app/transcript_processor.py-write_merged_timestamped_transcript-contract_inputs83-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_summary.contract.yaml-src/interview_app/transcript_summary.py-_build_summarizer_pipeline-contract_inputs84-None]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_processor.contract.yaml-src/interview_app/transcript_processor.py-format_seconds_for_transcript-contract_inputs84-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_summary.contract.yaml-src/interview_app/transcript_summary.py-_build_text2text_summarizer_pipeline-contract_inputs85-None]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_summary.contract.yaml-src/interview_app/transcript_summary.py-_build_summarizer_pipeline-contract_inputs85-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_summary.contract.yaml-src/interview_app/transcript_summary.py-_format_runtime_error-contract_inputs86-None]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_summary.contract.yaml-src/interview_app/transcript_summary.py-_build_text2text_summarizer_pipeline-contract_inputs86-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_summary.contract.yaml-src/interview_app/transcript_summary.py-_normalize_runtime_error_text-contract_inputs87-None]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_summary.contract.yaml-src/interview_app/transcript_summary.py-_format_runtime_error-contract_inputs87-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_summary.contract.yaml-src/interview_app/transcript_summary.py-_normalize_transcript_text-contract_inputs88-None]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_summary.contract.yaml-src/interview_app/transcript_summary.py-_normalize_runtime_error_text-contract_inputs88-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_summary.contract.yaml-src/interview_app/transcript_summary.py-_chunk_text-contract_inputs89-None]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_summary.contract.yaml-src/interview_app/transcript_summary.py-_normalize_transcript_text-contract_inputs89-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_summary.contract.yaml-src/interview_app/transcript_summary.py-summarize_transcript-contract_inputs90-None]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_summary.contract.yaml-src/interview_app/transcript_summary.py-_chunk_text-contract_inputs90-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_writer.contract.yaml-src/interview_app/transcript_writer.py-__init__-contract_inputs91-TranscriptWriterController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_summary.contract.yaml-src/interview_app/transcript_summary.py-summarize_transcript-contract_inputs91-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_writer.contract.yaml-src/interview_app/transcript_writer.py-append_live_segment-contract_inputs92-TranscriptWriterController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_writer.contract.yaml-src/interview_app/transcript_writer.py-__init__-contract_inputs92-TranscriptWriterController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_writer.contract.yaml-src/interview_app/transcript_writer.py-rewrite_from_flow-contract_inputs93-TranscriptWriterController]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_writer.contract.yaml-src/interview_app/transcript_writer.py-append_live_segment-contract_inputs93-TranscriptWriterController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_executor.contract.yaml-src/interview_app/transcription_executor.py-recommended_max_workers-contract_inputs94-None]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcript_writer.contract.yaml-src/interview_app/transcript_writer.py-rewrite_from_flow-contract_inputs94-TranscriptWriterController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_executor.contract.yaml-src/interview_app/transcription_executor.py-resolve_transcription_max_workers-contract_inputs95-None]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_executor.contract.yaml-src/interview_app/transcription_executor.py-recommended_max_workers-contract_inputs95-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_executor.contract.yaml-src/interview_app/transcription_executor.py-resolve_transcription_job_timeout_seconds-contract_inputs96-None]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_executor.contract.yaml-src/interview_app/transcription_executor.py-resolve_transcription_max_workers-contract_inputs96-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_executor.contract.yaml-src/interview_app/transcription_executor.py-__init__-contract_inputs97-BoundedTranscriptionExecutor]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_executor.contract.yaml-src/interview_app/transcription_executor.py-resolve_transcription_job_timeout_seconds-contract_inputs97-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_executor.contract.yaml-src/interview_app/transcription_executor.py-submit-contract_inputs98-BoundedTranscriptionExecutor]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_executor.contract.yaml-src/interview_app/transcription_executor.py-__init__-contract_inputs98-BoundedTranscriptionExecutor]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_executor.contract.yaml-src/interview_app/transcription_executor.py-shutdown-contract_inputs99-BoundedTranscriptionExecutor]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_executor.contract.yaml-src/interview_app/transcription_executor.py-submit-contract_inputs99-BoundedTranscriptionExecutor]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_executor.contract.yaml-src/interview_app/transcription_executor.py-_executor_instance-contract_inputs100-BoundedTranscriptionExecutor]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_executor.contract.yaml-src/interview_app/transcription_executor.py-shutdown-contract_inputs100-BoundedTranscriptionExecutor]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_executor.contract.yaml-src/interview_app/transcription_executor.py-_run_job-contract_inputs101-BoundedTranscriptionExecutor]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_executor.contract.yaml-src/interview_app/transcription_executor.py-_executor_instance-contract_inputs101-BoundedTranscriptionExecutor]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_executor.contract.yaml-src/interview_app/transcription_executor.py-_runtime_payload-contract_inputs102-BoundedTranscriptionExecutor]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_executor.contract.yaml-src/interview_app/transcription_executor.py-_run_job-contract_inputs102-BoundedTranscriptionExecutor]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_executor.contract.yaml-src/interview_app/transcription_executor.py-_emit-contract_inputs103-BoundedTranscriptionExecutor]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_executor.contract.yaml-src/interview_app/transcription_executor.py-_runtime_payload-contract_inputs103-BoundedTranscriptionExecutor]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_executor.contract.yaml-src/interview_app/transcription_executor.py-_discard_future-contract_inputs104-BoundedTranscriptionExecutor]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_executor.contract.yaml-src/interview_app/transcription_executor.py-_emit-contract_inputs104-BoundedTranscriptionExecutor]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-enqueue-contract_inputs105-TranscriptionQueueState]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_executor.contract.yaml-src/interview_app/transcription_executor.py-_discard_future-contract_inputs105-BoundedTranscriptionExecutor]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-mark_started-contract_inputs106-TranscriptionQueueState]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-enqueue-contract_inputs106-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-mark_completed-contract_inputs107-TranscriptionQueueState]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-mark_started-contract_inputs107-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-mark_failed-contract_inputs108-TranscriptionQueueState]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-mark_completed-contract_inputs108-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-mark_timed_out-contract_inputs109-TranscriptionQueueState]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-mark_failed-contract_inputs109-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-cancel-contract_inputs110-TranscriptionQueueState]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-mark_timed_out-contract_inputs110-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-next_payload-contract_inputs111-TranscriptionQueueState]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-cancel-contract_inputs111-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-wait_for_pending-contract_inputs112-TranscriptionQueueState]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-next_payload-contract_inputs112-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-pending_count-contract_inputs113-TranscriptionQueueState]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-wait_for_pending-contract_inputs113-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-is_pending-contract_inputs114-TranscriptionQueueState]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-pending_count-contract_inputs114-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-clear-contract_inputs115-TranscriptionQueueState]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-is_pending-contract_inputs115-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-is_canceled-contract_inputs116-TranscriptionQueueState]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-clear-contract_inputs116-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-clear_error-contract_inputs117-TranscriptionQueueState]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-is_canceled-contract_inputs117-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-error_reasons-contract_inputs118-TranscriptionQueueState]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-clear_error-contract_inputs118-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-_snapshot_locked-contract_inputs119-TranscriptionQueueState]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-error_reasons-contract_inputs119-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_whisper_runtime_policy.contract.yaml-src/interview_app/whisper_runtime_policy.py-resolve_runtime-contract_inputs120-None]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_transcription_queue.contract.yaml-src/interview_app/transcription_queue.py-_snapshot_locked-contract_inputs120-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_whisper_runtime_policy.contract.yaml-src/interview_app/whisper_runtime_policy.py-fallback_from_exception-contract_inputs121-None]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_whisper_runtime_policy.contract.yaml-src/interview_app/whisper_runtime_policy.py-resolve_runtime-contract_inputs121-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_whisper_runtime_policy.contract.yaml-src/interview_app/whisper_runtime_policy.py-persist_runtime_choice-contract_inputs122-None]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_whisper_runtime_policy.contract.yaml-src/interview_app/whisper_runtime_policy.py-fallback_from_exception-contract_inputs122-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_whisper_runtime_policy.contract.yaml-src/interview_app/whisper_runtime_policy.py-_value_or_default-contract_inputs123-None]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_whisper_runtime_policy.contract.yaml-src/interview_app/whisper_runtime_policy.py-persist_runtime_choice-contract_inputs123-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_whisper_runtime_policy.contract.yaml-src/interview_app/whisper_runtime_policy.py-_is_device_runtime_exception-contract_inputs124-None]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_whisper_runtime_policy.contract.yaml-src/interview_app/whisper_runtime_policy.py-_value_or_default-contract_inputs124-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_whisper_runtime_policy.contract.yaml-src/interview_app/whisper_runtime_policy.py-_contains_runtime_error_marker-contract_inputs125-None]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_whisper_runtime_policy.contract.yaml-src/interview_app/whisper_runtime_policy.py-_is_device_runtime_exception-contract_inputs125-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_whisper_runtime_policy.contract.yaml-src/interview_app/whisper_runtime_policy.py-_resolve_cpu_fallback-contract_inputs126-None]
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_whisper_runtime_policy.contract.yaml-src/interview_app/whisper_runtime_policy.py-_contains_runtime_error_marker-contract_inputs126-None]
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_whisper_runtime_policy.contract.yaml-src/interview_app/whisper_runtime_policy.py-_resolve_cpu_fallback-contract_inputs127-None]
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_whisper_runtime_policy.contract.yaml-src/interview_app/whisper_runtime_policy.py-_openvino_genai_available-contract_inputs128-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
@@ -1358,6 +1370,14 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_interview_audio_recorder_start_recording.py::test_start_recording_windows_allows_system_only
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_interview_audio_recorder_start_recording.py::test_start_recording_windows_adds_local_mic_backup_when_only_system_requested
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_interview_audio_recorder_start_recording.py::test_recording_session_raises_when_requested_process_exits_immediately
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
@@ -1577,371 +1597,379 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-fallback_from_exception-contract_inputs53-None]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_openvino_genai_available-contract_inputs53-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-persist_runtime_choice-contract_inputs54-None]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-fallback_from_exception-contract_inputs54-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-list_windows_dshow_audio_devices-contract_inputs55-None]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-persist_runtime_choice-contract_inputs55-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-resolve_preferred_windows_audio_device-contract_inputs56-None]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-list_windows_dshow_audio_devices-contract_inputs56-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-resolve_default_windows_system_device-contract_inputs57-None]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-resolve_preferred_windows_audio_device-contract_inputs57-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-build_finalize_context-contract_inputs58-None]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-resolve_default_windows_system_device-contract_inputs58-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-finalize_progress_status_label-contract_inputs59-None]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-resolve_default_windows_microphone_device-contract_inputs59-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-build_finalize_progress_tasks-contract_inputs60-None]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-build_finalize_context-contract_inputs60-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-format_finalize_progress_tasks-contract_inputs61-None]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-finalize_progress_status_label-contract_inputs61-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_write_deepseek_launch_progress-contract_inputs62-None]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-build_finalize_progress_tasks-contract_inputs62-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-enqueue_deepseek_finalize_job-contract_inputs63-None]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-format_finalize_progress_tasks-contract_inputs63-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-resolve_deepseek_regeneration_job_path-contract_inputs64-None]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_write_deepseek_launch_progress-contract_inputs64-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_deepseek_job_path_candidates-contract_inputs65-None]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-enqueue_deepseek_finalize_job-contract_inputs65-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_synthesize_deepseek_job_from_session-contract_inputs66-None]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-resolve_deepseek_regeneration_job_path-contract_inputs66-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_load_matching_interview_session-contract_inputs67-None]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_deepseek_job_path_candidates-contract_inputs67-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_session_deepseek_inputs-contract_inputs68-None]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_synthesize_deepseek_job_from_session-contract_inputs68-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_candidate_payload_from_history_row-contract_inputs69-None]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_load_matching_interview_session-contract_inputs69-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_scoring_payload_from_history_row-contract_inputs70-None]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_session_deepseek_inputs-contract_inputs70-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_load_current_rubric_for_deepseek_job-contract_inputs71-None]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_candidate_payload_from_history_row-contract_inputs71-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_local_deepseek_settings_source-contract_inputs72-None]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_scoring_payload_from_history_row-contract_inputs72-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_normalize_session_match_text-contract_inputs73-None]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_load_current_rubric_for_deepseek_job-contract_inputs73-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_dedupe_paths-contract_inputs74-None]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_local_deepseek_settings_source-contract_inputs74-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_coerce_flow_index-contract_inputs75-None]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_normalize_session_match_text-contract_inputs75-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_session_question_title-contract_inputs76-None]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_dedupe_paths-contract_inputs76-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-retry_deepseek_finalize_job-contract_inputs77-None]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_coerce_flow_index-contract_inputs77-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-regenerate_interview_notes_job-contract_inputs78-None]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_session_question_title-contract_inputs78-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_mark_deepseek_history_processing-contract_inputs79-None]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-retry_deepseek_finalize_job-contract_inputs79-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-raise_legacy_finalize_guardrail-contract_inputs80-None]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-regenerate_interview_notes_job-contract_inputs80-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-validate_before_finalize-contract_inputs81-None]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_mark_deepseek_history_processing-contract_inputs81-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-to_dict-contract_inputs82-InterviewState]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-raise_legacy_finalize_guardrail-contract_inputs82-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs83-InterviewSessionContext]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-validate_before_finalize-contract_inputs83-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-safe_interview_date-contract_inputs84-InterviewSessionContext]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-to_dict-contract_inputs84-InterviewState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-safe_base_name-contract_inputs85-InterviewSessionContext]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs85-InterviewSessionContext]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-active_session_key-contract_inputs86-InterviewSessionContext]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-safe_interview_date-contract_inputs86-InterviewSessionContext]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-validate_runtime_base_dir-contract_inputs87-InterviewSessionContext]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-safe_base_name-contract_inputs87-InterviewSessionContext]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-runtime_init_log_path-contract_inputs88-InterviewSessionContext]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-active_session_key-contract_inputs88-InterviewSessionContext]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs89-InterviewSessionStore]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-validate_runtime_base_dir-contract_inputs89-InterviewSessionContext]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-session_path-contract_inputs90-InterviewSessionStore]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-runtime_init_log_path-contract_inputs90-InterviewSessionContext]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-load-contract_inputs91-InterviewSessionStore]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs91-InterviewSessionStore]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-save_question_snapshot-contract_inputs92-InterviewSessionStore]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-session_path-contract_inputs92-InterviewSessionStore]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs93-InterviewSessionManager]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-load-contract_inputs93-InterviewSessionStore]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-load_draft_payload-contract_inputs94-InterviewSessionManager]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-save_question_snapshot-contract_inputs94-InterviewSessionStore]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-load_session_payload-contract_inputs95-InterviewSessionManager]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs95-InterviewSessionManager]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-normalize_payload-contract_inputs96-InterviewSessionManager]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-load_draft_payload-contract_inputs96-InterviewSessionManager]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-normalize_session_payload-contract_inputs97-InterviewSessionManager]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-load_session_payload-contract_inputs97-InterviewSessionManager]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-hydrate_state-contract_inputs98-InterviewSessionManager]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-normalize_payload-contract_inputs98-InterviewSessionManager]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-hydrate_state_from_session_payload-contract_inputs99-InterviewSessionManager]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-normalize_session_payload-contract_inputs99-InterviewSessionManager]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-build_resume_instruction-contract_inputs100-InterviewSessionManager]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-hydrate_state-contract_inputs100-InterviewSessionManager]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-enqueue-contract_inputs101-TranscriptionQueueState]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-hydrate_state_from_session_payload-contract_inputs101-InterviewSessionManager]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-mark_started-contract_inputs102-TranscriptionQueueState]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-build_resume_instruction-contract_inputs102-InterviewSessionManager]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-mark_completed-contract_inputs103-TranscriptionQueueState]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-enqueue-contract_inputs103-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-mark_failed-contract_inputs104-TranscriptionQueueState]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-mark_started-contract_inputs104-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-mark_timed_out-contract_inputs105-TranscriptionQueueState]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-mark_completed-contract_inputs105-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-cancel-contract_inputs106-TranscriptionQueueState]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-mark_failed-contract_inputs106-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-next_payload-contract_inputs107-TranscriptionQueueState]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-mark_timed_out-contract_inputs107-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-wait_for_pending-contract_inputs108-TranscriptionQueueState]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-cancel-contract_inputs108-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-pending_count-contract_inputs109-TranscriptionQueueState]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-next_payload-contract_inputs109-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-is_pending-contract_inputs110-TranscriptionQueueState]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-wait_for_pending-contract_inputs110-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-clear-contract_inputs111-TranscriptionQueueState]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-pending_count-contract_inputs111-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-is_canceled-contract_inputs112-TranscriptionQueueState]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-is_pending-contract_inputs112-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-clear_error-contract_inputs113-TranscriptionQueueState]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-clear-contract_inputs113-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-error_reasons-contract_inputs114-TranscriptionQueueState]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-is_canceled-contract_inputs114-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs115-BoundedTranscriptionExecutor]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-clear_error-contract_inputs115-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-submit-contract_inputs116-BoundedTranscriptionExecutor]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-error_reasons-contract_inputs116-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-shutdown-contract_inputs117-BoundedTranscriptionExecutor]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs117-BoundedTranscriptionExecutor]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs118-TranscriptWriterController]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-submit-contract_inputs118-BoundedTranscriptionExecutor]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-append_live_segment-contract_inputs119-TranscriptWriterController]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-shutdown-contract_inputs119-BoundedTranscriptionExecutor]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-rewrite_from_flow-contract_inputs120-TranscriptWriterController]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs120-TranscriptWriterController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs121-AudioRuntimeController]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-append_live_segment-contract_inputs121-TranscriptWriterController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-wait_for_pending_transcriptions-contract_inputs122-AudioRuntimeController]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-rewrite_from_flow-contract_inputs122-TranscriptWriterController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-background_transcribe_question-contract_inputs123-AudioRuntimeController]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs123-AudioRuntimeController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-start_recording_session-contract_inputs124-AudioRuntimeController]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-wait_for_pending_transcriptions-contract_inputs124-AudioRuntimeController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-start_recording_with_runtime_fallback-contract_inputs125-AudioRuntimeController]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-background_transcribe_question-contract_inputs125-AudioRuntimeController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs126-FlowController]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-start_recording_session-contract_inputs126-AudioRuntimeController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-go_next-contract_inputs127-FlowController]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-start_recording_with_runtime_fallback-contract_inputs127-AudioRuntimeController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-go_back-contract_inputs128-FlowController]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs128-FlowController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-active_flow-contract_inputs129-FlowController]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-go_next-contract_inputs129-FlowController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs130-DashboardController]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-go_back-contract_inputs130-FlowController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-refresh_dashboard-contract_inputs131-DashboardController]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-active_flow-contract_inputs131-FlowController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs132-HistoryController]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs132-DashboardController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-build_history_table-contract_inputs133-HistoryController]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-refresh_dashboard-contract_inputs133-DashboardController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-refresh_history_tree-contract_inputs134-HistoryController]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs134-HistoryController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-selected_history_row-contract_inputs135-HistoryController]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-build_history_table-contract_inputs135-HistoryController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-export_report-contract_inputs136-FinalizeGateways]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-refresh_history_tree-contract_inputs136-HistoryController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-export_basic_report-contract_inputs137-FinalizeGateways]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-selected_history_row-contract_inputs137-HistoryController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-export_integration-contract_inputs138-FinalizeGateways]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-export_report-contract_inputs138-FinalizeGateways]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-persist_finalize_history-contract_inputs139-FinalizeGateways]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-export_basic_report-contract_inputs139-FinalizeGateways]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-send_referral-contract_inputs140-FinalizeGateways]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-export_integration-contract_inputs140-FinalizeGateways]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs141-FinalizePipelineController]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-persist_finalize_history-contract_inputs141-FinalizeGateways]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-finalize_interview-contract_inputs142-FinalizePipelineController]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-send_referral-contract_inputs142-FinalizeGateways]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-run_finalize_pipeline-contract_inputs143-FinalizePipelineController]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs143-FinalizePipelineController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-poll_finalize_worker-contract_inputs144-FinalizePipelineController]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-finalize_interview-contract_inputs144-FinalizePipelineController]
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-run_finalize_pipeline-contract_inputs145-FinalizePipelineController]
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-poll_finalize_worker-contract_inputs146-FinalizePipelineController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
@@ -3477,6 +3505,14 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_back_reentry_overwrites_existing_flow_end_timestamp
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_back_reentry_next_overwrites_following_question_start
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_session_enforces_intro_custom_scored_final_custom_workflow
   duration_seconds_n2: 0.001
   gui_heavy: false
@@ -3553,7 +3589,11 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_stops_recording_after_last_scored_question_before_final_custom
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_keeps_recording_active_after_last_scored_question_navigation
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_last_scored_question_routes_to_review_before_transcription
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
@@ -4725,7 +4765,7 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_setup_and_run_contract.py::test_setup_and_run_installs_openvino_packages_for_intel_gpu
+- nodeid: tests/test_setup_and_run_contract.py::test_setup_and_run_installs_openvino_packages_for_transcription_default
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
@@ -5497,371 +5537,379 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-fallback_from_exception-contract_inputs183-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_openvino_genai_available-contract_inputs183-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-persist_runtime_choice-contract_inputs184-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-fallback_from_exception-contract_inputs184-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-list_windows_dshow_audio_devices-contract_inputs185-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-persist_runtime_choice-contract_inputs185-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-resolve_preferred_windows_audio_device-contract_inputs186-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-list_windows_dshow_audio_devices-contract_inputs186-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-resolve_default_windows_system_device-contract_inputs187-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-resolve_preferred_windows_audio_device-contract_inputs187-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-build_finalize_context-contract_inputs188-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-resolve_default_windows_system_device-contract_inputs188-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-finalize_progress_status_label-contract_inputs189-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-resolve_default_windows_microphone_device-contract_inputs189-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-build_finalize_progress_tasks-contract_inputs190-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-build_finalize_context-contract_inputs190-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-format_finalize_progress_tasks-contract_inputs191-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-finalize_progress_status_label-contract_inputs191-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_write_deepseek_launch_progress-contract_inputs192-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-build_finalize_progress_tasks-contract_inputs192-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-enqueue_deepseek_finalize_job-contract_inputs193-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-format_finalize_progress_tasks-contract_inputs193-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-resolve_deepseek_regeneration_job_path-contract_inputs194-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_write_deepseek_launch_progress-contract_inputs194-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_deepseek_job_path_candidates-contract_inputs195-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-enqueue_deepseek_finalize_job-contract_inputs195-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_synthesize_deepseek_job_from_session-contract_inputs196-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-resolve_deepseek_regeneration_job_path-contract_inputs196-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_load_matching_interview_session-contract_inputs197-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_deepseek_job_path_candidates-contract_inputs197-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_session_deepseek_inputs-contract_inputs198-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_synthesize_deepseek_job_from_session-contract_inputs198-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_candidate_payload_from_history_row-contract_inputs199-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_load_matching_interview_session-contract_inputs199-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_scoring_payload_from_history_row-contract_inputs200-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_session_deepseek_inputs-contract_inputs200-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_load_current_rubric_for_deepseek_job-contract_inputs201-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_candidate_payload_from_history_row-contract_inputs201-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_local_deepseek_settings_source-contract_inputs202-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_scoring_payload_from_history_row-contract_inputs202-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_normalize_session_match_text-contract_inputs203-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_load_current_rubric_for_deepseek_job-contract_inputs203-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_dedupe_paths-contract_inputs204-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_local_deepseek_settings_source-contract_inputs204-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_coerce_flow_index-contract_inputs205-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_normalize_session_match_text-contract_inputs205-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_session_question_title-contract_inputs206-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_dedupe_paths-contract_inputs206-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-retry_deepseek_finalize_job-contract_inputs207-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_coerce_flow_index-contract_inputs207-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-regenerate_interview_notes_job-contract_inputs208-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_session_question_title-contract_inputs208-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_mark_deepseek_history_processing-contract_inputs209-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-retry_deepseek_finalize_job-contract_inputs209-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-raise_legacy_finalize_guardrail-contract_inputs210-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-regenerate_interview_notes_job-contract_inputs210-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-validate_before_finalize-contract_inputs211-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_mark_deepseek_history_processing-contract_inputs211-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-to_dict-contract_inputs212-InterviewState]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-raise_legacy_finalize_guardrail-contract_inputs212-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs213-InterviewSessionContext]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-validate_before_finalize-contract_inputs213-None]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-safe_interview_date-contract_inputs214-InterviewSessionContext]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-to_dict-contract_inputs214-InterviewState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-safe_base_name-contract_inputs215-InterviewSessionContext]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs215-InterviewSessionContext]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-active_session_key-contract_inputs216-InterviewSessionContext]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-safe_interview_date-contract_inputs216-InterviewSessionContext]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-validate_runtime_base_dir-contract_inputs217-InterviewSessionContext]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-safe_base_name-contract_inputs217-InterviewSessionContext]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-runtime_init_log_path-contract_inputs218-InterviewSessionContext]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-active_session_key-contract_inputs218-InterviewSessionContext]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs219-InterviewSessionStore]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-validate_runtime_base_dir-contract_inputs219-InterviewSessionContext]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-session_path-contract_inputs220-InterviewSessionStore]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-runtime_init_log_path-contract_inputs220-InterviewSessionContext]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-load-contract_inputs221-InterviewSessionStore]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs221-InterviewSessionStore]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-save_question_snapshot-contract_inputs222-InterviewSessionStore]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-session_path-contract_inputs222-InterviewSessionStore]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs223-InterviewSessionManager]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-load-contract_inputs223-InterviewSessionStore]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-load_draft_payload-contract_inputs224-InterviewSessionManager]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-save_question_snapshot-contract_inputs224-InterviewSessionStore]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-load_session_payload-contract_inputs225-InterviewSessionManager]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs225-InterviewSessionManager]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-normalize_payload-contract_inputs226-InterviewSessionManager]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-load_draft_payload-contract_inputs226-InterviewSessionManager]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-normalize_session_payload-contract_inputs227-InterviewSessionManager]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-load_session_payload-contract_inputs227-InterviewSessionManager]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-hydrate_state-contract_inputs228-InterviewSessionManager]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-normalize_payload-contract_inputs228-InterviewSessionManager]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-hydrate_state_from_session_payload-contract_inputs229-InterviewSessionManager]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-normalize_session_payload-contract_inputs229-InterviewSessionManager]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-build_resume_instruction-contract_inputs230-InterviewSessionManager]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-hydrate_state-contract_inputs230-InterviewSessionManager]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-enqueue-contract_inputs231-TranscriptionQueueState]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-hydrate_state_from_session_payload-contract_inputs231-InterviewSessionManager]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-mark_started-contract_inputs232-TranscriptionQueueState]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-build_resume_instruction-contract_inputs232-InterviewSessionManager]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-mark_completed-contract_inputs233-TranscriptionQueueState]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-enqueue-contract_inputs233-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-mark_failed-contract_inputs234-TranscriptionQueueState]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-mark_started-contract_inputs234-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-mark_timed_out-contract_inputs235-TranscriptionQueueState]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-mark_completed-contract_inputs235-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-cancel-contract_inputs236-TranscriptionQueueState]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-mark_failed-contract_inputs236-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-next_payload-contract_inputs237-TranscriptionQueueState]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-mark_timed_out-contract_inputs237-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-wait_for_pending-contract_inputs238-TranscriptionQueueState]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-cancel-contract_inputs238-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-pending_count-contract_inputs239-TranscriptionQueueState]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-next_payload-contract_inputs239-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-is_pending-contract_inputs240-TranscriptionQueueState]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-wait_for_pending-contract_inputs240-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-clear-contract_inputs241-TranscriptionQueueState]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-pending_count-contract_inputs241-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-is_canceled-contract_inputs242-TranscriptionQueueState]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-is_pending-contract_inputs242-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-clear_error-contract_inputs243-TranscriptionQueueState]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-clear-contract_inputs243-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-error_reasons-contract_inputs244-TranscriptionQueueState]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-is_canceled-contract_inputs244-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs245-BoundedTranscriptionExecutor]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-clear_error-contract_inputs245-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-submit-contract_inputs246-BoundedTranscriptionExecutor]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-error_reasons-contract_inputs246-TranscriptionQueueState]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-shutdown-contract_inputs247-BoundedTranscriptionExecutor]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs247-BoundedTranscriptionExecutor]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs248-TranscriptWriterController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-submit-contract_inputs248-BoundedTranscriptionExecutor]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-append_live_segment-contract_inputs249-TranscriptWriterController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-shutdown-contract_inputs249-BoundedTranscriptionExecutor]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-rewrite_from_flow-contract_inputs250-TranscriptWriterController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs250-TranscriptWriterController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs251-AudioRuntimeController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-append_live_segment-contract_inputs251-TranscriptWriterController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-wait_for_pending_transcriptions-contract_inputs252-AudioRuntimeController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-rewrite_from_flow-contract_inputs252-TranscriptWriterController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-background_transcribe_question-contract_inputs253-AudioRuntimeController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs253-AudioRuntimeController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-start_recording_session-contract_inputs254-AudioRuntimeController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-wait_for_pending_transcriptions-contract_inputs254-AudioRuntimeController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-start_recording_with_runtime_fallback-contract_inputs255-AudioRuntimeController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-background_transcribe_question-contract_inputs255-AudioRuntimeController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs256-FlowController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-start_recording_session-contract_inputs256-AudioRuntimeController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-go_next-contract_inputs257-FlowController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-start_recording_with_runtime_fallback-contract_inputs257-AudioRuntimeController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-go_back-contract_inputs258-FlowController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs258-FlowController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-active_flow-contract_inputs259-FlowController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-go_next-contract_inputs259-FlowController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs260-DashboardController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-go_back-contract_inputs260-FlowController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-refresh_dashboard-contract_inputs261-DashboardController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-active_flow-contract_inputs261-FlowController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs262-HistoryController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs262-DashboardController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-build_history_table-contract_inputs263-HistoryController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-refresh_dashboard-contract_inputs263-DashboardController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-refresh_history_tree-contract_inputs264-HistoryController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs264-HistoryController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-selected_history_row-contract_inputs265-HistoryController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-build_history_table-contract_inputs265-HistoryController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-export_report-contract_inputs266-FinalizeGateways]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-refresh_history_tree-contract_inputs266-HistoryController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-export_basic_report-contract_inputs267-FinalizeGateways]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-selected_history_row-contract_inputs267-HistoryController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-export_integration-contract_inputs268-FinalizeGateways]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-export_report-contract_inputs268-FinalizeGateways]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-persist_finalize_history-contract_inputs269-FinalizeGateways]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-export_basic_report-contract_inputs269-FinalizeGateways]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-send_referral-contract_inputs270-FinalizeGateways]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-export_integration-contract_inputs270-FinalizeGateways]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs271-FinalizePipelineController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-persist_finalize_history-contract_inputs271-FinalizeGateways]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-finalize_interview-contract_inputs272-FinalizePipelineController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-send_referral-contract_inputs272-FinalizeGateways]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-run_finalize_pipeline-contract_inputs273-FinalizePipelineController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs273-FinalizePipelineController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-poll_finalize_worker-contract_inputs274-FinalizePipelineController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-finalize_interview-contract_inputs274-FinalizePipelineController]
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-run_finalize_pipeline-contract_inputs275-FinalizePipelineController]
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-poll_finalize_worker-contract_inputs276-FinalizePipelineController]
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
@@ -6593,6 +6641,10 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_transcription_diagnostics.py::TestTranscriptionDiagnostics::test_transcribe_existing_recordings_suppresses_repeated_segment_floods
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_transcription_diagnostics.py::TestTranscriptionDiagnostics::test_transcribe_existing_recordings_uses_openvino_backend_when_requested
   duration_seconds_n2: 0.001
   gui_heavy: false
@@ -6865,7 +6917,7 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_whisper_runtime_policy.py::test_resolve_runtime_uses_cpu_when_cuda_configured_without_nvidia
+- nodeid: tests/test_whisper_runtime_policy.py::test_resolve_runtime_prefers_installed_openvino_over_legacy_cuda_defaults
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
@@ -6877,7 +6929,11 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_whisper_runtime_policy.py::test_resolve_runtime_keeps_cuda_when_nvidia_detected
+- nodeid: tests/test_whisper_runtime_policy.py::test_resolve_runtime_defaults_to_openvino_when_available
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_whisper_runtime_policy.py::test_resolve_runtime_uses_explicit_faster_whisper_backend_when_requested
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
@@ -6902,6 +6958,10 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_whisper_runtime_policy.py::test_persist_runtime_choice_updates_settings
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_whisper_settings.py::TestWhisperSettings::test_normalize_accepts_supported_anti_hallucination_values
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast

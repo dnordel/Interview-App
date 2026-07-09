@@ -19,6 +19,10 @@ def test_start_recording_session_uses_resolved_windows_system_device(monkeypatch
         "interview_app.audio_runtime.resolve_default_windows_system_device",
         lambda: "VB-Audio Virtual Cable (CABLE Input)",
     )
+    monkeypatch.setattr(
+        "interview_app.audio_runtime.resolve_default_windows_microphone_device",
+        lambda: "Microphone (Realtek USB Audio)",
+    )
 
     controller = AudioRuntimeController(app=_AppStub(), shared_state=object())
     runtime_config = RuntimeConfig(model="small", device="cpu", compute_type="int8")

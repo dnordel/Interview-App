@@ -2,14 +2,14 @@ module:
   name: interview_audio_recorder
   language: python
   path: src/interview_audio_recorder.py
-  version: 1.2.0
+  version: 1.3.0
   description: Records interview audio with ffmpeg and transcribes tracks with
     selectable faster-whisper, OpenVINO GenAI, or whisper.cpp CLI backends.
 functions:
 - name: start_recording
   description: Start an ffmpeg recording session and return a RecordingSession handle;
-    Windows may record one available audio stream when only microphone or system capture
-    is configured.
+    Windows auto-adds a resolved local microphone backup when only system capture
+    is configured unless disabled.
   locked: false
   inputs:
     os_name:
@@ -26,12 +26,26 @@ functions:
       type: str
       required: false
       default: faster_whisper
+    require_local_mic_backup:
+      type: bool
+      required: false
+      default: true
   returns:
     type: RecordingSession
   exceptions:
   - ValueError
   - SystemExit
-  side_effects: starts one or more ffmpeg subprocesses and writes wav files
+  side_effects: starts one or more ffmpeg subprocesses, verifies they remain alive
+    briefly, and writes wav files
+- name: _resolve_windows_microphone_backup_device
+  description: Resolve local Windows microphone backup device through interview runtime
+    device probing.
+  locked: false
+  inputs: {}
+  returns:
+    type: str
+  exceptions: []
+  side_effects: probes local ffmpeg audio devices when available
 - name: _linux_parent_death_preexec
   description: Configure linux child-process parent-death signal so ffmpeg exits if
     the parent process dies.
@@ -77,7 +91,8 @@ functions:
   side_effects: closes OS handle
 - name: transcribe_existing_recordings
   description: Transcribe existing WAV recordings through the selected Whisper backend
-    and write interleaved transcript TXT/JSONL outputs.
+    and write interleaved transcript TXT/JSONL outputs, suppressing repeated ASR
+    segment floods.
   locked: false
   inputs:
     output_dir:
@@ -179,6 +194,35 @@ functions:
     type: list[Segment]
   exceptions: []
   side_effects: reads whisper.cpp JSON transcript file
+- name: _normalize_whisper_transcribe_settings
+  description: Normalize Whisper transcription settings with robust anti-hallucination
+    defaults including VAD, disabled previous-text conditioning, repeat penalties,
+    no-repeat ngram size, and hallucination silence threshold.
+  locked: false
+  inputs:
+    settings:
+      type: Mapping[str, Any] | None
+      required: true
+  returns:
+    type: dict[str, Any]
+  exceptions: []
+  side_effects: none
+- name: _suppress_repeated_segment_floods
+  description: Collapse excessive consecutive identical ASR segments into a suppression
+    marker so one hallucinated phrase cannot flood transcripts.
+  locked: false
+  inputs:
+    segments:
+      type: list[Segment]
+      required: true
+    max_consecutive:
+      type: int
+      required: false
+      default: 2
+  returns:
+    type: list[Segment]
+  exceptions: []
+  side_effects: none
 classes:
 - name: FasterWhisperBackend
   description: faster-whisper transcription backend using CTranslate2.
@@ -272,6 +316,10 @@ classes:
         type: list[str] | None
     returns:
       type: None
+    exceptions:
+    - RuntimeError
+    side_effects: starts ffmpeg subprocesses and fails if any requested process exits
+      immediately
   - name: stop
     inputs: {}
     returns:

@@ -948,10 +948,10 @@ function Set-GpuVendorEnvironment {
       Remove-Item Env:\INTERVIEW_OPENVINO_WHISPER_MODEL -ErrorAction SilentlyContinue
       Write-Log "AMD GPU detected. Using configured whisper.cpp backend: $whisperCppExe"
     } else {
-      $env:INTERVIEW_WHISPER_BACKEND = "faster_whisper"
+      $env:INTERVIEW_WHISPER_BACKEND = "openvino_genai"
+      $env:INTERVIEW_OPENVINO_WHISPER_MODEL = "OpenVINO/whisper-small-int8-ov"
       Remove-Item Env:\INTERVIEW_WHISPERCPP_EXE -ErrorAction SilentlyContinue
       Remove-Item Env:\INTERVIEW_WHISPERCPP_MODEL -ErrorAction SilentlyContinue
-      Remove-Item Env:\INTERVIEW_OPENVINO_WHISPER_MODEL -ErrorAction SilentlyContinue
     }
   } elseif ($vendor -eq "intel") {
     $env:INTERVIEW_WHISPER_BACKEND = "openvino_genai"
@@ -959,13 +959,13 @@ function Set-GpuVendorEnvironment {
     Remove-Item Env:\INTERVIEW_WHISPERCPP_EXE -ErrorAction SilentlyContinue
     Remove-Item Env:\INTERVIEW_WHISPERCPP_MODEL -ErrorAction SilentlyContinue
   } elseif ($vendor -eq "nvidia") {
-    $env:INTERVIEW_WHISPER_BACKEND = "faster_whisper"
-    Remove-Item Env:\INTERVIEW_OPENVINO_WHISPER_MODEL -ErrorAction SilentlyContinue
+    $env:INTERVIEW_WHISPER_BACKEND = "openvino_genai"
+    $env:INTERVIEW_OPENVINO_WHISPER_MODEL = "OpenVINO/whisper-small-int8-ov"
     Remove-Item Env:\INTERVIEW_WHISPERCPP_EXE -ErrorAction SilentlyContinue
     Remove-Item Env:\INTERVIEW_WHISPERCPP_MODEL -ErrorAction SilentlyContinue
   } else {
-    $env:INTERVIEW_WHISPER_BACKEND = "faster_whisper"
-    Remove-Item Env:\INTERVIEW_OPENVINO_WHISPER_MODEL -ErrorAction SilentlyContinue
+    $env:INTERVIEW_WHISPER_BACKEND = "openvino_genai"
+    $env:INTERVIEW_OPENVINO_WHISPER_MODEL = "OpenVINO/whisper-small-int8-ov"
     Remove-Item Env:\INTERVIEW_WHISPERCPP_EXE -ErrorAction SilentlyContinue
     Remove-Item Env:\INTERVIEW_WHISPERCPP_MODEL -ErrorAction SilentlyContinue
   }
@@ -1328,7 +1328,7 @@ function Ensure-VenvAndDeps([string]$PyExe) {
     Write-Log "Skipping GPU dependency install because no NVIDIA GPU was detected."
     Remove-NvidiaGpuPackagesWhenUnsupported -VenvPy $VenvPy
     if ($gpuProfile.Amd) {
-      Write-Log "AMD GPU detected. Ollama may use supported ROCm/Vulkan acceleration; Whisper transcription remains CPU unless an external Vulkan whisper.cpp backend is configured."
+      Write-Log "AMD GPU detected. Ollama may use supported ROCm/Vulkan acceleration; Whisper transcription will use OpenVINO GenAI unless an external Vulkan whisper.cpp backend is configured."
     }
     if ($gpuProfile.Intel) {
       Write-Log "Intel GPU detected. OpenVINO GenAI will be used for Whisper transcription when dependencies install successfully."
@@ -1336,11 +1336,11 @@ function Ensure-VenvAndDeps([string]$PyExe) {
   }
 
   $openVinoReq = Join-Path $AppDir "requirements-openvino.txt"
-  if ((Test-Path $openVinoReq) -and $gpuProfile.Intel) {
+  if (Test-Path $openVinoReq) {
     $openVinoRequirementsFingerprint = Get-RequirementsFingerprint -RequirementsPath $openVinoReq
     $openVinoDepsNeedInstall = $needRecreate -or ($cfg.Tools.OpenVinoRequirementsFingerprint -ne $openVinoRequirementsFingerprint)
     if ($openVinoDepsNeedInstall) {
-      Write-Log "Intel GPU detected. Installing OpenVINO GenAI transcription dependencies..."
+      Write-Log "Installing OpenVINO GenAI transcription dependencies..."
       $openVinoEc = Run-Proc -File $VenvPy -Args @("-m","pip","install","-r",$openVinoReq)
       if ($openVinoEc -ne 0) {
         Write-Log "OpenVINO dependency install failed. Falling back to faster-whisper CPU mode."

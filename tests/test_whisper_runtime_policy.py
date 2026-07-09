@@ -17,8 +17,13 @@ def test_resolve_runtime_prefers_runtime_keys() -> None:
     assert config == RuntimeConfig(model="medium", device="cuda", compute_type="float16")
 
 
-def test_resolve_runtime_uses_cpu_when_cuda_configured_without_nvidia(monkeypatch) -> None:
+def test_resolve_runtime_prefers_installed_openvino_over_legacy_cuda_defaults(monkeypatch) -> None:
     monkeypatch.setenv("INTERVIEW_GPU_VENDOR", "amd")
+    monkeypatch.delenv("INTERVIEW_WHISPER_BACKEND", raising=False)
+    monkeypatch.setattr(
+        "interview_runtime.importlib.util.find_spec",
+        lambda name: object() if name == "openvino_genai" else None,
+    )
     config = resolve_runtime(
         {
             "whisper_model": "large-v3",
@@ -27,7 +32,12 @@ def test_resolve_runtime_uses_cpu_when_cuda_configured_without_nvidia(monkeypatc
             "whisper_fallback_model": "small",
         }
     )
-    assert config == RuntimeConfig(model="small", device="cpu", compute_type="int8")
+    assert config == RuntimeConfig(
+        model="OpenVINO/whisper-small-int8-ov",
+        device="GPU",
+        compute_type="fp16",
+        backend="openvino_genai",
+    )
 
 
 def test_resolve_runtime_selects_whisper_cpp_for_amd_when_configured(monkeypatch) -> None:
@@ -67,10 +77,29 @@ def test_resolve_runtime_selects_openvino_for_intel_gpu(monkeypatch) -> None:
     )
 
 
-def test_resolve_runtime_keeps_cuda_when_nvidia_detected(monkeypatch) -> None:
+def test_resolve_runtime_defaults_to_openvino_when_available(monkeypatch) -> None:
+    monkeypatch.delenv("INTERVIEW_GPU_VENDOR", raising=False)
+    monkeypatch.delenv("INTERVIEW_WHISPER_BACKEND", raising=False)
+    monkeypatch.setattr(
+        "interview_runtime.importlib.util.find_spec",
+        lambda name: object() if name == "openvino_genai" else None,
+    )
+
+    config = resolve_runtime({})
+
+    assert config == RuntimeConfig(
+        model="OpenVINO/whisper-small-int8-ov",
+        device="GPU",
+        compute_type="fp16",
+        backend="openvino_genai",
+    )
+
+
+def test_resolve_runtime_uses_explicit_faster_whisper_backend_when_requested(monkeypatch) -> None:
     monkeypatch.setenv("INTERVIEW_GPU_VENDOR", "nvidia")
     config = resolve_runtime(
         {
+            "whisper_backend": "faster_whisper",
             "whisper_model": "large-v3",
             "whisper_device": "cuda",
             "whisper_compute_type": "float16",

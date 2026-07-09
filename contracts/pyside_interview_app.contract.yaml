@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.64.1
+  version: 1.65.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, resizable splitter sections, school/classroom selectors, wider color-coded classroom list with per-classroom status-count overview, metric cards, positions table, fully editable right-side assignment/person details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics, parallel Staffing v2 navigation/page shell with its own mockup-style staffing sidebar, People / Employee Management and Assignment History sub-dashboards for the mockup-driven rewrite backed by staffing_dashboard_v2 while the legacy Staffing page remains available,
@@ -3130,8 +3130,8 @@ classes:
     side_effects: Resets PySide session transcript state for candidate-answer questions
       and may start FFmpeg-backed local recording.
   - name: _stop_pyside_interview_recording
-    description: Stop optional PySide continuous recording after the final scored
-      question or during finalize fallback, transcribe it locally, map candidate
+    description: Stop optional PySide continuous recording from the background
+      finalize worker, transcribe it locally, map candidate
       transcript segments to interview flow items, and save the draft.
     locked: false
     inputs: {}
@@ -3141,10 +3141,10 @@ classes:
     side_effects: May write WAV/transcript artifacts under DEFAULT_BASE_DIR and update
       session flow_recordings/flow_candidate_transcripts.
   - name: _should_stop_recording_after_question
-    description: Return whether PySide recording should stop after the supplied flow
-      question, which is true only for the last remaining scored trait question
-      while recording is active so final custom/non-scored questions are manual-note
-      only.
+    description: Return whether PySide recording should stop during live question
+      navigation. This compatibility guard always returns false so stopping and
+      transcription stay off the GUI navigation path and run from background
+      finalize instead.
     locked: false
     inputs:
       flow_index:
@@ -3181,6 +3181,37 @@ classes:
     exceptions: []
     side_effects: Writes draft/finalize artifacts through a background worker and
       switches to the review tab.
+  - name: _mark_flow_timestamp_at
+    description: Record or overwrite the active live-question transcript start timestamp.
+    locked: false
+    inputs:
+      flow_idx:
+        type: int
+        required: true
+      elapsed:
+        type: float
+        required: true
+      overwrite:
+        type: bool
+        required: false
+        default: false
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Mutates PySide session flow_time_marks and saves the draft.
+  - name: _close_flow_timestamp
+    description: Close the active live-question transcript window; after Back re-entry,
+      overwrite the existing end boundary so continued candidate answers map to
+      the corrected question.
+    locked: false
+    inputs:
+      flow_idx:
+        type: int
+        required: true
+    returns:
+      type: float | None
+    exceptions: []
+    side_effects: Mutates PySide session flow_time_marks and saves the draft.
   - name: _skip_live_question
     description: Save the active live question as skipped and advance without requiring a scored rating.
     locked: false
@@ -3190,7 +3221,9 @@ classes:
     exceptions: []
     side_effects: Writes PySide draft JSON and re-renders the live interview page.
   - name: _go_back_live_question
-    description: Return the live interview view to the previous question while preserving saved answers for review or overwrite.
+    description: Return the live interview view to the previous question while preserving
+      saved answers for review or overwrite, and mark the next save as a timestamp-boundary
+      overwrite.
     locked: false
     inputs: {}
     returns:

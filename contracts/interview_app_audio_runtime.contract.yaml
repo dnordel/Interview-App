@@ -2,7 +2,7 @@ module:
   name: interview_app_audio_runtime
   language: python
   path: src/interview_app/audio_runtime.py
-  version: 1.1.2
+  version: 1.2.0
   description: Deprecated compatibility wrapper for audio runtime controller and Whisper
     fallback helpers implemented by interview_runtime.
 functions: []
@@ -108,8 +108,8 @@ classes:
     returns:
       type: Any
     exceptions: []
-    side_effects: starts audio recording subprocesses; may use interview_runtime.DEFAULT_WINDOWS_MIC_DEVICE
-      when app settings omit windows_microphone_device
+    side_effects: starts audio recording subprocesses; may use resolved default Windows
+      microphone device when app settings omit windows_microphone_device
   - name: start_recording_with_runtime_fallback
     description: AudioRuntimeController.start_recording_with_runtime_fallback method.
     locked: false

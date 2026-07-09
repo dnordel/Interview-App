@@ -57,6 +57,9 @@ class Segment:
         return {"start": self.start, "end": self.end, "speaker": self.speaker, "text": self.text}
 
 
+SUPPRESSED_REPETITION_TEXT = "[suppressed repeated ASR segment flood]"
+
+
 @dataclass
 class RecordingResult:
     mic_wav: Path
@@ -356,8 +359,20 @@ class RecordingSession:
             self._close_windows_job()
             raise
 
+        self._verify_started_processes(started)
+
         self._procs = started
         self._started = True
+
+    def _verify_started_processes(self, processes: list[subprocess.Popen]) -> None:
+        time.sleep(0.25)
+        dead_count = sum(1 for proc in processes if proc.poll() is not None)
+        if dead_count <= 0:
+            return
+        for proc in processes:
+            self._safe_terminate(proc)
+        self._close_windows_job()
+        raise RuntimeError("Recording process exited immediately. Check configured audio device names.")
 
     def stop(self) -> None:
         """
@@ -449,7 +464,7 @@ class RecordingSession:
             self._logger.exception("stop_and_transcribe_failed")
             raise RuntimeError(f"Transcription failed. Diagnostic log: {diagnostic_path}") from exc
 
-        merged = _merge_interleaved(mic_segs, sys_segs)
+        merged = _suppress_repeated_segment_floods(_merge_interleaved(mic_segs, sys_segs))
         self._logger.info(
             "Full transcription completed for base_name=%s with %d segments in %.2fs",
             base_name,
@@ -515,7 +530,7 @@ class RecordingSession:
         if sys_segs:
             self._sys_transcribed_until = max(self._sys_transcribed_until, max(s.end for s in sys_segs))
 
-        merged = _merge_interleaved(mic_segs, sys_segs)
+        merged = _suppress_repeated_segment_floods(_merge_interleaved(mic_segs, sys_segs))
         self._logger.info(
             "Incremental transcription returned %d segments in %.2fs (mic_cursor=%.2f sys_cursor=%.2f)",
             len(merged),
@@ -554,6 +569,7 @@ def start_recording(
     whisper_compute_type: Optional[str] = None,
     whisper_backend: str = "faster_whisper",
     whisper_settings: Optional[Mapping[str, Any]] = None,
+    require_local_mic_backup: bool = True,
 ) -> RecordingSession:
     """
     Starts recording immediately and returns a RecordingSession handle.
@@ -596,6 +612,8 @@ def start_recording(
                 "Windows requires at least one audio device: win_mic_device or win_sys_device.\n"
                 "Get names via: ffmpeg -list_devices true -f dshow -i dummy"
             )
+        if require_local_mic_backup and not win_mic_device and win_sys_device:
+            win_mic_device = _resolve_windows_microphone_backup_device()
         mic_cmd = _ffmpeg_windows_mic_cmd(ffmpeg, mic_wav, sample_rate, win_mic_device) if win_mic_device else None
         sys_cmd = _ffmpeg_windows_system_cmd(ffmpeg, sys_wav, sample_rate, win_sys_device) if win_sys_device else None
 
@@ -639,6 +657,12 @@ def _require_ffmpeg() -> str:
     if not exe:
         raise SystemExit("ffmpeg not found on PATH. Install FFmpeg and open a new terminal.")
     return exe
+
+
+def _resolve_windows_microphone_backup_device() -> str:
+    from interview_runtime import resolve_default_windows_microphone_device
+
+    return resolve_default_windows_microphone_device()
 
 
 def _fmt_ts(seconds: float) -> str:
@@ -1042,7 +1066,7 @@ def transcribe_existing_recordings(
         offset_sec=sys_offset,
         whisper_settings=settings,
     ) if sys_path else []
-    merged = _merge_interleaved(mic_segments, sys_segments)
+    merged = _suppress_repeated_segment_floods(_merge_interleaved(mic_segments, sys_segments))
 
     with transcript_txt.open("w", encoding="utf-8") as handle:
         handle.write("TIMESTAMPED INTERLEAVED TRANSCRIPT\n")
@@ -1064,7 +1088,18 @@ def transcribe_existing_recordings(
 
 
 def _normalize_whisper_transcribe_settings(settings: Optional[Mapping[str, Any]]) -> dict[str, Any]:
-    defaults: dict[str, Any] = {"vad_filter": True, "beam_size": 5, "temperature": 0.0}
+    defaults: dict[str, Any] = {
+        "vad_filter": True,
+        "beam_size": 5,
+        "temperature": 0.0,
+        "condition_on_previous_text": False,
+        "compression_ratio_threshold": 2.4,
+        "log_prob_threshold": -1.0,
+        "no_speech_threshold": 0.6,
+        "no_repeat_ngram_size": 3,
+        "repetition_penalty": 1.15,
+        "hallucination_silence_threshold": 2.0,
+    }
     if not settings:
         return defaults
 
@@ -1083,7 +1118,87 @@ def _normalize_whisper_transcribe_settings(settings: Optional[Mapping[str, Any]]
         if 0.0 <= temp_value <= 1.0:
             resolved["temperature"] = temp_value
 
+    condition_on_previous_text = settings.get("condition_on_previous_text")
+    if isinstance(condition_on_previous_text, bool):
+        resolved["condition_on_previous_text"] = condition_on_previous_text
+
+    compression_ratio_threshold = settings.get("compression_ratio_threshold")
+    if isinstance(compression_ratio_threshold, (float, int)):
+        threshold = float(compression_ratio_threshold)
+        if 1.0 <= threshold <= 10.0:
+            resolved["compression_ratio_threshold"] = threshold
+
+    log_prob_threshold = settings.get("log_prob_threshold")
+    if isinstance(log_prob_threshold, (float, int)):
+        threshold = float(log_prob_threshold)
+        if -10.0 <= threshold <= 0.0:
+            resolved["log_prob_threshold"] = threshold
+
+    no_speech_threshold = settings.get("no_speech_threshold")
+    if isinstance(no_speech_threshold, (float, int)):
+        threshold = float(no_speech_threshold)
+        if 0.0 <= threshold <= 1.0:
+            resolved["no_speech_threshold"] = threshold
+
+    no_repeat_ngram_size = settings.get("no_repeat_ngram_size")
+    if isinstance(no_repeat_ngram_size, int) and 0 <= no_repeat_ngram_size <= 10:
+        resolved["no_repeat_ngram_size"] = no_repeat_ngram_size
+
+    repetition_penalty = settings.get("repetition_penalty")
+    if isinstance(repetition_penalty, (float, int)):
+        penalty = float(repetition_penalty)
+        if 1.0 <= penalty <= 5.0:
+            resolved["repetition_penalty"] = penalty
+
+    hallucination_silence_threshold = settings.get("hallucination_silence_threshold")
+    if isinstance(hallucination_silence_threshold, (float, int)):
+        threshold = float(hallucination_silence_threshold)
+        if 0.0 <= threshold <= 30.0:
+            resolved["hallucination_silence_threshold"] = threshold
+
     return resolved
+
+
+def _suppress_repeated_segment_floods(segments: list[Segment], *, max_consecutive: int = 2) -> list[Segment]:
+    filtered: list[Segment] = []
+    previous_key = ""
+    run_count = 0
+    suppressed = 0
+    last_suppressed: Segment | None = None
+    for segment in segments:
+        key = _segment_repetition_key(segment.text)
+        if key and key == previous_key:
+            run_count += 1
+        else:
+            if suppressed and last_suppressed is not None:
+                filtered.append(_suppression_marker(last_suppressed, suppressed))
+            previous_key = key
+            run_count = 1
+            suppressed = 0
+            last_suppressed = None
+        if key and run_count > max_consecutive:
+            suppressed += 1
+            last_suppressed = segment
+            continue
+        filtered.append(segment)
+    if suppressed and last_suppressed is not None:
+        filtered.append(_suppression_marker(last_suppressed, suppressed))
+    return filtered
+
+
+def _segment_repetition_key(text: str) -> str:
+    key = " ".join(str(text or "").strip().casefold().split())
+    return key if len(key) >= 8 else ""
+
+
+def _suppression_marker(segment: Segment, suppressed_count: int) -> Segment:
+    return Segment(
+        start=segment.start,
+        end=segment.end,
+        speaker=segment.speaker,
+        text=f"{SUPPRESSED_REPETITION_TEXT}: {suppressed_count} duplicate segments removed.",
+    )
+
 
 def _merge_interleaved(a: list[Segment], b: list[Segment]) -> list[Segment]:
     merged = a + b

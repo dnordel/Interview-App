@@ -10,6 +10,7 @@ import sys
 import traceback
 import threading
 import queue
+import importlib.util
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -77,6 +78,12 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DEEPSEEK_PROMPTS_CONFIG_PATH = REPO_ROOT / "config" / "deepseek_prompts.json"
 TRANSCRIPTION_TIMEOUT_REASON = "transcription_timeout"
 DEFAULT_WINDOWS_MIC_DEVICE = "Microphone (Realtek USB Audio)"
+_WINDOWS_MIC_DEVICE_ALIASES = (
+    "Microphone (Realtek USB Audio)",
+    "Microphone Array (Intel Smart Sound Technology)",
+    "Microphone (USB Audio Device)",
+    "Microphone",
+)
 _WINDOWS_AUDIO_DEVICE_ALIASES = (
     "VB-Audio Virtual Cable (CABLE Input)",
     "CABLE Output (VB-Audio Virtual Cable)",
@@ -3256,7 +3263,19 @@ def resolve_runtime(settings: dict[str, Any]) -> RuntimeConfig:
             compute_type="int8",
             backend="whisper_cpp",
         )
-    if backend == "openvino_genai" or (vendor == "intel" and runtime.device == "cuda"):
+    explicit_runtime = any(
+        settings.get(key)
+        for key in (
+            "whisper_backend",
+            "whisper_runtime_backend",
+            "whisper_runtime_model",
+            "whisper_runtime_device",
+            "whisper_runtime_compute_type",
+        )
+    )
+    if backend == "openvino_genai" or (
+        not explicit_runtime and not backend and _openvino_genai_available()
+    ) or (vendor == "intel" and runtime.device == "cuda"):
         openvino_model = str(
             settings.get("whisper_openvino_model")
             or os.environ.get("INTERVIEW_OPENVINO_WHISPER_MODEL")
@@ -3271,6 +3290,10 @@ def resolve_runtime(settings: dict[str, Any]) -> RuntimeConfig:
     if runtime.device == "cuda" and vendor and vendor != "nvidia":
         return _resolve_cpu_fallback(preferred=runtime, settings=settings)
     return runtime
+
+
+def _openvino_genai_available() -> bool:
+    return importlib.util.find_spec("openvino_genai") is not None
 
 
 def fallback_from_exception(
@@ -3425,6 +3448,22 @@ def resolve_default_windows_system_device() -> str:
     return resolved
 
 
+def resolve_default_windows_microphone_device() -> str:
+    preferred = DEFAULT_WINDOWS_MIC_DEVICE
+    device_probe = _resolve_audio_devices_symbol(
+        "list_windows_dshow_audio_devices",
+        list_windows_dshow_audio_devices,
+    )
+    resolved = resolve_preferred_windows_audio_device(
+        preferred_name=preferred,
+        aliases=_WINDOWS_MIC_DEVICE_ALIASES[1:],
+        available_devices=device_probe(),
+    )
+    if resolved != preferred:
+        logger.info("windows_microphone_device_fallback_selected", extra={"resolved_device": resolved})
+    return resolved
+
+
 def _resolve_audio_runtime_symbol(symbol_name: str, fallback: Any) -> Any:
     module = sys.modules.get("interview_app.audio_runtime")
     if module is not None and hasattr(module, symbol_name):
@@ -3536,12 +3575,18 @@ class AudioRuntimeController:
         runtime_config: RuntimeConfig,
     ) -> Any:
         settings = getattr(self.app, "settings", {})
-        mic_device = str(settings.get("windows_microphone_device") or DEFAULT_WINDOWS_MIC_DEVICE).strip()
+        mic_device = str(
+            settings.get("windows_microphone_device")
+            or _resolve_audio_runtime_symbol(
+                "resolve_default_windows_microphone_device",
+                resolve_default_windows_microphone_device,
+            )()
+        ).strip()
         return start_recording(
             os_name="windows" if sys.platform.startswith("win") else "linux",
             output_dir=base_dir,
             base_name=base_name,
-            win_mic_device=mic_device or DEFAULT_WINDOWS_MIC_DEVICE,
+            win_mic_device=mic_device or resolve_default_windows_microphone_device(),
             win_sys_device=_resolve_audio_runtime_symbol(
                 "resolve_default_windows_system_device",
                 resolve_default_windows_system_device,

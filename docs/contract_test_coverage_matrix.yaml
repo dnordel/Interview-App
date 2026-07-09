@@ -12,7 +12,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-09T20:20:44.244135+00:00'
+generated_at_utc: '2026-07-09T22:40:34.865522+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -1612,6 +1612,16 @@ entries:
     - return_type
     - security_side_effects
 - contract: contracts/interview_app_audio_devices.contract.yaml
+  symbol: interview_app_audio_devices.resolve_default_windows_microphone_device
+  kind: function
+  tests:
+  - path: tests/test_interview_app_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_side_effects
+- contract: contracts/interview_app_audio_devices.contract.yaml
   symbol: interview_app_audio_devices.resolve_default_windows_system_device
   kind: function
   tests:
@@ -2812,6 +2822,16 @@ entries:
     - return_type
     - security_side_effects
 - contract: contracts/interview_app_whisper_runtime_policy.contract.yaml
+  symbol: interview_app_whisper_runtime_policy._openvino_genai_available
+  kind: function
+  tests:
+  - path: tests/test_interview_app_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_side_effects
+- contract: contracts/interview_app_whisper_runtime_policy.contract.yaml
   symbol: interview_app_whisper_runtime_policy._resolve_cpu_fallback
   kind: function
   tests:
@@ -2970,6 +2990,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/interview_audio_recorder.contract.yaml
+  symbol: interview_audio_recorder._normalize_whisper_transcribe_settings
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/interview_audio_recorder.contract.yaml
   symbol: interview_audio_recorder._parse_whisper_cpp_timestamp
   kind: function
   tests:
@@ -2988,7 +3017,25 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/interview_audio_recorder.contract.yaml
+  symbol: interview_audio_recorder._resolve_windows_microphone_backup_device
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/interview_audio_recorder.contract.yaml
   symbol: interview_audio_recorder._segments_from_whisper_cpp_json
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/interview_audio_recorder.contract.yaml
+  symbol: interview_audio_recorder._suppress_repeated_segment_floods
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -3785,6 +3832,16 @@ entries:
     - return_type
     - security_leakage_prevention
 - contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime._openvino_genai_available
+  kind: function
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime._render_deepseek_prompt_template
   kind: function
   tests:
@@ -4216,6 +4273,16 @@ entries:
     - security_leakage_prevention
 - contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime.resolve_deepseek_regeneration_job_path
+  kind: function
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime.resolve_default_windows_microphone_device
   kind: function
   tests:
   - path: tests/test_interview_root_contracts.py
@@ -8904,6 +8971,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._close_flow_timestamp
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._close_pyside_finalize_progress
   kind: method
   tests:
@@ -9328,6 +9404,15 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._mark_admin_cell_dirty
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._mark_flow_timestamp_at
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py

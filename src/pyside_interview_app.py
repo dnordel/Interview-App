@@ -2217,6 +2217,7 @@ class PySideInterviewWindow:
         self._pyside_deepseek_progress_timer: Any | None = None
         self._history_table_widgets: dict[str, Any] = {}
         self._overwrite_next_live_timestamp = False
+        self._overwrite_next_live_boundary_timestamp = False
         self._startup_notifications_scheduled = False
         self._recording_interface_preload_started = False
         class ResponsiveMainWindow(QtWidgets.QMainWindow):
@@ -3114,8 +3115,11 @@ class PySideInterviewWindow:
         if self.session is None or self.recording_started_monotonic is None:
             return None
         elapsed = max(0.0, time.monotonic() - self.recording_started_monotonic)
+        overwrite = self._overwrite_next_live_boundary_timestamp
         for mark in reversed(self.session.flow_time_marks):
-            if int(mark.get("flow_index", -1)) == flow_idx and "end_t" not in mark:
+            if int(mark.get("flow_index", -1)) != flow_idx:
+                continue
+            if overwrite or "end_t" not in mark:
                 mark["end_t"] = elapsed
                 break
         self.session.save_draft()
@@ -3149,10 +3153,7 @@ class PySideInterviewWindow:
             self.recording_started_monotonic = None
 
     def _should_stop_recording_after_question(self, flow_index: int, item: FlowQuestion) -> bool:
-        if self.session is None or self.recording_session is None or item.kind != "trait":
-            return False
-        remaining = self.session._workflow_items()[flow_index + 1 :]
-        return not any(question.kind == "trait" for question in remaining)
+        return False
 
     def _apply_pyside_recording_result(self, recording_result: dict[str, Any]) -> None:
         if self.session is None:
@@ -3216,12 +3217,15 @@ class PySideInterviewWindow:
                 )
             if item.kind == "intro":
                 self._start_pyside_interview_recording()
-            if self._should_stop_recording_after_question(current_index, item):
-                self._stop_pyside_interview_recording()
             self.session_index = self.session.current_index
             self.session_answers = dict(self.session.answers)
             if self.session.active_question() is not None and boundary_elapsed is not None:
-                self._mark_flow_timestamp_at(self.session.current_index, boundary_elapsed)
+                self._mark_flow_timestamp_at(
+                    self.session.current_index,
+                    boundary_elapsed,
+                    overwrite=self._overwrite_next_live_boundary_timestamp,
+                )
+            self._overwrite_next_live_boundary_timestamp = False
         else:
             answer = {
                 "kind": item.kind,
@@ -3236,7 +3240,12 @@ class PySideInterviewWindow:
             self.session_answers[item.question_id] = answer
             self.session_index += 1
             if self._active_question() is not None and boundary_elapsed is not None:
-                self._mark_flow_timestamp_at(self.session_index, boundary_elapsed)
+                self._mark_flow_timestamp_at(
+                    self.session_index,
+                    boundary_elapsed,
+                    overwrite=self._overwrite_next_live_boundary_timestamp,
+                )
+            self._overwrite_next_live_boundary_timestamp = False
         if self._active_question() is None:
             self._render_review_page()
             self._render_offer_page()
@@ -3265,9 +3274,11 @@ class PySideInterviewWindow:
             self.session_index = self.session.current_index
             self.session_answers = dict(self.session.answers)
             self._overwrite_next_live_timestamp = True
+            self._overwrite_next_live_boundary_timestamp = True
         elif self.session_index > 0:
             self.session_index -= 1
             self._overwrite_next_live_timestamp = True
+            self._overwrite_next_live_boundary_timestamp = True
         self._render_live_question_page()
         self._render_review_page()
         self._render_offer_page()

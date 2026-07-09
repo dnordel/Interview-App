@@ -2,7 +2,7 @@ module:
   name: interview_runtime
   language: python
   path: src/interview_runtime.py
-  version: 0.32.0
+  version: 0.33.0
   description: Flattened public interface for interview state, session management,
     audio/transcription runtime, transcript summary seam, controllers, history, and
     finalize pipeline; only active legacy adapters remain in the compatibility module
@@ -747,8 +747,9 @@ functions:
   side_effects: none
 - name: resolve_runtime
   description: Resolve configured Whisper runtime model, device, compute type, and
-    backend with defaults, using the setup-published GPU vendor to select CUDA,
-    OpenVINO GenAI, configured whisper.cpp, or CPU-safe fallback.
+    backend with defaults, preferring installed OpenVINO GenAI for startup defaults
+    while preserving explicit backend/runtime overrides, configured whisper.cpp,
+    and CPU-safe fallback.
   locked: false
   inputs:
     settings:
@@ -756,6 +757,14 @@ functions:
       required: true
   returns:
     type: RuntimeConfig
+  exceptions: []
+  side_effects: none
+- name: _openvino_genai_available
+  description: Return whether the OpenVINO GenAI Python package is importable.
+  locked: false
+  inputs: {}
+  returns:
+    type: bool
   exceptions: []
   side_effects: none
 - name: fallback_from_exception
@@ -829,6 +838,16 @@ functions:
   side_effects: none
 - name: resolve_default_windows_system_device
   description: Resolve VB-CABLE system capture device using probing and known aliases.
+  locked: false
+  inputs: {}
+  returns:
+    type: str
+  exceptions: []
+  side_effects: Probes local ffmpeg audio devices when available.
+- name: resolve_default_windows_microphone_device
+  description: Resolve the default local Windows microphone using probing and known
+    microphone aliases so interview recordings keep a mic backup alongside system
+    capture.
   locked: false
   inputs: {}
   returns:
@@ -2549,6 +2568,9 @@ data_structures:
 - name: _WINDOWS_AUDIO_DEVICE_ALIASES
   description: Known VB-CABLE DirectShow device aliases used during Windows system-audio
     capture.
+- name: _WINDOWS_MIC_DEVICE_ALIASES
+  description: Known local microphone DirectShow device aliases used for microphone
+    backup capture.
 - name: DIAGNOSTIC_LOG_MARKER
   description: Marker used to preserve diagnostic filenames while redacting paths.
 - name: _COMPAT_MODULES

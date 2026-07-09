@@ -263,8 +263,9 @@ functions:
   side_effects: queries local executables and WMI and writes launcher log entries
 - name: Get-GpuVendorProfile
   description: Detect NVIDIA, AMD, and Intel GPU controller names so setup can install
-    NVIDIA-only faster-whisper packages only on NVIDIA systems while leaving
-    AMD/Intel acceleration to supported local runtimes such as Ollama ROCm/Vulkan.
+    NVIDIA-only faster-whisper packages only on NVIDIA systems while preferring
+    OpenVINO GenAI for Whisper transcription and leaving AMD Ollama acceleration
+    to supported ROCm/Vulkan runtimes.
   locked: false
   inputs: {}
   returns:
@@ -304,8 +305,8 @@ functions:
   side_effects: reads local model paths
 - name: Set-GpuVendorEnvironment
   description: Publish the detected GPU vendor and selected transcription backend
-    environment variables so Python modules can choose the supported runtime path
-    for the current machine.
+    environment variables so Python modules prefer OpenVINO GenAI for transcription,
+    except when configured AMD whisper.cpp is available.
   locked: false
   inputs:
     Profile:
@@ -456,7 +457,7 @@ functions:
     versioning, skip unchanged dependency installs on healthy cached environments,
     install base requirements only when changed or after venv recreation, add optional
     NVIDIA GPU dependencies only when supported and changed, install OpenVINO GenAI
-    dependencies on Intel GPU systems only when changed, and remove NVIDIA-only Python
+    dependencies when changed, and remove NVIDIA-only Python
     wheels on non-NVIDIA systems.
   locked: false
   inputs:

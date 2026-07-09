@@ -103,6 +103,35 @@ class TestTranscriptionDiagnostics(unittest.TestCase):
             self.assertIn("OpenVINO text", result.transcript_txt.read_text(encoding="utf-8"))
             self.assertEqual(backend.kwargs["language"], "en")
 
+    def test_transcribe_existing_recordings_suppresses_repeated_segment_floods(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            sys_wav = root / "sys.wav"
+            sys_wav.write_bytes(b"sys-bytes")
+
+            class _RepeatingBackend:
+                def transcribe_segments(self, **kwargs):
+                    return [
+                        Segment(start=1.0, end=2.0, speaker=kwargs["speaker"], text="real answer"),
+                        Segment(start=2.0, end=3.0, speaker=kwargs["speaker"], text="stuck phrase"),
+                        Segment(start=3.0, end=4.0, speaker=kwargs["speaker"], text="stuck phrase"),
+                        Segment(start=4.0, end=5.0, speaker=kwargs["speaker"], text="stuck phrase"),
+                        Segment(start=5.0, end=6.0, speaker=kwargs["speaker"], text="stuck phrase"),
+                    ]
+
+            with patch.object(RecordingSession, "_get_or_create_backend", return_value=_RepeatingBackend()):
+                result = transcribe_existing_recordings(
+                    output_dir=root,
+                    base_name="sample",
+                    mic_wav=None,
+                    sys_wav=sys_wav,
+                )
+
+            transcript = result.transcript_txt.read_text(encoding="utf-8")
+            self.assertEqual(result.segment_count, 4)
+            self.assertEqual(transcript.count("stuck phrase"), 2)
+            self.assertIn("suppressed repeated ASR segment flood", transcript)
+
     def test_openvino_model_resolution_rejects_unapproved_repo_ids(self):
         with self.assertRaises(RuntimeError):
             _resolve_openvino_model_path("some-user/unknown-whisper")
