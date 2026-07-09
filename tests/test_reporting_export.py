@@ -159,7 +159,7 @@ class TestDocxExporterValidation(unittest.TestCase):
 
         self.assertEqual(transcript, "Whisper segment one.\n\nWhisper segment two.")
 
-    def test_export_uses_candidate_transcript_for_custom_flow_entry(self):
+    def test_export_uses_manual_notes_for_final_custom_flow_entry_when_transcript_exists(self):
         payload = {
             "candidate": {
                 "name": "Ada",
@@ -168,11 +168,19 @@ class TestDocxExporterValidation(unittest.TestCase):
             },
             "flow_transcript": [
                 {
-                    "type": "custom",
-                    "title": "Custom Question",
+                    "type": "trait",
+                    "id": "trait_1",
+                    "title": "Family Partnership",
                     "question": "How do you partner with families?",
                     "candidate_transcript": "I send weekly updates and hold check-ins.",
-                    "answer": "Interviewer note that should not replace transcript.",
+                    "answer": "Scored manual note.",
+                },
+                {
+                    "type": "custom",
+                    "title": "Availability",
+                    "question": "What is your availability?",
+                    "candidate_transcript": "Stale audio transcript should not replace final custom notes.",
+                    "answer": "Available full-time, cannot work Fridays.",
                 }
             ],
             "custom_answers": [],
@@ -185,9 +193,10 @@ class TestDocxExporterValidation(unittest.TestCase):
             doc_text = "\n".join(paragraph.text for paragraph in doc.paragraphs)
             table_text = "\n".join(cell.text for table in doc.tables for row in table.rows for cell in row.cells)
 
-        self.assertIn("Full Candidate Answer (auto-transcribed)", doc_text)
         self.assertIn("I send weekly updates and hold check-ins.", table_text)
-        self.assertNotIn("Interviewer note that should not replace transcript.", doc_text + table_text)
+        self.assertIn("Full Candidate Answer (manual notes)", doc_text)
+        self.assertIn("Available full-time, cannot work Fridays.", table_text)
+        self.assertNotIn("Stale audio transcript should not replace final custom notes.", doc_text + table_text)
 
     def test_export_omits_custom_questions_table_from_notes_document(self):
         payload = {

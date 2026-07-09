@@ -1088,6 +1088,35 @@ def test_pyside_session_enforces_intro_custom_scored_final_custom_workflow(tmp_p
     assert "Palmdale is open weekdays" in session.answers["intro_script"]["prompt"]
 
 
+def test_pyside_recording_starts_after_intro_not_on_begin(tmp_path: Path, monkeypatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    starts: list[str] = []
+    monkeypatch.setattr(window, "_start_pyside_interview_recording", lambda: starts.append("start"))
+
+    window.home_candidate_input.setText("Latoya Nugent")
+    window._begin_selected_interview()
+
+    assert starts == []
+    assert window.session.active_question().kind == "intro"
+
+    window.live_notes.setPlainText("Intro read by interviewer.")
+    window._save_and_next()
+
+    assert starts == ["start"]
+    assert window.session.active_question().kind == "custom"
+    window.window.close()
+    app.processEvents()
+
+
 def test_pyside_qualification_screen_keeps_education_and_experience_with_why_ece(tmp_path: Path) -> None:
     model = build_interview_redesign_model(
         rubric_path=_write_test_rubric(tmp_path),
@@ -1252,7 +1281,6 @@ def test_pyside_review_screen_shows_interviewer_closeout_without_slow_outputs(tm
     assert "Send candidate to director interview if required by your hiring workflow." in visible_text
     assert "DeepSeek" not in visible_text
     assert "AI" not in visible_text
-    assert "transcript" not in visible_text.lower()
     assert "Candidate transcript should stay hidden." not in visible_text
     assert "Transcript text should not render." not in visible_text
 
@@ -1265,16 +1293,18 @@ def test_pyside_review_screen_shows_interviewer_closeout_without_slow_outputs(tm
 
     table = review_page.findChild(qt_widgets.QTableWidget, "PySideReviewQuestionTable")
     assert table is not None
-    assert table.columnCount() == 4
-    assert [table.horizontalHeaderItem(column).text() for column in range(4)] == [
+    assert table.columnCount() == 5
+    assert [table.horizontalHeaderItem(column).text() for column in range(5)] == [
         "Question",
         "Score",
         "Notes",
+        "Transcript",
         "Flags",
     ]
     assert table.item(2, 0).text() == "Empathy"
     assert table.item(2, 1).text() == "Missing"
     assert table.item(2, 2).text() == "Yes"
+    assert table.item(2, 3).text() == "Transcript text should not render."
     window.window.close()
     app.processEvents()
 
@@ -1662,6 +1692,69 @@ def test_pyside_next_marks_new_question_at_click_boundary(tmp_path: Path, monkey
     assert marks[0]["end_t"] == 5.0
     assert marks[1]["flow_index"] == 1
     assert marks[1]["t"] == 5.0
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_review_table_shows_generated_transcripts(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
+    session.start(candidate_name="Latoya Nugent", school="Palmdale", track_key="preschool")
+    session.save_answer_and_advance(notes="Intro notes.")
+    session.save_answer_and_advance(notes="Manual custom notes.")
+    session.save_answer_and_advance(notes="Manual scored notes.", score="5")
+    session.flow_candidate_transcripts[1] = "Generated custom transcript."
+    session.flow_candidate_transcripts[2] = "Generated scored transcript."
+    window.session = session
+
+    window._render_review_page()
+
+    table = window.window.findChild(qt_widgets.QTableWidget, "PySideReviewQuestionTable")
+    headers = [table.horizontalHeaderItem(index).text() for index in range(table.columnCount())]
+    assert "Transcript" in headers
+    transcript_column = headers.index("Transcript")
+    transcript_values = [
+        table.item(row, transcript_column).text()
+        for row in range(table.rowCount())
+        if table.item(row, transcript_column) is not None
+    ]
+    assert "Generated custom transcript." in transcript_values
+    assert "Generated scored transcript." in transcript_values
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_stops_recording_after_last_scored_question_before_final_custom(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_workflow_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
+    session.start(candidate_name="Latoya Nugent", school="Palmdale", track_key="preschool")
+    window.session = session
+    window.recording_session = object()
+
+    workflow = session._workflow_items()
+    first_custom_index = next(index for index, item in enumerate(workflow) if item.kind == "custom")
+    trait_index = next(index for index, item in enumerate(workflow) if item.kind == "trait")
+
+    assert window._should_stop_recording_after_question(first_custom_index, workflow[first_custom_index]) is False
+    assert window._should_stop_recording_after_question(trait_index, workflow[trait_index]) is True
     window.window.close()
     app.processEvents()
 

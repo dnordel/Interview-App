@@ -2949,7 +2949,6 @@ class PySideInterviewWindow:
         draft_path = self._default_draft_path(candidate_name or "Candidate")
         self.session = PySideInterviewSession(model=self.model, draft_path=draft_path)
         self.session.start(candidate_name=candidate_name, school=school, track_key=self.session_track_key)
-        self._start_pyside_interview_recording()
         self._render_live_question_page()
         self._render_review_page()
         self._render_offer_page()
@@ -3145,6 +3144,13 @@ class PySideInterviewWindow:
         finally:
             self.recording_session = None
             self.recording_base_name = ""
+            self.recording_started_monotonic = None
+
+    def _should_stop_recording_after_question(self, flow_index: int, item: FlowQuestion) -> bool:
+        if self.session is None or self.recording_session is None or item.kind != "trait":
+            return False
+        remaining = self.session._workflow_items()[flow_index + 1 :]
+        return not any(question.kind == "trait" for question in remaining)
 
     def _apply_pyside_recording_result(self, recording_result: dict[str, Any]) -> None:
         if self.session is None:
@@ -3206,6 +3212,10 @@ class PySideInterviewWindow:
                     quick_actions=quick_actions,
                     qualification=qualification,
                 )
+            if item.kind == "intro":
+                self._start_pyside_interview_recording()
+            if self._should_stop_recording_after_question(current_index, item):
+                self._stop_pyside_interview_recording()
             self.session_index = self.session.current_index
             self.session_answers = dict(self.session.answers)
             if self.session.active_question() is not None and boundary_elapsed is not None:
@@ -3503,9 +3513,9 @@ class PySideInterviewWindow:
         summary_layout.addWidget(self._label("Needs Review", "SectionTitle"))
         summary_layout.addWidget(checklist)
 
-        question_table = self.QtWidgets.QTableWidget(0, 4)
+        question_table = self.QtWidgets.QTableWidget(0, 5)
         question_table.setObjectName("PySideReviewQuestionTable")
-        question_table.setHorizontalHeaderLabels(["Question", "Score", "Notes", "Flags"])
+        question_table.setHorizontalHeaderLabels(["Question", "Score", "Notes", "Transcript", "Flags"])
         question_table.verticalHeader().setVisible(False)
         question_table.setEditTriggers(self.QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         question_table.setSelectionBehavior(self.QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
@@ -3532,7 +3542,13 @@ class PySideInterviewWindow:
                 flags.append("Disqualifier")
             if "Candidate gave no example" in quick_actions:
                 flags.append("No example")
-            values = [item.title, score_text, note_text, ", ".join(flags) or "-"]
+            transcript_text = ""
+            if self.session is not None:
+                transcript_text = str(self.session.flow_candidate_transcripts.get(row, "") or "").strip()
+                if not transcript_text:
+                    recording = self.session.flow_recordings.get(row, {}) or {}
+                    transcript_text = str(recording.get("candidate_transcript") or "").strip()
+            values = [item.title, score_text, note_text, transcript_text or "Not generated", ", ".join(flags) or "-"]
             for column, value in enumerate(values):
                 question_table.setItem(row, column, self.QtWidgets.QTableWidgetItem(value))
         question_table.resizeColumnsToContents()

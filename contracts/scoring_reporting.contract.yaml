@@ -2,7 +2,7 @@ module:
   name: scoring_reporting
   language: python
   path: src/scoring_reporting.py
-  version: 0.19.0
+  version: 0.20.0
   description: Flattened public interface for scoring, reporting, trait signals, exports,
     referrals, email safety, offers, and templates, including DeepSeek-only advisory
     signal scoring; only active legacy adapters remain in the compatibility module
@@ -1610,8 +1610,9 @@ classes:
   - name: export_basic_interview_notes
     description: Generate a lightweight non-DeepSeek interview notes DOCX containing
       candidate header details, overall interviewer score, hiring decision, interviewer
-      rating table, and interview transcript text without AI-generated summaries
-      or advisory scoring sections.
+      rating table, interview transcript text for pre-scored custom and scored
+      questions, and manual notes for custom/non-scored questions after the scored
+      block, without AI-generated summaries or advisory scoring sections.
     locked: false
     inputs:
       rubric:
@@ -1669,8 +1670,11 @@ classes:
       it in a separate Question text row, explains missing answer-card AI-trait-based
       signal-weighted ratings as no supported signals, no weighted signals, or not generated
       instead of plain N/A, allows long transcript boxes to split
-      across pages to reduce blank space, excludes intro/script flow items from rendered notes sections, omits
-      score/rating rows from non-scored custom answer-summary cards, and preserves
+      across pages to reduce blank space, uses manual notes instead of stale
+      transcript text for custom/non-scored questions after the scored block while
+      preserving transcript text for pre-scored custom and scored questions, excludes
+      intro/script flow items from rendered notes sections, omits score/rating rows
+      from non-scored custom answer-summary cards, and preserves
       final interviewer raw/weighted scores, AI-trait-based net signal score,
       signal-derived raw score, signal-derived weighted score, AI-Advisor model observations, auto-no-hire metadata,
       and compatibility selected signal ids when present, and omits the legacy

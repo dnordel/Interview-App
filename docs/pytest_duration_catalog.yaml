@@ -3481,6 +3481,10 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_recording_starts_after_intro_not_on_begin
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_qualification_screen_keeps_education_and_experience_with_why_ece
   duration_seconds_n2: 0.001
   gui_heavy: false
@@ -3542,6 +3546,14 @@ entries:
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_next_marks_new_question_at_click_boundary
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_review_table_shows_generated_transcripts
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_stops_recording_after_last_scored_question_before_final_custom
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
@@ -4469,15 +4481,15 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_reporting_export.py::TestDocxExporterValidation::test_export_uses_candidate_transcript_for_custom_flow_entry
-  duration_seconds_n2: 0.001
-  gui_heavy: false
-  placement: fast
 - nodeid: tests/test_reporting_export.py::TestDocxExporterValidation::test_export_uses_director_ready_section_order_and_appendices
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_reporting_export.py::TestDocxExporterValidation::test_export_uses_interview_notes_template_layout
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_reporting_export.py::TestDocxExporterValidation::test_export_uses_manual_notes_for_final_custom_flow_entry_when_transcript_exists
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast

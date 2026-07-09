@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.63.2
+  version: 1.64.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, resizable splitter sections, school/classroom selectors, wider color-coded classroom list with per-classroom status-count overview, metric cards, positions table, fully editable right-side assignment/person details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics, parallel Staffing v2 navigation/page shell with its own mockup-style staffing sidebar, People / Employee Management and Assignment History sub-dashboards for the mockup-driven rewrite backed by staffing_dashboard_v2 while the legacy Staffing page remains available,
@@ -3118,19 +3118,21 @@ classes:
     exceptions: []
     side_effects: Updates Admin Studio table item baseline data.
   - name: _start_pyside_interview_recording
-    description: Start optional continuous PySide interview recording using the shared
-      local recorder and the same runtime settings warmed after startup, or record
-      a non-blocking warning when recording dependencies are unavailable.
+    description: Start optional continuous PySide interview recording after the intro
+      screen using the shared local recorder and the same runtime settings warmed
+      after startup, or record a non-blocking warning when recording dependencies
+      are unavailable.
     locked: false
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Resets PySide session transcript state and may start FFmpeg-backed
-      local recording.
+    side_effects: Resets PySide session transcript state for candidate-answer questions
+      and may start FFmpeg-backed local recording.
   - name: _stop_pyside_interview_recording
-    description: Stop optional PySide continuous recording, transcribe it locally,
-      map candidate transcript segments to interview flow items, and save the draft.
+    description: Stop optional PySide continuous recording after the final scored
+      question or during finalize fallback, transcribe it locally, map candidate
+      transcript segments to interview flow items, and save the draft.
     locked: false
     inputs: {}
     returns:
@@ -3138,6 +3140,23 @@ classes:
     exceptions: []
     side_effects: May write WAV/transcript artifacts under DEFAULT_BASE_DIR and update
       session flow_recordings/flow_candidate_transcripts.
+  - name: _should_stop_recording_after_question
+    description: Return whether PySide recording should stop after the supplied flow
+      question, which is true only for the last remaining scored trait question
+      while recording is active so final custom/non-scored questions are manual-note
+      only.
+    locked: false
+    inputs:
+      flow_index:
+        type: int
+        required: true
+      item:
+        type: FlowQuestion
+        required: true
+    returns:
+      type: bool
+    exceptions: []
+    side_effects: none
   - name: _render_live_footer
     description: Render persistent Live Interview footer actions with Back and Skip
       on the left, Next or Finalize plus Exit on the right, and disable Next/Finalize
@@ -3204,9 +3223,9 @@ classes:
     description: Render the interviewer-facing closeout screen from already-available
       session data, including saved/background report status text, manual score,
       determination, next step, missing/skipped checks, and a question score table
-      that only exposes whether notes exist. It must not display DeepSeek output,
-      AI analysis/scoring text, transcript text, Finalize Interview, or Generate
-      Offer actions.
+      that exposes whether notes exist plus any generated question transcripts.
+      It must not display DeepSeek output, AI analysis/scoring text, Finalize
+      Interview, or Generate Offer actions.
     locked: false
     inputs: {}
     returns:

@@ -998,11 +998,20 @@ class DocxExporter:
         doc.add_heading("Interview Transcript", level=1)
         flow_transcript = [item for item in payload.get("flow_transcript", []) or [] if isinstance(item, dict)]
         if flow_transcript:
+            seen_scored_question = False
             for item in flow_transcript:
                 question = str(item.get("question") or item.get("prompt") or item.get("title") or "Question").strip()
-                answer = str(item.get("candidate_transcript") or item.get("answer") or "").strip()
+                item_type = str(item.get("type") or "").strip().lower()
+                use_manual_notes = seen_scored_question and item_type in {"custom", "qualification"}
+                answer = (
+                    str(item.get("answer") or item.get("evaluator_notes") or "").strip()
+                    if use_manual_notes
+                    else str(item.get("candidate_transcript") or item.get("answer") or "").strip()
+                )
                 doc.add_paragraph(question, style="List Bullet")
                 doc.add_paragraph(answer or "No transcript captured.")
+                if item_type == "trait":
+                    seen_scored_question = True
         else:
             transcript = self._extract_full_candidate_transcript(payload)
             doc.add_paragraph(transcript or "No transcript captured.")
@@ -1459,6 +1468,15 @@ class DocxExporter:
             for item in raw_flow_transcript
             if isinstance(item, dict) and not is_intro_flow_item(item)
         ]
+        final_manual_note_positions: set[int] = set()
+        seen_scored_question = False
+        for index, item in enumerate(flow_transcript):
+            item_type = str(item.get("type") or "").strip().lower()
+            if item_type == "trait":
+                seen_scored_question = True
+                continue
+            if seen_scored_question and item_type in {"custom", "qualification"}:
+                final_manual_note_positions.add(index)
         answer_summaries = [
             item
             for item in payload.get("answer_summaries", []) or []
@@ -1866,12 +1884,19 @@ class DocxExporter:
                 add_heading(f"{i}. {item_title} ({itype})", level=2)
                 if qtext:
                     add_labeled_text("Question: ", qtext, space_after=3)
-                cand_tx = compact_transcript_attempts(item.get("candidate_transcript") or "")
+                use_manual_notes = (i - 1) in final_manual_note_positions
+                cand_tx = compact_transcript_attempts(
+                    item.get("answer") or item.get("evaluator_notes") or ""
+                    if use_manual_notes
+                    else item.get("candidate_transcript") or ""
+                )
                 if cand_tx:
-                    add_text("Full Candidate Answer (auto-transcribed)", bold=True)
+                    label = "Full Candidate Answer (manual notes)" if use_manual_notes else "Full Candidate Answer (auto-transcribed)"
+                    add_text(label, bold=True)
                     add_box(cand_tx, allow_split=True)
                 else:
-                    add_labeled_text("Full Candidate Answer (auto-transcribed): ", "Not captured")
+                    label = "Full Candidate Answer (manual notes): " if use_manual_notes else "Full Candidate Answer (auto-transcribed): "
+                    add_labeled_text(label, "Not captured")
         add_heading("AI Advisory Appendix")
         add_box(
             f"{ai_advisory_label} content is supporting information only. "
