@@ -12524,6 +12524,135 @@ def test_pyside_staffing_v2_summary_cards_follow_selected_school(
     app.processEvents()
 
 
+@pytest.mark.pyside_gui
+@pytest.mark.slow_pyside
+def test_pyside_staffing_v2_director_candidates_follow_admin_school_selector(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    seed_path = tmp_path / "staffing_seed.json"
+    seed_path.write_text(
+        json.dumps(
+            {
+                "schools": [
+                    {
+                        "name": "Hawthorne",
+                        "classrooms": [
+                            {
+                                "name": "Harmony",
+                                "positions": [
+                                    {
+                                        "position_name": "Hawthorne Teacher",
+                                        "position_type": "Teacher",
+                                        "status": "need_now",
+                                    }
+                                ],
+                            }
+                        ],
+                    },
+                    {
+                        "name": "North Long Beach",
+                        "classrooms": [
+                            {
+                                "name": "Unity",
+                                "positions": [
+                                    {
+                                        "position_name": "North Long Beach Teacher",
+                                        "position_type": "Teacher",
+                                        "status": "need_now",
+                                    }
+                                ],
+                            }
+                        ],
+                    },
+                    {
+                        "name": "Palmdale",
+                        "classrooms": [
+                            {
+                                "name": "Quest",
+                                "positions": [
+                                    {
+                                        "position_name": "Palmdale Teacher",
+                                        "position_type": "Teacher",
+                                        "status": "need_now",
+                                    }
+                                ],
+                            }
+                        ],
+                    },
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    staffing_path = tmp_path / "staffing.sqlite3"
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", staffing_path)
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", seed_path)
+    store = pyside_interview_app.StaffingStore(staffing_path)
+    store.initialize()
+    store.import_seed_file(seed_path)
+    service = pyside_interview_app.StaffingService(store)
+    for school, candidate in [
+        ("Hawthorne", "Hawthorne Candidate"),
+        ("North Long Beach", "North Long Beach Candidate"),
+        ("Palmdale", "Palmdale Candidate"),
+    ]:
+        service.upsert_director_candidate_referral(
+            history_id=f"hist-{school.lower().replace(' ', '-')}",
+            candidate_name=candidate,
+            school=school,
+            position="Teacher",
+            interviewer_rating=8.0,
+            interviewer_outcome="hire",
+            interview_date="2026-07-09",
+        )
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.sqlite3",
+        school_options=["Hawthorne", "North Long Beach", "Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
+    window.sidebar.setCurrentRow(nav_items.index("Staffing v2"))
+    app.processEvents()
+    page = window.stack.currentWidget()
+    selector = page.findChild(qt_widgets.QComboBox, "StaffingV2SchoolFilter")
+    table = page.findChild(qt_widgets.QTableWidget, "StaffingV2DirectorInterviewPendingTable")
+
+    selector.setCurrentText("Hawthorne")
+    app.processEvents()
+    assert [table.item(row, 0).text() for row in range(table.rowCount())] == ["Hawthorne Candidate"]
+    assert [table.horizontalHeaderItem(column).text() for column in range(table.columnCount())] == [
+        "Candidate",
+        "Outcome",
+        "Score",
+        "Interview\nDate",
+        "Role",
+        "Referral\nDate",
+        "Action",
+    ]
+    assert not table.horizontalHeader().stretchLastSection()
+    assert table.horizontalHeader().minimumHeight() >= 54
+    assert table.columnWidth(6) >= 156
+    record_button = table.cellWidget(0, 6)
+    assert record_button is not None
+    assert record_button.minimumWidth() >= 144
+    assert table.columnWidth(6) >= record_button.minimumWidth()
+
+    selector.setCurrentText("North Long Beach")
+    app.processEvents()
+    assert [table.item(row, 0).text() for row in range(table.rowCount())] == ["North Long Beach Candidate"]
+
+    selector.setCurrentText("Palmdale")
+    app.processEvents()
+    assert [table.item(row, 0).text() for row in range(table.rowCount())] == ["Palmdale Candidate"]
+    window.window.close()
+    app.processEvents()
+
+
 def test_pyside_staffing_action_button_exposes_secondary_actions(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -13833,6 +13962,82 @@ def test_director_staffing_launch_queues_history_backfill_when_edit_lock_exists(
     assert pyside_interview_app.StaffingService(store).flush_pending_operations() == 1
     pending = store.list_director_candidate_referrals(school="Palmdale")
     assert [candidate.candidate_name for candidate in pending] == ["Locked Candidate"]
+
+
+@pytest.mark.pyside_gui
+@pytest.mark.slow_pyside
+def test_staffing_v2_director_interviews_delete_checked_pending_rows(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    history_path = tmp_path / "interview_history.sqlite3"
+    staffing_path = tmp_path / "staffing.sqlite3"
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", staffing_path)
+    store = pyside_interview_app.StaffingStore(
+        pyside_interview_app.staffing_db_path_for_school("Palmdale", base_path=staffing_path)
+    )
+    store.initialize()
+    service = pyside_interview_app.StaffingService(store)
+    for history_id, candidate_name in [
+        ("hist-delete-1", "Adrianna Love"),
+        ("hist-delete-2", "Michelle Marti"),
+        ("hist-keep", "Catherine Gray"),
+    ]:
+        service.upsert_director_candidate_referral(
+            history_id=history_id,
+            candidate_name=candidate_name,
+            school="Palmdale",
+            position="Teacher",
+            interviewer_rating=8.0,
+            interviewer_outcome="hire",
+            interview_date="2026-07-08",
+        )
+    model = pyside_interview_app.build_director_staffing_model(
+        build_interview_redesign_model(
+            rubric_path=_write_test_rubric(tmp_path),
+            overrides_path=_write_test_overrides(tmp_path),
+            history_path=history_path,
+            school_options=["Palmdale"],
+        ),
+        school="Palmdale",
+    )
+
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    table = window.window.findChild(qt_widgets.QTableWidget, "StaffingV2DirectorInterviewPendingTable")
+    delete_selected = window.window.findChild(qt_widgets.QPushButton, "StaffingV2DirectorInterviewDeleteSelected")
+
+    rendered_rows = {
+        table.item(row, 0).text(): row
+        for row in range(table.rowCount())
+        if table.item(row, 0) is not None
+    }
+    assert table.selectionMode() == qt_widgets.QAbstractItemView.SelectionMode.MultiSelection
+    assert set(rendered_rows) == {"Adrianna Love", "Michelle Marti", "Catherine Gray"}
+    adrianna_checkbox = table.cellWidget(rendered_rows["Adrianna Love"], 0)
+    michelle_checkbox = table.cellWidget(rendered_rows["Michelle Marti"], 0)
+    assert adrianna_checkbox is not None
+    assert michelle_checkbox is not None
+    assert adrianna_checkbox.text() == "Adrianna Love"
+    assert michelle_checkbox.text() == "Michelle Marti"
+    adrianna_checkbox.setChecked(True)
+    michelle_checkbox.setChecked(True)
+    monkeypatch.setattr(
+        qt_widgets.QMessageBox,
+        "question",
+        lambda *_args, **_kwargs: qt_widgets.QMessageBox.StandardButton.Yes,
+    )
+    delete_selected.click()
+    app.processEvents()
+
+    assert table.rowCount() == 1
+    assert table.item(0, 0).text() == "Catherine Gray"
+    assert [candidate.candidate_name for candidate in service.list_pending_director_interviews(school="Palmdale")] == [
+        "Catherine Gray"
+    ]
+    window.window.close()
+    app.processEvents()
 
 
 def _staffing_row_for_position(table, position_name: str) -> int:

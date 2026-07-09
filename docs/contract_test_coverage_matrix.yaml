@@ -12,7 +12,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-09T16:03:21.711418+00:00'
+generated_at_utc: '2026-07-09T16:54:27.609535+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -13207,6 +13207,15 @@ entries:
     - return_type
 - contract: contracts/staffing_dashboard_v2.contract.yaml
   symbol: staffing_dashboard_v2.StaffingDashboardV2Page._apply_classrooms_filter_drawer
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_v2.contract.yaml
+  symbol: staffing_dashboard_v2.StaffingDashboardV2Page._apply_director_pending_table_column_layout
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py

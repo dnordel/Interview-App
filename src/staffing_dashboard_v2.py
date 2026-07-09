@@ -4786,6 +4786,7 @@ class StaffingDashboardV2Page:
         self.classroom_list.blockSignals(False)
         self._sync_classroom_list_selection()
         self._select_classroom(self.classroom_list.currentRow())
+        self._refresh_director_interviews()
 
     def _dashboard_classroom_matches_filters(self, rows: list[StaffingMetricRow]) -> bool:
         status = str(self.dashboard_classroom_filter_state.get("status", "All Statuses"))
@@ -4860,13 +4861,15 @@ class StaffingDashboardV2Page:
         self.director_interview_pending_table.setObjectName("StaffingV2DirectorInterviewPendingTable")
         self.director_interview_pending_table.setEditTriggers(self.QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         self.director_interview_pending_table.setSelectionBehavior(self.QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
-        self.director_interview_pending_table.setSelectionMode(self.QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
+        self.director_interview_pending_table.setSelectionMode(self.QtWidgets.QAbstractItemView.SelectionMode.MultiSelection)
         self.director_interview_pending_table.setHorizontalHeaderLabels(
-            ["Candidate", "Outcome", "First Interview Score", "Interview Date", "Position", "Referral", "Action"]
+            ["Candidate", "Outcome", "Score", "Interview\nDate", "Role", "Referral\nDate", "Action"]
         )
         self.director_interview_pending_table.verticalHeader().hide()
-        self.director_interview_pending_table.horizontalHeader().setStretchLastSection(True)
-        self.director_interview_pending_table.setMaximumHeight(170)
+        self.director_interview_pending_table.setWordWrap(True)
+        self.director_interview_pending_table.setHorizontalScrollBarPolicy(self.QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self._apply_director_pending_table_column_layout()
+        self.director_interview_pending_table.setMaximumHeight(190)
         layout.addWidget(self.director_interview_pending_table)
 
         layout.addWidget(self._label("Completed", "StaffingV2Muted"))
@@ -4891,6 +4894,16 @@ class StaffingDashboardV2Page:
         self.director_interview_history_table.setMaximumHeight(150)
         layout.addWidget(self.director_interview_history_table)
         return panel
+
+    def _apply_director_pending_table_column_layout(self) -> None:
+        table = self.director_interview_pending_table
+        header = table.horizontalHeader()
+        header.setStretchLastSection(False)
+        header.setDefaultAlignment(self.QtCore.Qt.AlignmentFlag.AlignCenter)
+        header.setMinimumHeight(54)
+        for column, width in enumerate([220, 96, 124, 112, 220, 112, 156]):
+            table.setColumnWidth(column, width)
+            header.setSectionResizeMode(column, self.QtWidgets.QHeaderView.ResizeMode.Fixed)
 
     def _refresh_director_interviews(self) -> None:
         if not hasattr(self, "director_interview_pending_table"):
@@ -4924,20 +4937,39 @@ class StaffingDashboardV2Page:
                 item = self.QtWidgets.QTableWidgetItem(value)
                 item.setData(self.QtCore.Qt.ItemDataRole.UserRole, candidate.id)
                 table.setItem(row_index, column, item)
+                if column == 0:
+                    checkbox = self.QtWidgets.QCheckBox(value)
+                    checkbox.setObjectName("StaffingV2DirectorInterviewCandidateSelect")
+                    checkbox.setProperty("directorReferralId", candidate.id)
+                    checkbox.setToolTip("Select candidate for deletion")
+                    table.setCellWidget(row_index, column, checkbox)
             button = self.QtWidgets.QPushButton("Record Interview")
             button.setObjectName("StaffingV2DirectorInterviewRecordButton")
+            button.setMinimumWidth(144)
             self._set_button_icon(button, "status_filled")
             button.clicked.connect(lambda _checked=False, item=candidate.id: self._open_director_interview_dialog(item))
             table.setCellWidget(row_index, 6, button)
-        table.resizeColumnsToContents()
+        self._apply_director_pending_table_column_layout()
 
     def _delete_selected_director_referrals(self) -> None:
         table = self.director_interview_pending_table
-        referral_ids = {
-            int(item.data(self.QtCore.Qt.ItemDataRole.UserRole))
-            for item in table.selectedItems()
-            if item.data(self.QtCore.Qt.ItemDataRole.UserRole)
-        }
+        referral_ids = set()
+        for row in range(table.rowCount()):
+            candidate_item = table.item(row, 0)
+            if candidate_item is None:
+                continue
+            referral_id = candidate_item.data(self.QtCore.Qt.ItemDataRole.UserRole)
+            if not referral_id:
+                continue
+            candidate_selector = table.cellWidget(row, 0)
+            is_checked = bool(candidate_selector is not None and candidate_selector.isChecked())
+            is_selected = table.selectionModel().isRowSelected(row, self.QtCore.QModelIndex())
+            if is_checked or is_selected:
+                referral_ids.add(int(referral_id))
+        for item in table.selectedItems():
+            referral_id = item.data(self.QtCore.Qt.ItemDataRole.UserRole)
+            if referral_id:
+                referral_ids.add(int(referral_id))
         if not referral_ids:
             self.director_interview_status.setText(
                 f"{len(self.pending_director_candidates)} pending / {len(self.completed_director_interviews)} completed"

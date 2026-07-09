@@ -4181,6 +4181,10 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_director_candidates_follow_admin_school_selector
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_action_button_exposes_secondary_actions
   duration_seconds_n2: 0.001
   gui_heavy: false
@@ -4246,6 +4250,10 @@ entries:
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_director_staffing_launch_queues_history_backfill_when_edit_lock_exists
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_staffing_v2_director_interviews_delete_checked_pending_rows
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
