@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.62.0
+  version: 1.62.1
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, resizable splitter sections, school/classroom selectors, wider color-coded classroom list with per-classroom status-count overview, metric cards, positions table, fully editable right-side assignment/person details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics, parallel Staffing v2 navigation/page shell with its own mockup-style staffing sidebar, People / Employee Management and Assignment History sub-dashboards for the mockup-driven rewrite backed by staffing_dashboard_v2 while the legacy Staffing page remains available,
@@ -552,9 +552,10 @@ classes:
       history row under the selected output directory without queueing DeepSeek.
   - name: finalize_interview
     description: Finalize the completed PySide session using shared desktop runtime
-      contracts for scoring, basic DocxExporter notes generation, integration export,
-      transcript metadata, and history persistence; DeepSeek processing is not started
-      by finalize and is only launched later from the candidate history Generate action.
+      contracts for scoring, immediate history persistence after the hiring decision,
+      basic DocxExporter notes generation, integration export, transcript metadata,
+      and final history path backfill; DeepSeek processing is not started by finalize
+      and is only launched later from the candidate history Generate action.
     locked: false
     inputs:
       base_dir:
@@ -574,9 +575,10 @@ classes:
     exceptions:
     - ReportingValidationError
     - OSError
-    side_effects: Writes basic interview-notes DOCX to the resolved per-school Dropbox
-      candidate folder when configured, writes integration export, finalized interview
-      history row with not-started DeepSeek status, and preserves any PySide recording/transcript
+    side_effects: Writes finalized interview history immediately after scoring with
+      not-started DeepSeek status, writes basic interview-notes DOCX to the resolved
+      per-school Dropbox candidate folder when configured, backfills the history notes
+      paths, writes integration export, and preserves any PySide recording/transcript
       payload in history/session data for later history-triggered DeepSeek generation.
   - name: _transcript_metadata
     description: Build complete/partial transcript metadata from PySide flow transcript
@@ -3161,9 +3163,10 @@ classes:
     exceptions: []
     side_effects: Updates visible live-interview footer button state.
   - name: _poll_pyside_finalize_worker
-    description: Poll background PySide finalize results, drain progress updates,
-      refresh history/candidate tables, and update review status text when recording/transcription
-      and notes generation complete or fail.
+    description: Poll background PySide finalize events/results, drain progress updates,
+      refresh history/candidate tables as soon as history is persisted, and update
+      review status text when recording/transcription and notes generation complete
+      or fail.
     locked: false
     inputs:
       results:
@@ -3175,9 +3178,9 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Stops the polling timer, clears finalize running state, updates
-      the review status label, refreshes visible history tables, and starts optional
-      detached DeepSeek progress polling.
+    side_effects: May refresh visible history tables before final report export
+      completes; stops the polling timer, clears finalize running state, updates the
+      review status label, and starts optional detached DeepSeek progress polling.
   - name: _show_pyside_finalize_progress
     description: Show a user-closable non-modal PySide finalize progress dialog with
       immediate ordered sanitized task/status rows in a compact scrollable task pane

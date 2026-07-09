@@ -1930,6 +1930,67 @@ def test_pyside_finalize_reload_history_after_queueing_deepseek(tmp_path: Path, 
     app.processEvents()
 
 
+def test_pyside_finalize_shows_candidate_history_before_report_export_finishes(tmp_path: Path, monkeypatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    history_path = tmp_path / "interview_history.sqlite3"
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    window.session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
+    window.session.start(candidate_name="Mina Patel", school="Palmdale", track_key="preschool")
+    monkeypatch.setattr(window, "_stop_pyside_interview_recording", lambda: None)
+    monkeypatch.setattr(pyside_interview_app, "INTERVIEW_HISTORY_PATH", history_path)
+    export_started = threading.Event()
+    release_export = threading.Event()
+
+    def _blocked_export(_gateway, app_adapter, context):
+        export_started.set()
+        release_export.wait(timeout=5)
+        out_path = tmp_path / "notes.docx"
+        app_adapter.state.referral_packet["interview_notes_path"] = str(out_path)
+        context.interview_notes_document_path = str(out_path)
+        context.payload["interview_notes_document_path"] = str(out_path)
+        return str(out_path)
+
+    monkeypatch.setattr(pyside_interview_app.FinalizeGateways, "export_basic_report", _blocked_export)
+    monkeypatch.setattr(
+        pyside_interview_app.FinalizeGateways,
+        "export_integration",
+        lambda _gateway, _app_adapter, _context: tmp_path / "integration.json",
+    )
+    monkeypatch.setattr(
+        pyside_interview_app.FinalizeGateways,
+        "send_referral",
+        lambda _gateway, _app_adapter, _context, _out_path, _integration_path: ({}, None),
+    )
+
+    window._generate_interview_notes_from_session()
+    for _ in range(100):
+        app.processEvents()
+        if window.candidate_history_table.rowCount() == 1 and export_started.is_set():
+            break
+
+    assert export_started.is_set()
+    assert window.history_table.rowCount() == 1
+    assert window.history_table.item(0, 1).text() == "Mina Patel"
+    assert window.candidate_history_table.rowCount() == 1
+    assert window.candidate_history_table.item(0, 1).text() == "Mina Patel"
+
+    release_export.set()
+    for _ in range(100):
+        app.processEvents()
+        if "Interview finalized:" in window.review_status_label.text():
+            break
+    window.window.close()
+    app.processEvents()
+
+
 @pytest.mark.pyside_gui
 @pytest.mark.slow_pyside
 def test_pyside_history_grid_shows_failed_retry_for_failed_deepseek_row(tmp_path: Path) -> None:
@@ -13778,10 +13839,23 @@ def test_staffing_v2_director_interviews_sync_pending_history_and_record_complet
     assert dialog is not None
     dialog.findChild(qt_widgets.QLineEdit, "StaffingV2DirectorInterviewDirectorName").setText("Avery Director")
     dialog.findChild(qt_widgets.QDoubleSpinBox, "StaffingV2DirectorInterviewRating").setValue(9.0)
-    dialog.findChild(qt_widgets.QComboBox, "StaffingV2DirectorInterviewDecision").setCurrentText("Hire")
-    dialog.findChild(qt_widgets.QLineEdit, "StaffingV2DirectorInterviewShiftStartText").setText("8:00 AM")
-    dialog.findChild(qt_widgets.QLineEdit, "StaffingV2DirectorInterviewShiftEndText").setText("5:00 PM")
-    dialog.findChild(qt_widgets.QComboBox, "StaffingV2DirectorInterviewClassroom").setCurrentText("Harmony 1")
+    decision = dialog.findChild(qt_widgets.QComboBox, "StaffingV2DirectorInterviewDecision")
+    shift_start = dialog.findChild(qt_widgets.QLineEdit, "StaffingV2DirectorInterviewShiftStartText")
+    shift_end = dialog.findChild(qt_widgets.QLineEdit, "StaffingV2DirectorInterviewShiftEndText")
+    classroom = dialog.findChild(qt_widgets.QComboBox, "StaffingV2DirectorInterviewClassroom")
+    decision.setCurrentText("No-Hire")
+    app.processEvents()
+    assert not shift_start.isVisible()
+    assert not shift_end.isVisible()
+    assert not classroom.isVisible()
+    decision.setCurrentText("Hire")
+    app.processEvents()
+    assert shift_start.isVisible()
+    assert shift_end.isVisible()
+    assert classroom.isVisible()
+    shift_start.setText("8:00 AM")
+    shift_end.setText("5:00 PM")
+    classroom.setCurrentText("Harmony 1")
     dialog.findChild(qt_widgets.QTextEdit, "StaffingV2DirectorInterviewNotes").setPlainText("Strong classroom presence.")
     dialog.findChild(qt_widgets.QPushButton, "StaffingV2DirectorInterviewSave").click()
     app.processEvents()

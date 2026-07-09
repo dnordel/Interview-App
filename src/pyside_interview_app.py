@@ -506,15 +506,25 @@ class PySideInterviewSession:
         transcript_metadata = self._transcript_metadata()
         context = build_finalize_context(adapter, scoring, warnings, transcript_metadata, run_deepseek=False)
         active_gateways = gateways or FinalizeGateways()
+        history_id = active_gateways.persist_finalize_history(adapter, context, "")
         export_basic_report = getattr(active_gateways, "export_basic_report", None)
         out_path = (
             export_basic_report(adapter, context)
             if callable(export_basic_report)
             else active_gateways.export_report(adapter, context)
         )
+        notes_path = adapter.state.referral_packet.get("interview_notes_path", "") or str(out_path)
+        adapter.history_store.update_row(
+            history_id,
+            {
+                "saved_report_path": str(out_path),
+                "interview_notes_path": notes_path,
+                "notes_path": notes_path,
+                "report_path": str(out_path),
+            },
+        )
         integration_path = active_gateways.export_integration(adapter, context)
         director_packet, comm_log_path = active_gateways.send_referral(adapter, context, out_path, integration_path)
-        history_id = active_gateways.persist_finalize_history(adapter, context, out_path)
         return {
             "scoring": scoring,
             "out_path": str(out_path),
@@ -3467,15 +3477,25 @@ class PySideInterviewWindow:
         self._pyside_finalize_running = True
         self._show_pyside_finalize_progress("Preparing finalize")
         self.review_status_label.setText("Finalizing interview. Recording and notes are processing in the background.")
-        results: queue.Queue[dict[str, Any]] = queue.Queue(maxsize=1)
+        results: queue.Queue[dict[str, Any]] = queue.Queue()
         session = self.session
+
+        class _PySideLiveRefreshFinalizeGateways(FinalizeGateways):
+            def persist_finalize_history(self, app: Any, context: Any, out_path: str) -> str:
+                history_id = super().persist_finalize_history(app, context, out_path)
+                results.put({"ok": True, "event": "history_persisted", "history_id": history_id})
+                return history_id
 
         def _worker() -> None:
             try:
                 self._report_pyside_finalize_progress("Stopping recording and transcribing")
                 self._stop_pyside_interview_recording()
                 self._report_pyside_finalize_progress("Building interview notes")
-                result = session.finalize_interview(base_dir=DEFAULT_BASE_DIR, history_path=INTERVIEW_HISTORY_PATH)
+                result = session.finalize_interview(
+                    base_dir=DEFAULT_BASE_DIR,
+                    history_path=INTERVIEW_HISTORY_PATH,
+                    gateways=_PySideLiveRefreshFinalizeGateways(),
+                )
                 self._report_pyside_finalize_progress("Queueing DeepSeek processing")
                 results.put({"ok": True, "result": result, "warning": self.recording_warning})
             except Exception as exc:  # noqa: BLE001
@@ -3491,6 +3511,9 @@ class PySideInterviewWindow:
         try:
             message = results.get_nowait()
         except queue.Empty:
+            return
+        if message.get("event") == "history_persisted":
+            self._reload_history_model()
             return
         timer.stop()
         timer.deleteLater()

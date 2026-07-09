@@ -5074,12 +5074,28 @@ class StaffingDashboardV2Page:
         form_layout.addLayout(self._labeled_control("Interview Date", completed_date))
         form_layout.addLayout(self._labeled_control("Rating", rating))
         form_layout.addLayout(self._labeled_control("Decision", decision))
-        form_layout.addLayout(self._labeled_control("Proposed Shift Start", shift_start))
-        form_layout.addLayout(self._labeled_control("Proposed Shift End", shift_end))
-        form_layout.addLayout(self._labeled_control("Proposed Classroom", classroom))
+        hire_only_fields: list[Any] = []
+        for object_name, label, control in (
+            ("StaffingV2DirectorInterviewShiftStartRow", "Proposed Shift Start", shift_start),
+            ("StaffingV2DirectorInterviewShiftEndRow", "Proposed Shift End", shift_end),
+            ("StaffingV2DirectorInterviewClassroomRow", "Proposed Classroom", classroom),
+        ):
+            row = self.QtWidgets.QWidget()
+            row.setObjectName(object_name)
+            row.setLayout(self._labeled_control(label, control))
+            form_layout.addWidget(row)
+            hire_only_fields.append(row)
         form_layout.addWidget(follow_up)
         form_layout.addLayout(self._labeled_control("Decision Notes", notes))
         layout.addWidget(form)
+
+        def sync_hire_only_fields() -> None:
+            is_hire = decision.currentText() == "Hire"
+            for field in hire_only_fields:
+                field.setVisible(is_hire)
+
+        decision.currentTextChanged.connect(sync_hire_only_fields)
+        sync_hire_only_fields()
 
         info, info_layout = self._dialog_section("StaffingV2DialogInfo")
         info_layout.addWidget(self._label("Hire decisions store proposed classroom and shift only."))
@@ -5114,9 +5130,9 @@ class StaffingDashboardV2Page:
                     rating=rating.value(),
                     decision="hire" if decision.currentText() == "Hire" else "no_hire",
                     decision_notes=notes.toPlainText(),
-                    proposed_shift_start=shift_start.text(),
-                    proposed_shift_end=shift_end.text(),
-                    proposed_classroom=classroom.currentText(),
+                    proposed_shift_start=shift_start.text() if decision.currentText() == "Hire" else "",
+                    proposed_shift_end=shift_end.text() if decision.currentText() == "Hire" else "",
+                    proposed_classroom=classroom.currentText() if decision.currentText() == "Hire" else "",
                     follow_up_needed=follow_up.isChecked(),
                 )
             except Exception as exc:  # noqa: BLE001 - service validation is user-facing here.
