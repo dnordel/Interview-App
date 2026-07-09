@@ -4089,6 +4089,10 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_full_app_selection_resyncs_shared_page_scrollbars
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_notifications_nav_opens_rule_dashboard_and_editor
   duration_seconds_n2: 0.001
   gui_heavy: false

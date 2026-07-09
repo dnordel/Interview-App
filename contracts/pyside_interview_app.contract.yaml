@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.64.0
+  version: 1.64.1
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, resizable splitter sections, school/classroom selectors, wider color-coded classroom list with per-classroom status-count overview, metric cards, positions table, fully editable right-side assignment/person details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics, parallel Staffing v2 navigation/page shell with its own mockup-style staffing sidebar, People / Employee Management and Assignment History sub-dashboards for the mockup-driven rewrite backed by staffing_dashboard_v2 while the legacy Staffing page remains available,
@@ -3363,7 +3363,7 @@ classes:
     exceptions: []
     side_effects: Writes PySide draft JSON and changes visible tab.
   - name: _select_main_nav_row
-    description: Ensure a deferred main navigation page is built, switch the main PySide stack to the selected navigation row, and hide the legacy Interview Assistant sidebar when the temporary Staffing v2 page is active so Staffing v2 can render its own mockup-style shell.
+    description: Ensure a deferred main navigation page is built, switch the main PySide stack to the selected navigation row, hide the legacy Interview Assistant sidebar when the temporary Staffing v2 page is active so Staffing v2 can render its own mockup-style shell, and resynchronize the shared StaffingDashboardV2Page scroll behavior after full/admin navigation activates Staffing v2.
     locked: false
     inputs:
       index:
@@ -3373,7 +3373,7 @@ classes:
       type: None
     exceptions: []
     side_effects: May build and replace one deferred stack page, changes the visible
-      stack index, and toggles sidebar_panel visibility.
+      stack index, toggles sidebar_panel visibility, and schedules the shared Staffing v2 page to resync scrollbars when Staffing v2 becomes active.
   - name: _deferred_main_nav_page
     description: Return a lightweight placeholder widget for a secondary main navigation page so launcher startup can show the first page before heavier pages are constructed.
     locked: false

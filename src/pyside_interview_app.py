@@ -2314,6 +2314,8 @@ class PySideInterviewWindow:
         nav_text = item.text() if item is not None else ""
         if hasattr(self, "sidebar_panel"):
             self.sidebar_panel.setVisible(nav_text != "Staffing v2")
+        if nav_text == "Staffing v2" and getattr(self, "staffing_v2_dashboard", None) is not None:
+            self.QtCore.QTimer.singleShot(0, self.staffing_v2_dashboard._sync_staffing_v2_scroll_ranges)
 
     def _deferred_main_nav_page(self, name: str) -> Any:
         page = self.QtWidgets.QWidget()

@@ -97,11 +97,14 @@ class _StaffingV2WheelRelay:
                 self.scroll_area = scroll_area
 
             def eventFilter(self, watched: Any, event: Any) -> bool:  # noqa: N802
-                if event.type() != self.QtCore.QEvent.Type.Wheel:
+                try:
+                    if event.type() != self.QtCore.QEvent.Type.Wheel:
+                        return False
+                    if not self.scroll_area.isVisible() or not self._contains_watched(watched, event):
+                        return False
+                    return self._scroll(event)
+                except RuntimeError:
                     return False
-                if not self.scroll_area.isVisible() or not self._contains_watched(watched, event):
-                    return False
-                return self._scroll(event)
 
             def _contains_watched(self, watched: Any, event: Any) -> bool:
                 content = self.scroll_area.widget() if hasattr(self.scroll_area, "widget") else None
@@ -134,15 +137,18 @@ class _StaffingV2ApplicationWheelRouter:
                 self.root = root
 
             def eventFilter(self, watched: Any, event: Any) -> bool:  # noqa: N802
-                if event.type() != QtCore.QEvent.Type.Wheel or not self.root.isVisible():
+                try:
+                    if event.type() != QtCore.QEvent.Type.Wheel or not self.root.isVisible():
+                        return False
+                    global_position = _v2_wheel_global_position(event)
+                    if not self.root.rect().contains(self.root.mapFromGlobal(global_position)):
+                        return False
+                    for scroll_area in self._scroll_areas_at(global_position):
+                        if _scroll_v2_area_from_wheel(scroll_area, event):
+                            return True
                     return False
-                global_position = _v2_wheel_global_position(event)
-                if not self.root.rect().contains(self.root.mapFromGlobal(global_position)):
+                except RuntimeError:
                     return False
-                for scroll_area in self._scroll_areas_at(global_position):
-                    if _scroll_v2_area_from_wheel(scroll_area, event):
-                        return True
-                return False
 
             def _scroll_areas_at(self, global_position: Any) -> list[Any]:
                 candidates = []
@@ -4089,10 +4095,17 @@ class StaffingDashboardV2Page:
             ("StaffingV2PeopleNotesTab", "Notes", False),
             ("StaffingV2PeopleDocumentsTab", "Documents", False),
         ]
+        def select_people_tab(selected_object_name: str) -> None:
+            for tab_button in tabs.findChildren(self.QtWidgets.QPushButton):
+                tab_button.setProperty("staffingV2ActivePeopleTab", tab_button.objectName() == selected_object_name)
+                tab_button.style().unpolish(tab_button)
+                tab_button.style().polish(tab_button)
+
         for object_name, text, is_active in tab_specs:
             tab = self.QtWidgets.QPushButton(text)
             tab.setObjectName(object_name)
             tab.setProperty("staffingV2ActivePeopleTab", is_active)
+            tab.clicked.connect(lambda _checked=False, item=object_name: select_people_tab(item))
             tabs_layout.addWidget(tab)
         tabs_layout.addStretch(1)
         self.people_detail_layout.addWidget(tabs)
@@ -4190,6 +4203,7 @@ class StaffingDashboardV2Page:
         self.history_date_range_filter.setObjectName("StaffingV2HistoryDateRangeFilter")
         self._set_button_icon(self.history_date_range_filter, "history")
         self.history_date_range_filter.setToolTip("Displayed from assignment history open dates.")
+        self.history_date_range_filter.setEnabled(False)
         filters.addLayout(self._labeled_control("Date Range", self.history_date_range_filter), 1)
         self.history_search = self.QtWidgets.QLineEdit()
         self.history_search.setObjectName("StaffingV2HistorySearch")
@@ -5899,6 +5913,8 @@ class StaffingDashboardV2Page:
         people_search = self.QtWidgets.QLineEdit()
         people_search.setObjectName("StaffingV2ComingPeopleSearch")
         people_search.setPlaceholderText("Search People records...")
+        select_existing.clicked.connect(lambda _checked=False: (people_search.setFocus(), people_search.selectAll()))
+        create_new.clicked.connect(lambda _checked=False: (full_name.clear(), full_name.setFocus()))
         fields = [
             ("Full Name *", full_name, 0, 0),
             ("Role *", role, 0, 1),

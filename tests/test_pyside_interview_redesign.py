@@ -9839,6 +9839,79 @@ def test_pyside_staffing_v2_dashboard_scrollbars_have_scrollable_range(
     app.processEvents()
 
 
+def test_pyside_staffing_v2_full_app_selection_resyncs_shared_page_scrollbars(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    seed_path = tmp_path / "staffing_seed.json"
+    seed_path.write_text(
+        json.dumps(
+            {
+                "schools": [
+                    {
+                        "name": "Hawthorne",
+                        "classrooms": [
+                            {
+                                "name": f"Classroom {index:02d}",
+                                "positions": [
+                                    {
+                                        "position_name": "Teacher 1",
+                                        "position_type": "Teacher",
+                                        "status": "filled",
+                                        "person": {"name": f"Teacher {index}"},
+                                    }
+                                ],
+                            }
+                            for index in range(1, 14)
+                        ],
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", tmp_path / "staffing.sqlite3")
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", seed_path)
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.sqlite3",
+        school_options=["Hawthorne"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
+    staffing_index = nav_items.index("Staffing v2")
+    window.sidebar.setCurrentRow(staffing_index)
+    app.processEvents()
+    dashboard = window.staffing_v2_dashboard
+    assert isinstance(dashboard, StaffingDashboardV2Page)
+    assert dashboard.school_filter == ""
+    page = window.stack.currentWidget()
+    detail_scroll = page.findChild(qt_widgets.QScrollArea, "StaffingV2DashboardDetailScroll")
+    assert detail_scroll.verticalScrollBar().maximum() > 0
+
+    sync_calls: list[str] = []
+    original_sync = dashboard._sync_staffing_v2_scroll_ranges
+
+    def sync_spy() -> None:
+        sync_calls.append("sync")
+        original_sync()
+
+    dashboard._sync_staffing_v2_scroll_ranges = sync_spy
+    window.sidebar.setCurrentRow(nav_items.index("Interviews"))
+    app.processEvents()
+    window.sidebar.setCurrentRow(staffing_index)
+    app.processEvents()
+
+    assert sync_calls == ["sync"]
+    assert isinstance(window.staffing_v2_dashboard, StaffingDashboardV2Page)
+    assert window.stack.currentWidget() is page
+    window.window.close()
+    app.processEvents()
+
+
 def test_pyside_staffing_v2_notifications_nav_opens_rule_dashboard_and_editor(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -11182,8 +11255,18 @@ def test_pyside_staffing_v2_mark_coming_dialog_saves_through_service(
     assert not dialog.findChild(qt_widgets.QPushButton, "StaffingV2ComingCreatePerson").icon().isNull()
     assert _icon_has_primary_blue(dialog.findChild(qt_widgets.QPushButton, "StaffingV2ComingCreatePerson").icon())
     assert not dialog.findChild(qt_widgets.QPushButton, "StaffingV2ComingSubmit").icon().isNull()
+    people_search = dialog.findChild(qt_widgets.QLineEdit, "StaffingV2ComingPeopleSearch")
+    people_search.setText("Emily")
+    dialog.findChild(qt_widgets.QPushButton, "StaffingV2ComingSelectPerson").click()
+    app.processEvents()
+    assert people_search.selectedText() == "Emily"
+    full_name = dialog.findChild(qt_widgets.QLineEdit, "StaffingV2ComingFullName")
+    full_name.setText("Temporary Name")
+    dialog.findChild(qt_widgets.QPushButton, "StaffingV2ComingCreatePerson").click()
+    app.processEvents()
+    assert full_name.text() == ""
 
-    dialog.findChild(qt_widgets.QLineEdit, "StaffingV2ComingFullName").setText("Emily Carter")
+    full_name.setText("Emily Carter")
     dialog.findChild(qt_widgets.QComboBox, "StaffingV2ComingRole").setCurrentText("Teacher")
     dialog.findChild(qt_widgets.QDateEdit, "StaffingV2ComingStartDate").setDate(qt_core.QDate(2026, 8, 1))
     dialog.findChild(qt_widgets.QComboBox, "StaffingV2ComingPermitStatus").setCurrentText("Permit in Process")
@@ -11836,6 +11919,10 @@ def test_pyside_staffing_v2_people_dashboard_renders_employee_management_from_db
     assert overview_tab.property("staffingV2ActivePeopleTab") is True
     for inactive_tab in [assignments_tab, history_tab, notes_tab, documents_tab]:
         assert inactive_tab.property("staffingV2ActivePeopleTab") is False
+    history_tab.click()
+    app.processEvents()
+    assert history_tab.property("staffingV2ActivePeopleTab") is True
+    assert overview_tab.property("staffingV2ActivePeopleTab") is False
     deactivate_button = page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleDeactivateButton")
     assert deactivate_button.text() == "Deactivate Employee"
     assert not deactivate_button.icon().isNull()
@@ -12022,6 +12109,7 @@ def test_pyside_staffing_v2_assignment_history_dashboard_renders_history_from_db
     history_date_range = page.findChild(qt_widgets.QPushButton, "StaffingV2HistoryDateRangeFilter")
     assert history_date_range.text() == "2026-05-08 - 2026-07-01"
     assert not history_date_range.icon().isNull()
+    assert not history_date_range.isEnabled()
     history_search = page.findChild(qt_widgets.QLineEdit, "StaffingV2HistorySearch")
     assert history_search.placeholderText() == "Search assignments..."
     assert history_search.actions()
@@ -12588,6 +12676,8 @@ def test_pyside_director_staffing_mode_uses_same_staffing_page_only(
     action_button = table.cellWidget(0, 7)
 
     assert director_model.navigation == ["Staffing v2"]
+    assert isinstance(window.staffing_v2_dashboard, StaffingDashboardV2Page)
+    assert window.staffing_v2_dashboard.school_filter == ""
     assert window.window.windowTitle() == "Director Staffing Dashboard"
     staffing_sidebar = page.findChild(qt_widgets.QFrame, "StaffingV2Sidebar")
 
@@ -12661,6 +12751,8 @@ def test_pyside_director_staffing_mode_filters_to_assigned_school(
     board_text = _widget_text(page)
 
     assert director_model.director_staffing_school == "Palmdale"
+    assert isinstance(window.staffing_v2_dashboard, StaffingDashboardV2Page)
+    assert window.staffing_v2_dashboard.school_filter == "Palmdale"
     assert [selector.itemText(index) for index in range(selector.count())] == ["Palmdale"]
     assert selector.currentText() == "Palmdale"
     assert table.rowCount() == 2
