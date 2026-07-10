@@ -3525,11 +3525,19 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_finalize_payload_uses_qualification_fields_and_keeps_why_ece_transcript
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_latest_pyside_draft_path_returns_newest_json
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_session_review_summary_uses_scoring_rules
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_session_review_score_update_recalculates_and_persists
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
@@ -3542,6 +3550,10 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_review_screen_shows_interviewer_closeout_without_slow_outputs
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_review_screen_allows_rating_change_from_transcript
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
@@ -4442,6 +4454,10 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_reporting_export.py::TestDocxExporterValidation::test_answer_summary_card_explains_missing_signal_advisory_rating
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_reporting_export.py::TestDocxExporterValidation::test_export_candidate_snapshot_includes_final_non_scored_manual_inputs
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast

@@ -1487,6 +1487,11 @@ class DocxExporter:
             for index, item in enumerate(flow_transcript, start=1)
             if isinstance(item, dict)
         }
+        custom_answer_by_id = {
+            str(item.get("id") or "").strip(): item
+            for item in payload.get("custom_answers", []) or []
+            if isinstance(item, dict) and str(item.get("id") or "").strip()
+        }
         skipped_trait_ids = {
             canonical_trait_id(row.get("trait_id"))
             for row in scoring["rows"]
@@ -1511,6 +1516,7 @@ class DocxExporter:
                 summary_item.get("question_label"),
                 summary_item.get("question_text"),
                 summary_item.get("question"),
+                summary_item.get("prompt"),
                 item.get("title"),
             )
 
@@ -1688,6 +1694,18 @@ class DocxExporter:
         if has_degree is False:
             snapshot_rows.append(("Total units completed (if no degree)", total_units_text))
         snapshot_rows.append(("Years of experience", years_experience_text))
+        for index in sorted(final_manual_note_positions):
+            item = flow_transcript[index]
+            fallback = custom_answer_by_id.get(str(item.get("id") or "").strip(), {})
+            question_text = flow_question_for_index(item.get("flow_index"), item) or usable_question_text(
+                fallback.get("question"),
+                fallback.get("question_text"),
+            )
+            manual_answer = str(
+                item.get("answer") or item.get("evaluator_notes") or fallback.get("answer") or ""
+            ).strip()
+            if question_text and manual_answer:
+                snapshot_rows.append((question_text, manual_answer))
 
         add_heading("Candidate Snapshot")
         add_key_value_table(snapshot_rows)

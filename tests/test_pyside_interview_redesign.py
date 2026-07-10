@@ -123,6 +123,18 @@ def _widget_text(widget) -> str:
     return " ".join(label.text() for label in labels)
 
 
+def _table_text(table) -> str:
+    if table is None:
+        return ""
+    values: list[str] = []
+    for row in range(table.rowCount()):
+        for column in range(table.columnCount()):
+            item = table.item(row, column)
+            if item is not None:
+                values.append(item.text())
+    return " ".join(values)
+
+
 def _icon_has_primary_blue(icon, size: int = 18) -> bool:
     image = icon.pixmap(size, size).toImage()
     for y in range(image.height()):
@@ -1216,6 +1228,81 @@ def test_pyside_qualification_screen_keeps_education_and_experience_with_why_ece
     assert answer["qualification"]["years_experience"] == 4
 
 
+def test_pyside_finalize_payload_uses_qualification_fields_and_keeps_why_ece_transcript(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(pyside_interview_app, "DEFAULT_BASE_DIR", tmp_path)
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_workflow_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
+    session.start(candidate_name="Lisvelia Pazos-Hilario", school="Palmdale", track_key="preschool")
+    session.save_answer_and_advance(notes="Intro read.")
+    session.save_answer_and_advance(
+        notes="",
+        qualification={
+            "has_degree": True,
+            "degree_type": "AA",
+            "degree_in_ece": True,
+            "ece_units_completed": None,
+            "infant_toddler_class_completed": False,
+            "total_units_completed": None,
+            "years_experience": 7,
+        },
+    )
+    session.qualification = {}
+    session.flow_candidate_transcripts[1] = "Why-ECE candidate answer from transcript."
+    session.save_answer_and_advance(notes="Why LPL manual note.")
+    session.save_answer_and_advance(notes="Scored example.", score="5")
+    session.save_answer_and_advance(notes="full-time")
+    session.flow_candidate_transcripts[4] = "Noisy ASR for FT-or-PT should not win."
+    session.save_answer_and_advance(notes="no")
+    session.flow_candidate_transcripts[5] = "Noisy ASR for Not-Avail should not win."
+    session.save_answer_and_advance(notes="Asked for 35/hour.")
+    session.flow_candidate_transcripts[6] = "Noisy ASR for Pay should not win."
+    session.save_answer_and_advance(notes="asap")
+    session.flow_candidate_transcripts[7] = "Noisy ASR for Start should not win."
+    adapter = pyside_interview_app._PySideFinalizeAdapter(
+        session,
+        base_dir=tmp_path,
+        history_path=tmp_path / "history.sqlite3",
+    )
+    scoring = pyside_interview_app.ScoringEngine.evaluate(
+        adapter._rubric_with_question_overrides(),
+        adapter.state.track,
+        adapter.state.trait_inputs,
+    )
+
+    context = pyside_interview_app.build_finalize_context(
+        adapter,
+        scoring,
+        [],
+        session._transcript_metadata(),
+        run_deepseek=False,
+    )
+
+    assert context.payload["candidate"]["qualification"] == {
+        "has_degree": True,
+        "degree_type": "AA",
+        "degree_in_ece": True,
+        "ece_units_completed": None,
+        "infant_toddler_class_completed": False,
+        "total_units_completed": None,
+        "years_experience": 7,
+    }
+    by_id = {item["id"]: item for item in context.payload["flow_transcript"]}
+    assert by_id["Why-ECE"]["candidate_transcript"] == "Why-ECE candidate answer from transcript."
+    by_id = {item["id"]: item for item in context.payload["flow_transcript"]}
+    assert by_id["FT-or-PT"]["candidate_transcript"] == "full-time"
+    assert by_id["Not-Avail"]["candidate_transcript"] == "no"
+    assert by_id["Pay"]["candidate_transcript"] == "Asked for 35/hour."
+    assert by_id["Start"]["candidate_transcript"] == "asap"
+
+
 def test_latest_pyside_draft_path_returns_newest_json(tmp_path: Path) -> None:
     old = tmp_path / "old.json"
     new = tmp_path / "new.json"
@@ -1245,6 +1332,33 @@ def test_pyside_session_review_summary_uses_scoring_rules(tmp_path: Path) -> Non
     assert summary.next_action == "Generate Offer"
     assert summary.missing_scores == []
     assert summary.strongest_evidence == ["Warm child-centered example."]
+
+
+def test_pyside_session_review_score_update_recalculates_and_persists(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(pyside_interview_app, "DEFAULT_BASE_DIR", tmp_path)
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
+    session.start(candidate_name="Latoya Nugent", school="Palmdale", track_key="preschool")
+    session.save_answer_and_advance(notes="Mission aligned.", score="")
+    session.save_answer_and_advance(notes="Values aligned.", score="")
+    session.save_answer_and_advance(notes="Warm child-centered example.", score="")
+    session.flow_candidate_transcripts[2] = "I helped a child breathe and name their feelings."
+
+    session.update_review_score("trait_1", 5)
+
+    assert session.answers["trait_1"]["score"] == "5"
+    assert session.review_summary().outcome == "Hire"
+    draft = json.loads((tmp_path / "draft.json").read_text(encoding="utf-8"))
+    assert draft["answers"]["trait_1"]["score"] == "5"
+    session_file = next((tmp_path / "interview_sessions").glob("*.json"))
+    payload = json.loads(session_file.read_text(encoding="utf-8"))
+    assert payload["questions"]["2"]["notes"]["raw_score"] == 5
+    assert payload["questions"]["2"]["candidate_transcript"] == "I helped a child breathe and name their feelings."
 
 
 def test_pyside_offer_review_defaults_are_prefilled_from_completed_session(tmp_path: Path) -> None:
@@ -1361,9 +1475,52 @@ def test_pyside_review_screen_shows_interviewer_closeout_without_slow_outputs(tm
         "Flags",
     ]
     assert table.item(2, 0).text() == "Empathy"
-    assert table.item(2, 1).text() == "Missing"
+    rating = table.cellWidget(2, 1)
+    assert isinstance(rating, qt_widgets.QSpinBox)
+    assert rating.value() == 0
     assert table.item(2, 2).text() == "Yes"
     assert table.item(2, 3).text() == "Transcript text should not render."
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_review_screen_allows_rating_change_from_transcript(tmp_path: Path, monkeypatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    monkeypatch.setattr(pyside_interview_app, "DEFAULT_BASE_DIR", tmp_path)
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
+    session.start(candidate_name="Latoya Nugent", school="Palmdale", track_key="preschool")
+    session.save_answer_and_advance(notes="Intro complete.", score="")
+    session.save_answer_and_advance(notes="No extra qualification notes.", score="")
+    session.save_answer_and_advance(notes="Review this against transcript.", score="")
+    session.flow_candidate_transcripts[2] = "Candidate described calming a child and helping them use words."
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    window.session = session
+
+    window._render_review_page()
+    review_page = window.interview_tabs.widget(3)
+    rating = review_page.findChild(qt_widgets.QSpinBox, "PySideReviewRating_trait_1")
+    assert rating is not None
+    assert rating.value() == 0
+    assert "Candidate described calming a child" in _table_text(
+        review_page.findChild(qt_widgets.QTableWidget, "PySideReviewQuestionTable"),
+    )
+
+    rating.setValue(5)
+    app.processEvents()
+
+    assert session.answers["trait_1"]["score"] == "5"
+    assert "Determination: Hire" in _widget_text(review_page)
+    needs = review_page.findChild(qt_widgets.QListWidget, "PySideReviewNeedsList")
+    assert needs is not None
+    assert "Missing score: Empathy" not in [needs.item(row).text() for row in range(needs.count())]
     window.window.close()
     app.processEvents()
 

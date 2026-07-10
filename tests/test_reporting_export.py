@@ -588,6 +588,69 @@ class TestDocxExporterValidation(unittest.TestCase):
         self.assertIn("Total units completed (if no degree)", infant_text)
         self.assertIn("Infant/toddler class completed", bss_text)
 
+    def test_export_candidate_snapshot_includes_final_non_scored_manual_inputs(self):
+        payload = {
+            "candidate": {
+                "name": "Lisvelia Pazos-Hilario",
+                "interview_date": "2026-07-09",
+                "school": "Palmdale",
+                "track": "general",
+                "qualification": {
+                    "has_degree": True,
+                    "degree_type": "AA",
+                    "degree_in_ece": True,
+                    "ece_units_completed": None,
+                    "years_experience": 7,
+                },
+            },
+            "flow_transcript": [
+                {"type": "qualification", "id": "Why-ECE", "prompt": "Why ECE?", "candidate_transcript": "Long transcript."},
+                {"type": "custom", "id": "Why-LPL", "prompt": "Why LPL?", "candidate_transcript": "Mission answer."},
+                {"type": "trait", "id": "trait_1", "prompt": "Scored?", "candidate_transcript": "Scored answer."},
+                {
+                    "type": "custom",
+                    "id": "FT-or-PT",
+                    "prompt": "Are you looking for full-time or part-time?",
+                    "candidate_transcript": "Noisy ASR should not render here.",
+                    "evaluator_notes": "full-time",
+                },
+                {
+                    "type": "custom",
+                    "id": "Pay",
+                    "prompt": "What kind of pay are you looking for? Is that negotiable?",
+                    "candidate_transcript": "Noisy ASR should not render here.",
+                },
+                {
+                    "type": "custom",
+                    "id": "Start",
+                    "prompt": "When could you start if we decide to move forward?",
+                    "candidate_transcript": "Noisy ASR should not render here.",
+                    "evaluator_notes": "asap",
+                },
+            ],
+            "custom_answers": [
+                {
+                    "id": "Pay",
+                    "question": "What kind of pay are you looking for? Is that negotiable?",
+                    "answer": "$35/hour, negotiable",
+                },
+            ],
+        }
+
+        with tempfile.TemporaryDirectory() as td:
+            path = DocxExporter(Path(td)).export(self._rubric(), payload, self._scoring())
+            doc = Document(path)
+
+        snapshot_table = next(table for table in doc.tables if table.rows[0].cells[0].text == "Has degree")
+        snapshot_rows = {row.cells[0].text: row.cells[1].text for row in snapshot_table.rows}
+        self.assertEqual(snapshot_rows["Degree type"], "AA")
+        self.assertEqual(snapshot_rows["Years of experience"], "7")
+        self.assertEqual(snapshot_rows["Are you looking for full-time or part-time?"], "full-time")
+        self.assertEqual(snapshot_rows["What kind of pay are you looking for? Is that negotiable?"], "$35/hour, negotiable")
+        self.assertEqual(snapshot_rows["When could you start if we decide to move forward?"], "asap")
+        self.assertNotIn("Why ECE?", snapshot_rows)
+        self.assertNotIn("Why LPL?", snapshot_rows)
+
     def test_export_uses_director_ready_section_order_and_appendices(self):
         payload = {
             "candidate": {

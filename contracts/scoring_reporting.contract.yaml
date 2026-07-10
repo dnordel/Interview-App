@@ -2,7 +2,7 @@ module:
   name: scoring_reporting
   language: python
   path: src/scoring_reporting.py
-  version: 0.20.0
+  version: 0.20.1
   description: Flattened public interface for scoring, reporting, trait signals, exports,
     referrals, email safety, offers, and templates, including DeepSeek-only advisory
     signal scoring; only active legacy adapters remain in the compatibility module
@@ -1649,7 +1649,8 @@ classes:
       repeating candidate name, school/location, track, or interview date already
       shown in the subtitle, showing Infant/toddler class completed only for
       infant/toddler or BSS tracks and Total units completed only when the
-      candidate has no degree; AI-generated
+      candidate has no degree, and appending manual interviewer inputs for
+      non-scored custom questions that occur after the scored block; AI-generated
       evidence-summary sections; scorecard
       snapshot immediately after the executive summary with compact score headers and
       balanced score-column widths; consolidated answer summaries

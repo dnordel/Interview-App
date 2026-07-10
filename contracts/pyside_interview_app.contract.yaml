@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.65.0
+  version: 1.65.1
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, resizable splitter sections, school/classroom selectors, wider color-coded classroom list with per-classroom status-count overview, metric cards, positions table, fully editable right-side assignment/person details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics, parallel Staffing v2 navigation/page shell with its own mockup-style staffing sidebar, People / Employee Management and Assignment History sub-dashboards for the mockup-driven rewrite backed by staffing_dashboard_v2 while the legacy Staffing page remains available,
@@ -459,6 +459,21 @@ classes:
     returns:
       type: None
     exceptions: []
+    side_effects: Writes PySide draft JSON and canonical interview_sessions question snapshots.
+  - name: update_review_score
+    description: Update one scored trait rating from the PySide review screen after the interview, preserving notes/transcripts, clearing skipped state when a score is chosen, autosaving the draft, and mirroring canonical interview_sessions snapshots.
+    locked: false
+    inputs:
+      question_id:
+        type: str
+        required: true
+      score:
+        type: int | str | None
+        required: true
+    returns:
+      type: None
+    exceptions:
+    - ValueError
     side_effects: Writes PySide draft JSON and canonical interview_sessions question snapshots.
   - name: import_indeed_transcript_file
     description: Import an Indeed-generated .txt transcript into the session, split answers by configured question prompts, infer interviewer/candidate speakers, mark unasked questions skipped, and leave scored answers unrated for operator review.
@@ -3256,7 +3271,8 @@ classes:
     description: Render the interviewer-facing closeout screen from already-available
       session data, including saved/background report status text, manual score,
       determination, next step, missing/skipped checks, and a question score table
-      that exposes whether notes exist plus any generated question transcripts.
+      that exposes whether notes exist plus any generated question transcripts
+      and allows scored trait ratings to be changed after the interview.
       It must not display DeepSeek output, AI analysis/scoring text, Finalize
       Interview, or Generate Offer actions.
     locked: false
@@ -3266,6 +3282,20 @@ classes:
     exceptions: []
     side_effects: Rebuilds visible review widgets without launching finalize,
       transcript, analysis, or offer workflows.
+  - name: _update_review_rating
+    description: Persist a review-screen trait rating edit through PySideInterviewSession, refresh cached answers, and rerender review summary, needs list, and score table.
+    locked: false
+    inputs:
+      question_id:
+        type: str
+        required: true
+      value:
+        type: int
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Writes PySide draft/session snapshots and rebuilds visible review widgets.
   - name: _poll_pyside_finalize_worker
     description: Poll background PySide finalize events/results, drain progress updates,
       refresh history/candidate tables as soon as history is persisted, and update

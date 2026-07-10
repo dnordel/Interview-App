@@ -314,6 +314,40 @@ class PySideInterviewSession:
     def skip_active_question(self, *, notes: str = "", quick_actions: Sequence[str] = ()) -> None:
         self.save_answer_and_advance(notes=notes, score="", quick_actions=quick_actions, skipped=True)
 
+    def update_review_score(self, question_id: str, score: int | str | None) -> None:
+        target_id = str(question_id).strip()
+        flow_item = next(
+            (item for item in self._workflow_items() if item.question_id == target_id),
+            None,
+        )
+        if flow_item is None or flow_item.kind != "trait":
+            raise ValueError("Review score updates require a scored interview question.")
+        if score in (None, ""):
+            score_text = ""
+        else:
+            try:
+                score_int = int(score)
+            except (TypeError, ValueError) as exc:
+                raise ValueError("Review score must be blank or between 1 and 5.") from exc
+            if score_int == 0:
+                score_text = ""
+            elif 1 <= score_int <= 5:
+                score_text = str(score_int)
+            else:
+                raise ValueError("Review score must be blank or between 1 and 5.")
+        answer = dict(self.answers.get(target_id, {}))
+        answer.setdefault("kind", flow_item.kind)
+        answer.setdefault("title", flow_item.title)
+        answer.setdefault("prompt", flow_item.prompt)
+        answer.setdefault("notes", "")
+        answer.setdefault("quick_actions", [])
+        answer["score"] = score_text
+        if score_text:
+            answer.pop("skipped", None)
+            answer.pop("skip_reason", None)
+        self.answers[target_id] = answer
+        self.save_draft()
+
     def import_indeed_transcript_file(self, path: Path) -> IndeedTranscriptImportResult:
         source = Path(path)
         if source.suffix.lower() != ".txt":
@@ -790,7 +824,17 @@ class _PySideFinalizeAdapter:
             text = str((value or {}).get("candidate_transcript") or "").strip()
             if text:
                 by_flow_index[int(key)] = text
+        seen_scored_question = False
         for index, item in enumerate(_flow_tx):
+            item_type = str(item.get("type") or "").strip().lower()
+            if item_type == "trait":
+                seen_scored_question = True
+                item["candidate_transcript"] = by_flow_index.get(index, str(item.get("candidate_transcript") or ""))
+                continue
+            if seen_scored_question and item_type in {"custom", "qualification"}:
+                manual_notes = str(item.get("answer") or item.get("evaluator_notes") or "").strip()
+                item["candidate_transcript"] = manual_notes or by_flow_index.get(index, str(item.get("candidate_transcript") or ""))
+                continue
             item["candidate_transcript"] = by_flow_index.get(index, str(item.get("candidate_transcript") or ""))
 
     def _rewrite_live_transcript_docx_from_flow(self, _flow_tx: list[dict[str, Any]]) -> None:
@@ -806,9 +850,18 @@ class _PySideFinalizeAdapter:
                 "school": self.session.school,
                 "track": self.session.track_key,
                 "position": track.label if track is not None else self.session.track_key,
-                "qualification": dict(self.session.qualification),
+                "qualification": self._qualification_payload(),
             }
         }
+
+    def _qualification_payload(self) -> dict[str, Any]:
+        qualification = dict(self.session.qualification or {})
+        if qualification:
+            return qualification
+        why_ece = self.session.answers.get("Why-ECE", {})
+        if isinstance(why_ece, dict) and isinstance(why_ece.get("qualification"), dict):
+            return dict(why_ece["qualification"])
+        return {}
 
     def _trait_inputs(self) -> dict[str, dict[str, Any]]:
         inputs: dict[str, dict[str, Any]] = {}
@@ -3563,7 +3616,21 @@ class PySideInterviewWindow:
                     transcript_text = str(recording.get("candidate_transcript") or "").strip()
             values = [item.title, score_text, note_text, transcript_text or "Not generated", ", ".join(flags) or "-"]
             for column, value in enumerate(values):
+                if column == 1 and item.kind == "trait":
+                    continue
                 question_table.setItem(row, column, self.QtWidgets.QTableWidgetItem(value))
+            if item.kind == "trait":
+                rating = self.QtWidgets.QSpinBox()
+                rating.setObjectName(f"PySideReviewRating_{item.question_id}")
+                rating.setRange(0, 5)
+                rating.setSpecialValueText("Missing")
+                rating.setToolTip("Change interviewer rating after reading notes and transcript.")
+                rating.setKeyboardTracking(False)
+                rating.setValue(_coerce_session_score(score_value) or 0)
+                rating.valueChanged.connect(
+                    lambda value, question_id=item.question_id: self._update_review_rating(question_id, value),
+                )
+                question_table.setCellWidget(row, 1, rating)
         question_table.resizeColumnsToContents()
         summary_layout.addWidget(self._label("Question Score Review", "SectionTitle"))
         summary_layout.addWidget(question_table)
@@ -3577,6 +3644,17 @@ class PySideInterviewWindow:
         summary_layout.addWidget(self.review_status_label)
         layout.addWidget(summary)
         layout.addStretch(1)
+
+    def _update_review_rating(self, question_id: str, value: int) -> None:
+        if self.session is None:
+            return
+        try:
+            self.session.update_review_score(question_id, value)
+        except ValueError as exc:
+            self.review_status_label.setText(str(exc))
+            return
+        self.session_answers = dict(self.session.answers)
+        self._render_review_page()
 
     def _default_draft_path(self, candidate_name: str) -> Path:
         safe_name = "".join(ch if ch.isalnum() else "_" for ch in candidate_name).strip("_") or "Candidate"
