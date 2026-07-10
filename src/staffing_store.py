@@ -679,6 +679,35 @@ class StaffingStore:
             )
             return int(cursor.rowcount or 0)
 
+    def dismiss_director_referral_history_ids(self, history_ids: Sequence[str]) -> int:
+        ids = sorted({str(history_id).strip() for history_id in history_ids if str(history_id).strip()})
+        if not ids:
+            return 0
+        placeholders = ",".join("?" for _ in ids)
+        with self.write_connection("director_candidate_referral_dismiss") as conn:
+            now = _utc_now_iso()
+            conn.executemany(
+                """
+                INSERT INTO director_referral_dismissals (history_id, dismissed_at)
+                VALUES (?, ?)
+                ON CONFLICT(history_id) DO UPDATE SET dismissed_at = excluded.dismissed_at
+                """,
+                [(history_id, now) for history_id in ids],
+            )
+            cursor = conn.execute(
+                f"""
+                DELETE FROM director_candidate_referrals
+                WHERE history_id IN ({placeholders})
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM director_interviews i
+                      WHERE i.referral_id = director_candidate_referrals.id
+                  )
+                """,
+                tuple(ids),
+            )
+            return int(cursor.rowcount or 0)
+
     def list_dismissed_director_referral_history_ids(self) -> set[str]:
         self.initialize()
         with self.connect() as conn:

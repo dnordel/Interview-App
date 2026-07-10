@@ -3645,6 +3645,14 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_review_table_updates_transcript_when_finalize_worker_reports_transcripts
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_review_apply_scores_updates_history_and_queues_director_referral
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_finalize_shows_candidate_history_before_report_export_finishes
   duration_seconds_n2: 0.001
   gui_heavy: false
@@ -4266,6 +4274,10 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_director_staffing_poll_imports_queued_referral_and_refreshes_gui
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_director_staffing_poll_imports_review_score_dismissal_and_removes_pending_referral
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast

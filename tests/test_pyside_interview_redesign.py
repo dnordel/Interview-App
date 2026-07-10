@@ -1,10 +1,12 @@
 import json
 import os
+import queue
 import sys
 import threading
 from datetime import date, timedelta
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 import pyside_interview_app
@@ -2362,6 +2364,150 @@ def test_pyside_finalize_reload_history_after_queueing_deepseek(tmp_path: Path, 
     assert window.candidate_history_table.rowCount() == 1
     assert window.candidate_history_table.item(0, 1).text() == "Latoya Nugent"
     assert window.candidate_history_table.cellWidget(0, 6).text() == "Processing"
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_review_table_updates_transcript_when_finalize_worker_reports_transcripts(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.sqlite3",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    window.session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
+    window.session.start(candidate_name="Live Transcript", school="Palmdale", track_key="preschool")
+    for item in window.session._workflow_items():
+        window.session.answers[item.question_id] = {
+            "kind": item.kind,
+            "title": item.title,
+            "prompt": item.prompt,
+            "notes": "Saved note",
+            "score": "3" if item.kind == "trait" else "",
+            "quick_actions": [],
+        }
+    window.session.current_index = len(window.session._workflow_items())
+    window._render_review_page()
+    table = window.window.findChild(qt_widgets.QTableWidget, "PySideReviewQuestionTable")
+    trait_row = next(row for row in range(table.rowCount()) if table.cellWidget(row, 1) is not None)
+    assert table.item(trait_row, 3).text() == "Not generated"
+
+    messages: queue.Queue[dict[str, Any]] = queue.Queue()
+    window.session.flow_candidate_transcripts[trait_row] = "Candidate described a calm redirect."
+    messages.put({"ok": True, "event": "transcripts_updated"})
+    fake_timer = SimpleNamespace(stop=lambda: None, deleteLater=lambda: None)
+
+    window._poll_pyside_finalize_worker(messages, fake_timer)
+    app.processEvents()
+
+    assert table.item(trait_row, 3).text() == "Candidate described a calm redirect."
+    window.window.close()
+    app.processEvents()
+
+
+def _write_two_trait_rubric(tmp_path: Path) -> Path:
+    rubric_path = _write_test_rubric(tmp_path)
+    rubric = json.loads(rubric_path.read_text(encoding="utf-8"))
+    rubric["tracks"]["preschool"]["max_weighted_total"] = 10
+    rubric["traits"][0]["priority"] = "Standard"
+    rubric["traits"].append(
+        {
+            "id": "trait_2",
+            "name": "Reliability",
+            "priority": "Standard",
+            "weight": 1,
+            "applicable_tracks": ["preschool"],
+            "primary_question": "Tell me about showing up reliably.",
+            "descriptors": {
+                "1": "Serious concern",
+                "2": "Weak",
+                "3": "Mixed / acceptable",
+                "4": "Strong",
+                "5": "Excellent",
+            },
+            "sample_answers": {},
+        }
+    )
+    rubric_path.write_text(json.dumps(rubric), encoding="utf-8")
+    return rubric_path
+
+
+def test_pyside_review_apply_scores_updates_history_and_queues_director_referral(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    history_path = tmp_path / "interview_history.sqlite3"
+    referral_queue_path = tmp_path / "staffing_referrals.pending.jsonl"
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_REFERRAL_QUEUE_PATH", referral_queue_path)
+    model = build_interview_redesign_model(
+        rubric_path=_write_two_trait_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Palmdale"],
+    )
+    history = InterviewHistoryStore(history_path)
+    history.append(
+        {
+            "history_id": "hist-review",
+            "candidate_name": "Review Candidate",
+            "school": "Palmdale",
+            "track": "Preschool",
+            "interview_date": date.today().isoformat(),
+            "outcome": "No Hire",
+            "score": "60.0%",
+        }
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model)
+    window.session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
+    window.session.start(candidate_name="Review Candidate", school="Palmdale", track_key="preschool")
+    for item in window.session._workflow_items():
+        window.session.answers[item.question_id] = {
+            "kind": item.kind,
+            "title": item.title,
+            "prompt": item.prompt,
+            "notes": "Saved note",
+            "score": "3" if item.kind == "trait" else "",
+            "quick_actions": [],
+        }
+    window._review_history_id = "hist-review"
+    window._render_review_page()
+
+    trait_rows = [row for row in range(window.review_question_table.rowCount()) if window.review_question_table.cellWidget(row, 1)]
+    first_rating = window.review_question_table.cellWidget(trait_rows[0], 1)
+    first_rating.setValue(4)
+    app.processEvents()
+    window.window.findChild(qt_widgets.QPushButton, "PySideReviewApplyScoresButton").click()
+    app.processEvents()
+
+    row = InterviewHistoryStore(history_path).load()[0]
+    assert row["outcome"] == "Borderline"
+    assert row["review_scores"]["trait_1"] == "4"
+    assert window.review_status_label.text().startswith("Scores updated:")
+    queued = [json.loads(line) for line in referral_queue_path.read_text(encoding="utf-8").splitlines()]
+    assert queued[0]["operation"] == "director_candidate_referral"
+    assert queued[0]["payload"]["history_id"] == "hist-review"
+    assert queued[0]["payload"]["interviewer_outcome"] == "borderline"
+
+    refreshed_trait_rows = [
+        row for row in range(window.review_question_table.rowCount()) if window.review_question_table.cellWidget(row, 1)
+    ]
+    refreshed_first_rating = window.review_question_table.cellWidget(refreshed_trait_rows[0], 1)
+    refreshed_first_rating.setValue(3)
+    app.processEvents()
+    window.window.findChild(qt_widgets.QPushButton, "PySideReviewApplyScoresButton").click()
+    app.processEvents()
+
+    updated_row = InterviewHistoryStore(history_path).load()[0]
+    assert updated_row["outcome"] == "No Hire"
+    queued = [json.loads(line) for line in referral_queue_path.read_text(encoding="utf-8").splitlines()]
+    assert queued[-1]["operation"] == "director_candidate_referral_dismissal"
+    assert queued[-1]["payload"]["history_id"] == "hist-review"
     window.window.close()
     app.processEvents()
 
@@ -13210,6 +13356,59 @@ def test_director_staffing_poll_imports_queued_referral_and_refreshes_gui(
     assert table.rowCount() == 1
     assert table.item(0, 0).text() == "Live Queue Candidate"
     assert not referral_queue_path.exists()
+    window.window.close()
+    app.processEvents()
+
+
+@pytest.mark.pyside_gui
+@pytest.mark.slow_pyside
+def test_director_staffing_poll_imports_review_score_dismissal_and_removes_pending_referral(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    staffing_path = tmp_path / "staffing.sqlite3"
+    referral_queue_path = tmp_path / "staffing_referrals.pending.jsonl"
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", staffing_path)
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_REFERRAL_QUEUE_PATH", referral_queue_path)
+    school_store = pyside_interview_app.StaffingStore(
+        pyside_interview_app.staffing_db_path_for_school("Palmdale", base_path=staffing_path)
+    )
+    school_store.initialize()
+    pyside_interview_app.StaffingService(school_store).upsert_director_candidate_referral(
+        history_id="hist-review-remove",
+        candidate_name="Remove Candidate",
+        school="Palmdale",
+        position="Teacher",
+        interviewer_rating=7.0,
+        interviewer_outcome="borderline",
+        interview_date="2026-07-10",
+    )
+    full_model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.sqlite3",
+        school_options=["Palmdale"],
+    )
+    director_model = pyside_interview_app.build_director_staffing_model(full_model, school="Palmdale")
+    window = pyside_interview_app.PySideInterviewWindow(director_model)
+    table = window.window.findChild(qt_widgets.QTableWidget, "StaffingV2DirectorInterviewPendingTable")
+    assert table.rowCount() == 1
+
+    pyside_interview_app._append_staffing_referral_dismissal_queue(
+        {
+            "history_id": "hist-review-remove",
+            "candidate_name": "Remove Candidate",
+            "school": "Palmdale",
+            "position": "Teacher",
+        }
+    )
+    window._poll_staffing_referral_queue()
+    app.processEvents()
+
+    assert table.rowCount() == 0
+    assert "hist-review-remove" in school_store.list_dismissed_director_referral_history_ids()
     window.window.close()
     app.processEvents()
 

@@ -2,11 +2,11 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.65.1
+  version: 1.66.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, resizable splitter sections, school/classroom selectors, wider color-coded classroom list with per-classroom status-count overview, metric cards, positions table, fully editable right-side assignment/person details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics, parallel Staffing v2 navigation/page shell with its own mockup-style staffing sidebar, People / Employee Management and Assignment History sub-dashboards for the mockup-driven rewrite backed by staffing_dashboard_v2 while the legacy Staffing page remains available,
-    director staffing-only launch mode that opens the Staffing v2 dashboard, keeps the full mockup navigation rail visible, filters to an assigned school when supplied, reuses the same Staffing v2 page, stores school-scoped director staffing data in school-specific SQLite files bootstrapped from the existing shared staffing DB on first use, imports queued hire/borderline interview referral events into the matching school staffing database on launch and on a live timer, and records finalized interview referral events to a central JSONL bridge queue instead of writing staffing databases directly,
+    director staffing-only launch mode that opens the Staffing v2 dashboard, keeps the full mockup navigation rail visible, filters to an assigned school when supplied, reuses the same Staffing v2 page, stores school-scoped director staffing data in school-specific SQLite files bootstrapped from the existing shared staffing DB on first use, imports queued hire/borderline interview referral and dismissal events into the matching school staffing database on launch and on a live timer, and records finalized or review-updated referral events to a central JSONL bridge queue instead of writing staffing databases directly,
     compact home draft actions beside the start action, guided review-then-apply Admin Studio backed by admin_studio
     with dashboard-first grouped admin-console navigation, standard icons on each
     selectable Admin Studio nav item, Environment/User cards at the bottom of the Admin Studio rail, distinct status pills,
@@ -3271,8 +3271,10 @@ classes:
     description: Render the interviewer-facing closeout screen from already-available
       session data, including saved/background report status text, manual score,
       determination, next step, missing/skipped checks, and a question score table
-      that exposes whether notes exist plus any generated question transcripts
-      and allows scored trait ratings to be changed after the interview.
+      that exposes whether notes exist plus any generated question transcripts,
+      refreshes transcript cells as background transcription finishes, and allows
+      scored trait ratings to be changed then explicitly applied to history DB
+      scoring and director-referral queue state after the interview.
       It must not display DeepSeek output, AI analysis/scoring text, Finalize
       Interview, or Generate Offer actions.
     locked: false
@@ -3295,10 +3297,65 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Writes PySide draft/session snapshots and rebuilds visible review widgets.
+    side_effects: Writes PySide draft/session snapshots, marks review scores dirty, and rebuilds visible review widgets.
+  - name: _review_scoring
+    description: Re-run the manual scoring engine from current review-screen session answers.
+    locked: false
+    inputs: {}
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: none
+  - name: _review_history_key
+    description: Resolve the finalized interview history row key for the active review session.
+    locked: false
+    inputs: {}
+    returns:
+      type: str
+    exceptions: []
+    side_effects: May read interview history and cache the resolved history id.
+  - name: _session_position_label
+    description: Return the current session's display position label from the active interview flow.
+    locked: false
+    inputs: {}
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _sync_review_score_staffing_referral
+    description: Queue director-candidate referral or dismissal events after review-screen score updates change the manual outcome.
+    locked: false
+    inputs:
+      history_id:
+        type: str
+        required: true
+      scoring:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Appends referral or dismissal records to the central staffing referral queue and refreshes an active Staffing v2 dashboard only when running in the matching director-school context.
+  - name: _apply_review_score_updates
+    description: Apply edited review-screen trait scores to finalized interview history, re-run manual scoring, and sync director referral add/remove queue state.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates InterviewHistoryStore score/outcome/scoring fields, appends staffing referral queue records, refreshes history tables, and rebuilds the review screen.
+  - name: _refresh_review_transcript_cells
+    description: Refresh only the review question table transcript cells from current session transcript mappings.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates visible review table transcript cells without rebuilding the whole review page.
   - name: _poll_pyside_finalize_worker
     description: Poll background PySide finalize events/results, drain progress updates,
-      refresh history/candidate tables as soon as history is persisted, and update
+      refresh history/candidate tables as soon as history is persisted, refresh
+      review transcript cells as soon as transcription mapping is available, and update
       review status text when recording/transcription and notes generation complete
       or fail.
     locked: false
@@ -3312,7 +3369,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: May refresh visible history tables before final report export
+    side_effects: May refresh visible transcript cells and history tables before final report export
       completes; stops the polling timer, clears finalize running state, updates the
       review status label, and starts optional detached DeepSeek progress polling.
   - name: _show_pyside_finalize_progress
@@ -3467,7 +3524,7 @@ classes:
     returns:
       type: QWidget
     exceptions: []
-    side_effects: Initializes local or school-specific staffing storage, with first-use school DB copies from the existing shared staffing DB when present; imports staffing seed data when the DB is empty or clearly missing seed assignments, imports queued director referral events, syncs eligible interview history into pending director referrals, creates a StaffingDashboardV2Page, stores it on the PySide window, wires service-backed staffing actions from the existing StaffingService handlers, starts periodic queue polling, and connects the V2 Notifications dashboard to the shared notification rules SQLite path and shared email notification service.
+    side_effects: Initializes local or school-specific staffing storage, with first-use school DB copies from the existing shared staffing DB when present; imports staffing seed data when the DB is empty or clearly missing seed assignments, imports queued director referral events, syncs eligible interview history into pending director referrals, creates a StaffingDashboardV2Page, stores it on the PySide window, wires service-backed staffing actions from the existing StaffingService handlers, starts periodic queue polling only for assigned director-school launches, and connects the V2 Notifications dashboard to the shared notification rules SQLite path and shared email notification service.
   - name: _start_staffing_referral_queue_polling
     description: Start one PySide timer that periodically imports central referral queue records for the current director school.
     locked: false
@@ -3475,7 +3532,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Creates and starts a QTimer owned by the main window when no queue timer is active.
+    side_effects: Creates and starts a QTimer owned by the main window when a director school is assigned and no queue timer is active.
   - name: _poll_staffing_referral_queue
     description: Import queued referral records and refresh the Staffing v2 dashboard when new rows were applied.
     locked: false
@@ -3491,7 +3548,7 @@ classes:
     returns:
       type: int
     exceptions: []
-    side_effects: Reads and may rewrite the central referral queue file; upserts matching referral payloads into the active staffing database or queues them on that database if its edit lock is held.
+    side_effects: Reads and may rewrite the central referral queue file; upserts matching referral payloads into the active staffing database, dismisses matching history ids, or queues referral upserts on that database if its edit lock is held.
   - name: _sync_staffing_director_referrals_from_history
     description: Upsert non-dismissed Hire and Borderline PySide history rows into StaffingService pending director-interview referrals, scoped to the director launch school when supplied, and queue rows that cannot be written because the staffing database edit lock is currently held.
     locked: false

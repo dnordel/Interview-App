@@ -2,7 +2,7 @@ module:
   name: staffing_service
   language: python
   path: src/staffing_service.py
-  version: 0.15.1
+  version: 0.16.0
   description: Staffing assignment state machine, service-backed classroom, position, person creation, director interview referral/completion tracking with optional pending-queue fallback, mistaken-position deletion, queued Dropbox edit handling, staffing dashboard metrics with pending-operation projection and workbook display metadata, confirmed person moves, editable assignment details, person permit metadata updates, and post-commit notification emission for successful transactions.
 functions: []
 classes:
@@ -436,6 +436,16 @@ classes:
     exceptions:
     - StaffingEditLock
     side_effects: Deletes and dismisses selected pending director interview referrals without deleting completed director interviews, staffing assignments, or interview history rows.
+  - name: dismiss_director_referral_history_ids
+    inputs:
+      history_ids:
+        type: Sequence[str]
+        required: true
+    returns:
+      type: int
+    exceptions:
+    - StaffingEditLock
+    side_effects: Dismisses director referral history ids and removes matching pending director interview referrals without deleting completed director interviews, staffing assignments, or interview history rows.
   - name: record_director_interview
     inputs:
       referral_id:

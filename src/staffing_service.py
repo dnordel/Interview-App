@@ -363,6 +363,9 @@ class StaffingService:
     def delete_pending_director_interviews(self, referral_ids: Sequence[int]) -> int:
         return self.store.delete_pending_director_referrals(referral_ids)
 
+    def dismiss_director_referral_history_ids(self, history_ids: Sequence[str]) -> int:
+        return self.store.dismiss_director_referral_history_ids(history_ids)
+
     def record_director_interview(
         self,
         referral_id: int,

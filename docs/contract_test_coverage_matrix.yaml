@@ -1,4 +1,4 @@
-last_updated: '2026-07-09'
+last_updated: '2026-07-10'
 sections:
 - name: interview_app
   tests:
@@ -12,7 +12,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-10T00:12:44.779239+00:00'
+generated_at_utc: '2026-07-10T19:20:36.234835+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -8818,6 +8818,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._apply_review_score_updates
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._attach_latest_deepseek_progress_from_history
   kind: method
   tests:
@@ -9727,6 +9736,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._refresh_review_transcript_cells
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._refresh_staffing_classroom_choices
   kind: method
   tests:
@@ -9881,6 +9899,24 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._review_admin_changes
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._review_history_key
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._review_scoring
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -10187,6 +10223,15 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._selected_staffing_school
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._session_position_label
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -10655,6 +10700,15 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._sync_admin_status
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._sync_review_score_staffing_referral
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -15073,6 +15127,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/staffing_service.contract.yaml
+  symbol: staffing_service.StaffingService.dismiss_director_referral_history_ids
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_service.contract.yaml
   symbol: staffing_service.StaffingService.flush_pending_operations
   kind: method
   tests:
@@ -15317,6 +15380,15 @@ entries:
     - return_type
 - contract: contracts/staffing_store.contract.yaml
   symbol: staffing_store.StaffingStore.delete_pending_director_referrals
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_store.contract.yaml
+  symbol: staffing_store.StaffingStore.dismiss_director_referral_history_ids
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py

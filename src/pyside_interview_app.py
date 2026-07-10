@@ -1006,11 +1006,16 @@ def _bootstrap_school_staffing_db_from_base(school: str, school_path: Path, *, b
             shutil.copy2(sidecar, target.with_name(f"{target.name}{suffix}"))
 
 
-def _append_staffing_referral_queue(payload: dict[str, Any], *, queue_path: Path | None = None) -> None:
+def _append_staffing_referral_queue(
+    payload: dict[str, Any],
+    *,
+    queue_path: Path | None = None,
+    operation: str = "director_candidate_referral",
+) -> None:
     target = Path(queue_path or STAFFING_REFERRAL_QUEUE_PATH)
     target.parent.mkdir(parents=True, exist_ok=True)
     record = {
-        "operation": "director_candidate_referral",
+        "operation": str(operation or "director_candidate_referral").strip() or "director_candidate_referral",
         "payload": payload,
         "queued_at": datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
     }
@@ -1041,6 +1046,8 @@ def _pop_staffing_referral_queue_for_school(school: str, *, queue_path: Path | N
         if school_filter and str(payload.get("school", "")).strip() != school_filter:
             remaining.append(record)
             continue
+        payload = dict(payload)
+        payload["_operation"] = str(record.get("operation") or "director_candidate_referral")
         matched.append(payload)
     if remaining:
         with target.open("w", encoding="utf-8") as file:
@@ -1053,6 +1060,14 @@ def _pop_staffing_referral_queue_for_school(school: str, *, queue_path: Path | N
     else:
         target.unlink()
     return matched
+
+
+def _append_staffing_referral_dismissal_queue(payload: dict[str, Any], *, queue_path: Path | None = None) -> None:
+    _append_staffing_referral_queue(
+        payload,
+        queue_path=queue_path,
+        operation="director_candidate_referral_dismissal",
+    )
 
 
 def _history_offer_action(offer_status: str) -> str:
@@ -2268,6 +2283,10 @@ class PySideInterviewWindow:
         self._pyside_finalize_progress_queue: queue.Queue[str] | None = None
         self._pyside_finalize_progress_refresh_timer: Any | None = None
         self._pyside_deepseek_progress_timer: Any | None = None
+        self._review_score_dirty = False
+        self._review_history_id = ""
+        self.review_question_table: Any | None = None
+        self.review_apply_scores_button: Any | None = None
         self._history_table_widgets: dict[str, Any] = {}
         self._overwrite_next_live_timestamp = False
         self._overwrite_next_live_boundary_timestamp = False
@@ -3581,6 +3600,7 @@ class PySideInterviewWindow:
 
         question_table = self.QtWidgets.QTableWidget(0, 5)
         question_table.setObjectName("PySideReviewQuestionTable")
+        self.review_question_table = question_table
         question_table.setHorizontalHeaderLabels(["Question", "Score", "Notes", "Transcript", "Flags"])
         question_table.verticalHeader().setVisible(False)
         question_table.setEditTriggers(self.QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -3636,6 +3656,12 @@ class PySideInterviewWindow:
         summary_layout.addWidget(question_table)
         summary_layout.addWidget(self._label("Send candidate to director interview if required by your hiring workflow."))
         actions = self.QtWidgets.QHBoxLayout()
+        apply_scores_button = self.QtWidgets.QPushButton("Update Scores")
+        apply_scores_button.setObjectName("PySideReviewApplyScoresButton")
+        apply_scores_button.setEnabled(self._review_score_dirty)
+        apply_scores_button.clicked.connect(self._apply_review_score_updates)
+        self.review_apply_scores_button = apply_scores_button
+        actions.addWidget(apply_scores_button)
         home_button = self.QtWidgets.QPushButton("Home")
         home_button.clicked.connect(lambda: self.interview_tabs.setCurrentIndex(0))
         actions.addWidget(home_button)
@@ -3654,7 +3680,123 @@ class PySideInterviewWindow:
             self.review_status_label.setText(str(exc))
             return
         self.session_answers = dict(self.session.answers)
+        self._review_score_dirty = True
         self._render_review_page()
+
+    def _review_scoring(self) -> dict[str, Any]:
+        if self.session is None:
+            return {}
+        adapter = _PySideFinalizeAdapter(self.session, base_dir=DEFAULT_BASE_DIR, history_path=INTERVIEW_HISTORY_PATH)
+        return ScoringEngine.evaluate(adapter._rubric_with_question_overrides(), adapter.state.track, adapter.state.trait_inputs)
+
+    def _review_history_key(self) -> str:
+        if self._review_history_id:
+            return self._review_history_id
+        if self.session is None:
+            return ""
+        rows = self.history_store.load()
+        for row in reversed(rows):
+            if str(row.get("candidate_name") or "").strip() != self.session.candidate_name:
+                continue
+            if str(row.get("interview_date") or "").strip() != self.session.interview_date:
+                continue
+            key = self.history_store.build_row_key(row)
+            if key:
+                self._review_history_id = key
+                return key
+        return ""
+
+    def _session_position_label(self) -> str:
+        if self.session is None:
+            return ""
+        flow = self.model.flows.get(self.session.track_key)
+        return flow.label if flow is not None else self.session.track_key
+
+    def _sync_review_score_staffing_referral(self, history_id: str, scoring: dict[str, Any]) -> None:
+        if self.session is None:
+            return
+        outcome = _director_referral_outcome(str(scoring.get("outcome", "") or ""))
+        payload = {
+            "history_id": history_id,
+            "candidate_name": self.session.candidate_name,
+            "school": self.session.school,
+            "position": self._session_position_label(),
+            "interviewer_rating": _director_referral_rating(str(scoring.get("percent_of_max_label") or scoring.get("percent_of_max") or "")),
+            "interview_date": self.session.interview_date,
+            "candidate_email": "",
+            "referral_date": self.session.interview_date,
+        }
+        if outcome:
+            _append_staffing_referral_queue({**payload, "interviewer_outcome": outcome})
+        else:
+            _append_staffing_referral_dismissal_queue(payload)
+        if (
+            getattr(self, "staffing_v2_dashboard", None) is not None
+            and self.director_staffing_school
+            and self.director_staffing_school == self.session.school
+        ):
+            self._poll_staffing_referral_queue()
+
+    def _apply_review_score_updates(self) -> None:
+        if self.session is None:
+            return
+        history_id = self._review_history_key()
+        if not history_id:
+            self.review_status_label.setText("Scores not updated: finalized history row is not ready.")
+            return
+        try:
+            scoring = self._review_scoring()
+            outcome = str(scoring.get("outcome", "") or "Incomplete")
+            percent = scoring.get("percent_of_max", 0)
+            percent_label = str(scoring.get("percent_of_max_label") or f"{percent}%")
+            review_scores = {
+                question_id: str(answer.get("score") or "")
+                for question_id, answer in self.session.answers.items()
+                if isinstance(answer, dict) and str(answer.get("kind") or "") == "trait"
+            }
+            updated = self.history_store.update_row(
+                history_id,
+                {
+                    "interview_score": percent,
+                    "score": percent_label,
+                    "percent_of_max": percent,
+                    "percent_of_max_label": percent_label,
+                    "determination": outcome,
+                    "outcome": outcome,
+                    "status": outcome,
+                    "interview_status": outcome,
+                    "next_action": _next_action_for_outcome(outcome),
+                    "review_scores": review_scores,
+                    "scoring": scoring,
+                    "review_score_updated_at": datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
+                },
+            )
+            if not updated:
+                self.review_status_label.setText("Scores not updated: finalized history row is not ready.")
+                return
+            self._sync_review_score_staffing_referral(history_id, scoring)
+        except Exception:
+            self.review_status_label.setText("Scores not updated. Review the finalized history row and try again.")
+            return
+        self._review_score_dirty = False
+        self._reload_history_model()
+        self._render_review_page()
+        self.review_status_label.setText(f"Scores updated: {percent_label} {outcome}.")
+
+    def _refresh_review_transcript_cells(self) -> None:
+        table = self.review_question_table
+        if self.session is None or table is None:
+            return
+        for row in range(table.rowCount()):
+            transcript_text = str(self.session.flow_candidate_transcripts.get(row, "") or "").strip()
+            if not transcript_text:
+                recording = self.session.flow_recordings.get(row, {}) or {}
+                transcript_text = str(recording.get("candidate_transcript") or "").strip()
+            item = table.item(row, 3)
+            if item is None:
+                item = self.QtWidgets.QTableWidgetItem("")
+                table.setItem(row, 3, item)
+            item.setText(transcript_text or "Not generated")
 
     def _default_draft_path(self, candidate_name: str) -> Path:
         safe_name = "".join(ch if ch.isalnum() else "_" for ch in candidate_name).strip("_") or "Candidate"
@@ -3689,6 +3831,7 @@ class PySideInterviewWindow:
             try:
                 self._report_pyside_finalize_progress("Stopping recording and transcribing")
                 self._stop_pyside_interview_recording()
+                results.put({"ok": True, "event": "transcripts_updated"})
                 self._report_pyside_finalize_progress("Building interview notes")
                 result = session.finalize_interview(
                     base_dir=DEFAULT_BASE_DIR,
@@ -3712,7 +3855,11 @@ class PySideInterviewWindow:
         except queue.Empty:
             return
         if message.get("event") == "history_persisted":
+            self._review_history_id = str(message.get("history_id") or "")
             self._reload_history_model()
+            return
+        if message.get("event") == "transcripts_updated":
+            self._refresh_review_transcript_cells()
             return
         timer.stop()
         timer.deleteLater()
@@ -3723,6 +3870,8 @@ class PySideInterviewWindow:
             self._refresh_pyside_finalize_progress()
             return
         result = message.get("result", {})
+        if isinstance(result, dict):
+            self._review_history_id = str(result.get("history_id") or self._review_history_id)
         output_path = result.get("out_path", "") if isinstance(result, dict) else ""
         warning_text = str(message.get("warning") or "").strip()
         warning = f" {warning_text}" if warning_text else ""
@@ -9861,6 +10010,8 @@ class PySideInterviewWindow:
         return dashboard.widget
 
     def _start_staffing_referral_queue_polling(self) -> None:
+        if not self.director_staffing_school:
+            return
         if self._staffing_referral_queue_timer is not None:
             return
         timer = self.QtCore.QTimer(self.window)
@@ -9886,19 +10037,23 @@ class PySideInterviewWindow:
         service = StaffingService(self.staffing_store, notification_service=self._notification_service())
         imported = 0
         for payload in payloads:
+            operation = str(payload.get("_operation") or "director_candidate_referral")
             try:
-                service.upsert_director_candidate_referral(
-                    history_id=str(payload["history_id"]),
-                    candidate_name=str(payload["candidate_name"]),
-                    school=str(payload["school"]),
-                    position=str(payload.get("position", "")),
-                    interviewer_rating=payload.get("interviewer_rating"),
-                    interviewer_outcome=str(payload["interviewer_outcome"]),
-                    interview_date=str(payload.get("interview_date", "")),
-                    candidate_email=str(payload.get("candidate_email", "")),
-                    referral_date=str(payload.get("referral_date", "")),
-                    queue_on_lock=True,
-                )
+                if operation == "director_candidate_referral_dismissal":
+                    service.dismiss_director_referral_history_ids([str(payload["history_id"])])
+                else:
+                    service.upsert_director_candidate_referral(
+                        history_id=str(payload["history_id"]),
+                        candidate_name=str(payload["candidate_name"]),
+                        school=str(payload["school"]),
+                        position=str(payload.get("position", "")),
+                        interviewer_rating=payload.get("interviewer_rating"),
+                        interviewer_outcome=str(payload["interviewer_outcome"]),
+                        interview_date=str(payload.get("interview_date", "")),
+                        candidate_email=str(payload.get("candidate_email", "")),
+                        referral_date=str(payload.get("referral_date", "")),
+                        queue_on_lock=True,
+                    )
             except (OSError, ValueError, StaffingEditLock, KeyError):
                 continue
             imported += 1
