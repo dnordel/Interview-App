@@ -272,6 +272,7 @@ Role-sensitive visibility expectations for manual QA:
 - `user_artifacts/interviews/onboarding_settings.json`: onboarding email/reminder settings (created by onboarding app).
 - `user_artifacts/interview_history.sqlite3`: finalized interview history rows (created by interview app).
 - `user_artifacts/interview_history.json`: legacy finalized interview history rows imported into SQLite when the DB is empty.
+- `user_artifacts/staffing_referrals.sqlite3`: interview-to-staffing director referral queue; legacy `staffing_referrals.pending.jsonl` records import once when present.
 - `user_artifacts/school_offer_settings.json`: local offer-template settings (created by interview app).
 - `user_artifacts/interview_app_settings.json`: local app settings, including output folder preference.
 

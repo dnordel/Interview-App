@@ -2,11 +2,11 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.67.0
+  version: 1.68.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, resizable splitter sections, school/classroom selectors, wider color-coded classroom list with per-classroom status-count overview, metric cards, positions table, fully editable right-side assignment/person details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics, parallel Staffing v2 navigation/page shell with its own mockup-style staffing sidebar, People / Employee Management and Assignment History sub-dashboards for the mockup-driven rewrite backed by staffing_dashboard_v2 while the legacy Staffing page remains available,
-    director staffing-only launch mode that opens the Staffing v2 dashboard, keeps the full mockup navigation rail visible, filters to an assigned school when supplied, reuses the same Staffing v2 page, stores school-scoped director staffing data in school-specific SQLite files bootstrapped from the existing shared staffing DB on first use, imports queued hire/borderline interview referral and dismissal events into the matching school staffing database on launch and on a live timer, and records finalized or review-updated referral events to a central JSONL bridge queue instead of writing staffing databases directly,
+    director staffing-only launch mode that opens the Staffing v2 dashboard, keeps the full mockup navigation rail visible, filters to an assigned school when supplied, reuses the same Staffing v2 page, stores school-scoped director staffing data in school-specific SQLite files bootstrapped from the existing shared staffing DB on first use, imports queued hire/borderline interview referral and dismissal events into the matching school staffing database on launch and on a live timer, and records finalized or review-updated referral events to a central SQLite bridge queue instead of writing staffing databases directly,
     compact home draft actions beside the start action, guided review-then-apply Admin Studio backed by admin_studio
     with dashboard-first grouped admin-console navigation, standard icons on each
     selectable Admin Studio nav item, Environment/User cards at the bottom of the Admin Studio rail, distinct status pills,
@@ -104,6 +104,30 @@ functions:
       default: null
   returns:
     type: Path
+  exceptions: []
+  side_effects: none
+- name: staffing_referral_queue_db_path
+  description: Return the central staffing referral queue SQLite path, deriving a sibling DB path from an injected legacy JSONL queue path for tests and migrations.
+  locked: false
+  inputs:
+    queue_path:
+      type: Path | None
+      required: false
+      default: null
+  returns:
+    type: Path
+  exceptions: []
+  side_effects: none
+- name: _staffing_referral_queue_store
+  description: Build the SQLite-backed central director referral queue store with the legacy JSONL path wired for one-time import.
+  locked: false
+  inputs:
+    queue_path:
+      type: Path | None
+      required: false
+      default: null
+  returns:
+    type: StaffingReferralQueueStore
   exceptions: []
   side_effects: none
 - name: build_pyside_onboarding_board
@@ -3643,7 +3667,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Reads and may rewrite the central referral queue file, writes matching referrals to the active staffing database, and refreshes StaffingDashboardV2Page.
+    side_effects: Reads and consumes matching central SQLite referral queue rows, writes matching referrals to the active staffing database, and refreshes StaffingDashboardV2Page.
   - name: _import_queued_staffing_director_referrals
     description: Move central referral queue records for the current director school into the active StaffingService director-referral store.
     locked: false
@@ -3651,7 +3675,7 @@ classes:
     returns:
       type: int
     exceptions: []
-    side_effects: Reads and may rewrite the central referral queue file; upserts matching referral payloads into the active staffing database, dismisses matching history ids, or queues referral upserts on that database if its edit lock is held.
+    side_effects: Reads and consumes matching central SQLite referral queue rows, importing any legacy JSONL queue once first; upserts matching referral payloads into the active staffing database, dismisses matching history ids, or queues referral upserts on that database if its edit lock is held.
   - name: _sync_staffing_director_referrals_from_history
     description: Upsert non-dismissed Hire and Borderline PySide history rows into StaffingService pending director-interview referrals, scoped to the director launch school when supplied, and queue rows that cannot be written because the staffing database edit lock is currently held.
     locked: false
@@ -3670,7 +3694,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Appends one sanitized director candidate referral event to the central staffing referral queue JSONL file without opening or mutating staffing databases.
+    side_effects: Appends one sanitized director candidate referral event to the central staffing referral queue SQLite database without opening or mutating staffing databases.
   - name: _refresh_staffing_dashboard
     description: Initialize local staffing storage, import seed data when the staffing DB is empty or clearly missing seed assignments, compute metrics, and refresh the hidden compatibility metric label, school/classroom selectors, classroom list, metric cards, positions table, and hidden legacy school-tabbed workbook boards.
     locked: false
@@ -4463,6 +4487,7 @@ dependencies:
 - module: platform_services
 - module: scoring_reporting
 - module: staffing_dashboard_v2
+- module: staffing_referral_queue
 - module: staffing_service
 - module: staffing_store
 - module: PySide6

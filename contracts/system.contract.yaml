@@ -97,10 +97,14 @@ modules:
     - platform_services
     - scoring_reporting
     - staffing_dashboard_v2
+    - staffing_referral_queue
     - staffing_service
     - staffing_store
     - ui_mode_switch
     - PySide6
+  staffing_referral_queue:
+    path: src/staffing_referral_queue.py
+    depends_on: []
   admin_studio:
     path: src/admin_studio.py
     depends_on:

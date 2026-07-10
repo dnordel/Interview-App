@@ -12,7 +12,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-10T21:05:35.054848+00:00'
+generated_at_utc: '2026-07-10T22:48:23.366600+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -11014,6 +11014,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app._staffing_referral_queue_store
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.build_director_staffing_model
   kind: function
   tests:
@@ -11087,6 +11096,15 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.staffing_db_path_for_school
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.staffing_referral_queue_db_path
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -15173,6 +15191,60 @@ entries:
     - return_type
 - contract: contracts/staffing_dashboard_v2.contract.yaml
   symbol: staffing_dashboard_v2.configure_v2_scroll_areas
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_referral_queue.contract.yaml
+  symbol: staffing_referral_queue.StaffingReferralQueueStore._ensure_legacy_imported
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_referral_queue.contract.yaml
+  symbol: staffing_referral_queue.StaffingReferralQueueStore._read_legacy_records
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_referral_queue.contract.yaml
+  symbol: staffing_referral_queue.StaffingReferralQueueStore.append
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_referral_queue.contract.yaml
+  symbol: staffing_referral_queue.StaffingReferralQueueStore.connect
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_referral_queue.contract.yaml
+  symbol: staffing_referral_queue.StaffingReferralQueueStore.pop_for_school
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_referral_queue.contract.yaml
+  symbol: staffing_referral_queue._utc_now_iso
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py

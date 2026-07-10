@@ -5961,6 +5961,18 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_staffing_referral_queue.py::test_referral_queue_pops_matching_school_and_preserves_other_schools
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_staffing_referral_queue.py::test_referral_queue_imports_legacy_jsonl_once_and_skips_malformed_lines
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_staffing_referral_queue.py::test_referral_queue_concurrent_appends_preserve_all_events
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_staffing_service_metrics.py::test_staffing_metrics_count_open_age_and_fill_time
   duration_seconds_n2: 0.001
   gui_heavy: false

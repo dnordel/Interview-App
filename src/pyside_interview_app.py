@@ -81,6 +81,7 @@ from scoring_reporting import DocxExporter, OfferInput, OfferLetterService, Scor
 from scoring_reporting import build_integration_payload, serialize_integration_payload
 from scoring_reporting import CANONICAL_DEGREE_TYPES, CandidateQualification, validate_candidate_qualification
 from staffing_dashboard_v2 import StaffingDashboardV2Page, configure_v2_scroll_areas
+from staffing_referral_queue import StaffingReferralQueueStore
 from staffing_service import StaffingService
 from staffing_store import StaffingEditLock, StaffingStore
 
@@ -92,6 +93,7 @@ DIRECTOR_STAFFING_NAVIGATION = ["Staffing v2"]
 SETUP_STEPS = ["Candidate", "Interview Plan", "Ready"]
 STAFFING_DB_PATH = DEFAULT_BASE_DIR / "staffing_dashboard.sqlite3"
 STAFFING_REFERRAL_QUEUE_PATH = DEFAULT_BASE_DIR / "staffing_referrals.pending.jsonl"
+STAFFING_REFERRAL_QUEUE_DB_PATH = DEFAULT_BASE_DIR / "staffing_referrals.sqlite3"
 STAFFING_SEED_PATH = CONFIG_DIR / "staffing_seed.json"
 STAFFING_PERMIT_VALUES = [
     "unknown",
@@ -1011,60 +1013,32 @@ def _bootstrap_school_staffing_db_from_base(school: str, school_path: Path, *, b
             shutil.copy2(sidecar, target.with_name(f"{target.name}{suffix}"))
 
 
+def staffing_referral_queue_db_path(*, queue_path: Path | None = None) -> Path:
+    if queue_path is None:
+        return Path(STAFFING_REFERRAL_QUEUE_DB_PATH)
+    legacy_path = Path(queue_path)
+    return legacy_path.with_suffix("").with_suffix(".sqlite3")
+
+
+def _staffing_referral_queue_store(*, queue_path: Path | None = None) -> StaffingReferralQueueStore:
+    legacy_path = Path(queue_path or STAFFING_REFERRAL_QUEUE_PATH)
+    return StaffingReferralQueueStore(
+        staffing_referral_queue_db_path(queue_path=legacy_path),
+        legacy_jsonl_path=legacy_path,
+    )
+
+
 def _append_staffing_referral_queue(
     payload: dict[str, Any],
     *,
     queue_path: Path | None = None,
     operation: str = "director_candidate_referral",
 ) -> None:
-    target = Path(queue_path or STAFFING_REFERRAL_QUEUE_PATH)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    record = {
-        "operation": str(operation or "director_candidate_referral").strip() or "director_candidate_referral",
-        "payload": payload,
-        "queued_at": datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
-    }
-    with target.open("a", encoding="utf-8") as file:
-        file.write(json.dumps(record, ensure_ascii=True, sort_keys=True) + "\n")
+    _staffing_referral_queue_store(queue_path=queue_path).append(payload, operation=operation)
 
 
 def _pop_staffing_referral_queue_for_school(school: str, *, queue_path: Path | None = None) -> list[dict[str, Any]]:
-    target = Path(queue_path or STAFFING_REFERRAL_QUEUE_PATH)
-    if not target.exists():
-        return []
-    school_filter = str(school or "").strip()
-    matched: list[dict[str, Any]] = []
-    remaining: list[dict[str, Any]] = []
-    for line in target.read_text(encoding="utf-8").splitlines():
-        if not line.strip():
-            continue
-        try:
-            record = json.loads(line)
-        except json.JSONDecodeError:
-            remaining.append({"raw": line})
-            continue
-        if not isinstance(record, dict):
-            continue
-        payload = record.get("payload", {})
-        if not isinstance(payload, dict):
-            continue
-        if school_filter and str(payload.get("school", "")).strip() != school_filter:
-            remaining.append(record)
-            continue
-        payload = dict(payload)
-        payload["_operation"] = str(record.get("operation") or "director_candidate_referral")
-        matched.append(payload)
-    if remaining:
-        with target.open("w", encoding="utf-8") as file:
-            for record in remaining:
-                raw = record.get("raw") if isinstance(record, dict) else None
-                if raw is not None:
-                    file.write(str(raw) + "\n")
-                else:
-                    file.write(json.dumps(record, ensure_ascii=True, sort_keys=True) + "\n")
-    else:
-        target.unlink()
-    return matched
+    return _staffing_referral_queue_store(queue_path=queue_path).pop_for_school(school)
 
 
 def _append_staffing_referral_dismissal_queue(payload: dict[str, Any], *, queue_path: Path | None = None) -> None:

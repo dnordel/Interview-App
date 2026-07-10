@@ -1,0 +1,72 @@
+module:
+  name: staffing_referral_queue
+  language: python
+  path: src/staffing_referral_queue.py
+  version: 1.0.0
+  description: SQLite-backed central queue for interview-to-staffing director referral and dismissal events, with one-time legacy JSONL import for existing staffing_referrals.pending.jsonl files.
+functions:
+- name: _utc_now_iso
+  description: Return current UTC timestamp as ISO text without microseconds.
+  locked: false
+  inputs: {}
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+classes:
+- name: StaffingReferralQueueStore
+  description: Persists central director referral queue events in SQLite and imports older JSONL queue records once.
+  locked: false
+  methods:
+  - name: append
+    inputs:
+      payload:
+        type: dict[str, Any]
+        required: true
+      operation:
+        type: str
+        required: false
+        default: director_candidate_referral
+    returns:
+      type: None
+    exceptions:
+    - sqlite3.Error
+    side_effects: Creates or opens the queue SQLite database, imports legacy JSONL records if present, and inserts one unconsumed referral event.
+  - name: pop_for_school
+    inputs:
+      school:
+        type: str
+        required: true
+    returns:
+      type: list[dict[str, Any]]
+    exceptions:
+    - sqlite3.Error
+    side_effects: Creates or opens the queue SQLite database, imports legacy JSONL records if present, marks matching unconsumed events consumed, and returns payloads with _operation added.
+  - name: connect
+    inputs: {}
+    returns:
+      type: sqlite3.Connection
+    exceptions:
+    - sqlite3.Error
+    side_effects: Creates parent directories and initializes the queue SQLite schema and indexes.
+  - name: _ensure_legacy_imported
+    inputs: {}
+    returns:
+      type: None
+    exceptions:
+    - OSError
+    - sqlite3.Error
+    side_effects: Creates a temporary .importing lock, reads a legacy JSONL queue once, imports valid payload rows, ignores malformed rows, preserves the original JSONL as a manual backup, writes an .imported marker to prevent duplicate import, and removes the temporary import lock.
+  - name: _read_legacy_records
+    inputs:
+      legacy_path:
+        type: Path
+        required: true
+    returns:
+      type: list[tuple[str, str, str, str]]
+    exceptions:
+    - OSError
+    side_effects: Reads a legacy JSONL queue file.
+data_structures: []
+dependencies:
+- module: sqlite3

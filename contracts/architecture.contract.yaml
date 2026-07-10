@@ -105,9 +105,15 @@ datastores:
     - data_store
     - pyside_interview_app
     - web_app_backend
+  staffing_referral_queue_db:
+    type: sqlite
+    description: Canonical interview-to-staffing director referral bridge lives in user_artifacts/staffing_referrals.sqlite3; legacy staffing_referrals.pending.jsonl records are imported once when present.
+    used_by:
+    - staffing_referral_queue
+    - pyside_interview_app
   json_file_store:
     type: file_system_json
-    description: Canonical mutable app JSON lives under user_artifacts except finalized interview history, which is SQLite-backed; interview_history.json files remain read-only migration sources so past interviews from older app versions remain visible. DeepSeek prompt templates live in config/deepseek_prompts.json for source-controlled prompt editing and per-question override maps; runtime role-context injection keeps executive prompts scoped to the selected job title instead of embedding all role-specific guidance in every request.
+    description: Canonical mutable app JSON lives under user_artifacts except finalized interview history and staffing referral queue events, which are SQLite-backed; interview_history.json files remain read-only migration sources so past interviews from older app versions remain visible. DeepSeek prompt templates live in config/deepseek_prompts.json for source-controlled prompt editing and per-question override maps; runtime role-context injection keeps executive prompts scoped to the selected job title instead of embedding all role-specific guidance in every request.
     used_by:
     - data_store
     - onboarding_operations

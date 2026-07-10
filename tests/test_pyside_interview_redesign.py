@@ -2700,10 +2700,10 @@ def test_pyside_review_apply_scores_updates_history_and_queues_director_referral
     assert row["outcome"] == "Borderline"
     assert row["review_scores"]["trait_1"] == "4"
     assert window.review_status_label.text().startswith("Scores updated:")
-    queued = [json.loads(line) for line in referral_queue_path.read_text(encoding="utf-8").splitlines()]
-    assert queued[0]["operation"] == "director_candidate_referral"
-    assert queued[0]["payload"]["history_id"] == "hist-review"
-    assert queued[0]["payload"]["interviewer_outcome"] == "borderline"
+    queued = pyside_interview_app._pop_staffing_referral_queue_for_school("Palmdale", queue_path=referral_queue_path)
+    assert queued[0]["_operation"] == "director_candidate_referral"
+    assert queued[0]["history_id"] == "hist-review"
+    assert queued[0]["interviewer_outcome"] == "borderline"
 
     refreshed_trait_rows = [
         row for row in range(window.review_question_table.rowCount()) if window.review_question_table.cellWidget(row, 1)
@@ -2716,9 +2716,9 @@ def test_pyside_review_apply_scores_updates_history_and_queues_director_referral
 
     updated_row = InterviewHistoryStore(history_path).load()[0]
     assert updated_row["outcome"] == "No Hire"
-    queued = [json.loads(line) for line in referral_queue_path.read_text(encoding="utf-8").splitlines()]
-    assert queued[-1]["operation"] == "director_candidate_referral_dismissal"
-    assert queued[-1]["payload"]["history_id"] == "hist-review"
+    queued = pyside_interview_app._pop_staffing_referral_queue_for_school("Palmdale", queue_path=referral_queue_path)
+    assert queued[-1]["_operation"] == "director_candidate_referral_dismissal"
+    assert queued[-1]["history_id"] == "hist-review"
     window.window.close()
     app.processEvents()
 
@@ -13091,10 +13091,10 @@ def test_interview_finalize_queues_director_referral_without_staffing_db_write(
     )
 
     assert not staffing_path.exists()
-    assert referral_queue_path.exists()
-    queued = [json.loads(line) for line in referral_queue_path.read_text(encoding="utf-8").splitlines()]
-    assert queued[0]["payload"]["history_id"] == "hist-queued"
-    assert queued[0]["payload"]["school"] == "Palmdale"
+    assert pyside_interview_app.staffing_referral_queue_db_path(queue_path=referral_queue_path).exists()
+    queued = pyside_interview_app._pop_staffing_referral_queue_for_school("Palmdale", queue_path=referral_queue_path)
+    assert queued[0]["history_id"] == "hist-queued"
+    assert queued[0]["school"] == "Palmdale"
     window.window.close()
     app.processEvents()
 
