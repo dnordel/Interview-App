@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.66.0
+  version: 1.67.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, resizable splitter sections, school/classroom selectors, wider color-coded classroom list with per-classroom status-count overview, metric cards, positions table, fully editable right-side assignment/person details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics, parallel Staffing v2 navigation/page shell with its own mockup-style staffing sidebar, People / Employee Management and Assignment History sub-dashboards for the mockup-driven rewrite backed by staffing_dashboard_v2 while the legacy Staffing page remains available,
@@ -44,6 +44,7 @@ module:
     visible edit mode, dirty-cell affordances, unsaved-change discard confirmation,
     validation-blocked apply, interview notes
     regeneration actions, user-closable
+    history-row Indeed transcript import that opens the selected candidate in the completed Review screen for transcript-adjacent score edits, regenerates the Basic Interview Notes document, and saves a not-started DeepSeek job for the history Generate action,
     finalize progress with immediate ordered task/status rows in a compact scrollable
     dialog, successful-completion auto-close, live history refresh, and single supported desktop GUI documentation
     while preserving shared finalize, history, document, and DeepSeek runtime services.
@@ -770,6 +771,105 @@ classes:
     exceptions: []
     side_effects: May run ffmpeg device enumeration through interview_runtime cache
       and stores a non-blocking recording warning if preload fails.
+  - name: _recording_warning_text
+    description: Return operator-facing PySide recording warning text including the
+      selected Windows system-audio capture device when available so wrong output
+      routing is visible before finalize.
+    locked: false
+    inputs: {}
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _schedule_pyside_intro_audio_transcription_check
+    description: Schedule a 15-second post-Begin Interview transcription probe against
+      the active PySide recorder so blank early audio can warn the operator before
+      finalize.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Uses QTimer.singleShot when an active recording session exists.
+  - name: _run_pyside_intro_audio_transcription_check_async
+    description: Start a daemon worker for the 15-second intro audio transcription
+      probe without blocking the PySide UI.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Starts a daemon thread and a short QTimer poller.
+  - name: _transcribe_pyside_intro_audio_sample
+    description: Transcribe newly available recorder segments for the early-audio
+      probe and return joined recognized candidate/system text, ignoring interviewer
+      microphone-only segments so route failures are still detected.
+    locked: false
+    inputs:
+      session:
+        type: Any
+        required: true
+    returns:
+      type: str
+    exceptions:
+    - Exception
+    side_effects: May initialize local Whisper backend and read active WAV files.
+  - name: _poll_pyside_intro_audio_check
+    description: Poll the background early-audio transcription result and show a
+      backup-recording warning when the first 15 seconds produce blank transcript.
+    locked: false
+    inputs:
+      results:
+        type: queue.Queue[dict[str, Any]]
+        required: true
+      timer:
+        type: Any
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Stops/deletes the poll timer and may update recording_warning.
+  - name: _apply_pyside_intro_audio_check_result
+    description: Apply the early-audio transcription probe result, warning the operator
+      to check audio settings and record the meeting in Zoom when transcript text
+      is blank.
+    locked: false
+    inputs:
+      transcript_text:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: May update recording_warning, log a route warning, and rerender
+      the live question page.
+  - name: _wav_has_detectable_signal
+    description: Return whether a sampled WAV file contains detectable non-silent
+      PCM signal for the PySide system-audio route check.
+    locked: false
+    inputs:
+      wav_path:
+        type: Path
+        required: true
+      min_average_abs:
+        type: float
+        required: false
+        default: 8.0
+    returns:
+      type: bool
+    exceptions: []
+    side_effects: Reads a local WAV file.
+  - name: _check_pyside_system_audio_capture
+    description: Check the active PySide system-capture WAV shortly after recording
+      starts and show a non-blocking VB-CABLE routing warning when no meeting/system
+      audio signal is detected.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: May update recording_warning, log a route warning, and rerender
+      the live question page.
   - name: _initial_window_size
     description: Calculate startup QMainWindow size from current primary-screen
       available logical geometry so Windows display scaling does not open the app
@@ -3133,17 +3233,20 @@ classes:
     exceptions: []
     side_effects: Updates Admin Studio table item baseline data.
   - name: _start_pyside_interview_recording
-    description: Start optional continuous PySide interview recording after the intro
-      screen using the shared local recorder and the same runtime settings warmed
-      after startup, or record a non-blocking warning when recording dependencies
+    description: Start optional continuous PySide interview recording at Begin Interview
+      using the shared local recorder and the same runtime settings warmed after
+      startup, store the selected Windows system-audio capture device, or record
+      a non-blocking warning when recording dependencies or audio-device selection
       are unavailable.
     locked: false
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Resets PySide session transcript state for candidate-answer questions
-      and may start FFmpeg-backed local recording.
+    side_effects: Resets PySide session transcript state for candidate-answer questions,
+      may start FFmpeg-backed local recording, schedules non-blocking system-audio
+      route and 15-second intro transcription checks, and clears recording timing
+      state when audio capture cannot start.
   - name: _stop_pyside_interview_recording
     description: Stop optional PySide continuous recording from the background
       finalize worker, transcribe it locally, map candidate
@@ -4198,7 +4301,7 @@ classes:
     exceptions: []
     side_effects: none
   - name: _create_history_table
-    description: Create a shared expanding PySide history-grid table with Date, Candidate, School, Position, Score, Status, Notes, Regenerate, Offer, and Delete columns.
+    description: Create a shared expanding PySide history-grid table with Date, Candidate, School, Position, Score, Status, Notes, Regenerate, Transcript, Offer, and Delete columns.
     locked: false
     inputs:
       object_name:
@@ -4209,7 +4312,7 @@ classes:
     exceptions: []
     side_effects: Creates a PySide table widget.
   - name: _size_history_table_columns
-    description: Size PySide history text columns to visible content while keeping Notes, Offer, and Delete action columns compact.
+    description: Size PySide history text columns to visible content while keeping Notes, Regenerate, Transcript, Offer, and Delete action columns compact.
     locked: false
     inputs:
       table:
@@ -4219,6 +4322,95 @@ classes:
       type: None
     exceptions: []
     side_effects: Updates visible PySide history table column widths.
+  - name: _track_key_for_history_row
+    description: Resolve the interview track key for a finalized history row from its
+      position text, falling back to the first configured track when no direct label
+      match exists.
+    locked: false
+    inputs:
+      row:
+        type: PySideHistoryRow
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _session_from_history_row
+    description: Build a PySideInterviewSession for a finalized history row so an
+      imported Indeed transcript can be attached to the existing candidate and
+      opened for review-score edits.
+    locked: false
+    inputs:
+      row:
+        type: PySideHistoryRow
+        required: true
+    returns:
+      type: PySideInterviewSession
+    exceptions:
+    - ValueError
+    side_effects: Writes the new draft through PySideInterviewSession.start.
+  - name: _history_import_updates
+    description: Build the history-store payload for an imported Indeed transcript,
+      including mapped answers, flow transcripts, source metadata, regenerated
+      Basic Interview Notes metadata, saved DeepSeek job metadata, and resetting
+      DeepSeek processing status to not_started.
+    locked: false
+    inputs:
+      row:
+        type: PySideHistoryRow
+        required: true
+      session:
+        type: PySideInterviewSession
+        required: true
+      result:
+        type: IndeedTranscriptImportResult
+        required: true
+      source_path:
+        type: Path
+        required: true
+      artifact_updates:
+        type: dict[str, Any] | None
+        required: false
+        default: None
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: none
+  - name: _regenerate_history_import_artifacts
+    description: Regenerate Basic Interview Notes and write a not-started DeepSeek
+      finalize job for a history-row Indeed transcript import without launching
+      the DeepSeek worker.
+    locked: false
+    inputs:
+      row:
+        type: PySideHistoryRow
+        required: true
+      session:
+        type: PySideInterviewSession
+        required: true
+    returns:
+      type: dict[str, Any]
+    exceptions:
+    - Exception
+    side_effects: Writes a Basic Interview Notes DOCX, writes a deepseek-finalize
+      JSON job under DEFAULT_BASE_DIR/deepseek_jobs, and returns history updates.
+  - name: _import_indeed_transcript_for_history_row
+    description: Prompt for an Indeed .txt transcript for a selected finalized history
+      row, import it into that candidate's PySide session, persist mapped answers
+      and transcript metadata to the history row, regenerate the Basic Interview
+      Notes DOCX, save a DeepSeek job for the Generate button, and open the Review
+      tab with editable ratings bound to that same history row.
+    locked: false
+    inputs:
+      row:
+        type: PySideHistoryRow
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Opens a local file picker, reads a .txt transcript, writes draft
+      and interview-session snapshots, updates InterviewHistoryStore, refreshes
+      history tables, and re-renders live/review/offer panes.
 data_structures:
 - name: InterviewRedesignModel
   type: dataclass

@@ -952,69 +952,409 @@ class DocxExporter:
         interview_date = self._require_candidate_field(candidate, "interview_date")
         track_key = self._require_candidate_field(candidate, "track")
         school = str(candidate.get("school", "") or "").strip()
+        qualification = candidate.get("qualification", {}) or {}
         track_cfg = ScoringEngine._get_track_config(rubric, track_key)
         track_label = str(track_cfg.get("label") or track_key)
 
+        body_font = "Aptos"
+        navy = "1F4E79"
+        green = "385723"
+        label_fill = "EEF2F7"
+        score_header_fill = "9DC3E6"
+        answer_header_fill = "A9D18E"
+        box_fill = "F8FAFC"
+        border_color = "D9E2F3"
+        dark_text = "1F2937"
+        content_width_inches = 7.2
+
         doc = Document()
-        styles = doc.styles
-        styles["Normal"].font.name = "Arial"
-        styles["Normal"].font.size = Pt(12)
+        for section in doc.sections:
+            section.top_margin = Inches(0.6)
+            section.right_margin = Inches(0.65)
+            section.bottom_margin = Inches(0.55)
+            section.left_margin = Inches(0.65)
+            section.header_distance = Inches(0.25)
+            section.footer_distance = Inches(0.25)
 
-        title = doc.add_heading("Basic Interview Notes", level=0)
-        title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        subtitle = doc.add_paragraph(f"{cname} | {school or 'Unknown school'} | {track_label} | {interview_date}")
-        subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        for style_name in ("Normal", "Title", "Subtitle", "Heading 1", "Heading 2", "Heading 3"):
+            style = doc.styles[style_name]
+            style.font.name = body_font
+            style.font.size = Pt(11 if style_name == "Normal" else 12)
+            style.font.color.rgb = RGBColor.from_string(dark_text)
+            style.paragraph_format.space_after = Pt(4)
+            style.paragraph_format.line_spacing = 1.12
+            if style_name == "Title":
+                style.font.size = Pt(18)
+                style.font.bold = True
+                style.font.color.rgb = RGBColor.from_string(navy)
+                style.paragraph_format.space_after = Pt(6)
+            elif style_name == "Subtitle":
+                style.font.size = Pt(11)
+                style.font.color.rgb = RGBColor.from_string("6B7280")
+                style.paragraph_format.space_after = Pt(4)
+            elif style_name in {"Heading 1", "Heading 2", "Heading 3"}:
+                style.font.bold = True
+                style.font.color.rgb = RGBColor.from_string(navy if style_name != "Heading 3" else green)
+                style.paragraph_format.space_before = Pt(10)
+                style.paragraph_format.space_after = Pt(4)
 
-        doc.add_heading("Overall Score", level=1)
-        percent = scoring.get("percent_of_max", 0)
-        doc.add_paragraph(
-            f"Score: {scoring.get('weighted_total', 0)} / {scoring.get('max_weighted_total', 0)} ({percent}%)."
-        )
-        doc.add_paragraph(f"Hiring Decision: {scoring.get('outcome', 'Incomplete')}")
-        doc.add_paragraph(f"Final Outcome: {scoring.get('outcome', 'Incomplete')}")
+        def _replace_child(parent: Any, tag: str, child: Any) -> None:
+            for existing in list(parent):
+                if existing.tag == tag:
+                    parent.remove(existing)
+            parent.append(child)
 
-        doc.add_heading("Interviewer Ratings", level=1)
-        rating_rows = [row for row in scoring.get("rows", []) or [] if isinstance(row, dict) and not row.get("skipped", False)]
-        if rating_rows:
-            table = doc.add_table(rows=1, cols=5)
+        def set_cell_shading(cell: Any, fill: str) -> None:
+            tc_pr = cell._tc.get_or_add_tcPr()
+            shd = OxmlElement("w:shd")
+            shd.set(qn("w:val"), "clear")
+            shd.set(qn("w:color"), "auto")
+            shd.set(qn("w:fill"), fill)
+            _replace_child(tc_pr, qn("w:shd"), shd)
+
+        def set_cell_borders(cell: Any, color: str = border_color) -> None:
+            tc_pr = cell._tc.get_or_add_tcPr()
+            borders = OxmlElement("w:tcBorders")
+            for side in ("top", "left", "bottom", "right"):
+                node = OxmlElement(f"w:{side}")
+                node.set(qn("w:val"), "single")
+                node.set(qn("w:sz"), "4")
+                node.set(qn("w:space"), "0")
+                node.set(qn("w:color"), color)
+                borders.append(node)
+            _replace_child(tc_pr, qn("w:tcBorders"), borders)
+
+        def set_cell_margins(cell: Any, *, top: int = 80, bottom: int = 80, start: int = 90, end: int = 90) -> None:
+            tc_pr = cell._tc.get_or_add_tcPr()
+            tc_mar = tc_pr.first_child_found_in("w:tcMar")
+            if tc_mar is None:
+                tc_mar = OxmlElement("w:tcMar")
+                tc_pr.append(tc_mar)
+            for margin_name, margin_value in {
+                "top": top,
+                "bottom": bottom,
+                "start": start,
+                "end": end,
+            }.items():
+                node = tc_mar.find(qn(f"w:{margin_name}"))
+                if node is None:
+                    node = OxmlElement(f"w:{margin_name}")
+                    tc_mar.append(node)
+                node.set(qn("w:w"), str(margin_value))
+                node.set(qn("w:type"), "dxa")
+
+        def set_cell_width(cell: Any, width_dxa: int) -> None:
+            tc_pr = cell._tc.get_or_add_tcPr()
+            tc_w = tc_pr.first_child_found_in("w:tcW")
+            if tc_w is None:
+                tc_w = OxmlElement("w:tcW")
+                tc_pr.append(tc_w)
+            tc_w.set(qn("w:w"), str(width_dxa))
+            tc_w.set(qn("w:type"), "dxa")
+
+        def set_table_geometry(table: Any, widths: list[float], *, indent_dxa: int = 0) -> None:
+            width_dxa = [int(width * 1440) for width in widths]
+            table.autofit = False
+            tbl_pr = table._tbl.tblPr
+            tbl_w = OxmlElement("w:tblW")
+            tbl_w.set(qn("w:w"), str(sum(width_dxa)))
+            tbl_w.set(qn("w:type"), "dxa")
+            _replace_child(tbl_pr, qn("w:tblW"), tbl_w)
+            tbl_ind = OxmlElement("w:tblInd")
+            tbl_ind.set(qn("w:w"), str(indent_dxa))
+            tbl_ind.set(qn("w:type"), "dxa")
+            _replace_child(tbl_pr, qn("w:tblInd"), tbl_ind)
+            tbl_grid = OxmlElement("w:tblGrid")
+            for width in width_dxa:
+                grid_col = OxmlElement("w:gridCol")
+                grid_col.set(qn("w:w"), str(width))
+                tbl_grid.append(grid_col)
+            for existing in list(table._tbl):
+                if existing.tag == qn("w:tblGrid"):
+                    table._tbl.remove(existing)
+            table._tbl.insert(1, tbl_grid)
+            for row in table.rows:
+                for index, cell in enumerate(row.cells):
+                    set_cell_width(cell, width_dxa[min(index, len(width_dxa) - 1)])
+
+        def normalize_paragraph(paragraph: Any, *, size: float = 10.5, color: str = dark_text, bold: bool = False) -> None:
+            paragraph.paragraph_format.space_after = Pt(0)
+            paragraph.paragraph_format.line_spacing = 1.08
+            for run in paragraph.runs:
+                run.font.name = body_font
+                run.font.size = Pt(size)
+                run.font.color.rgb = RGBColor.from_string(color)
+                run.bold = bold
+
+        def set_cell_text(
+            cell: Any,
+            text: Any,
+            *,
+            bold: bool = False,
+            fill: str | None = None,
+            color: str = dark_text,
+            align: Any | None = None,
+            size: float = 10.5,
+        ) -> None:
+            cell.text = str(text)
+            cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+            set_cell_borders(cell)
+            set_cell_margins(cell)
+            if fill:
+                set_cell_shading(cell, fill)
+            for paragraph in cell.paragraphs:
+                if align is not None:
+                    paragraph.alignment = align
+                normalize_paragraph(paragraph, size=size, color=color, bold=bold)
+
+        def add_note(text: str) -> None:
+            paragraph = doc.add_paragraph()
+            paragraph.paragraph_format.space_after = Pt(6)
+            paragraph.paragraph_format.line_spacing = 1.12
+            run = paragraph.add_run(text)
+            run.italic = True
+            run.font.name = body_font
+            run.font.size = Pt(9)
+            run.font.color.rgb = RGBColor.from_string("6B7280")
+
+        def add_heading(text: str) -> None:
+            paragraph = doc.add_heading(text, level=1)
+            normalize_paragraph(paragraph, size=14, color=navy, bold=True)
+
+        def add_key_value_table(rows: list[tuple[str, Any]]) -> Any:
+            table = doc.add_table(rows=0, cols=2)
             table.style = "Table Grid"
-            headers = table.rows[0].cells
-            headers[0].text = "Trait"
-            headers[1].text = "Priority"
-            headers[2].text = "Rating"
-            headers[3].text = "Weighted Score"
-            headers[4].text = "Interviewer Notes"
-            for row in rating_rows:
+            set_table_geometry(table, [2.25, content_width_inches - 2.25])
+            for label, value in rows:
                 cells = table.add_row().cells
-                cells[0].text = str(row.get("trait_name") or row.get("trait_id") or "")
-                cells[1].text = str(row.get("priority") or "")
-                raw_score = row.get("raw_score")
-                cells[2].text = "N/A" if raw_score is None else str(raw_score)
-                cells[3].text = str(row.get("weighted_score", ""))
-                cells[4].text = str(row.get("verbatim_notes") or row.get("trait_notes") or "")
-        else:
-            doc.add_paragraph("No interviewer ratings recorded.")
+                set_cell_text(cells[0], label, bold=True, fill=label_fill, size=10)
+                set_cell_text(cells[1], value if str(value).strip() else "Not provided", size=10)
+            return table
 
-        doc.add_heading("Interview Transcript", level=1)
-        flow_transcript = [item for item in payload.get("flow_transcript", []) or [] if isinstance(item, dict)]
+        def add_spacer(points: float = 4) -> None:
+            paragraph = doc.add_paragraph()
+            paragraph.paragraph_format.space_after = Pt(points)
+
+        def format_bool(value: Any) -> str:
+            if value is True:
+                return "Yes"
+            if value is False:
+                return "No"
+            return "Not provided"
+
+        def display(value: Any) -> str:
+            text = str(value).strip() if value is not None else ""
+            return text or "Not provided"
+
+        def custom_answer_by_id() -> dict[str, str]:
+            answers: dict[str, str] = {}
+            for item in payload.get("custom_answers", []) or []:
+                if not isinstance(item, dict):
+                    continue
+                item_id = str(item.get("id") or "").strip()
+                answer = str(item.get("answer") or "").strip()
+                if item_id and answer:
+                    answers[item_id] = answer
+            return answers
+
+        custom_answers = custom_answer_by_id()
+
+        def answer_for_flow_item(item: dict[str, Any], *, seen_scored_question: bool) -> str:
+            item_type = str(item.get("type") or "").strip().lower()
+            item_id = str(item.get("id") or "").strip()
+            use_manual_notes = seen_scored_question and item_type in {"custom", "qualification"}
+            if use_manual_notes:
+                return str(item.get("evaluator_notes") or custom_answers.get(item_id) or "").strip()
+            return str(item.get("candidate_transcript") or item.get("answer") or item.get("evaluator_notes") or custom_answers.get(item_id) or "").strip()
+
+        def first_answer_matching(*needles: str) -> str:
+            seen_scored_question = False
+            for item in payload.get("flow_transcript", []) or []:
+                if not isinstance(item, dict):
+                    continue
+                prompt = str(item.get("question") or item.get("prompt") or item.get("title") or "").lower()
+                answer = answer_for_flow_item(item, seen_scored_question=seen_scored_question)
+                if any(needle in prompt for needle in needles) and answer:
+                    return answer
+                if str(item.get("type") or "").strip().lower() == "trait":
+                    seen_scored_question = True
+            return ""
+
+        def row_for_trait(item: dict[str, Any]) -> dict[str, Any]:
+            trait_id = str(item.get("id") or item.get("trait_id") or "").strip()
+            for row in scoring.get("rows", []) or []:
+                if not isinstance(row, dict):
+                    continue
+                if trait_id and trait_id in {str(row.get("trait_id") or ""), str(row.get("id") or "")}:
+                    return row
+            return {}
+
+        def raw_score_text(row: dict[str, Any], item: dict[str, Any]) -> str:
+            if row.get("skipped", False):
+                return "Skipped"
+            raw_score = row.get("raw_score", item.get("raw_score"))
+            return "N/A" if raw_score is None else str(raw_score)
+
+        def first_present_bool(*values: Any) -> Any:
+            for value in values:
+                if value is True or value is False:
+                    return value
+            return None
+
+        header = doc.sections[0].header.paragraphs[0]
+        header.text = "Launch Pad Learning | Structured Interview Notes Template"
+        normalize_paragraph(header, size=8, color="6B7280", bold=True)
+
+        footer = doc.sections[0].footer.paragraphs[0]
+        footer.text = "Basic Interview Notes"
+        footer.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        normalize_paragraph(footer, size=8, color="6B7280")
+
+        title = doc.add_paragraph(style="Title")
+        title.add_run("Structured Behavioral Interview Notes")
+        title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        normalize_paragraph(title, size=18, color=navy, bold=True)
+        subtitle = doc.add_paragraph("Master Template for Python-Generated Candidate Reports", style="Subtitle")
+        subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        normalize_paragraph(subtitle, size=11, color="6B7280")
+
+        add_heading("1. Candidate Snapshot")
+        add_key_value_table(
+            [
+                ("Candidate Name", cname),
+                ("Interview Date", interview_date),
+                ("School / Location", school or "Unknown school"),
+                ("Position / Track", track_label),
+                ("Final Outcome", scoring.get("outcome", "Incomplete")),
+            ]
+        )
+        add_spacer()
+
+        add_heading("2. Candidate Education and Experience Summary")
+        add_key_value_table(
+            [
+                ("Has Degree", format_bool(qualification.get("has_degree")) if isinstance(qualification, dict) else "Not provided"),
+                ("Degree Type", display(qualification.get("degree_type")) if isinstance(qualification, dict) else "Not provided"),
+                ("Degree in ECE", format_bool(qualification.get("degree_in_ece")) if isinstance(qualification, dict) else "Not provided"),
+                ("ECE Units Completed", display(qualification.get("ece_units_completed")) if isinstance(qualification, dict) else "Not provided"),
+                (
+                    "Infant / Toddler Class Completed",
+                    format_bool(qualification.get("infant_toddler_class_completed")) if isinstance(qualification, dict) else "Not provided",
+                ),
+                (
+                    "Total Units Completed if No Degree",
+                    display(qualification.get("total_units_completed")) if isinstance(qualification, dict) else "Not provided",
+                ),
+                ("Years of Experience", display(qualification.get("years_experience")) if isinstance(qualification, dict) else "Not provided"),
+                ("Availability Summary", first_answer_matching("availability", "available")),
+                ("Pay Expectation", first_answer_matching("pay", "compensation", "salary")),
+                ("Earliest Start Date", first_answer_matching("start")),
+            ]
+        )
+        add_spacer()
+
+        add_heading("3. Score Summary")
+        add_note(
+            'Skipped scored questions display as "Skipped" or "N/A" and are excluded from the max score when scoring data marks them skipped.'
+        )
+        rating_rows = [row for row in scoring.get("rows", []) or [] if isinstance(row, dict) and not row.get("skipped", False)]
+        skipped_rows = [row for row in scoring.get("rows", []) or [] if isinstance(row, dict) and row.get("skipped", False)]
+        score_table = doc.add_table(rows=1, cols=5)
+        score_table.style = "Table Grid"
+        set_table_geometry(score_table, [2.1, 1.0, 0.75, 1.45, 1.9], indent_dxa=360)
+        score_headers = ["Trait", "Priority", "Weight", "Raw Score", "Weighted Score"]
+        for cell, header_text in zip(score_table.rows[0].cells, score_headers):
+            set_cell_text(cell, header_text, bold=True, fill=score_header_fill, align=WD_ALIGN_PARAGRAPH.CENTER, size=10)
+        if rating_rows:
+            for row in rating_rows:
+                cells = score_table.add_row().cells
+                set_cell_text(cells[0], row.get("trait_name") or row.get("trait_id") or "")
+                set_cell_text(cells[1], row.get("priority") or "")
+                set_cell_text(cells[2], row.get("weight") or "")
+                raw_score = row.get("raw_score")
+                set_cell_text(cells[3], "N/A" if raw_score is None else raw_score, align=WD_ALIGN_PARAGRAPH.CENTER)
+                set_cell_text(cells[4], row.get("weighted_score", ""), align=WD_ALIGN_PARAGRAPH.CENTER)
+        total_cells = score_table.add_row().cells
+        set_cell_text(total_cells[0], "Weighted Total", bold=True)
+        set_cell_text(total_cells[1], "")
+        set_cell_text(total_cells[2], "")
+        set_cell_text(total_cells[3], "")
+        set_cell_text(total_cells[4], f"{scoring.get('weighted_total', 0)} / {scoring.get('max_weighted_total', 0)}", bold=True)
+        skipped_cells = score_table.add_row().cells
+        set_cell_text(skipped_cells[0], "Skipped Scored Questions", bold=True)
+        set_cell_text(skipped_cells[1], "")
+        set_cell_text(skipped_cells[2], "")
+        set_cell_text(skipped_cells[3], ", ".join(str(row.get("trait_name") or row.get("trait_id") or "Question") for row in skipped_rows) or "None")
+        set_cell_text(skipped_cells[4], "")
+        add_spacer()
+
+        add_heading("4. Candidate Answers")
+        add_note(
+            "This section preserves the sequence of the interview. It includes scored and non-scored questions with full-width answer blocks."
+        )
+        flow_transcript = [
+            item
+            for item in payload.get("flow_transcript", []) or []
+            if isinstance(item, dict) and str(item.get("type") or "").strip().lower() != "intro"
+        ]
         if flow_transcript:
             seen_scored_question = False
-            for item in flow_transcript:
+            for index, item in enumerate(flow_transcript, start=1):
                 question = str(item.get("question") or item.get("prompt") or item.get("title") or "Question").strip()
                 item_type = str(item.get("type") or "").strip().lower()
-                use_manual_notes = seen_scored_question and item_type in {"custom", "qualification"}
-                answer = (
-                    str(item.get("answer") or item.get("evaluator_notes") or "").strip()
-                    if use_manual_notes
-                    else str(item.get("candidate_transcript") or item.get("answer") or "").strip()
+                row = row_for_trait(item)
+                answer = answer_for_flow_item(item, seen_scored_question=seen_scored_question)
+                question_table = doc.add_table(rows=2, cols=4)
+                question_table.style = "Table Grid"
+                set_table_geometry(question_table, [1.25, 2.45, 1.15, 2.35])
+                for cell, header_text in zip(question_table.rows[0].cells, ["Question", "Type / Trait", "Raw Score", "Flags"]):
+                    set_cell_text(cell, header_text, bold=True, fill=answer_header_fill, align=WD_ALIGN_PARAGRAPH.CENTER, size=10)
+                flag_text = (
+                    "No example after follow-ups: "
+                    f"{format_bool(first_present_bool(item.get('no_example_after_followups'), row.get('no_example_after_followups')))}\n"
+                    "Absolute disqualifier checked: "
+                    f"{format_bool(first_present_bool(item.get('absolute_disqualifier_checked'), row.get('absolute_disqualifier')))}"
                 )
-                doc.add_paragraph(question, style="List Bullet")
-                doc.add_paragraph(answer or "No transcript captured.")
+                body_cells = question_table.rows[1].cells
+                set_cell_text(body_cells[0], item.get("flow_index") or index, bold=True)
+                set_cell_text(body_cells[1], row.get("trait_name") or item_type.title() or "Question")
+                set_cell_text(body_cells[2], raw_score_text(row, item), align=WD_ALIGN_PARAGRAPH.CENTER)
+                set_cell_text(body_cells[3], flag_text, size=9.5)
+
+                q_label = doc.add_paragraph()
+                q_label.paragraph_format.space_before = Pt(2)
+                q_label.paragraph_format.space_after = Pt(2)
+                q_run = q_label.add_run("Question Text")
+                q_run.bold = True
+                q_run.font.name = body_font
+                q_run.font.size = Pt(9.5)
+                q_run.font.color.rgb = RGBColor.from_string(navy)
+                question_box = doc.add_table(rows=1, cols=1)
+                question_box.style = "Table Grid"
+                set_table_geometry(question_box, [content_width_inches])
+                set_cell_text(question_box.rows[0].cells[0], question, fill=box_fill, size=10)
+
+                a_label = doc.add_paragraph()
+                a_label.paragraph_format.space_before = Pt(2)
+                a_label.paragraph_format.space_after = Pt(2)
+                a_run = a_label.add_run("Candidate Answer")
+                a_run.bold = True
+                a_run.font.name = body_font
+                a_run.font.size = Pt(9.5)
+                a_run.font.color.rgb = RGBColor.from_string(navy)
+                answer_box = doc.add_table(rows=1, cols=1)
+                answer_box.style = "Table Grid"
+                set_table_geometry(answer_box, [content_width_inches])
+                set_cell_text(answer_box.rows[0].cells[0], answer or "No transcript captured.", fill=box_fill, size=10)
+                add_spacer(6)
                 if item_type == "trait":
                     seen_scored_question = True
         else:
             transcript = self._extract_full_candidate_transcript(payload)
-            doc.add_paragraph(transcript or "No transcript captured.")
+            answer_box = doc.add_table(rows=1, cols=1)
+            answer_box.style = "Table Grid"
+            set_table_geometry(answer_box, [content_width_inches])
+            set_cell_text(answer_box.rows[0].cells[0], transcript or "No transcript captured.", fill=box_fill, size=10)
 
         school_part = sanitize_filename(school) if school else "UnknownSchool"
         filename = f"{interview_date} - {school_part} - {sanitize_filename(cname)} - Basic Interview Notes.docx"

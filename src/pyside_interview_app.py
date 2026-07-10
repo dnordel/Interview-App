@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import os
 import queue
 import re
@@ -10,6 +11,7 @@ import subprocess
 import sys
 import threading
 import time
+import wave
 from difflib import SequenceMatcher
 from dataclasses import dataclass, field, replace
 from datetime import date, timedelta
@@ -50,6 +52,7 @@ from interview_runtime import (
     resolve_deepseek_regeneration_job_path,
     resolve_default_windows_system_device,
     resolve_runtime,
+    _local_deepseek_settings_source,
 )
 from notification_service import (
     EMAIL_ACCOUNT_SETTINGS_PATH,
@@ -74,7 +77,7 @@ from platform_services import (
     atomic_write_json,
     compose_intro_script,
 )
-from scoring_reporting import OfferInput, OfferLetterService, ScoringEngine, build_offer_filename
+from scoring_reporting import DocxExporter, OfferInput, OfferLetterService, ScoringEngine, build_offer_filename
 from scoring_reporting import build_integration_payload, serialize_integration_payload
 from scoring_reporting import CANONICAL_DEGREE_TYPES, CandidateQualification, validate_candidate_qualification
 from staffing_dashboard_v2 import StaffingDashboardV2Page, configure_v2_scroll_areas
@@ -83,6 +86,7 @@ from staffing_store import StaffingEditLock, StaffingStore
 
 
 APP_TITLE = "Interview Assistant"
+LOGGER = logging.getLogger(__name__)
 NAVIGATION = ["Interviews", "Candidates", "Offers", "Staffing", "Staffing v2", "Onboarding", "Admin"]
 DIRECTOR_STAFFING_NAVIGATION = ["Staffing v2"]
 SETUP_STEPS = ["Candidate", "Interview Plan", "Ready"]
@@ -111,6 +115,7 @@ PYSIDE_FINALIZE_PROGRESS_TASKS = (
     "Queueing DeepSeek processing",
     *DEFAULT_DEEPSEEK_PROGRESS_TASKS,
 )
+PYSIDE_INTRO_AUDIO_CHECK_DELAY_MS = 15000
 
 
 @dataclass(frozen=True)
@@ -2272,7 +2277,10 @@ class PySideInterviewWindow:
         self.recording_base_name = ""
         self.recording_started_monotonic: float | None = None
         self.recording_candidate_label = "CANDIDATE"
+        self.recording_system_device = ""
         self.recording_warning = ""
+        self._pyside_intro_audio_check_queue: queue.Queue[dict[str, Any]] | None = None
+        self._pyside_intro_audio_check_timer: Any | None = None
         self._pyside_finalize_running = False
         self._pyside_finalize_progress_step = ""
         self._pyside_finalize_progress_tasks: list[dict[str, str]] = []
@@ -2449,6 +2457,126 @@ class PySideInterviewWindow:
                 resolve_default_windows_system_device()
         except Exception as exc:
             self.recording_warning = f"Recording preload unavailable: {exc}"
+
+    def _recording_warning_text(self) -> str:
+        warning = str(self.recording_warning or "").strip()
+        if not warning:
+            return ""
+        device = str(self.recording_system_device or "").strip()
+        if device:
+            return f"{warning} System audio capture device: {device}. Check Windows/meeting output before continuing."
+        return f"{warning} Check Windows/meeting output before continuing."
+
+    def _schedule_pyside_intro_audio_transcription_check(self) -> None:
+        if self.recording_session is None:
+            return
+        self.QtCore.QTimer.singleShot(
+            PYSIDE_INTRO_AUDIO_CHECK_DELAY_MS,
+            self._run_pyside_intro_audio_transcription_check_async,
+        )
+
+    def _run_pyside_intro_audio_transcription_check_async(self) -> None:
+        session = self.recording_session
+        if session is None:
+            return
+        results: queue.Queue[dict[str, Any]] = queue.Queue()
+        self._pyside_intro_audio_check_queue = results
+
+        def _worker() -> None:
+            try:
+                transcript = self._transcribe_pyside_intro_audio_sample(session)
+                results.put({"ok": True, "transcript": transcript})
+            except Exception as exc:  # noqa: BLE001
+                results.put({"ok": False, "error": exc})
+
+        threading.Thread(target=_worker, daemon=True).start()
+        timer = self.QtCore.QTimer(self.window)
+        self._pyside_intro_audio_check_timer = timer
+        timer.timeout.connect(lambda: self._poll_pyside_intro_audio_check(results, timer))
+        timer.start(100)
+
+    def _transcribe_pyside_intro_audio_sample(self, session: Any) -> str:
+        transcribe = getattr(session, "transcribe_new_segments", None)
+        if not callable(transcribe):
+            return ""
+        segments = transcribe(language="en")
+        chunks: list[str] = []
+        for segment in segments or []:
+            speaker = str(getattr(segment, "speaker", "") or "").strip()
+            if speaker and speaker != self.recording_candidate_label:
+                continue
+            text = str(getattr(segment, "text", "") or "").strip()
+            if text:
+                chunks.append(text)
+        return " ".join(chunks).strip()
+
+    def _poll_pyside_intro_audio_check(self, results: queue.Queue[dict[str, Any]], timer: Any) -> None:
+        try:
+            message = results.get_nowait()
+        except queue.Empty:
+            return
+        timer.stop()
+        timer.deleteLater()
+        if self._pyside_intro_audio_check_queue is results:
+            self._pyside_intro_audio_check_queue = None
+            self._pyside_intro_audio_check_timer = None
+        if message.get("ok"):
+            self._apply_pyside_intro_audio_check_result(str(message.get("transcript") or ""))
+            return
+        self.recording_warning = (
+            f"Audio transcription check failed: {message.get('error')}. "
+            "Check audio settings. Record the interview in Zoom as a backup so transcripts can be generated outside this app."
+        )
+        LOGGER.error("pyside_intro_audio_check_failed")
+        self._render_live_question_page()
+
+    def _apply_pyside_intro_audio_check_result(self, transcript_text: str) -> None:
+        if str(transcript_text or "").strip():
+            return
+        self.recording_warning = (
+            "No speech was transcribed from the first 15 seconds. "
+            "Check audio settings and confirm Zoom/Windows output is routed to VB-CABLE. "
+            "Record the interview in Zoom as a backup so transcripts can be generated outside this app."
+        )
+        LOGGER.warning("pyside_intro_audio_check_blank")
+        if hasattr(self, "live_question_layout"):
+            self._render_live_question_page()
+
+    def _wav_has_detectable_signal(self, wav_path: Path, *, min_average_abs: float = 8.0) -> bool:
+        try:
+            with wave.open(str(wav_path), "rb") as wav_file:
+                sample_width = wav_file.getsampwidth()
+                frame_count = min(wav_file.getnframes(), max(wav_file.getframerate(), 8000))
+                raw = wav_file.readframes(frame_count)
+        except (OSError, wave.Error):
+            return False
+        if sample_width != 2 or not raw:
+            return bool(raw)
+        sample_count = len(raw) // 2
+        if sample_count <= 0:
+            return False
+        total = 0
+        for index in range(0, len(raw) - 1, 2):
+            value = int.from_bytes(raw[index : index + 2], byteorder="little", signed=True)
+            total += abs(value)
+        return (total / sample_count) >= min_average_abs
+
+    def _check_pyside_system_audio_capture(self) -> None:
+        session = self.recording_session
+        if session is None:
+            return
+        sys_wav = Path(str(getattr(session, "sys_wav", "") or ""))
+        if not sys_wav or self._wav_has_detectable_signal(sys_wav):
+            return
+        device = str(self.recording_system_device or "").strip()
+        detail = f" on {device}" if device else ""
+        self.recording_warning = (
+            f"No meeting/system audio detected yet{detail}. "
+            "If candidate audio is playing, switch Zoom/Windows output to VB-CABLE."
+        )
+        LOGGER.warning("pyside_system_audio_route_no_signal")
+        if hasattr(self, "live_question_layout"):
+            self._render_live_question_page()
 
     def _initial_window_size(self) -> tuple[int, int]:
         screen = self.QtWidgets.QApplication.primaryScreen()
@@ -2808,10 +2936,22 @@ class PySideInterviewWindow:
         return all(_history_token_matches(term, blob_tokens) for term in query.split())
 
     def _create_history_table(self, object_name: str) -> Any:
-        table = self.QtWidgets.QTableWidget(0, 10)
+        table = self.QtWidgets.QTableWidget(0, 11)
         table.setObjectName(object_name)
         table.setHorizontalHeaderLabels(
-            ["Date", "Candidate", "School", "Position", "Score", "Status", "Notes", "Regenerate", "Offer", "Delete"]
+            [
+                "Date",
+                "Candidate",
+                "School",
+                "Position",
+                "Score",
+                "Status",
+                "Notes",
+                "Regenerate",
+                "Transcript",
+                "Offer",
+                "Delete",
+            ]
         )
         table.horizontalHeader().setStretchLastSection(True)
         table.setSortingEnabled(True)
@@ -2867,18 +3007,25 @@ class PySideInterviewWindow:
         regenerate_button.setToolTip("Generate or regenerate DeepSeek interview notes from saved interview data.")
         regenerate_button.clicked.connect(lambda _checked=False, item=row: self._retry_history_deepseek(item))
         table.setCellWidget(row_index, 7, regenerate_button)
+        transcript_button = self.QtWidgets.QPushButton("Import")
+        transcript_button.setMaximumWidth(95)
+        transcript_button.setProperty("history_row_key", row.row_key)
+        transcript_button.setEnabled(bool(row.row_key))
+        transcript_button.setToolTip("Import an Indeed transcript for this candidate and open review.")
+        transcript_button.clicked.connect(lambda _checked=False, item=row: self._import_indeed_transcript_for_history_row(item))
+        table.setCellWidget(row_index, 8, transcript_button)
         offer_button = self.QtWidgets.QPushButton(row.offer_action)
         offer_button.setMaximumWidth(115)
         offer_button.setProperty("history_row_key", row.row_key)
         offer_button.setEnabled(bool(row.row_key))
         offer_button.clicked.connect(lambda _checked=False, item=row: self._open_history_offer(item))
-        table.setCellWidget(row_index, 8, offer_button)
+        table.setCellWidget(row_index, 9, offer_button)
         delete_button = self.QtWidgets.QPushButton("Delete")
         delete_button.setMaximumWidth(80)
         delete_button.setProperty("history_row_key", row.row_key)
         delete_button.setEnabled(bool(row.row_key))
         delete_button.clicked.connect(lambda _checked=False, item=row: self._delete_history_row(item))
-        table.setCellWidget(row_index, 9, delete_button)
+        table.setCellWidget(row_index, 10, delete_button)
 
     def _history_notes_action_state(self, row: PySideHistoryRow) -> tuple[str, bool, str]:
         status = row.deepseek_processing_status.strip().lower()
@@ -2903,15 +3050,17 @@ class PySideInterviewWindow:
             5: 130,
             6: 90,
             7: 105,
-            8: 110,
-            9: 80,
+            8: 95,
+            9: 110,
+            10: 80,
         }
         for column, minimum in minimums.items():
             table.setColumnWidth(column, max(table.columnWidth(column), table.sizeHintForColumn(column), minimum))
         table.setColumnWidth(6, min(table.columnWidth(6), 105))
         table.setColumnWidth(7, min(table.columnWidth(7), 115))
-        table.setColumnWidth(8, min(table.columnWidth(8), 125))
-        table.setColumnWidth(9, min(table.columnWidth(9), 95))
+        table.setColumnWidth(8, min(table.columnWidth(8), 105))
+        table.setColumnWidth(9, min(table.columnWidth(9), 125))
+        table.setColumnWidth(10, min(table.columnWidth(10), 95))
 
     def _history_outcome_brush(self, outcome: str) -> Any:
         color = _history_outcome_color(outcome)
@@ -3024,6 +3173,7 @@ class PySideInterviewWindow:
         draft_path = self._default_draft_path(candidate_name or "Candidate")
         self.session = PySideInterviewSession(model=self.model, draft_path=draft_path)
         self.session.start(candidate_name=candidate_name, school=school, track_key=self.session_track_key)
+        self._start_pyside_interview_recording()
         self._render_live_question_page()
         self._render_review_page()
         self._render_offer_page()
@@ -3066,6 +3216,163 @@ class PySideInterviewWindow:
         if hasattr(self, "home_draft_label"):
             self.home_draft_label.setText(
                 f"Imported Indeed transcript: {result.mapped_count} answers split, {skipped_count} questions marked skipped."
+            )
+
+    def _track_key_for_history_row(self, row: PySideHistoryRow) -> str:
+        position = str(row.position or "").strip()
+        if position:
+            for key, label in self.model.track_labels.items():
+                if position == label or position.lower() == label.lower():
+                    return key
+            for key, label in self.model.track_labels.items():
+                lowered = position.lower()
+                if key.lower() in lowered or label.lower() in lowered:
+                    return key
+        return next(iter(self.model.flows), "")
+
+    def _session_from_history_row(self, row: PySideHistoryRow) -> PySideInterviewSession:
+        track_key = self._track_key_for_history_row(row)
+        draft_path = self._default_draft_path(row.candidate or "Candidate")
+        session = PySideInterviewSession(model=self.model, draft_path=draft_path)
+        session.start(candidate_name=row.candidate, school=row.school, track_key=track_key)
+        if row.interview_date:
+            session.interview_date = row.interview_date
+        return session
+
+    def _history_import_updates(
+        self,
+        row: PySideHistoryRow,
+        session: PySideInterviewSession,
+        result: IndeedTranscriptImportResult,
+        source_path: Path,
+        artifact_updates: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        flow_recordings = [
+            {**recording, "flow_index": flow_index}
+            for flow_index, recording in sorted(session.flow_recordings.items())
+            if isinstance(recording, dict)
+        ]
+        updates = {
+            "candidate_name": session.candidate_name,
+            "school": session.school,
+            "position": self.model.track_labels.get(session.track_key, session.track_key),
+            "track_key": session.track_key,
+            "interview_date": session.interview_date,
+            "answers": session.answers,
+            "flow_candidate_transcripts": {
+                str(flow_index): transcript for flow_index, transcript in sorted(session.flow_candidate_transcripts.items())
+            },
+            "flow_recordings": flow_recordings,
+            "imported_indeed_transcript": {
+                "source_path": str(source_path),
+                "mapped_count": result.mapped_count,
+                "unmatched_question_ids": list(result.unmatched_question_ids),
+                "interviewer_speaker": result.interviewer_speaker,
+                "candidate_speaker": result.candidate_speaker,
+                "imported_at": datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
+            },
+            "deepseek_processing_status": "not_started",
+            "deepseek_processing_warning": "",
+        }
+        if artifact_updates:
+            updates.update(artifact_updates)
+        return updates
+
+    def _regenerate_history_import_artifacts(self, row: PySideHistoryRow, session: PySideInterviewSession) -> dict[str, Any]:
+        adapter = _PySideFinalizeAdapter(session, base_dir=DEFAULT_BASE_DIR, history_path=self.model.history_path)
+        warnings: list[str] = []
+        scoring = ScoringEngine.evaluate(adapter._rubric_with_question_overrides(), adapter.state.track, adapter.state.trait_inputs)
+        context = build_finalize_context(adapter, scoring, warnings, session._transcript_metadata(), run_deepseek=False)
+        existing_notes_path = Path(str(row.notes_path or row.report_path or ""))
+        output_dir = existing_notes_path.parent if str(existing_notes_path).strip() else adapter._interview_notes_output_dir()
+        output_dir.mkdir(parents=True, exist_ok=True)
+        out_path = DocxExporter(output_dir).export_basic_interview_notes(
+            adapter._rubric_with_question_overrides(),
+            context.payload,
+            scoring,
+        )
+        history_id = str(row.row_key).strip()
+        job_path = Path(DEFAULT_BASE_DIR) / "deepseek_jobs" / f"deepseek-finalize-{history_id}.json"
+        progress_path = job_path.with_suffix(".progress.json")
+        job_payload = {
+            "history_id": history_id,
+            "history_path": str(self.model.history_path),
+            "base_dir": str(DEFAULT_BASE_DIR),
+            "report_path": str(out_path),
+            "rubric": adapter._rubric_with_question_overrides(),
+            "payload": context.payload,
+            "scoring": scoring,
+            "deepseek_settings": _local_deepseek_settings_source(adapter.settings),
+            "progress_path": str(progress_path),
+        }
+        job_path.parent.mkdir(parents=True, exist_ok=True)
+        atomic_write_json(job_path, job_payload, indent=2, ensure_ascii=False)
+        percent = scoring.get("percent_of_max", 0)
+        percent_label = str(scoring.get("percent_of_max_label") or f"{percent}%")
+        outcome = str(scoring.get("outcome", "") or "Incomplete")
+        return {
+            "saved_report_path": str(out_path),
+            "interview_notes_path": str(out_path),
+            "notes_path": str(out_path),
+            "report_path": str(out_path),
+            "interview_score": percent,
+            "score": percent_label,
+            "percent_of_max": percent,
+            "percent_of_max_label": percent_label,
+            "determination": outcome,
+            "outcome": outcome,
+            "status": outcome,
+            "interview_status": outcome,
+            "next_action": _next_action_for_outcome(outcome),
+            "scoring": scoring,
+            "deepseek_job_path": str(job_path),
+            "deepseek_progress_path": str(progress_path),
+            "basic_notes_regenerated_at": datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
+        }
+
+    def _import_indeed_transcript_for_history_row(self, row: PySideHistoryRow) -> None:
+        if not row.row_key:
+            return
+        file_name, _filter = self.QtWidgets.QFileDialog.getOpenFileName(
+            self.window,
+            f"Import Indeed Transcript - {row.candidate or 'Candidate'}",
+            str(Path.home()),
+            "Text files (*.txt)",
+        )
+        if not file_name:
+            return
+        source_path = Path(file_name)
+        session = self._session_from_history_row(row)
+        try:
+            result = session.import_indeed_transcript_file(source_path)
+            artifact_updates = self._regenerate_history_import_artifacts(row, session)
+            updated = self.history_store.update_row(
+                row.row_key,
+                self._history_import_updates(row, session, result, source_path, artifact_updates),
+            )
+        except Exception as exc:  # noqa: BLE001
+            self.QtWidgets.QMessageBox.warning(self.window, "Indeed Transcript", f"Could not import transcript: {exc}")
+            return
+        if not updated:
+            self.QtWidgets.QMessageBox.warning(self.window, "Indeed Transcript", "History entry was not found.")
+            return
+        self.session = session
+        self.session_track_key = session.track_key
+        self.session_index = session.current_index
+        self.session_answers = dict(session.answers)
+        self._review_history_id = row.row_key
+        self._review_score_dirty = False
+        self._reload_history_model()
+        self._render_live_question_page()
+        self._render_review_page()
+        self._render_offer_page()
+        self._refresh_home_draft_panel()
+        self.interview_tabs.setCurrentIndex(3)
+        if hasattr(self, "home_draft_label"):
+            skipped_count = len(result.unmatched_question_ids)
+            self.home_draft_label.setText(
+                f"Imported Indeed transcript for {session.candidate_name}: "
+                f"{result.mapped_count} answers split, {skipped_count} questions marked skipped."
             )
 
     def _continue_latest_draft(self) -> None:
@@ -3142,24 +3449,33 @@ class PySideInterviewWindow:
         self.recording_started_monotonic = time.monotonic()
         self.recording_base_name = self._safe_base_name()
         self.recording_candidate_label = "CANDIDATE"
+        self.recording_system_device = ""
         try:
             from interview_audio_recorder import start_recording
 
             runtime_config = resolve_runtime(self._recording_runtime_settings())
+            system_device = resolve_default_windows_system_device() if sys.platform.startswith("win") else None
+            self.recording_system_device = str(system_device or "")
             self.recording_session = start_recording(
                 os_name="windows" if sys.platform.startswith("win") else "linux",
                 output_dir=DEFAULT_BASE_DIR,
                 base_name=self.recording_base_name,
                 win_mic_device=DEFAULT_WINDOWS_MIC_DEVICE,
-                win_sys_device=resolve_default_windows_system_device() if sys.platform.startswith("win") else None,
+                win_sys_device=system_device,
                 whisper_model=runtime_config.model,
                 whisper_device=runtime_config.device,
                 whisper_compute_type=runtime_config.compute_type,
                 whisper_backend=runtime_config.backend,
             )
+            if sys.platform.startswith("win"):
+                self.QtCore.QTimer.singleShot(2500, self._check_pyside_system_audio_capture)
+            self._schedule_pyside_intro_audio_transcription_check()
         except (Exception, SystemExit) as exc:
             self.recording_session = None
+            self.recording_started_monotonic = None
+            self.recording_base_name = ""
             self.recording_warning = f"Recording unavailable: {exc}"
+            LOGGER.exception("pyside_recording_start_failed")
         self.session.save_draft()
 
     def _mark_flow_timestamp(self, flow_idx: int) -> None:
@@ -3219,6 +3535,7 @@ class PySideInterviewWindow:
             self._apply_pyside_recording_result(payload)
         except Exception as exc:
             self.recording_warning = f"Recording/transcription failed: {exc}"
+            LOGGER.exception("pyside_recording_stop_failed")
         finally:
             self.recording_session = None
             self.recording_base_name = ""
@@ -3287,8 +3604,6 @@ class PySideInterviewWindow:
                     quick_actions=quick_actions,
                     qualification=qualification,
                 )
-            if item.kind == "intro":
-                self._start_pyside_interview_recording()
             self.session_index = self.session.current_index
             self.session_answers = dict(self.session.answers)
             if self.session.active_question() is not None and boundary_elapsed is not None:
@@ -3374,6 +3689,11 @@ class PySideInterviewWindow:
         self._mark_flow_timestamp(current_index)
 
         layout.addWidget(self._label(item.progress_label, "SectionTitle"))
+        recording_warning_text = self._recording_warning_text()
+        if recording_warning_text:
+            recording_warning_label = self._label(recording_warning_text)
+            recording_warning_label.setObjectName("PySideRecordingWarning")
+            layout.addWidget(recording_warning_label)
         split = self.QtWidgets.QHBoxLayout()
         left, left_layout = self._surface()
         left_layout.addWidget(self._label(item.title, "SectionTitle"))
@@ -3574,6 +3894,11 @@ class PySideInterviewWindow:
             ]
             summary_layout.addWidget(self._label(" | ".join(candidate_details)))
         summary_layout.addWidget(self._label("Interview saved"))
+        recording_warning_text = self._recording_warning_text()
+        if recording_warning_text:
+            recording_warning_label = self._label(recording_warning_text)
+            recording_warning_label.setObjectName("PySideRecordingWarning")
+            summary_layout.addWidget(recording_warning_label)
         summary_layout.addWidget(self._label("Report files are being prepared in the background. You can return Home."))
         summary_layout.addWidget(self._label(f"Captured {answered} of {total} configured interview responses."))
         review = self.session.review_summary() if self.session is not None else None

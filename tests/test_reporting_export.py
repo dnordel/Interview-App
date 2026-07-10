@@ -1025,6 +1025,99 @@ class TestDocxExporterValidation(unittest.TestCase):
         self.assertIn("AI-trait-based score: 9 / 15 (60.0%).", table_text)
         self.assertIn("AI advisory Total: N/A (incomplete)", table_text)
 
+    def test_export_basic_interview_notes_uses_structured_template_layout(self):
+        payload = {
+            "candidate": {
+                "name": "Ada Lovelace",
+                "interview_date": "2026-02-20",
+                "school": "Palmdale",
+                "track": "general",
+                "qualification": {
+                    "has_degree": True,
+                    "degree_type": "BA",
+                    "degree_in_ece": False,
+                    "ece_units_completed": 24,
+                    "infant_toddler_class_completed": False,
+                    "total_units_completed": None,
+                    "years_experience": 4,
+                },
+            },
+            "flow_transcript": [
+                {
+                    "flow_index": 0,
+                    "type": "intro",
+                    "id": "intro_script",
+                    "prompt": "Intro script should stay out of notes.",
+                    "candidate_transcript": "Company overview.",
+                },
+                {
+                    "flow_index": 1,
+                    "type": "qualification",
+                    "id": "availability",
+                    "prompt": "What is your availability?",
+                    "candidate_transcript": "Weekdays after 8.",
+                },
+                {
+                    "flow_index": 2,
+                    "type": "trait",
+                    "id": "trait_1",
+                    "question": "How do you support a child in distress?",
+                    "candidate_transcript": "I kneel down and name feelings.",
+                    "no_example_after_followups": False,
+                    "absolute_disqualifier_checked": False,
+                },
+                {
+                    "flow_index": 3,
+                    "type": "custom",
+                    "id": "pay",
+                    "prompt": "What pay are you looking for?",
+                    "candidate_transcript": "Noisy ASR",
+                    "evaluator_notes": "$24/hour",
+                },
+            ],
+        }
+        scoring = self._trait_scoring()
+
+        with tempfile.TemporaryDirectory() as td:
+            exporter = DocxExporter(Path(td))
+            out_path = exporter.export_basic_interview_notes(self._rubric(), payload, scoring)
+            doc = Document(out_path)
+
+        full_text = _doc_text(doc)
+        headings = [paragraph.text for paragraph in doc.paragraphs if paragraph.style.name.startswith("Heading")]
+        self.assertEqual(headings[:4], [
+            "1. Candidate Snapshot",
+            "2. Candidate Education and Experience Summary",
+            "3. Score Summary",
+            "4. Candidate Answers",
+        ])
+        self.assertNotIn("{{", full_text)
+        self.assertNotIn("Developer note", full_text)
+        self.assertNotIn("Intro script should stay out of notes.", full_text)
+        self.assertNotIn("Company overview.", full_text)
+        self.assertIn("Structured Behavioral Interview Notes", full_text)
+        self.assertIn("Master Template for Python-Generated Candidate Reports", full_text)
+        self.assertIn("Ada Lovelace", doc.tables[0].rows[0].cells[1].text)
+        self.assertIn("Final Outcome", doc.tables[0].rows[4].cells[0].text)
+        self.assertEqual(doc.tables[1].rows[0].cells[0].text, "Has Degree")
+        self.assertEqual(doc.tables[1].rows[7].cells[0].text, "Availability Summary")
+        self.assertEqual(doc.tables[2].rows[0].cells[0].text, "Trait")
+        self.assertEqual(doc.tables[2].rows[-2].cells[0].text, "Weighted Total")
+        self.assertEqual(doc.tables[2].rows[-1].cells[0].text, "Skipped Scored Questions")
+        self.assertTrue(_cell_xml_contains(doc.tables[2].rows[0].cells[0], 'w:fill="9DC3E6"'))
+        answer_tables = [
+            table
+            for table in doc.tables
+            if len(table.rows) > 1 and table.rows[0].cells[0].text == "Question"
+        ]
+        self.assertTrue(answer_tables)
+        self.assertTrue(_cell_xml_contains(answer_tables[0].rows[0].cells[0], 'w:fill="A9D18E"'))
+        self.assertTrue(any("No example after follow-ups: No" in table.rows[1].cells[3].text for table in answer_tables))
+        self.assertIn("Question Text", full_text)
+        self.assertIn("Candidate Answer", full_text)
+        self.assertIn("$24/hour", full_text)
+        self.assertNotIn("Noisy ASR", full_text)
+
     def test_export_explains_incomplete_human_and_missing_ai_recommendation_status(self):
         payload = {
             "candidate": {

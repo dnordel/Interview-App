@@ -3,6 +3,7 @@ import os
 import queue
 import sys
 import threading
+import wave
 from datetime import date, timedelta
 from pathlib import Path
 from types import SimpleNamespace
@@ -32,6 +33,14 @@ from pyside_interview_app import (
     standard_window_control_flags,
 )
 from scoring_reporting import CandidateQualification
+
+
+def _pyside_window_on_page(model, page_name: str):
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
+    window.sidebar.setCurrentRow(nav_items.index(page_name))
+    window.QtWidgets.QApplication.processEvents()
+    return window
 
 
 def test_pyside_session_imports_indeed_transcript_for_rating_review(tmp_path: Path) -> None:
@@ -65,7 +74,6 @@ Speaker 0: I got low, helped them breathe, and supported words for what happened
     assert session.flow_candidate_transcripts[2].startswith("I got low")
     assert session.active_question().question_id == "trait_1"
 
-
 def test_pyside_session_writes_interview_session_snapshots(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(pyside_interview_app, "DEFAULT_BASE_DIR", tmp_path)
     model = build_interview_redesign_model(
@@ -88,7 +96,6 @@ def test_pyside_session_writes_interview_session_snapshots(tmp_path: Path, monke
     assert payload["questions"]["0"]["item_id"] == "intro_script"
     assert payload["questions"]["0"]["candidate_transcript"] == "Candidate wants to work close to home."
     assert "Company Statement" in payload["questions"]["0"]["notes"]["question_text"]
-
 
 def test_pyside_session_imports_indeed_transcript_when_speaker_numbers_flip(tmp_path: Path) -> None:
     model = build_interview_redesign_model(
@@ -146,7 +153,6 @@ def _icon_has_primary_blue(icon, size: int = 18) -> bool:
                 return True
     return False
 
-
 def test_staffing_v2_validation_helpers_hide_seed_dates_and_build_worklist() -> None:
     rows = [
         StaffingMetricRow(
@@ -180,7 +186,6 @@ def test_staffing_v2_validation_helpers_hide_seed_dates_and_build_worklist() -> 
     }
     assert {issue["type"] for issue in issues} == {"Coverage", "Lifecycle", "Compliance"}
     assert issues[0]["severity"] == "Critical"
-
 
 def test_staffing_v2_scroll_helper_relays_wheel_events_from_child_widgets() -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -222,7 +227,6 @@ def test_staffing_v2_scroll_helper_relays_wheel_events_from_child_widgets() -> N
     assert wheel.isAccepted()
     root.close()
     app.processEvents()
-
 
 def test_staffing_v2_scroll_helper_relays_from_nested_item_view_without_range() -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -267,7 +271,6 @@ def test_staffing_v2_scroll_helper_relays_from_nested_item_view_without_range() 
     assert wheel.isAccepted()
     root.close()
     app.processEvents()
-
 
 def test_redesign_model_prioritizes_guided_interview_workflow(tmp_path: Path) -> None:
     rubric_path = tmp_path / "rubric.json"
@@ -357,7 +360,6 @@ def test_redesign_model_prioritizes_guided_interview_workflow(tmp_path: Path) ->
     assert "Needs follow-up" in scored.quick_actions
     assert "Disqualifier observed" in scored.quick_actions
 
-
 def test_pyside_model_accepts_revision_probe_and_gateway_fields(tmp_path: Path) -> None:
     rubric_path = tmp_path / "rubric.json"
     overrides_path = tmp_path / "question_overrides.json"
@@ -434,7 +436,6 @@ def test_pyside_model_accepts_revision_probe_and_gateway_fields(tmp_path: Path) 
     assert scored.followups == ["What did you try first?", "What changed after that?"]
     assert scored.score_cards[0].description == "Serious concern. Unsafe or blaming."
 
-
 def test_pyside_model_loads_legacy_history_into_history_rows(tmp_path: Path) -> None:
     canonical_dir = tmp_path / "user_artifacts"
     canonical_dir.mkdir()
@@ -463,7 +464,6 @@ def test_pyside_model_loads_legacy_history_into_history_rows(tmp_path: Path) -> 
 
     assert [row.candidate for row in model.home.history_rows] == ["Legacy Candidate"]
     assert model.home.recent_interviews[0].candidate == "Legacy Candidate"
-
 
 def test_pyside_history_rows_expose_school_position_and_offer_action(tmp_path: Path) -> None:
     history_path = tmp_path / "interview_history.sqlite3"
@@ -497,7 +497,6 @@ def test_pyside_history_rows_expose_school_position_and_offer_action(tmp_path: P
     assert row.interview_date == ""
     assert row.notes_path.endswith("notes.docx")
 
-
 def test_pyside_history_rows_expose_deepseek_processing_state(tmp_path: Path) -> None:
     history_path = tmp_path / "interview_history.sqlite3"
     InterviewHistoryStore(history_path).append(
@@ -521,7 +520,6 @@ def test_pyside_history_rows_expose_deepseek_processing_state(tmp_path: Path) ->
     assert row.deepseek_processing_status == "processing"
     assert row.deepseek_processing_warning == "Queued for local DeepSeek."
 
-
 def test_pyside_history_filters_read_latest_rows_from_sqlite(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -543,7 +541,7 @@ def test_pyside_history_filters_read_latest_rows_from_sqlite(tmp_path: Path) -> 
         history_path=history_path,
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     store.append(
         {
             "history_id": "hist-2",
@@ -564,7 +562,6 @@ def test_pyside_history_filters_read_latest_rows_from_sqlite(tmp_path: Path) -> 
     assert visible_candidates == ["Fresh Candidate", "Latoya Nugent"]
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_history_rows_show_newest_interviews_first(tmp_path: Path) -> None:
     history_path = tmp_path / "interview_history.sqlite3"
@@ -594,7 +591,6 @@ def test_pyside_history_rows_show_newest_interviews_first(tmp_path: Path) -> Non
     assert [row.candidate for row in model.home.history_rows] == ["Today Candidate", "Old Candidate"]
     assert model.home.recent_interviews[0].candidate == "Today Candidate"
 
-
 def test_pyside_history_grid_shows_date_and_open_notes_action(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -619,13 +615,14 @@ def test_pyside_history_grid_shows_date_and_open_notes_action(tmp_path: Path) ->
         history_path=history_path,
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
 
-    assert window.history_table.columnCount() == 10
+    assert window.history_table.columnCount() == 11
     assert window.history_table.horizontalHeaderItem(0).text() == "Date"
     assert window.history_table.horizontalHeaderItem(6).text() == "Notes"
     assert window.history_table.horizontalHeaderItem(7).text() == "Regenerate"
-    assert window.history_table.horizontalHeaderItem(9).text() == "Delete"
+    assert window.history_table.horizontalHeaderItem(8).text() == "Transcript"
+    assert window.history_table.horizontalHeaderItem(10).text() == "Delete"
     assert window.history_table.item(0, 0).text() == "2026-06-23"
     notes_button = window.history_table.cellWidget(0, 6)
     assert notes_button.text() == "Open Notes"
@@ -635,13 +632,16 @@ def test_pyside_history_grid_shows_date_and_open_notes_action(tmp_path: Path) ->
     assert regenerate_button.text() == "Regenerate"
     assert regenerate_button.property("history_row_key") == "hist-1"
     assert regenerate_button.isEnabled()
-    delete_button = window.history_table.cellWidget(0, 9)
+    transcript_button = window.history_table.cellWidget(0, 8)
+    assert transcript_button.text() == "Import"
+    assert transcript_button.property("history_row_key") == "hist-1"
+    assert transcript_button.isEnabled()
+    delete_button = window.history_table.cellWidget(0, 10)
     assert delete_button.text() == "Delete"
     assert delete_button.property("history_row_key") == "hist-1"
     assert delete_button.isEnabled()
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_history_grid_shows_processing_until_deepseek_finishes(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -671,7 +671,7 @@ def test_pyside_history_grid_shows_processing_until_deepseek_finishes(tmp_path: 
         history_path=history_path,
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
 
     failed_button = window.history_table.cellWidget(0, 6)
     processing_button = window.history_table.cellWidget(1, 6)
@@ -684,7 +684,6 @@ def test_pyside_history_grid_shows_processing_until_deepseek_finishes(tmp_path: 
     assert failed_button.toolTip() == "DeepSeek processing failed."
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_history_grid_filters_fuzzy_search_school_outcome_and_colors_rows(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -726,7 +725,7 @@ def test_pyside_history_grid_filters_fuzzy_search_school_outcome_and_colors_rows
         history_path=history_path,
         school_options=["Palmdale", "Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
 
     assert window.history_school_filter.itemText(0) == "All schools"
     assert [window.history_table.item(row, 1).text() for row in range(window.history_table.rowCount())] == [
@@ -754,7 +753,6 @@ def test_pyside_history_grid_filters_fuzzy_search_school_outcome_and_colors_rows
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_history_grid_sorts_by_column(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -770,7 +768,7 @@ def test_pyside_history_grid_sorts_by_column(tmp_path: Path) -> None:
         history_path=history_path,
         school_options=["Palmdale", "Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
 
     assert window.history_table.isSortingEnabled()
 
@@ -783,7 +781,6 @@ def test_pyside_history_grid_sorts_by_column(tmp_path: Path) -> None:
     ]
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_history_grid_sizes_text_columns_and_keeps_action_buttons_compact(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -808,7 +805,7 @@ def test_pyside_history_grid_sizes_text_columns_and_keeps_action_buttons_compact
         history_path=history_path,
         school_options=["West Palmdale Learning Center"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     table = window.history_table
 
     for column in range(0, 6):
@@ -817,11 +814,12 @@ def test_pyside_history_grid_sizes_text_columns_and_keeps_action_buttons_compact
     assert table.horizontalHeaderItem(6).text() == "Notes"
     assert table.columnWidth(6) <= 105
     assert table.columnWidth(7) <= 125
+    assert table.columnWidth(8) <= 115
     assert table.cellWidget(0, 6).maximumWidth() <= 95
     assert table.cellWidget(0, 7).maximumWidth() <= 115
+    assert table.cellWidget(0, 8).maximumWidth() <= 105
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_session_autosaves_and_resumes_guided_interview(tmp_path: Path) -> None:
     model = build_interview_redesign_model(
@@ -850,7 +848,6 @@ def test_pyside_session_autosaves_and_resumes_guided_interview(tmp_path: Path) -
     assert resumed.current_index == 1
     assert resumed.answers[first.question_id]["notes"] == "Wants values-aligned school."
     assert resumed.active_question().kind == "custom"
-
 
 def test_pyside_session_back_and_skip_preserve_answers_and_move_through_flow(tmp_path: Path) -> None:
     model = build_interview_redesign_model(
@@ -883,7 +880,6 @@ def test_pyside_session_back_and_skip_preserve_answers_and_move_through_flow(tmp
     assert intro is not None
     assert session.answers[intro.question_id]["notes"] == "Intro complete."
 
-
 def test_pyside_live_footer_blocks_unrated_scored_next_and_keeps_skip_enabled(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -894,7 +890,7 @@ def test_pyside_live_footer_blocks_unrated_scored_next_and_keeps_skip_enabled(tm
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
     session.start(candidate_name="Latoya Nugent", school="Palmdale", track_key="preschool")
     session.save_answer_and_advance(notes="Intro complete.")
@@ -921,7 +917,6 @@ def test_pyside_live_footer_blocks_unrated_scored_next_and_keeps_skip_enabled(tm
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_home_import_indeed_transcript_opens_rating_flow(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -941,7 +936,7 @@ Speaker 0: I noticed the child was upset and helped them name the feeling.
 """,
         encoding="utf-8",
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     window.home_candidate_input.setText("Miriam")
     monkeypatch.setattr(
         window.QtWidgets.QFileDialog,
@@ -960,6 +955,138 @@ Speaker 0: I noticed the child was upset and helped them name the feeling.
     window.window.close()
     app.processEvents()
 
+def test_pyside_history_import_indeed_transcript_opens_review_for_existing_candidate(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    monkeypatch.setattr(pyside_interview_app, "DEFAULT_BASE_DIR", tmp_path)
+    history_path = tmp_path / "interview_history.sqlite3"
+    store = InterviewHistoryStore(history_path)
+    store.append(
+        {
+            "history_id": "hist-grace",
+            "candidate_name": "Grace Morales",
+            "school": "Palmdale",
+            "position": "Preschool Teacher",
+            "interview_date": "2026-07-10",
+            "outcome": "Incomplete",
+        }
+    )
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Palmdale"],
+    )
+    transcript_path = tmp_path / "grace-indeed.txt"
+    transcript_path.write_text(
+        """
+Speaker 0: Tell me about a time a child was having a hard moment emotionally.
+
+Speaker 1: I got low, named the feeling, and helped the child find words.
+""",
+        encoding="utf-8",
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    monkeypatch.setattr(
+        window.QtWidgets.QFileDialog,
+        "getOpenFileName",
+        lambda *_args, **_kwargs: (str(transcript_path), "Text files (*.txt)"),
+    )
+    row = window.model.home.history_rows[0]
+
+    window._import_indeed_transcript_for_history_row(row)
+
+    assert window.session is not None
+    assert window.session.candidate_name == "Grace Morales"
+    assert window.session.school == "Palmdale"
+    assert window.interview_tabs.currentIndex() == 3
+    review_page = window.interview_tabs.widget(3)
+    assert "I got low, named the feeling" in _table_text(
+        review_page.findChild(qt_widgets.QTableWidget, "PySideReviewQuestionTable"),
+    )
+    rating = review_page.findChild(qt_widgets.QSpinBox, "PySideReviewRating_trait_1")
+    assert rating is not None
+    rating.setValue(4)
+    app.processEvents()
+    window._apply_review_score_updates()
+
+    stored = InterviewHistoryStore(history_path).load()[0]
+    assert stored["review_scores"]["trait_1"] == "4"
+    assert stored["imported_indeed_transcript"]["mapped_count"] == 1
+    assert stored["answers"]["trait_1"]["notes"].startswith("I got low")
+    assert stored["flow_recordings"][0]["candidate_transcript"].startswith("I got low")
+    window.window.close()
+    app.processEvents()
+
+def test_pyside_history_import_regenerates_basic_notes_and_deepseek_job(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    monkeypatch.setattr(pyside_interview_app, "DEFAULT_BASE_DIR", tmp_path)
+    history_path = tmp_path / "interview_history.sqlite3"
+    notes_dir = tmp_path / "notes"
+    notes_dir.mkdir()
+    stale_notes = notes_dir / "2026-07-10 - Palmdale - Grace Morales - Basic Interview Notes.docx"
+    stale_notes.write_text("stale", encoding="utf-8")
+    store = InterviewHistoryStore(history_path)
+    store.append(
+        {
+            "history_id": "hist-grace",
+            "candidate_name": "Grace Morales",
+            "school": "Palmdale",
+            "position": "Preschool Teacher",
+            "interview_date": "2026-07-10",
+            "interview_notes_path": str(stale_notes),
+            "saved_report_path": str(stale_notes),
+            "deepseek_processing_status": "not_started",
+        }
+    )
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Palmdale"],
+    )
+    transcript_path = tmp_path / "grace-indeed.txt"
+    transcript_path.write_text(
+        """
+Speaker 0: Tell me about a time a child was having a hard moment emotionally.
+
+Speaker 1: I got low, named the feeling, and helped the child find words.
+""",
+        encoding="utf-8",
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    monkeypatch.setattr(
+        window.QtWidgets.QFileDialog,
+        "getOpenFileName",
+        lambda *_args, **_kwargs: (str(transcript_path), "Text files (*.txt)"),
+    )
+
+    window._import_indeed_transcript_for_history_row(window.model.home.history_rows[0])
+
+    row = InterviewHistoryStore(history_path).load()[0]
+    notes_path = Path(row["interview_notes_path"])
+    assert notes_path.exists()
+    assert notes_path == stale_notes
+    assert "Structured Behavioral Interview Notes" in _docx_text(notes_path)
+    assert "I got low, named the feeling" in _docx_text(notes_path)
+    job_path = Path(row["deepseek_job_path"])
+    assert job_path.exists()
+    job = json.loads(job_path.read_text(encoding="utf-8"))
+    assert job["history_id"] == "hist-grace"
+    assert job["report_path"] == str(notes_path)
+    assert job["payload"]["flow_transcript"][2]["candidate_transcript"].startswith("I got low")
+    assert row["deepseek_processing_status"] == "not_started"
+    window.window.close()
+    app.processEvents()
 
 def test_pyside_show_schedules_recording_interface_preload_once(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -988,7 +1115,6 @@ def test_pyside_show_schedules_recording_interface_preload_once(tmp_path: Path, 
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_home_delete_saved_draft_requires_confirmation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -1002,7 +1128,7 @@ def test_pyside_home_delete_saved_draft_requires_confirmation(tmp_path: Path, mo
     draft_path = tmp_path / "drafts" / "latoya.json"
     draft_path.parent.mkdir()
     draft_path.write_text('{"schema":"pyside_interview_draft.v1"}', encoding="utf-8")
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     monkeypatch.setattr(pyside_interview_app, "latest_pyside_draft_path", lambda _drafts_dir=None: draft_path)
     window._refresh_home_draft_panel()
     no = window.QtWidgets.QMessageBox.StandardButton.No
@@ -1020,7 +1146,6 @@ def test_pyside_home_delete_saved_draft_requires_confirmation(tmp_path: Path, mo
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_home_draft_actions_share_start_panel_to_prioritize_history(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -1031,7 +1156,7 @@ def test_pyside_home_draft_actions_share_start_panel_to_prioritize_history(tmp_p
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
 
     buttons = {button.text(): button for button in window.interview_tabs.widget(0).findChildren(qt_widgets.QPushButton)}
     section_titles = [
@@ -1046,7 +1171,6 @@ def test_pyside_home_draft_actions_share_start_panel_to_prioritize_history(tmp_p
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_back_reentry_overwrites_existing_flow_timestamp(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -1057,7 +1181,7 @@ def test_pyside_back_reentry_overwrites_existing_flow_timestamp(tmp_path: Path) 
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
     session.start(candidate_name="Latoya Nugent", school="Palmdale", track_key="preschool")
     window.session = session
@@ -1069,7 +1193,6 @@ def test_pyside_back_reentry_overwrites_existing_flow_timestamp(tmp_path: Path) 
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_back_reentry_overwrites_existing_flow_end_timestamp(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -1080,7 +1203,7 @@ def test_pyside_back_reentry_overwrites_existing_flow_end_timestamp(tmp_path: Pa
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
     session.start(candidate_name="Latoya Nugent", school="Palmdale", track_key="preschool")
     window.session = session
@@ -1094,7 +1217,6 @@ def test_pyside_back_reentry_overwrites_existing_flow_end_timestamp(tmp_path: Pa
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_back_reentry_next_overwrites_following_question_start(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -1105,7 +1227,7 @@ def test_pyside_back_reentry_next_overwrites_following_question_start(tmp_path: 
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     monkeypatch.setattr(window, "_start_pyside_interview_recording", lambda: None)
     monkeypatch.setattr(pyside_interview_app.time, "monotonic", lambda: 112.0)
     session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
@@ -1127,7 +1249,6 @@ def test_pyside_back_reentry_next_overwrites_following_question_start(tmp_path: 
     ]
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_session_enforces_intro_custom_scored_final_custom_workflow(tmp_path: Path) -> None:
     model = build_interview_redesign_model(
@@ -1160,8 +1281,7 @@ def test_pyside_session_enforces_intro_custom_scored_final_custom_workflow(tmp_p
     ]
     assert "Palmdale is open weekdays" in session.answers["intro_script"]["prompt"]
 
-
-def test_pyside_recording_starts_after_intro_not_on_begin(tmp_path: Path, monkeypatch) -> None:
+def test_pyside_recording_starts_on_begin_for_intro_audio_check(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
     app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
@@ -1171,14 +1291,14 @@ def test_pyside_recording_starts_after_intro_not_on_begin(tmp_path: Path, monkey
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     starts: list[str] = []
     monkeypatch.setattr(window, "_start_pyside_interview_recording", lambda: starts.append("start"))
 
     window.home_candidate_input.setText("Latoya Nugent")
     window._begin_selected_interview()
 
-    assert starts == []
+    assert starts == ["start"]
     assert window.session.active_question().kind == "intro"
 
     window.live_notes.setPlainText("Intro read by interviewer.")
@@ -1189,6 +1309,126 @@ def test_pyside_recording_starts_after_intro_not_on_begin(tmp_path: Path, monkey
     window.window.close()
     app.processEvents()
 
+def test_pyside_recording_start_failure_shows_audio_device_warning(tmp_path: Path, monkeypatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    monkeypatch.setattr(pyside_interview_app.sys, "platform", "win32")
+    monkeypatch.setattr(pyside_interview_app, "resolve_default_windows_system_device", lambda: "Wrong Output Device")
+
+    import interview_audio_recorder
+
+    def _raise_bad_device(**_kwargs: object) -> object:
+        raise RuntimeError("Recording process exited immediately. Check configured audio device names.")
+
+    monkeypatch.setattr(interview_audio_recorder, "start_recording", _raise_bad_device)
+
+    window.home_candidate_input.setText("Latoya Nugent")
+    window._begin_selected_interview()
+    app.processEvents()
+
+    warning = window.window.findChild(qt_widgets.QLabel, "PySideRecordingWarning")
+    assert warning is not None
+    assert "Wrong Output Device" in warning.text()
+    assert "Check Windows/meeting output" in warning.text()
+    assert window.recording_session is None
+    assert window.recording_started_monotonic is None
+    assert window.recording_system_device == "Wrong Output Device"
+    window.window.close()
+    app.processEvents()
+
+def test_pyside_intro_audio_check_warns_on_blank_transcription(tmp_path: Path, monkeypatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    monkeypatch.setattr(window, "_start_pyside_interview_recording", lambda: None)
+    window.home_candidate_input.setText("Latoya Nugent")
+    window._begin_selected_interview()
+
+    window._apply_pyside_intro_audio_check_result("")
+    app.processEvents()
+
+    warning = window.window.findChild(qt_widgets.QLabel, "PySideRecordingWarning")
+    assert warning is not None
+    assert "No speech was transcribed from the first 15 seconds" in warning.text()
+    assert "Record the interview in Zoom" in warning.text()
+    window.window.close()
+    app.processEvents()
+
+def test_pyside_intro_audio_check_ignores_interviewer_only_segments(tmp_path: Path, monkeypatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    monkeypatch.setattr(window, "_start_pyside_interview_recording", lambda: None)
+    window.home_candidate_input.setText("Latoya Nugent")
+    window._begin_selected_interview()
+
+    session = SimpleNamespace(
+        transcribe_new_segments=lambda **_kwargs: [SimpleNamespace(speaker="INTERVIEWER", text="Did you see our website?")]
+    )
+
+    assert window._transcribe_pyside_intro_audio_sample(session) == ""
+    window.window.close()
+    app.processEvents()
+
+def test_pyside_system_audio_route_check_warns_when_capture_is_silent(tmp_path: Path, monkeypatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    monkeypatch.setattr(window, "_start_pyside_interview_recording", lambda: None)
+    window.home_candidate_input.setText("Latoya Nugent")
+    window._begin_selected_interview()
+    window.live_notes.setPlainText("Intro read.")
+    window.session.save_answer_and_advance(notes="Intro read.")
+    window.session_index = window.session.current_index
+    window._render_live_question_page()
+
+    sys_wav = tmp_path / "silent_sys.wav"
+    with wave.open(str(sys_wav), "wb") as wav_file:
+        wav_file.setnchannels(1)
+        wav_file.setsampwidth(2)
+        wav_file.setframerate(16000)
+        wav_file.writeframes(b"\x00\x00" * 16000)
+
+    window.recording_session = SimpleNamespace(sys_wav=sys_wav)
+    window.recording_system_device = "VB-Audio Virtual Cable (CABLE Input)"
+    window._check_pyside_system_audio_capture()
+    app.processEvents()
+
+    warning = window.window.findChild(qt_widgets.QLabel, "PySideRecordingWarning")
+    assert warning is not None
+    assert "No meeting/system audio detected yet" in warning.text()
+    assert "switch Zoom/Windows output to VB-CABLE" in warning.text()
+    window.window.close()
+    app.processEvents()
 
 def test_pyside_qualification_screen_keeps_education_and_experience_with_why_ece(tmp_path: Path) -> None:
     model = build_interview_redesign_model(
@@ -1228,7 +1468,6 @@ def test_pyside_qualification_screen_keeps_education_and_experience_with_why_ece
     assert answer["qualification"]["degree_type"] == "BA"
     assert answer["qualification"]["ece_units_completed"] == 18
     assert answer["qualification"]["years_experience"] == 4
-
 
 def test_pyside_finalize_payload_uses_qualification_fields_and_keeps_why_ece_transcript(
     tmp_path: Path,
@@ -1304,7 +1543,6 @@ def test_pyside_finalize_payload_uses_qualification_fields_and_keeps_why_ece_tra
     assert by_id["Pay"]["candidate_transcript"] == "Asked for 35/hour."
     assert by_id["Start"]["candidate_transcript"] == "asap"
 
-
 def test_latest_pyside_draft_path_returns_newest_json(tmp_path: Path) -> None:
     old = tmp_path / "old.json"
     new = tmp_path / "new.json"
@@ -1312,7 +1550,6 @@ def test_latest_pyside_draft_path_returns_newest_json(tmp_path: Path) -> None:
     new.write_text("{}", encoding="utf-8")
 
     assert latest_pyside_draft_path(tmp_path) == new
-
 
 def test_pyside_session_review_summary_uses_scoring_rules(tmp_path: Path) -> None:
     model = build_interview_redesign_model(
@@ -1334,7 +1571,6 @@ def test_pyside_session_review_summary_uses_scoring_rules(tmp_path: Path) -> Non
     assert summary.next_action == "Generate Offer"
     assert summary.missing_scores == []
     assert summary.strongest_evidence == ["Warm child-centered example."]
-
 
 def test_pyside_session_review_score_update_recalculates_and_persists(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(pyside_interview_app, "DEFAULT_BASE_DIR", tmp_path)
@@ -1362,7 +1598,6 @@ def test_pyside_session_review_score_update_recalculates_and_persists(tmp_path: 
     assert payload["questions"]["2"]["notes"]["raw_score"] == 5
     assert payload["questions"]["2"]["candidate_transcript"] == "I helped a child breathe and name their feelings."
 
-
 def test_pyside_offer_review_defaults_are_prefilled_from_completed_session(tmp_path: Path) -> None:
     model = build_interview_redesign_model(
         rubric_path=_write_test_rubric(tmp_path),
@@ -1384,7 +1619,6 @@ def test_pyside_offer_review_defaults_are_prefilled_from_completed_session(tmp_p
     assert defaults["determination"] == "Hire"
     assert defaults["next_action"] == "Generate Offer"
 
-
 def test_pyside_review_screen_hides_finalize_and_offer_actions(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -1400,7 +1634,7 @@ def test_pyside_review_screen_hides_finalize_and_offer_actions(tmp_path: Path) -
     session.save_answer_and_advance(notes="Mission aligned.", score="")
     session.save_answer_and_advance(notes="Values aligned.", score="")
     session.save_answer_and_advance(notes="Warm child-centered example.", score="5")
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Offers")
     window.session = session
     window._render_review_page()
 
@@ -1420,7 +1654,6 @@ def test_pyside_review_screen_hides_finalize_and_offer_actions(tmp_path: Path) -
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_review_screen_shows_interviewer_closeout_without_slow_outputs(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -1437,7 +1670,7 @@ def test_pyside_review_screen_shows_interviewer_closeout_without_slow_outputs(tm
     session.skip_active_question(notes="No extra qualification notes.")
     session.save_answer_and_advance(notes="Candidate transcript should stay hidden.", score="")
     session.flow_candidate_transcripts[2] = "Transcript text should not render."
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     window.session = session
 
     window._render_review_page()
@@ -1485,7 +1718,6 @@ def test_pyside_review_screen_shows_interviewer_closeout_without_slow_outputs(tm
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_review_screen_allows_rating_change_from_transcript(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -1503,7 +1735,7 @@ def test_pyside_review_screen_allows_rating_change_from_transcript(tmp_path: Pat
     session.save_answer_and_advance(notes="No extra qualification notes.", score="")
     session.save_answer_and_advance(notes="Review this against transcript.", score="")
     session.flow_candidate_transcripts[2] = "Candidate described calming a child and helping them use words."
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     window.session = session
 
     window._render_review_page()
@@ -1525,7 +1757,6 @@ def test_pyside_review_screen_allows_rating_change_from_transcript(tmp_path: Pat
     assert "Missing score: Empathy" not in [needs.item(row).text() for row in range(needs.count())]
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_session_generates_offer_document_from_template(tmp_path: Path) -> None:
     model = build_interview_redesign_model(
@@ -1559,7 +1790,6 @@ def test_pyside_session_generates_offer_document_from_template(tmp_path: Path) -
     rendered = _docx_text(output_path)
     assert "Latoya Nugent | Palmdale | Preschool | 22.50 | 40" in rendered
 
-
 def test_pyside_session_offer_generation_emits_start_date_notification(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -1586,7 +1816,7 @@ def test_pyside_session_offer_generation_emits_start_date_notification(tmp_path:
             notifications.append((event_type, payload, idempotency_key))
             return []
 
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Offers")
     window.session = session
     window.notification_service = FakeNotifications()
     window._open_session_offer()
@@ -1604,7 +1834,6 @@ def test_pyside_session_offer_generation_emits_start_date_notification(tmp_path:
     assert notifications[0][2].endswith(":offer.generated")
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_window_runs_due_notification_schedule_on_startup(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -1637,7 +1866,6 @@ def test_pyside_window_runs_due_notification_schedule_on_startup(tmp_path: Path,
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_session_generates_interview_notes_document(tmp_path: Path) -> None:
     model = build_interview_redesign_model(
         rubric_path=_write_test_rubric(tmp_path),
@@ -1657,10 +1885,10 @@ def test_pyside_session_generates_interview_notes_document(tmp_path: Path) -> No
     rendered = _docx_text(output_path)
     assert "Latoya Nugent" in rendered
     assert "Warm child-centered example." in rendered
-    assert "Final Outcome: Hire" in rendered
+    assert "Final Outcome" in rendered
+    assert "Hire" in rendered
     assert (tmp_path / "notes" / "interview_history.sqlite3").exists()
     assert not (tmp_path / "notes" / "interview_history.json").exists()
-
 
 def test_pyside_finalize_writes_basic_notes_without_deepseek_queue(tmp_path: Path, monkeypatch) -> None:
     model = build_interview_redesign_model(
@@ -1690,19 +1918,20 @@ def test_pyside_finalize_writes_basic_notes_without_deepseek_queue(tmp_path: Pat
     assert integration_path.exists()
     assert "pyside_notes" not in str(report_path)
     rendered = _docx_text(report_path)
-    assert "Basic Interview Notes" in rendered
-    assert "Interview Transcript" in rendered
-    assert "Interviewer Ratings" in rendered
+    assert "Structured Behavioral Interview Notes" in rendered
+    assert "1. Candidate Snapshot" in rendered
+    assert "2. Candidate Education and Experience Summary" in rendered
+    assert "3. Score Summary" in rendered
+    assert "4. Candidate Answers" in rendered
     assert "Warm child-centered example." in rendered
-    assert "Overall Score" in rendered
-    assert "Hiring Decision" in rendered
+    assert "Weighted Total" in rendered
+    assert "Final Outcome" in rendered
     assert "Consolidated Answer Summaries" not in rendered
     assert rows[0]["candidate_name"] == "Latoya Nugent"
     assert Path(rows[0]["interview_notes_path"]) == report_path
     assert rows[0]["deepseek_processing_status"] == "not_started"
     assert result["deepseek_job_path"] == ""
     assert result["deepseek_progress_path"] == ""
-
 
 def test_pyside_finalize_writes_interview_notes_to_school_dropbox_folder(tmp_path: Path, monkeypatch) -> None:
     dropbox_root = tmp_path / "Dropbox"
@@ -1738,7 +1967,6 @@ def test_pyside_finalize_writes_interview_notes_to_school_dropbox_folder(tmp_pat
     assert report_path.parent == dropbox_root / "LPL PMD Office Shared" / "Staff" / "Candidates"
     assert report_path.exists()
 
-
 def test_pyside_admin_school_folder_settings_review_confirm_persists(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -1768,7 +1996,7 @@ def test_pyside_admin_school_folder_settings_review_confirm_persists(tmp_path: P
         school_options=["Palmdale"],
     )
 
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     table = window.school_folder_settings_table
     assert table.editTriggers() == qt_widgets.QAbstractItemView.EditTrigger.NoEditTriggers
     window.admin_edit_button.click()
@@ -1787,7 +2015,6 @@ def test_pyside_admin_school_folder_settings_review_confirm_persists(tmp_path: P
     assert saved["Palmdale"]["offer_output_dir"] == "offers"
     assert saved["Palmdale"]["interview_notes_dir"] == r"\Dropbox\LPL PMD Office Shared\Staff\Candidates"
     window.window.close()
-
 
 def test_pyside_finalize_preserves_transcribed_audio_in_basic_notes(tmp_path: Path, monkeypatch) -> None:
     model = build_interview_redesign_model(
@@ -1830,7 +2057,6 @@ def test_pyside_finalize_preserves_transcribed_audio_in_basic_notes(tmp_path: Pa
     assert rows[0]["flow_recordings"] == list(session.flow_recordings.values())
     assert rows[0]["deepseek_processing_status"] == "not_started"
 
-
 def test_pyside_last_question_footer_finalizes_and_shows_complete_home(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -1841,7 +2067,7 @@ def test_pyside_last_question_footer_finalizes_and_shows_complete_home(tmp_path:
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     monkeypatch.setattr(window, "_start_pyside_interview_recording", lambda: None)
     finalized: list[bool] = []
 
@@ -1882,7 +2108,6 @@ def test_pyside_last_question_footer_finalizes_and_shows_complete_home(tmp_path:
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_next_marks_new_question_at_click_boundary(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -1893,7 +2118,7 @@ def test_pyside_next_marks_new_question_at_click_boundary(tmp_path: Path, monkey
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     monkeypatch.setattr(window, "_start_pyside_interview_recording", lambda: None)
     ticks = iter([100.0, 105.0, 109.0])
     monkeypatch.setattr(pyside_interview_app.time, "monotonic", lambda: next(ticks))
@@ -1913,7 +2138,6 @@ def test_pyside_next_marks_new_question_at_click_boundary(tmp_path: Path, monkey
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_review_table_shows_generated_transcripts(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -1924,7 +2148,7 @@ def test_pyside_review_table_shows_generated_transcripts(tmp_path: Path) -> None
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
     session.start(candidate_name="Latoya Nugent", school="Palmdale", track_key="preschool")
     session.save_answer_and_advance(notes="Intro notes.")
@@ -1950,7 +2174,6 @@ def test_pyside_review_table_shows_generated_transcripts(tmp_path: Path) -> None
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_keeps_recording_active_after_last_scored_question_navigation(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -1961,7 +2184,7 @@ def test_pyside_keeps_recording_active_after_last_scored_question_navigation(tmp
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Interviews")
     session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
     session.start(candidate_name="Latoya Nugent", school="Palmdale", track_key="preschool")
     window.session = session
@@ -1976,7 +2199,6 @@ def test_pyside_keeps_recording_active_after_last_scored_question_navigation(tmp
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_last_scored_question_routes_to_review_before_transcription(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -1987,7 +2209,7 @@ def test_pyside_last_scored_question_routes_to_review_before_transcription(tmp_p
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     monkeypatch.setattr(window, "_start_pyside_interview_recording", lambda: None)
     window.home_candidate_input.setText("Latoya Nugent")
     window._begin_selected_interview()
@@ -2019,7 +2241,6 @@ def test_pyside_last_scored_question_routes_to_review_before_transcription(tmp_p
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_finalize_returns_while_recording_transcription_finishes(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -2030,7 +2251,7 @@ def test_pyside_finalize_returns_while_recording_transcription_finishes(tmp_path
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     monkeypatch.setattr(window, "_start_pyside_interview_recording", lambda: None)
     window.home_candidate_input.setText("Latoya Nugent")
     window._begin_selected_interview()
@@ -2072,7 +2293,6 @@ def test_pyside_finalize_returns_while_recording_transcription_finishes(tmp_path
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_finalize_progress_window_is_user_closable_and_non_canceling(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -2083,7 +2303,7 @@ def test_pyside_finalize_progress_window_is_user_closable_and_non_canceling(tmp_
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     window._show_pyside_finalize_progress("Stopping recording")
 
     progress_dialog = window.pyside_finalize_progress_dialog
@@ -2104,7 +2324,6 @@ def test_pyside_finalize_progress_window_is_user_closable_and_non_canceling(tmp_
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_finalize_progress_scheduled_close_uses_one_shot_timer(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -2115,7 +2334,7 @@ def test_pyside_finalize_progress_scheduled_close_uses_one_shot_timer(tmp_path: 
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     window._show_pyside_finalize_progress("Interview finalized")
     single_shots: list[int] = []
 
@@ -2135,7 +2354,6 @@ def test_pyside_finalize_progress_scheduled_close_uses_one_shot_timer(tmp_path: 
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_progress_window_polls_deepseek_progress_json(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -2146,7 +2364,7 @@ def test_pyside_progress_window_polls_deepseek_progress_json(tmp_path: Path) -> 
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     progress_path = tmp_path / "deepseek.progress.json"
     progress_path.write_text(json.dumps({"step": "Updating interview notes document", "status": "processing"}), encoding="utf-8")
 
@@ -2173,7 +2391,6 @@ def test_pyside_progress_window_polls_deepseek_progress_json(tmp_path: Path) -> 
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_progress_window_auto_closes_after_deepseek_complete(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -2184,7 +2401,7 @@ def test_pyside_progress_window_auto_closes_after_deepseek_complete(tmp_path: Pa
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     progress_path = tmp_path / "deepseek.progress.json"
     scheduled_closes: list[bool] = []
     window._schedule_close_pyside_finalize_progress = lambda: scheduled_closes.append(True)
@@ -2209,7 +2426,6 @@ def test_pyside_progress_window_auto_closes_after_deepseek_complete(tmp_path: Pa
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_progress_window_renders_task_status_list(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -2220,7 +2436,7 @@ def test_pyside_progress_window_renders_task_status_list(tmp_path: Path) -> None
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     window._show_pyside_finalize_progress("Queueing DeepSeek processing")
     window._pyside_finalize_progress_tasks = [
         {"name": "Stopping recording", "status": "Finished"},
@@ -2241,7 +2457,6 @@ def test_pyside_progress_window_renders_task_status_list(tmp_path: Path) -> None
     window._close_pyside_finalize_progress()
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_progress_window_discovers_deepseek_progress_from_history(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -2278,7 +2493,7 @@ def test_pyside_progress_window_discovers_deepseek_progress_from_history(tmp_pat
         history_path=history_path,
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
 
     window._show_pyside_finalize_progress("Queueing DeepSeek processing")
     window._refresh_pyside_finalize_progress()
@@ -2292,7 +2507,6 @@ def test_pyside_progress_window_discovers_deepseek_progress_from_history(tmp_pat
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_progress_window_immediately_shows_ordered_tasks_in_scroll_area(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -2303,7 +2517,7 @@ def test_pyside_progress_window_immediately_shows_ordered_tasks_in_scroll_area(t
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
 
     window._show_pyside_finalize_progress("Queueing DeepSeek processing")
     app.processEvents()
@@ -2321,7 +2535,6 @@ def test_pyside_progress_window_immediately_shows_ordered_tasks_in_scroll_area(t
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_finalize_reload_history_after_queueing_deepseek(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -2334,7 +2547,7 @@ def test_pyside_finalize_reload_history_after_queueing_deepseek(tmp_path: Path, 
         history_path=history_path,
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Candidates")
     window.session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
     window.session.start(candidate_name="Latoya Nugent", school="Palmdale", track_key="preschool")
     monkeypatch.setattr(window, "_stop_pyside_interview_recording", lambda: None)
@@ -2367,7 +2580,6 @@ def test_pyside_finalize_reload_history_after_queueing_deepseek(tmp_path: Path, 
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_review_table_updates_transcript_when_finalize_worker_reports_transcripts(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -2378,7 +2590,7 @@ def test_pyside_review_table_updates_transcript_when_finalize_worker_reports_tra
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     window.session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
     window.session.start(candidate_name="Live Transcript", school="Palmdale", track_key="preschool")
     for item in window.session._workflow_items():
@@ -2435,7 +2647,6 @@ def _write_two_trait_rubric(tmp_path: Path) -> Path:
     rubric_path.write_text(json.dumps(rubric), encoding="utf-8")
     return rubric_path
 
-
 def test_pyside_review_apply_scores_updates_history_and_queues_director_referral(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -2463,7 +2674,7 @@ def test_pyside_review_apply_scores_updates_history_and_queues_director_referral
             "score": "60.0%",
         }
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     window.session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
     window.session.start(candidate_name="Review Candidate", school="Palmdale", track_key="preschool")
     for item in window.session._workflow_items():
@@ -2511,7 +2722,6 @@ def test_pyside_review_apply_scores_updates_history_and_queues_director_referral
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_finalize_shows_candidate_history_before_report_export_finishes(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -2523,7 +2733,7 @@ def test_pyside_finalize_shows_candidate_history_before_report_export_finishes(t
         history_path=history_path,
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Candidates")
     window.session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
     window.session.start(candidate_name="Mina Patel", school="Palmdale", track_key="preschool")
     monkeypatch.setattr(window, "_stop_pyside_interview_recording", lambda: None)
@@ -2597,7 +2807,7 @@ def test_pyside_history_grid_shows_failed_retry_for_failed_deepseek_row(tmp_path
         history_path=history_path,
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
 
     button = window.history_table.cellWidget(0, 6)
 
@@ -2632,7 +2842,7 @@ def test_pyside_failed_retry_button_requeues_deepseek_job(tmp_path: Path, monkey
         history_path=history_path,
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     calls: list[Path] = []
 
     def _fake_regenerate(job_path: Path, *, mode: str) -> Path:
@@ -2681,7 +2891,7 @@ def test_pyside_retry_uses_persisted_deepseek_job_path(tmp_path: Path, monkeypat
         history_path=history_path,
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     calls: list[object] = []
 
     monkeypatch.setattr(
@@ -2697,7 +2907,6 @@ def test_pyside_retry_uses_persisted_deepseek_job_path(tmp_path: Path, monkeypat
     assert calls == [stored_job_path, "full"]
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_existing_notes_can_be_regenerated(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -2723,7 +2932,7 @@ def test_pyside_existing_notes_can_be_regenerated(tmp_path: Path, monkeypatch) -
         history_path=history_path,
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     calls: list[object] = []
 
     monkeypatch.setattr(
@@ -2739,7 +2948,6 @@ def test_pyside_existing_notes_can_be_regenerated(tmp_path: Path, monkeypatch) -
     assert calls == [job_path, "document_only"]
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_regenerate_prompt_uses_history_candidate_name(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -2759,7 +2967,7 @@ def test_pyside_regenerate_prompt_uses_history_candidate_name(tmp_path: Path, mo
         history_path=history_path,
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     calls: list[str] = []
 
     class _FakeMessageBox:
@@ -2804,7 +3012,6 @@ def test_pyside_regenerate_prompt_uses_history_candidate_name(tmp_path: Path, mo
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_open_notes_opens_existing_document_without_regenerate_prompt(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -2826,7 +3033,7 @@ def test_pyside_open_notes_opens_existing_document_without_regenerate_prompt(tmp
         history_path=history_path,
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     calls: list[str] = []
     monkeypatch.setattr(window, "_choose_pyside_notes_regeneration_mode", lambda _row: calls.append("prompt") or "full")
     if sys.platform.startswith("win"):
@@ -2840,7 +3047,6 @@ def test_pyside_open_notes_opens_existing_document_without_regenerate_prompt(tmp
     assert calls == [f"open:{notes_path}"]
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_regenerate_prompts_before_missing_job_warning(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -2860,7 +3066,7 @@ def test_pyside_regenerate_prompts_before_missing_job_warning(tmp_path: Path, mo
         history_path=history_path,
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     calls: list[str] = []
     window._choose_pyside_notes_regeneration_mode = lambda _row: calls.append("mode") or "document_only"
     monkeypatch.setattr(
@@ -2876,13 +3082,11 @@ def test_pyside_regenerate_prompts_before_missing_job_warning(tmp_path: Path, mo
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_review_source_exposes_finalize_button_not_placeholder_notes() -> None:
     source = Path("src/pyside_interview_app.py").read_text(encoding="utf-8")
 
     assert 'self._primary_button("Finalize Interview")' not in source
     assert 'output_dir=DEFAULT_BASE_DIR / "pyside_notes"' not in source
-
 
 def test_pyside_onboarding_board_surfaces_next_required_task() -> None:
     employee = Employee(
@@ -2909,7 +3113,6 @@ def test_pyside_onboarding_board_surfaces_next_required_task() -> None:
     assert board.next_task == "Taylor Green: Past task"
     assert board.rows[0]["employee"] == "Taylor Green"
     assert board.rows[0]["next_task"] == "Past task"
-
 
 def test_pyside_candidate_board_groups_history_by_candidate() -> None:
     rows = [
@@ -2938,7 +3141,6 @@ def test_pyside_candidate_board_groups_history_by_candidate() -> None:
     assert board.rows[0]["status"] == "Hire"
     assert board.rows[0]["next_action"] == "Generate Offer"
 
-
 def test_pyside_candidate_board_recomputes_stale_history_status_from_score() -> None:
     rows = [
         {
@@ -2956,7 +3158,6 @@ def test_pyside_candidate_board_recomputes_stale_history_status_from_score() -> 
     assert board.rows[0]["score"] == "70.0"
     assert board.rows[0]["status"] == "Borderline"
     assert board.history_rows[0].status == "Borderline"
-
 
 def test_pyside_candidate_board_treats_ai_auto_no_hire_as_advisory_for_status() -> None:
     rows = [
@@ -2977,7 +3178,6 @@ def test_pyside_candidate_board_treats_ai_auto_no_hire_as_advisory_for_status() 
     assert board.rows[0]["score"] == "70.0"
     assert board.rows[0]["status"] == "Borderline"
     assert board.history_rows[0].status == "Borderline"
-
 
 def test_pyside_candidates_page_uses_history_table_layout_and_actions(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -3004,21 +3204,33 @@ def test_pyside_candidates_page_uses_history_table_layout_and_actions(tmp_path: 
         history_path=history_path,
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Candidates")
 
-    assert window.candidate_history_table.columnCount() == window.history_table.columnCount() == 10
+    assert window.candidate_history_table.columnCount() == window.history_table.columnCount() == 11
     assert [
         window.candidate_history_table.horizontalHeaderItem(column).text()
         for column in range(window.candidate_history_table.columnCount())
-    ] == ["Date", "Candidate", "School", "Position", "Score", "Status", "Notes", "Regenerate", "Offer", "Delete"]
+    ] == [
+        "Date",
+        "Candidate",
+        "School",
+        "Position",
+        "Score",
+        "Status",
+        "Notes",
+        "Regenerate",
+        "Transcript",
+        "Offer",
+        "Delete",
+    ]
     assert window.candidate_history_table.item(0, 1).text() == "Latoya Nugent"
     assert window.candidate_history_table.cellWidget(0, 6).text() == "Open Notes"
     assert window.candidate_history_table.cellWidget(0, 7).text() == "Regenerate"
-    assert window.candidate_history_table.cellWidget(0, 8).text() == "Generate Offer"
-    assert window.candidate_history_table.cellWidget(0, 9).text() == "Delete"
+    assert window.candidate_history_table.cellWidget(0, 8).text() == "Import"
+    assert window.candidate_history_table.cellWidget(0, 9).text() == "Generate Offer"
+    assert window.candidate_history_table.cellWidget(0, 10).text() == "Delete"
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_history_delete_requires_confirmation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -3034,7 +3246,7 @@ def test_pyside_history_delete_requires_confirmation(tmp_path: Path, monkeypatch
         history_path=history_path,
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     no = window.QtWidgets.QMessageBox.StandardButton.No
     yes = window.QtWidgets.QMessageBox.StandardButton.Yes
 
@@ -3048,7 +3260,6 @@ def test_pyside_history_delete_requires_confirmation(tmp_path: Path, monkeypatch
     assert [row["history_id"] for row in InterviewHistoryStore(history_path).load()] == ["hist-2"]
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_studio_uses_guided_readonly_sections_until_edit(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -3086,7 +3297,7 @@ def test_pyside_admin_studio_uses_guided_readonly_sections_until_edit(tmp_path: 
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     questions_table = window.window.findChild(qt_widgets.QTableWidget, "AdminStudioQuestionsTable")
     rubrics_table = window.window.findChild(qt_widgets.QTableWidget, "AdminStudioRubricsTable")
@@ -3145,7 +3356,6 @@ def test_pyside_admin_studio_uses_guided_readonly_sections_until_edit(tmp_path: 
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_pages_do_not_force_content_wider_than_viewport(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -3172,7 +3382,7 @@ def test_pyside_pages_do_not_force_content_wider_than_viewport(tmp_path: Path, m
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     window.window.show()
     window.window.resize(640, 480)
     app.processEvents()
@@ -3190,7 +3400,6 @@ def test_pyside_pages_do_not_force_content_wider_than_viewport(tmp_path: Path, m
         assert scroll.widget().sizePolicy().horizontalPolicy() == qt_widgets.QSizePolicy.Policy.Expanding
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_studio_modern_dashboard_and_section_cards(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -3249,7 +3458,7 @@ def test_pyside_admin_studio_modern_dashboard_and_section_cards(tmp_path: Path, 
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
 
     assert window.window.findChild(qt_widgets.QLabel, "AdminStudioWorkspaceActionsLabel").text() == "Workspace actions"
     assert window.window.findChild(qt_widgets.QFrame, "AdminStudioSidebarBrandCard") is not None
@@ -3387,7 +3596,6 @@ def test_pyside_admin_studio_modern_dashboard_and_section_cards(tmp_path: Path, 
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_admin_deepseek_model_screen_shows_hardware_and_ollama_guidance(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -3413,7 +3621,7 @@ def test_pyside_admin_deepseek_model_screen_shows_hardware_and_ollama_guidance(t
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(8)
 
@@ -3432,7 +3640,6 @@ def test_pyside_admin_deepseek_model_screen_shows_hardware_and_ollama_guidance(t
     assert "Context window" in _widget_text(performance)
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_deepseek_model_uses_cards_not_visible_dropdown(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -3459,7 +3666,7 @@ def test_pyside_admin_deepseek_model_uses_cards_not_visible_dropdown(tmp_path: P
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(8)
 
@@ -3472,7 +3679,6 @@ def test_pyside_admin_deepseek_model_uses_cards_not_visible_dropdown(tmp_path: P
     assert model_selector.maximumHeight() == 0
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_modern_sections_hide_legacy_backing_tables(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -3499,7 +3705,7 @@ def test_pyside_admin_modern_sections_hide_legacy_backing_tables(tmp_path: Path,
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
 
     backing_tables = {
@@ -3518,7 +3724,6 @@ def test_pyside_admin_modern_sections_hide_legacy_backing_tables(tmp_path: Path,
 
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_deepseek_selected_model_panel_shows_decision_details(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -3545,7 +3750,7 @@ def test_pyside_admin_deepseek_selected_model_panel_shows_decision_details(tmp_p
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(8)
 
@@ -3562,7 +3767,6 @@ def test_pyside_admin_deepseek_selected_model_panel_shows_decision_details(tmp_p
     assert selected_panel.findChild(qt_widgets.QPushButton, "AdminStudioViewModelDetailsButton") is not None
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_validation_issue_action_opens_affected_section(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -3613,7 +3817,7 @@ def test_pyside_admin_validation_issue_action_opens_affected_section(tmp_path: P
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
 
     section_list.setCurrentRow(12)
@@ -3629,7 +3833,6 @@ def test_pyside_admin_validation_issue_action_opens_affected_section(tmp_path: P
     assert window.window.findChild(qt_widgets.QLineEdit, "AdminStudioNotificationRuleEvent").text() == "offer.approved"
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_validation_issue_action_selects_affected_prompt(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -3665,7 +3868,7 @@ def test_pyside_admin_validation_issue_action_selects_affected_prompt(tmp_path: 
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     window.admin_draft.update_prompt("executive_summary_user", "Changed executive summary from {transcript}.")
 
@@ -3681,7 +3884,6 @@ def test_pyside_admin_validation_issue_action_selects_affected_prompt(tmp_path: 
     assert window.window.findChild(qt_widgets.QLabel, "AdminStudioPromptEditorTitle").text() == "executive_summary_user"
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_validation_issue_action_selects_affected_json_file_and_line(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -3711,7 +3913,7 @@ def test_pyside_admin_validation_issue_action_selects_affected_json_file_and_lin
         school_options=["Palmdale"],
     )
     overrides_path.write_text('{\n  "tracks": [\n', encoding="utf-8")
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     window.admin_draft.validate = lambda: ["Question override file has invalid JSON on line 3."]
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
 
@@ -3728,7 +3930,6 @@ def test_pyside_admin_validation_issue_action_selects_affected_json_file_and_lin
     assert "Line 3" in window.window.findChild(qt_widgets.QLabel, "AdminStudioJsonViewerFooter").text()
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_validation_details_dialog_shows_technical_payload(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -3768,7 +3969,7 @@ def test_pyside_admin_validation_details_dialog_shows_technical_payload(tmp_path
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(12)
 
@@ -3790,7 +3991,6 @@ def test_pyside_admin_validation_details_dialog_shows_technical_payload(tmp_path
     assert "Active notification rule" in raw.toPlainText()
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_validation_review_shows_blocked_banner_summary_and_guidance(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -3830,7 +4030,7 @@ def test_pyside_admin_validation_review_shows_blocked_banner_summary_and_guidanc
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(12)
 
@@ -3855,7 +4055,6 @@ def test_pyside_admin_validation_review_shows_blocked_banner_summary_and_guidanc
     assert "Publish blocked" in _widget_text(publish)
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_validation_review_issue_cards_show_filter_why_and_what(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -3895,7 +4094,7 @@ def test_pyside_admin_validation_review_issue_cards_show_filter_why_and_what(tmp
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(12)
 
@@ -3914,7 +4113,6 @@ def test_pyside_admin_validation_review_issue_cards_show_filter_why_and_what(tmp
     assert "Add a subject template" in card_text
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_validation_issue_card_has_collapsed_raw_details(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -3954,7 +4152,7 @@ def test_pyside_admin_validation_issue_card_has_collapsed_raw_details(tmp_path: 
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(12)
 
@@ -3975,7 +4173,6 @@ def test_pyside_admin_validation_issue_card_has_collapsed_raw_details(tmp_path: 
     assert "offer.approved" in raw.toPlainText()
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_validation_issue_filter_hides_nonmatching_cards(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -4015,7 +4212,7 @@ def test_pyside_admin_validation_issue_filter_hides_nonmatching_cards(tmp_path: 
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(12)
 
@@ -4037,7 +4234,6 @@ def test_pyside_admin_validation_issue_filter_hides_nonmatching_cards(tmp_path: 
     assert issue_card.isHidden() is False
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_validation_publish_availability_uses_disabled_button_when_blocked(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -4077,7 +4273,7 @@ def test_pyside_admin_validation_publish_availability_uses_disabled_button_when_
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(12)
 
@@ -4090,7 +4286,6 @@ def test_pyside_admin_validation_publish_availability_uses_disabled_button_when_
     assert "You can publish once all blocking issues are resolved." in _widget_text(panel)
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_publish_button_tracks_validation_blockers_after_fix(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -4130,7 +4325,7 @@ def test_pyside_admin_publish_button_tracks_validation_blockers_after_fix(tmp_pa
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(6)
     window.admin_edit_button.click()
@@ -4147,7 +4342,6 @@ def test_pyside_admin_publish_button_tracks_validation_blockers_after_fix(tmp_pa
     assert window.admin_publish_button.isEnabled() is True
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_review_changes_button_opens_grouped_diff_dialog(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -4174,7 +4368,7 @@ def test_pyside_admin_review_changes_button_opens_grouped_diff_dialog(tmp_path: 
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(9)
     window.admin_edit_button.click()
@@ -4212,7 +4406,6 @@ def test_pyside_admin_review_changes_button_opens_grouped_diff_dialog(tmp_path: 
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_admin_dashboard_draft_changes_lists_all_dirty_files(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -4238,7 +4431,7 @@ def test_pyside_admin_dashboard_draft_changes_lists_all_dirty_files(tmp_path: Pa
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(9)
     window.admin_edit_button.click()
@@ -4284,7 +4477,6 @@ def test_pyside_admin_dashboard_draft_changes_lists_all_dirty_files(tmp_path: Pa
     assert len(panel.findChildren(qt_widgets.QFrame, "AdminStudioDraftChangeRow")) == 6
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_dashboard_validation_issue_opens_affected_notification_rule(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -4334,7 +4526,7 @@ def test_pyside_admin_dashboard_validation_issue_opens_affected_notification_rul
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     validation_review = window.window.findChild(qt_widgets.QFrame, "AdminStudioValidationReviewPanel")
     issue_button = next(
         button
@@ -4350,7 +4542,6 @@ def test_pyside_admin_dashboard_validation_issue_opens_affected_notification_rul
     assert window.window.findChild(qt_widgets.QLineEdit, "AdminStudioNotificationRuleEvent").text() == "offer.approved"
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_publish_confirmation_summarizes_changes_and_validation(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -4377,7 +4568,7 @@ def test_pyside_admin_publish_confirmation_summarizes_changes_and_validation(tmp
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(9)
     window.admin_edit_button.click()
@@ -4414,7 +4605,6 @@ def test_pyside_admin_publish_confirmation_summarizes_changes_and_validation(tmp
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_admin_question_card_edits_through_drawer_draft(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -4440,7 +4630,7 @@ def test_pyside_admin_question_card_edits_through_drawer_draft(tmp_path: Path, m
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(2)
 
@@ -4513,7 +4703,6 @@ def test_pyside_admin_question_card_edits_through_drawer_draft(tmp_path: Path, m
     assert window.admin_draft.overrides["custom_questions"]["preschool"][0]["text"] == "Why are you applying to Launch Pad Learning now?"
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_questions_track_tabs_switch_visible_flow(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -4590,7 +4779,7 @@ def test_pyside_admin_questions_track_tabs_switch_visible_flow(tmp_path: Path, m
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(2)
 
@@ -4636,7 +4825,6 @@ def test_pyside_admin_questions_track_tabs_switch_visible_flow(tmp_path: Path, m
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_admin_add_question_dropzone_opens_blank_drawer_and_saves(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -4662,7 +4850,7 @@ def test_pyside_admin_add_question_dropzone_opens_blank_drawer_and_saves(tmp_pat
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(2)
     window.admin_edit_button.click()
@@ -4696,7 +4884,6 @@ def test_pyside_admin_add_question_dropzone_opens_blank_drawer_and_saves(tmp_pat
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_admin_question_reorder_updates_draft_flow_without_changing_ids(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -4722,7 +4909,7 @@ def test_pyside_admin_question_reorder_updates_draft_flow_without_changing_ids(t
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(2)
     window.admin_edit_button.click()
@@ -4739,7 +4926,6 @@ def test_pyside_admin_question_reorder_updates_draft_flow_without_changing_ids(t
     assert window.admin_unsaved_pill.text() == "Unsaved changes: 1"
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_question_drawer_delete_removes_custom_question_from_draft(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -4766,7 +4952,7 @@ def test_pyside_admin_question_drawer_delete_removes_custom_question_from_draft(
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(2)
     window.admin_edit_button.click()
@@ -4783,7 +4969,6 @@ def test_pyside_admin_question_drawer_delete_removes_custom_question_from_draft(
     assert window.admin_unsaved_pill.text() == "Unsaved changes: 1"
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_question_duplicate_creates_custom_copy_in_draft(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -4810,7 +4995,7 @@ def test_pyside_admin_question_duplicate_creates_custom_copy_in_draft(tmp_path: 
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(2)
 
@@ -4831,7 +5016,6 @@ def test_pyside_admin_question_duplicate_creates_custom_copy_in_draft(tmp_path: 
     assert window.admin_unsaved_pill.text() == "Unsaved changes: 1"
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_layout_keeps_controls_readable_on_narrow_windows(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -4858,7 +5042,7 @@ def test_pyside_admin_layout_keeps_controls_readable_on_narrow_windows(tmp_path:
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     toolbar_scroll = window.window.findChild(qt_widgets.QScrollArea, "AdminStudioToolbarScroll")
 
@@ -4932,7 +5116,7 @@ def test_pyside_admin_layout_uses_font_metrics_for_windows_text_scaling(tmp_path
             history_path=tmp_path / "missing-history.json",
             school_options=["Palmdale"],
         )
-        window = pyside_interview_app.PySideInterviewWindow(model)
+        window = _pyside_window_on_page(model, "Admin")
         section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
 
         window.window.resize(760, 620)
@@ -4968,7 +5152,7 @@ def test_pyside_initial_window_fits_available_screen_after_display_scaling(tmp_p
         school_options=["Palmdale"],
     )
 
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     available = app.primaryScreen().availableGeometry()
 
     assert window.window.width() <= max(640, available.width() - 40)
@@ -5019,7 +5203,7 @@ def test_pyside_admin_rubrics_editor_matches_mockup_and_saves_draft(tmp_path: Pa
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(3)
 
@@ -5135,7 +5319,6 @@ def test_pyside_admin_rubrics_editor_matches_mockup_and_saves_draft(tmp_path: Pa
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_admin_rubrics_linked_question_follows_selected_trait(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -5179,7 +5362,7 @@ def test_pyside_admin_rubrics_linked_question_follows_selected_trait(tmp_path: P
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(3)
 
@@ -5197,7 +5380,6 @@ def test_pyside_admin_rubrics_linked_question_follows_selected_trait(tmp_path: P
     assert window.window.findChild(qt_widgets.QLabel, "AdminStudioQuestionDrawerId").text() == "trait_2"
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_rubrics_renders_all_trait_cards(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -5239,7 +5421,7 @@ def test_pyside_admin_rubrics_renders_all_trait_cards(tmp_path: Path, monkeypatc
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(3)
 
@@ -5254,7 +5436,6 @@ def test_pyside_admin_rubrics_renders_all_trait_cards(tmp_path: Path, monkeypatc
     assert window.window.findChild(qt_widgets.QLineEdit, "AdminStudioRubricTraitId").text() == "trait_10"
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_rubrics_filters_search_and_view_controls_trait_cards(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -5308,7 +5489,7 @@ def test_pyside_admin_rubrics_filters_search_and_view_controls_trait_cards(tmp_p
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(3)
 
@@ -5373,7 +5554,6 @@ def test_pyside_admin_rubrics_filters_search_and_view_controls_trait_cards(tmp_p
     assert window.window.findChild(qt_widgets.QFrame, "AdminStudioRubricTraitCardsPanel").property("adminRubricViewMode") == "list"
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_signal_hints_search_and_detail_reference(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -5440,7 +5620,7 @@ def test_pyside_admin_signal_hints_search_and_detail_reference(tmp_path: Path, m
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(4)
 
@@ -5521,7 +5701,6 @@ def test_pyside_admin_signal_hints_search_and_detail_reference(tmp_path: Path, m
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_admin_signal_hints_uses_cards_without_legacy_table(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -5547,7 +5726,7 @@ def test_pyside_admin_signal_hints_uses_cards_without_legacy_table(tmp_path: Pat
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(4)
 
@@ -5556,7 +5735,6 @@ def test_pyside_admin_signal_hints_uses_cards_without_legacy_table(tmp_path: Pat
     assert window.window.findChild(qt_widgets.QTableWidget, "AdminStudioSignalsTable") is None
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_signal_hints_renders_all_hint_groups(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -5601,7 +5779,7 @@ def test_pyside_admin_signal_hints_renders_all_hint_groups(tmp_path: Path, monke
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(4)
 
@@ -5615,7 +5793,6 @@ def test_pyside_admin_signal_hints_renders_all_hint_groups(tmp_path: Path, monke
     assert window.window.findChild(qt_widgets.QLabel, "AdminStudioSignalDetailTitle").text() == "Trait 10"
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_notification_rule_editor_saves_draft(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -5657,7 +5834,7 @@ def test_pyside_admin_notification_rule_editor_saves_draft(tmp_path: Path, monke
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(6)
 
@@ -5737,7 +5914,6 @@ def test_pyside_admin_notification_rule_editor_saves_draft(tmp_path: Path, monke
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_admin_notifications_create_button_opens_blank_rule_and_saves_card(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -5778,7 +5954,7 @@ def test_pyside_admin_notifications_create_button_opens_blank_rule_and_saves_car
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(6)
 
@@ -5819,7 +5995,6 @@ def test_pyside_admin_notifications_create_button_opens_blank_rule_and_saves_car
     )
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_notifications_editor_shows_mockup_status_panels(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -5864,7 +6039,7 @@ def test_pyside_admin_notifications_editor_shows_mockup_status_panels(tmp_path: 
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(6)
     rule_button = window.window.findChild(qt_widgets.QPushButton, "AdminStudioNotificationRuleButton_staffing_assign_manager")
@@ -5940,7 +6115,7 @@ def test_pyside_admin_notifications_recipient_chips_remove_and_save(tmp_path: Pa
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(6)
     window.window.findChild(qt_widgets.QPushButton, "AdminStudioNotificationRuleButton_staffing_assign_manager").click()
@@ -5970,7 +6145,6 @@ def test_pyside_admin_notifications_recipient_chips_remove_and_save(tmp_path: Pa
     assert [recipient.email for recipient in saved.recipients] == ["manager@example.org"]
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_notifications_body_toolbar_inserts_template_markup(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -6010,7 +6184,7 @@ def test_pyside_admin_notifications_body_toolbar_inserts_template_markup(tmp_pat
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(6)
     window.window.findChild(qt_widgets.QPushButton, "AdminStudioNotificationRuleButton_staffing_assign_manager").click()
@@ -6050,7 +6224,6 @@ def test_pyside_admin_notifications_body_toolbar_inserts_template_markup(tmp_pat
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_admin_notifications_subject_variable_button_inserts_and_saves(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -6089,7 +6262,7 @@ def test_pyside_admin_notifications_subject_variable_button_inserts_and_saves(tm
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(6)
     window.window.findChild(qt_widgets.QPushButton, "AdminStudioNotificationRuleButton_staffing_assign_manager").click()
@@ -6113,7 +6286,6 @@ def test_pyside_admin_notifications_subject_variable_button_inserts_and_saves(tm
     assert saved.subject_template == "Position needed now:{position_name}"
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_notifications_date_offset_uses_clear_before_after_controls(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -6156,7 +6328,7 @@ def test_pyside_admin_notifications_date_offset_uses_clear_before_after_controls
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(6)
     window.window.findChild(qt_widgets.QPushButton, "AdminStudioNotificationRuleButton_onboarding_start_reminder").click()
@@ -6208,7 +6380,6 @@ def test_pyside_admin_notifications_date_offset_uses_clear_before_after_controls
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_admin_notifications_delete_rule_removes_draft_card_and_table_row(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -6258,7 +6429,7 @@ def test_pyside_admin_notifications_delete_rule_removes_draft_card_and_table_row
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(6)
 
@@ -6291,7 +6462,6 @@ def test_pyside_admin_notifications_delete_rule_removes_draft_card_and_table_row
     assert window.window.findChild(qt_widgets.QLineEdit, "AdminStudioNotificationRuleEvent").text() == "offer.approved"
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_notification_preview_modal_renders_sample_data(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -6333,7 +6503,7 @@ def test_pyside_admin_notification_preview_modal_renders_sample_data(tmp_path: P
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(6)
     window.window.findChild(qt_widgets.QPushButton, "AdminStudioNotificationRuleButton_staffing_assign_manager").click()
@@ -6350,7 +6520,6 @@ def test_pyside_admin_notification_preview_modal_renders_sample_data(tmp_path: P
     assert "Unresolved variables: unknown_token" in _widget_text(dialog)
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_notifications_enabled_filter_hides_nonmatching_rule_cards(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -6401,7 +6570,7 @@ def test_pyside_admin_notifications_enabled_filter_hides_nonmatching_rule_cards(
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(6)
 
@@ -6425,7 +6594,6 @@ def test_pyside_admin_notifications_enabled_filter_hides_nonmatching_rule_cards(
     assert not cards["offer.accepted"].isHidden()
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_notifications_timing_filter_hides_nonmatching_rule_cards(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -6480,7 +6648,7 @@ def test_pyside_admin_notifications_timing_filter_hides_nonmatching_rule_cards(t
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(6)
 
@@ -6504,7 +6672,6 @@ def test_pyside_admin_notifications_timing_filter_hides_nonmatching_rule_cards(t
     assert not cards["onboarding.start-reminder"].isHidden()
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_notifications_recipients_filter_hides_empty_recipient_rules(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -6555,7 +6722,7 @@ def test_pyside_admin_notifications_recipients_filter_hides_empty_recipient_rule
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(6)
 
@@ -6582,7 +6749,6 @@ def test_pyside_admin_notifications_recipients_filter_hides_empty_recipient_rule
     assert not cards["custom.missing-recipient"].isHidden()
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_notifications_event_filter_hides_nonmatching_rule_cards(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -6633,7 +6799,7 @@ def test_pyside_admin_notifications_event_filter_hides_nonmatching_rule_cards(tm
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(6)
 
@@ -6657,7 +6823,6 @@ def test_pyside_admin_notifications_event_filter_hides_nonmatching_rule_cards(tm
     assert not cards["staffing.assign-manager"].isHidden()
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_notifications_template_filter_hides_by_subject_body_completeness(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -6718,7 +6883,7 @@ def test_pyside_admin_notifications_template_filter_hides_by_subject_body_comple
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(6)
 
@@ -6751,7 +6916,6 @@ def test_pyside_admin_notifications_template_filter_hides_by_subject_body_comple
     assert not cards["custom.missing-body"].isHidden()
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_notifications_renders_all_rule_cards(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -6793,7 +6957,7 @@ def test_pyside_admin_notifications_renders_all_rule_cards(tmp_path: Path, monke
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(6)
 
@@ -6806,7 +6970,6 @@ def test_pyside_admin_notifications_renders_all_rule_cards(tmp_path: Path, monke
     assert window.window.findChild(qt_widgets.QLineEdit, "AdminStudioNotificationRuleEvent").text() == "custom.rule-8"
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_notifications_sort_reorders_rule_cards(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -6874,7 +7037,7 @@ def test_pyside_admin_notifications_sort_reorders_rule_cards(tmp_path: Path, mon
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(6)
 
@@ -6894,7 +7057,6 @@ def test_pyside_admin_notifications_sort_reorders_rule_cards(tmp_path: Path, mon
     assert panel.layout().itemAt(4).widget().property("adminNotificationEvent") == "offer.accepted"
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_notifications_toolbar_scrolls_and_toggles_card_view(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -6935,7 +7097,7 @@ def test_pyside_admin_notifications_toolbar_scrolls_and_toggles_card_view(tmp_pa
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(6)
 
@@ -6956,7 +7118,6 @@ def test_pyside_admin_notifications_toolbar_scrolls_and_toggles_card_view(tmp_pa
         assert card.property("adminNotificationViewMode") == "grid"
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_notification_validation_warns_on_unknown_variables(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -6996,7 +7157,7 @@ def test_pyside_admin_notification_validation_warns_on_unknown_variables(tmp_pat
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(6)
     window.window.findChild(qt_widgets.QPushButton, "AdminStudioNotificationRuleButton_custom_unknown_variable").click()
@@ -7006,7 +7167,6 @@ def test_pyside_admin_notification_validation_warns_on_unknown_variables(tmp_pat
     assert "Unknown variables: unknown_body, unknown_subject" in validation.text()
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_email_settings_save_feed_notification_sending(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -7049,7 +7209,7 @@ def test_pyside_admin_email_settings_save_feed_notification_sending(tmp_path: Pa
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     email_row = next(
         row
@@ -7102,7 +7262,6 @@ def test_pyside_admin_email_settings_save_feed_notification_sending(tmp_path: Pa
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_admin_email_test_connection_verifies_smtp_without_saving(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -7136,7 +7295,7 @@ def test_pyside_admin_email_test_connection_verifies_smtp_without_saving(tmp_pat
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     email_row = next(
         row
@@ -7159,7 +7318,6 @@ def test_pyside_admin_email_test_connection_verifies_smtp_without_saving(tmp_pat
     assert "Connection verified" in status.text()
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_email_account_type_is_exclusive_and_saved(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -7189,7 +7347,7 @@ def test_pyside_admin_email_account_type_is_exclusive_and_saved(tmp_path: Path, 
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     email_row = next(row for row in range(section_list.count()) if section_list.item(row).text() == "Email Settings")
     section_list.setCurrentRow(email_row)
@@ -7213,7 +7371,6 @@ def test_pyside_admin_email_account_type_is_exclusive_and_saved(tmp_path: Path, 
     assert notification_service.load_email_account_settings(email_settings_path).account_type == "POP3"
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_email_account_type_updates_provider_defaults_and_mockup_panels(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -7242,7 +7399,7 @@ def test_pyside_admin_email_account_type_updates_provider_defaults_and_mockup_pa
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     email_row = next(row for row in range(section_list.count()) if section_list.item(row).text() == "Email Settings")
     section_list.setCurrentRow(email_row)
@@ -7273,7 +7430,6 @@ def test_pyside_admin_email_account_type_updates_provider_defaults_and_mockup_pa
     assert encryption.currentText() == "SSL/TLS"
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_templates_school_drawer_saves_folder_draft(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -7312,7 +7468,7 @@ def test_pyside_admin_templates_school_drawer_saves_folder_draft(tmp_path: Path,
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(5)
 
@@ -7350,7 +7506,6 @@ def test_pyside_admin_templates_school_drawer_saves_folder_draft(tmp_path: Path,
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_admin_templates_can_add_and_delete_school_draft(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -7379,7 +7534,7 @@ def test_pyside_admin_templates_can_add_and_delete_school_draft(tmp_path: Path, 
         history_path=tmp_path / "missing-history.json",
         school_options=["Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(5)
 
@@ -7425,7 +7580,6 @@ def test_pyside_admin_templates_can_add_and_delete_school_draft(tmp_path: Path, 
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_admin_templates_offer_template_health_panel_lists_active_templates(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -7470,7 +7624,7 @@ def test_pyside_admin_templates_offer_template_health_panel_lists_active_templat
         history_path=tmp_path / "missing-history.json",
         school_options=["Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(5)
 
@@ -7492,7 +7646,6 @@ def test_pyside_admin_templates_offer_template_health_panel_lists_active_templat
     assert "Viewing all configured offer templates" in window.window.findChild(qt_widgets.QLabel, "AdminStudioSchoolLastTestWrite").text()
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_templates_new_template_adds_selected_school_template(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -7529,7 +7682,7 @@ def test_pyside_admin_templates_new_template_adds_selected_school_template(tmp_p
         history_path=tmp_path / "missing-history.json",
         school_options=["Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(5)
 
@@ -7549,7 +7702,6 @@ def test_pyside_admin_templates_new_template_adds_selected_school_template(tmp_p
     assert "Template added to draft" in validation.text()
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_templates_test_write_checks_selected_folder(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -7581,7 +7733,7 @@ def test_pyside_admin_templates_test_write_checks_selected_folder(tmp_path: Path
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(5)
 
@@ -7597,7 +7749,6 @@ def test_pyside_admin_templates_test_write_checks_selected_folder(tmp_path: Path
     assert not (target_dir / "_admin_studio_test_write.tmp").exists()
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_templates_copy_path_copies_selected_folder(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -7629,7 +7780,7 @@ def test_pyside_admin_templates_copy_path_copies_selected_folder(tmp_path: Path,
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(5)
 
@@ -7643,7 +7794,6 @@ def test_pyside_admin_templates_copy_path_copies_selected_folder(tmp_path: Path,
     assert "Copied" in window.window.findChild(qt_widgets.QLabel, "AdminStudioSchoolLastTestWrite").text()
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_templates_school_card_actions_use_selected_school(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -7682,7 +7832,7 @@ def test_pyside_admin_templates_school_card_actions_use_selected_school(tmp_path
         history_path=tmp_path / "missing-history.json",
         school_options=["Hawthorne", "Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(5)
 
@@ -7704,7 +7854,6 @@ def test_pyside_admin_templates_school_card_actions_use_selected_school(tmp_path
     assert not (palmdale_dir / "_admin_studio_test_write.tmp").exists()
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_templates_school_cards_track_selected_state(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -7739,7 +7888,7 @@ def test_pyside_admin_templates_school_cards_track_selected_state(tmp_path: Path
         history_path=tmp_path / "missing-history.json",
         school_options=["Hawthorne", "Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(5)
 
@@ -7757,7 +7906,6 @@ def test_pyside_admin_templates_school_cards_track_selected_state(tmp_path: Path
     assert window.window.findChild(qt_widgets.QLabel, "AdminStudioSchoolDetailTitle").text() == "Palmdale"
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_templates_browse_folder_updates_selected_path(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -7791,7 +7939,7 @@ def test_pyside_admin_templates_browse_folder_updates_selected_path(tmp_path: Pa
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(5)
     monkeypatch.setattr(
@@ -7810,7 +7958,6 @@ def test_pyside_admin_templates_browse_folder_updates_selected_path(tmp_path: Pa
     assert "Selected folder" in window.window.findChild(qt_widgets.QLabel, "AdminStudioSchoolValidationNotes").text()
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_prompt_editor_saves_prompt_draft(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -7845,7 +7992,7 @@ def test_pyside_admin_prompt_editor_saves_prompt_draft(tmp_path: Path, monkeypat
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(9)
 
@@ -7889,7 +8036,6 @@ def test_pyside_admin_prompt_editor_saves_prompt_draft(tmp_path: Path, monkeypat
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_admin_prompt_version_note_unblocks_prompt_publish_validation(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -7915,7 +8061,7 @@ def test_pyside_admin_prompt_version_note_unblocks_prompt_publish_validation(tmp
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(9)
     window.window.findChild(qt_widgets.QPushButton, "AdminStudioPromptTemplateButton_answer_summary_user").click()
@@ -7936,7 +8082,6 @@ def test_pyside_admin_prompt_version_note_unblocks_prompt_publish_validation(tmp
     assert not [error for error in window.admin_draft.validate() if "requires version notes" in error]
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_prompt_summary_strip_matches_mockup(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -7963,7 +8108,7 @@ def test_pyside_admin_prompt_summary_strip_matches_mockup(tmp_path: Path, monkey
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(9)
 
@@ -7985,7 +8130,6 @@ def test_pyside_admin_prompt_summary_strip_matches_mockup(tmp_path: Path, monkey
     assert window.window.findChild(qt_widgets.QPushButton, "AdminStudioPromptSummaryNewPromptButton").text() == "New Prompt"
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_prompt_settings_opens_prompt_settings_dialog(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -8012,7 +8156,7 @@ def test_pyside_admin_prompt_settings_opens_prompt_settings_dialog(tmp_path: Pat
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(9)
 
@@ -8033,7 +8177,6 @@ def test_pyside_admin_prompt_settings_opens_prompt_settings_dialog(tmp_path: Pat
     dialog.close()
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_prompt_selected_metadata_matches_mockup(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -8063,7 +8206,7 @@ def test_pyside_admin_prompt_selected_metadata_matches_mockup(tmp_path: Path, mo
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(9)
     window.window.findChild(qt_widgets.QPushButton, "AdminStudioPromptTemplateButton_answer_summary_user").click()
@@ -8085,7 +8228,6 @@ def test_pyside_admin_prompt_selected_metadata_matches_mockup(tmp_path: Path, mo
     assert "Version: v2" in metadata.text()
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_prompt_search_filters_template_cards(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -8120,7 +8262,7 @@ def test_pyside_admin_prompt_search_filters_template_cards(tmp_path: Path, monke
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(9)
 
@@ -8149,7 +8291,6 @@ def test_pyside_admin_prompt_search_filters_template_cards(tmp_path: Path, monke
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_admin_prompt_new_template_creates_draft_card(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -8175,7 +8316,7 @@ def test_pyside_admin_prompt_new_template_creates_draft_card(tmp_path: Path, mon
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(9)
 
@@ -8207,7 +8348,6 @@ def test_pyside_admin_prompt_new_template_creates_draft_card(tmp_path: Path, mon
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_admin_prompt_variable_chips_include_all_visible_tokens(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -8233,7 +8373,7 @@ def test_pyside_admin_prompt_variable_chips_include_all_visible_tokens(tmp_path:
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(9)
     window.admin_edit_button.click()
@@ -8264,7 +8404,6 @@ def test_pyside_admin_prompt_variable_chips_include_all_visible_tokens(tmp_path:
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_admin_prompt_validation_warns_on_unknown_variables(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -8290,7 +8429,7 @@ def test_pyside_admin_prompt_validation_warns_on_unknown_variables(tmp_path: Pat
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(9)
     window.window.findChild(qt_widgets.QPushButton, "AdminStudioPromptTemplateButton_answer_summary_user").click()
@@ -8305,7 +8444,6 @@ def test_pyside_admin_prompt_validation_warns_on_unknown_variables(tmp_path: Pat
     assert validation.text() == "JSON/text prompt looks ready."
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_prompt_validation_warns_on_missing_required_variables(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -8333,7 +8471,7 @@ def test_pyside_admin_prompt_validation_warns_on_missing_required_variables(tmp_
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(9)
     window.window.findChild(qt_widgets.QPushButton, "AdminStudioPromptTemplateButton_answer_summary_user").click()
@@ -8352,7 +8490,6 @@ def test_pyside_admin_prompt_validation_warns_on_missing_required_variables(tmp_
     assert validation.text() == "JSON/text prompt looks ready."
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_prompt_editor_footer_tracks_cursor_and_format(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -8380,7 +8517,7 @@ def test_pyside_admin_prompt_editor_footer_tracks_cursor_and_format(tmp_path: Pa
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(9)
     window.window.findChild(qt_widgets.QPushButton, "AdminStudioPromptTemplateButton_answer_summary_user").click()
@@ -8409,7 +8546,6 @@ def test_pyside_admin_prompt_editor_footer_tracks_cursor_and_format(tmp_path: Pa
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_admin_prompt_editor_format_dropdown_and_expand_dialog(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -8435,7 +8571,7 @@ def test_pyside_admin_prompt_editor_format_dropdown_and_expand_dialog(tmp_path: 
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(9)
     window.window.findChild(qt_widgets.QPushButton, "AdminStudioPromptTemplateButton_answer_summary_user").click()
@@ -8465,7 +8601,6 @@ def test_pyside_admin_prompt_editor_format_dropdown_and_expand_dialog(tmp_path: 
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_admin_prompt_inspector_tabs_show_variables_and_activity(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -8491,7 +8626,7 @@ def test_pyside_admin_prompt_inspector_tabs_show_variables_and_activity(tmp_path
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(9)
     window.window.findChild(qt_widgets.QPushButton, "AdminStudioPromptTemplateButton_answer_summary_user").click()
@@ -8508,7 +8643,6 @@ def test_pyside_admin_prompt_inspector_tabs_show_variables_and_activity(tmp_path
     assert "Save Draft updates version history" in _widget_text(tabs.widget(1))
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_prompt_preview_modal_renders_sample_prompt(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -8538,7 +8672,7 @@ def test_pyside_admin_prompt_preview_modal_renders_sample_prompt(tmp_path: Path,
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(9)
     window.window.findChild(qt_widgets.QPushButton, "AdminStudioPromptTemplateButton_answer_summary_user").click()
@@ -8558,7 +8692,6 @@ def test_pyside_admin_prompt_preview_modal_renders_sample_prompt(tmp_path: Path,
     assert "Unresolved variables: missing_var" in text
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_version_history_dialog_shows_prompt_versions(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -8585,7 +8718,7 @@ def test_pyside_admin_version_history_dialog_shows_prompt_versions(tmp_path: Pat
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(9)
     window.window.findChild(qt_widgets.QPushButton, "AdminStudioPromptTemplateButton_answer_summary_user").click()
@@ -8606,7 +8739,6 @@ def test_pyside_admin_version_history_dialog_shows_prompt_versions(tmp_path: Pat
     assert "Changed prompt template" in text
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_global_version_history_covers_admin_artifact_types(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -8633,7 +8765,7 @@ def test_pyside_admin_global_version_history_covers_admin_artifact_types(tmp_pat
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
 
     button = window.window.findChild(qt_widgets.QPushButton, "AdminStudioGlobalVersionHistoryButton")
 
@@ -8652,7 +8784,6 @@ def test_pyside_admin_global_version_history_covers_admin_artifact_types(tmp_pat
     assert len(dialog.findChildren(qt_widgets.QFrame, "AdminStudioVersionHistoryEntry")) >= 4
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_discard_confirmation_modal_lists_lost_changes(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -8679,7 +8810,7 @@ def test_pyside_admin_discard_confirmation_modal_lists_lost_changes(tmp_path: Pa
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(9)
     window.admin_edit_button.click()
@@ -8708,7 +8839,6 @@ def test_pyside_admin_discard_confirmation_modal_lists_lost_changes(tmp_path: Pa
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_admin_add_track_modal_creates_draft_track(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -8734,7 +8864,7 @@ def test_pyside_admin_add_track_modal_creates_draft_track(tmp_path: Path, monkey
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
 
     add_track = window.window.findChild(qt_widgets.QPushButton, "AdminStudioAddTrackButton")
     assert add_track is not None
@@ -8758,7 +8888,6 @@ def test_pyside_admin_add_track_modal_creates_draft_track(tmp_path: Path, monkey
     assert "Unsaved changes:" in window.admin_unsaved_pill.text()
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_advanced_json_selects_file_and_shows_readonly_viewer(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -8786,7 +8915,7 @@ def test_pyside_admin_advanced_json_selects_file_and_shows_readonly_viewer(tmp_p
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(11)
 
@@ -8820,7 +8949,6 @@ def test_pyside_admin_advanced_json_selects_file_and_shows_readonly_viewer(tmp_p
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_admin_advanced_json_copy_button_copies_visible_viewer_text(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -8846,7 +8974,7 @@ def test_pyside_admin_advanced_json_copy_button_copies_visible_viewer_text(tmp_p
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(11)
     window.window.findChild(qt_widgets.QPushButton, "AdminStudioJsonFileButton_deepseek_prompts_json").click()
@@ -8864,7 +8992,6 @@ def test_pyside_admin_advanced_json_copy_button_copies_visible_viewer_text(tmp_p
     assert "Copied deepseek_prompts.json" in status.text()
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_advanced_json_expand_opens_read_only_viewer(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -8891,7 +9018,7 @@ def test_pyside_admin_advanced_json_expand_opens_read_only_viewer(tmp_path: Path
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(11)
     window.window.findChild(qt_widgets.QPushButton, "AdminStudioJsonFileButton_deepseek_prompts_json").click()
@@ -8912,7 +9039,6 @@ def test_pyside_admin_advanced_json_expand_opens_read_only_viewer(tmp_path: Path
     assert expanded.toPlainText() == viewer.toPlainText()
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_advanced_json_marks_selected_file_and_copies_detail_path(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -8939,7 +9065,7 @@ def test_pyside_admin_advanced_json_marks_selected_file_and_copies_detail_path(t
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(11)
 
@@ -8966,7 +9092,6 @@ def test_pyside_admin_advanced_json_marks_selected_file_and_copies_detail_path(t
     assert "Copied path for deepseek_prompts.json" in copy_status.text()
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_advanced_json_mockup_summary_and_issue_panels(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -8996,7 +9121,7 @@ def test_pyside_admin_advanced_json_mockup_summary_and_issue_panels(tmp_path: Pa
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(11)
 
@@ -9031,7 +9156,6 @@ def test_pyside_admin_advanced_json_mockup_summary_and_issue_panels(tmp_path: Pa
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_admin_advanced_json_issue_card_jumps_to_problem_line(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -9059,7 +9183,7 @@ def test_pyside_admin_advanced_json_issue_card_jumps_to_problem_line(tmp_path: P
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(11)
 
@@ -9076,7 +9200,6 @@ def test_pyside_admin_advanced_json_issue_card_jumps_to_problem_line(tmp_path: P
     assert "Line 4" in footer.text()
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_json_editor_validates_and_saves_draft_payload(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -9103,7 +9226,7 @@ def test_pyside_admin_json_editor_validates_and_saves_draft_payload(tmp_path: Pa
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(11)
     window.window.findChild(qt_widgets.QPushButton, "AdminStudioJsonFileButton_deepseek_prompts_json").click()
@@ -9146,7 +9269,6 @@ def test_pyside_admin_json_editor_validates_and_saves_draft_payload(tmp_path: Pa
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_admin_advanced_json_uses_cards_without_legacy_table(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -9172,7 +9294,7 @@ def test_pyside_admin_advanced_json_uses_cards_without_legacy_table(tmp_path: Pa
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(11)
 
@@ -9181,7 +9303,6 @@ def test_pyside_admin_advanced_json_uses_cards_without_legacy_table(tmp_path: Pa
     assert window.window.findChild(qt_widgets.QTableWidget, "AdminStudioAdvancedTable") is None
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_admin_discard_requires_confirmation_and_reverts_table_edits(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -9208,7 +9329,7 @@ def test_pyside_admin_discard_requires_confirmation_and_reverts_table_edits(tmp_
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Admin")
     questions_table = window.window.findChild(qt_widgets.QTableWidget, "AdminStudioQuestionsTable")
     window.admin_edit_button.click()
     questions_table.item(0, 4).setText("Changed question?")
@@ -9229,7 +9350,6 @@ def test_pyside_admin_discard_requires_confirmation_and_reverts_table_edits(tmp_
     assert window.admin_edit_mode is False
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_window_uses_native_title_minimize_and_maximize_controls() -> None:
     class FakeWindowType:
@@ -9256,7 +9376,6 @@ def test_pyside_window_uses_native_title_minimize_and_maximize_controls() -> Non
     assert flags & FakeWindowType.WindowCloseButtonHint
     assert not flags & FakeWindowType.FramelessWindowHint
 
-
 def test_pyside_window_show_opens_main_window_maximized() -> None:
     window = pyside_interview_app.PySideInterviewWindow.__new__(pyside_interview_app.PySideInterviewWindow)
     calls: list[str] = []
@@ -9273,7 +9392,6 @@ def test_pyside_window_show_opens_main_window_maximized() -> None:
     window.show()
 
     assert calls == ["fit", "showMaximized", "schedule_notifications", "schedule_recording_preload"]
-
 
 def test_pyside_window_schedules_startup_notifications_once_after_show() -> None:
     window = pyside_interview_app.PySideInterviewWindow.__new__(pyside_interview_app.PySideInterviewWindow)
@@ -9296,7 +9414,6 @@ def test_pyside_window_schedules_startup_notifications_once_after_show() -> None
     window._schedule_startup_notifications()
 
     assert calls == ["timer:0", "notifications"]
-
 
 def test_pyside_window_can_defer_secondary_pages_until_navigation(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -9350,7 +9467,6 @@ def test_pyside_window_can_defer_secondary_pages_until_navigation(tmp_path: Path
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_window_fit_keeps_maximized_state_intact() -> None:
     window = pyside_interview_app.PySideInterviewWindow.__new__(pyside_interview_app.PySideInterviewWindow)
 
@@ -9386,7 +9502,6 @@ def test_pyside_window_fit_keeps_maximized_state_intact() -> None:
     assert fake_window.maximum_size_calls == 0
     assert fake_window.resize_calls == 0
     assert fake_window.move_calls == 0
-
 
 def test_pyside_window_fit_does_not_cap_normal_window_maximum_size() -> None:
     window = pyside_interview_app.PySideInterviewWindow.__new__(pyside_interview_app.PySideInterviewWindow)
@@ -9461,7 +9576,6 @@ def test_pyside_window_fit_does_not_cap_normal_window_maximum_size() -> None:
     assert fake_window.resize_calls == 0
     assert fake_window.move_calls == 1
 
-
 def test_pyside_history_generate_offer_button_prefills_offer_wizard(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -9483,7 +9597,7 @@ def test_pyside_history_generate_offer_button_prefills_offer_wizard(tmp_path: Pa
         history_path=history_path,
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Candidates")
 
     button = next(
         child
@@ -9501,7 +9615,6 @@ def test_pyside_history_generate_offer_button_prefills_offer_wizard(tmp_path: Pa
     assert window.offer_fields["position"].text() == "Preschool Teacher"
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_history_offer_generation_updates_history_status(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -9528,7 +9641,7 @@ def test_pyside_history_offer_generation_updates_history_status(tmp_path: Path) 
         history_path=history_path,
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Offers")
     notifications = []
 
     class FakeNotifications:
@@ -9556,7 +9669,6 @@ def test_pyside_history_offer_generation_updates_history_status(tmp_path: Path) 
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_rating_notification_emits_for_hire_and_borderline_only(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -9567,7 +9679,7 @@ def test_pyside_rating_notification_emits_for_hire_and_borderline_only(tmp_path:
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     notifications = []
 
     class FakeNotifications:
@@ -9604,7 +9716,6 @@ def test_pyside_rating_notification_emits_for_hire_and_borderline_only(tmp_path:
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_live_question_wraps_scores_inside_vertical_scroll_area(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -9616,7 +9727,7 @@ def test_pyside_live_question_wraps_scores_inside_vertical_scroll_area(tmp_path:
         history_path=tmp_path / "missing-history.json",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
 
     window.session_index = 1
     window._render_live_question_page()
@@ -9632,7 +9743,6 @@ def test_pyside_live_question_wraps_scores_inside_vertical_scroll_area(tmp_path:
     assert any("consent-oriented strategies" in label.text() for label in score_labels)
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_contract_documents_supported_desktop_surface() -> None:
     contract_text = Path("contracts/pyside_interview_app.contract.yaml").read_text(encoding="utf-8")
@@ -9698,7 +9808,6 @@ def _docx_text(path: Path) -> str:
             chunks.extend(cell.text for cell in row.cells)
     return "\n".join(chunks)
 
-
 def test_pyside_staffing_dashboard_imports_seed_and_shows_metrics(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -9734,7 +9843,7 @@ def test_pyside_staffing_dashboard_imports_seed_and_shows_metrics(tmp_path: Path
         school_options=["Hawthorne"],
     )
 
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Staffing")
     labels = [label.text() for label in window.stack.widget(3).findChildren(qt_widgets.QLabel)]
     table = window.window.findChild(qt_widgets.QTableWidget, "PySideStaffingWorkbookBoard")
 
@@ -9750,7 +9859,6 @@ def test_pyside_staffing_dashboard_imports_seed_and_shows_metrics(tmp_path: Path
     assert table.item(1, 3).text() == "need_now"
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mutating_db(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -9810,7 +9918,7 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
         school_options=["Hawthorne"],
     )
 
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
     assert "Staffing" in nav_items
     assert "Staffing v2" in nav_items
@@ -10072,7 +10180,6 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_staffing_v2_dashboard_scrollbars_have_scrollable_range(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -10112,7 +10219,7 @@ def test_pyside_staffing_v2_dashboard_scrollbars_have_scrollable_range(
         school_options=["Hawthorne"],
     )
 
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     window.window.resize(1280, 700)
     window.window.show()
     nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
@@ -10243,7 +10350,6 @@ def test_pyside_staffing_v2_dashboard_scrollbars_have_scrollable_range(
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_staffing_v2_full_app_selection_resyncs_shared_page_scrollbars(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -10285,7 +10391,7 @@ def test_pyside_staffing_v2_full_app_selection_resyncs_shared_page_scrollbars(
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
     staffing_index = nav_items.index("Staffing v2")
     window.sidebar.setCurrentRow(staffing_index)
@@ -10315,7 +10421,6 @@ def test_pyside_staffing_v2_full_app_selection_resyncs_shared_page_scrollbars(
     assert window.stack.currentWidget() is page
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_staffing_v2_notifications_nav_opens_rule_dashboard_and_editor(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -10371,7 +10476,7 @@ def test_pyside_staffing_v2_notifications_nav_opens_rule_dashboard_and_editor(
         school_options=["Hawthorne"],
     )
 
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
     window.sidebar.setCurrentRow(nav_items.index("Staffing v2"))
     page = window.stack.currentWidget()
@@ -10413,7 +10518,6 @@ def test_pyside_staffing_v2_notifications_nav_opens_rule_dashboard_and_editor(
 
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_staffing_v2_notifications_filters_chips_preview_and_test_send(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -10477,7 +10581,7 @@ def test_pyside_staffing_v2_notifications_filters_chips_preview_and_test_send(
         school_options=["Hawthorne"],
     )
 
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
     window.sidebar.setCurrentRow(nav_items.index("Staffing v2"))
     page = window.stack.currentWidget()
@@ -10554,7 +10658,6 @@ def test_pyside_staffing_v2_notifications_filters_chips_preview_and_test_send(
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_staffing_v2_notifications_editor_saves_rule_changes(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -10584,7 +10687,7 @@ def test_pyside_staffing_v2_notifications_editor_saves_rule_changes(
         school_options=["Hawthorne"],
     )
 
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
     window.sidebar.setCurrentRow(nav_items.index("Staffing v2"))
     page = window.stack.currentWidget()
@@ -10695,7 +10798,7 @@ def test_pyside_staffing_v2_classrooms_dashboard_uses_new_shell_and_db_rows(
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
     window.sidebar.setCurrentRow(nav_items.index("Staffing v2"))
     app.processEvents()
@@ -10851,7 +10954,6 @@ def test_pyside_staffing_v2_classrooms_dashboard_uses_new_shell_and_db_rows(
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_staffing_v2_add_classroom_dialog_creates_classroom_through_service(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -10876,7 +10978,7 @@ def test_pyside_staffing_v2_add_classroom_dialog_creates_classroom_through_servi
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
     window.sidebar.setCurrentRow(nav_items.index("Staffing v2"))
     app.processEvents()
@@ -10915,7 +11017,6 @@ def test_pyside_staffing_v2_add_classroom_dialog_creates_classroom_through_servi
     assert {"Sunflower", "18", "0", "Don't Need"} <= table_text
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_staffing_v2_classrooms_filter_side_panel_filters_rows_without_mutating_db(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -10970,7 +11071,7 @@ def test_pyside_staffing_v2_classrooms_filter_side_panel_filters_rows_without_mu
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
     window.sidebar.setCurrentRow(nav_items.index("Staffing v2"))
     app.processEvents()
@@ -11057,7 +11158,6 @@ def test_pyside_staffing_v2_classrooms_filter_side_panel_filters_rows_without_mu
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_staffing_v2_classrooms_paginates_and_saves_detail_without_assignment_mutation(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -11086,7 +11186,7 @@ def test_pyside_staffing_v2_classrooms_paginates_and_saves_detail_without_assign
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
     window.sidebar.setCurrentRow(nav_items.index("Staffing v2"))
     app.processEvents()
@@ -11150,7 +11250,6 @@ def test_pyside_staffing_v2_classrooms_paginates_and_saves_detail_without_assign
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_staffing_v2_add_position_dialog_creates_need_now_position_through_service(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -11193,7 +11292,7 @@ def test_pyside_staffing_v2_add_position_dialog_creates_need_now_position_throug
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
     window.sidebar.setCurrentRow(nav_items.index("Staffing v2"))
     app.processEvents()
@@ -11247,7 +11346,6 @@ def test_pyside_staffing_v2_add_position_dialog_creates_need_now_position_throug
     assert "Teacher 2" in table_text
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_staffing_v2_add_position_submit_immediately_shows_created_position_when_filters_are_stale(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -11331,7 +11429,6 @@ def test_pyside_staffing_v2_add_position_submit_immediately_shows_created_positi
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_staffing_v2_delete_position_removes_accidental_director(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -11408,7 +11505,6 @@ def test_pyside_staffing_v2_delete_position_removes_accidental_director(
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_staffing_v2_position_detail_drawer_opens_from_position_row(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -11457,7 +11553,7 @@ def test_pyside_staffing_v2_position_detail_drawer_opens_from_position_row(
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
     window.sidebar.setCurrentRow(nav_items.index("Staffing v2"))
     app.processEvents()
@@ -11521,7 +11617,6 @@ def test_pyside_staffing_v2_position_detail_drawer_opens_from_position_row(
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_staffing_v2_position_drawer_wires_open_and_edit_actions(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -11546,7 +11641,7 @@ def test_pyside_staffing_v2_position_drawer_wires_open_and_edit_actions(
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
     window.sidebar.setCurrentRow(nav_items.index("Staffing v2"))
     app.processEvents()
@@ -11580,7 +11675,6 @@ def test_pyside_staffing_v2_position_drawer_wires_open_and_edit_actions(
     assert _staffing_row_for_position(refreshed_table, "Teacher 1A") == 0
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_staffing_v2_mark_coming_dialog_saves_through_service(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -11630,7 +11724,7 @@ def test_pyside_staffing_v2_mark_coming_dialog_saves_through_service(
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
     window.sidebar.setCurrentRow(nav_items.index("Staffing v2"))
     app.processEvents()
@@ -11691,7 +11785,6 @@ def test_pyside_staffing_v2_mark_coming_dialog_saves_through_service(
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_staffing_v2_mark_filled_dialog_uses_coming_start_date(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -11721,7 +11814,7 @@ def test_pyside_staffing_v2_mark_filled_dialog_uses_coming_start_date(
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
     window.sidebar.setCurrentRow(nav_items.index("Staffing v2"))
     app.processEvents()
@@ -11768,7 +11861,6 @@ def test_pyside_staffing_v2_mark_filled_dialog_uses_coming_start_date(
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_staffing_v2_manage_filled_dialog_selects_next_workflow(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -11798,7 +11890,7 @@ def test_pyside_staffing_v2_manage_filled_dialog_selects_next_workflow(
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
     window.sidebar.setCurrentRow(nav_items.index("Staffing v2"))
     app.processEvents()
@@ -11914,7 +12006,6 @@ def test_pyside_staffing_v2_manage_filled_dialog_selects_next_workflow(
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_staffing_v2_replace_today_reopens_need_now_and_clears_person(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -11942,7 +12033,7 @@ def test_pyside_staffing_v2_replace_today_reopens_need_now_and_clears_person(
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
     window.sidebar.setCurrentRow(nav_items.index("Staffing v2"))
     app.processEvents()
@@ -11977,7 +12068,6 @@ def test_pyside_staffing_v2_replace_today_reopens_need_now_and_clears_person(
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_staffing_v2_update_permit_dialog_saves_people_permit_details(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -12006,7 +12096,7 @@ def test_pyside_staffing_v2_update_permit_dialog_saves_people_permit_details(
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
     window.sidebar.setCurrentRow(nav_items.index("Staffing v2"))
     app.processEvents()
@@ -12058,7 +12148,6 @@ def test_pyside_staffing_v2_update_permit_dialog_saves_people_permit_details(
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_staffing_v2_mark_need_now_dialog_clears_replacement(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -12087,7 +12176,7 @@ def test_pyside_staffing_v2_mark_need_now_dialog_clears_replacement(
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
     window.sidebar.setCurrentRow(nav_items.index("Staffing v2"))
     app.processEvents()
@@ -12137,7 +12226,6 @@ def test_pyside_staffing_v2_mark_need_now_dialog_clears_replacement(
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_staffing_v2_people_dashboard_renders_employee_management_from_db(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -12181,7 +12269,7 @@ def test_pyside_staffing_v2_people_dashboard_renders_employee_management_from_db
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne", "North Long Beach"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
     window.sidebar.setCurrentRow(nav_items.index("Staffing v2"))
     app.processEvents()
@@ -12363,7 +12451,7 @@ def test_pyside_staffing_v2_add_person_dialog_creates_person_through_service(
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
     window.sidebar.setCurrentRow(nav_items.index("Staffing v2"))
     app.processEvents()
@@ -12471,7 +12559,7 @@ def test_pyside_staffing_v2_assignment_history_dashboard_renders_history_from_db
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
     window.sidebar.setCurrentRow(nav_items.index("Staffing v2"))
     app.processEvents()
@@ -12721,7 +12809,7 @@ def test_pyside_staffing_v2_validation_dashboard_and_filter_drawer_use_existing_
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
     window.sidebar.setCurrentRow(nav_items.index("Staffing v2"))
     app.processEvents()
@@ -12964,7 +13052,7 @@ def test_pyside_history_offer_actions_advance_generated_and_approved_rows(tmp_pa
         history_path=history_path,
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     window.notification_service = FakeNotifications()
 
     window._open_history_offer(model.home.history_rows[0])
@@ -12985,7 +13073,6 @@ def test_pyside_history_offer_actions_advance_generated_and_approved_rows(tmp_pa
     assert approved_payload["offer_path"].endswith("Latoya Nugent Offer.docx")
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_staffing_open_action_refreshes_dashboard(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -13020,7 +13107,7 @@ def test_pyside_staffing_open_action_refreshes_dashboard(tmp_path: Path, monkeyp
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Staffing")
     table = window.window.findChild(qt_widgets.QTableWidget, "PySideStaffingWorkbookBoard")
     button = _staffing_button_for_position(table, "Teacher 1")
 
@@ -13036,7 +13123,6 @@ def test_pyside_staffing_open_action_refreshes_dashboard(tmp_path: Path, monkeyp
     assert any("Open positions: 1" in text for text in labels)
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_director_staffing_mode_uses_same_staffing_page_only(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -13097,7 +13183,6 @@ def test_pyside_director_staffing_mode_uses_same_staffing_page_only(
     assert action_button.text() == "Mark Need Now"
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_director_staffing_mode_filters_to_assigned_school(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -13169,7 +13254,6 @@ def test_pyside_director_staffing_mode_filters_to_assigned_school(
     window.window.close()
     app.processEvents()
 
-
 def test_staffing_db_path_for_school_uses_safe_school_specific_names(tmp_path: Path) -> None:
     base_path = tmp_path / "staffing_dashboard.sqlite3"
 
@@ -13180,7 +13264,6 @@ def test_staffing_db_path_for_school_uses_safe_school_specific_names(tmp_path: P
         tmp_path / "staffing_dashboard_long_beach_bixby.sqlite3"
     )
     assert pyside_interview_app.staffing_db_path_for_school("", base_path=base_path) == base_path
-
 
 def test_school_specific_staffing_db_bootstraps_from_existing_base_db(tmp_path: Path) -> None:
     base_path = tmp_path / "staffing_dashboard.sqlite3"
@@ -13412,7 +13495,6 @@ def test_director_staffing_poll_imports_review_score_dismissal_and_removes_pendi
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_staffing_v2_summary_cards_follow_selected_school(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -13460,7 +13542,7 @@ def test_pyside_staffing_v2_summary_cards_follow_selected_school(
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne", "Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
     window.sidebar.setCurrentRow(nav_items.index("Staffing v2"))
     app.processEvents()
@@ -13568,7 +13650,7 @@ def test_pyside_staffing_v2_director_candidates_follow_admin_school_selector(
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne", "North Long Beach", "Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
     window.sidebar.setCurrentRow(nav_items.index("Staffing v2"))
     app.processEvents()
@@ -13609,7 +13691,6 @@ def test_pyside_staffing_v2_director_candidates_follow_admin_school_selector(
     assert [table.item(row, 0).text() for row in range(table.rowCount())] == ["Palmdale Candidate"]
     window.window.close()
     app.processEvents()
-
 
 def test_staffing_v2_director_pending_table_uses_compact_readable_columns(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -13658,7 +13739,6 @@ def test_staffing_v2_director_pending_table_uses_compact_readable_columns(tmp_pa
     page.widget.close()
     app.processEvents()
 
-
 def test_pyside_staffing_action_button_exposes_secondary_actions(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -13693,7 +13773,7 @@ def test_pyside_staffing_action_button_exposes_secondary_actions(tmp_path: Path,
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Staffing")
     table = window.window.findChild(qt_widgets.QTableWidget, "PySideStaffingWorkbookBoard")
 
     coming_menu_labels = [action.text() for action in _staffing_button_for_position(table, "Teacher 1").menu().actions()]
@@ -13705,7 +13785,6 @@ def test_pyside_staffing_action_button_exposes_secondary_actions(tmp_path: Path,
     assert "Mark Not Needed" in replace_menu_labels
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_staffing_dashboard_groups_by_school_and_colors_statuses(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -13731,7 +13810,7 @@ def test_pyside_staffing_dashboard_groups_by_school_and_colors_statuses(tmp_path
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne", "Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Staffing")
     tabs = window.window.findChild(qt_widgets.QTabWidget, "PySideStaffingSchoolTabs")
     first_table = tabs.widget(0).findChild(qt_widgets.QTableWidget, "PySideStaffingWorkbookBoard")
     second_table = tabs.widget(1).findChild(qt_widgets.QTableWidget, "PySideStaffingWorkbookBoard")
@@ -13744,7 +13823,6 @@ def test_pyside_staffing_dashboard_groups_by_school_and_colors_statuses(tmp_path
     assert second_table.item(second_row, 2).background().color().isValid()
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_staffing_dashboard_renders_workbook_layout_tabs_and_actual_names(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -13818,7 +13896,7 @@ def test_pyside_staffing_dashboard_renders_workbook_layout_tabs_and_actual_names
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Staffing")
     tabs = window.window.findChild(qt_widgets.QTabWidget, "PySideStaffingSchoolTabs")
     selector = window.window.findChild(qt_widgets.QComboBox, "PySideStaffingSchoolSelector")
     hawthorne = tabs.widget(0)
@@ -13842,7 +13920,6 @@ def test_pyside_staffing_dashboard_renders_workbook_layout_tabs_and_actual_names
     assert any("3 to 1 (infant units needed)" in text for text in labels)
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_staffing_dashboard_refreshes_partial_seed_and_hides_color_key(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -13910,7 +13987,7 @@ def test_pyside_staffing_dashboard_refreshes_partial_seed_and_hides_color_key(
         school_options=["Hawthorne"],
     )
 
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Staffing")
     tabs = window.window.findChild(qt_widgets.QTabWidget, "PySideStaffingSchoolTabs")
     selector = window.window.findChild(qt_widgets.QComboBox, "PySideStaffingSchoolSelector")
     labels = [label.text() for label in window.stack.widget(3).findChildren(qt_widgets.QLabel)]
@@ -13929,7 +14006,6 @@ def test_pyside_staffing_dashboard_refreshes_partial_seed_and_hides_color_key(
     assert "Need Now - Job Opening" not in labels
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_staffing_classroom_detail_matches_dashboard_mockup_shell(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -14015,7 +14091,7 @@ def test_pyside_staffing_classroom_detail_matches_dashboard_mockup_shell(
         school_options=["Hawthorne"],
     )
 
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Staffing")
     page = window.stack.widget(3)
     school_selector = page.findChild(qt_widgets.QComboBox, "PySideStaffingSchoolSelector")
     classroom_selector = page.findChild(qt_widgets.QComboBox, "PySideStaffingClassroomSelector")
@@ -14062,7 +14138,6 @@ def test_pyside_staffing_classroom_detail_matches_dashboard_mockup_shell(
     assert _staffing_button_for_position(table, "Aide 1").text() == "Mark Coming"
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_staffing_row_click_opens_mockup_detail_drawer(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -14111,7 +14186,7 @@ def test_pyside_staffing_row_click_opens_mockup_detail_drawer(
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Staffing")
     table = window.staffing_positions_table
     drawer = window.staffing_detail_drawer
 
@@ -14184,7 +14259,6 @@ def test_pyside_staffing_row_click_opens_mockup_detail_drawer(
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_mark_coming_uses_guided_dialog_and_saves_position(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -14225,7 +14299,7 @@ def test_pyside_mark_coming_uses_guided_dialog_and_saves_position(
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Staffing")
     assignment_id = next(row.id for row in window.staffing_store.list_assignments() if row.position_name == "Aide 1")
     monkeypatch.setattr(
         window.QtWidgets.QInputDialog,
@@ -14260,7 +14334,6 @@ def test_pyside_mark_coming_uses_guided_dialog_and_saves_position(
     assert updated.start_date == "2026-08-01"
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_replace_employee_uses_guided_dialog_and_saves_replacement(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -14304,7 +14377,7 @@ def test_pyside_replace_employee_uses_guided_dialog_and_saves_replacement(
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Palmdale"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Staffing")
     assignment_id = next(row.id for row in window.staffing_store.list_assignments() if row.position_name == "Teacher 2")
     monkeypatch.setattr(
         window.QtWidgets.QInputDialog,
@@ -14361,7 +14434,6 @@ def test_pyside_replace_employee_uses_guided_dialog_and_saves_replacement(
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_update_permit_uses_guided_dialog_and_saves_people_status(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -14402,7 +14474,7 @@ def test_pyside_update_permit_uses_guided_dialog_and_saves_people_status(
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Staffing")
     assignment_id = next(row.id for row in window.staffing_store.list_assignments() if row.position_name == "Teacher 3")
     monkeypatch.setattr(
         window.QtWidgets.QInputDialog,
@@ -14428,7 +14500,6 @@ def test_pyside_update_permit_uses_guided_dialog_and_saves_people_status(
     assert updated.permit_status == "teacher_permit_approved"
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_staffing_dashboard_visual_render_uses_real_seed_from_any_cwd(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -14469,7 +14540,7 @@ def test_pyside_staffing_dashboard_visual_render_uses_real_seed_from_any_cwd(
         school_options=["Hawthorne"],
     )
 
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Staffing")
     window.window.resize(1600, 1100)
     window.window.show()
     app.processEvents()
@@ -14496,7 +14567,6 @@ def test_pyside_staffing_dashboard_visual_render_uses_real_seed_from_any_cwd(
     window.window.close()
     app.processEvents()
 
-
 def test_pyside_staffing_action_surfaces_exact_service_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -14509,14 +14579,13 @@ def test_pyside_staffing_action_surfaces_exact_service_error(tmp_path: Path, mon
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Staffing")
 
     window._run_staffing_action(lambda service: service.open_position(999), "unused")
 
     assert "Assignment not found." in window.staffing_status_label.text()
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_staffing_actions_use_notification_service(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -14563,7 +14632,7 @@ def test_pyside_staffing_actions_use_notification_service(tmp_path: Path, monkey
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Staffing")
     table = window.window.findChild(qt_widgets.QTableWidget, "PySideStaffingWorkbookBoard")
 
     _staffing_button_for_position(table, "Teacher 1").click()
@@ -14573,7 +14642,6 @@ def test_pyside_staffing_actions_use_notification_service(tmp_path: Path, monkey
     assert notifications[0][0] == "staffing.assignment.need_now"
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_staffing_uses_single_draggable_colored_workbook_table(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -14601,7 +14669,7 @@ def test_pyside_staffing_uses_single_draggable_colored_workbook_table(tmp_path: 
         school_options=["Hawthorne", "Palmdale"],
     )
 
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Staffing")
     tabs = window.window.findChild(qt_widgets.QTabWidget, "PySideStaffingSchoolTabs")
     workbook_tables = window.window.findChildren(qt_widgets.QTableWidget, "PySideStaffingWorkbookBoard")
     flat_tables = window.window.findChildren(qt_widgets.QTableWidget, "PySideStaffingAssignments")
@@ -14621,7 +14689,6 @@ def test_pyside_staffing_uses_single_draggable_colored_workbook_table(tmp_path: 
     assert workbook_tables[0].item(_staffing_row_for_position(workbook_tables[0], "Teacher 1"), 4).flags() & qt_core.Qt.ItemFlag.ItemIsDragEnabled
     window.window.close()
     app.processEvents()
-
 
 def test_pyside_staffing_confirm_move_updates_source_and_target(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -14657,7 +14724,7 @@ def test_pyside_staffing_confirm_move_updates_source_and_target(tmp_path: Path, 
         history_path=tmp_path / "interview_history.sqlite3",
         school_options=["Hawthorne"],
     )
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = _pyside_window_on_page(model, "Staffing")
     yes = window.QtWidgets.QMessageBox.StandardButton.Yes
     monkeypatch.setattr(window.QtWidgets.QMessageBox, "question", lambda *_args, **_kwargs: yes)
     assignments = window.staffing_store.list_assignments()
@@ -14674,7 +14741,6 @@ def test_pyside_staffing_confirm_move_updates_source_and_target(tmp_path: Path, 
     assert target.person_name == "Angie"
     window.window.close()
     app.processEvents()
-
 
 def test_staffing_v2_director_interviews_sync_pending_history_and_record_completion(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch

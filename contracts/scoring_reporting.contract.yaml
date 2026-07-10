@@ -1608,11 +1608,15 @@ classes:
     exceptions: []
     side_effects: none
   - name: export_basic_interview_notes
-    description: Generate a lightweight non-DeepSeek interview notes DOCX containing
-      candidate header details, overall interviewer score, hiring decision, interviewer
-      rating table, interview transcript text for pre-scored custom and scored
-      questions, and manual notes for custom/non-scored questions after the scored
-      block, without AI-generated summaries or advisory scoring sections.
+    description: Generate a lightweight non-DeepSeek interview notes DOCX using
+      the structured behavioral interview notes layout with a title/subtitle,
+      candidate snapshot table, education and experience summary table, score
+      summary table, and sequenced candidate answer blocks with question metadata,
+      full-width question text, and full-width candidate answer boxes, excluding
+      the intro script. The export includes transcript text for pre-scored custom
+      and scored questions plus manual notes for custom/non-scored questions after
+      the scored block, without AI-generated summaries or advisory scoring
+      sections.
     locked: false
     inputs:
       rubric:

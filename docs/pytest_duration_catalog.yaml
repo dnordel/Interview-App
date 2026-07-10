@@ -3489,6 +3489,14 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: true
   placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_history_import_indeed_transcript_opens_review_for_existing_candidate
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_history_import_regenerates_basic_notes_and_deepseek_job
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_show_schedules_recording_interface_preload_once
   duration_seconds_n2: 0.001
   gui_heavy: true
@@ -3517,7 +3525,23 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_recording_starts_after_intro_not_on_begin
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_recording_starts_on_begin_for_intro_audio_check
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_recording_start_failure_shows_audio_device_warning
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_intro_audio_check_warns_on_blank_transcription
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_intro_audio_check_ignores_interviewer_only_segments
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_system_audio_route_check_warns_when_capture_is_silent
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
@@ -4466,6 +4490,10 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_reporting_export.py::TestDocxExporterValidation::test_answer_summary_card_explains_missing_signal_advisory_rating
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_reporting_export.py::TestDocxExporterValidation::test_export_basic_interview_notes_uses_structured_template_layout
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
