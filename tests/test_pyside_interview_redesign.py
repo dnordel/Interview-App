@@ -3401,7 +3401,7 @@ def test_pyside_pages_do_not_force_content_wider_than_viewport(tmp_path: Path, m
     window.window.close()
     app.processEvents()
 
-def test_pyside_admin_studio_modern_dashboard_and_section_cards(tmp_path: Path, monkeypatch) -> None:
+def test_pyside_admin_studio_readonly_render_scenario(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
     app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
@@ -3522,6 +3522,20 @@ def test_pyside_admin_studio_modern_dashboard_and_section_cards(tmp_path: Path, 
     ]
 
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
+    backing_tables = {
+        2: "AdminStudioQuestionsTable",
+        3: "AdminStudioRubricsTable",
+        6: "AdminStudioNotificationsTable",
+        9: "AdminStudioPromptsTable",
+    }
+    for row, object_name in backing_tables.items():
+        section_list.setCurrentRow(row)
+        table = window.window.findChild(qt_widgets.QTableWidget, object_name)
+        assert table is not None
+        assert table.property("adminBackingField") is True
+        assert table.isVisibleTo(window.window) is False
+        assert table.maximumHeight() == 0
+    section_list.setCurrentRow(1)
     window.admin_edit_button.click()
     quick_link_buttons[0].click()
     assert section_list.currentItem().text() == "Notifications"
@@ -3560,8 +3574,36 @@ def test_pyside_admin_studio_modern_dashboard_and_section_cards(tmp_path: Path, 
     assert len(window.window.findChildren(qt_widgets.QFrame, "AdminStudioSignalHintGroup")) >= 1
     assert window.window.findChild(qt_widgets.QFrame, "AdminStudioSignalDetailPanel") is not None
     section_list.setCurrentRow(8)
-    assert len(window.window.findChildren(qt_widgets.QFrame, "AdminStudioModelOptionCard")) == 3
-    assert window.window.findChild(qt_widgets.QFrame, "AdminStudioSelectedModelPanel") is not None
+    model_selector = window.window.findChild(qt_widgets.QComboBox, "AdminStudioDeepseekModelSelector")
+    model_cards = window.window.findChildren(qt_widgets.QFrame, "AdminStudioModelOptionCard")
+    selected_model_panel = window.window.findChild(qt_widgets.QFrame, "AdminStudioSelectedModelPanel")
+    hardware = window.window.findChild(qt_widgets.QFrame, "AdminStudioDeepseekHardwareNotesPanel")
+    ollama = window.window.findChild(qt_widgets.QFrame, "AdminStudioDeepseekOllamaCompatibilityPanel")
+    performance = window.window.findChild(qt_widgets.QFrame, "AdminStudioDeepseekPerformancePanel")
+    selected_text = _widget_text(selected_model_panel)
+    assert len(model_cards) == 3
+    assert selected_model_panel is not None
+    assert model_selector is not None
+    assert model_selector.property("adminBackingField") is True
+    assert model_selector.isVisibleTo(window.window) is False
+    assert model_selector.maximumHeight() == 0
+    assert hardware is not None
+    assert "More RAM/VRAM improves context length" in _widget_text(hardware)
+    assert "View hardware recommendations" in _widget_text(hardware)
+    assert ollama is not None
+    assert "All listed models are allowlisted and compatible with Ollama" in _widget_text(ollama)
+    assert "View allowlisted DeepSeek models" in _widget_text(ollama)
+    assert performance is not None
+    assert "Response time" in _widget_text(performance)
+    assert "Context window" in _widget_text(performance)
+    assert "Balanced - DeepSeek R1 8B" in selected_text
+    assert "Speed: Fast" in selected_text
+    assert "Quality: Very Good" in selected_text
+    assert "Why this model?" in selected_text
+    assert "Publish restrictions" in selected_text
+    assert "Only allowlisted local Ollama DeepSeek models can be published" in selected_text
+    assert selected_model_panel.findChild(qt_widgets.QPushButton, "AdminStudioUseSelectedModelButton") is not None
+    assert selected_model_panel.findChild(qt_widgets.QPushButton, "AdminStudioViewModelDetailsButton") is not None
     fast_model_button = window.window.findChild(qt_widgets.QPushButton, "AdminStudioSelectModel_deepseek-r1_1_5b")
     assert fast_model_button is not None
     assert fast_model_button.isEnabled() is False
@@ -3593,178 +3635,6 @@ def test_pyside_admin_studio_modern_dashboard_and_section_cards(tmp_path: Path, 
     section_list.setCurrentRow(12)
     assert window.window.findChild(qt_widgets.QFrame, "AdminStudioPublishAvailabilityPanel") is not None
 
-    window.window.close()
-    app.processEvents()
-
-def test_pyside_admin_deepseek_model_screen_shows_hardware_and_ollama_guidance(tmp_path: Path, monkeypatch) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    rubric_path = _write_test_rubric(tmp_path)
-    overrides_path = _write_test_overrides(tmp_path)
-    settings_path = tmp_path / "school_offer_settings.json"
-    settings_path.write_text(json.dumps({}), encoding="utf-8")
-    prompts_path = tmp_path / "deepseek_prompts.json"
-    prompts_path.write_text(json.dumps({"answer_summary_user": "Summarize."}), encoding="utf-8")
-    app_settings_path = tmp_path / "interview_app_settings.json"
-    app_settings_path.write_text(json.dumps({"deepseek_summary_model": "deepseek-r1:8b"}), encoding="utf-8")
-    notification_rules_path = tmp_path / "notification_rules.sqlite3"
-    monkeypatch.setattr(pyside_interview_app, "DEFAULT_RUBRIC_PATH", rubric_path)
-    monkeypatch.setattr(pyside_interview_app, "QUESTIONS_OVERRIDE_PATH", overrides_path)
-    monkeypatch.setattr(pyside_interview_app, "SCHOOL_OFFER_SETTINGS_PATH", settings_path)
-    monkeypatch.setattr(pyside_interview_app, "DEEPSEEK_PROMPTS_CONFIG_PATH", prompts_path)
-    monkeypatch.setattr(pyside_interview_app, "INTERVIEW_APP_SETTINGS_PATH", app_settings_path)
-    monkeypatch.setattr(pyside_interview_app, "NOTIFICATION_RULES_PATH", notification_rules_path)
-    model = build_interview_redesign_model(
-        rubric_path=rubric_path,
-        overrides_path=overrides_path,
-        history_path=tmp_path / "missing-history.json",
-        school_options=["Palmdale"],
-    )
-    window = _pyside_window_on_page(model, "Admin")
-    section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
-    section_list.setCurrentRow(8)
-
-    hardware = window.window.findChild(qt_widgets.QFrame, "AdminStudioDeepseekHardwareNotesPanel")
-    ollama = window.window.findChild(qt_widgets.QFrame, "AdminStudioDeepseekOllamaCompatibilityPanel")
-    performance = window.window.findChild(qt_widgets.QFrame, "AdminStudioDeepseekPerformancePanel")
-
-    assert hardware is not None
-    assert "More RAM/VRAM improves context length" in _widget_text(hardware)
-    assert "View hardware recommendations" in _widget_text(hardware)
-    assert ollama is not None
-    assert "All listed models are allowlisted and compatible with Ollama" in _widget_text(ollama)
-    assert "View allowlisted DeepSeek models" in _widget_text(ollama)
-    assert performance is not None
-    assert "Response time" in _widget_text(performance)
-    assert "Context window" in _widget_text(performance)
-    window.window.close()
-    app.processEvents()
-
-def test_pyside_admin_deepseek_model_uses_cards_not_visible_dropdown(tmp_path: Path, monkeypatch) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    rubric_path = _write_test_rubric(tmp_path)
-    overrides_path = _write_test_overrides(tmp_path)
-    settings_path = tmp_path / "school_offer_settings.json"
-    settings_path.write_text(json.dumps({}), encoding="utf-8")
-    prompts_path = tmp_path / "deepseek_prompts.json"
-    prompts_path.write_text(json.dumps({"answer_summary_user": "Summarize."}), encoding="utf-8")
-    app_settings_path = tmp_path / "interview_app_settings.json"
-    app_settings_path.write_text(json.dumps({"deepseek_summary_model": "deepseek-r1:8b"}), encoding="utf-8")
-    notification_rules_path = tmp_path / "notification_rules.sqlite3"
-    monkeypatch.setattr(pyside_interview_app, "DEFAULT_RUBRIC_PATH", rubric_path)
-    monkeypatch.setattr(pyside_interview_app, "QUESTIONS_OVERRIDE_PATH", overrides_path)
-    monkeypatch.setattr(pyside_interview_app, "SCHOOL_OFFER_SETTINGS_PATH", settings_path)
-    monkeypatch.setattr(pyside_interview_app, "DEEPSEEK_PROMPTS_CONFIG_PATH", prompts_path)
-    monkeypatch.setattr(pyside_interview_app, "INTERVIEW_APP_SETTINGS_PATH", app_settings_path)
-    monkeypatch.setattr(pyside_interview_app, "NOTIFICATION_RULES_PATH", notification_rules_path)
-    model = build_interview_redesign_model(
-        rubric_path=rubric_path,
-        overrides_path=overrides_path,
-        history_path=tmp_path / "missing-history.json",
-        school_options=["Palmdale"],
-    )
-    window = _pyside_window_on_page(model, "Admin")
-    section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
-    section_list.setCurrentRow(8)
-
-    model_selector = window.window.findChild(qt_widgets.QComboBox, "AdminStudioDeepseekModelSelector")
-    assert len(window.window.findChildren(qt_widgets.QFrame, "AdminStudioModelOptionCard")) == 3
-    assert window.window.findChild(qt_widgets.QFrame, "AdminStudioSelectedModelPanel") is not None
-    assert model_selector is not None
-    assert model_selector.property("adminBackingField") is True
-    assert model_selector.isVisibleTo(window.window) is False
-    assert model_selector.maximumHeight() == 0
-    window.window.close()
-    app.processEvents()
-
-def test_pyside_admin_modern_sections_hide_legacy_backing_tables(tmp_path: Path, monkeypatch) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    rubric_path = _write_test_rubric(tmp_path)
-    overrides_path = _write_test_overrides(tmp_path)
-    settings_path = tmp_path / "school_offer_settings.json"
-    settings_path.write_text(json.dumps({"Palmdale": {"interview_notes_dir": "C:/safe/palmdale"}}), encoding="utf-8")
-    prompts_path = tmp_path / "deepseek_prompts.json"
-    prompts_path.write_text(json.dumps({"answer_summary_user": "Summarize {payload_json}."}), encoding="utf-8")
-    app_settings_path = tmp_path / "interview_app_settings.json"
-    app_settings_path.write_text(json.dumps({"deepseek_summary_model": "deepseek-r1:8b"}), encoding="utf-8")
-    notification_rules_path = tmp_path / "notification_rules.sqlite3"
-    monkeypatch.setattr(pyside_interview_app, "DEFAULT_RUBRIC_PATH", rubric_path)
-    monkeypatch.setattr(pyside_interview_app, "QUESTIONS_OVERRIDE_PATH", overrides_path)
-    monkeypatch.setattr(pyside_interview_app, "SCHOOL_OFFER_SETTINGS_PATH", settings_path)
-    monkeypatch.setattr(pyside_interview_app, "DEEPSEEK_PROMPTS_CONFIG_PATH", prompts_path)
-    monkeypatch.setattr(pyside_interview_app, "INTERVIEW_APP_SETTINGS_PATH", app_settings_path)
-    monkeypatch.setattr(pyside_interview_app, "NOTIFICATION_RULES_PATH", notification_rules_path)
-    model = build_interview_redesign_model(
-        rubric_path=rubric_path,
-        overrides_path=overrides_path,
-        history_path=tmp_path / "missing-history.json",
-        school_options=["Palmdale"],
-    )
-    window = _pyside_window_on_page(model, "Admin")
-    section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
-
-    backing_tables = {
-        2: "AdminStudioQuestionsTable",
-        3: "AdminStudioRubricsTable",
-        6: "AdminStudioNotificationsTable",
-        9: "AdminStudioPromptsTable",
-    }
-    for row, object_name in backing_tables.items():
-        section_list.setCurrentRow(row)
-        table = window.window.findChild(qt_widgets.QTableWidget, object_name)
-        assert table is not None
-        assert table.property("adminBackingField") is True
-        assert table.isVisibleTo(window.window) is False
-        assert table.maximumHeight() == 0
-
-    window.window.close()
-    app.processEvents()
-
-def test_pyside_admin_deepseek_selected_model_panel_shows_decision_details(tmp_path: Path, monkeypatch) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    rubric_path = _write_test_rubric(tmp_path)
-    overrides_path = _write_test_overrides(tmp_path)
-    settings_path = tmp_path / "school_offer_settings.json"
-    settings_path.write_text(json.dumps({}), encoding="utf-8")
-    prompts_path = tmp_path / "deepseek_prompts.json"
-    prompts_path.write_text(json.dumps({"answer_summary_user": "Summarize."}), encoding="utf-8")
-    app_settings_path = tmp_path / "interview_app_settings.json"
-    app_settings_path.write_text(json.dumps({"deepseek_summary_model": "deepseek-r1:8b"}), encoding="utf-8")
-    notification_rules_path = tmp_path / "notification_rules.sqlite3"
-    monkeypatch.setattr(pyside_interview_app, "DEFAULT_RUBRIC_PATH", rubric_path)
-    monkeypatch.setattr(pyside_interview_app, "QUESTIONS_OVERRIDE_PATH", overrides_path)
-    monkeypatch.setattr(pyside_interview_app, "SCHOOL_OFFER_SETTINGS_PATH", settings_path)
-    monkeypatch.setattr(pyside_interview_app, "DEEPSEEK_PROMPTS_CONFIG_PATH", prompts_path)
-    monkeypatch.setattr(pyside_interview_app, "INTERVIEW_APP_SETTINGS_PATH", app_settings_path)
-    monkeypatch.setattr(pyside_interview_app, "NOTIFICATION_RULES_PATH", notification_rules_path)
-    model = build_interview_redesign_model(
-        rubric_path=rubric_path,
-        overrides_path=overrides_path,
-        history_path=tmp_path / "missing-history.json",
-        school_options=["Palmdale"],
-    )
-    window = _pyside_window_on_page(model, "Admin")
-    section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
-    section_list.setCurrentRow(8)
-
-    selected_panel = window.window.findChild(qt_widgets.QFrame, "AdminStudioSelectedModelPanel")
-    text = _widget_text(selected_panel)
-
-    assert "Balanced - DeepSeek R1 8B" in text
-    assert "Speed: Fast" in text
-    assert "Quality: Very Good" in text
-    assert "Why this model?" in text
-    assert "Publish restrictions" in text
-    assert "Only allowlisted local Ollama DeepSeek models can be published" in text
-    assert selected_panel.findChild(qt_widgets.QPushButton, "AdminStudioUseSelectedModelButton") is not None
-    assert selected_panel.findChild(qt_widgets.QPushButton, "AdminStudioViewModelDetailsButton") is not None
     window.window.close()
     app.processEvents()
 
@@ -5555,7 +5425,7 @@ def test_pyside_admin_rubrics_filters_search_and_view_controls_trait_cards(tmp_p
     window.window.close()
     app.processEvents()
 
-def test_pyside_admin_signal_hints_search_and_detail_reference(tmp_path: Path, monkeypatch) -> None:
+def test_pyside_admin_signal_hints_search_detail_scenario(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
     app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
@@ -5642,9 +5512,13 @@ def test_pyside_admin_signal_hints_search_and_detail_reference(tmp_path: Path, m
 
     assert search is not None
     assert search.placeholderText() == "Search signal hints by trait, keyword, or phrase..."
+    hint_list_panel = window.window.findChild(qt_widgets.QFrame, "AdminStudioSignalHintListPanel")
     assert summary_strip is not None
+    assert hint_list_panel is not None
+    assert window.window.findChild(qt_widgets.QFrame, "AdminStudioSignalDetailPanel") is not None
+    assert window.window.findChild(qt_widgets.QTableWidget, "AdminStudioSignalsTable") is None
     assert "2 hint groups" in _widget_text(summary_strip)
-    assert "Hint Groups (2)" in _widget_text(window.window.findChild(qt_widgets.QFrame, "AdminStudioSignalHintListPanel"))
+    assert "Hint Groups (2)" in _widget_text(hint_list_panel)
     for name, button in fixed_categories.items():
         assert button is not None, name
         assert button.property("adminSignalCategory") == name
@@ -5698,41 +5572,6 @@ def test_pyside_admin_signal_hints_search_and_detail_reference(tmp_path: Path, m
     assert "Category: Guidance" in metadata.text()
     assert "Last updated:" in metadata.text()
     assert window.window.findChild(qt_widgets.QLabel, "AdminStudioSignalUsageNotes").text().startswith("Strong candidates")
-    window.window.close()
-    app.processEvents()
-
-def test_pyside_admin_signal_hints_uses_cards_without_legacy_table(tmp_path: Path, monkeypatch) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    rubric_path = _write_test_rubric(tmp_path)
-    overrides_path = _write_test_overrides(tmp_path)
-    settings_path = tmp_path / "school_offer_settings.json"
-    settings_path.write_text(json.dumps({}), encoding="utf-8")
-    prompts_path = tmp_path / "deepseek_prompts.json"
-    prompts_path.write_text(json.dumps({"answer_summary_user": "Summarize."}), encoding="utf-8")
-    app_settings_path = tmp_path / "interview_app_settings.json"
-    app_settings_path.write_text(json.dumps({"deepseek_summary_model": "deepseek-r1:8b"}), encoding="utf-8")
-    notification_rules_path = tmp_path / "notification_rules.sqlite3"
-    monkeypatch.setattr(pyside_interview_app, "DEFAULT_RUBRIC_PATH", rubric_path)
-    monkeypatch.setattr(pyside_interview_app, "QUESTIONS_OVERRIDE_PATH", overrides_path)
-    monkeypatch.setattr(pyside_interview_app, "SCHOOL_OFFER_SETTINGS_PATH", settings_path)
-    monkeypatch.setattr(pyside_interview_app, "DEEPSEEK_PROMPTS_CONFIG_PATH", prompts_path)
-    monkeypatch.setattr(pyside_interview_app, "INTERVIEW_APP_SETTINGS_PATH", app_settings_path)
-    monkeypatch.setattr(pyside_interview_app, "NOTIFICATION_RULES_PATH", notification_rules_path)
-    model = build_interview_redesign_model(
-        rubric_path=rubric_path,
-        overrides_path=overrides_path,
-        history_path=tmp_path / "missing-history.json",
-        school_options=["Palmdale"],
-    )
-    window = _pyside_window_on_page(model, "Admin")
-    section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
-    section_list.setCurrentRow(4)
-
-    assert window.window.findChild(qt_widgets.QFrame, "AdminStudioSignalHintListPanel") is not None
-    assert window.window.findChild(qt_widgets.QFrame, "AdminStudioSignalDetailPanel") is not None
-    assert window.window.findChild(qt_widgets.QTableWidget, "AdminStudioSignalsTable") is None
     window.window.close()
     app.processEvents()
 
@@ -8083,153 +7922,7 @@ def test_pyside_admin_prompt_version_note_unblocks_prompt_publish_validation(tmp
     window.window.close()
     app.processEvents()
 
-def test_pyside_admin_prompt_summary_strip_matches_mockup(tmp_path: Path, monkeypatch) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    rubric_path = _write_test_rubric(tmp_path)
-    overrides_path = _write_test_overrides(tmp_path)
-    settings_path = tmp_path / "school_offer_settings.json"
-    settings_path.write_text(json.dumps({}), encoding="utf-8")
-    prompts_path = tmp_path / "deepseek_prompts.json"
-    prompts_path.write_text(json.dumps({"answer_summary_user": "Summarize {payload_json}."}), encoding="utf-8")
-    app_settings_path = tmp_path / "interview_app_settings.json"
-    app_settings_path.write_text(json.dumps({"deepseek_summary_model": "deepseek-r1:8b"}), encoding="utf-8")
-    notification_rules_path = tmp_path / "notification_rules.sqlite3"
-    monkeypatch.setattr(pyside_interview_app, "DEFAULT_RUBRIC_PATH", rubric_path)
-    monkeypatch.setattr(pyside_interview_app, "QUESTIONS_OVERRIDE_PATH", overrides_path)
-    monkeypatch.setattr(pyside_interview_app, "SCHOOL_OFFER_SETTINGS_PATH", settings_path)
-    monkeypatch.setattr(pyside_interview_app, "DEEPSEEK_PROMPTS_CONFIG_PATH", prompts_path)
-    monkeypatch.setattr(pyside_interview_app, "INTERVIEW_APP_SETTINGS_PATH", app_settings_path)
-    monkeypatch.setattr(pyside_interview_app, "NOTIFICATION_RULES_PATH", notification_rules_path)
-    model = build_interview_redesign_model(
-        rubric_path=rubric_path,
-        overrides_path=overrides_path,
-        history_path=tmp_path / "missing-history.json",
-        school_options=["Palmdale"],
-    )
-    window = _pyside_window_on_page(model, "Admin")
-    section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
-    section_list.setCurrentRow(9)
-
-    strip = window.window.findChild(qt_widgets.QFrame, "AdminStudioPromptSummaryStrip")
-    cards = window.window.findChildren(qt_widgets.QFrame, "AdminStudioPromptSummaryCard")
-
-    assert strip is not None
-    assert len(cards) == 4
-    strip_text = _widget_text(strip)
-    assert "Variables" in strip_text
-    assert "12 tokens" in strip_text
-    assert "Preview" in strip_text
-    assert "Live preview" in strip_text
-    assert "Version review" in strip_text
-    assert "5 versions" in strip_text
-    assert "Validation" in strip_text
-    assert "warning" in strip_text.lower()
-    assert window.window.findChild(qt_widgets.QPushButton, "AdminStudioPromptSettingsButton").text() == "Prompt Settings"
-    assert window.window.findChild(qt_widgets.QPushButton, "AdminStudioPromptSummaryNewPromptButton").text() == "New Prompt"
-    window.window.close()
-    app.processEvents()
-
-def test_pyside_admin_prompt_settings_opens_prompt_settings_dialog(tmp_path: Path, monkeypatch) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    rubric_path = _write_test_rubric(tmp_path)
-    overrides_path = _write_test_overrides(tmp_path)
-    settings_path = tmp_path / "school_offer_settings.json"
-    settings_path.write_text(json.dumps({}), encoding="utf-8")
-    prompts_path = tmp_path / "deepseek_prompts.json"
-    prompts_path.write_text(json.dumps({"answer_summary_user": "Summarize {payload_json}."}), encoding="utf-8")
-    app_settings_path = tmp_path / "interview_app_settings.json"
-    app_settings_path.write_text(json.dumps({"deepseek_summary_model": "deepseek-r1:8b"}), encoding="utf-8")
-    notification_rules_path = tmp_path / "notification_rules.sqlite3"
-    monkeypatch.setattr(pyside_interview_app, "DEFAULT_RUBRIC_PATH", rubric_path)
-    monkeypatch.setattr(pyside_interview_app, "QUESTIONS_OVERRIDE_PATH", overrides_path)
-    monkeypatch.setattr(pyside_interview_app, "SCHOOL_OFFER_SETTINGS_PATH", settings_path)
-    monkeypatch.setattr(pyside_interview_app, "DEEPSEEK_PROMPTS_CONFIG_PATH", prompts_path)
-    monkeypatch.setattr(pyside_interview_app, "INTERVIEW_APP_SETTINGS_PATH", app_settings_path)
-    monkeypatch.setattr(pyside_interview_app, "NOTIFICATION_RULES_PATH", notification_rules_path)
-    model = build_interview_redesign_model(
-        rubric_path=rubric_path,
-        overrides_path=overrides_path,
-        history_path=tmp_path / "missing-history.json",
-        school_options=["Palmdale"],
-    )
-    window = _pyside_window_on_page(model, "Admin")
-    section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
-    section_list.setCurrentRow(9)
-
-    window.window.findChild(qt_widgets.QPushButton, "AdminStudioPromptSettingsButton").click()
-    app.processEvents()
-
-    dialog = next(
-        widget
-        for widget in app.topLevelWidgets()
-        if widget.objectName() == "AdminStudioPromptSettingsDialog" and widget.isVisible()
-    )
-    assert "Prompt Settings" in dialog.windowTitle()
-    text = _widget_text(dialog)
-    assert "Required variables" in text
-    assert "answer_summary_user requires {payload_json}" in text
-    assert "Unknown variables block publishing" in text
-    assert section_list.currentItem().text() == "DeepSeek Prompts"
-    dialog.close()
-    window.window.close()
-    app.processEvents()
-
-def test_pyside_admin_prompt_selected_metadata_matches_mockup(tmp_path: Path, monkeypatch) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    rubric_path = _write_test_rubric(tmp_path)
-    overrides_path = _write_test_overrides(tmp_path)
-    settings_path = tmp_path / "school_offer_settings.json"
-    settings_path.write_text(json.dumps({}), encoding="utf-8")
-    prompts_path = tmp_path / "deepseek_prompts.json"
-    prompts_path.write_text(
-        json.dumps({"answer_summary_user": "Summarize {payload_json}.", "executive_summary_user": "Summarize {transcript}."}),
-        encoding="utf-8",
-    )
-    app_settings_path = tmp_path / "interview_app_settings.json"
-    app_settings_path.write_text(json.dumps({"deepseek_summary_model": "deepseek-r1:8b"}), encoding="utf-8")
-    notification_rules_path = tmp_path / "notification_rules.sqlite3"
-    monkeypatch.setattr(pyside_interview_app, "DEFAULT_RUBRIC_PATH", rubric_path)
-    monkeypatch.setattr(pyside_interview_app, "QUESTIONS_OVERRIDE_PATH", overrides_path)
-    monkeypatch.setattr(pyside_interview_app, "SCHOOL_OFFER_SETTINGS_PATH", settings_path)
-    monkeypatch.setattr(pyside_interview_app, "DEEPSEEK_PROMPTS_CONFIG_PATH", prompts_path)
-    monkeypatch.setattr(pyside_interview_app, "INTERVIEW_APP_SETTINGS_PATH", app_settings_path)
-    monkeypatch.setattr(pyside_interview_app, "NOTIFICATION_RULES_PATH", notification_rules_path)
-    model = build_interview_redesign_model(
-        rubric_path=rubric_path,
-        overrides_path=overrides_path,
-        history_path=tmp_path / "missing-history.json",
-        school_options=["Palmdale"],
-    )
-    window = _pyside_window_on_page(model, "Admin")
-    section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
-    section_list.setCurrentRow(9)
-    window.window.findChild(qt_widgets.QPushButton, "AdminStudioPromptTemplateButton_answer_summary_user").click()
-
-    status = window.window.findChild(qt_widgets.QLabel, "AdminStudioPromptSelectedStatus")
-    description = window.window.findChild(qt_widgets.QLabel, "AdminStudioPromptSelectedDescription")
-    metadata = window.window.findChild(qt_widgets.QLabel, "AdminStudioPromptSelectedMetadata")
-
-    assert status is not None
-    assert status.text() == "Warning"
-    assert description.text() == "Early childhood hiring notes summary"
-    assert "Version: v3" in metadata.text()
-    assert "Status: Draft" in metadata.text()
-    assert "Last modified: May 21, 2025 · 10:42 AM" in metadata.text()
-
-    window.window.findChild(qt_widgets.QPushButton, "AdminStudioPromptTemplateButton_executive_summary_user").click()
-    assert status.text() == "OK"
-    assert description.text() == "Executive summary section"
-    assert "Version: v2" in metadata.text()
-    window.window.close()
-    app.processEvents()
-
-def test_pyside_admin_prompt_search_filters_template_cards(tmp_path: Path, monkeypatch) -> None:
+def test_pyside_admin_prompt_render_navigation_scenario(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
     app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
@@ -8266,28 +7959,86 @@ def test_pyside_admin_prompt_search_filters_template_cards(tmp_path: Path, monke
     section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
     section_list.setCurrentRow(9)
 
+    strip = window.window.findChild(qt_widgets.QFrame, "AdminStudioPromptSummaryStrip")
+    cards = window.window.findChildren(qt_widgets.QFrame, "AdminStudioPromptSummaryCard")
+
+    assert strip is not None
+    assert len(cards) == 4
+    strip_text = _widget_text(strip)
+    assert "Variables" in strip_text
+    assert "12 tokens" in strip_text
+    assert "Preview" in strip_text
+    assert "Live preview" in strip_text
+    assert "Version review" in strip_text
+    assert "5 versions" in strip_text
+    assert "Validation" in strip_text
+    assert "warning" in strip_text.lower()
+    assert window.window.findChild(qt_widgets.QPushButton, "AdminStudioPromptSettingsButton").text() == "Prompt Settings"
+    assert window.window.findChild(qt_widgets.QPushButton, "AdminStudioPromptSummaryNewPromptButton").text() == "New Prompt"
+
+    window.window.findChild(qt_widgets.QPushButton, "AdminStudioPromptSettingsButton").click()
+    app.processEvents()
+    dialog = next(
+        widget
+        for widget in app.topLevelWidgets()
+        if widget.objectName() == "AdminStudioPromptSettingsDialog" and widget.isVisible()
+    )
+    assert "Prompt Settings" in dialog.windowTitle()
+    dialog_text = _widget_text(dialog)
+    assert "Required variables" in dialog_text
+    assert "answer_summary_user requires {payload_json}" in dialog_text
+    assert "Unknown variables block publishing" in dialog_text
+    assert section_list.currentItem().text() == "DeepSeek Prompts"
+    dialog.close()
+
+    answer_button = window.window.findChild(qt_widgets.QPushButton, "AdminStudioPromptTemplateButton_answer_summary_user")
+    executive_button = window.window.findChild(qt_widgets.QPushButton, "AdminStudioPromptTemplateButton_executive_summary_user")
+    answer_button.click()
+    status = window.window.findChild(qt_widgets.QLabel, "AdminStudioPromptSelectedStatus")
+    description = window.window.findChild(qt_widgets.QLabel, "AdminStudioPromptSelectedDescription")
+    metadata = window.window.findChild(qt_widgets.QLabel, "AdminStudioPromptSelectedMetadata")
+    assert status is not None
+    assert status.text() == "Warning"
+    assert description.text() == "Early childhood hiring notes summary"
+    assert "Version: v3" in metadata.text()
+    assert "Status: Draft" in metadata.text()
+    assert "Last modified: May 21, 2025 · 10:42 AM" in metadata.text()
+    executive_button.click()
+    assert status.text() == "OK"
+    assert description.text() == "Executive summary section"
+    assert "Version: v2" in metadata.text()
+
     search = window.window.findChild(qt_widgets.QLineEdit, "AdminStudioPromptSearch")
-    cards = {
+    prompt_cards = {
         card.property("adminPromptKey"): card
         for card in window.window.findChildren(qt_widgets.QFrame, "AdminStudioPromptTemplateCard")
     }
-
     assert search is not None
     assert search.placeholderText() == "Search prompts..."
-    assert {"answer_summary_user", "executive_summary_user"}.issubset(set(cards))
+    assert {"answer_summary_user", "executive_summary_user"}.issubset(set(prompt_cards))
     search.setText("executive")
     app.processEvents()
-    assert cards["answer_summary_user"].isHidden() is True
-    assert cards["executive_summary_user"].isHidden() is False
-
+    assert prompt_cards["answer_summary_user"].isHidden() is True
+    assert prompt_cards["executive_summary_user"].isHidden() is False
     search.setText("early childhood")
     app.processEvents()
-    assert cards["answer_summary_user"].isHidden() is False
-    assert cards["executive_summary_user"].isHidden() is True
-
+    assert prompt_cards["answer_summary_user"].isHidden() is False
+    assert prompt_cards["executive_summary_user"].isHidden() is True
     search.clear()
     app.processEvents()
-    assert all(card.isHidden() is False for card in cards.values())
+    assert all(card.isHidden() is False for card in prompt_cards.values())
+
+    answer_button.click()
+    inspector_tabs = window.window.findChild(qt_widgets.QTabWidget, "AdminStudioPromptInspectorTabs")
+    assert inspector_tabs is not None
+    assert [inspector_tabs.tabText(index) for index in range(inspector_tabs.count())] == ["Inspector", "Activity"]
+    assert "payload_json" in _widget_text(inspector_tabs.widget(0))
+    assert "Open Preview" in _widget_text(inspector_tabs.widget(0))
+    assert "Required variables" in _widget_text(inspector_tabs.widget(0))
+    assert "v3" in _widget_text(inspector_tabs.widget(1))
+    assert "David Nord" in _widget_text(inspector_tabs.widget(1))
+    assert "Save Draft updates version history" in _widget_text(inspector_tabs.widget(1))
+
     window.window.close()
     app.processEvents()
 
@@ -8598,49 +8349,6 @@ def test_pyside_admin_prompt_editor_format_dropdown_and_expand_dialog(tmp_path: 
     assert expanded_editor is not None
     assert expanded_editor.toPlainText() == "Summarize {payload_json}."
     assert expanded_editor.isEnabled() == window.window.findChild(qt_widgets.QPlainTextEdit, "AdminStudioPromptTemplateEditor").isEnabled()
-    window.window.close()
-    app.processEvents()
-
-def test_pyside_admin_prompt_inspector_tabs_show_variables_and_activity(tmp_path: Path, monkeypatch) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    rubric_path = _write_test_rubric(tmp_path)
-    overrides_path = _write_test_overrides(tmp_path)
-    settings_path = tmp_path / "school_offer_settings.json"
-    settings_path.write_text(json.dumps({}), encoding="utf-8")
-    prompts_path = tmp_path / "deepseek_prompts.json"
-    prompts_path.write_text(json.dumps({"answer_summary_user": "Summarize {payload_json}."}), encoding="utf-8")
-    app_settings_path = tmp_path / "interview_app_settings.json"
-    app_settings_path.write_text(json.dumps({"deepseek_summary_model": "deepseek-r1:8b"}), encoding="utf-8")
-    notification_rules_path = tmp_path / "notification_rules.sqlite3"
-    monkeypatch.setattr(pyside_interview_app, "DEFAULT_RUBRIC_PATH", rubric_path)
-    monkeypatch.setattr(pyside_interview_app, "QUESTIONS_OVERRIDE_PATH", overrides_path)
-    monkeypatch.setattr(pyside_interview_app, "SCHOOL_OFFER_SETTINGS_PATH", settings_path)
-    monkeypatch.setattr(pyside_interview_app, "DEEPSEEK_PROMPTS_CONFIG_PATH", prompts_path)
-    monkeypatch.setattr(pyside_interview_app, "INTERVIEW_APP_SETTINGS_PATH", app_settings_path)
-    monkeypatch.setattr(pyside_interview_app, "NOTIFICATION_RULES_PATH", notification_rules_path)
-    model = build_interview_redesign_model(
-        rubric_path=rubric_path,
-        overrides_path=overrides_path,
-        history_path=tmp_path / "missing-history.json",
-        school_options=["Palmdale"],
-    )
-    window = _pyside_window_on_page(model, "Admin")
-    section_list = window.window.findChild(qt_widgets.QListWidget, "AdminStudioSectionList")
-    section_list.setCurrentRow(9)
-    window.window.findChild(qt_widgets.QPushButton, "AdminStudioPromptTemplateButton_answer_summary_user").click()
-
-    tabs = window.window.findChild(qt_widgets.QTabWidget, "AdminStudioPromptInspectorTabs")
-
-    assert tabs is not None
-    assert [tabs.tabText(index) for index in range(tabs.count())] == ["Inspector", "Activity"]
-    assert "payload_json" in _widget_text(tabs.widget(0))
-    assert "Open Preview" in _widget_text(tabs.widget(0))
-    assert "Required variables" in _widget_text(tabs.widget(0))
-    assert "v3" in _widget_text(tabs.widget(1))
-    assert "David Nord" in _widget_text(tabs.widget(1))
-    assert "Save Draft updates version history" in _widget_text(tabs.widget(1))
     window.window.close()
     app.processEvents()
 

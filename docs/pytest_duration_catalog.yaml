@@ -3745,23 +3745,7 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_studio_modern_dashboard_and_section_cards
-  duration_seconds_n2: 0.001
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_deepseek_model_screen_shows_hardware_and_ollama_guidance
-  duration_seconds_n2: 0.001
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_deepseek_model_uses_cards_not_visible_dropdown
-  duration_seconds_n2: 0.001
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_modern_sections_hide_legacy_backing_tables
-  duration_seconds_n2: 0.001
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_deepseek_selected_model_panel_shows_decision_details
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_studio_readonly_render_scenario
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
@@ -3873,14 +3857,10 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: true
   placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_signal_hints_search_and_detail_reference
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_signal_hints_search_detail_scenario
   duration_seconds_n2: 0.001
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_signal_hints_uses_cards_without_legacy_table
-  duration_seconds_n2: 0.001
-  gui_heavy: true
-  placement: gui_wave_3
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_signal_hints_renders_all_hint_groups
   duration_seconds_n2: 0.001
   gui_heavy: true
@@ -4017,19 +3997,7 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_prompt_summary_strip_matches_mockup
-  duration_seconds_n2: 0.001
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_prompt_settings_opens_prompt_settings_dialog
-  duration_seconds_n2: 0.001
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_prompt_selected_metadata_matches_mockup
-  duration_seconds_n2: 0.001
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_prompt_search_filters_template_cards
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_prompt_render_navigation_scenario
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
@@ -4054,10 +4022,6 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_prompt_editor_format_dropdown_and_expand_dialog
-  duration_seconds_n2: 0.001
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_prompt_inspector_tabs_show_variables_and_activity
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
