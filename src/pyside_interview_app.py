@@ -12,6 +12,7 @@ import sys
 import threading
 import time
 import wave
+from uuid import uuid4
 from difflib import SequenceMatcher
 from dataclasses import dataclass, field, replace
 from datetime import date, timedelta
@@ -375,13 +376,15 @@ class PySideInterviewSession:
             _flow_index, item = by_id.get(match.question_id, (match.flow_index, None))
             if item is None:
                 continue
+            previous = dict(self.answers.get(item.question_id, {}) or {})
+            previous_score = str(previous.get("score") or "").strip()
             self.answers[item.question_id] = {
                 "kind": item.kind,
                 "title": item.title,
                 "prompt": item.prompt,
                 "notes": match.candidate_transcript,
-                "score": "",
-                "quick_actions": [],
+                "score": previous_score,
+                "quick_actions": list(previous.get("quick_actions", []) or []),
                 "imported_transcript": True,
             }
             self.flow_candidate_transcripts[match.flow_index] = match.candidate_transcript
@@ -393,17 +396,26 @@ class PySideInterviewSession:
         for question_id, (flow_index, item) in by_id.items():
             if item.kind == "intro" or question_id in matched_ids:
                 continue
-            self.answers[question_id] = {
+            previous = dict(self.answers.get(question_id, {}) or {})
+            previous_score = str(previous.get("score") or "").strip()
+            previous_notes = str(previous.get("notes") or "")
+            answer = {
                 "kind": item.kind,
                 "title": item.title,
                 "prompt": item.prompt,
-                "notes": "",
-                "score": "",
-                "quick_actions": [],
-                "skipped": True,
-                "skip_reason": "not_found_in_indeed_transcript",
+                "notes": previous_notes if previous_score else "",
+                "score": previous_score,
+                "quick_actions": list(previous.get("quick_actions", []) or []),
                 "imported_transcript": True,
             }
+            if not previous_score:
+                answer.update(
+                    {
+                        "skipped": True,
+                        "skip_reason": "not_found_in_indeed_transcript",
+                    }
+                )
+            self.answers[question_id] = answer
             self.flow_candidate_transcripts.pop(flow_index, None)
             self.flow_recordings.pop(flow_index, None)
         first_unrated = next(
@@ -532,10 +544,15 @@ class PySideInterviewSession:
         )
         return OfferLetterService.render_offer(Path(template_path), output_path, data)
 
-    def generate_interview_notes_document(self, *, output_dir: Path) -> Path:
+    def generate_interview_notes_document(
+        self,
+        *,
+        output_dir: Path,
+        history_path: Path = INTERVIEW_HISTORY_PATH,
+    ) -> Path:
         result = self.finalize_interview(
             base_dir=Path(output_dir),
-            history_path=Path(output_dir) / "interview_history.sqlite3",
+            history_path=Path(history_path),
         )
         return Path(result["out_path"])
 
@@ -3154,26 +3171,21 @@ class PySideInterviewWindow:
         self.interview_tabs.setCurrentIndex(2)
 
     def _import_indeed_transcript_from_home(self) -> None:
-        label = self.home_role_combo.currentText() if hasattr(self, "home_role_combo") else ""
-        track_key = self._track_key_for_label(label)
-        candidate_name = self.home_candidate_input.text().strip() if hasattr(self, "home_candidate_input") else ""
-        school = self.home_school_combo.currentText().strip() if hasattr(self, "home_school_combo") else ""
-        if not candidate_name:
-            self.QtWidgets.QMessageBox.warning(self.window, "Indeed Transcript", "Enter candidate name before importing.")
+        request = self._collect_indeed_transcript_import_request()
+        if not request:
             return
-        file_name, _filter = self.QtWidgets.QFileDialog.getOpenFileName(
-            self.window,
-            "Import Indeed Transcript",
-            str(Path.home()),
-            "Text files (*.txt)",
-        )
-        if not file_name:
-            return
+        candidate_name = str(request.get("candidate_name") or "").strip()
+        school = str(request.get("school") or "").strip()
+        track_key = str(request.get("track_key") or "").strip()
+        interview_date = str(request.get("interview_date") or "").strip()
+        source_path = Path(str(request.get("transcript_path") or ""))
         draft_path = self._default_draft_path(candidate_name or "Candidate")
         session = PySideInterviewSession(model=self.model, draft_path=draft_path)
         try:
             session.start(candidate_name=candidate_name, school=school, track_key=track_key)
-            result = session.import_indeed_transcript_file(Path(file_name))
+            session.interview_date = interview_date or date.today().isoformat()
+            result = session.import_indeed_transcript_file(source_path)
+            history_id = self._persist_new_indeed_import_history_row(session, result, source_path)
         except Exception as exc:  # noqa: BLE001
             self.QtWidgets.QMessageBox.warning(self.window, "Indeed Transcript", f"Could not import transcript: {exc}")
             return
@@ -3181,7 +3193,10 @@ class PySideInterviewWindow:
         self.session_track_key = session.track_key
         self.session_index = session.current_index
         self.session_answers = dict(session.answers)
+        self._review_history_id = history_id
+        self._review_score_dirty = False
         skipped_count = len(result.unmatched_question_ids)
+        self._reload_history_model()
         self._render_live_question_page()
         self._render_review_page()
         self._render_offer_page()
@@ -3191,6 +3206,125 @@ class PySideInterviewWindow:
             self.home_draft_label.setText(
                 f"Imported Indeed transcript: {result.mapped_count} answers split, {skipped_count} questions marked skipped."
             )
+
+    def _collect_indeed_transcript_import_request(self) -> dict[str, Any] | None:
+        dialog = self.QtWidgets.QDialog(self.window)
+        dialog.setObjectName("PySideIndeedTranscriptImportDialog")
+        dialog.setWindowTitle("Import Indeed Transcript")
+        layout = self.QtWidgets.QVBoxLayout(dialog)
+        form = self.QtWidgets.QFormLayout()
+        candidate = self.QtWidgets.QLineEdit()
+        candidate.setObjectName("PySideIndeedImportCandidateName")
+        candidate.setText(self.home_candidate_input.text().strip() if hasattr(self, "home_candidate_input") else "")
+        school = self.QtWidgets.QComboBox()
+        school.setObjectName("PySideIndeedImportSchool")
+        school.addItems(self.model.school_options)
+        current_school = self.home_school_combo.currentText().strip() if hasattr(self, "home_school_combo") else ""
+        if current_school:
+            idx = school.findText(current_school)
+            if idx >= 0:
+                school.setCurrentIndex(idx)
+        role = self.QtWidgets.QComboBox()
+        role.setObjectName("PySideIndeedImportTrack")
+        for key, label in self.model.track_labels.items():
+            role.addItem(label, key)
+        current_role = self.home_role_combo.currentText() if hasattr(self, "home_role_combo") else ""
+        if current_role:
+            idx = role.findText(current_role)
+            if idx >= 0:
+                role.setCurrentIndex(idx)
+        interview_date = self.QtWidgets.QDateEdit()
+        interview_date.setObjectName("PySideIndeedImportInterviewDate")
+        interview_date.setCalendarPopup(True)
+        interview_date.setDate(self.QtCore.QDate.currentDate())
+        transcript_path = self.QtWidgets.QLineEdit()
+        transcript_path.setObjectName("PySideIndeedImportTranscriptPath")
+        browse = self.QtWidgets.QPushButton("Browse")
+        browse.setObjectName("PySideIndeedImportBrowse")
+        path_row = self.QtWidgets.QHBoxLayout()
+        path_row.addWidget(transcript_path, 1)
+        path_row.addWidget(browse)
+
+        def _browse() -> None:
+            file_name, _filter = self.QtWidgets.QFileDialog.getOpenFileName(
+                dialog,
+                "Import Indeed Transcript",
+                str(Path.home()),
+                "Text files (*.txt)",
+            )
+            if file_name:
+                transcript_path.setText(file_name)
+
+        browse.clicked.connect(_browse)
+        form.addRow("Candidate Name", candidate)
+        form.addRow("Interview Date", interview_date)
+        form.addRow("School", school)
+        form.addRow("Track", role)
+        form.addRow("Transcript", path_row)
+        layout.addLayout(form)
+        buttons = self.QtWidgets.QDialogButtonBox(
+            self.QtWidgets.QDialogButtonBox.StandardButton.Ok | self.QtWidgets.QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        layout.addWidget(buttons)
+        if dialog.exec() != self.QtWidgets.QDialog.DialogCode.Accepted:
+            return None
+        candidate_name = candidate.text().strip()
+        path = transcript_path.text().strip()
+        if not candidate_name or not path:
+            self.QtWidgets.QMessageBox.warning(
+                self.window,
+                "Indeed Transcript",
+                "Candidate name and transcript file are required.",
+            )
+            return None
+        return {
+            "candidate_name": candidate_name,
+            "interview_date": interview_date.date().toString("yyyy-MM-dd"),
+            "school": school.currentText().strip(),
+            "track_key": str(role.currentData() or self._track_key_for_label(role.currentText())),
+            "transcript_path": Path(path),
+        }
+
+    def _persist_new_indeed_import_history_row(
+        self,
+        session: PySideInterviewSession,
+        result: IndeedTranscriptImportResult,
+        source_path: Path,
+    ) -> str:
+        history_id = f"indeed-import-{uuid4()}"
+        updates = self._history_import_updates(
+            PySideHistoryRow(
+                row_key=history_id,
+                interview_date=session.interview_date,
+                candidate=session.candidate_name,
+                school=session.school,
+                position=self.model.track_labels.get(session.track_key, session.track_key),
+                score="",
+                status="Incomplete",
+                offer_status="not_generated",
+                offer_action="Review",
+                notes_path="",
+                report_path="",
+            ),
+            session,
+            result,
+            source_path,
+        )
+        payload = {
+            **updates,
+            "history_id": history_id,
+            "outcome": "Incomplete",
+            "status": "Incomplete",
+            "interview_status": "Incomplete",
+            "score": "",
+            "interview_score": "",
+            "percent_of_max": "",
+            "saved_at": datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
+        }
+        self.history_store.append(payload)
+        return history_id
 
     def _track_key_for_history_row(self, row: PySideHistoryRow) -> str:
         position = str(row.position or "").strip()
@@ -3211,7 +3345,52 @@ class PySideInterviewWindow:
         session.start(candidate_name=row.candidate, school=row.school, track_key=track_key)
         if row.interview_date:
             session.interview_date = row.interview_date
+        payload = self._history_payload_for_row(row)
+        self._hydrate_session_from_history_payload(session, payload)
         return session
+
+    def _history_payload_for_row(self, row: PySideHistoryRow) -> dict[str, Any]:
+        key = str(row.row_key or "").strip()
+        if not key:
+            return {}
+        for payload in self.history_store.load():
+            if self.history_store.build_row_key(payload) == key:
+                return payload
+        return {}
+
+    def _hydrate_session_from_history_payload(
+        self,
+        session: PySideInterviewSession,
+        payload: dict[str, Any],
+    ) -> None:
+        if not isinstance(payload, dict):
+            return
+        stored_answers = payload.get("answers", {})
+        if isinstance(stored_answers, dict):
+            for question_id, answer in stored_answers.items():
+                if isinstance(answer, dict):
+                    session.answers[str(question_id)] = dict(answer)
+        review_scores = payload.get("review_scores", {})
+        if isinstance(review_scores, dict):
+            for question_id, score in review_scores.items():
+                answer = dict(session.answers.get(str(question_id), {}) or {})
+                answer["score"] = str(score or "").strip()
+                session.answers[str(question_id)] = answer
+        scoring = payload.get("scoring", {})
+        if isinstance(scoring, dict):
+            for row in scoring.get("rows", []) or []:
+                if not isinstance(row, dict):
+                    continue
+                question_id = str(row.get("trait_id") or "").strip()
+                raw_score = row.get("raw_score")
+                if not question_id or raw_score in (None, ""):
+                    continue
+                answer = dict(session.answers.get(question_id, {}) or {})
+                answer.setdefault("kind", "trait")
+                answer["score"] = str(raw_score)
+                answer.pop("skipped", None)
+                answer.pop("skip_reason", None)
+                session.answers[question_id] = answer
 
     def _history_import_updates(
         self,
@@ -3226,6 +3405,13 @@ class PySideInterviewWindow:
             for flow_index, recording in sorted(session.flow_recordings.items())
             if isinstance(recording, dict)
         ]
+        review_scores = {
+            question_id: str(answer.get("score") or "")
+            for question_id, answer in session.answers.items()
+            if isinstance(answer, dict)
+            and str(answer.get("kind") or "") == "trait"
+            and str(answer.get("score") or "").strip()
+        }
         updates = {
             "candidate_name": session.candidate_name,
             "school": session.school,
@@ -3245,6 +3431,7 @@ class PySideInterviewWindow:
                 "candidate_speaker": result.candidate_speaker,
                 "imported_at": datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
             },
+            "review_scores": review_scores,
             "deepseek_processing_status": "not_started",
             "deepseek_processing_warning": "",
         }

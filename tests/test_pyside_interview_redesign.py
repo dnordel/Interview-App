@@ -937,11 +937,16 @@ Speaker 0: I noticed the child was upset and helped them name the feeling.
         encoding="utf-8",
     )
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
-    window.home_candidate_input.setText("Miriam")
     monkeypatch.setattr(
-        window.QtWidgets.QFileDialog,
-        "getOpenFileName",
-        lambda *_args, **_kwargs: (str(transcript_path), "Text files (*.txt)"),
+        window,
+        "_collect_indeed_transcript_import_request",
+        lambda: {
+            "candidate_name": "Miriam",
+            "interview_date": "2026-07-10",
+            "school": "Palmdale",
+            "track_key": "preschool",
+            "transcript_path": transcript_path,
+        },
     )
     window._start_pyside_interview_recording = lambda: (_ for _ in ()).throw(AssertionError("recording should not start"))
 
@@ -952,6 +957,66 @@ Speaker 0: I noticed the child was upset and helped them name the feeling.
     assert "helped them name" in window.live_notes.toPlainText()
     assert not window.live_next_button.isEnabled()
     assert window.interview_tabs.currentIndex() == 2
+    window.window.close()
+    app.processEvents()
+
+def test_pyside_home_import_indeed_transcript_creates_history_row_from_metadata(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    history_path = tmp_path / "interview_history.sqlite3"
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Palmdale", "Hawthorne"],
+    )
+    transcript_path = tmp_path / "indeed.txt"
+    transcript_path.write_text(
+        """
+Speaker 1: Tell me about a time a child was having a hard moment emotionally.
+
+Speaker 0: I noticed the child was upset and helped them name the feeling.
+""",
+        encoding="utf-8",
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    monkeypatch.setattr(
+        window,
+        "_collect_indeed_transcript_import_request",
+        lambda: {
+            "candidate_name": "Miriam Rivera",
+            "interview_date": "2026-07-10",
+            "school": "Hawthorne",
+            "track_key": "preschool",
+            "transcript_path": transcript_path,
+        },
+    )
+    window._start_pyside_interview_recording = lambda: (_ for _ in ()).throw(AssertionError("recording should not start"))
+
+    window._import_indeed_transcript_from_home()
+
+    rows = InterviewHistoryStore(history_path).load()
+    assert len(rows) == 1
+    row = rows[0]
+    assert row["candidate_name"] == "Miriam Rivera"
+    assert row["interview_date"] == "2026-07-10"
+    assert row["school"] == "Hawthorne"
+    assert row["track_key"] == "preschool"
+    assert row["outcome"] == "Incomplete"
+    assert row["imported_indeed_transcript"]["source_path"] == str(transcript_path)
+    assert row["answers"]["trait_1"]["notes"].startswith("I noticed")
+    assert row["flow_recordings"][0]["source"] == "indeed_transcript_import"
+    assert window.session is not None
+    assert window.session.candidate_name == "Miriam Rivera"
+    assert window.session.interview_date == "2026-07-10"
+    assert window.session.active_question().question_id == "trait_1"
+    assert "helped them name" in window.live_notes.toPlainText()
+    assert window.interview_tabs.currentIndex() == 2
+    assert window._review_history_id == row["history_id"]
     window.window.close()
     app.processEvents()
 
@@ -973,6 +1038,18 @@ def test_pyside_history_import_indeed_transcript_opens_review_for_existing_candi
             "position": "Preschool Teacher",
             "interview_date": "2026-07-10",
             "outcome": "Incomplete",
+            "score": "80.0%",
+            "review_scores": {"trait_1": "4"},
+            "answers": {
+                "trait_1": {
+                    "kind": "trait",
+                    "title": "Empathy",
+                    "prompt": "Tell me about a time a child was having a hard moment emotionally.",
+                    "notes": "Prior notes",
+                    "score": "4",
+                    "quick_actions": [],
+                }
+            },
         }
     )
     model = build_interview_redesign_model(
@@ -1003,6 +1080,7 @@ Speaker 1: I got low, named the feeling, and helped the child find words.
     assert window.session is not None
     assert window.session.candidate_name == "Grace Morales"
     assert window.session.school == "Palmdale"
+    assert window.session.answers["trait_1"]["score"] == "4"
     assert window.interview_tabs.currentIndex() == 3
     review_page = window.interview_tabs.widget(3)
     assert "I got low, named the feeling" in _table_text(
@@ -1016,6 +1094,8 @@ Speaker 1: I got low, named the feeling, and helped the child find words.
 
     stored = InterviewHistoryStore(history_path).load()[0]
     assert stored["review_scores"]["trait_1"] == "4"
+    assert stored["scoring"]["rows"][0]["raw_score"] == 4
+    assert stored["score"] == "80.0%"
     assert stored["imported_indeed_transcript"]["mapped_count"] == 1
     assert stored["answers"]["trait_1"]["notes"].startswith("I got low")
     assert stored["flow_recordings"][0]["candidate_transcript"].startswith("I got low")
@@ -1879,7 +1959,9 @@ def test_pyside_session_generates_interview_notes_document(tmp_path: Path) -> No
     session.save_answer_and_advance(notes="Values aligned.", score="")
     session.save_answer_and_advance(notes="Warm child-centered example.", score="5")
 
-    output_path = session.generate_interview_notes_document(output_dir=tmp_path / "notes")
+    history_path = tmp_path / "interview_history.sqlite3"
+
+    output_path = session.generate_interview_notes_document(output_dir=tmp_path / "notes", history_path=history_path)
 
     assert output_path.exists()
     rendered = _docx_text(output_path)
@@ -1887,7 +1969,8 @@ def test_pyside_session_generates_interview_notes_document(tmp_path: Path) -> No
     assert "Warm child-centered example." in rendered
     assert "Final Outcome" in rendered
     assert "Hire" in rendered
-    assert (tmp_path / "notes" / "interview_history.sqlite3").exists()
+    assert history_path.exists()
+    assert not (tmp_path / "notes" / "interview_history.sqlite3").exists()
     assert not (tmp_path / "notes" / "interview_history.json").exists()
 
 def test_pyside_finalize_writes_basic_notes_without_deepseek_queue(tmp_path: Path, monkeypatch) -> None:

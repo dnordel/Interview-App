@@ -3489,6 +3489,10 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: true
   placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_home_import_indeed_transcript_creates_history_row_from_metadata
+  duration_seconds_n2: 0.001
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_history_import_indeed_transcript_opens_review_for_existing_candidate
   duration_seconds_n2: 0.001
   gui_heavy: false

@@ -501,7 +501,7 @@ classes:
     - ValueError
     side_effects: Writes PySide draft JSON and canonical interview_sessions question snapshots.
   - name: import_indeed_transcript_file
-    description: Import an Indeed-generated .txt transcript into the session, split answers by configured question prompts, infer interviewer/candidate speakers, mark unasked questions skipped, and leave scored answers unrated for operator review.
+    description: Import an Indeed-generated .txt transcript into the session, split answers by configured question prompts, infer interviewer/candidate speakers, preserve any existing scored ratings, mark unasked unrated questions skipped, and leave newly scored answers unrated for operator review.
     locked: false
     inputs:
       path:
@@ -514,7 +514,7 @@ classes:
     - OSError
     side_effects: Reads a local .txt transcript file, updates answers/transcript maps, writes PySide draft JSON, and writes canonical interview_sessions question snapshots.
   - name: import_indeed_transcript_text
-    description: Import Indeed transcript text into the session, split candidate answer transcripts onto matching questions, infer speakers, mark unmatched questions skipped, and move to the first imported scored answer that still needs a rating.
+    description: Import Indeed transcript text into the session, split candidate answer transcripts onto matching questions, infer speakers, preserve any existing scored ratings, mark unmatched unrated questions skipped, and move to the first imported scored answer that still needs a rating.
     locked: false
     inputs:
       text:
@@ -580,18 +580,24 @@ classes:
   - name: generate_interview_notes_document
     description: Compatibility wrapper that finalizes the PySide session through
       the shared desktop finalize path and returns the generated interview-notes
-      DOCX path.
+      DOCX path, using the configured history DB unless a caller supplies an
+      explicit history path.
     locked: false
     inputs:
       output_dir:
         type: Path
         required: true
+      history_path:
+        type: Path
+        required: false
+        default: INTERVIEW_HISTORY_PATH
     returns:
       type: Path
     exceptions:
     - OSError
-    side_effects: Writes basic interview-notes DOCX, integration export, and SQLite
-      history row under the selected output directory without queueing DeepSeek.
+    side_effects: Writes basic interview-notes DOCX and integration export under
+      the selected output directory, and writes the SQLite history row to the
+      configured history path without queueing DeepSeek.
   - name: finalize_interview
     description: Finalize the completed PySide session using shared desktop runtime
       contracts for scoring, immediate history persistence after the hiring decision,
@@ -4346,6 +4352,57 @@ classes:
       type: None
     exceptions: []
     side_effects: Updates visible PySide history table column widths.
+  - name: _track_key_for_label
+    description: Resolve a displayed role label to a configured interview track key.
+    locked: false
+    inputs:
+      label:
+        type: str
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: none
+  - name: _import_indeed_transcript_from_home
+    description: Collect candidate name, interview date, school, track, and transcript
+      file metadata for a new Indeed transcript import, import mapped transcript
+      answers into a PySide session, immediately create an Incomplete candidate
+      history row, and open the existing live rating flow without starting recording.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Opens import metadata/file UI, reads a local .txt transcript,
+      writes PySide draft/session snapshots, appends InterviewHistoryStore row,
+      refreshes history tables, and opens the live rating tab.
+  - name: _collect_indeed_transcript_import_request
+    description: Show the new-transcript import dialog for candidate name, interview
+      date, school, track, and .txt transcript file path.
+    locked: false
+    inputs: {}
+    returns:
+      type: dict[str, Any] | None
+    exceptions: []
+    side_effects: Opens a modal PySide dialog and may show validation warning.
+  - name: _persist_new_indeed_import_history_row
+    description: Append an Incomplete candidate history row for a new Indeed transcript
+      import using mapped answers and transcript metadata.
+    locked: false
+    inputs:
+      session:
+        type: PySideInterviewSession
+        required: true
+      result:
+        type: IndeedTranscriptImportResult
+        required: true
+      source_path:
+        type: Path
+        required: true
+    returns:
+      type: str
+    exceptions: []
+    side_effects: Appends one InterviewHistoryStore row and returns its history_id.
   - name: _track_key_for_history_row
     description: Resolve the interview track key for a finalized history row from its
       position text, falling back to the first configured track when no direct label
@@ -4362,7 +4419,8 @@ classes:
   - name: _session_from_history_row
     description: Build a PySideInterviewSession for a finalized history row so an
       imported Indeed transcript can be attached to the existing candidate and
-      opened for review-score edits.
+      opened for review-score edits while preserving prior answers, review scores,
+      and scoring-row raw scores from history payload data.
     locked: false
     inputs:
       row:
@@ -4373,11 +4431,38 @@ classes:
     exceptions:
     - ValueError
     side_effects: Writes the new draft through PySideInterviewSession.start.
+  - name: _history_payload_for_row
+    description: Load the full persisted history payload for a rendered history row key.
+    locked: false
+    inputs:
+      row:
+        type: PySideHistoryRow
+        required: true
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: none
+  - name: _hydrate_session_from_history_payload
+    description: Copy saved answers, review score edits, and scoring raw-score values
+      from a history payload into a PySide session before transcript import.
+    locked: false
+    inputs:
+      session:
+        type: PySideInterviewSession
+        required: true
+      payload:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Mutates the in-memory PySideInterviewSession answers.
   - name: _history_import_updates
     description: Build the history-store payload for an imported Indeed transcript,
       including mapped answers, flow transcripts, source metadata, regenerated
       Basic Interview Notes metadata, saved DeepSeek job metadata, and resetting
-      DeepSeek processing status to not_started.
+      DeepSeek processing status to not_started while carrying forward preserved
+      review scores.
     locked: false
     inputs:
       row:
