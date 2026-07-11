@@ -6185,7 +6185,7 @@ entries:
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_storage_persistence.py::test_ml_dataset_path_for_history_path_uses_history_directory
+- nodeid: tests/test_storage_persistence.py::test_ml_dataset_path_for_history_path_uses_configured_drive_dir
   duration_seconds_n2: 0.001
   gui_heavy: false
   placement: fast

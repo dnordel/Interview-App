@@ -7,8 +7,9 @@ module:
     loaders for interview runtime and onboarding settings.
 functions:
 - name: ml_dataset_path_for_history_path
-  description: Return the sibling interview_ml_dataset.sqlite3 path for a given
-    interview history database path.
+  description: Return the interview_ml_dataset.sqlite3 path under the configured
+    ML dataset directory, defaulting to G:\My Drive\Work\LaunchPad\Interview ML DB
+    and allowing INTERVIEW_ML_DATASET_DIR to override it for tests or alternate machines.
   locked: false
   inputs:
     history_path:

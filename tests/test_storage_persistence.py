@@ -6,6 +6,9 @@ from pathlib import Path
 import pytest
 
 from data_store import (
+    DEFAULT_ML_DATASET_DIR,
+    ML_DATASET_DB_NAME,
+    ML_DATASET_DIR_ENV,
     InterviewHistoryStore,
     InterviewMLDatasetStore,
     QuestionOverridesStore,
@@ -379,8 +382,10 @@ def test_ml_dataset_store_records_deepseek_trace_and_exports(tmp_path: Path):
     assert exports["deepseek_traces"].name == "deepseek_traces.jsonl"
 
 
-def test_ml_dataset_path_for_history_path_uses_history_directory(tmp_path: Path):
-    assert ml_dataset_path_for_history_path(tmp_path / "interview_history.sqlite3") == tmp_path / "interview_ml_dataset.sqlite3"
+def test_ml_dataset_path_for_history_path_uses_configured_drive_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    assert ml_dataset_path_for_history_path(tmp_path / "interview_history.sqlite3") == DEFAULT_ML_DATASET_DIR / ML_DATASET_DB_NAME
+    monkeypatch.setenv(ML_DATASET_DIR_ENV, str(tmp_path / "ml-target"))
+    assert ml_dataset_path_for_history_path(tmp_path / "interview_history.sqlite3") == tmp_path / "ml-target" / ML_DATASET_DB_NAME
 
 
 def test_ml_backfill_recovers_missing_transcript_text_from_docx(tmp_path: Path):

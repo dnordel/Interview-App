@@ -171,7 +171,7 @@ modules:
     path: user_artifacts/interview_history.sqlite3
     depends_on: []
   interview_ml_dataset_db:
-    path: user_artifacts/interview_ml_dataset.sqlite3
+    path: G:\My Drive\Work\LaunchPad\Interview ML DB\interview_ml_dataset.sqlite3
     depends_on:
     - interview_history_db
   legacy_interview_history_json:

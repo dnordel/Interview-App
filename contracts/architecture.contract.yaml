@@ -107,7 +107,7 @@ datastores:
     - web_app_backend
   interview_ml_dataset_db:
     type: sqlite
-    description: Derived normalized ML dataset lives in user_artifacts/interview_ml_dataset.sqlite3, storing session/profile rows, exact per-answer prompt snapshots, human and AI scoring fields, DeepSeek prompt/output traces, signal evidence, export metadata, and pending-AI backlog rows. It is rebuilt or enriched from finalize, DeepSeek worker, history, job/session artifacts, and DOCX transcript recovery without making it canonical app history.
+    description: Derived normalized ML dataset lives outside Dropbox at G:\My Drive\Work\LaunchPad\Interview ML DB\interview_ml_dataset.sqlite3 by default, storing session/profile rows, exact per-answer prompt snapshots, human and AI scoring fields, DeepSeek prompt/output traces, signal evidence, export metadata, and pending-AI backlog rows. It is rebuilt or enriched from finalize, DeepSeek worker, history, job/session artifacts, and DOCX transcript recovery without making it canonical app history; INTERVIEW_ML_DATASET_DIR can override the directory for tests or alternate machines.
     used_by:
     - data_store
     - interview_runtime

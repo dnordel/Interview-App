@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import os
 import re
 import sqlite3
 from datetime import datetime, timezone
@@ -27,10 +28,14 @@ DEFAULT_SCHOOL_INTERVIEW_NOTES_DIRS: dict[str, str] = {
 }
 
 ML_DATASET_DB_NAME = "interview_ml_dataset.sqlite3"
+DEFAULT_ML_DATASET_DIR = Path(r"G:\My Drive\Work\LaunchPad\Interview ML DB")
+ML_DATASET_DIR_ENV = "INTERVIEW_ML_DATASET_DIR"
 
 
 def ml_dataset_path_for_history_path(history_path: Path) -> Path:
-    return Path(history_path).parent / ML_DATASET_DB_NAME
+    configured_dir = str(os.environ.get(ML_DATASET_DIR_ENV, "") or "").strip()
+    base_dir = Path(configured_dir) if configured_dir else DEFAULT_ML_DATASET_DIR
+    return base_dir / ML_DATASET_DB_NAME
 
 
 def default_school_offer_settings() -> dict[str, dict[str, str]]:
