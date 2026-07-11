@@ -754,6 +754,9 @@ def test_generate_deepseek_interview_summaries_repairs_validates_logs_and_keeps_
     assert '"parse_success": false' in log_text
     assert '"candidate_name": "Ada"' in log_text
     assert '"job_title": "Lead Teacher"' in log_text
+    assert '"prompt_text":' in log_text
+    assert config.trace_events
+    assert config.trace_events[-1]["model_response"]
 
 
 def test_deepseek_json_parser_skips_invalid_brace_text_before_valid_object() -> None:

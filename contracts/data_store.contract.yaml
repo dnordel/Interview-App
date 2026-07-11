@@ -2,10 +2,22 @@ module:
   name: data_store
   language: python
   path: src/data_store.py
-  version: 1.7.1
+  version: 1.8.0
   description: SQLite-backed interview history store plus JSON-backed stores and
     loaders for interview runtime and onboarding settings.
 functions:
+- name: ml_dataset_path_for_history_path
+  description: Return the sibling interview_ml_dataset.sqlite3 path for a given
+    interview history database path.
+  locked: false
+  inputs:
+    history_path:
+      type: Path
+      required: true
+  returns:
+    type: Path
+  exceptions: []
+  side_effects: none
 - name: default_school_offer_settings
   description: Return default per-school offer settings with full-time, part-time,
     contractor template slots and portable interview-notes folder fragments for
@@ -483,6 +495,95 @@ classes:
         required: true
     returns:
       type: float | None
+- name: InterviewMLDatasetStore
+  description: Persists normalized interview data for machine-learning analysis,
+    including session/profile metadata, per-question answer rows with exact prompt
+    snapshots, AI signal rows, DeepSeek prompt/output traces, pending-AI backlog rows,
+    and CSV/JSONL exports.
+  locked: false
+  attributes:
+    path:
+      type: Path
+    db_path:
+      type: Path
+  methods:
+  - name: count_rows
+    inputs:
+      table_name:
+        type: str
+        required: true
+    returns:
+      type: int
+    side_effects: Creates the ML dataset SQLite schema when missing, then reads a
+      count from a supported ML table.
+  - name: fetch_one
+    inputs:
+      query:
+        type: str
+        required: true
+      params:
+        type: tuple[Any, ...]
+        required: false
+        default: ()
+    returns:
+      type: sqlite3.Row | None
+    side_effects: Creates the ML dataset SQLite schema when missing, then executes
+      one local read query.
+  - name: upsert_interview
+    description: Upsert one interview's ML session/profile rows and replace its
+      derived answer/signal rows idempotently from finalize, DeepSeek, or backfill
+      payloads; missing or pending DeepSeek analysis creates a pending-AI backlog row.
+    inputs:
+      history_entry:
+        type: dict[str, Any]
+        required: true
+      payload:
+        type: dict[str, Any]
+        required: true
+      scoring:
+        type: dict[str, Any]
+        required: true
+      source_job_path:
+        type: Path | str
+        required: false
+        default: ''
+      source_session_path:
+        type: Path | str
+        required: false
+        default: ''
+    returns:
+      type: None
+    side_effects: Creates or updates interview_ml_dataset.sqlite3 only; does not
+      run DeepSeek or mutate interview history.
+  - name: record_deepseek_traces
+    description: Upsert raw DeepSeek prompt/output trace events for one history id,
+      preserving prompt text, response text, validation result, normalized output,
+      model metadata, and optional trait/question identifiers.
+    inputs:
+      history_id:
+        type: str
+        required: true
+      events:
+        type: list[dict[str, Any]]
+        required: true
+      source_path:
+        type: Path | str
+        required: false
+        default: ''
+    returns:
+      type: int
+    side_effects: Writes rows to ml_deepseek_traces.
+  - name: export_dataset
+    description: Export ML sessions, answers, signals, pending-AI rows, DeepSeek
+      traces, and joined answer-level JSONL files to a local directory and log export
+      metadata.
+    inputs:
+      output_dir:
+        type: Path
+        required: true
+    returns:
+      type: dict[str, Path]
+    side_effects: Creates export files and appends rows to ml_exports.
 - name: SchoolOfferSettingsStore
   description: Stores per-school full-time, part-time, contractor offer template
     settings and interview-note output folder settings.

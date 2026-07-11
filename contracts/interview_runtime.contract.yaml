@@ -2,7 +2,7 @@ module:
   name: interview_runtime
   language: python
   path: src/interview_runtime.py
-  version: 0.33.0
+  version: 0.34.0
   description: Flattened public interface for interview state, session management,
     audio/transcription runtime, transcript summary seam, controllers, history, and
     finalize pipeline; only active legacy adapters remain in the compatibility module
@@ -518,7 +518,9 @@ functions:
   side_effects: none
 - name: _write_deepseek_debug_log
   description: Append one raw DeepSeek model-output debug event with prompt name,
-    response text, validation outcome, candidate name, job title, and timestamp.
+    prompt text/messages, response text, validation outcome, normalized output,
+    candidate name, job title, and timestamp; also buffers the event on the active
+    DeepSeek config for ML dataset persistence.
   locked: false
   inputs:
     config:
@@ -536,6 +538,18 @@ functions:
     validation_errors:
       type: list[str]
       required: true
+    messages:
+      type: list[dict[str, str]] | None
+      required: false
+      default: null
+    normalized_output:
+      type: dict[str, Any] | list[dict[str, Any]] | None
+      required: false
+      default: null
+    step_label:
+      type: str
+      required: false
+      default: ''
     candidate_name:
       type: str
       required: false
@@ -547,7 +561,20 @@ functions:
   returns:
     type: None
   exceptions: []
-  side_effects: May create a local log directory and append one JSONL event.
+  side_effects: Appends to config.trace_events and may create a local log directory
+    and append one JSONL event.
+- name: _deepseek_trace_prompt_text
+  description: Render role/content DeepSeek messages into prompt text for debug logs
+    and ML trace persistence.
+  locked: false
+  inputs:
+    messages:
+      type: list[dict[str, str]]
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
 - name: _normalize_deepseek_completion_until_valid
   description: Request one DeepSeek prompt, parse only the first valid JSON object,
     validate it through the provided normalizer, log raw model output and validation
@@ -2357,6 +2384,8 @@ classes:
       type: dict[str, Any]
     debug_log_dir:
       type: Path | None
+    trace_events:
+      type: list[dict[str, Any]]
   methods: []
 - name: FinalizeGateways
   description: Finalize output gateway adapter for report export, integration export,

@@ -12,7 +12,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-10T23:19:21.947673+00:00'
+generated_at_utc: '2026-07-11T00:28:53.761800+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -493,6 +493,33 @@ entries:
     - behavior
     - parameter_validation
     - return_type
+- contract: contracts/backfill_interview_ml_dataset.contract.yaml
+  symbol: backfill_interview_ml_dataset.backfill_ml_dataset
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/backfill_interview_ml_dataset.contract.yaml
+  symbol: backfill_interview_ml_dataset.main
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/backfill_interview_ml_dataset.contract.yaml
+  symbol: backfill_interview_ml_dataset.recover_flow_transcript_from_docx
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
 - contract: contracts/candidate_profile.contract.yaml
   symbol: candidate_profile.CandidateQualification.from_dict
   kind: method
@@ -908,6 +935,51 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/data_store.contract.yaml
+  symbol: data_store.InterviewMLDatasetStore.count_rows
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/data_store.contract.yaml
+  symbol: data_store.InterviewMLDatasetStore.export_dataset
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/data_store.contract.yaml
+  symbol: data_store.InterviewMLDatasetStore.fetch_one
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/data_store.contract.yaml
+  symbol: data_store.InterviewMLDatasetStore.record_deepseek_traces
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/data_store.contract.yaml
+  symbol: data_store.InterviewMLDatasetStore.upsert_interview
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/data_store.contract.yaml
   symbol: data_store.QuestionOverridesStore.clear_trait_question_override
   kind: method
   tests:
@@ -1115,6 +1187,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/data_store.contract.yaml
+  symbol: data_store.ml_dataset_path_for_history_path
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/data_store.contract.yaml
   symbol: data_store.resolve_interview_notes_output_dir
   kind: function
   tests:
@@ -1268,6 +1349,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/deepseek_finalize_worker.contract.yaml
+  symbol: deepseek_finalize_worker._ml_dataset_store
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/deepseek_finalize_worker.contract.yaml
   symbol: deepseek_finalize_worker._process_is_alive
   kind: function
   tests:
@@ -1341,6 +1431,15 @@ entries:
     - return_type
 - contract: contracts/deepseek_finalize_worker.contract.yaml
   symbol: deepseek_finalize_worker._update_history
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/deepseek_finalize_worker.contract.yaml
+  symbol: deepseek_finalize_worker._update_ml_dataset
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -1494,6 +1593,24 @@ entries:
     - return_type
 - contract: contracts/email_security.contract.yaml
   symbol: email_security.sender_email_error_reason
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/export_interview_ml_dataset.contract.yaml
+  symbol: export_interview_ml_dataset.export_ml_dataset
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/export_interview_ml_dataset.contract.yaml
+  symbol: export_interview_ml_dataset.main
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -3763,6 +3880,16 @@ entries:
     - security_leakage_prevention
 - contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime._deepseek_question_keys
+  kind: function
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime._deepseek_trace_prompt_text
   kind: function
   tests:
   - path: tests/test_interview_root_contracts.py

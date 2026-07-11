@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import csv
+import hashlib
 import json
 import re
 import sqlite3
@@ -23,6 +25,12 @@ DEFAULT_SCHOOL_INTERVIEW_NOTES_DIRS: dict[str, str] = {
     "North Long Beach": r"\Dropbox\LPL NLB Office Shared\Staff\Candidates",
     "Palmdale": r"\Dropbox\LPL PMD Office Shared\Staff\Candidates",
 }
+
+ML_DATASET_DB_NAME = "interview_ml_dataset.sqlite3"
+
+
+def ml_dataset_path_for_history_path(history_path: Path) -> Path:
+    return Path(history_path).parent / ML_DATASET_DB_NAME
 
 
 def default_school_offer_settings() -> dict[str, dict[str, str]]:
@@ -771,6 +779,704 @@ class InterviewHistoryStore:
             except (TypeError, ValueError):
                 continue
         return None
+
+class InterviewMLDatasetStore:
+    """Persists normalized interview data for ML analysis and exports."""
+
+    _TABLES = {
+        "ml_interview_sessions",
+        "ml_candidate_profiles",
+        "ml_answer_rows",
+        "ml_signal_rows",
+        "ml_deepseek_traces",
+        "ml_pending_ai_analysis",
+        "ml_exports",
+    }
+
+    def __init__(self, path: Path):
+        self.path = Path(path)
+        self.db_path = self.path
+
+    def count_rows(self, table_name: str) -> int:
+        self._ensure_db()
+        if table_name not in self._TABLES:
+            raise ValueError("Unsupported ML dataset table.")
+        with sqlite3.connect(self.db_path) as conn:
+            row = conn.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()
+        return int(row[0] if row is not None else 0)
+
+    def fetch_one(self, query: str, params: tuple[Any, ...] = ()) -> sqlite3.Row | None:
+        self._ensure_db()
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            return conn.execute(query, params).fetchone()
+
+    def upsert_interview(
+        self,
+        history_entry: dict[str, Any],
+        payload: dict[str, Any],
+        scoring: dict[str, Any],
+        *,
+        source_job_path: Path | str = "",
+        source_session_path: Path | str = "",
+    ) -> None:
+        if not isinstance(history_entry, dict) or not isinstance(payload, dict) or not isinstance(scoring, dict):
+            return
+        history_id = str(history_entry.get("history_id") or payload.get("history_id") or "").strip()
+        if not history_id:
+            return
+        self._ensure_db()
+        candidate = payload.get("candidate", {}) if isinstance(payload.get("candidate"), dict) else {}
+        qualification = candidate.get("qualification", {}) if isinstance(candidate.get("qualification"), dict) else {}
+        ai_state = self._ai_analysis_state(history_entry, payload, scoring)
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("PRAGMA foreign_keys = ON")
+            self._upsert_session(
+                conn,
+                history_id,
+                history_entry,
+                candidate,
+                scoring,
+                ai_state=ai_state,
+                source_job_path=str(source_job_path or history_entry.get("deepseek_job_path", "") or ""),
+                source_session_path=str(source_session_path or ""),
+            )
+            self._upsert_profile(conn, history_id, qualification)
+            conn.execute("DELETE FROM ml_answer_rows WHERE history_id = ?", (history_id,))
+            conn.execute("DELETE FROM ml_signal_rows WHERE history_id = ?", (history_id,))
+            for answer in self._answer_rows(history_id, payload, scoring):
+                self._insert_row(conn, "ml_answer_rows", answer)
+            for signal in self._signal_rows(history_id, scoring):
+                self._insert_row(conn, "ml_signal_rows", signal)
+            conn.execute("DELETE FROM ml_pending_ai_analysis WHERE history_id = ?", (history_id,))
+            if ai_state in {"missing", "pending"}:
+                self._upsert_pending(conn, history_id, history_entry, candidate, payload, source_job_path)
+            conn.commit()
+
+    def record_deepseek_traces(
+        self,
+        history_id: str,
+        events: list[dict[str, Any]],
+        *,
+        source_path: Path | str = "",
+    ) -> int:
+        key = str(history_id or "").strip()
+        if not key or not isinstance(events, list):
+            return 0
+        self._ensure_db()
+        inserted = 0
+        with sqlite3.connect(self.db_path) as conn:
+            for event in events:
+                if not isinstance(event, dict):
+                    continue
+                conn.execute(
+                    """
+                    INSERT INTO ml_deepseek_traces (
+                        trace_key, history_id, prompt_name, stage, model, base_url,
+                        prompt_text, prompt_messages_json, raw_output, parse_success,
+                        validation_errors_json, normalized_output_json, trait_id,
+                        question_id, source_path, created_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(trace_key) DO UPDATE SET
+                        prompt_name = excluded.prompt_name,
+                        stage = excluded.stage,
+                        model = excluded.model,
+                        base_url = excluded.base_url,
+                        prompt_text = excluded.prompt_text,
+                        prompt_messages_json = excluded.prompt_messages_json,
+                        raw_output = excluded.raw_output,
+                        parse_success = excluded.parse_success,
+                        validation_errors_json = excluded.validation_errors_json,
+                        normalized_output_json = excluded.normalized_output_json,
+                        trait_id = excluded.trait_id,
+                        question_id = excluded.question_id,
+                        source_path = excluded.source_path
+                    """,
+                    (
+                        self._trace_key(key, event),
+                        key,
+                        self._text(event, "prompt_name"),
+                        self._text(event, "stage", "step_label"),
+                        self._text(event, "model"),
+                        self._text(event, "base_url"),
+                        self._text(event, "prompt_text"),
+                        self._json(event.get("prompt_messages", [])),
+                        str(event.get("model_response", "") or event.get("raw_output", "") or ""),
+                        self._bool_int(event.get("parse_success", False)),
+                        self._json(event.get("validation_errors", [])),
+                        self._json(event.get("normalized_output", None)),
+                        self._text(event, "trait_id"),
+                        self._text(event, "question_id"),
+                        str(source_path or event.get("source_path", "") or ""),
+                        str(event.get("timestamp", "") or datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")),
+                    ),
+                )
+                inserted += 1
+            conn.commit()
+        return inserted
+
+    def export_dataset(self, output_dir: Path) -> dict[str, Path]:
+        self._ensure_db()
+        out_dir = Path(output_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        exports = {
+            "sessions": out_dir / "sessions.csv",
+            "answers": out_dir / "answers.csv",
+            "signals": out_dir / "signals.csv",
+            "pending_ai_analysis": out_dir / "pending_ai_analysis.csv",
+            "deepseek_traces": out_dir / "deepseek_traces.jsonl",
+            "joined": out_dir / "ml_dataset.jsonl",
+        }
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            self._write_csv(conn, "SELECT * FROM ml_interview_sessions ORDER BY interview_date, candidate_name", exports["sessions"])
+            self._write_csv(conn, "SELECT * FROM ml_answer_rows ORDER BY history_id, flow_index", exports["answers"])
+            self._write_csv(conn, "SELECT * FROM ml_signal_rows ORDER BY history_id, trait_id, signal_id", exports["signals"])
+            self._write_csv(conn, "SELECT * FROM ml_pending_ai_analysis ORDER BY interview_date, candidate_name", exports["pending_ai_analysis"])
+            self._write_jsonl(conn, "SELECT * FROM ml_deepseek_traces ORDER BY created_at, prompt_name", exports["deepseek_traces"])
+            self._write_jsonl(
+                conn,
+                """
+                SELECT s.candidate_name, s.school, s.track, s.interview_date, s.human_outcome,
+                       s.human_percent_score, s.ai_analysis_state, a.*
+                FROM ml_answer_rows a
+                LEFT JOIN ml_interview_sessions s ON s.history_id = a.history_id
+                ORDER BY a.history_id, a.flow_index
+                """,
+                exports["joined"],
+            )
+            for export_type, path in exports.items():
+                conn.execute(
+                    "INSERT INTO ml_exports (export_type, path, row_count, created_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)",
+                    (export_type, str(path), self._export_count(conn, export_type)),
+                )
+            conn.commit()
+        return exports
+
+    def _ensure_db(self) -> None:
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("PRAGMA foreign_keys = ON")
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS ml_interview_sessions (
+                    history_id TEXT PRIMARY KEY,
+                    candidate_name TEXT,
+                    candidate_email TEXT,
+                    candidate_phone TEXT,
+                    school TEXT,
+                    track TEXT,
+                    position TEXT,
+                    interview_date TEXT,
+                    finalized_at TEXT,
+                    human_outcome TEXT,
+                    human_percent_score REAL,
+                    transcript_status TEXT,
+                    deepseek_status TEXT,
+                    deepseek_model TEXT,
+                    source_report_path TEXT,
+                    source_job_path TEXT,
+                    source_session_path TEXT,
+                    ai_analysis_state TEXT,
+                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS ml_candidate_profiles (
+                    history_id TEXT PRIMARY KEY,
+                    has_degree INTEGER,
+                    degree_type TEXT,
+                    degree_in_ece INTEGER,
+                    ece_units_completed INTEGER,
+                    infant_toddler_class_completed INTEGER,
+                    total_units_completed INTEGER,
+                    years_experience INTEGER,
+                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY(history_id) REFERENCES ml_interview_sessions(history_id) ON DELETE CASCADE
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS ml_answer_rows (
+                    answer_key TEXT PRIMARY KEY,
+                    history_id TEXT NOT NULL,
+                    flow_index INTEGER,
+                    question_id TEXT,
+                    question_type TEXT,
+                    trait_id TEXT,
+                    trait_name TEXT,
+                    rubric_weight REAL,
+                    rubric_priority TEXT,
+                    question_text TEXT,
+                    question_text_hash TEXT,
+                    answer_text TEXT,
+                    candidate_transcript TEXT,
+                    skipped INTEGER,
+                    interviewer_raw_score INTEGER,
+                    interviewer_weighted_score REAL,
+                    ai_advisory_raw_score INTEGER,
+                    ai_advisory_weighted_score REAL,
+                    ai_trait_raw_score INTEGER,
+                    ai_trait_weighted_score REAL,
+                    score_delta_interviewer_advisory INTEGER,
+                    score_delta_interviewer_trait INTEGER,
+                    interviewer_adjusted INTEGER,
+                    adjustment_reason TEXT,
+                    risk_flag INTEGER,
+                    no_example_after_followups INTEGER,
+                    absolute_disqualifier INTEGER,
+                    net_signal_score REAL,
+                    model_trait_score_json TEXT,
+                    model_signal_analysis_summary TEXT,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY(history_id) REFERENCES ml_interview_sessions(history_id) ON DELETE CASCADE
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS ml_signal_rows (
+                    signal_key TEXT PRIMARY KEY,
+                    history_id TEXT NOT NULL,
+                    trait_id TEXT,
+                    question_id TEXT,
+                    signal_id TEXT,
+                    confidence REAL,
+                    weight REAL,
+                    net_signal_score REAL,
+                    auto_no_hire INTEGER,
+                    rationale TEXT,
+                    evidence_quote TEXT,
+                    risks_or_gaps TEXT,
+                    source_json TEXT,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY(history_id) REFERENCES ml_interview_sessions(history_id) ON DELETE CASCADE
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS ml_deepseek_traces (
+                    trace_key TEXT PRIMARY KEY,
+                    history_id TEXT NOT NULL,
+                    prompt_name TEXT,
+                    stage TEXT,
+                    model TEXT,
+                    base_url TEXT,
+                    prompt_text TEXT,
+                    prompt_messages_json TEXT,
+                    raw_output TEXT,
+                    parse_success INTEGER,
+                    validation_errors_json TEXT,
+                    normalized_output_json TEXT,
+                    trait_id TEXT,
+                    question_id TEXT,
+                    source_path TEXT,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY(history_id) REFERENCES ml_interview_sessions(history_id) ON DELETE CASCADE
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS ml_pending_ai_analysis (
+                    history_id TEXT PRIMARY KEY,
+                    candidate_name TEXT,
+                    interview_date TEXT,
+                    reason TEXT,
+                    transcript_available INTEGER,
+                    job_available INTEGER,
+                    recommended_next_action TEXT,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY(history_id) REFERENCES ml_interview_sessions(history_id) ON DELETE CASCADE
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS ml_exports (
+                    export_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    export_type TEXT,
+                    path TEXT,
+                    row_count INTEGER,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_ml_answers_history ON ml_answer_rows(history_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_ml_signals_history ON ml_signal_rows(history_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_ml_traces_history ON ml_deepseek_traces(history_id)")
+            conn.commit()
+
+    def _upsert_session(
+        self,
+        conn: sqlite3.Connection,
+        history_id: str,
+        history_entry: dict[str, Any],
+        candidate: dict[str, Any],
+        scoring: dict[str, Any],
+        *,
+        ai_state: str,
+        source_job_path: str,
+        source_session_path: str,
+    ) -> None:
+        conn.execute(
+            """
+            INSERT INTO ml_interview_sessions (
+                history_id, candidate_name, candidate_email, candidate_phone, school,
+                track, position, interview_date, finalized_at, human_outcome,
+                human_percent_score, transcript_status, deepseek_status, deepseek_model,
+                source_report_path, source_job_path, source_session_path, ai_analysis_state,
+                updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(history_id) DO UPDATE SET
+                candidate_name = excluded.candidate_name,
+                candidate_email = excluded.candidate_email,
+                candidate_phone = excluded.candidate_phone,
+                school = excluded.school,
+                track = excluded.track,
+                position = excluded.position,
+                interview_date = excluded.interview_date,
+                finalized_at = excluded.finalized_at,
+                human_outcome = excluded.human_outcome,
+                human_percent_score = excluded.human_percent_score,
+                transcript_status = excluded.transcript_status,
+                deepseek_status = excluded.deepseek_status,
+                deepseek_model = excluded.deepseek_model,
+                source_report_path = excluded.source_report_path,
+                source_job_path = excluded.source_job_path,
+                source_session_path = excluded.source_session_path,
+                ai_analysis_state = excluded.ai_analysis_state,
+                updated_at = CURRENT_TIMESTAMP
+            """,
+            (
+                history_id,
+                self._text(candidate, "name") or self._text(history_entry, "candidate_name", "candidate"),
+                self._text(candidate, "email", "candidate_email") or self._text(history_entry, "candidate_email", "email"),
+                self._text(candidate, "phone", "candidate_phone"),
+                self._text(candidate, "school") or self._text(history_entry, "school"),
+                self._text(candidate, "track") or self._text(history_entry, "track"),
+                self._text(candidate, "position", "job_title") or self._text(history_entry, "position", "track"),
+                self._text(candidate, "interview_date") or self._text(history_entry, "interview_date"),
+                self._text(history_entry, "saved_at", "deepseek_completed_at"),
+                self._text(scoring, "outcome") or self._text(history_entry, "determination", "outcome"),
+                self._float(scoring.get("percent_of_max", history_entry.get("interview_score"))),
+                self._text(history_entry, "transcript_completeness_status") or self._text(history_entry, "transcript_status"),
+                self._text(history_entry, "deepseek_processing_status"),
+                self._text(history_entry, "deepseek_model"),
+                self._text(history_entry, "interview_notes_path", "saved_report_path", "report_path"),
+                source_job_path,
+                source_session_path,
+                ai_state,
+            ),
+        )
+
+    def _upsert_profile(self, conn: sqlite3.Connection, history_id: str, qualification: dict[str, Any]) -> None:
+        conn.execute(
+            """
+            INSERT INTO ml_candidate_profiles (
+                history_id, has_degree, degree_type, degree_in_ece, ece_units_completed,
+                infant_toddler_class_completed, total_units_completed, years_experience,
+                updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(history_id) DO UPDATE SET
+                has_degree = excluded.has_degree,
+                degree_type = excluded.degree_type,
+                degree_in_ece = excluded.degree_in_ece,
+                ece_units_completed = excluded.ece_units_completed,
+                infant_toddler_class_completed = excluded.infant_toddler_class_completed,
+                total_units_completed = excluded.total_units_completed,
+                years_experience = excluded.years_experience,
+                updated_at = CURRENT_TIMESTAMP
+            """,
+            (
+                history_id,
+                self._bool_int(qualification.get("has_degree")),
+                self._text(qualification, "degree_type"),
+                self._bool_int(qualification.get("degree_in_ece")),
+                self._int_or_none(qualification.get("ece_units_completed")),
+                self._bool_int(qualification.get("infant_toddler_class_completed")),
+                self._int_or_none(qualification.get("total_units_completed")),
+                self._int_or_none(qualification.get("years_experience")),
+            ),
+        )
+
+    def _answer_rows(self, history_id: str, payload: dict[str, Any], scoring: dict[str, Any]) -> list[dict[str, Any]]:
+        scoring_by_trait = {
+            str(row.get("trait_id") or row.get("id") or "").strip(): row
+            for row in scoring.get("rows", []) or []
+            if isinstance(row, dict)
+        }
+        output: list[dict[str, Any]] = []
+        seen: set[tuple[str, str]] = set()
+        for fallback_idx, item in enumerate(payload.get("flow_transcript", []) or []):
+            if not isinstance(item, dict):
+                continue
+            question_type = self._text(item, "type")
+            question_id = self._text(item, "id", "question_id") or str(fallback_idx + 1)
+            flow_index = self._int_or_none(item.get("flow_index")) or fallback_idx + 1
+            row = scoring_by_trait.get(question_id, {}) if question_type == "trait" else {}
+            output.append(self._answer_row(history_id, flow_index, question_type, question_id, item, row))
+            seen.add((question_type, question_id))
+        for fallback_idx, item in enumerate(payload.get("custom_answers", []) or []):
+            if not isinstance(item, dict):
+                continue
+            question_id = self._text(item, "id", "question_id") or f"custom_{fallback_idx + 1}"
+            if ("custom", question_id) in seen:
+                continue
+            output.append(self._answer_row(history_id, fallback_idx + 1, "custom", question_id, item, {}))
+        return output
+
+    def _answer_row(
+        self,
+        history_id: str,
+        flow_index: int,
+        question_type: str,
+        question_id: str,
+        item: dict[str, Any],
+        scoring_row: dict[str, Any],
+    ) -> dict[str, Any]:
+        interviewer_raw = self._int_or_none(scoring_row.get("raw_score"))
+        advisory_raw = self._int_or_none(scoring_row.get("suggested_raw_score"))
+        model_trait_score = scoring_row.get("model_trait_score", {}) if isinstance(scoring_row.get("model_trait_score"), dict) else {}
+        trait_raw = self._int_or_none(model_trait_score.get("raw_score", scoring_row.get("deepseek_raw_score")))
+        return {
+            "answer_key": self._hash([history_id, str(flow_index), question_type, question_id]),
+            "history_id": history_id,
+            "flow_index": flow_index,
+            "question_id": question_id,
+            "question_type": question_type,
+            "trait_id": question_id if question_type == "trait" else "",
+            "trait_name": self._text(scoring_row, "trait_name", "name"),
+            "rubric_weight": self._float(scoring_row.get("weight")),
+            "rubric_priority": self._text(scoring_row, "priority"),
+            "question_text": self._text(item, "question", "prompt", "title"),
+            "question_text_hash": self._hash([self._text(item, "question", "prompt", "title")]),
+            "answer_text": self._text(item, "answer") or self._text(item, "candidate_transcript"),
+            "candidate_transcript": self._text(item, "candidate_transcript"),
+            "skipped": self._bool_int(item.get("skipped", scoring_row.get("skipped", False))),
+            "interviewer_raw_score": interviewer_raw,
+            "interviewer_weighted_score": self._float(scoring_row.get("weighted_score")),
+            "ai_advisory_raw_score": advisory_raw,
+            "ai_advisory_weighted_score": self._float(scoring_row.get("deepseek_signal_score", scoring_row.get("deepseek_calculated_score"))),
+            "ai_trait_raw_score": trait_raw,
+            "ai_trait_weighted_score": trait_raw * (self._float(scoring_row.get("weight", 0) or 0) or 0) if trait_raw is not None else None,
+            "score_delta_interviewer_advisory": interviewer_raw - advisory_raw if interviewer_raw is not None and advisory_raw is not None else None,
+            "score_delta_interviewer_trait": interviewer_raw - trait_raw if interviewer_raw is not None and trait_raw is not None else None,
+            "interviewer_adjusted": self._bool_int(scoring_row.get("interviewer_adjusted", False)),
+            "adjustment_reason": self._text(scoring_row, "adjustment_reason"),
+            "risk_flag": self._bool_int(bool(model_trait_score.get("risks_or_gaps")) or bool(scoring_row.get("auto_no_hire_present"))),
+            "no_example_after_followups": self._bool_int(scoring_row.get("no_example_after_followups", False)),
+            "absolute_disqualifier": self._bool_int(scoring_row.get("absolute_disqualifier", False)),
+            "net_signal_score": self._float(scoring_row.get("net_signal_score")),
+            "model_trait_score_json": self._json(model_trait_score),
+            "model_signal_analysis_summary": self._text(scoring_row, "model_signal_analysis_summary"),
+        }
+
+    def _signal_rows(self, history_id: str, scoring: dict[str, Any]) -> list[dict[str, Any]]:
+        output: list[dict[str, Any]] = []
+        for row in scoring.get("rows", []) or []:
+            if not isinstance(row, dict):
+                continue
+            trait_id = self._text(row, "trait_id", "id")
+            auto_ids = {str(item) for item in row.get("auto_no_hire_signal_ids", []) or []}
+            for idx, signal in enumerate(row.get("model_signal_suggestions", []) or []):
+                if not isinstance(signal, dict):
+                    continue
+                signal_id = self._text(signal, "signal_id", "id", "ref") or str(idx)
+                output.append(
+                    {
+                        "signal_key": self._hash([history_id, trait_id, signal_id, str(idx)]),
+                        "history_id": history_id,
+                        "trait_id": trait_id,
+                        "question_id": trait_id,
+                        "signal_id": signal_id,
+                        "confidence": self._float(signal.get("confidence")),
+                        "weight": self._float(signal.get("weight", signal.get("default_weight"))),
+                        "net_signal_score": self._float(row.get("net_signal_score")),
+                        "auto_no_hire": self._bool_int(signal_id in auto_ids or signal.get("is_auto_no_hire", False)),
+                        "rationale": self._text(signal, "rationale", "reason"),
+                        "evidence_quote": self._text(signal, "evidence_quote", "quote"),
+                        "risks_or_gaps": self._text(signal, "risks_or_gaps", "risk"),
+                        "source_json": self._json(signal),
+                    }
+                )
+        return output
+
+    def _upsert_pending(
+        self,
+        conn: sqlite3.Connection,
+        history_id: str,
+        history_entry: dict[str, Any],
+        candidate: dict[str, Any],
+        payload: dict[str, Any],
+        source_job_path: Path | str,
+    ) -> None:
+        conn.execute(
+            """
+            INSERT INTO ml_pending_ai_analysis (
+                history_id, candidate_name, interview_date, reason, transcript_available,
+                job_available, recommended_next_action, created_at, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ON CONFLICT(history_id) DO UPDATE SET
+                candidate_name = excluded.candidate_name,
+                interview_date = excluded.interview_date,
+                reason = excluded.reason,
+                transcript_available = excluded.transcript_available,
+                job_available = excluded.job_available,
+                recommended_next_action = excluded.recommended_next_action,
+                updated_at = CURRENT_TIMESTAMP
+            """,
+            (
+                history_id,
+                self._text(candidate, "name") or self._text(history_entry, "candidate_name", "candidate"),
+                self._text(candidate, "interview_date") or self._text(history_entry, "interview_date"),
+                "DeepSeek analysis missing or not completed.",
+                self._bool_int(self._has_transcript(payload)),
+                self._bool_int(bool(str(source_job_path or history_entry.get("deepseek_job_path", "") or "").strip())),
+                "Queue DeepSeek analysis in a later batch slice.",
+            ),
+        )
+
+    @staticmethod
+    def _insert_row(conn: sqlite3.Connection, table: str, row: dict[str, Any]) -> None:
+        keys = list(row)
+        placeholders = ", ".join("?" for _ in keys)
+        conn.execute(f"INSERT INTO {table} ({', '.join(keys)}) VALUES ({placeholders})", tuple(row[key] for key in keys))
+
+    @staticmethod
+    def _ai_analysis_state(history_entry: dict[str, Any], payload: dict[str, Any], scoring: dict[str, Any]) -> str:
+        statuses = {
+            str(history_entry.get("deepseek_processing_status", "") or "").strip().lower(),
+            str(payload.get("summary_status", "") or "").strip().lower(),
+            str(payload.get("model_suggestion_status", "") or "").strip().lower(),
+            str(payload.get("model_scoring_status", "") or "").strip().lower(),
+        }
+        has_ai = any(
+            isinstance(row, dict)
+            and (
+                row.get("suggested_raw_score") is not None
+                or row.get("deepseek_raw_score") is not None
+                or row.get("model_trait_score")
+                or row.get("model_signal_suggestions")
+            )
+            for row in scoring.get("rows", []) or []
+        )
+        if "complete" in statuses or ("generated" in statuses and has_ai):
+            return "complete"
+        if "partial" in statuses or has_ai:
+            return "partial"
+        if statuses.intersection({"queued", "processing", "not_started"}):
+            return "pending"
+        return "missing"
+
+    @staticmethod
+    def _has_transcript(payload: dict[str, Any]) -> bool:
+        return any(
+            isinstance(item, dict) and str(item.get("candidate_transcript") or item.get("answer") or "").strip()
+            for item in [*(payload.get("flow_transcript", []) or []), *(payload.get("custom_answers", []) or [])]
+        )
+
+    @staticmethod
+    def _write_csv(conn: sqlite3.Connection, query: str, path: Path) -> None:
+        cursor = conn.execute(query)
+        rows = cursor.fetchall()
+        fieldnames = [item[0] for item in cursor.description or []]
+        with path.open("w", encoding="utf-8", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=fieldnames)
+            writer.writeheader()
+            for row in rows:
+                writer.writerow(dict(row))
+
+    @staticmethod
+    def _write_jsonl(conn: sqlite3.Connection, query: str, path: Path) -> None:
+        with path.open("w", encoding="utf-8") as handle:
+            for row in conn.execute(query).fetchall():
+                handle.write(json.dumps(dict(row), ensure_ascii=False, sort_keys=True))
+                handle.write("\n")
+
+    @staticmethod
+    def _export_count(conn: sqlite3.Connection, export_type: str) -> int:
+        table_by_export = {
+            "sessions": "ml_interview_sessions",
+            "answers": "ml_answer_rows",
+            "signals": "ml_signal_rows",
+            "pending_ai_analysis": "ml_pending_ai_analysis",
+            "deepseek_traces": "ml_deepseek_traces",
+            "joined": "ml_answer_rows",
+        }
+        table = table_by_export.get(export_type, "ml_exports")
+        row = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()
+        return int(row[0] if row is not None else 0)
+
+    @staticmethod
+    def _trace_key(history_id: str, event: dict[str, Any]) -> str:
+        return InterviewMLDatasetStore._hash(
+            [
+                history_id,
+                str(event.get("timestamp", "")),
+                str(event.get("prompt_name", "")),
+                str(event.get("prompt_text", "")),
+                str(event.get("model_response", event.get("raw_output", ""))),
+            ]
+        )
+
+    @staticmethod
+    def _hash(parts: list[str]) -> str:
+        digest = hashlib.sha256()
+        digest.update("\x1f".join(str(part) for part in parts).encode("utf-8"))
+        return digest.hexdigest()
+
+    @staticmethod
+    def _json(value: Any) -> str:
+        return json.dumps(value, ensure_ascii=False, sort_keys=True)
+
+    @staticmethod
+    def _text(payload: dict[str, Any], *keys: str) -> str:
+        for key in keys:
+            value = payload.get(key)
+            if value is None:
+                continue
+            text = str(value).strip()
+            if text:
+                return text
+        return ""
+
+    @staticmethod
+    def _int_or_none(value: Any) -> int | None:
+        if isinstance(value, bool):
+            return None
+        try:
+            if value is None or value == "":
+                return None
+            return int(value)
+        except (TypeError, ValueError):
+            return None
+
+    @staticmethod
+    def _float(value: Any) -> float | None:
+        if isinstance(value, bool):
+            return None
+        try:
+            if value is None or value == "":
+                return None
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+
+    @staticmethod
+    def _bool_int(value: Any) -> int | None:
+        if value is None:
+            return None
+        return 1 if bool(value) else 0
 
 
 class SchoolOfferSettingsStore:

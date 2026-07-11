@@ -28,7 +28,7 @@ from types import ModuleType
 from typing import Any, Callable, Deque, Mapping, Optional, Sequence, TypedDict
 from uuid import uuid4
 
-from data_store import InterviewHistoryStore, RubricLoader
+from data_store import InterviewHistoryStore, InterviewMLDatasetStore, RubricLoader, ml_dataset_path_for_history_path
 from scoring_reporting import (
     CandidateQualification,
     DEFAULT_ENGINE_MODULE_CONTRACT,
@@ -1243,6 +1243,7 @@ class DeepSeekSummaryConfig:
     timeout_seconds: float = 600.0
     prompt_templates: dict[str, Any] = field(default_factory=dict)
     debug_log_dir: Path | None = None
+    trace_events: list[dict[str, Any]] = field(default_factory=list)
 
 
 _LOCAL_DEEPSEEK_BASE_URL = "http://127.0.0.1:11434/v1"
@@ -2033,21 +2034,32 @@ def _write_deepseek_debug_log(
     model_response: str,
     parse_success: bool,
     validation_errors: list[str],
+    messages: list[dict[str, str]] | None = None,
+    normalized_output: dict[str, Any] | list[dict[str, Any]] | None = None,
+    step_label: str = "",
     candidate_name: str = "",
     job_title: str = "",
 ) -> None:
-    log_path = _deepseek_debug_log_path(config)
-    if log_path is None:
-        return
+    prompt_messages = list(messages or [])
     event = {
         "timestamp": _utc_timestamp(),
         "prompt_name": str(prompt_name or "").strip(),
+        "stage": str(step_label or prompt_name or "").strip(),
         "candidate_name": str(candidate_name or "").strip(),
         "job_title": str(job_title or "").strip(),
+        "model": str(config.model or "").strip(),
+        "base_url": str(config.base_url or "").strip(),
+        "prompt_text": _deepseek_trace_prompt_text(prompt_messages),
+        "prompt_messages": prompt_messages,
         "model_response": str(model_response or ""),
         "parse_success": bool(parse_success),
         "validation_errors": [str(error) for error in validation_errors],
+        "normalized_output": normalized_output,
     }
+    config.trace_events.append(event)
+    log_path = _deepseek_debug_log_path(config)
+    if log_path is None:
+        return
     try:
         log_path.parent.mkdir(parents=True, exist_ok=True)
         with log_path.open("a", encoding="utf-8") as handle:
@@ -2055,6 +2067,18 @@ def _write_deepseek_debug_log(
             handle.write("\n")
     except OSError:
         logger.warning("DeepSeek debug output log write failed: OSError")
+
+
+def _deepseek_trace_prompt_text(messages: list[dict[str, str]]) -> str:
+    parts: list[str] = []
+    for message in messages:
+        if not isinstance(message, dict):
+            continue
+        role = str(message.get("role") or "").strip()
+        content = str(message.get("content") or "").strip()
+        if role or content:
+            parts.append(f"{role}:\n{content}".strip())
+    return "\n\n".join(parts)
 
 
 def _normalize_deepseek_completion_until_valid(
@@ -2085,6 +2109,8 @@ def _normalize_deepseek_completion_until_valid(
                 model_response="",
                 parse_success=False,
                 validation_errors=[type(exc).__name__],
+                messages=active_messages,
+                step_label=step_label,
                 candidate_name=candidate_name,
                 job_title=job_title,
             )
@@ -2097,6 +2123,9 @@ def _normalize_deepseek_completion_until_valid(
                 model_response=content,
                 parse_success=True,
                 validation_errors=[],
+                messages=active_messages,
+                normalized_output=normalized,
+                step_label=step_label,
                 candidate_name=candidate_name,
                 job_title=job_title,
             )
@@ -2109,6 +2138,8 @@ def _normalize_deepseek_completion_until_valid(
                 model_response=content,
                 parse_success=False,
                 validation_errors=[str(exc)],
+                messages=active_messages,
+                step_label=step_label,
                 candidate_name=candidate_name,
                 job_title=job_title,
             )
@@ -4085,6 +4116,18 @@ def enqueue_deepseek_finalize_job(app: Any, context: FinalizeContext, out_path: 
             "deepseek_progress_path": str(progress_path),
         },
     )
+    InterviewMLDatasetStore(ml_dataset_path_for_history_path(Path(history_path))).upsert_interview(
+        {
+            "history_id": history_id,
+            "deepseek_processing_status": "queued",
+            "deepseek_job_path": str(job_path),
+            "deepseek_progress_path": str(progress_path),
+            "saved_report_path": str(out_path),
+        },
+        context.payload,
+        context.scoring,
+        source_job_path=job_path,
+    )
     _write_deepseek_launch_progress(progress_path, "Launching local DeepSeek worker")
     _start_deepseek_finalize_worker(job_path)
     return job_path
@@ -4606,6 +4649,14 @@ class FinalizeGateways:
             "deepseek_processing_warning": "",
         }
         app.history_store.append(history_entry)
+        history_path = str(getattr(app.history_store, "path", "")).strip()
+        if history_path:
+            InterviewMLDatasetStore(ml_dataset_path_for_history_path(Path(history_path))).upsert_interview(
+                history_entry,
+                context.payload,
+                context.scoring,
+                source_job_path=history_entry.get("deepseek_job_path", ""),
+            )
         return history_id
 
     def send_referral(

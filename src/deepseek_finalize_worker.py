@@ -19,7 +19,7 @@ SRC = Path(__file__).resolve().parent
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from data_store import InterviewHistoryStore
+from data_store import InterviewHistoryStore, InterviewMLDatasetStore, ml_dataset_path_for_history_path
 from interview_runtime import (
     DEFAULT_DEEPSEEK_PROGRESS_TASKS,
     _attach_deepseek_role_context_to_flow,
@@ -58,12 +58,49 @@ def _history_store(job: dict[str, Any]) -> InterviewHistoryStore | None:
     return InterviewHistoryStore(Path(history_path))
 
 
+def _ml_dataset_store(job: dict[str, Any]) -> InterviewMLDatasetStore | None:
+    history_path = str(job.get("history_path", "")).strip()
+    if not history_path:
+        return None
+    return InterviewMLDatasetStore(ml_dataset_path_for_history_path(Path(history_path)))
+
+
 def _update_history(job: dict[str, Any], updates: dict[str, Any]) -> None:
     store = _history_store(job)
     history_id = str(job.get("history_id", "")).strip()
     if store is None or not history_id:
         return
     store.update_row(history_id, updates)
+
+
+def _update_ml_dataset(
+    job: dict[str, Any],
+    payload: dict[str, Any],
+    scoring: dict[str, Any],
+    updates: dict[str, Any],
+    config: Any | None = None,
+) -> None:
+    store = _ml_dataset_store(job)
+    history_id = str(job.get("history_id", "")).strip()
+    if store is None or not history_id:
+        return
+    history_entry = {
+        "history_id": history_id,
+        "deepseek_job_path": str(job.get("job_path", "") or ""),
+        "saved_report_path": str(updates.get("interview_notes_path") or updates.get("saved_report_path") or job.get("report_path", "") or ""),
+        **updates,
+    }
+    store.upsert_interview(
+        history_entry,
+        payload,
+        scoring,
+        source_job_path=str(job.get("_job_path", "") or ""),
+        source_session_path=str(job.get("source_session_path", "") or ""),
+    )
+    trace_events = list(getattr(config, "trace_events", []) or []) if config is not None else []
+    trace_events.extend(item for item in job.get("deepseek_trace_events", []) or [] if isinstance(item, dict))
+    if trace_events:
+        store.record_deepseek_traces(history_id, trace_events, source_path=str(job.get("_job_path", "") or ""))
 
 
 def _write_progress(job: dict[str, Any], step: str, status: str = "processing") -> None:
@@ -393,16 +430,15 @@ def _run_job_unlocked(job: dict[str, Any], job_path: Path) -> None:
         _write_progress(job, "Updating interview notes document")
         out_path = _export_interview_notes(job, job_path, rubric, payload, scoring)
         processing_status, processing_warning = _deepseek_history_status(payload)
-        _update_history(
-            job,
-            {
-                "saved_report_path": str(out_path),
-                "interview_notes_path": str(out_path),
-                "deepseek_processing_status": processing_status,
-                "deepseek_processing_warning": processing_warning,
-                "deepseek_completed_at": _utc_timestamp(),
-            },
-        )
+        updates = {
+            "saved_report_path": str(out_path),
+            "interview_notes_path": str(out_path),
+            "deepseek_processing_status": processing_status,
+            "deepseek_processing_warning": processing_warning,
+            "deepseek_completed_at": _utc_timestamp(),
+        }
+        _update_history(job, updates)
+        _update_ml_dataset(job, payload, scoring, updates)
         _write_progress(job, "Complete", "complete")
         return
 
@@ -459,24 +495,26 @@ def _run_job_unlocked(job: dict[str, Any], job_path: Path) -> None:
     if str(report_path):
         _delete_superseded_basic_notes(report_path, out_path)
     processing_status, processing_warning = _deepseek_history_status(payload)
-    _update_history(
-        job,
-        {
-            "interview_score": scoring.get("percent_of_max", 0),
-            "determination": scoring.get("outcome", ""),
-            "saved_report_path": str(out_path),
-            "interview_notes_path": str(out_path),
-            "deepseek_processing_status": processing_status,
-            "deepseek_processing_warning": processing_warning,
-            "deepseek_completed_at": _utc_timestamp(),
-        },
-    )
+    updates = {
+        "interview_score": scoring.get("percent_of_max", 0),
+        "determination": scoring.get("outcome", ""),
+        "saved_report_path": str(out_path),
+        "interview_notes_path": str(out_path),
+        "deepseek_processing_status": processing_status,
+        "deepseek_processing_warning": processing_warning,
+        "deepseek_completed_at": _utc_timestamp(),
+    }
+    _update_history(job, updates)
+    job["deepseek_trace_events"] = list(getattr(config, "trace_events", []) or [])
+    _checkpoint_job(job_path, job, payload, scoring)
+    _update_ml_dataset(job, payload, scoring, updates, config)
     _write_progress(job, "Complete", "complete")
 
 
 def run_job(job_path: Path) -> None:
     job_path = Path(job_path)
     job = _load_job(job_path)
+    job["_job_path"] = str(job_path)
     history_id = str(job.get("history_id", "")).strip()
     if not history_id:
         raise ValueError("DeepSeek finalize job missing history_id.")
@@ -500,6 +538,18 @@ def main(argv: list[str]) -> int:
             _write_progress(job, warning, "failed")
             _update_history(
                 job,
+                {
+                    "deepseek_processing_status": "failed",
+                    "deepseek_processing_warning": warning,
+                    "deepseek_completed_at": _utc_timestamp(),
+                },
+            )
+            payload = job.get("payload", {}) if isinstance(job.get("payload"), dict) else {}
+            scoring = job.get("scoring", {}) if isinstance(job.get("scoring"), dict) else {}
+            _update_ml_dataset(
+                job,
+                payload,
+                scoring,
                 {
                     "deepseek_processing_status": "failed",
                     "deepseek_processing_warning": warning,

@@ -11,12 +11,25 @@ modules:
     - interview_app_finalize_pipeline
     - interview_app_history_actions
     - interview_app_session_manager
+    - interview_ml_dataset_db
   deepseek_finalize_worker:
     path: src/deepseek_finalize_worker.py
     depends_on:
     - data_store
     - interview_runtime
     - scoring_reporting
+    - interview_ml_dataset_db
+  backfill_interview_ml_dataset:
+    path: tools/backfill_interview_ml_dataset.py
+    depends_on:
+    - data_store
+    - interview_history_db
+    - interview_ml_dataset_db
+  export_interview_ml_dataset:
+    path: tools/export_interview_ml_dataset.py
+    depends_on:
+    - data_store
+    - interview_ml_dataset_db
   onboarding_operations:
     path: src/onboarding_operations.py
     depends_on:
@@ -157,6 +170,10 @@ modules:
   interview_history_db:
     path: user_artifacts/interview_history.sqlite3
     depends_on: []
+  interview_ml_dataset_db:
+    path: user_artifacts/interview_ml_dataset.sqlite3
+    depends_on:
+    - interview_history_db
   legacy_interview_history_json:
     path: interview_history.json
     depends_on: []
@@ -184,6 +201,7 @@ modules:
     depends_on:
     - platform_services
     - interview_history_db
+    - interview_ml_dataset_db
     - legacy_interview_history_json
   docx_compat:
     path: src/docx_compat.py

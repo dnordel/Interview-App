@@ -105,6 +105,15 @@ datastores:
     - data_store
     - pyside_interview_app
     - web_app_backend
+  interview_ml_dataset_db:
+    type: sqlite
+    description: Derived normalized ML dataset lives in user_artifacts/interview_ml_dataset.sqlite3, storing session/profile rows, exact per-answer prompt snapshots, human and AI scoring fields, DeepSeek prompt/output traces, signal evidence, export metadata, and pending-AI backlog rows. It is rebuilt or enriched from finalize, DeepSeek worker, history, job/session artifacts, and DOCX transcript recovery without making it canonical app history.
+    used_by:
+    - data_store
+    - interview_runtime
+    - deepseek_finalize_worker
+    - tools/backfill_interview_ml_dataset.py
+    - tools/export_interview_ml_dataset.py
   staffing_referral_queue_db:
     type: sqlite
     description: Canonical interview-to-staffing director referral bridge lives in user_artifacts/staffing_referrals.sqlite3; legacy staffing_referrals.pending.jsonl records are imported once when present.

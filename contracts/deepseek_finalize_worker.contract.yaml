@@ -2,7 +2,7 @@ module:
   name: deepseek_finalize_worker
   language: python
   path: src/deepseek_finalize_worker.py
-  version: 1.9.3
+  version: 1.10.0
   description: Detached local DeepSeek finalize worker that refreshes interview notes
     documents and history status after the GUI finalize flow returns, keeping DeepSeek
     signal scoring advisory and human raw scores final. Workers serialize processing
@@ -46,6 +46,18 @@ functions:
     type: InterviewHistoryStore | None
   exceptions: []
   side_effects: none
+- name: _ml_dataset_store
+  description: Build the sibling interview ML dataset store for a DeepSeek job when
+    a history path is present.
+  locked: false
+  inputs:
+    job:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: InterviewMLDatasetStore | None
+  exceptions: []
+  side_effects: none
 - name: _update_history
   description: Update the matching interview history row when history identifiers
     are available.
@@ -61,6 +73,34 @@ functions:
     type: None
   exceptions: []
   side_effects: Updates interview history through InterviewHistoryStore when a row matches.
+- name: _update_ml_dataset
+  description: Upsert the sibling ML dataset row set for a DeepSeek job using current
+    payload/scoring, history updates, source paths, and buffered DeepSeek prompt/output
+    trace events. Missing or failed AI analysis creates pending-AI backlog data and
+    never starts a new DeepSeek run.
+  locked: false
+  inputs:
+    job:
+      type: dict[str, Any]
+      required: true
+    payload:
+      type: dict[str, Any]
+      required: true
+    scoring:
+      type: dict[str, Any]
+      required: true
+    updates:
+      type: dict[str, Any]
+      required: true
+    config:
+      type: Any | None
+      required: false
+      default: null
+  returns:
+    type: None
+  exceptions: []
+  side_effects: Writes interview_ml_dataset.sqlite3 and trace rows when a history
+    path and history id are available.
 - name: _write_progress
   description: Write sanitized detached DeepSeek progress state for the GUI progress
     popup, using only step/status/task-list/timestamp metadata and no transcript
