@@ -378,11 +378,17 @@ class PySideInterviewSession:
                 continue
             previous = dict(self.answers.get(item.question_id, {}) or {})
             previous_score = str(previous.get("score") or "").strip()
+            previous_notes = str(previous.get("notes") or "").strip()
+            preserve_manual_notes = (
+                item.kind in {"custom", "qualification"}
+                and bool(previous_notes)
+                and not bool(previous.get("imported_transcript"))
+            )
             self.answers[item.question_id] = {
                 "kind": item.kind,
                 "title": item.title,
                 "prompt": item.prompt,
-                "notes": match.candidate_transcript,
+                "notes": previous_notes if preserve_manual_notes else match.candidate_transcript,
                 "score": previous_score,
                 "quick_actions": list(previous.get("quick_actions", []) or []),
                 "imported_transcript": True,
@@ -3365,6 +3371,12 @@ class PySideInterviewWindow:
     ) -> None:
         if not isinstance(payload, dict):
             return
+        qualification = payload.get("qualification", {})
+        candidate = payload.get("candidate", {})
+        if isinstance(candidate, dict) and isinstance(candidate.get("qualification"), dict):
+            qualification = candidate.get("qualification", {})
+        if isinstance(qualification, dict):
+            session.qualification = dict(qualification)
         stored_answers = payload.get("answers", {})
         if isinstance(stored_answers, dict):
             for question_id, answer in stored_answers.items():
@@ -3400,6 +3412,9 @@ class PySideInterviewWindow:
         source_path: Path,
         artifact_updates: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
+        adapter = _PySideFinalizeAdapter(session, base_dir=DEFAULT_BASE_DIR, history_path=self.model.history_path)
+        flow_transcript = adapter._build_flow_transcript()
+        adapter._apply_candidate_transcripts_to_flow(flow_transcript)
         flow_recordings = [
             {**recording, "flow_index": flow_index}
             for flow_index, recording in sorted(session.flow_recordings.items())
@@ -3422,6 +3437,8 @@ class PySideInterviewWindow:
             "flow_candidate_transcripts": {
                 str(flow_index): transcript for flow_index, transcript in sorted(session.flow_candidate_transcripts.items())
             },
+            "flow_transcript": flow_transcript,
+            "custom_answers": adapter._ordered_custom_answers(),
             "flow_recordings": flow_recordings,
             "imported_indeed_transcript": {
                 "source_path": str(source_path),

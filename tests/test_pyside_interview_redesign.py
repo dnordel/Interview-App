@@ -1009,6 +1009,10 @@ Speaker 0: I noticed the child was upset and helped them name the feeling.
     assert row["outcome"] == "Incomplete"
     assert row["imported_indeed_transcript"]["source_path"] == str(transcript_path)
     assert row["answers"]["trait_1"]["notes"].startswith("I noticed")
+    assert any(
+        str(item.get("candidate_transcript") or "").startswith("I noticed")
+        for item in row["flow_transcript"]
+    )
     assert row["flow_recordings"][0]["source"] == "indeed_transcript_import"
     assert window.session is not None
     assert window.session.candidate_name == "Miriam Rivera"
@@ -1040,7 +1044,26 @@ def test_pyside_history_import_indeed_transcript_opens_review_for_existing_candi
             "outcome": "Incomplete",
             "score": "80.0%",
             "review_scores": {"trait_1": "4"},
+            "candidate": {
+                "qualification": {
+                    "has_degree": True,
+                    "degree_type": "AA",
+                    "degree_in_ece": True,
+                    "ece_units_completed": 35,
+                    "infant_toddler_class_completed": True,
+                    "total_units_completed": None,
+                    "years_experience": 30,
+                }
+            },
             "answers": {
+                "FT-or-PT": {
+                    "kind": "custom",
+                    "title": "Non-scored question",
+                    "prompt": "Are you looking for full-time or part-time?",
+                    "notes": "part-time for now, full-time eventually.",
+                    "score": "",
+                    "quick_actions": [],
+                },
                 "trait_1": {
                     "kind": "trait",
                     "title": "Empathy",
@@ -1064,6 +1087,10 @@ def test_pyside_history_import_indeed_transcript_opens_review_for_existing_candi
 Speaker 0: Tell me about a time a child was having a hard moment emotionally.
 
 Speaker 1: I got low, named the feeling, and helped the child find words.
+
+Speaker 0: Are you looking for full-time or part-time?
+
+Speaker 1: I gave a long transcript answer that should not replace the saved logistics field.
 """,
         encoding="utf-8",
     )
@@ -1096,8 +1123,14 @@ Speaker 1: I got low, named the feeling, and helped the child find words.
     assert stored["review_scores"]["trait_1"] == "4"
     assert stored["scoring"]["rows"][0]["raw_score"] == 4
     assert stored["score"] == "80.0%"
+    assert stored["candidate"]["qualification"]["degree_type"] == "AA"
+    assert stored["answers"]["FT-or-PT"]["notes"] == "part-time for now, full-time eventually."
     assert stored["imported_indeed_transcript"]["mapped_count"] == 1
     assert stored["answers"]["trait_1"]["notes"].startswith("I got low")
+    assert any(
+        str(item.get("candidate_transcript") or "").startswith("I got low")
+        for item in stored["flow_transcript"]
+    )
     assert stored["flow_recordings"][0]["candidate_transcript"].startswith("I got low")
     window.window.close()
     app.processEvents()
