@@ -1,0 +1,255 @@
+module:
+  name: director_staffing_app
+  language: python
+  path: src/director_staffing_app.py
+  version: 1.1.0
+  description: Minimal PySide entrypoint for the director Staffing v2 dashboard that avoids full interview, audio, transcription, DOCX, and local AI setup while preserving school-specific staffing DB routing and pending director-referral queue/history backfill.
+functions:
+- name: parse_args
+  description: Parse director staffing launch arguments.
+  locked: false
+  inputs:
+    argv:
+      type: Sequence[str] | None
+      required: false
+      default: null
+  returns:
+    type: argparse.Namespace
+  exceptions:
+  - SystemExit
+  side_effects: none
+- name: import_staffing_seed_if_needed
+  description: Initialize the staffing store and import staffing seed rows when the DB is empty or behind the seed assignment count.
+  locked: false
+  inputs:
+    store:
+      type: StaffingStore
+      required: true
+    seed_path:
+      type: Path
+      required: false
+      default: STAFFING_SEED_PATH
+  returns:
+    type: void
+  exceptions:
+  - OSError
+  - JSONDecodeError
+  - StaffingEditLock
+  side_effects: initializes staffing SQLite storage, reads config/staffing_seed.json, and may import seed assignments
+- name: staffing_db_path_for_school
+  description: Build the school-specific staffing SQLite path used by director launchers.
+  locked: false
+  inputs:
+    school:
+      type: str
+      required: true
+    base_path:
+      type: Path
+      required: false
+      default: STAFFING_DB_PATH
+  returns:
+    type: Path
+  exceptions: []
+  side_effects: none
+- name: bootstrap_school_staffing_db_from_base
+  description: Copy the shared staffing DB and SQLite sidecars into a school-specific DB when that school DB does not exist yet.
+  locked: false
+  inputs:
+    school:
+      type: str
+      required: true
+    school_path:
+      type: Path
+      required: true
+    base_path:
+      type: Path
+      required: false
+      default: STAFFING_DB_PATH
+  returns:
+    type: void
+  exceptions:
+  - OSError
+  side_effects: may copy the base staffing SQLite file and WAL/SHM sidecars
+- name: sync_director_referrals
+  description: Import queued director referral events and backfill hire/borderline interview history rows into the school-scoped staffing DB.
+  locked: false
+  inputs:
+    store:
+      type: StaffingStore
+      required: true
+    school:
+      type: str
+      required: true
+    history_db_path:
+      type: Path
+      required: false
+      default: INTERVIEW_HISTORY_DB_PATH
+    history_json_path:
+      type: Path
+      required: false
+      default: INTERVIEW_HISTORY_JSON_PATH
+    queue_db_path:
+      type: Path
+      required: false
+      default: STAFFING_REFERRAL_QUEUE_DB_PATH
+    queue_legacy_path:
+      type: Path
+      required: false
+      default: STAFFING_REFERRAL_QUEUE_LEGACY_PATH
+  returns:
+    type: int
+  exceptions: []
+  side_effects: reads referral queue/history storage and may upsert or dismiss director candidate referrals in staffing SQLite
+- name: _import_queued_director_referrals
+  description: Consume queued director referral and dismissal events for one school.
+  locked: false
+  inputs:
+    service:
+      type: StaffingService
+      required: true
+    school:
+      type: str
+      required: true
+    queue_db_path:
+      type: Path
+      required: true
+    queue_legacy_path:
+      type: Path
+      required: true
+  returns:
+    type: int
+  exceptions: []
+  side_effects: marks queue events consumed and may mutate director candidate referrals
+- name: _backfill_director_referrals_from_history
+  description: Backfill hire and borderline interview history rows into pending director referrals for one school.
+  locked: false
+  inputs:
+    store:
+      type: StaffingStore
+      required: true
+    service:
+      type: StaffingService
+      required: true
+    school:
+      type: str
+      required: true
+    history_db_path:
+      type: Path
+      required: true
+    history_json_path:
+      type: Path
+      required: true
+  returns:
+    type: int
+  exceptions: []
+  side_effects: reads interview history and may upsert director candidate referrals
+- name: _load_history_payloads
+  description: Read interview history payloads from canonical SQLite first, then legacy JSON if the DB has no rows.
+  locked: false
+  inputs:
+    history_db_path:
+      type: Path
+      required: true
+    history_json_path:
+      type: Path
+      required: true
+  returns:
+    type: list[dict[str, Any]]
+  exceptions: []
+  side_effects: reads local history storage
+- name: _history_text
+  description: Return the first non-empty string value for candidate history keys.
+  locked: false
+  inputs:
+    row:
+      type: dict[str, Any]
+      required: true
+    keys:
+      type: str
+      required: true
+      variadic: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _history_status_from_score
+  description: Derive Hire, Borderline, or No Hire from a numeric score string.
+  locked: false
+  inputs:
+    score:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _director_referral_outcome
+  description: Normalize history status text into director referral outcomes.
+  locked: false
+  inputs:
+    status:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: _director_referral_rating
+  description: Normalize score text into a 1-10 director referral rating.
+  locked: false
+  inputs:
+    score:
+      type: str
+      required: true
+  returns:
+    type: float | None
+  exceptions: []
+  side_effects: none
+- name: _history_row_key
+  description: Build a fallback director referral history id from candidate and interview date.
+  locked: false
+  inputs:
+    row:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: launch_director_staffing_app
+  description: Launch the standalone director Staffing v2 PySide window with an optional school filter.
+  locked: false
+  inputs:
+    director_school:
+      type: str
+      required: false
+      default: ""
+  returns:
+    type: int
+  exceptions:
+  - PySide6UnavailableError
+  - OSError
+  side_effects: creates a QApplication/main window, initializes staffing storage, builds StaffingDashboardV2Page, and starts the Qt event loop
+- name: main
+  description: CLI entry point for the standalone director Staffing v2 dashboard.
+  locked: false
+  inputs:
+    argv:
+      type: Sequence[str] | None
+      required: false
+      default: null
+  returns:
+    type: int
+  exceptions:
+  - SystemExit
+  - OSError
+  side_effects: parses launch arguments and starts the director Staffing v2 dashboard
+classes: []
+data_structures: []
+dependencies:
+- module: staffing_dashboard_v2
+- module: staffing_service
+- module: staffing_store
+- module: notification_service
+- module: staffing_referral_queue
+- module: PySide6

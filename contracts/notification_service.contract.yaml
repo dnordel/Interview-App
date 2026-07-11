@@ -2,9 +2,34 @@ module:
   name: notification_service
   language: python
   path: src/notification_service.py
-  version: 1.6.0
-  description: Generic checkpoint notification emitter that renders safe dynamic payload templates including staffing, offer, start, notice-given, last-working-day, school-code, reply-by-date, candidate-email, and attachment fields, resolves explicit-email and role recipients including Candidate, school Director, Hiring Manager, and Executive Director, supports event-triggered and queued date-offset rules, supports selected-rule test sends from Staffing v2 without enabling disabled rules, auto-sends via shared company SMTP settings or onboarding SMTP settings, attaches approved-offer PDFs, and records sanitized audit outcomes.
+  version: 1.7.0
+  description: Generic checkpoint notification emitter that renders safe dynamic payload templates including staffing, offer, start, notice-given, last-working-day, school-code, reply-by-date, candidate-email, and attachment fields, resolves explicit-email and role recipients including Candidate, school Director, Hiring Manager, and Executive Director, supports event-triggered and queued date-offset rules, supports selected-rule test sends from Staffing v2 without enabling disabled rules, auto-sends via local notification SMTP settings or onboarding-compatible SMTP settings, attaches approved-offer PDFs, and records sanitized audit outcomes without importing DOCX/reporting modules.
 functions:
+- name: _send_email_message
+  locked: false
+  inputs:
+    settings:
+      type: EmailSettings
+      required: true
+    recipients:
+      type: list[str]
+      required: true
+    subject:
+      type: str
+      required: true
+    body:
+      type: str
+      required: true
+    attachment_paths:
+      type: list[Path] | None
+      required: false
+      default: null
+  returns:
+    type: None
+  exceptions:
+  - OSError
+  - smtplib.SMTPException
+  side_effects: Sends one SMTP message, supports local and onboarding-compatible email settings field names, sanitizes the subject, and may read attachment bytes without logging secrets.
 - name: resolve_notification_recipients
   locked: false
   inputs:
@@ -107,6 +132,26 @@ functions:
     type: NotificationService
   side_effects: Reads shared email settings and opens notification SQLite database.
 classes:
+- name: EmailSettings
+  description: Lightweight SMTP settings value used by notification_service without importing onboarding or DOCX/reporting modules.
+  locked: false
+  methods:
+  - name: from_dict
+    inputs:
+      payload:
+        type: dict[str, Any] | None
+        required: true
+    returns:
+      type: EmailSettings
+    exceptions:
+    - ValueError
+    side_effects: none
+  - name: to_dict
+    inputs: {}
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: none
 - name: NotificationService
   description: Emits exact-match notification events for active rules with idempotent send audit and runs due date-offset schedules.
   locked: false

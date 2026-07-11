@@ -48,10 +48,10 @@ services:
     - staffing_service
     - staffing_dashboard_v2
   director_staffing_dashboard_service:
-    description: Director-facing generated Windows launch paths, one per staffing seed school, for the full PySide app in staffing-only mode; each launcher hides non-staffing dashboards, filters to its assigned school, and reuses the exact same Staffing v2 page, persistence, transitions, and setup path as the full app.
+    description: Director-facing generated Windows launch paths, one per staffing seed school, for a minimal PySide Staffing v2 app; each launcher filters to its assigned school and avoids full interview, audio, transcription, DOCX, local AI, FFmpeg, VB-CABLE, OpenVINO, and GPU setup.
     modules:
     - director_staffing_launcher
-    - pyside_interview_app
+    - director_staffing_app
     - staffing_service
     - staffing_store
   web_scored_question_service:

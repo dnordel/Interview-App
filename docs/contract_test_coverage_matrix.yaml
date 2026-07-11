@@ -1,4 +1,4 @@
-last_updated: '2026-07-10'
+last_updated: '2026-07-11'
 sections:
 - name: interview_app
   tests:
@@ -12,7 +12,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-11T00:28:53.761800+00:00'
+generated_at_utc: '2026-07-11T23:42:22.199808+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -1557,6 +1557,141 @@ entries:
     - return_type
 - contract: contracts/director_referral_service.contract.yaml
   symbol: director_referral_service.send_director_packet
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/director_staffing_app.contract.yaml
+  symbol: director_staffing_app._backfill_director_referrals_from_history
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/director_staffing_app.contract.yaml
+  symbol: director_staffing_app._director_referral_outcome
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/director_staffing_app.contract.yaml
+  symbol: director_staffing_app._director_referral_rating
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/director_staffing_app.contract.yaml
+  symbol: director_staffing_app._history_row_key
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/director_staffing_app.contract.yaml
+  symbol: director_staffing_app._history_status_from_score
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/director_staffing_app.contract.yaml
+  symbol: director_staffing_app._history_text
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/director_staffing_app.contract.yaml
+  symbol: director_staffing_app._import_queued_director_referrals
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/director_staffing_app.contract.yaml
+  symbol: director_staffing_app._load_history_payloads
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/director_staffing_app.contract.yaml
+  symbol: director_staffing_app.bootstrap_school_staffing_db_from_base
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/director_staffing_app.contract.yaml
+  symbol: director_staffing_app.import_staffing_seed_if_needed
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/director_staffing_app.contract.yaml
+  symbol: director_staffing_app.launch_director_staffing_app
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/director_staffing_app.contract.yaml
+  symbol: director_staffing_app.main
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/director_staffing_app.contract.yaml
+  symbol: director_staffing_app.parse_args
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/director_staffing_app.contract.yaml
+  symbol: director_staffing_app.staffing_db_path_for_school
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/director_staffing_app.contract.yaml
+  symbol: director_staffing_app.sync_director_referrals
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -3899,6 +4034,36 @@ entries:
     - return_type
     - security_leakage_prevention
 - contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime._history_payload_for_regeneration
+  kind: function
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime._history_row_for_job
+  kind: function
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime._history_trait_inputs_for_regeneration
+  kind: function
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime._load_current_rubric_for_deepseek_job
   kind: function
   tests:
@@ -3979,6 +4144,16 @@ entries:
     - return_type
     - security_leakage_prevention
 - contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime._repair_regeneration_job_from_history
+  kind: function
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime._request_deepseek_content
   kind: function
   tests:
@@ -4050,6 +4225,16 @@ entries:
     - security_leakage_prevention
 - contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime._synthesize_deepseek_job_from_session
+  kind: function
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime._usable_scored_rating_count
   kind: function
   tests:
   - path: tests/test_interview_root_contracts.py
@@ -4639,6 +4824,24 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/notification_service.contract.yaml
+  symbol: notification_service.EmailSettings.from_dict
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/notification_service.contract.yaml
+  symbol: notification_service.EmailSettings.to_dict
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/notification_service.contract.yaml
   symbol: notification_service.NotificationService.emit_event
   kind: method
   tests:
@@ -4667,6 +4870,15 @@ entries:
     - return_type
 - contract: contracts/notification_service.contract.yaml
   symbol: notification_service._notification_attachment_paths
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/notification_service.contract.yaml
+  symbol: notification_service._send_email_message
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -13653,6 +13865,60 @@ entries:
     - return_type
 - contract: contracts/setup_and_run.contract.yaml
   symbol: setup_and_run.Write-Log
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_director_staffing.contract.yaml
+  symbol: setup_director_staffing.Ensure-DirectorDependencies
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_director_staffing.contract.yaml
+  symbol: setup_director_staffing.Ensure-DirectorVenv
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_director_staffing.contract.yaml
+  symbol: setup_director_staffing.Find-Python311
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_director_staffing.contract.yaml
+  symbol: setup_director_staffing.Run-Proc
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_director_staffing.contract.yaml
+  symbol: setup_director_staffing.Start-DirectorStaffingApp
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_director_staffing.contract.yaml
+  symbol: setup_director_staffing.Write-Log
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py

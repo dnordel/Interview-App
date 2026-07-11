@@ -43,8 +43,8 @@ def director_launcher_body(school: str) -> str:
         'cd /d "%~dp0"',
         "",
         (
-            'powershell -NoProfile -ExecutionPolicy Bypass -File "%CD%\\setup_and_run.ps1" '
-            f'-UiMode pyside -DirectorStaffingMode -DirectorSchool "{escaped_school}"'
+            'powershell -NoProfile -ExecutionPolicy Bypass -File "%CD%\\setup_director_staffing.ps1" '
+            f'-DirectorSchool "{escaped_school}"'
         ),
         "",
         "exit /b",

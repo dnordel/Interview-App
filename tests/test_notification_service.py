@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from notification_models import NotificationRecipient, NotificationRule
+import notification_service
 from notification_service import NotificationService, resolve_notification_recipients
 from notification_store import NotificationStore
 from onboarding_operations import EmailSettings
@@ -12,6 +13,47 @@ from onboarding_operations import EmailSettings
 
 def _settings() -> EmailSettings:
     return EmailSettings(sender_email="sender@example.org", smtp_host="smtp.example.org")
+
+
+def test_notification_sender_accepts_onboarding_email_settings_shape(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[tuple[str, object]] = []
+
+    class FakeSmtp:
+        def __init__(self, host: str, port: int, timeout: int) -> None:
+            calls.append(("connect", (host, port, timeout)))
+
+        def __enter__(self) -> "FakeSmtp":
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+        def starttls(self, *, context: object) -> None:
+            calls.append(("starttls", bool(context)))
+
+        def login(self, username: str, password: str) -> None:
+            calls.append(("login", (username, password)))
+
+        def send_message(self, message: object) -> None:
+            calls.append(("send", message["Subject"]))
+
+    monkeypatch.setattr(notification_service.smtplib, "SMTP", FakeSmtp)
+    settings = EmailSettings(
+        sender_email="sender@example.org",
+        smtp_host="smtp.example.org",
+        smtp_username="user",
+        smtp_password="secret",
+        use_tls=True,
+    )
+
+    notification_service._send_email_message(settings, ["to@example.org"], "Hello\r\nWorld", "Body")
+
+    assert calls[:3] == [
+        ("connect", ("smtp.example.org", 587, 30)),
+        ("starttls", True),
+        ("login", ("user", "secret")),
+    ]
+    assert calls[3] == ("send", "Hello World")
 
 
 def test_notification_rule_crud_supports_multiple_recipients(tmp_path: Path) -> None:

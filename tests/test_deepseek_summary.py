@@ -1031,6 +1031,80 @@ def test_regenerate_interview_notes_job_document_only_marks_mode_and_relaunches(
     assert progress["step"] == "Regenerating interview notes document"
 
 
+def test_regenerate_interview_notes_job_repairs_stale_skipped_job_from_history(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[Path] = []
+    history_path = tmp_path / "history.sqlite3"
+    InterviewHistoryStore(history_path).append(
+        {
+            "history_id": "hist-1",
+            "candidate_name": "Ada",
+            "interview_date": "2026-02-20",
+            "school": "Palmdale",
+            "track": "general",
+            "candidate": {"name": "Ada", "track": "general"},
+            "flow_transcript": [
+                {
+                    "flow_index": 1,
+                    "type": "trait",
+                    "id": "trait_1",
+                    "question": "How do you support a child?",
+                    "candidate_transcript": "I stay calm.",
+                }
+            ],
+            "scoring": {
+                "outcome": "Hire",
+                "percent_of_max": 100,
+                "rows": [
+                    {
+                        "trait_id": "trait_1",
+                        "trait_name": "Empathy",
+                        "raw_score": 5,
+                        "final_raw_score": 5,
+                        "weighted_score": 15,
+                        "skipped": False,
+                        "question_notes": "I stay calm.",
+                    }
+                ],
+            },
+        }
+    )
+    job_path = tmp_path / "deepseek-finalize-hist-1.json"
+    job_path.write_text(
+        json.dumps(
+            {
+                "history_id": "hist-1",
+                "history_path": str(history_path),
+                "progress_path": str(job_path.with_suffix(".progress.json")),
+                "payload": {
+                    "candidate": {"name": "Ada", "track": "general"},
+                    "flow_transcript": [{"flow_index": 1, "type": "trait", "id": "trait_1", "candidate_transcript": ""}],
+                    "trait_inputs": {"trait_1": {"skipped": True}},
+                },
+                "scoring": {
+                    "outcome": "No Hire",
+                    "rows": [{"trait_id": "trait_1", "raw_score": None, "skipped": True}],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(interview_runtime, "_start_deepseek_finalize_worker", lambda path: calls.append(Path(path)))
+
+    regenerate_interview_notes_job(job_path, mode="document_only")
+
+    assert calls == [job_path]
+    repaired = json.loads(job_path.read_text(encoding="utf-8"))
+    assert repaired["scoring"]["rows"][0]["raw_score"] == 5
+    assert repaired["scoring"]["rows"][0]["skipped"] is False
+    assert repaired["payload"]["flow_transcript"][0]["candidate_transcript"] == "I stay calm."
+    assert repaired["payload"]["trait_inputs"]["trait_1"]["raw_score"] == 5
+    assert repaired["payload"]["trait_inputs"]["trait_1"]["skipped"] is False
+    assert repaired["history_regeneration_repaired_from_history_at"]
+
+
 def test_regenerate_interview_notes_job_full_mode_resets_deepseek_checkpoints(
     tmp_path,
     monkeypatch: pytest.MonkeyPatch,

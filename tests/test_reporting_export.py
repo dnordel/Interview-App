@@ -1112,11 +1112,47 @@ class TestDocxExporterValidation(unittest.TestCase):
         ]
         self.assertTrue(answer_tables)
         self.assertTrue(_cell_xml_contains(answer_tables[0].rows[0].cells[0], 'w:fill="A9D18E"'))
+        self.assertEqual(len(answer_tables), 1)
         self.assertTrue(any("No example after follow-ups: No" in table.rows[1].cells[3].text for table in answer_tables))
         self.assertIn("Question Text", full_text)
         self.assertIn("Candidate Answer", full_text)
         self.assertIn("$24/hour", full_text)
         self.assertNotIn("Noisy ASR", full_text)
+
+    def test_export_basic_interview_notes_uses_compact_score_summary_when_all_traits_skipped(self):
+        payload = {
+            "candidate": {
+                "name": "Ada Lovelace",
+                "interview_date": "2026-02-20",
+                "school": "Palmdale",
+                "track": "general",
+            },
+            "flow_transcript": [
+                {
+                    "flow_index": 1,
+                    "type": "trait",
+                    "id": "trait_1",
+                    "question": "How do you support a child in distress?",
+                    "candidate_transcript": "I kneel down and name feelings.",
+                },
+            ],
+        }
+        scoring = self._trait_scoring()
+        scoring["rows"][0]["skipped"] = True
+        scoring["weighted_total"] = 0
+        scoring["outcome"] = "No Hire"
+
+        with tempfile.TemporaryDirectory() as td:
+            exporter = DocxExporter(Path(td))
+            out_path = exporter.export_basic_interview_notes(self._rubric(), payload, scoring)
+            doc = Document(out_path)
+
+        full_text = _doc_text(doc)
+        self.assertEqual(doc.tables[2].rows[0].cells[0].text, "Scored Ratings")
+        self.assertEqual(doc.tables[2].rows[0].cells[1].text, "No scored trait ratings were recorded.")
+        self.assertEqual(doc.tables[2].rows[1].cells[0].text, "Skipped Scored Questions")
+        self.assertEqual(doc.tables[2].rows[1].cells[1].text, "1")
+        self.assertNotIn("Weighted Total", full_text)
 
     def test_export_explains_incomplete_human_and_missing_ai_recommendation_status(self):
         payload = {

@@ -1128,8 +1128,8 @@ functions:
   exceptions: []
   side_effects: none
 - name: _scoring_payload_from_history_row
-  description: Build a minimal scoring payload for regenerated documents from saved
-    history score and determination fields.
+  description: Build a scoring payload for regenerated documents from saved history
+    scoring rows when present, falling back to minimal score and determination fields.
   locked: false
   inputs:
     row:
@@ -1240,7 +1240,9 @@ functions:
     local-DeepSeek-plus-document mode or document-only mode; full mode resets saved
     DeepSeek checkpoint payload fields and refreshes prompt templates from current
     config before worker launch, while document-only mode preserves saved DeepSeek
-    output and only rebuilds the interview notes DOCX.
+    output and only rebuilds the interview notes DOCX. Before launch, stale job
+    scoring that would drop valid history ratings is repaired from the matching
+    history row payload and scoring.
   locked: false
   inputs:
     job_path:
@@ -1254,11 +1256,83 @@ functions:
   exceptions:
   - ValueError
   - OSError
-  side_effects: Reads and rewrites local job JSON with rerun mode, may reset saved
-    DeepSeek payload checkpoint fields and current prompt templates, updates interview
-    history through InterviewHistoryStore to processing, seeds sanitized progress
-    JSON, may remove a failed same-job lock, and starts a detached Python worker
-    without shell interpolation.
+  side_effects: Reads and rewrites local job JSON with rerun mode, may repair stale
+    job payload/scoring from interview history, may reset saved DeepSeek payload
+    checkpoint fields and current prompt templates, updates interview history through
+    InterviewHistoryStore to processing, seeds sanitized progress JSON, may remove
+    a failed same-job lock, and starts a detached Python worker without shell
+    interpolation.
+- name: _repair_regeneration_job_from_history
+  description: Repair a persisted regeneration job from its matching history row when
+    history contains more usable scored ratings than the saved job, preventing stale
+    all-skipped job payloads from replacing valid interviewer ratings and transcripts.
+  locked: false
+  inputs:
+    job:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: dict[str, Any]
+  exceptions: []
+  side_effects: Reads interview history through InterviewHistoryStore when history
+    identifiers are present.
+- name: _history_row_for_job
+  description: Load the history row matching a DeepSeek job history id.
+  locked: false
+  inputs:
+    history_path:
+      type: Path
+      required: true
+    history_id:
+      type: str
+      required: true
+  returns:
+    type: dict[str, Any] | None
+  exceptions: []
+  side_effects: Reads interview history through InterviewHistoryStore.
+- name: _usable_scored_rating_count
+  description: Count non-skipped scoring rows that carry a usable final or raw score.
+  locked: false
+  inputs:
+    scoring:
+      type: Any
+      required: true
+  returns:
+    type: int
+  exceptions: []
+  side_effects: none
+- name: _history_payload_for_regeneration
+  description: Build a regeneration payload from a history row, preserving existing
+    DeepSeek output while restoring candidate metadata, flow transcripts, custom answers,
+    recordings, and trait inputs from history.
+  locked: false
+  inputs:
+    row:
+      type: dict[str, Any]
+      required: true
+    existing_payload:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: dict[str, Any]
+  exceptions: []
+  side_effects: none
+- name: _history_trait_inputs_for_regeneration
+  description: Build trait_inputs from history scoring rows so regenerated jobs preserve
+    interviewer raw scores, notes, skip state, disqualifier flags, follow-up flags,
+    and selected signal ids.
+  locked: false
+  inputs:
+    row:
+      type: dict[str, Any]
+      required: true
+    existing:
+      type: dict[str, Any]
+      required: true
+  returns:
+    type: dict[str, dict[str, Any]]
+  exceptions: []
+  side_effects: none
 - name: _mark_deepseek_history_processing
   description: Mark the history row referenced by a persisted DeepSeek job as processing,
     clearing warning and completion timestamp fields when both history path and history

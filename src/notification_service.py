@@ -2,14 +2,17 @@ from __future__ import annotations
 
 import re
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import date, timedelta
+from email.message import EmailMessage
 from pathlib import Path
+import smtplib
+import ssl
 from typing import Any
 
-from email_security import is_valid_email_address
+from email_security import is_valid_email_address, sanitize_email_subject
 from notification_models import NotificationRecipient, NotificationRule, NotificationSendResult
 from notification_store import NotificationStore
-from onboarding_operations import EmailSettings, _send_email_message
 from platform_services import USER_ARTIFACTS_DIR, atomic_write_json, safe_read_json
 
 
@@ -87,6 +90,146 @@ NOTIFICATION_TEMPLATE_FIELDS = (
     "classroom",
     "slot_group",
 )
+
+
+@dataclass
+class EmailSettings:
+    account_label: str = ""
+    display_name: str = ""
+    authentication_type: str = "Normal password"
+    account_type: str = "IMAP"
+    smtp_host: str = ""
+    smtp_port: int = 587
+    username: str = ""
+    password: str = ""
+    sender_email: str = ""
+    use_ssl: bool = False
+    use_starttls: bool = True
+    smtp_username: str = ""
+    smtp_password: str = ""
+    use_tls: bool = True
+    imap_or_pop_host: str = ""
+    imap_or_pop_port: int = 993
+    incoming_encryption: str = "SSL/TLS"
+    smtp_encryption: str = "STARTTLS"
+    remember_password: bool = True
+    require_spa: bool = False
+    use_same_credentials: bool = True
+    director_and_owners: str = ""
+    reminder_recipients: str = ""
+    reminder_subject_template: str = ""
+    reminder_body_template: str = ""
+    escalation_subject_template: str = ""
+    escalation_body_template: str = ""
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any] | None) -> "EmailSettings":
+        source = payload if isinstance(payload, dict) else {}
+        use_tls = bool(source.get("use_tls", True))
+        smtp_encryption = source.get("smtp_encryption", "STARTTLS" if use_tls else "None")
+        return cls(
+            account_label=str(source.get("account_label", "") or ""),
+            display_name=str(source.get("display_name", "") or ""),
+            authentication_type=str(source.get("authentication_type", "Normal password") or "Normal password"),
+            account_type=str(source.get("account_type", "IMAP") or "IMAP"),
+            smtp_host=str(source.get("smtp_host", "") or ""),
+            smtp_port=int(source.get("smtp_port", 587) or 587),
+            username=str(source.get("username", source.get("smtp_username", "")) or ""),
+            password=str(source.get("password", source.get("smtp_password", "")) or ""),
+            sender_email=str(source.get("sender_email", "") or ""),
+            use_ssl=bool(source.get("use_ssl", False)),
+            use_starttls=bool(source.get("use_starttls", True)),
+            smtp_username=str(source.get("smtp_username", source.get("username", "")) or ""),
+            smtp_password=str(source.get("smtp_password", source.get("password", "")) or ""),
+            use_tls=use_tls,
+            imap_or_pop_host=str(source.get("imap_or_pop_host", "") or ""),
+            imap_or_pop_port=int(source.get("imap_or_pop_port", 993) or 993),
+            incoming_encryption=str(source.get("incoming_encryption", "SSL/TLS") or "SSL/TLS"),
+            smtp_encryption=str(smtp_encryption or "STARTTLS"),
+            remember_password=bool(source.get("remember_password", True)),
+            require_spa=bool(source.get("require_spa", False)),
+            use_same_credentials=bool(source.get("use_same_credentials", True)),
+            director_and_owners=str(source.get("director_and_owners", "") or ""),
+            reminder_recipients=str(source.get("reminder_recipients", "") or ""),
+            reminder_subject_template=str(source.get("reminder_subject_template", "") or ""),
+            reminder_body_template=str(source.get("reminder_body_template", "") or ""),
+            escalation_subject_template=str(source.get("escalation_subject_template", "") or ""),
+            escalation_body_template=str(source.get("escalation_body_template", "") or ""),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "account_label": self.account_label,
+            "display_name": self.display_name,
+            "authentication_type": self.authentication_type,
+            "account_type": self.account_type,
+            "smtp_host": self.smtp_host,
+            "smtp_port": self.smtp_port,
+            "username": self.username,
+            "password": self.password,
+            "sender_email": self.sender_email,
+            "use_ssl": self.use_ssl,
+            "use_starttls": self.use_starttls,
+            "smtp_username": self.smtp_username,
+            "smtp_password": self.smtp_password,
+            "use_tls": self.use_tls,
+            "imap_or_pop_host": self.imap_or_pop_host,
+            "imap_or_pop_port": self.imap_or_pop_port,
+            "incoming_encryption": self.incoming_encryption,
+            "smtp_encryption": self.smtp_encryption,
+            "remember_password": self.remember_password,
+            "require_spa": self.require_spa,
+            "use_same_credentials": self.use_same_credentials,
+            "director_and_owners": self.director_and_owners,
+            "reminder_recipients": self.reminder_recipients,
+            "reminder_subject_template": self.reminder_subject_template,
+            "reminder_body_template": self.reminder_body_template,
+            "escalation_subject_template": self.escalation_subject_template,
+            "escalation_body_template": self.escalation_body_template,
+        }
+
+
+def _send_email_message(
+    settings: EmailSettings,
+    recipients: list[str],
+    subject: str,
+    body: str,
+    attachment_paths: list[Path] | None = None,
+) -> None:
+    username = str(getattr(settings, "username", "") or getattr(settings, "smtp_username", "") or "")
+    password = str(getattr(settings, "password", "") or getattr(settings, "smtp_password", "") or "")
+    use_ssl = bool(getattr(settings, "use_ssl", False)) or str(
+        getattr(settings, "smtp_encryption", "")
+    ).casefold() in {"ssl/tls", "ssl", "tls"}
+    use_starttls = bool(getattr(settings, "use_starttls", getattr(settings, "use_tls", True)))
+    encryption = str(getattr(settings, "smtp_encryption", "") or "").casefold()
+    if encryption in {"none", "no encryption"}:
+        use_starttls = False
+
+    message = EmailMessage()
+    message["Subject"] = sanitize_email_subject(subject)
+    message["From"] = settings.sender_email
+    message["To"] = ", ".join(recipients)
+    message.set_content(body)
+
+    for path in attachment_paths or []:
+        data = Path(path).read_bytes()
+        message.add_attachment(data, maintype="application", subtype="octet-stream", filename=Path(path).name)
+
+    context = ssl.create_default_context()
+    if use_ssl:
+        with smtplib.SMTP_SSL(settings.smtp_host, settings.smtp_port, context=context, timeout=30) as smtp:
+            if username:
+                smtp.login(username, password)
+            smtp.send_message(message)
+        return
+
+    with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=30) as smtp:
+        if use_starttls:
+            smtp.starttls(context=context)
+        if username:
+            smtp.login(username, password)
+        smtp.send_message(message)
 
 
 class NotificationService:

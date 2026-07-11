@@ -2,8 +2,8 @@ module:
   name: generate_director_staffing_launchers
   language: python
   path: tools/generate_director_staffing_launchers.py
-  version: 1.0.0
-  description: Generates one director staffing Windows launcher per school in config/staffing_seed.json, with each launcher using the full setup_and_run PySide path and passing its school as the director filter.
+  version: 1.1.0
+  description: Generates one director staffing Windows launcher per school in config/staffing_seed.json, with each launcher using the minimal director staffing setup path and passing its school as the director filter.
 functions:
 - name: load_staffing_schools
   description: Read staffing_seed.json and return ordered school names.

@@ -1611,10 +1611,12 @@ classes:
     description: Generate a lightweight non-DeepSeek interview notes DOCX using
       the structured behavioral interview notes layout with a title/subtitle,
       candidate snapshot table, education and experience summary table, score
-      summary table, and sequenced candidate answer blocks with question metadata,
-      full-width question text, and full-width candidate answer boxes, excluding
-      the intro script. The export includes transcript text for pre-scored custom
-      and scored questions plus manual notes for custom/non-scored questions after
+      summary table when scored ratings exist or a compact no-scored-ratings
+      summary when all scored traits were skipped, and sequenced candidate answer
+      blocks with question metadata only for scored trait questions, full-width
+      question text, and full-width candidate answer boxes, excluding the intro
+      script. The export includes transcript text for pre-scored custom and
+      scored questions plus manual notes for custom/non-scored questions after
       the scored block, without AI-generated summaries or advisory scoring
       sections.
     locked: false

@@ -4352,6 +4352,9 @@ def _candidate_payload_from_history_row(row: dict[str, Any], session: dict[str, 
 
 
 def _scoring_payload_from_history_row(row: dict[str, Any]) -> dict[str, Any]:
+    scoring = row.get("scoring")
+    if isinstance(scoring, dict) and isinstance(scoring.get("rows"), list):
+        return dict(scoring)
     return {
         "percent_of_max": row.get("interview_score", 0),
         "outcome": str(row.get("determination") or ""),
@@ -4446,6 +4449,7 @@ def regenerate_interview_notes_job(job_path: Path, *, mode: str) -> Path:
         raise ValueError("Regenerate mode must be 'full' or 'document_only'.")
 
     progress_path = Path(str(job.get("progress_path") or path.with_suffix(".progress.json")))
+    job = _repair_regeneration_job_from_history(job)
     job["rerun_mode"] = normalized_mode
     if normalized_mode == "full":
         payload = job.get("payload")
@@ -4464,6 +4468,110 @@ def regenerate_interview_notes_job(job_path: Path, *, mode: str) -> Path:
     _write_deepseek_launch_progress(progress_path, step)
     _start_deepseek_finalize_worker(path)
     return progress_path
+
+
+def _repair_regeneration_job_from_history(job: dict[str, Any]) -> dict[str, Any]:
+    history_path = str(job.get("history_path", "")).strip()
+    history_id = str(job.get("history_id", "")).strip()
+    if not history_path or not history_id:
+        return job
+    row = _history_row_for_job(Path(history_path), history_id)
+    if row is None:
+        return job
+    history_scoring = row.get("scoring")
+    if not isinstance(history_scoring, dict):
+        return job
+    job_scoring = job.get("scoring") if isinstance(job.get("scoring"), dict) else {}
+    if _usable_scored_rating_count(history_scoring) <= _usable_scored_rating_count(job_scoring):
+        return job
+
+    repaired = dict(job)
+    repaired["scoring"] = dict(history_scoring)
+    repaired["payload"] = _history_payload_for_regeneration(row, job.get("payload") if isinstance(job.get("payload"), dict) else {})
+    repaired["history_regeneration_repaired_from_history_at"] = _utc_timestamp()
+    return repaired
+
+
+def _history_row_for_job(history_path: Path, history_id: str) -> dict[str, Any] | None:
+    try:
+        rows = InterviewHistoryStore(Path(history_path)).load()
+    except Exception:
+        return None
+    for row in rows:
+        if isinstance(row, dict) and str(row.get("history_id") or "").strip() == history_id:
+            return row
+    return None
+
+
+def _usable_scored_rating_count(scoring: Any) -> int:
+    if not isinstance(scoring, dict):
+        return 0
+    count = 0
+    for row in scoring.get("rows", []) or []:
+        if not isinstance(row, dict) or row.get("skipped", False):
+            continue
+        raw_score = row.get("final_raw_score", row.get("raw_score"))
+        if str(raw_score if raw_score is not None else "").strip():
+            count += 1
+    return count
+
+
+def _history_payload_for_regeneration(row: dict[str, Any], existing_payload: dict[str, Any]) -> dict[str, Any]:
+    payload = dict(existing_payload)
+    candidate = row.get("candidate") if isinstance(row.get("candidate"), dict) else {}
+    payload["candidate"] = {
+        **dict(candidate),
+        "name": str(row.get("candidate_name") or candidate.get("name") or candidate.get("candidate_name") or "").strip(),
+        "candidate_name": str(row.get("candidate_name") or candidate.get("candidate_name") or candidate.get("name") or "").strip(),
+        "interview_date": str(row.get("interview_date") or candidate.get("interview_date") or "").strip(),
+        "school": str(row.get("school") or candidate.get("school") or "").strip(),
+        "track": str(row.get("track") or candidate.get("track") or "").strip(),
+        "qualification": row.get("qualification", candidate.get("qualification", {}))
+        if isinstance(row.get("qualification", candidate.get("qualification", {})), dict)
+        else {},
+    }
+    flow_transcript = row.get("flow_transcript")
+    if isinstance(flow_transcript, list) and any(
+        isinstance(item, dict) and str(item.get("candidate_transcript") or item.get("evaluator_notes") or "").strip()
+        for item in flow_transcript
+    ):
+        payload["flow_transcript"] = list(flow_transcript)
+    custom_answers = row.get("custom_answers")
+    if isinstance(custom_answers, list):
+        payload["custom_answers"] = list(custom_answers)
+    flow_recordings = row.get("flow_recordings")
+    if isinstance(flow_recordings, list):
+        payload["audio_recording"] = list(flow_recordings)
+    payload["trait_inputs"] = _history_trait_inputs_for_regeneration(row, payload.get("trait_inputs") if isinstance(payload.get("trait_inputs"), dict) else {})
+    payload["transcript_complete"] = True
+    payload["remaining_question_indices"] = []
+    return payload
+
+
+def _history_trait_inputs_for_regeneration(row: dict[str, Any], existing: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    trait_inputs: dict[str, dict[str, Any]] = {
+        str(key): dict(value) for key, value in existing.items() if isinstance(value, dict)
+    }
+    scoring = row.get("scoring") if isinstance(row.get("scoring"), dict) else {}
+    for score_row in scoring.get("rows", []) or []:
+        if not isinstance(score_row, dict):
+            continue
+        trait_id = str(score_row.get("trait_id") or score_row.get("id") or "").strip()
+        if not trait_id:
+            continue
+        raw_score = score_row.get("final_raw_score", score_row.get("raw_score"))
+        trait_inputs[trait_id] = {
+            **trait_inputs.get(trait_id, {}),
+            "raw_score": raw_score,
+            "question_notes": str(score_row.get("question_notes") or score_row.get("verbatim_notes") or ""),
+            "trait_notes": str(score_row.get("trait_notes") or score_row.get("verbatim_notes") or ""),
+            "verbatim_notes": str(score_row.get("verbatim_notes") or score_row.get("question_notes") or ""),
+            "absolute_disqualifier": bool(score_row.get("absolute_disqualifier", False)),
+            "no_example_after_followups": bool(score_row.get("no_example_after_followups", False)),
+            "skipped": bool(score_row.get("skipped", False)),
+            "selected_signal_ids": list(score_row.get("selected_signal_ids", []) or []),
+        }
+    return trait_inputs
 
 
 def _mark_deepseek_history_processing(job: dict[str, Any]) -> None:

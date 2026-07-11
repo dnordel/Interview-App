@@ -1259,13 +1259,13 @@ class DocxExporter:
         )
         rating_rows = [row for row in scoring.get("rows", []) or [] if isinstance(row, dict) and not row.get("skipped", False)]
         skipped_rows = [row for row in scoring.get("rows", []) or [] if isinstance(row, dict) and row.get("skipped", False)]
-        score_table = doc.add_table(rows=1, cols=5)
-        score_table.style = "Table Grid"
-        set_table_geometry(score_table, [2.1, 1.0, 0.75, 1.45, 1.9], indent_dxa=360)
-        score_headers = ["Trait", "Priority", "Weight", "Raw Score", "Weighted Score"]
-        for cell, header_text in zip(score_table.rows[0].cells, score_headers):
-            set_cell_text(cell, header_text, bold=True, fill=score_header_fill, align=WD_ALIGN_PARAGRAPH.CENTER, size=10)
         if rating_rows:
+            score_table = doc.add_table(rows=1, cols=5)
+            score_table.style = "Table Grid"
+            set_table_geometry(score_table, [2.1, 1.0, 0.75, 1.45, 1.9], indent_dxa=360)
+            score_headers = ["Trait", "Priority", "Weight", "Raw Score", "Weighted Score"]
+            for cell, header_text in zip(score_table.rows[0].cells, score_headers):
+                set_cell_text(cell, header_text, bold=True, fill=score_header_fill, align=WD_ALIGN_PARAGRAPH.CENTER, size=10)
             for row in rating_rows:
                 cells = score_table.add_row().cells
                 set_cell_text(cells[0], row.get("trait_name") or row.get("trait_id") or "")
@@ -1274,18 +1274,25 @@ class DocxExporter:
                 raw_score = row.get("raw_score")
                 set_cell_text(cells[3], "N/A" if raw_score is None else raw_score, align=WD_ALIGN_PARAGRAPH.CENTER)
                 set_cell_text(cells[4], row.get("weighted_score", ""), align=WD_ALIGN_PARAGRAPH.CENTER)
-        total_cells = score_table.add_row().cells
-        set_cell_text(total_cells[0], "Weighted Total", bold=True)
-        set_cell_text(total_cells[1], "")
-        set_cell_text(total_cells[2], "")
-        set_cell_text(total_cells[3], "")
-        set_cell_text(total_cells[4], f"{scoring.get('weighted_total', 0)} / {scoring.get('max_weighted_total', 0)}", bold=True)
-        skipped_cells = score_table.add_row().cells
-        set_cell_text(skipped_cells[0], "Skipped Scored Questions", bold=True)
-        set_cell_text(skipped_cells[1], "")
-        set_cell_text(skipped_cells[2], "")
-        set_cell_text(skipped_cells[3], ", ".join(str(row.get("trait_name") or row.get("trait_id") or "Question") for row in skipped_rows) or "None")
-        set_cell_text(skipped_cells[4], "")
+            total_cells = score_table.add_row().cells
+            set_cell_text(total_cells[0], "Weighted Total", bold=True)
+            set_cell_text(total_cells[1], "")
+            set_cell_text(total_cells[2], "")
+            set_cell_text(total_cells[3], "")
+            set_cell_text(total_cells[4], f"{scoring.get('weighted_total', 0)} / {scoring.get('max_weighted_total', 0)}", bold=True)
+            skipped_cells = score_table.add_row().cells
+            set_cell_text(skipped_cells[0], "Skipped Scored Questions", bold=True)
+            set_cell_text(skipped_cells[1], "")
+            set_cell_text(skipped_cells[2], "")
+            set_cell_text(skipped_cells[3], ", ".join(str(row.get("trait_name") or row.get("trait_id") or "Question") for row in skipped_rows) or "None")
+            set_cell_text(skipped_cells[4], "")
+        else:
+            add_key_value_table(
+                [
+                    ("Scored Ratings", "No scored trait ratings were recorded."),
+                    ("Skipped Scored Questions", str(len(skipped_rows)) if skipped_rows else "None"),
+                ]
+            )
         add_spacer()
 
         add_heading("4. Candidate Answers")
@@ -1304,22 +1311,23 @@ class DocxExporter:
                 item_type = str(item.get("type") or "").strip().lower()
                 row = row_for_trait(item)
                 answer = answer_for_flow_item(item, seen_scored_question=seen_scored_question)
-                question_table = doc.add_table(rows=2, cols=4)
-                question_table.style = "Table Grid"
-                set_table_geometry(question_table, [1.25, 2.45, 1.15, 2.35])
-                for cell, header_text in zip(question_table.rows[0].cells, ["Question", "Type / Trait", "Raw Score", "Flags"]):
-                    set_cell_text(cell, header_text, bold=True, fill=answer_header_fill, align=WD_ALIGN_PARAGRAPH.CENTER, size=10)
-                flag_text = (
-                    "No example after follow-ups: "
-                    f"{format_bool(first_present_bool(item.get('no_example_after_followups'), row.get('no_example_after_followups')))}\n"
-                    "Absolute disqualifier checked: "
-                    f"{format_bool(first_present_bool(item.get('absolute_disqualifier_checked'), row.get('absolute_disqualifier')))}"
-                )
-                body_cells = question_table.rows[1].cells
-                set_cell_text(body_cells[0], item.get("flow_index") or index, bold=True)
-                set_cell_text(body_cells[1], row.get("trait_name") or item_type.title() or "Question")
-                set_cell_text(body_cells[2], raw_score_text(row, item), align=WD_ALIGN_PARAGRAPH.CENTER)
-                set_cell_text(body_cells[3], flag_text, size=9.5)
+                if item_type == "trait":
+                    question_table = doc.add_table(rows=2, cols=4)
+                    question_table.style = "Table Grid"
+                    set_table_geometry(question_table, [1.25, 2.45, 1.15, 2.35])
+                    for cell, header_text in zip(question_table.rows[0].cells, ["Question", "Type / Trait", "Raw Score", "Flags"]):
+                        set_cell_text(cell, header_text, bold=True, fill=answer_header_fill, align=WD_ALIGN_PARAGRAPH.CENTER, size=10)
+                    flag_text = (
+                        "No example after follow-ups: "
+                        f"{format_bool(first_present_bool(item.get('no_example_after_followups'), row.get('no_example_after_followups')))}\n"
+                        "Absolute disqualifier checked: "
+                        f"{format_bool(first_present_bool(item.get('absolute_disqualifier_checked'), row.get('absolute_disqualifier')))}"
+                    )
+                    body_cells = question_table.rows[1].cells
+                    set_cell_text(body_cells[0], item.get("flow_index") or index, bold=True)
+                    set_cell_text(body_cells[1], row.get("trait_name") or item_type.title() or "Question")
+                    set_cell_text(body_cells[2], raw_score_text(row, item), align=WD_ALIGN_PARAGRAPH.CENTER)
+                    set_cell_text(body_cells[3], flag_text, size=9.5)
 
                 q_label = doc.add_paragraph()
                 q_label.paragraph_format.space_before = Pt(2)

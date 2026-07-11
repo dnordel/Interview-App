@@ -68,11 +68,23 @@ modules:
   director_staffing_launcher:
     path: tools/generate_director_staffing_launchers.py
     depends_on:
-    - pyside_interview_app
-    - setup_and_run
+    - director_staffing_app
+    - setup_director_staffing
     - staffing_service
     - staffing_store
     - config_staffing_seed_json
+  director_staffing_app:
+    path: src/director_staffing_app.py
+    depends_on:
+    - staffing_dashboard_v2
+    - staffing_service
+    - staffing_store
+    - notification_service
+    - PySide6
+  setup_director_staffing:
+    path: setup_director_staffing.ps1
+    depends_on:
+    - director_staffing_app
   setup_and_run:
     path: setup_and_run.ps1
     depends_on:
