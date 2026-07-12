@@ -189,9 +189,16 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     for nodeid, duration in _DURATION_REPORTS.items():
         current = existing.setdefault(
             nodeid,
-            {"nodeid": nodeid, "duration_seconds_n2": 0.001, "gui_heavy": False, "placement": "fast"},
+            {
+                "nodeid": nodeid,
+                "duration_seconds_n2": 0.001,
+                "duration_source": "collection_default",
+                "gui_heavy": False,
+                "placement": "fast",
+            },
         )
         current["duration_seconds_n2"] = round(float(duration), 3)
+        current["duration_source"] = "measured"
         current["placement"] = determine_placement(
             duration_seconds_n2=float(current["duration_seconds_n2"]),
             gui_heavy=bool(current.get("gui_heavy", False)),

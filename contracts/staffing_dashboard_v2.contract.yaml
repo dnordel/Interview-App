@@ -2,9 +2,27 @@ module:
   name: staffing_dashboard_v2
   language: python
   path: src/staffing_dashboard_v2.py
-  version: 0.21.9
-  description: Parallel PySide Staffing v2 dashboard page module for the mockup-driven rewrite; renders a standalone mockup-style staffing shell/sidebar with active nav state, Qt icons plus custom primary-blue add and person-add icons, styled scrollbars, and disabled placeholder nav entries for unimplemented mockup destinations, main Staffing Dashboard with stable dashboard objectName, labeled filters/icon-owned Add Position and a shared selected-school summary/action row containing semantic compact icon-bearing summary chips plus Export/View History actions, validation worklist chip drilldown, mockup colon labels, icon-bearing overview cards, icon-bearing classroom priority chip, custom always-scrollable classroom list rows with status dots and chevrons, icon-only classroom list filter dialog for status/permit/open-days filters, classroom list footer count, vertically scrollable classroom detail area with refresh-synced scroll range, page-wide per-pixel Qt scroll behavior for Staffing v2 lists/tables/text edits/scroll areas, position table with explicit row-number column, normalized date/program display, icon-bearing status and permit chips plus menu-style row actions including mistaken-position deletion for unassigned positions, icon-bearing dashed Add Position drop zone, director-interview pending/completed section for new hire/borderline referrals with first-interview score visibility, visible pending-candidate checkbox controls plus no-modifier multi-row selection for multi-delete, school-selector-synced pending/completed director interview lists, shortened wrapped pending-table headers, compact fixed pending-table column spacing with full-value cell tooltips, fully visible Record Interview action buttons, and hire-only proposed shift/classroom capture that hides those fields when director decision is No-Hire, status key, service-backed Add Position dialog with first-class Director position type and icon-only close, filtered Export read-only preview dialog, shared overlay side-panel template with top-aligned viewport-width-clamped scrollable body and fixed footer plus shared compact detail-card builder, Classroom Management sub-dashboard with icon-owned Add Classroom header action, service-backed Add Classroom dialog, Export read-only filtered-classrooms preview dialog, pagination footer, readable fixed-width table columns with status/active chips, icon-bearing compact detail/metric/health cards, row View detail selection, always-visible-scrollbar classroom detail overlay with pinned Save Changes/Deactivate controls, and an overlay side filter drawer with draft-only controls and active-count badges, Staffing Validation sub-dashboard with metric cards, active-state issue severity tabs, lifecycle/permit/date worklist issues, pagination footer, icon-bearing export/filter/search/table-row/detail-footer actions, row View drawer navigation, Run Full Validation refresh action, Export Validation Report read-only filtered-issues preview dialog, View Validation Rules read-only dialog, and icon-bearing overlay filter/right-panel controls, read-only position detail overlay drawer with icon-only close, normalized date/program display, icon-bearing action buttons including Delete Position for unassigned positions, icon-bearing related-person placeholder action, and icon-bearing footer actions, v2 Mark Coming / Mark Filled dialogs with Director role preservation, icon-only close, and icon-bearing footer actions, v2 Manage Filled chooser with icon-only close, v2 Update Permit dialog with icon-only close, v2 Mark Need Now dialog with icon-only close, v2 Delete Position confirmation dialog, People / Employee Management sub-dashboard with icon-owned Add Person action text, Director role filtering/addition, active-state detail tabs, pagination footer, icon-bearing header/filter/search/table-row/detail/footer actions, row View detail selection, service-backed Add Person dialog, and icon-bearing overlay detail/filter controls with compact reusable cards, full Staffing v2 Notifications dashboard with editable free-form events, filters, sorting, list/grid toggle, recipient chips, template variables, preview, test send, validation, sanitized audit errors, scheduled counts, save/cancel/delete backed by NotificationStore and NotificationService, and Assignment History sub-dashboard with icon-bearing header/date-range/table-row/detail-footer actions, View Validation navigation, View Assignment drawer navigation, Open Employee navigation, header Export read-only filtered-records preview dialog, Export Record read-only preview dialog, pagination footer, overlay detail panel with compact reusable cards, a neutral assignment-ID detail chip, icon-bearing lifecycle event rows, and validation checklist rows while the legacy Staffing page remains available.
+  version: 0.21.10
+  description: Parallel PySide Staffing v2 dashboard page module for the mockup-driven rewrite; renders a standalone mockup-style staffing shell/sidebar with forced light Fusion Qt palette/style, active nav state, Qt icons plus custom primary-blue add and person-add icons, styled light scrollbars/tables/inputs, and disabled placeholder nav entries for unimplemented mockup destinations, main Staffing Dashboard with stable dashboard objectName, labeled filters/icon-owned Add Position and a shared selected-school summary/action row containing semantic compact icon-bearing summary chips plus Export/View History actions, validation worklist chip drilldown, mockup colon labels, icon-bearing overview cards, icon-bearing classroom priority chip, custom always-scrollable classroom list rows with status dots and chevrons, icon-only classroom list filter dialog for status/permit/open-days filters, classroom list footer count, vertically scrollable classroom detail area with refresh-synced scroll range, page-wide per-pixel Qt scroll behavior for Staffing v2 lists/tables/text edits/scroll areas, position table with explicit row-number column, normalized date/program display, icon-bearing status and permit chips plus menu-style row actions including mistaken-position deletion for unassigned positions, icon-bearing dashed Add Position drop zone, director-interview pending/completed section for new hire/borderline referrals with first-interview score visibility, visible pending-candidate checkbox controls plus no-modifier multi-row selection for multi-delete, school-selector-synced pending/completed director interview lists, shortened wrapped pending-table headers, compact fixed pending-table column spacing with full-value cell tooltips, fully visible Record Interview action buttons, and hire-only proposed shift/classroom capture that hides those fields when director decision is No-Hire, status key, service-backed Add Position dialog with first-class Director position type and icon-only close, filtered Export read-only preview dialog, shared overlay side-panel template with top-aligned viewport-width-clamped scrollable body and fixed footer plus shared compact detail-card builder, Classroom Management sub-dashboard with icon-owned Add Classroom header action, service-backed Add Classroom dialog, Export read-only filtered-classrooms preview dialog, pagination footer, readable fixed-width table columns with status/active chips, icon-bearing compact detail/metric/health cards, row View detail selection, always-visible-scrollbar classroom detail overlay with pinned Save Changes/Deactivate controls, and an overlay side filter drawer with draft-only controls and active-count badges, Staffing Validation sub-dashboard with metric cards, active-state issue severity tabs, lifecycle/permit/date worklist issues, pagination footer, icon-bearing export/filter/search/table-row/detail-footer actions, row View drawer navigation, Run Full Validation refresh action, Export Validation Report read-only filtered-issues preview dialog, View Validation Rules read-only dialog, and icon-bearing overlay filter/right-panel controls, read-only position detail overlay drawer with icon-only close, normalized date/program display, icon-bearing action buttons including Delete Position for unassigned positions, icon-bearing related-person placeholder action, and icon-bearing footer actions, v2 Mark Coming / Mark Filled dialogs with Director role preservation, icon-only close, and icon-bearing footer actions, v2 Manage Filled chooser with icon-only close, v2 Update Permit dialog with icon-only close, v2 Mark Need Now dialog with icon-only close, v2 Delete Position confirmation dialog, People / Employee Management sub-dashboard with icon-owned Add Person action text, Director role filtering/addition, active-state detail tabs, pagination footer, icon-bearing header/filter/search/table-row/detail/footer actions, row View detail selection, service-backed Add Person dialog, and icon-bearing overlay detail/filter controls with compact reusable cards, full Staffing v2 Notifications dashboard with editable free-form events, filters, sorting, list/grid toggle, recipient chips, template variables, preview, test send, validation, sanitized audit errors, scheduled counts, save/cancel/delete backed by NotificationStore and NotificationService, and Assignment History sub-dashboard with icon-bearing header/date-range/table-row/detail-footer actions, View Validation navigation, View Assignment drawer navigation, Open Employee navigation, header Export read-only filtered-records preview dialog, Export Record read-only preview dialog, pagination footer, overlay detail panel with compact reusable cards, a neutral assignment-ID detail chip, icon-bearing lifecycle event rows, and validation checklist rows while the legacy Staffing page remains available.
 functions:
+- name: apply_staffing_v2_light_theme
+  description: Force a supplied or current QApplication onto Staffing v2's stable light Fusion Qt style and palette so native dark/high-contrast system color schemes cannot invert dashboard panels, tables, or inputs.
+  locked: false
+  inputs:
+    QtWidgets:
+      type: Any
+      required: true
+    QtGui:
+      type: Any
+      required: true
+    app:
+      type: Any | None
+      required: false
+      default: null
+  returns:
+    type: None
+  exceptions: []
+  side_effects: Sets QApplication style to Fusion when available, installs a light QPalette for active/inactive/disabled roles, requests the Qt light color scheme when supported, and marks _staffing_v2_forced_light_theme on the application.
 - name: configure_v2_scroll_areas
   description: Apply shared v2 per-pixel wheel scrolling, root/global-position,
     child-widget, and item-view viewport wheel relay, ignored size-adjust policy,
@@ -588,10 +606,22 @@ classes:
         type: Callable[[], NotificationService] | None
         required: false
         default: null
+      director_referral_dismissal_callback:
+        type: Callable[[list[StaffingDirectorCandidate], str, str], None] | None
+        required: false
+        default: null
+      director_referral_removal_actor:
+        type: str
+        required: false
+        default: admin
+      director_referral_removal_source:
+        type: str
+        required: false
+        default: admin_staffing_dashboard
     returns:
       type: None
     exceptions: []
-    side_effects: Creates a PySide QWidget tree and reads staffing metrics through the supplied service factory.
+    side_effects: Creates a PySide QWidget tree and reads staffing metrics through the supplied service factory; stores director referral removal actor/source metadata and an optional dismissal callback for cross-DB sync.
   - name: refresh
     inputs: {}
     returns:
@@ -663,7 +693,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Confirms and deletes checked or selected pending director interview referrals through StaffingService, preserving interview history rows and completed director interview records, then refreshes the director interview tables.
+    side_effects: Confirms and deletes checked or selected pending director interview referrals through StaffingService, preserving interview history rows and completed director interview records, records actor/source removal audit metadata, calls the optional dismissal callback for queue sync, then refreshes the director interview tables.
   - name: _refresh_director_history_table
     inputs: {}
     returns:
@@ -1702,7 +1732,7 @@ classes:
 data_structures:
 - name: APP_QSS
   type: str
-  description: Staffing v2 dedicated mockup QSS including shell colors, cards, chips, buttons, dialogs, and app-styled scrollbars.
+  description: Staffing v2 dedicated mockup QSS including shell colors, cards, chips, buttons, dialogs, light scroll/table/input styling, and app-styled scrollbars.
 - name: ActionCallback
   type: Callable[[int], None]
 dependencies:

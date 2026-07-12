@@ -129,10 +129,10 @@ Run the complete automated test suite:
 python -m pytest
 ```
 
-For the fastest full-suite run on the current Windows dev workstation, use a capped worker count:
+For the fastest full-suite run on the current Windows dev workstation, use a capped worker count with one-test xdist scheduling chunks:
 
 ```bash
-python -m pytest -n 24
+python -m pytest -n 24 --dist=load --maxschedchunk=1
 ```
 
 The test configuration spreads measured heavy PySide GUI tests through the collected test list when xdist is active, using measured durations so several heavy tests run in parallel without clustering the longest cases.
@@ -140,8 +140,8 @@ The test configuration spreads measured heavy PySide GUI tests through the colle
 For faster local feedback, run non-heavy tests in parallel, then run heavy PySide GUI tests with a capped worker count:
 
 ```bash
-python -m pytest -m "not slow_pyside" -n auto
-python -m pytest -m slow_pyside -n 16
+python -m pytest -m "not slow_pyside" -n auto --dist=load --maxschedchunk=1
+python -m pytest -m slow_pyside -n 16 --dist=load --maxschedchunk=1
 ```
 
 To experiment with separate worker pools for GUI-heavy and non-heavy groups:
@@ -436,8 +436,8 @@ python -m pytest
 For local iteration, split heavy PySide GUI coverage from parallel-safe tests:
 
 ```bash
-python -m pytest -m "not slow_pyside" -n auto
-python -m pytest -m slow_pyside -n 16
+python -m pytest -m "not slow_pyside" -n auto --dist=load --maxschedchunk=1
+python -m pytest -m slow_pyside -n 16 --dist=load --maxschedchunk=1
 ```
 
 To run both split groups concurrently:

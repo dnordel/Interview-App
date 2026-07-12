@@ -12,7 +12,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-11T23:42:22.199808+00:00'
+generated_at_utc: '2026-07-12T01:10:01.026454+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -1629,6 +1629,33 @@ entries:
     - return_type
 - contract: contracts/director_staffing_app.contract.yaml
   symbol: director_staffing_app._load_history_payloads
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/director_staffing_app.contract.yaml
+  symbol: director_staffing_app._queue_dashboard_director_referral_dismissals
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/director_staffing_app.contract.yaml
+  symbol: director_staffing_app.append_director_referral_dismissal_event
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/director_staffing_app.contract.yaml
+  symbol: director_staffing_app.apply_director_referral_dismissal_to_store
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -10048,6 +10075,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._queue_director_referral_dismissals
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._read_pyside_deepseek_progress_step
   kind: method
   tests:
@@ -15637,6 +15673,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/staffing_dashboard_v2.contract.yaml
+  symbol: staffing_dashboard_v2.apply_staffing_v2_light_theme
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_v2.contract.yaml
   symbol: staffing_dashboard_v2.configure_v2_scroll_areas
   kind: function
   tests:
@@ -16123,6 +16168,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/staffing_store.contract.yaml
+  symbol: staffing_store.StaffingStore.list_director_referral_removal_audit
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_store.contract.yaml
   symbol: staffing_store.StaffingStore.list_dismissed_director_referral_history_ids
   kind: method
   tests:
@@ -16169,6 +16223,15 @@ entries:
     - return_type
 - contract: contracts/staffing_store.contract.yaml
   symbol: staffing_store.StaffingStore.record_director_interview
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_store.contract.yaml
+  symbol: staffing_store.StaffingStore.record_director_referral_removal_audit
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py

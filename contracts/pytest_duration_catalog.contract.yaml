@@ -3,7 +3,7 @@ module:
   language: python
   path: tools/pytest_duration_catalog.py
   version: 1.0.0
-  description: Maintains collected pytest node ids, n=2 durations, GUI-heavy classification, and scheduler placement metadata.
+  description: Maintains collected pytest node ids, n=2 durations, measured/default duration source, GUI-heavy classification, and scheduler placement metadata.
 functions:
 - name: determine_placement
   description: Classify a test into a scheduler placement bucket from measured n=2 duration and GUI-heavy status.
@@ -54,7 +54,7 @@ functions:
   - RuntimeError
   side_effects: launches pytest collect-only subprocess
 - name: normalize_catalog
-  description: Build a normalized catalog payload from collected node ids and existing entries.
+  description: Build a normalized catalog payload from collected node ids and existing entries, preserving duration_source metadata so GUI scenario timing guards can distinguish measured durations from collection defaults.
   locked: false
   inputs:
     nodeids:

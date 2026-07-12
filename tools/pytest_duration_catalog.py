@@ -67,11 +67,13 @@ def normalize_catalog(
     for nodeid in nodeids:
         current = dict(existing_entries.get(nodeid, {}))
         duration = float(current.get("duration_seconds_n2", 0.001))
+        duration_source = str(current.get("duration_source") or "collection_default")
         gui_heavy = bool(current.get("gui_heavy", False))
         entries.append(
             {
                 "nodeid": nodeid,
                 "duration_seconds_n2": round(duration, 3),
+                "duration_source": duration_source,
                 "gui_heavy": gui_heavy,
                 "placement": determine_placement(duration_seconds_n2=duration, gui_heavy=gui_heavy),
             }

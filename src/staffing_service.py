@@ -360,11 +360,31 @@ class StaffingService:
     def list_completed_director_interviews(self, *, school: str = "") -> list[StaffingDirectorInterview]:
         return self.store.list_director_interviews(school=school)
 
-    def delete_pending_director_interviews(self, referral_ids: Sequence[int]) -> int:
-        return self.store.delete_pending_director_referrals(referral_ids)
+    def delete_pending_director_interviews(
+        self,
+        referral_ids: Sequence[int],
+        *,
+        removed_by: str = "",
+        removal_source: str = "",
+    ) -> int:
+        return self.store.delete_pending_director_referrals(
+            referral_ids,
+            removed_by=removed_by,
+            removal_source=removal_source,
+        )
 
-    def dismiss_director_referral_history_ids(self, history_ids: Sequence[str]) -> int:
-        return self.store.dismiss_director_referral_history_ids(history_ids)
+    def dismiss_director_referral_history_ids(
+        self,
+        history_ids: Sequence[str],
+        *,
+        removed_by: str = "",
+        removal_source: str = "",
+    ) -> int:
+        return self.store.dismiss_director_referral_history_ids(
+            history_ids,
+            removed_by=removed_by,
+            removal_source=removal_source,
+        )
 
     def record_director_interview(
         self,

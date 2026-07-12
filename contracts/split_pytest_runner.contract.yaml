@@ -6,7 +6,7 @@ module:
   description: Runs slow PySide and non-slow pytest groups concurrently with separate xdist worker budgets.
 functions:
 - name: build_split_pytest_commands
-  description: Build subprocess argument lists for slow PySide and non-slow pytest groups.
+  description: Build subprocess argument lists for slow PySide and non-slow pytest groups, using xdist load scheduling with one-test chunks to avoid long-tail worker stranding.
   locked: false
   inputs:
     python_executable:

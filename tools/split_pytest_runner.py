@@ -29,6 +29,8 @@ def build_split_pytest_commands(
             "slow_pyside",
             "-n",
             str(gui_workers),
+            "--dist=load",
+            "--maxschedchunk=1",
             *extra_args,
         ],
         [
@@ -39,6 +41,8 @@ def build_split_pytest_commands(
             "not slow_pyside",
             "-n",
             str(other_workers),
+            "--dist=load",
+            "--maxschedchunk=1",
             *extra_args,
         ],
     ]

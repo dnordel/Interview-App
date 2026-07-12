@@ -16,6 +16,7 @@ from staffing_models import (
     StaffingClassroom,
     StaffingDirectorCandidate,
     StaffingDirectorInterview,
+    StaffingDirectorReferralRemovalAudit,
     StaffingHistoryRecord,
     StaffingPerson,
 )
@@ -166,8 +167,19 @@ class StaffingStore:
                     history_id TEXT PRIMARY KEY,
                     dismissed_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS director_referral_removal_audit (
+                    id INTEGER PRIMARY KEY,
+                    history_id TEXT NOT NULL,
+                    candidate_name TEXT NOT NULL DEFAULT '',
+                    school TEXT NOT NULL DEFAULT '',
+                    removed_by TEXT NOT NULL DEFAULT '',
+                    removal_source TEXT NOT NULL DEFAULT '',
+                    removed_at TEXT NOT NULL
+                );
                 CREATE INDEX IF NOT EXISTS idx_director_referrals_school ON director_candidate_referrals(school);
                 CREATE INDEX IF NOT EXISTS idx_director_interviews_referral_id ON director_interviews(referral_id);
+                CREATE INDEX IF NOT EXISTS idx_director_referral_removal_audit_history_id
+                    ON director_referral_removal_audit(history_id);
                 """
             )
             self._ensure_column(conn, "people", "units", "REAL")
@@ -640,7 +652,13 @@ class StaffingStore:
             ).fetchall()
             return [self.director_candidate_context(conn, int(row["id"])) for row in rows]
 
-    def delete_pending_director_referrals(self, referral_ids: Sequence[int]) -> int:
+    def delete_pending_director_referrals(
+        self,
+        referral_ids: Sequence[int],
+        *,
+        removed_by: str = "",
+        removal_source: str = "",
+    ) -> int:
         ids = sorted({int(referral_id) for referral_id in referral_ids if int(referral_id) > 0})
         if not ids:
             return 0
@@ -648,7 +666,7 @@ class StaffingStore:
         with self.write_connection("director_candidate_referral_delete") as conn:
             history_rows = conn.execute(
                 f"""
-                SELECT r.history_id
+                SELECT r.history_id, r.candidate_name, r.school
                 FROM director_candidate_referrals r
                 LEFT JOIN director_interviews i ON i.referral_id = r.id
                 WHERE r.id IN ({placeholders})
@@ -665,6 +683,13 @@ class StaffingStore:
                 """,
                 [(str(row["history_id"]), now) for row in history_rows],
             )
+            self._insert_director_referral_removal_audit(
+                conn,
+                history_rows,
+                removed_by=removed_by,
+                removal_source=removal_source,
+                removed_at=now,
+            )
             cursor = conn.execute(
                 f"""
                 DELETE FROM director_candidate_referrals
@@ -679,7 +704,13 @@ class StaffingStore:
             )
             return int(cursor.rowcount or 0)
 
-    def dismiss_director_referral_history_ids(self, history_ids: Sequence[str]) -> int:
+    def dismiss_director_referral_history_ids(
+        self,
+        history_ids: Sequence[str],
+        *,
+        removed_by: str = "",
+        removal_source: str = "",
+    ) -> int:
         ids = sorted({str(history_id).strip() for history_id in history_ids if str(history_id).strip()})
         if not ids:
             return 0
@@ -694,6 +725,21 @@ class StaffingStore:
                 """,
                 [(history_id, now) for history_id in ids],
             )
+            audit_rows = conn.execute(
+                f"""
+                SELECT history_id, candidate_name, school
+                FROM director_candidate_referrals
+                WHERE history_id IN ({placeholders})
+                """,
+                tuple(ids),
+            ).fetchall()
+            self._insert_director_referral_removal_audit(
+                conn,
+                audit_rows,
+                removed_by=removed_by,
+                removal_source=removal_source,
+                removed_at=now,
+            )
             cursor = conn.execute(
                 f"""
                 DELETE FROM director_candidate_referrals
@@ -707,6 +753,109 @@ class StaffingStore:
                 tuple(ids),
             )
             return int(cursor.rowcount or 0)
+
+    def _insert_director_referral_removal_audit(
+        self,
+        conn: sqlite3.Connection,
+        rows: Sequence[Any],
+        *,
+        removed_by: str,
+        removal_source: str,
+        removed_at: str,
+    ) -> None:
+        clean_removed_by = str(removed_by or "").strip() or "unknown"
+        clean_source = str(removal_source or "").strip() or "unknown"
+        audit_rows = [
+            (
+                str(row["history_id"]),
+                str(row["candidate_name"] or ""),
+                str(row["school"] or ""),
+                clean_removed_by,
+                clean_source,
+                removed_at,
+            )
+            for row in rows
+            if str(row["history_id"] or "").strip()
+        ]
+        if not audit_rows:
+            return
+        conn.executemany(
+            """
+            INSERT INTO director_referral_removal_audit (
+                history_id, candidate_name, school, removed_by, removal_source, removed_at
+            ) VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            audit_rows,
+        )
+
+    def list_director_referral_removal_audit(self, *, school: str = "") -> list[StaffingDirectorReferralRemovalAudit]:
+        self.initialize()
+        school_filter = str(school or "").strip()
+        where = "WHERE school = ?" if school_filter else ""
+        params: tuple[Any, ...] = (school_filter,) if school_filter else ()
+        with self.connect() as conn:
+            rows = conn.execute(
+                f"""
+                SELECT id, history_id, candidate_name, school, removed_by, removal_source, removed_at
+                FROM director_referral_removal_audit
+                {where}
+                ORDER BY id DESC
+                """,
+                params,
+            ).fetchall()
+        return [
+            StaffingDirectorReferralRemovalAudit(
+                id=int(row["id"]),
+                history_id=str(row["history_id"]),
+                candidate_name=str(row["candidate_name"]),
+                school=str(row["school"]),
+                removed_by=str(row["removed_by"]),
+                removal_source=str(row["removal_source"]),
+                removed_at=str(row["removed_at"]),
+            )
+            for row in rows
+        ]
+
+    def record_director_referral_removal_audit(
+        self,
+        *,
+        history_id: str,
+        candidate_name: str = "",
+        school: str = "",
+        removed_by: str,
+        removal_source: str,
+        removed_at: str | None = None,
+    ) -> StaffingDirectorReferralRemovalAudit:
+        clean_history_id = _required_text(history_id, "History ID")
+        clean_removed_by = _required_text(removed_by, "Removed by")
+        clean_source = _required_text(removal_source, "Removal source")
+        timestamp = str(removed_at or _utc_now_iso())
+        with self.write_connection("director_referral_removal_audit") as conn:
+            cursor = conn.execute(
+                """
+                INSERT INTO director_referral_removal_audit (
+                    history_id, candidate_name, school, removed_by, removal_source, removed_at
+                ) VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    clean_history_id,
+                    str(candidate_name or "").strip(),
+                    str(school or "").strip(),
+                    clean_removed_by,
+                    clean_source,
+                    timestamp,
+                ),
+            )
+            audit_id = int(cursor.lastrowid)
+        return StaffingDirectorReferralRemovalAudit(
+            id=audit_id,
+            history_id=clean_history_id,
+            candidate_name=str(candidate_name or "").strip(),
+            school=str(school or "").strip(),
+            removed_by=clean_removed_by,
+            removal_source=clean_source,
+            removed_at=timestamp,
+        )
 
     def list_dismissed_director_referral_history_ids(self) -> set[str]:
         self.initialize()

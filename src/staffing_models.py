@@ -166,3 +166,14 @@ class StaffingDirectorInterview:
     owner_approval_status: str = "pending_owner_approval"
     created_at: str = ""
     updated_at: str = ""
+
+
+@dataclass(frozen=True)
+class StaffingDirectorReferralRemovalAudit:
+    id: int
+    history_id: str
+    candidate_name: str
+    school: str
+    removed_by: str
+    removal_source: str
+    removed_at: str = ""

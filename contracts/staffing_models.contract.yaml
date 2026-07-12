@@ -149,4 +149,13 @@ data_structures:
   - owner_approval_status
   - created_at
   - updated_at
+- name: StaffingDirectorReferralRemovalAudit
+  fields:
+  - id
+  - history_id
+  - candidate_name
+  - school
+  - removed_by
+  - removal_source
+  - removed_at
 dependencies: []

@@ -431,21 +431,37 @@ classes:
       referral_ids:
         type: Sequence[int]
         required: true
+      removed_by:
+        type: str
+        required: false
+        default: ''
+      removal_source:
+        type: str
+        required: false
+        default: ''
     returns:
       type: int
     exceptions:
     - StaffingEditLock
-    side_effects: Deletes and dismisses selected pending director interview referrals without deleting completed director interviews, staffing assignments, or interview history rows.
+    side_effects: Deletes and dismisses selected pending director interview referrals without deleting completed director interviews, staffing assignments, or interview history rows, and records removal audit actor/source metadata.
   - name: dismiss_director_referral_history_ids
     inputs:
       history_ids:
         type: Sequence[str]
         required: true
+      removed_by:
+        type: str
+        required: false
+        default: ''
+      removal_source:
+        type: str
+        required: false
+        default: ''
     returns:
       type: int
     exceptions:
     - StaffingEditLock
-    side_effects: Dismisses director referral history ids and removes matching pending director interview referrals without deleting completed director interviews, staffing assignments, or interview history rows.
+    side_effects: Dismisses director referral history ids and removes matching pending director interview referrals without deleting completed director interviews, staffing assignments, or interview history rows, and records removal audit actor/source metadata when matching pending rows exist.
   - name: record_director_interview
     inputs:
       referral_id:

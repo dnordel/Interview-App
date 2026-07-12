@@ -8,6 +8,8 @@ import subprocess
 import sqlite3
 import sys
 
+import pytest
+
 
 ROOT = Path(".")
 
@@ -116,6 +118,25 @@ def test_director_staffing_app_uses_school_specific_db_path(tmp_path: Path) -> N
     assert module.staffing_db_path_for_school("", base_path=base) == base
 
 
+@pytest.mark.pyside_gui
+@pytest.mark.slow_pyside
+def test_staffing_v2_forces_light_fusion_theme_for_consistent_colors() -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    qt_gui = pytest.importorskip("PySide6.QtGui")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    app.setPalette(qt_gui.QPalette())
+    module = _load_director_staffing_app()
+
+    module.apply_staffing_v2_light_theme(qt_widgets, qt_gui, app)
+
+    assert app.style().objectName().lower() == "fusion"
+    assert app.property("_staffing_v2_forced_light_theme") is True
+    assert app.palette().color(qt_gui.QPalette.ColorRole.Window).name().lower() == "#f8fafc"
+    assert app.palette().color(qt_gui.QPalette.ColorRole.Base).name().lower() == "#ffffff"
+    assert app.palette().color(qt_gui.QPalette.ColorRole.Text).name().lower() == "#0f172a"
+
+
 def test_director_staffing_app_backfills_palmdale_history_referrals(tmp_path: Path) -> None:
     module = _load_director_staffing_app()
     staffing_db = tmp_path / "staffing_dashboard_palmdale.sqlite3"
@@ -190,6 +211,173 @@ def test_director_staffing_app_backfills_palmdale_history_referrals(tmp_path: Pa
     pending = module.StaffingService(store).list_pending_director_interviews(school="Palmdale")
     assert imported == 2
     assert [candidate.candidate_name for candidate in pending] == ["Borderline Candidate", "Hire Candidate"]
+
+
+def test_director_staffing_app_syncs_removed_candidate_to_admin_audit(tmp_path: Path) -> None:
+    module = _load_director_staffing_app()
+    admin_store = module.StaffingStore(tmp_path / "staffing_dashboard.sqlite3")
+    director_store = module.StaffingStore(module.staffing_db_path_for_school("Palmdale", base_path=tmp_path / "staffing_dashboard.sqlite3"))
+    admin_store.initialize()
+    director_store.initialize()
+    admin_service = module.StaffingService(admin_store)
+    director_service = module.StaffingService(director_store)
+    for service in (admin_service, director_service):
+        service.upsert_director_candidate_referral(
+            history_id="hist-palmdale-remove",
+            candidate_name="Remove Me",
+            school="Palmdale",
+            position="Teacher",
+            interviewer_rating=8.8,
+            interviewer_outcome="hire",
+            interview_date="2026-07-08",
+        )
+    director_candidate = director_service.list_pending_director_interviews(school="Palmdale")[0]
+    assert director_service.delete_pending_director_interviews(
+        [director_candidate.id],
+        removed_by="director",
+        removal_source="director_staffing_dashboard",
+    ) == 1
+    module.append_director_referral_dismissal_event(
+        history_id=director_candidate.history_id,
+        school=director_candidate.school,
+        candidate_name=director_candidate.candidate_name,
+        removed_by="director",
+        removal_source="director_staffing_dashboard",
+        queue_db_path=tmp_path / "staffing_referrals.sqlite3",
+        queue_legacy_path=tmp_path / "missing.pending.jsonl",
+    )
+
+    imported = module.sync_director_referrals(
+        admin_store,
+        school="Palmdale",
+        history_db_path=tmp_path / "missing-history.sqlite3",
+        history_json_path=tmp_path / "missing-history.json",
+        queue_db_path=tmp_path / "staffing_referrals.sqlite3",
+        queue_legacy_path=tmp_path / "missing.pending.jsonl",
+    )
+
+    audit = admin_store.list_director_referral_removal_audit()
+    assert imported == 1
+    assert admin_service.list_pending_director_interviews(school="Palmdale") == []
+    assert len(audit) == 1
+    assert audit[0].candidate_name == "Remove Me"
+    assert audit[0].removed_by == "director"
+    assert audit[0].removal_source == "director_staffing_dashboard"
+
+
+def test_director_dashboard_delete_applies_to_admin_db_before_queue_poll(tmp_path: Path) -> None:
+    module = _load_director_staffing_app()
+    admin_path = tmp_path / "staffing_dashboard.sqlite3"
+    admin_store = module.StaffingStore(admin_path)
+    director_store = module.StaffingStore(module.staffing_db_path_for_school("Palmdale", base_path=admin_path))
+    admin_store.initialize()
+    director_store.initialize()
+    admin_service = module.StaffingService(admin_store)
+    director_service = module.StaffingService(director_store)
+    for service in (admin_service, director_service):
+        service.upsert_director_candidate_referral(
+            history_id="hist-direct-admin-delete",
+            candidate_name="Director Removes First",
+            school="Palmdale",
+            position="Teacher",
+            interviewer_rating=8.4,
+            interviewer_outcome="hire",
+            interview_date="2026-07-08",
+        )
+    director_candidate = director_service.list_pending_director_interviews(school="Palmdale")[0]
+
+    module.apply_director_referral_dismissal_to_store(
+        db_path=admin_path,
+        history_id=director_candidate.history_id,
+        school=director_candidate.school,
+        candidate_name=director_candidate.candidate_name,
+        removed_by="director",
+        removal_source="director_staffing_dashboard",
+    )
+
+    audit = admin_store.list_director_referral_removal_audit(school="Palmdale")
+    assert admin_service.list_pending_director_interviews(school="Palmdale") == []
+    assert len(audit) == 1
+    assert audit[0].candidate_name == "Director Removes First"
+    assert audit[0].removed_by == "director"
+
+
+def test_director_referral_double_delete_records_both_actors_without_readding(tmp_path: Path) -> None:
+    module = _load_director_staffing_app()
+    admin_store = module.StaffingStore(tmp_path / "staffing_dashboard.sqlite3")
+    director_store = module.StaffingStore(module.staffing_db_path_for_school("Palmdale", base_path=tmp_path / "staffing_dashboard.sqlite3"))
+    admin_store.initialize()
+    director_store.initialize()
+    admin_service = module.StaffingService(admin_store)
+    director_service = module.StaffingService(director_store)
+    for service in (admin_service, director_service):
+        service.upsert_director_candidate_referral(
+            history_id="hist-double-delete",
+            candidate_name="Double Delete Candidate",
+            school="Palmdale",
+            position="Teacher",
+            interviewer_rating=8.2,
+            interviewer_outcome="hire",
+            interview_date="2026-07-08",
+        )
+    queue_path = tmp_path / "staffing_referrals.sqlite3"
+    admin_candidate = admin_service.list_pending_director_interviews(school="Palmdale")[0]
+    director_candidate = director_service.list_pending_director_interviews(school="Palmdale")[0]
+
+    assert admin_service.delete_pending_director_interviews(
+        [admin_candidate.id],
+        removed_by="admin",
+        removal_source="admin_staffing_dashboard",
+    ) == 1
+    module.append_director_referral_dismissal_event(
+        history_id=admin_candidate.history_id,
+        school=admin_candidate.school,
+        candidate_name=admin_candidate.candidate_name,
+        removed_by="admin",
+        removal_source="admin_staffing_dashboard",
+        queue_db_path=queue_path,
+        queue_legacy_path=tmp_path / "missing.pending.jsonl",
+    )
+    assert director_service.delete_pending_director_interviews(
+        [director_candidate.id],
+        removed_by="director",
+        removal_source="director_staffing_dashboard",
+    ) == 1
+    module.append_director_referral_dismissal_event(
+        history_id=director_candidate.history_id,
+        school=director_candidate.school,
+        candidate_name=director_candidate.candidate_name,
+        removed_by="director",
+        removal_source="director_staffing_dashboard",
+        queue_db_path=queue_path,
+        queue_legacy_path=tmp_path / "missing.pending.jsonl",
+    )
+
+    admin_imported = module.sync_director_referrals(
+        admin_store,
+        school="Palmdale",
+        history_db_path=tmp_path / "missing-history.sqlite3",
+        history_json_path=tmp_path / "missing-history.json",
+        queue_db_path=queue_path,
+        queue_legacy_path=tmp_path / "missing.pending.jsonl",
+    )
+    director_imported = module.sync_director_referrals(
+        director_store,
+        school="Palmdale",
+        history_db_path=tmp_path / "missing-history.sqlite3",
+        history_json_path=tmp_path / "missing-history.json",
+        queue_db_path=queue_path,
+        queue_legacy_path=tmp_path / "missing.pending.jsonl",
+    )
+
+    admin_audit = admin_store.list_director_referral_removal_audit(school="Palmdale")
+    director_audit = director_store.list_director_referral_removal_audit(school="Palmdale")
+    assert admin_imported == 2
+    assert director_imported == 0
+    assert admin_service.list_pending_director_interviews(school="Palmdale") == []
+    assert director_service.list_pending_director_interviews(school="Palmdale") == []
+    assert {row.removed_by for row in admin_audit} == {"admin", "director"}
+    assert {row.removed_by for row in director_audit} == {"director"}
 
 
 def test_setup_and_run_passes_director_staffing_mode_to_pyside() -> None:

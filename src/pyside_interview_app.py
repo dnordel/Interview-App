@@ -81,7 +81,7 @@ from platform_services import (
 from scoring_reporting import DocxExporter, OfferInput, OfferLetterService, ScoringEngine, build_offer_filename
 from scoring_reporting import build_integration_payload, serialize_integration_payload
 from scoring_reporting import CANONICAL_DEGREE_TYPES, CandidateQualification, validate_candidate_qualification
-from staffing_dashboard_v2 import StaffingDashboardV2Page, configure_v2_scroll_areas
+from staffing_dashboard_v2 import StaffingDashboardV2Page, apply_staffing_v2_light_theme, configure_v2_scroll_areas
 from staffing_referral_queue import StaffingReferralQueueStore
 from staffing_service import StaffingService
 from staffing_store import StaffingEditLock, StaffingStore
@@ -10507,6 +10507,11 @@ class PySideInterviewWindow:
             school_filter=self.director_staffing_school,
             notification_store_path=NOTIFICATION_RULES_PATH,
             notification_service_factory=self._notification_service,
+            director_referral_dismissal_callback=self._queue_director_referral_dismissals,
+            director_referral_removal_actor="director" if self.director_staffing_mode else "admin",
+            director_referral_removal_source=(
+                "director_staffing_dashboard" if self.director_staffing_mode else "admin_staffing_dashboard"
+            ),
         )
         self.staffing_v2_dashboard = dashboard
         self._start_staffing_referral_queue_polling()
@@ -10543,7 +10548,19 @@ class PySideInterviewWindow:
             operation = str(payload.get("_operation") or "director_candidate_referral")
             try:
                 if operation == "director_candidate_referral_dismissal":
-                    service.dismiss_director_referral_history_ids([str(payload["history_id"])])
+                    removed = service.dismiss_director_referral_history_ids(
+                        [str(payload["history_id"])],
+                        removed_by=str(payload.get("removed_by") or "unknown"),
+                        removal_source=str(payload.get("removal_source") or "director_referral_queue"),
+                    )
+                    if not removed:
+                        self.staffing_store.record_director_referral_removal_audit(
+                            history_id=str(payload["history_id"]),
+                            candidate_name=str(payload.get("candidate_name") or ""),
+                            school=str(payload.get("school") or self.director_staffing_school),
+                            removed_by=str(payload.get("removed_by") or "unknown"),
+                            removal_source=str(payload.get("removal_source") or "director_referral_queue"),
+                        )
                 else:
                     service.upsert_director_candidate_referral(
                         history_id=str(payload["history_id"]),
@@ -10561,6 +10578,40 @@ class PySideInterviewWindow:
                 continue
             imported += 1
         return imported
+
+    def _queue_director_referral_dismissals(
+        self,
+        candidates: Sequence[StaffingDirectorCandidate],
+        removed_by: str,
+        removal_source: str,
+    ) -> None:
+        for candidate in candidates:
+            target_path = STAFFING_DB_PATH if self.director_staffing_mode else staffing_db_path_for_school(candidate.school)
+            if target_path.exists():
+                target_store = StaffingStore(target_path)
+                removed = StaffingService(target_store).dismiss_director_referral_history_ids(
+                    [candidate.history_id],
+                    removed_by=removed_by,
+                    removal_source=removal_source,
+                )
+                if not removed:
+                    target_store.record_director_referral_removal_audit(
+                        history_id=candidate.history_id,
+                        candidate_name=candidate.candidate_name,
+                        school=candidate.school,
+                        removed_by=removed_by,
+                        removal_source=removal_source,
+                    )
+            _append_staffing_referral_dismissal_queue(
+                {
+                    "history_id": candidate.history_id,
+                    "candidate_name": candidate.candidate_name,
+                    "school": candidate.school,
+                    "position": candidate.position,
+                    "removed_by": removed_by,
+                    "removal_source": removal_source,
+                }
+            )
 
     def _sync_staffing_director_referrals_from_history(self) -> None:
         if not hasattr(self, "staffing_store"):
@@ -11519,6 +11570,7 @@ def launch_pyside_interview_app(
 ) -> int:
     _QtCore, _QtGui, QtWidgets = _import_qt()
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv)
+    apply_staffing_v2_light_theme(QtWidgets, _QtGui, app)
     _apply_styles(app)
     active_model = model or build_interview_redesign_model()
     if director_staffing:

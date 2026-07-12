@@ -30,6 +30,8 @@ def test_build_split_pytest_commands_allocates_gui_and_non_gui_workers() -> None
             "slow_pyside",
             "-n",
             "8",
+            "--dist=load",
+            "--maxschedchunk=1",
         ],
         [
             "python.exe",
@@ -39,6 +41,8 @@ def test_build_split_pytest_commands_allocates_gui_and_non_gui_workers() -> None
             "not slow_pyside",
             "-n",
             "12",
+            "--dist=load",
+            "--maxschedchunk=1",
         ],
     ]
 

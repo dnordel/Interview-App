@@ -12,7 +12,7 @@ from typing import Any, Sequence
 
 from notification_service import NotificationService, NOTIFICATION_RULES_PATH
 from staffing_referral_queue import StaffingReferralQueueStore
-from staffing_dashboard_v2 import StaffingDashboardV2Page
+from staffing_dashboard_v2 import StaffingDashboardV2Page, apply_staffing_v2_light_theme
 from staffing_service import StaffingService
 from staffing_store import StaffingEditLock, StaffingStore
 
@@ -96,6 +96,57 @@ def sync_director_referrals(
     return imported
 
 
+def append_director_referral_dismissal_event(
+    *,
+    history_id: str,
+    school: str,
+    candidate_name: str = "",
+    removed_by: str,
+    removal_source: str,
+    queue_db_path: Path = STAFFING_REFERRAL_QUEUE_DB_PATH,
+    queue_legacy_path: Path = STAFFING_REFERRAL_QUEUE_LEGACY_PATH,
+) -> None:
+    StaffingReferralQueueStore(queue_db_path, legacy_jsonl_path=queue_legacy_path).append(
+        {
+            "history_id": str(history_id or "").strip(),
+            "school": str(school or "").strip(),
+            "candidate_name": str(candidate_name or "").strip(),
+            "removed_by": str(removed_by or "").strip() or "unknown",
+            "removal_source": str(removal_source or "").strip() or "unknown",
+        },
+        operation="director_candidate_referral_dismissal",
+    )
+
+
+def apply_director_referral_dismissal_to_store(
+    *,
+    db_path: Path,
+    history_id: str,
+    school: str,
+    candidate_name: str = "",
+    removed_by: str,
+    removal_source: str,
+) -> None:
+    target_path = Path(db_path)
+    if not target_path.exists():
+        return
+    store = StaffingStore(target_path)
+    removed = StaffingService(store).dismiss_director_referral_history_ids(
+        [history_id],
+        removed_by=removed_by,
+        removal_source=removal_source,
+    )
+    if removed:
+        return
+    store.record_director_referral_removal_audit(
+        history_id=history_id,
+        candidate_name=candidate_name,
+        school=school,
+        removed_by=removed_by,
+        removal_source=removal_source,
+    )
+
+
 def _import_queued_director_referrals(
     service: StaffingService,
     *,
@@ -109,7 +160,19 @@ def _import_queued_director_referrals(
         operation = str(payload.get("_operation") or "director_candidate_referral")
         try:
             if operation == "director_candidate_referral_dismissal":
-                service.dismiss_director_referral_history_ids([str(payload["history_id"])])
+                removed = service.dismiss_director_referral_history_ids(
+                    [str(payload["history_id"])],
+                    removed_by=str(payload.get("removed_by") or "unknown"),
+                    removal_source=str(payload.get("removal_source") or "director_referral_queue"),
+                )
+                if not removed:
+                    service.store.record_director_referral_removal_audit(
+                        history_id=str(payload["history_id"]),
+                        candidate_name=str(payload.get("candidate_name") or ""),
+                        school=str(payload.get("school") or school),
+                        removed_by=str(payload.get("removed_by") or "unknown"),
+                        removal_source=str(payload.get("removal_source") or "director_referral_queue"),
+                    )
             else:
                 service.upsert_director_candidate_referral(
                     history_id=str(payload["history_id"]),
@@ -261,6 +324,7 @@ def launch_director_staffing_app(*, director_school: str = "") -> int:
     from PySide6 import QtCore, QtGui, QtWidgets
 
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv)
+    apply_staffing_v2_light_theme(QtWidgets, QtGui, app)
     window = QtWidgets.QMainWindow()
     window.setWindowTitle("Director Staffing Dashboard")
     window.resize(1440, 920)
@@ -283,12 +347,38 @@ def launch_director_staffing_app(*, director_school: str = "") -> int:
         school_filter=director_school,
         notification_store_path=NOTIFICATION_RULES_PATH,
         notification_service_factory=notification_service,
+        director_referral_dismissal_callback=_queue_dashboard_director_referral_dismissals,
+        director_referral_removal_actor="director",
+        director_referral_removal_source="director_staffing_dashboard",
     )
     window.setCentralWidget(dashboard.widget)
     setattr(app, "_director_staffing_window", window)
     setattr(app, "_director_staffing_dashboard", dashboard)
     window.show()
     return app.exec()
+
+
+def _queue_dashboard_director_referral_dismissals(
+    candidates: list[Any],
+    removed_by: str,
+    removal_source: str,
+) -> None:
+    for candidate in candidates:
+        apply_director_referral_dismissal_to_store(
+            db_path=STAFFING_DB_PATH,
+            history_id=str(getattr(candidate, "history_id", "")),
+            school=str(getattr(candidate, "school", "")),
+            candidate_name=str(getattr(candidate, "candidate_name", "")),
+            removed_by=removed_by,
+            removal_source=removal_source,
+        )
+        append_director_referral_dismissal_event(
+            history_id=str(getattr(candidate, "history_id", "")),
+            school=str(getattr(candidate, "school", "")),
+            candidate_name=str(getattr(candidate, "candidate_name", "")),
+            removed_by=removed_by,
+            removal_source=removal_source,
+        )
 
 
 def main(argv: Sequence[str] | None = None) -> int:

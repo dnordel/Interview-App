@@ -2,8 +2,8 @@ module:
   name: director_staffing_app
   language: python
   path: src/director_staffing_app.py
-  version: 1.1.0
-  description: Minimal PySide entrypoint for the director Staffing v2 dashboard that avoids full interview, audio, transcription, DOCX, and local AI setup while preserving school-specific staffing DB routing and pending director-referral queue/history backfill.
+  version: 1.1.1
+  description: Minimal PySide entrypoint for the director Staffing v2 dashboard that avoids full interview, audio, transcription, DOCX, and local AI setup while preserving school-specific staffing DB routing, forced light Staffing v2 theme, and pending director-referral queue/history backfill.
 functions:
 - name: parse_args
   description: Parse director staffing launch arguments.
@@ -71,7 +71,7 @@ functions:
   - OSError
   side_effects: may copy the base staffing SQLite file and WAL/SHM sidecars
 - name: sync_director_referrals
-  description: Import queued director referral events and backfill hire/borderline interview history rows into the school-scoped staffing DB.
+  description: Import queued director referral/dismissal events and backfill hire/borderline interview history rows into the school-scoped staffing DB.
   locked: false
   inputs:
     store:
@@ -99,7 +99,69 @@ functions:
   returns:
     type: int
   exceptions: []
-  side_effects: reads referral queue/history storage and may upsert or dismiss director candidate referrals in staffing SQLite
+  side_effects: reads referral queue/history storage and may upsert referrals, dismiss referrals, or write removal audit rows in staffing SQLite
+- name: append_director_referral_dismissal_event
+  description: Append a director referral dismissal event with actor/source metadata to the central referral queue for cross-DB sync.
+  locked: false
+  inputs:
+    history_id:
+      type: str
+      required: true
+    school:
+      type: str
+      required: true
+    candidate_name:
+      type: str
+      required: false
+      default: ''
+    removed_by:
+      type: str
+      required: true
+    removal_source:
+      type: str
+      required: true
+    queue_db_path:
+      type: Path
+      required: false
+      default: STAFFING_REFERRAL_QUEUE_DB_PATH
+    queue_legacy_path:
+      type: Path
+      required: false
+      default: STAFFING_REFERRAL_QUEUE_LEGACY_PATH
+  returns:
+    type: void
+  exceptions:
+  - OSError
+  side_effects: writes one director_candidate_referral_dismissal event to the central referral queue
+- name: apply_director_referral_dismissal_to_store
+  description: Apply a director referral dismissal to an existing staffing DB path and record actor/source audit metadata even when the pending row is already gone.
+  locked: false
+  inputs:
+    db_path:
+      type: Path
+      required: true
+    history_id:
+      type: str
+      required: true
+    school:
+      type: str
+      required: true
+    candidate_name:
+      type: str
+      required: false
+      default: ''
+    removed_by:
+      type: str
+      required: true
+    removal_source:
+      type: str
+      required: true
+  returns:
+    type: void
+  exceptions:
+  - ValueError
+  - OSError
+  side_effects: may write director referral removal audit rows and dismissed-referral state, and may remove matching pending director referrals from the target staffing SQLite DB
 - name: _import_queued_director_referrals
   description: Consume queued director referral and dismissal events for one school.
   locked: false
@@ -119,7 +181,7 @@ functions:
   returns:
     type: int
   exceptions: []
-  side_effects: marks queue events consumed and may mutate director candidate referrals
+  side_effects: marks queue events consumed and may upsert director referrals, dismiss pending referrals, or write removal audit rows for already-removed referrals
 - name: _backfill_director_referrals_from_history
   description: Backfill hire and borderline interview history rows into pending director referrals for one school.
   locked: false
@@ -229,7 +291,25 @@ functions:
   exceptions:
   - PySide6UnavailableError
   - OSError
-  side_effects: creates a QApplication/main window, initializes staffing storage, builds StaffingDashboardV2Page, and starts the Qt event loop
+  side_effects: creates a QApplication/main window, applies Staffing v2's forced light Qt theme, initializes staffing storage, builds StaffingDashboardV2Page with director-removal actor/source queue callback, and starts the Qt event loop
+- name: _queue_dashboard_director_referral_dismissals
+  description: Apply and queue director referral dismissal events emitted by the standalone Staffing v2 dashboard delete-selected action.
+  locked: false
+  inputs:
+    candidates:
+      type: list[Any]
+      required: true
+    removed_by:
+      type: str
+      required: true
+    removal_source:
+      type: str
+      required: true
+  returns:
+    type: void
+  exceptions:
+  - OSError
+  side_effects: writes removal audit/dismissal state to the shared admin staffing DB when it exists and writes one central dismissal queue event per removed director candidate
 - name: main
   description: CLI entry point for the standalone director Staffing v2 dashboard.
   locked: false

@@ -21,6 +21,56 @@ from staffing_service import StaffingService
 from staffing_store import StaffingStore
 
 
+def apply_staffing_v2_light_theme(QtWidgets: Any, QtGui: Any, app: Any | None = None) -> None:
+    """Force Staffing v2 onto a stable light Qt palette instead of host OS colors."""
+    application = app or QtWidgets.QApplication.instance()
+    if application is None:
+        return
+
+    style_factory = getattr(QtWidgets, "QStyleFactory", None)
+    if style_factory is not None:
+        try:
+            if "Fusion" in style_factory.keys():
+                application.setStyle("Fusion")
+        except RuntimeError:
+            pass
+
+    color_role = QtGui.QPalette.ColorRole
+    color_group = QtGui.QPalette.ColorGroup
+    color = QtGui.QColor
+    palette = QtGui.QPalette()
+    for group in (color_group.Active, color_group.Inactive):
+        palette.setColor(group, color_role.Window, color("#f8fafc"))
+        palette.setColor(group, color_role.WindowText, color("#0f172a"))
+        palette.setColor(group, color_role.Base, color("#ffffff"))
+        palette.setColor(group, color_role.AlternateBase, color("#f1f5f9"))
+        palette.setColor(group, color_role.ToolTipBase, color("#ffffff"))
+        palette.setColor(group, color_role.ToolTipText, color("#0f172a"))
+        palette.setColor(group, color_role.Text, color("#0f172a"))
+        palette.setColor(group, color_role.Button, color("#ffffff"))
+        palette.setColor(group, color_role.ButtonText, color("#0f172a"))
+        palette.setColor(group, color_role.BrightText, color("#ffffff"))
+        palette.setColor(group, color_role.Link, color("#2563eb"))
+        palette.setColor(group, color_role.Highlight, color("#2563eb"))
+        palette.setColor(group, color_role.HighlightedText, color("#ffffff"))
+        if hasattr(color_role, "PlaceholderText"):
+            palette.setColor(group, color_role.PlaceholderText, color("#64748b"))
+    palette.setColor(color_group.Disabled, color_role.Window, color("#f8fafc"))
+    palette.setColor(color_group.Disabled, color_role.WindowText, color("#94a3b8"))
+    palette.setColor(color_group.Disabled, color_role.Base, color("#f1f5f9"))
+    palette.setColor(color_group.Disabled, color_role.Text, color("#94a3b8"))
+    palette.setColor(color_group.Disabled, color_role.Button, color("#f1f5f9"))
+    palette.setColor(color_group.Disabled, color_role.ButtonText, color("#94a3b8"))
+    application.setPalette(palette)
+    style_hints = application.styleHints()
+    if hasattr(style_hints, "setColorScheme") and hasattr(QtGui, "Qt"):
+        try:
+            style_hints.setColorScheme(QtGui.Qt.ColorScheme.Light)
+        except (AttributeError, RuntimeError, TypeError):
+            pass
+    application.setProperty("_staffing_v2_forced_light_theme", True)
+
+
 def configure_v2_scroll_areas(QtWidgets: Any, root: Any, QtCore: Any | None = None) -> None:
     """Apply v2 per-pixel wheel/scrollbar behavior under a widget root."""
     for scroll_area in root.findChildren(QtWidgets.QAbstractScrollArea):
@@ -201,6 +251,43 @@ APP_QSS = """
 QWidget#PySideStaffingV2Page {
     background-color: #f8fafc;
     color: #0f172a;
+}
+QWidget#PySideStaffingV2Page QAbstractScrollArea,
+QWidget#PySideStaffingV2Page QAbstractScrollArea > QWidget,
+QWidget#PySideStaffingV2Page QAbstractScrollArea > QWidget > QWidget,
+QWidget#PySideStaffingV2Page QTableWidget,
+QWidget#PySideStaffingV2Page QTableView {
+    background-color: #ffffff;
+    color: #0f172a;
+    alternate-background-color: #f8fafc;
+    gridline-color: #e2e8f0;
+    selection-background-color: #dbeafe;
+    selection-color: #0f172a;
+}
+QWidget#PySideStaffingV2Page QHeaderView,
+QWidget#PySideStaffingV2Page QHeaderView::section {
+    background-color: #f8fafc;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+    font-weight: 800;
+}
+QWidget#PySideStaffingV2Page QLineEdit,
+QWidget#PySideStaffingV2Page QComboBox,
+QWidget#PySideStaffingV2Page QTextEdit,
+QWidget#PySideStaffingV2Page QPlainTextEdit {
+    background-color: #ffffff;
+    color: #0f172a;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 6px 8px;
+    selection-background-color: #dbeafe;
+    selection-color: #0f172a;
+}
+QWidget#PySideStaffingV2Page QComboBox QAbstractItemView {
+    background-color: #ffffff;
+    color: #0f172a;
+    selection-background-color: #dbeafe;
+    selection-color: #0f172a;
 }
 QFrame#StaffingV2Shell {
     background-color: #f8fafc;
@@ -839,6 +926,7 @@ QLabel#StaffingV2ClassroomListFooter {
 
 
 ActionCallback = Callable[[int], None]
+DirectorReferralDismissalCallback = Callable[[list[StaffingDirectorCandidate], str, str], None]
 
 
 class _StaffingV2OverlayPanel:
@@ -993,10 +1081,14 @@ class StaffingDashboardV2Page:
         school_filter: str = "",
         notification_store_path: Path | None = None,
         notification_service_factory: Callable[[], NotificationService] | None = None,
+        director_referral_dismissal_callback: DirectorReferralDismissalCallback | None = None,
+        director_referral_removal_actor: str = "admin",
+        director_referral_removal_source: str = "admin_staffing_dashboard",
     ) -> None:
         self.QtCore = QtCore
         self.QtGui = QtGui
         self.QtWidgets = QtWidgets
+        apply_staffing_v2_light_theme(QtWidgets, QtGui)
         self.store = store
         self.service_factory = service_factory
         self.actions = actions or {}
@@ -1005,6 +1097,11 @@ class StaffingDashboardV2Page:
             Path(notification_store_path) if notification_store_path is not None else Path("notification_rules.sqlite3")
         )
         self.notification_service_factory = notification_service_factory
+        self.director_referral_dismissal_callback = director_referral_dismissal_callback
+        self.director_referral_removal_actor = str(director_referral_removal_actor or "admin").strip() or "admin"
+        self.director_referral_removal_source = (
+            str(director_referral_removal_source or "admin_staffing_dashboard").strip() or "admin_staffing_dashboard"
+        )
         self.rows: list[StaffingMetricRow] = []
         self.visible_rows: list[StaffingMetricRow] = []
         self.classroom_rows: dict[str, list[StaffingMetricRow]] = {}
@@ -4999,7 +5096,18 @@ class StaffingDashboardV2Page:
         )
         if response != self.QtWidgets.QMessageBox.StandardButton.Yes:
             return
-        deleted = self.service_factory().delete_pending_director_interviews(sorted(referral_ids))
+        selected_candidates = [candidate for candidate in self.pending_director_candidates if candidate.id in referral_ids]
+        deleted = self.service_factory().delete_pending_director_interviews(
+            sorted(referral_ids),
+            removed_by=self.director_referral_removal_actor,
+            removal_source=self.director_referral_removal_source,
+        )
+        if deleted and self.director_referral_dismissal_callback is not None:
+            self.director_referral_dismissal_callback(
+                selected_candidates,
+                self.director_referral_removal_actor,
+                self.director_referral_removal_source,
+            )
         self._refresh_director_interviews()
         self.director_interview_status.setText(
             f"{deleted} deleted / {len(self.pending_director_candidates)} pending / {len(self.completed_director_interviews)} completed"

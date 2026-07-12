@@ -327,27 +327,82 @@ classes:
       referral_ids:
         type: Sequence[int]
         required: true
+      removed_by:
+        type: str
+        required: false
+        default: ''
+      removal_source:
+        type: str
+        required: false
+        default: ''
     returns:
       type: int
     exceptions:
     - StaffingEditLock
-    side_effects: Dismisses and deletes matching pending director candidate referrals, preserving completed director interviews and recording dismissed history ids so history backfill does not re-add them.
+    side_effects: Dismisses and deletes matching pending director candidate referrals, preserving completed director interviews, recording dismissed history ids so history backfill does not re-add them, and writing removal audit rows with actor/source metadata.
   - name: dismiss_director_referral_history_ids
     inputs:
       history_ids:
         type: Sequence[str]
         required: true
+      removed_by:
+        type: str
+        required: false
+        default: ''
+      removal_source:
+        type: str
+        required: false
+        default: ''
     returns:
       type: int
     exceptions:
     - StaffingEditLock
-    side_effects: Records dismissed director referral history ids and deletes matching pending director candidate referrals while preserving completed director interviews.
+    side_effects: Records dismissed director referral history ids and deletes matching pending director candidate referrals while preserving completed director interviews, writing removal audit rows when matching pending rows still exist.
   - name: list_dismissed_director_referral_history_ids
     inputs: {}
     returns:
       type: set[str]
     exceptions: []
     side_effects: Creates or reads staffing SQLite dismissal records for director referral history ids.
+  - name: record_director_referral_removal_audit
+    inputs:
+      history_id:
+        type: str
+        required: true
+      candidate_name:
+        type: str
+        required: false
+        default: ''
+      school:
+        type: str
+        required: false
+        default: ''
+      removed_by:
+        type: str
+        required: true
+      removal_source:
+        type: str
+        required: true
+      removed_at:
+        type: str | None
+        required: false
+        default: null
+    returns:
+      type: StaffingDirectorReferralRemovalAudit
+    exceptions:
+    - ValueError
+    - StaffingEditLock
+    side_effects: Writes one director referral removal audit row even when the pending referral was already removed locally.
+  - name: list_director_referral_removal_audit
+    inputs:
+      school:
+        type: str
+        required: false
+        default: ''
+    returns:
+      type: list[StaffingDirectorReferralRemovalAudit]
+    exceptions: []
+    side_effects: Reads director referral removal audit rows, optionally school-scoped.
   - name: record_director_interview
     inputs:
       referral_id:
