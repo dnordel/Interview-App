@@ -12,7 +12,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-12T01:10:01.026454+00:00'
+generated_at_utc: '2026-07-12T02:33:48.568475+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -1791,6 +1791,24 @@ entries:
     - return_type
 - contract: contracts/generate_director_staffing_launchers.contract.yaml
   symbol: generate_director_staffing_launchers.director_launcher_filename
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/generate_director_staffing_launchers.contract.yaml
+  symbol: generate_director_staffing_launchers.director_vbs_launcher_body
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/generate_director_staffing_launchers.contract.yaml
+  symbol: generate_director_staffing_launchers.director_vbs_launcher_filename
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -11236,6 +11254,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._sync_staffing_v2_director_referrals_after_first_paint
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._test_admin_email_connection
   kind: method
   tests:
@@ -14359,6 +14386,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/staffing_dashboard_v2.contract.yaml
+  symbol: staffing_dashboard_v2.StaffingDashboardV2Page._ensure_lazy_view
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_v2.contract.yaml
   symbol: staffing_dashboard_v2.StaffingDashboardV2Page._icon_label
   kind: method
   tests:
@@ -14684,6 +14720,15 @@ entries:
     - return_type
 - contract: contracts/staffing_dashboard_v2.contract.yaml
   symbol: staffing_dashboard_v2.StaffingDashboardV2Page._previous_classrooms_page
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_v2.contract.yaml
+  symbol: staffing_dashboard_v2.StaffingDashboardV2Page._refresh_built_lazy_views
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -15269,6 +15314,15 @@ entries:
     - return_type
 - contract: contracts/staffing_dashboard_v2.contract.yaml
   symbol: staffing_dashboard_v2.StaffingDashboardV2Page.refresh
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_v2.contract.yaml
+  symbol: staffing_dashboard_v2.StaffingDashboardV2Page.refresh_all
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py

@@ -21,15 +21,22 @@ def test_director_bat_runs_minimal_staffing_setup_only() -> None:
     for school in [school["name"] for school in seed["schools"]]:
         path = ROOT / generator.director_launcher_filename(school)
         text = path.read_text(encoding="utf-8")
+        vbs_path = ROOT / generator.director_vbs_launcher_filename(school)
+        vbs_text = vbs_path.read_text(encoding="utf-8")
 
-        assert "setup_director_staffing.ps1" in text
+        assert "setup_director_staffing.ps1" not in text
+        assert "setup_director_staffing.ps1" in vbs_text
         assert "setup_and_run.ps1" not in text
+        assert "setup_and_run.ps1" not in vbs_text
         assert "-UiMode pyside" not in text
         assert "-DirectorStaffingMode" not in text
-        assert f'-DirectorSchool "{school}"' in text
+        assert f'-DirectorSchool " & Chr(34) & "{school}" & Chr(34)' in vbs_text
         assert "--director-staffing-v2" not in text
         assert text.splitlines() == generator.director_launcher_body(school).splitlines()
+        assert vbs_text.splitlines() == generator.director_vbs_launcher_body(school).splitlines()
         assert 'cd /d "%~dp0"' in text
+        assert 'shell.Run command, 0, False' in vbs_text
+        assert f'wscript.exe "%CD%\\{generator.director_vbs_launcher_filename(school)}"' in text
 
 
 def test_director_launchers_match_staffing_seed_schools() -> None:
@@ -40,6 +47,7 @@ def test_director_launchers_match_staffing_seed_schools() -> None:
 
     for school in expected_schools:
         assert expected_paths[school].exists()
+        assert (ROOT / generator.director_vbs_launcher_filename(school)).exists()
 
 
 def test_generate_director_staffing_launchers_from_seed(tmp_path: Path) -> None:
@@ -54,10 +62,15 @@ def test_generate_director_staffing_launchers_from_seed(tmp_path: Path) -> None:
 
     assert [path.name for path in output_paths] == [
         "..START DIRECTOR STAFFING - Alpha School.bat",
+        "..START DIRECTOR STAFFING - Alpha School.vbs",
         "..START DIRECTOR STAFFING - Beta School.bat",
+        "..START DIRECTOR STAFFING - Beta School.vbs",
     ]
-    assert '-DirectorSchool "Alpha School"' in output_paths[0].read_text(encoding="utf-8")
-    assert '-DirectorSchool "Beta/School"' in output_paths[1].read_text(encoding="utf-8")
+    assert 'wscript.exe "%CD%\\..START DIRECTOR STAFFING - Alpha School.vbs"' in output_paths[0].read_text(encoding="utf-8")
+    assert '-DirectorSchool " & Chr(34) & "Alpha School" & Chr(34)' in output_paths[1].read_text(encoding="utf-8")
+    assert 'shell.Run command, 0, False' in output_paths[1].read_text(encoding="utf-8")
+    assert 'wscript.exe "%CD%\\..START DIRECTOR STAFFING - Beta School.vbs"' in output_paths[2].read_text(encoding="utf-8")
+    assert '-DirectorSchool " & Chr(34) & "Beta/School" & Chr(34)' in output_paths[3].read_text(encoding="utf-8")
 
 
 def test_director_entrypoint_uses_staffing_only_modules_and_requirements() -> None:
@@ -85,6 +98,18 @@ def test_director_setup_skips_full_app_audio_docx_and_ai_installers() -> None:
     assert "requirements.txt" not in script_text
     for forbidden in ("Ensure-FFmpeg", "VB-CABLE", "Ollama", "DeepSeek", "requirements-openvino", "requirements-gpu"):
         assert forbidden not in script_text
+
+
+def test_director_setup_starts_gui_process_without_console_window() -> None:
+    script_text = Path("setup_director_staffing.ps1").read_text(encoding="utf-8")
+
+    assert "System.Diagnostics.ProcessStartInfo" in script_text
+    assert "$startInfo.UseShellExecute = $false" in script_text
+    assert "$startInfo.CreateNoWindow = $true" in script_text
+    assert "$startInfo.RedirectStandardOutput = $true" in script_text
+    assert "$startInfo.RedirectStandardError = $true" in script_text
+    assert "[System.Diagnostics.Process]::Start($startInfo)" in script_text
+    assert "Start-Process -FilePath $launcher" not in script_text
 
 
 def test_director_staffing_app_imports_without_docx_or_audio_modules() -> None:

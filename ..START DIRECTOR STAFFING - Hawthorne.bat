@@ -3,6 +3,6 @@ setlocal
 
 cd /d "%~dp0"
 
-powershell -NoProfile -ExecutionPolicy Bypass -File "%CD%\setup_director_staffing.ps1" -DirectorSchool "Hawthorne"
+wscript.exe "%CD%\..START DIRECTOR STAFFING - Hawthorne.vbs"
 
 exit /b

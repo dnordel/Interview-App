@@ -2,8 +2,8 @@ module:
   name: generate_director_staffing_launchers
   language: python
   path: tools/generate_director_staffing_launchers.py
-  version: 1.1.0
-  description: Generates one director staffing Windows launcher per school in config/staffing_seed.json, with each launcher using the minimal director staffing setup path and passing its school as the director filter.
+  version: 1.2.0
+  description: Generates one director staffing Windows .bat compatibility wrapper and one no-console .vbs launcher per school in config/staffing_seed.json, with each hidden launcher using the minimal director staffing setup path and passing its school as the director filter.
 functions:
 - name: load_staffing_schools
   description: Read staffing_seed.json and return ordered school names.
@@ -32,8 +32,31 @@ functions:
   exceptions:
   - ValueError
   side_effects: none
+- name: director_vbs_launcher_filename
+  description: Build a Windows-safe no-console VBScript director launcher filename for one school.
+  locked: false
+  inputs:
+    school:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions:
+  - ValueError
+  side_effects: none
 - name: director_launcher_body
-  description: Build the .bat launcher body for one school-specific director staffing dashboard.
+  description: Build the .bat compatibility-wrapper body for one school-specific director staffing dashboard.
+  locked: false
+  inputs:
+    school:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions: []
+  side_effects: none
+- name: director_vbs_launcher_body
+  description: Build the no-console .vbs launcher body that starts setup_director_staffing.ps1 through hidden PowerShell for one school-specific director staffing dashboard.
   locked: false
   inputs:
     school:
@@ -44,7 +67,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: generate_director_launchers
-  description: Create or update school-specific director staffing launcher .bat files under the repository root.
+  description: Create or update school-specific director staffing .bat compatibility wrappers and .vbs no-console launchers under the repository root.
   locked: false
   inputs:
     root:
@@ -61,9 +84,9 @@ functions:
   - OSError
   - JSONDecodeError
   - ValueError
-  side_effects: writes one .bat file per staffing seed school
+  side_effects: writes one .bat file and one .vbs file per staffing seed school
 - name: main
-  description: CLI entry point for regenerating director staffing launchers from the current staffing seed.
+  description: CLI entry point for regenerating director staffing .bat and .vbs launchers from the current staffing seed.
   locked: false
   inputs: {}
   returns:
@@ -72,7 +95,7 @@ functions:
   - OSError
   - JSONDecodeError
   - ValueError
-  side_effects: writes one .bat file per staffing seed school
+  side_effects: writes one .bat file and one .vbs file per staffing seed school
 classes: []
 data_structures: []
 dependencies: []

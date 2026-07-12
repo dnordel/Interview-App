@@ -114,15 +114,23 @@ _MEASURED_SLOW_PYSIDE_TESTS = {
 _DURATION_REPORTS: dict[str, float] = {}
 
 
-def pytest_configure() -> None:
+def pytest_configure(config: pytest.Config) -> None:
     """Validate that the correct DOCX library is importable before test collection."""
 
+    _force_xdist_maxschedchunk_one(config)
     try:
         importlib.import_module("docx")
     except ModuleNotFoundError as exc:
         if exc.name == "exceptions":
             pytest.exit(_DOCX_IMPORT_HELP, returncode=2)
         raise
+
+
+def _force_xdist_maxschedchunk_one(config: pytest.Config) -> None:
+    """Keep xdist full-suite scheduling to one test per dispatch chunk."""
+
+    if hasattr(config.option, "maxschedchunk"):
+        config.option.maxschedchunk = 1
 
 
 def _duration_catalog_by_nodeid() -> dict[str, dict[str, object]]:

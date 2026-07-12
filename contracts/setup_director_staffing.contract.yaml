@@ -2,7 +2,7 @@ module:
   name: setup_director_staffing
   language: powershell
   path: setup_director_staffing.ps1
-  version: 1.0.0
+  version: 1.0.1
   description: Minimal Windows bootstrap for school-filtered director Staffing v2 launchers; provisions only Python 3.11, a director-specific virtual environment, PySide6 requirements, and the standalone director_staffing_app entrypoint without FFmpeg, VB-CABLE, DOCX, transcription, OpenVINO, GPU, Ollama, or DeepSeek setup.
 functions:
 - name: Write-Log
@@ -54,7 +54,7 @@ functions:
   - Exception
   side_effects: may create the director staffing virtual environment
 - name: Start-DirectorStaffingApp
-  description: Launch the standalone director Staffing v2 app with quoted arguments, redirected stdout/stderr logs, and immediate-exit detection.
+  description: Launch the standalone director Staffing v2 app with quoted arguments, no child console window, redirected stdout/stderr logs for immediate-exit diagnostics, and immediate-exit detection.
   locked: false
   inputs:
     VenvPy:
@@ -71,7 +71,7 @@ functions:
     type: void
   exceptions:
   - Exception
-  side_effects: starts the director Staffing v2 Python process, writes launch logs, and may write stdout/stderr files
+  side_effects: starts the director Staffing v2 Python process through System.Diagnostics.ProcessStartInfo with UseShellExecute false and CreateNoWindow true, writes launch logs, creates stdout/stderr log files, and writes captured output when the process exits immediately
 - name: Ensure-DirectorDependencies
   description: Install only requirements-director.txt when PySide6 is missing from the director virtual environment.
   locked: false

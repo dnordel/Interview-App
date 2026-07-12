@@ -3,6 +3,13 @@ from __future__ import annotations
 import tests.conftest as test_conftest
 
 
+class _FakeConfig:
+    class Option:
+        maxschedchunk = None
+
+    option = Option()
+
+
 class _FakeItem:
     def __init__(self, name: str, slow: bool = False) -> None:
         self.name = name
@@ -37,6 +44,14 @@ def test_spread_slow_pyside_items_interleaves_gui_heavy_tests() -> None:
         "fast_10",
         "fast_11",
     ]
+
+
+def test_pytest_config_forces_single_xdist_schedule_chunk() -> None:
+    config = _FakeConfig()
+
+    test_conftest._force_xdist_maxschedchunk_one(config)
+
+    assert config.option.maxschedchunk == 1
 
 
 def test_spread_slow_pyside_items_uses_duration_weights_for_heavy_waves(monkeypatch) -> None:

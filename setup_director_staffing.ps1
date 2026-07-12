@@ -100,13 +100,24 @@ function Start-DirectorStaffingApp {
   }
   $argumentString = $quotedArgs -join " "
   Write-Log ("START: {0} {1}" -f $launcher, $argumentString)
-  $process = Start-Process -FilePath $launcher -ArgumentList $argumentString -WorkingDirectory (Join-Path $AppDir "src") -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru
+  "" | Out-File -FilePath $stdout -Encoding UTF8
+  "" | Out-File -FilePath $stderr -Encoding UTF8
+  $startInfo = New-Object System.Diagnostics.ProcessStartInfo
+  $startInfo.FileName = $launcher
+  $startInfo.Arguments = $argumentString
+  $startInfo.WorkingDirectory = Join-Path $AppDir "src"
+  $startInfo.UseShellExecute = $false
+  $startInfo.CreateNoWindow = $true
+  $startInfo.RedirectStandardOutput = $true
+  $startInfo.RedirectStandardError = $true
+  $process = [System.Diagnostics.Process]::Start($startInfo)
   Start-Sleep -Milliseconds 1200
   if ($process.HasExited) {
+    $outputText = $process.StandardOutput.ReadToEnd()
     $errorText = ""
-    if (Test-Path $stderr) {
-      $errorText = (Get-Content -LiteralPath $stderr -Raw -ErrorAction SilentlyContinue)
-    }
+    $errorText = $process.StandardError.ReadToEnd()
+    $outputText | Out-File -FilePath $stdout -Encoding UTF8
+    $errorText | Out-File -FilePath $stderr -Encoding UTF8
     throw "Director staffing dashboard exited immediately. $errorText"
   }
 }

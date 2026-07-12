@@ -34,20 +34,39 @@ def director_launcher_filename(school: str) -> str:
     return f"..START DIRECTOR STAFFING - {clean}.bat"
 
 
+def director_vbs_launcher_filename(school: str) -> str:
+    return director_launcher_filename(school).removesuffix(".bat") + ".vbs"
+
+
 def director_launcher_body(school: str) -> str:
-    escaped_school = str(school).replace('"', '""')
+    vbs_name = director_vbs_launcher_filename(school).replace('"', '""')
     lines = [
         "@echo off",
         "setlocal",
         "",
         'cd /d "%~dp0"',
         "",
-        (
-            'powershell -NoProfile -ExecutionPolicy Bypass -File "%CD%\\setup_director_staffing.ps1" '
-            f'-DirectorSchool "{escaped_school}"'
-        ),
+        f'wscript.exe "%CD%\\{vbs_name}"',
         "",
         "exit /b",
+        "",
+    ]
+    return "\r\n".join(lines)
+
+
+def director_vbs_launcher_body(school: str) -> str:
+    escaped_school = re.sub(r"\s+", " ", str(school or "")).strip().replace('"', '""')
+    lines = [
+        'Set shell = CreateObject("WScript.Shell")',
+        'Set fso = CreateObject("Scripting.FileSystemObject")',
+        "appDir = fso.GetParentFolderName(WScript.ScriptFullName)",
+        "shell.CurrentDirectory = appDir",
+        (
+            'command = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File " '
+            '& Chr(34) & appDir & "\\setup_director_staffing.ps1" & Chr(34) '
+            f'& " -DirectorSchool " & Chr(34) & "{escaped_school}" & Chr(34)'
+        ),
+        "shell.Run command, 0, False",
         "",
     ]
     return "\r\n".join(lines)
@@ -60,9 +79,11 @@ def generate_director_launchers(
 ) -> list[Path]:
     output_paths: list[Path] = []
     for school in load_staffing_schools(seed_path):
-        path = Path(root) / director_launcher_filename(school)
-        path.write_text(director_launcher_body(school), encoding="utf-8", newline="")
-        output_paths.append(path)
+        bat_path = Path(root) / director_launcher_filename(school)
+        vbs_path = Path(root) / director_vbs_launcher_filename(school)
+        bat_path.write_text(director_launcher_body(school), encoding="utf-8", newline="")
+        vbs_path.write_text(director_vbs_launcher_body(school), encoding="utf-8", newline="")
+        output_paths.extend([bat_path, vbs_path])
     return output_paths
 
 

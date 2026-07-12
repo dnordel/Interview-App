@@ -2252,6 +2252,7 @@ class PySideInterviewWindow:
         _bootstrap_school_staffing_db_from_base(self.director_staffing_school, staffing_db_path)
         self.staffing_store = StaffingStore(staffing_db_path)
         self._staffing_referral_queue_timer: Any | None = None
+        self._staffing_v2_director_referrals_sync_started = False
         self.staffing_status_label: Any | None = None
         self.staffing_metrics_label: Any | None = None
         self.staffing_table: Any | None = None
@@ -2420,6 +2421,8 @@ class PySideInterviewWindow:
     def show(self) -> None:
         self._fit_window_to_available_screen()
         self.window.showMaximized()
+        if getattr(self, "director_staffing_mode", False):
+            return
         self._schedule_startup_notifications()
         self._schedule_recording_interface_preload()
 
@@ -10485,8 +10488,10 @@ class PySideInterviewWindow:
                     seed_assignment_count += len(support_row.get("slots", support_row.get("positions", [])))
             if len(existing_assignments) < seed_assignment_count:
                 self.staffing_store.import_seed_file(STAFFING_SEED_PATH)
-        self._import_queued_staffing_director_referrals()
-        self._sync_staffing_director_referrals_from_history()
+        defer_director_sync = bool(self.director_staffing_mode)
+        if not defer_director_sync:
+            self._import_queued_staffing_director_referrals()
+            self._sync_staffing_director_referrals_from_history()
         dashboard = StaffingDashboardV2Page(
             QtCore=self.QtCore,
             QtGui=self.QtGui,
@@ -10515,7 +10520,18 @@ class PySideInterviewWindow:
         )
         self.staffing_v2_dashboard = dashboard
         self._start_staffing_referral_queue_polling()
+        if defer_director_sync:
+            self.QtCore.QTimer.singleShot(100, self._sync_staffing_v2_director_referrals_after_first_paint)
         return dashboard.widget
+
+    def _sync_staffing_v2_director_referrals_after_first_paint(self) -> None:
+        if getattr(self, "_staffing_v2_director_referrals_sync_started", False):
+            return
+        self._staffing_v2_director_referrals_sync_started = True
+        self._import_queued_staffing_director_referrals()
+        self._sync_staffing_director_referrals_from_history()
+        if getattr(self, "staffing_v2_dashboard", None) is not None:
+            self.staffing_v2_dashboard.refresh()
 
     def _start_staffing_referral_queue_polling(self) -> None:
         if not self.director_staffing_school:

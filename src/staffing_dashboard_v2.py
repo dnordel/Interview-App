@@ -1123,6 +1123,7 @@ class StaffingDashboardV2Page:
         self.dashboard_classroom_filter_state: dict[str, Any] = self._default_dashboard_classroom_filter_state()
         self.validation_issues: list[dict[str, str]] = []
         self.visible_validation_issues: list[dict[str, str]] = []
+        self._lazy_views_built: set[str] = set()
         self.widget = QtWidgets.QWidget()
         self.widget.setObjectName("PySideStaffingV2Page")
         self.widget.setStyleSheet(APP_QSS)
@@ -1358,6 +1359,9 @@ class StaffingDashboardV2Page:
         self.positions_table.horizontalHeader().setSectionResizeMode(self.QtWidgets.QHeaderView.ResizeMode.Stretch)
         self.positions_table.horizontalHeader().setSectionResizeMode(0, self.QtWidgets.QHeaderView.ResizeMode.Fixed)
         self.positions_table.setColumnWidth(0, 44)
+        for column, width in ((3, 148), (6, 158), (7, 170)):
+            self.positions_table.horizontalHeader().setSectionResizeMode(column, self.QtWidgets.QHeaderView.ResizeMode.Fixed)
+            self.positions_table.setColumnWidth(column, width)
         self.positions_table.cellClicked.connect(self._open_position_drawer_from_table)
         self.positions_table.setMinimumHeight(150)
         self.positions_table.setMaximumHeight(220)
@@ -1381,11 +1385,6 @@ class StaffingDashboardV2Page:
         self.drawer_footer_layout = self.drawer_panel.footer_layout
         main.setSizes([380, 920])
         dashboard_root.addWidget(main, 1)
-        self._build_classrooms_view()
-        self._build_people_view()
-        self._build_history_view()
-        self._build_notifications_view()
-        self._build_validation_view()
         self._set_active_nav(self.dashboard_nav_button)
 
     def _sidebar_button(self, object_name: str, text: str, icon_key: str = "") -> Any:
@@ -1477,14 +1476,44 @@ class StaffingDashboardV2Page:
         self.page_stack.setCurrentWidget(self.dashboard_view)
 
     def _show_classrooms_view(self) -> None:
+        self._ensure_lazy_view("classrooms")
         self._set_active_nav(self.classrooms_nav_button)
         self._refresh_classrooms()
         self.page_stack.setCurrentWidget(self.classrooms_view)
 
     def _show_validation_view(self) -> None:
+        self._ensure_lazy_view("validation")
         self._set_active_nav(self.validation_nav_button)
         self._refresh_validation()
         self.page_stack.setCurrentWidget(self.validation_view)
+
+    def _ensure_lazy_view(self, name: str) -> None:
+        if name in self._lazy_views_built:
+            return
+        builders = {
+            "classrooms": self._build_classrooms_view,
+            "people": self._build_people_view,
+            "history": self._build_history_view,
+            "notifications": self._build_notifications_view,
+            "validation": self._build_validation_view,
+        }
+        builder = builders.get(name)
+        if builder is None:
+            return
+        builder()
+        self._lazy_views_built.add(name)
+
+    def _refresh_built_lazy_views(self) -> None:
+        if "classrooms" in self._lazy_views_built:
+            self._refresh_classrooms()
+        if "people" in self._lazy_views_built:
+            self._refresh_people()
+        if "history" in self._lazy_views_built:
+            self._refresh_history()
+        if "notifications" in self._lazy_views_built:
+            self._refresh_notifications()
+        if "validation" in self._lazy_views_built:
+            self._refresh_validation()
 
     def _build_classrooms_view(self) -> None:
         self.classrooms_view = self.QtWidgets.QWidget()
@@ -1935,7 +1964,7 @@ class StaffingDashboardV2Page:
                 self.classrooms_filter_dont_need.setChecked(True)
             self.classrooms_applied_filter_state["dont_need"] = True
             self.classrooms_current_page = 1
-            self.refresh()
+            self.refresh_all()
             dialog.accept()
 
         save.clicked.connect(save_classroom)
@@ -2486,7 +2515,7 @@ class StaffingDashboardV2Page:
         except ValueError as exc:
             status.setText(str(exc))
             return
-        self.refresh()
+        self.refresh_all()
         self._select_classroom_management_by_key(f"{updated.school}\u241f{updated.name}")
 
     def _deactivate_selected_classroom(self, record: StaffingClassroom | None, status: Any) -> None:
@@ -2498,7 +2527,7 @@ class StaffingDashboardV2Page:
         except ValueError as exc:
             status.setText(str(exc))
             return
-        self.refresh()
+        self.refresh_all()
 
     def _refresh_classrooms_validation_panel(self) -> None:
         self._mark_layout_widgets_stale(self.classrooms_validation_layout)
@@ -2925,7 +2954,7 @@ class StaffingDashboardV2Page:
             button.setObjectName(object_name)
             self._set_button_icon(button, icon_key)
             if object_name == "StaffingV2ValidationRunFullButton":
-                button.clicked.connect(self.refresh)
+                button.clicked.connect(self.refresh_all)
             elif object_name == "StaffingV2ValidationExportQuickButton":
                 button.clicked.connect(self._open_validation_export_dialog)
             elif object_name == "StaffingV2ValidationRulesButton":
@@ -3921,16 +3950,19 @@ class StaffingDashboardV2Page:
         dialog.show()
 
     def _show_people_view(self) -> None:
+        self._ensure_lazy_view("people")
         self._set_active_nav(self.people_nav_button)
         self._refresh_people()
         self.page_stack.setCurrentWidget(self.people_view)
 
     def _show_history_view(self) -> None:
+        self._ensure_lazy_view("history")
         self._set_active_nav(self.history_nav_button)
         self._refresh_history()
         self.page_stack.setCurrentWidget(self.history_view)
 
     def _show_notifications_view(self) -> None:
+        self._ensure_lazy_view("notifications")
         self._set_active_nav(self.notifications_nav_button)
         self._refresh_notifications()
         self.page_stack.setCurrentWidget(self.notifications_view)
@@ -3948,19 +3980,19 @@ class StaffingDashboardV2Page:
         layout.addWidget(control)
         return layout
 
-    def refresh(self) -> None:
+    def refresh(self, *, include_lazy: bool = False) -> None:
         self.store.initialize()
         metrics = self.service_factory().staffing_metrics(today=date.today(), school=self.school_filter)
         self.rows = list(metrics.rows)
         self._sync_selectors()
         self._refresh_filters()
         self._refresh_director_interviews()
-        self._refresh_classrooms()
-        self._refresh_people()
-        self._refresh_history()
-        self._refresh_notifications()
-        self._refresh_validation()
+        if include_lazy:
+            self._refresh_built_lazy_views()
         self._schedule_dashboard_scroll_sync()
+
+    def refresh_all(self) -> None:
+        self.refresh(include_lazy=True)
 
     def _schedule_dashboard_scroll_sync(self) -> None:
         if not self._dashboard_scroll_widgets:
@@ -4881,9 +4913,13 @@ class StaffingDashboardV2Page:
         for classroom, rows in self.classroom_rows.items():
             item = self.QtWidgets.QListWidgetItem(_classroom_label(classroom, rows))
             item.setData(self.QtCore.Qt.ItemDataRole.UserRole, classroom)
-            item.setSizeHint(self.QtCore.QSize(0, 68))
+            widget = self._classroom_list_item_widget(classroom, rows)
+            size_hint = widget.sizeHint()
+            if "\n" in _classroom_counts_text(rows):
+                size_hint.setHeight(max(size_hint.height() + 12, 82))
+            item.setSizeHint(size_hint)
             self.classroom_list.addItem(item)
-            self.classroom_list.setItemWidget(item, self._classroom_list_item_widget(classroom, rows))
+            self.classroom_list.setItemWidget(item, widget)
         visible_count = self.classroom_list.count()
         total_count = len(self.classroom_rows)
         if visible_count:
@@ -4931,7 +4967,7 @@ class StaffingDashboardV2Page:
         frame.setObjectName("StaffingV2ClassroomListItem")
         frame.setProperty("staffingV2Selected", False)
         layout = self.QtWidgets.QHBoxLayout(frame)
-        layout.setContentsMargins(10, 6, 10, 6)
+        layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(10)
         dot = self.QtWidgets.QFrame()
         dot.setObjectName("StaffingV2ClassroomStatusDot")
@@ -4942,7 +4978,7 @@ class StaffingDashboardV2Page:
         title = self._label(classroom, "StaffingV2ClassroomItemTitle")
         title.setWordWrap(False)
         counts = self._label(_classroom_counts_text(rows), "StaffingV2ClassroomItemCounts")
-        counts.setWordWrap(False)
+        counts.setWordWrap(True)
         text.addWidget(title)
         text.addWidget(counts)
         layout.addLayout(text, 1)
@@ -4959,10 +4995,14 @@ class StaffingDashboardV2Page:
         header.addWidget(self._label("Director Interviews", "StaffingV2SectionTitle"))
         header.addStretch(1)
         self.director_interview_status = self._label("", "StaffingV2Muted")
+        self.director_interview_status.setObjectName("StaffingV2DirectorInterviewStatus")
+        self.director_interview_status.setWordWrap(False)
+        self.director_interview_status.setMinimumWidth(170)
         header.addWidget(self.director_interview_status)
         self.director_interview_delete_selected = self.QtWidgets.QPushButton("Delete Selected")
         self.director_interview_delete_selected.setObjectName("StaffingV2DirectorInterviewDeleteSelected")
         self._set_button_icon(self.director_interview_delete_selected, "delete")
+        self.director_interview_delete_selected.setMinimumWidth(170)
         self.director_interview_delete_selected.clicked.connect(self._delete_selected_director_referrals)
         header.addWidget(self.director_interview_delete_selected)
         layout.addLayout(header)
@@ -5263,7 +5303,7 @@ class StaffingDashboardV2Page:
                 error.show()
                 return
             dialog.close()
-            self.refresh()
+            self.refresh_all()
 
         save.clicked.connect(save_interview)
         dialog.show()
@@ -5338,6 +5378,8 @@ class StaffingDashboardV2Page:
             )
             self.positions_table.setCellWidget(row_index, 7, self._action_button(row))
         self.positions_table.resizeColumnsToContents()
+        for column, width in ((3, 148), (6, 158), (7, 170)):
+            self.positions_table.setColumnWidth(column, width)
 
     def _open_position_drawer_from_table(self, row: int, _column: int) -> None:
         assignment_id = _table_assignment_id(self.positions_table, row)
@@ -5465,6 +5507,7 @@ class StaffingDashboardV2Page:
         button.setProperty("staffingAssignmentId", row.assignment_id)
         button.setProperty("staffingAction", action_key)
         button.setMinimumHeight(34)
+        button.setMinimumWidth(164)
         button.setPopupMode(self.QtWidgets.QToolButton.ToolButtonPopupMode.MenuButtonPopup)
         menu = self.QtWidgets.QMenu(button)
         menu.setObjectName("StaffingV2ActionMenu")
@@ -5576,7 +5619,7 @@ class StaffingDashboardV2Page:
             self._show_position_drawer(assignment_id)
             return
         refreshed_id = int(getattr(result, "assignment_id", assignment_id) or assignment_id)
-        self.refresh()
+        self.refresh_all()
         self._show_position_drawer(refreshed_id)
 
     def _open_position_edit_dialog(self, assignment_id: int) -> None:
@@ -5696,7 +5739,7 @@ class StaffingDashboardV2Page:
                 error.show()
                 return
             dialog.close()
-            self.refresh()
+            self.refresh_all()
             self._show_position_drawer(int(getattr(result, "assignment_id", assignment.id) or assignment.id))
 
         submit.clicked.connect(save)
@@ -5832,7 +5875,7 @@ class StaffingDashboardV2Page:
                 self.school_selector.setCurrentText(assignment.school)
             if assignment.classroom_program:
                 self.program_selector.setCurrentText(assignment.classroom_program)
-            self.refresh()
+            self.refresh_all()
             for index in range(self.classroom_list.count()):
                 if self.classroom_list.item(index).data(self.QtCore.Qt.ItemDataRole.UserRole) == assignment.classroom:
                     self.classroom_list.setCurrentRow(index)
@@ -5910,7 +5953,7 @@ class StaffingDashboardV2Page:
                 return
             dialog.close()
             self.drawer.hide()
-            self.refresh()
+            self.refresh_all()
 
         confirm.clicked.connect(delete_position)
         dialog.show()
@@ -6129,7 +6172,7 @@ class StaffingDashboardV2Page:
                 error.show()
                 return
             dialog.close()
-            self.refresh()
+            self.refresh_all()
             self._show_position_drawer(assignment_id)
 
         submit.clicked.connect(save)
@@ -6428,7 +6471,7 @@ class StaffingDashboardV2Page:
                 error.show()
                 return
             dialog.close()
-            self.refresh()
+            self.refresh_all()
             self._show_position_drawer(assignment_id)
 
         submit.clicked.connect(save)
@@ -6609,7 +6652,7 @@ class StaffingDashboardV2Page:
                 error.show()
                 return
             dialog.close()
-            self.refresh()
+            self.refresh_all()
             self._show_position_drawer(assignment_id)
 
         submit.clicked.connect(save)
@@ -6723,7 +6766,7 @@ class StaffingDashboardV2Page:
                     current = None
                 if current is not None and current.status == "need_now":
                     dialog.close()
-                    self.refresh()
+                    self.refresh_all()
                     self._show_position_drawer(assignment_id)
                     return
                 error.setText(_safe_staffing_error(exc))
@@ -6731,7 +6774,7 @@ class StaffingDashboardV2Page:
                 submit.setEnabled(True)
                 return
             dialog.close()
-            self.refresh()
+            self.refresh_all()
             self._show_position_drawer(assignment_id)
 
         submit.clicked.connect(save)
@@ -6927,7 +6970,7 @@ class StaffingDashboardV2Page:
                 error.show()
                 return
             dialog.close()
-            self.refresh()
+            self.refresh_all()
             self._show_position_drawer(assignment_id)
 
         submit.clicked.connect(save)
@@ -7076,7 +7119,7 @@ def _classroom_counts_text(rows: list[StaffingMetricRow]) -> str:
     coming = sum(1 for row in rows if row.status == "coming")
     filled = sum(1 for row in rows if row.status == "filled")
     dont_need = sum(1 for row in rows if row.status == "dont_need_now")
-    return f"Need {need} · Replace {replace} · Coming {coming} · Filled {filled} · Don't Need {dont_need}"
+    return f"Need {need} · Replace {replace}\nComing {coming} · Filled {filled} · Don't Need {dont_need}"
 
 
 def _classroom_status_key(rows: list[StaffingMetricRow]) -> str:

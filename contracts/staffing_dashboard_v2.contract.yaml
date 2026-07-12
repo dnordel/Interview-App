@@ -2,8 +2,8 @@ module:
   name: staffing_dashboard_v2
   language: python
   path: src/staffing_dashboard_v2.py
-  version: 0.21.10
-  description: Parallel PySide Staffing v2 dashboard page module for the mockup-driven rewrite; renders a standalone mockup-style staffing shell/sidebar with forced light Fusion Qt palette/style, active nav state, Qt icons plus custom primary-blue add and person-add icons, styled light scrollbars/tables/inputs, and disabled placeholder nav entries for unimplemented mockup destinations, main Staffing Dashboard with stable dashboard objectName, labeled filters/icon-owned Add Position and a shared selected-school summary/action row containing semantic compact icon-bearing summary chips plus Export/View History actions, validation worklist chip drilldown, mockup colon labels, icon-bearing overview cards, icon-bearing classroom priority chip, custom always-scrollable classroom list rows with status dots and chevrons, icon-only classroom list filter dialog for status/permit/open-days filters, classroom list footer count, vertically scrollable classroom detail area with refresh-synced scroll range, page-wide per-pixel Qt scroll behavior for Staffing v2 lists/tables/text edits/scroll areas, position table with explicit row-number column, normalized date/program display, icon-bearing status and permit chips plus menu-style row actions including mistaken-position deletion for unassigned positions, icon-bearing dashed Add Position drop zone, director-interview pending/completed section for new hire/borderline referrals with first-interview score visibility, visible pending-candidate checkbox controls plus no-modifier multi-row selection for multi-delete, school-selector-synced pending/completed director interview lists, shortened wrapped pending-table headers, compact fixed pending-table column spacing with full-value cell tooltips, fully visible Record Interview action buttons, and hire-only proposed shift/classroom capture that hides those fields when director decision is No-Hire, status key, service-backed Add Position dialog with first-class Director position type and icon-only close, filtered Export read-only preview dialog, shared overlay side-panel template with top-aligned viewport-width-clamped scrollable body and fixed footer plus shared compact detail-card builder, Classroom Management sub-dashboard with icon-owned Add Classroom header action, service-backed Add Classroom dialog, Export read-only filtered-classrooms preview dialog, pagination footer, readable fixed-width table columns with status/active chips, icon-bearing compact detail/metric/health cards, row View detail selection, always-visible-scrollbar classroom detail overlay with pinned Save Changes/Deactivate controls, and an overlay side filter drawer with draft-only controls and active-count badges, Staffing Validation sub-dashboard with metric cards, active-state issue severity tabs, lifecycle/permit/date worklist issues, pagination footer, icon-bearing export/filter/search/table-row/detail-footer actions, row View drawer navigation, Run Full Validation refresh action, Export Validation Report read-only filtered-issues preview dialog, View Validation Rules read-only dialog, and icon-bearing overlay filter/right-panel controls, read-only position detail overlay drawer with icon-only close, normalized date/program display, icon-bearing action buttons including Delete Position for unassigned positions, icon-bearing related-person placeholder action, and icon-bearing footer actions, v2 Mark Coming / Mark Filled dialogs with Director role preservation, icon-only close, and icon-bearing footer actions, v2 Manage Filled chooser with icon-only close, v2 Update Permit dialog with icon-only close, v2 Mark Need Now dialog with icon-only close, v2 Delete Position confirmation dialog, People / Employee Management sub-dashboard with icon-owned Add Person action text, Director role filtering/addition, active-state detail tabs, pagination footer, icon-bearing header/filter/search/table-row/detail/footer actions, row View detail selection, service-backed Add Person dialog, and icon-bearing overlay detail/filter controls with compact reusable cards, full Staffing v2 Notifications dashboard with editable free-form events, filters, sorting, list/grid toggle, recipient chips, template variables, preview, test send, validation, sanitized audit errors, scheduled counts, save/cancel/delete backed by NotificationStore and NotificationService, and Assignment History sub-dashboard with icon-bearing header/date-range/table-row/detail-footer actions, View Validation navigation, View Assignment drawer navigation, Open Employee navigation, header Export read-only filtered-records preview dialog, Export Record read-only preview dialog, pagination footer, overlay detail panel with compact reusable cards, a neutral assignment-ID detail chip, icon-bearing lifecycle event rows, and validation checklist rows while the legacy Staffing page remains available.
+  version: 0.22.1
+  description: Parallel PySide Staffing v2 dashboard page module for the mockup-driven rewrite; renders a standalone mockup-style staffing shell/sidebar with forced light Fusion Qt palette/style, active nav state, Qt icons plus custom primary-blue add and person-add icons, styled light scrollbars/tables/inputs, and disabled placeholder nav entries for unimplemented mockup destinations, main Staffing Dashboard with stable dashboard objectName, labeled filters/icon-owned Add Position and a shared selected-school summary/action row containing semantic compact icon-bearing summary chips plus Export/View History actions, validation worklist chip drilldown, mockup colon labels, icon-bearing overview cards, icon-bearing classroom priority chip, custom always-scrollable auto-height classroom list rows with status dots, chevrons, and two-line position count text, icon-only classroom list filter dialog for status/permit/open-days filters, classroom list footer count, vertically scrollable classroom detail area with refresh-synced scroll range, page-wide per-pixel Qt scroll behavior for Staffing v2 lists/tables/text edits/scroll areas, position table with explicit row-number column, normalized date/program display, fixed readable status/permit/action columns, icon-bearing status and permit chips plus menu-style row actions including mistaken-position deletion for unassigned positions, icon-bearing dashed Add Position drop zone, director-interview pending/completed section for new hire/borderline referrals with first-interview score visibility, one-line pending/completed count header, visible pending-candidate checkbox controls plus no-modifier multi-row selection for multi-delete, school-selector-synced pending/completed director interview lists, shortened wrapped pending-table headers, compact fixed pending-table column spacing with full-value cell tooltips, fully visible Record Interview action buttons, and hire-only proposed shift/classroom capture that hides those fields when director decision is No-Hire, status key, service-backed Add Position dialog with first-class Director position type and icon-only close, filtered Export read-only preview dialog, shared overlay side-panel template with top-aligned viewport-width-clamped scrollable body and fixed footer plus shared compact detail-card builder, Classroom Management sub-dashboard with icon-owned Add Classroom header action, service-backed Add Classroom dialog, Export read-only filtered-classrooms preview dialog, pagination footer, readable fixed-width table columns with status/active chips, icon-bearing compact detail/metric/health cards, row View detail selection, always-visible-scrollbar classroom detail overlay with pinned Save Changes/Deactivate controls, and an overlay side filter drawer with draft-only controls and active-count badges, Staffing Validation sub-dashboard with metric cards, active-state issue severity tabs, lifecycle/permit/date worklist issues, pagination footer, icon-bearing export/filter/search/table-row/detail-footer actions, row View drawer navigation, Run Full Validation refresh action, Export Validation Report read-only filtered-issues preview dialog, View Validation Rules read-only dialog, and icon-bearing overlay filter/right-panel controls, read-only position detail overlay drawer with icon-only close, normalized date/program display, icon-bearing action buttons including Delete Position for unassigned positions, icon-bearing related-person placeholder action, and icon-bearing footer actions, v2 Mark Coming / Mark Filled dialogs with Director role preservation, icon-only close, and icon-bearing footer actions, v2 Manage Filled chooser with icon-only close, v2 Update Permit dialog with icon-only close, v2 Mark Need Now dialog with icon-only close, v2 Delete Position confirmation dialog, People / Employee Management sub-dashboard with icon-owned Add Person action text, Director role filtering/addition, active-state detail tabs, pagination footer, icon-bearing header/filter/search/table-row/detail/footer actions, row View detail selection, service-backed Add Person dialog, and icon-bearing overlay detail/filter controls with compact reusable cards, full Staffing v2 Notifications dashboard with editable free-form events, filters, sorting, list/grid toggle, recipient chips, template variables, preview, test send, validation, sanitized audit errors, scheduled counts, save/cancel/delete backed by NotificationStore and NotificationService, and Assignment History sub-dashboard with icon-bearing header/date-range/table-row/detail-footer actions, View Validation navigation, View Assignment drawer navigation, Open Employee navigation, header Export read-only filtered-records preview dialog, Export Record read-only preview dialog, pagination footer, overlay detail panel with compact reusable cards, a neutral assignment-ID detail chip, icon-bearing lifecycle event rows, and validation checklist rows while the legacy Staffing page remains available.
 functions:
 - name: apply_staffing_v2_light_theme
   description: Force a supplied or current QApplication onto Staffing v2's stable light Fusion Qt style and palette so native dark/high-contrast system color schemes cannot invert dashboard panels, tables, or inputs.
@@ -195,7 +195,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: _classroom_counts_text
-  description: Format Staffing v2 classroom row status counts from StaffingMetricRow data for both legacy item text and custom row widgets.
+  description: Format Staffing v2 classroom row status counts from StaffingMetricRow data as two visible rows for both legacy item text and custom row widgets.
   locked: false
   inputs:
     rows:
@@ -621,13 +621,23 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Creates a PySide QWidget tree and reads staffing metrics through the supplied service factory; stores director referral removal actor/source metadata and an optional dismissal callback for cross-DB sync.
+    side_effects: Creates the visible Staffing v2 shell and main dashboard QWidget tree, defers hidden Classroom Management, People, Assignment History, Notifications, and Validation sub-dashboard widget trees until first navigation, reads initial dashboard staffing metrics through the supplied service factory, and stores director referral removal actor/source metadata plus an optional dismissal callback for cross-DB sync.
   - name: refresh
+    inputs:
+      include_lazy:
+        type: bool
+        required: false
+        default: false
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Initializes staffing storage if needed, reads staffing metrics and director interview referral/completion records, refreshes visible dashboard selectors, selected-school summary cards, classroom list, positions table, and director-interview tables; when include_lazy is true, also refreshes already-built hidden sub-dashboards without constructing new ones, then schedules Staffing v2 scroll range synchronization.
+  - name: refresh_all
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Initializes staffing storage if needed, reads staffing metrics, director interview referral/completion records, classroom records, people snapshots, and assignment history snapshots, refreshes Staffing v2 visible selectors, selected-school summary cards, classroom list, positions table, director-interview tables, Classroom Management widgets, Staffing Validation widgets, People dashboard widgets, and Assignment History dashboard widgets including the DB-backed history date-range display, then schedules Staffing v2 scroll range synchronization.
+    side_effects: Refreshes the main Staffing v2 dashboard plus all already-built lazy sub-dashboards without constructing sub-dashboards that have not yet been opened.
   - name: _schedule_dashboard_scroll_sync
     inputs: {}
     returns:
@@ -663,13 +673,13 @@ classes:
     returns:
       type: QFrame
     exceptions: []
-    side_effects: Creates one mockup-style main dashboard classroom list row widget with status dot, title, count text, and chevron, marking the custom row widget tree transparent for mouse events so the underlying QListWidget keeps v1-style native click and wheel scrolling, without mutating staffing data.
+    side_effects: Creates one mockup-style main dashboard classroom list row widget with status dot, title, wrapped two-line count text, and chevron, marking the custom row widget tree transparent for mouse events so the underlying QListWidget keeps v1-style native click and wheel scrolling, without mutating staffing data.
   - name: _director_interview_panel
     inputs: {}
     returns:
       type: QFrame
     exceptions: []
-    side_effects: Creates the main-dashboard director interview section with pending and completed read-only tables, shortened wrapped pending-table headers, and fixed pending-table spacing without mutating staffing data.
+    side_effects: Creates the main-dashboard director interview section with a one-line pending/completed status label, fixed-width Delete Selected action, pending and completed read-only tables, shortened wrapped pending-table headers, and fixed pending-table spacing without mutating staffing data.
   - name: _apply_director_pending_table_column_layout
     inputs: {}
     returns:
@@ -681,7 +691,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Reads school-scoped pending director candidates and completed director interviews through StaffingService, then refreshes both visible tables.
+    side_effects: Reads school-scoped pending director candidates and completed director interviews through StaffingService, then refreshes both visible tables and the one-line pending/completed status label.
   - name: _refresh_director_pending_table
     inputs: {}
     returns:
@@ -772,31 +782,46 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Refreshes classroom management groups from StaffingService metric rows, marks the Classrooms nav item active, and switches the v2 stack to the Classroom Management dashboard without mutating staffing data.
+    side_effects: Builds the Classroom Management dashboard on first navigation, refreshes classroom management groups from StaffingService metric rows, marks the Classrooms nav item active, and switches the v2 stack to the Classroom Management dashboard without mutating staffing data.
   - name: _show_validation_view
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Refreshes validation issues from StaffingService metric rows, marks the Validation nav item active, and switches the v2 stack to the Staffing Validation dashboard without mutating staffing data.
+    side_effects: Builds the Staffing Validation dashboard on first navigation, refreshes validation issues from StaffingService metric rows, marks the Validation nav item active, and switches the v2 stack to the Staffing Validation dashboard without mutating staffing data.
+  - name: _ensure_lazy_view
+    inputs:
+      name:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Builds one deferred Staffing v2 sub-dashboard by key exactly once and records it as built; unknown keys are ignored without mutating staffing data.
+  - name: _refresh_built_lazy_views
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Refreshes only lazy Staffing v2 sub-dashboards that have already been built, avoiding notification, people, history, classroom-management, and validation reads before first navigation.
   - name: _show_people_view
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Refreshes people snapshots from StaffingStore.list_people, marks the People nav item active, and switches the v2 stack to the People / Employee Management dashboard without mutating staffing data.
+    side_effects: Builds the People / Employee Management dashboard on first navigation, refreshes people snapshots from StaffingStore.list_people, marks the People nav item active, and switches the v2 stack to the People / Employee Management dashboard without mutating staffing data.
   - name: _show_history_view
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Refreshes assignment history snapshots from StaffingStore.list_assignment_history, marks the Assignment History nav item active, and switches the v2 stack to the Assignment History dashboard without mutating staffing data.
+    side_effects: Builds the Assignment History dashboard on first navigation, refreshes assignment history snapshots from StaffingStore.list_assignment_history, marks the Assignment History nav item active, and switches the v2 stack to the Assignment History dashboard without mutating staffing data.
   - name: _show_notifications_view
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Refreshes notification rules from NotificationStore, marks the Notifications nav item active, and switches the v2 stack to the Notifications dashboard without mutating staffing data.
+    side_effects: Builds the Notifications dashboard on first navigation, refreshes notification rules from NotificationStore, marks the Notifications nav item active, and switches the v2 stack to the Notifications dashboard without mutating staffing data.
   - name: _notification_store
     inputs: {}
     returns:

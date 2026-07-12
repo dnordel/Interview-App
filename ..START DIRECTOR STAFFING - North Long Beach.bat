@@ -3,6 +3,6 @@ setlocal
 
 cd /d "%~dp0"
 
-powershell -NoProfile -ExecutionPolicy Bypass -File "%CD%\setup_director_staffing.ps1" -DirectorSchool "North Long Beach"
+wscript.exe "%CD%\..START DIRECTOR STAFFING - North Long Beach.vbs"
 
 exit /b

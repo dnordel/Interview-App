@@ -333,7 +333,6 @@ def launch_director_staffing_app(*, director_school: str = "") -> int:
     store = StaffingStore(staffing_path)
     try:
         import_staffing_seed_if_needed(store)
-        sync_director_referrals(store, school=director_school)
     except StaffingEditLock:
         pass
 
@@ -355,6 +354,16 @@ def launch_director_staffing_app(*, director_school: str = "") -> int:
     setattr(app, "_director_staffing_window", window)
     setattr(app, "_director_staffing_dashboard", dashboard)
     window.show()
+
+    def sync_referrals_after_first_paint() -> None:
+        try:
+            imported = sync_director_referrals(store, school=director_school)
+        except StaffingEditLock:
+            return
+        if imported:
+            dashboard.refresh()
+
+    QtCore.QTimer.singleShot(100, sync_referrals_after_first_paint)
     return app.exec()
 
 

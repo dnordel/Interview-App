@@ -2,8 +2,8 @@ module:
   name: director_staffing_app
   language: python
   path: src/director_staffing_app.py
-  version: 1.1.1
-  description: Minimal PySide entrypoint for the director Staffing v2 dashboard that avoids full interview, audio, transcription, DOCX, and local AI setup while preserving school-specific staffing DB routing, forced light Staffing v2 theme, and pending director-referral queue/history backfill.
+  version: 1.1.2
+  description: Minimal PySide entrypoint for the director Staffing v2 dashboard that avoids full interview, audio, transcription, DOCX, and local AI setup while preserving school-specific staffing DB routing, forced light Staffing v2 theme, and delayed pending director-referral queue/history backfill after first paint.
 functions:
 - name: parse_args
   description: Parse director staffing launch arguments.
@@ -291,7 +291,7 @@ functions:
   exceptions:
   - PySide6UnavailableError
   - OSError
-  side_effects: creates a QApplication/main window, applies Staffing v2's forced light Qt theme, initializes staffing storage, builds StaffingDashboardV2Page with director-removal actor/source queue callback, and starts the Qt event loop
+  side_effects: creates a QApplication/main window, applies Staffing v2's forced light Qt theme, initializes staffing storage/seed data, builds and shows StaffingDashboardV2Page with director-removal actor/source queue callback, schedules director referral queue/history sync on a Qt timer after first paint, refreshes the dashboard when delayed sync imports rows, and starts the Qt event loop
 - name: _queue_dashboard_director_referral_dismissals
   description: Apply and queue director referral dismissal events emitted by the standalone Staffing v2 dashboard delete-selected action.
   locked: false

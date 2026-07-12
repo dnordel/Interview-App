@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.68.1
+  version: 1.69.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, resizable splitter sections, school/classroom selectors, wider color-coded classroom list with per-classroom status-count overview, metric cards, positions table, fully editable right-side assignment/person details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics, parallel Staffing v2 navigation/page shell with its own mockup-style staffing sidebar and forced light Qt theme, People / Employee Management and Assignment History sub-dashboards for the mockup-driven rewrite backed by staffing_dashboard_v2 while the legacy Staffing page remains available,
@@ -747,13 +747,13 @@ classes:
       type: set[int]
   methods:
   - name: show
-    description: Fit the redesigned PySide6 main window to current usable screen geometry before showing it maximized, then schedule startup notification draining and recording-interface preload after first paint.
+    description: Fit the redesigned PySide6 main window to current usable screen geometry before showing it maximized, then schedule startup notification draining and recording-interface preload after first paint for full interview launches while skipping those interview/audio warmups for director staffing-only launches.
     locked: false
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Updates QMainWindow position before displaying the QMainWindow maximized and scheduling startup notification draining plus recording-interface preload.
+    side_effects: Updates QMainWindow position before displaying the QMainWindow maximized; for non-director launches schedules startup notification draining plus recording-interface preload, and for director staffing-only launches returns immediately after showing the GUI.
   - name: _schedule_startup_notifications
     description: Schedule the best-effort due-notification drain once through the Qt event loop after the main window has been shown so notification I/O does not block first paint.
     locked: false
@@ -3651,13 +3651,21 @@ classes:
     side_effects: May construct one page widget, replace the matching stacked-widget
       placeholder, and mark that navigation index as loaded.
   - name: _staffing_v2_page
-    description: Build the Staffing v2 page from staffing_dashboard_v2 for the mockup-driven rewrite and director staffing-only launch surface, passing the shared notification rules store path and shared notification service factory into the V2 Notifications dashboard; imports queued referral events for the current director school, syncs hire/borderline interview history rows into pending director-interview referrals while skipping dismissed referrals, and starts live referral queue polling.
+    description: Build the Staffing v2 page from staffing_dashboard_v2 for the mockup-driven rewrite and director staffing-only launch surface, passing the shared notification rules store path and shared notification service factory into the V2 Notifications dashboard; normal embedded launches import queued referral events and sync hire/borderline history rows immediately, while director staffing-only launches defer that referral sync until after first paint and start live referral queue polling.
     locked: false
     inputs: {}
     returns:
       type: QWidget
     exceptions: []
-    side_effects: Initializes local or school-specific staffing storage, with first-use school DB copies from the existing shared staffing DB when present; imports staffing seed data when the DB is empty or clearly missing seed assignments, imports queued director referral events, syncs eligible interview history into pending director referrals, creates a StaffingDashboardV2Page, stores it on the PySide window, wires service-backed staffing actions and director-referral dismissal queue callbacks from existing handlers, starts periodic queue polling only for assigned director-school launches, and connects the V2 Notifications dashboard to the shared notification rules SQLite path and shared email notification service.
+    side_effects: Initializes local or school-specific staffing storage, with first-use school DB copies from the existing shared staffing DB when present; imports staffing seed data when the DB is empty or clearly missing seed assignments, creates a lazy StaffingDashboardV2Page, stores it on the PySide window, wires service-backed staffing actions and director-referral dismissal queue callbacks from existing handlers, imports/syncs director referrals immediately for non-director embedded launches, schedules post-first-paint referral sync for director staffing-only launches, starts periodic queue polling only for assigned director-school launches, and connects the V2 Notifications dashboard to the shared notification rules SQLite path and shared email notification service.
+  - name: _sync_staffing_v2_director_referrals_after_first_paint
+    description: Run deferred director Staffing v2 referral queue import and history backfill after the director staffing-only GUI has had a chance to paint, then refresh the visible Staffing v2 dashboard.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Imports central referral queue rows, syncs eligible interview history rows into pending director referrals, and refreshes the Staffing v2 dashboard after first paint.
   - name: _start_staffing_referral_queue_polling
     description: Start one PySide timer that periodically imports central referral queue records for the current director school.
     locked: false
