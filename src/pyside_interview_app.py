@@ -2419,7 +2419,7 @@ class PySideInterviewWindow:
         self._main_nav_pages_built.add(index)
 
     def show(self) -> None:
-        self._fit_window_to_available_screen()
+        self._fit_window_to_available_screen(fill_available=True)
         self.window.showMaximized()
         if getattr(self, "director_staffing_mode", False):
             return
@@ -2591,7 +2591,7 @@ class PySideInterviewWindow:
         height = min(height, max(480, available_height - 40))
         return (width, height)
 
-    def _fit_window_to_available_screen(self) -> None:
+    def _fit_window_to_available_screen(self, *, fill_available: bool = False) -> None:
         if self.window.isMaximized() or self.window.isFullScreen():
             return
         screen = self.window.screen() or self.QtWidgets.QApplication.primaryScreen()
@@ -2600,6 +2600,9 @@ class PySideInterviewWindow:
         available = screen.availableGeometry()
         max_width = max(640, int(available.width()))
         max_height = max(480, int(available.height()))
+        if fill_available:
+            self.window.setGeometry(available)
+            return
         if self.window.width() > max_width or self.window.height() > max_height:
             self.window.resize(min(self.window.width(), max_width), min(self.window.height(), max_height))
         geometry = self.window.geometry()

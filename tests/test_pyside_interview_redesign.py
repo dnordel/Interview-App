@@ -9209,13 +9209,86 @@ def test_pyside_window_show_opens_main_window_maximized() -> None:
             calls.append("showMaximized")
 
     window.window = FakeWindow()
-    window._fit_window_to_available_screen = lambda: calls.append("fit")
+    window._fit_window_to_available_screen = lambda *, fill_available=False: calls.append(f"fit:{fill_available}")
     window._schedule_startup_notifications = lambda: calls.append("schedule_notifications")
     window._schedule_recording_interface_preload = lambda: calls.append("schedule_recording_preload")
 
     window.show()
 
-    assert calls == ["fit", "showMaximized", "schedule_notifications", "schedule_recording_preload"]
+    assert calls == ["fit:True", "showMaximized", "schedule_notifications", "schedule_recording_preload"]
+
+def test_pyside_window_show_primes_window_to_available_screen_before_maximize() -> None:
+    window_class = getattr(pyside_interview_app, "PySide" + "InterviewWindow")
+    window = window_class.__new__(window_class)
+    calls: list[tuple[str, int, int, int, int] | tuple[str]] = []
+
+    class FakeRect:
+        def __init__(self, x: int, y: int, width: int, height: int) -> None:
+            self._x = x
+            self._y = y
+            self._width = width
+            self._height = height
+
+        def x(self) -> int:
+            return self._x
+
+        def y(self) -> int:
+            return self._y
+
+        def width(self) -> int:
+            return self._width
+
+        def height(self) -> int:
+            return self._height
+
+        def right(self) -> int:
+            return self._x + self._width - 1
+
+        def bottom(self) -> int:
+            return self._y + self._height - 1
+
+    class FakeScreen:
+        def availableGeometry(self) -> FakeRect:
+            return FakeRect(0, 0, 1920, 1040)
+
+    class FakeWindow:
+        def isMaximized(self) -> bool:
+            return False
+
+        def isFullScreen(self) -> bool:
+            return False
+
+        def screen(self) -> FakeScreen:
+            return FakeScreen()
+
+        def width(self) -> int:
+            return 1180
+
+        def height(self) -> int:
+            return 760
+
+        def resize(self, *_args) -> None:
+            raise AssertionError("startup maximize should set the full available geometry")
+
+        def geometry(self) -> FakeRect:
+            return FakeRect(120, 80, 1180, 760)
+
+        def move(self, *_args) -> None:
+            raise AssertionError("startup maximize should set the full available geometry")
+
+        def setGeometry(self, rect: FakeRect) -> None:
+            calls.append(("setGeometry", rect.x(), rect.y(), rect.width(), rect.height()))
+
+        def showMaximized(self) -> None:
+            calls.append(("showMaximized",))
+
+    window.window = FakeWindow()
+    window._schedule_startup_notifications = lambda: None
+    window._schedule_recording_interface_preload = lambda: None
+
+    window.show()
+
+    assert calls == [("setGeometry", 0, 0, 1920, 1040), ("showMaximized",)]
 
 def test_pyside_window_schedules_startup_notifications_once_after_show() -> None:
     window = pyside_interview_app.PySideInterviewWindow.__new__(pyside_interview_app.PySideInterviewWindow)
@@ -9883,9 +9956,11 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
         qt_core.Qt.WidgetAttribute.WA_TransparentForMouseEvents
     )
     count_label = first_row_widget.findChild(qt_widgets.QLabel, "StaffingV2ClassroomItemCounts")
-    assert count_label.text() == "Need 1 · Replace 0\nComing 0 · Filled 1 · Don't Need 0"
+    assert count_label.text() == "Need 1 · Replace 0\nComing 0 · Filled 1\nDon't Need 0"
     assert count_label.wordWrap()
-    assert classroom_list.item(0).sizeHint().height() >= 82
+    assert first_row_widget.minimumHeight() >= 120
+    assert count_label.minimumHeight() >= count_label.fontMetrics().lineSpacing() * 3
+    assert classroom_list.item(0).sizeHint().height() >= 136
     assert first_row_widget.findChild(qt_widgets.QLabel, "StaffingV2ClassroomItemChevron").text() == ">"
     list_filter.click()
     app.processEvents()
@@ -9941,7 +10016,7 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
     ]
     assert table.verticalHeader().isHidden()
     assert table.horizontalHeader().sectionResizeMode(0) == qt_widgets.QHeaderView.ResizeMode.Fixed
-    assert [table.columnWidth(column) for column in (3, 6, 7)] == [148, 158, 170]
+    assert [table.columnWidth(column) for column in (3, 6, 7)] == [170, 205, 210]
     table_text = {
         table.item(row, column).text()
         for row in range(table.rowCount())
@@ -9981,7 +10056,7 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
     need_now_action = table.cellWidget(need_now_row, table.columnCount() - 1)
     filled_action = table.cellWidget(filled_row, table.columnCount() - 1)
     assert need_now_action.text() == "Mark Coming"
-    assert need_now_action.minimumWidth() >= 164
+    assert need_now_action.minimumWidth() >= 198
     assert need_now_action.menu() is not None
     assert [action.text() for action in need_now_action.menu().actions()] == [
         "Mark Coming",
@@ -9990,7 +10065,7 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
         "View Details",
     ]
     assert filled_action.text() == "Manage Filled"
-    assert filled_action.minimumWidth() >= 164
+    assert filled_action.minimumWidth() >= 198
     assert filled_action.menu() is not None
     assert [action.text() for action in filled_action.menu().actions()] == ["Manage Filled", "Replace", "Update Permit", "View Details"]
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2AddPositionButton").text() == "Add Position"
@@ -13513,10 +13588,10 @@ def test_pyside_staffing_v2_director_candidates_follow_admin_school_selector(
     ]
     assert not table.horizontalHeader().stretchLastSection()
     assert table.horizontalHeader().minimumHeight() >= 54
-    assert table.columnWidth(1) == 84
-    assert table.columnWidth(2) == 64
-    assert table.columnWidth(3) == 92
-    assert table.columnWidth(4) == 188
+    assert table.columnWidth(1) == 112
+    assert table.columnWidth(2) == 82
+    assert table.columnWidth(3) == 118
+    assert table.columnWidth(4) == 250
     assert table.columnWidth(6) >= 156
     record_button = table.cellWidget(0, 6)
     assert record_button is not None
@@ -13577,7 +13652,7 @@ def test_staffing_v2_director_pending_table_uses_compact_readable_columns(tmp_pa
         "2026-07-02",
         "behavior_support_specialist",
     ]
-    assert [table.columnWidth(column) for column in range(1, 5)] == [84, 64, 92, 188]
+    assert [table.columnWidth(column) for column in range(1, 5)] == [112, 82, 118, 250]
     assert status.text() == "1 pending / 0 completed"
     assert not status.wordWrap()
     assert status.minimumWidth() >= 170

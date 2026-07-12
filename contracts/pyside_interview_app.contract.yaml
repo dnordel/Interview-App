@@ -747,13 +747,13 @@ classes:
       type: set[int]
   methods:
   - name: show
-    description: Fit the redesigned PySide6 main window to current usable screen geometry before showing it maximized, then schedule startup notification draining and recording-interface preload after first paint for full interview launches while skipping those interview/audio warmups for director staffing-only launches.
+    description: Expand the redesigned PySide6 main window to current usable screen geometry before showing it maximized, then schedule startup notification draining and recording-interface preload after first paint for full interview launches while skipping those interview/audio warmups for director staffing-only launches.
     locked: false
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Updates QMainWindow position before displaying the QMainWindow maximized; for non-director launches schedules startup notification draining plus recording-interface preload, and for director staffing-only launches returns immediately after showing the GUI.
+    side_effects: Updates QMainWindow geometry to the current taskbar-safe work area before displaying the QMainWindow maximized; for non-director launches schedules startup notification draining plus recording-interface preload, and for director staffing-only launches returns immediately after showing the GUI.
   - name: _schedule_startup_notifications
     description: Schedule the best-effort due-notification drain once through the Qt event loop after the main window has been shown so notification I/O does not block first paint.
     locked: false
@@ -911,13 +911,17 @@ classes:
     exceptions: []
     side_effects: Reads QApplication primary screen geometry.
   - name: _fit_window_to_available_screen
-    description: Resize the PySide main window down to the current screen's available geometry when needed and keep the visible non-maximized window inside the taskbar-safe work area while preserving maximized or fullscreen state and user maximization.
+    description: Resize the PySide main window down to, or optionally fill, the current screen's available geometry and keep the visible non-maximized window inside the taskbar-safe work area while preserving maximized or fullscreen state and user maximization.
     locked: false
-    inputs: {}
+    inputs:
+      fill_available:
+        type: bool
+        required: false
+        default: false
     returns:
       type: None
     exceptions: []
-    side_effects: Reads QMainWindow state and QScreen available geometry, then updates QMainWindow size and position only for non-maximized windows.
+    side_effects: Reads QMainWindow state and QScreen available geometry, then updates QMainWindow geometry, size, or position only for non-maximized windows.
   - name: _apply_responsive_layout
     description: Adjust main and Admin Studio sidebar width constraints from current
       window breakpoints and live font metrics so Windows text/display scaling

@@ -143,6 +143,55 @@ def test_director_staffing_app_uses_school_specific_db_path(tmp_path: Path) -> N
     assert module.staffing_db_path_for_school("", base_path=base) == base
 
 
+def test_director_staffing_window_launches_maximized_to_available_screen() -> None:
+    module = _load_director_staffing_app()
+    calls: list[tuple[str, int, int, int, int] | tuple[str]] = []
+
+    class FakeRect:
+        def __init__(self, x: int, y: int, width: int, height: int) -> None:
+            self._x = x
+            self._y = y
+            self._width = width
+            self._height = height
+
+        def x(self) -> int:
+            return self._x
+
+        def y(self) -> int:
+            return self._y
+
+        def width(self) -> int:
+            return self._width
+
+        def height(self) -> int:
+            return self._height
+
+    class FakeScreen:
+        def availableGeometry(self) -> FakeRect:
+            return FakeRect(0, 0, 1920, 1040)
+
+    class FakeApplication:
+        @staticmethod
+        def primaryScreen() -> FakeScreen:
+            return FakeScreen()
+
+    FakeQtWidgets = type("FakeQtWidgets", (), {"Q" + "Application": FakeApplication})
+
+    class FakeWindow:
+        def screen(self) -> FakeScreen:
+            return FakeScreen()
+
+        def setGeometry(self, rect: FakeRect) -> None:
+            calls.append(("setGeometry", rect.x(), rect.y(), rect.width(), rect.height()))
+
+        def showMaximized(self) -> None:
+            calls.append(("showMaximized",))
+
+    module._show_director_staffing_window_maximized(FakeWindow(), FakeQtWidgets)
+
+    assert calls == [("setGeometry", 0, 0, 1920, 1040), ("showMaximized",)]
+
+
 @pytest.mark.pyside_gui
 @pytest.mark.slow_pyside
 def test_staffing_v2_forces_light_fusion_theme_for_consistent_colors() -> None:

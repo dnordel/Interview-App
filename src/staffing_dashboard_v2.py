@@ -1355,11 +1355,9 @@ class StaffingDashboardV2Page:
             ["", "Position", "Person", "Status", "Start Date", "Days Open", "Permit Status", "Next Action"]
         )
         self.positions_table.verticalHeader().hide()
-        self.positions_table.horizontalHeader().setStretchLastSection(True)
-        self.positions_table.horizontalHeader().setSectionResizeMode(self.QtWidgets.QHeaderView.ResizeMode.Stretch)
-        self.positions_table.horizontalHeader().setSectionResizeMode(0, self.QtWidgets.QHeaderView.ResizeMode.Fixed)
-        self.positions_table.setColumnWidth(0, 44)
-        for column, width in ((3, 148), (6, 158), (7, 170)):
+        self.positions_table.horizontalHeader().setStretchLastSection(False)
+        self.positions_table.horizontalHeader().setSectionResizeMode(self.QtWidgets.QHeaderView.ResizeMode.Fixed)
+        for column, width in enumerate([44, 130, 130, 170, 112, 112, 205, 210]):
             self.positions_table.horizontalHeader().setSectionResizeMode(column, self.QtWidgets.QHeaderView.ResizeMode.Fixed)
             self.positions_table.setColumnWidth(column, width)
         self.positions_table.cellClicked.connect(self._open_position_drawer_from_table)
@@ -4916,7 +4914,7 @@ class StaffingDashboardV2Page:
             widget = self._classroom_list_item_widget(classroom, rows)
             size_hint = widget.sizeHint()
             if "\n" in _classroom_counts_text(rows):
-                size_hint.setHeight(max(size_hint.height() + 12, 82))
+                size_hint.setHeight(max(size_hint.height() + 24, 136))
             item.setSizeHint(size_hint)
             self.classroom_list.addItem(item)
             self.classroom_list.setItemWidget(item, widget)
@@ -4966,6 +4964,7 @@ class StaffingDashboardV2Page:
         frame = self.QtWidgets.QFrame()
         frame.setObjectName("StaffingV2ClassroomListItem")
         frame.setProperty("staffingV2Selected", False)
+        frame.setMinimumHeight(120)
         layout = self.QtWidgets.QHBoxLayout(frame)
         layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(10)
@@ -4979,6 +4978,7 @@ class StaffingDashboardV2Page:
         title.setWordWrap(False)
         counts = self._label(_classroom_counts_text(rows), "StaffingV2ClassroomItemCounts")
         counts.setWordWrap(True)
+        counts.setMinimumHeight(max(64, counts.fontMetrics().lineSpacing() * 3 + 6))
         text.addWidget(title)
         text.addWidget(counts)
         layout.addLayout(text, 1)
@@ -5052,7 +5052,7 @@ class StaffingDashboardV2Page:
         header.setStretchLastSection(False)
         header.setDefaultAlignment(self.QtCore.Qt.AlignmentFlag.AlignCenter)
         header.setMinimumHeight(54)
-        for column, width in enumerate([220, 84, 64, 92, 188, 112, 156]):
+        for column, width in enumerate([260, 112, 82, 118, 250, 138, 210]):
             table.setColumnWidth(column, width)
             header.setSectionResizeMode(column, self.QtWidgets.QHeaderView.ResizeMode.Fixed)
 
@@ -5377,8 +5377,7 @@ class StaffingDashboardV2Page:
                 self._chip(_display_permit(row.permit_status or "unknown"), _permit_chip_status(row.permit_status or "unknown")),
             )
             self.positions_table.setCellWidget(row_index, 7, self._action_button(row))
-        self.positions_table.resizeColumnsToContents()
-        for column, width in ((3, 148), (6, 158), (7, 170)):
+        for column, width in enumerate([44, 130, 130, 170, 112, 112, 205, 210]):
             self.positions_table.setColumnWidth(column, width)
 
     def _open_position_drawer_from_table(self, row: int, _column: int) -> None:
@@ -5507,7 +5506,7 @@ class StaffingDashboardV2Page:
         button.setProperty("staffingAssignmentId", row.assignment_id)
         button.setProperty("staffingAction", action_key)
         button.setMinimumHeight(34)
-        button.setMinimumWidth(164)
+        button.setMinimumWidth(198)
         button.setPopupMode(self.QtWidgets.QToolButton.ToolButtonPopupMode.MenuButtonPopup)
         menu = self.QtWidgets.QMenu(button)
         menu.setObjectName("StaffingV2ActionMenu")
@@ -7119,7 +7118,7 @@ def _classroom_counts_text(rows: list[StaffingMetricRow]) -> str:
     coming = sum(1 for row in rows if row.status == "coming")
     filled = sum(1 for row in rows if row.status == "filled")
     dont_need = sum(1 for row in rows if row.status == "dont_need_now")
-    return f"Need {need} · Replace {replace}\nComing {coming} · Filled {filled} · Don't Need {dont_need}"
+    return f"Need {need} · Replace {replace}\nComing {coming} · Filled {filled}\nDon't Need {dont_need}"
 
 
 def _classroom_status_key(rows: list[StaffingMetricRow]) -> str:

@@ -320,6 +320,13 @@ def _history_row_key(row: dict[str, Any]) -> str:
     return f"{candidate}:{interview_date}"
 
 
+def _show_director_staffing_window_maximized(window: Any, QtWidgets: Any) -> None:
+    screen = window.screen() or QtWidgets.QApplication.primaryScreen()
+    if screen is not None:
+        window.setGeometry(screen.availableGeometry())
+    window.showMaximized()
+
+
 def launch_director_staffing_app(*, director_school: str = "") -> int:
     from PySide6 import QtCore, QtGui, QtWidgets
 
@@ -327,7 +334,6 @@ def launch_director_staffing_app(*, director_school: str = "") -> int:
     apply_staffing_v2_light_theme(QtWidgets, QtGui, app)
     window = QtWidgets.QMainWindow()
     window.setWindowTitle("Director Staffing Dashboard")
-    window.resize(1440, 920)
     staffing_path = staffing_db_path_for_school(director_school)
     bootstrap_school_staffing_db_from_base(director_school, staffing_path)
     store = StaffingStore(staffing_path)
@@ -353,7 +359,7 @@ def launch_director_staffing_app(*, director_school: str = "") -> int:
     window.setCentralWidget(dashboard.widget)
     setattr(app, "_director_staffing_window", window)
     setattr(app, "_director_staffing_dashboard", dashboard)
-    window.show()
+    _show_director_staffing_window_maximized(window, QtWidgets)
 
     def sync_referrals_after_first_paint() -> None:
         try:

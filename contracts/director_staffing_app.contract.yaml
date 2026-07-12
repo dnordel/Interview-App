@@ -2,7 +2,7 @@ module:
   name: director_staffing_app
   language: python
   path: src/director_staffing_app.py
-  version: 1.1.2
+  version: 1.1.3
   description: Minimal PySide entrypoint for the director Staffing v2 dashboard that avoids full interview, audio, transcription, DOCX, and local AI setup while preserving school-specific staffing DB routing, forced light Staffing v2 theme, and delayed pending director-referral queue/history backfill after first paint.
 functions:
 - name: parse_args
@@ -278,8 +278,22 @@ functions:
     type: str
   exceptions: []
   side_effects: none
+- name: _show_director_staffing_window_maximized
+  description: Expand the standalone director Staffing v2 QMainWindow to the current taskbar-safe available screen geometry and show it maximized while preserving native window controls.
+  locked: false
+  inputs:
+    window:
+      type: Any
+      required: true
+    QtWidgets:
+      type: Any
+      required: true
+  returns:
+    type: void
+  exceptions: []
+  side_effects: Reads QScreen available geometry when available, updates QMainWindow geometry, and displays the QMainWindow maximized.
 - name: launch_director_staffing_app
-  description: Launch the standalone director Staffing v2 PySide window with an optional school filter.
+  description: Launch the standalone director Staffing v2 PySide window maximized to the current taskbar-safe screen work area with an optional school filter.
   locked: false
   inputs:
     director_school:
@@ -291,7 +305,7 @@ functions:
   exceptions:
   - PySide6UnavailableError
   - OSError
-  side_effects: creates a QApplication/main window, applies Staffing v2's forced light Qt theme, initializes staffing storage/seed data, builds and shows StaffingDashboardV2Page with director-removal actor/source queue callback, schedules director referral queue/history sync on a Qt timer after first paint, refreshes the dashboard when delayed sync imports rows, and starts the Qt event loop
+  side_effects: creates a QApplication/main window, applies Staffing v2's forced light Qt theme, initializes staffing storage/seed data, builds and shows StaffingDashboardV2Page maximized to taskbar-safe available screen geometry with director-removal actor/source queue callback, schedules director referral queue/history sync on a Qt timer after first paint, refreshes the dashboard when delayed sync imports rows, and starts the Qt event loop
 - name: _queue_dashboard_director_referral_dismissals
   description: Apply and queue director referral dismissal events emitted by the standalone Staffing v2 dashboard delete-selected action.
   locked: false
