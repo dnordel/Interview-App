@@ -2,12 +2,16 @@ module:
   name: staffing_store
   language: python
   path: src/staffing_store.py
-  version: 0.15.0
+  version: 0.17.0
   description: SQLite persistence for staffing schools, classrooms, people including optional units, active status, role, current assignment summary, and permit effective-date/documentation metadata, service-backed assignment creation and mistaken-position soft deletion, assignments with shift metadata, workbook display metadata, assignment history dashboard records, director candidate referral/interview completion and dismissal records, Dropbox-visible edit locking, pending operation queueing, required staffing indexes, and deterministic seed imports.
 functions: []
 classes:
 - name: StaffingEditLock
   description: Raised when another director holds the staffing edit lock.
+  locked: false
+  methods: []
+- name: StaffingStaleRevisionError
+  description: Raised when a Director Interview optimistic row version is no longer current.
   locked: false
   methods: []
 - name: StaffingStore
@@ -451,7 +455,46 @@ classes:
     exceptions:
     - ValueError
     - StaffingEditLock
-    side_effects: Inserts or updates one completed director interview for a referral without mutating assignments, classrooms, people, or assignment_history.
+    side_effects: Inserts or updates one completed director interview, captures initial-report score/outcome, and appends immutable director-interview version/audit rows without mutating assignments, classrooms, people, or assignment_history.
+  - name: remove_pending_director_referral_for_reconciliation
+    inputs:
+      history_id: {type: str, required: true}
+      removed_by: {type: str, required: false, default: system}
+      removal_source: {type: str, required: false, default: candidate_report_reconciliation}
+    returns: {type: int}
+    side_effects: Removes only an ineligible pending referral and records removal audit without creating durable dismissal state.
+  - name: reopen_director_interview
+    inputs:
+      interview_id: {type: int, required: true}
+      expected_row_version: {type: int, required: true}
+      reason: {type: str, required: true}
+      actor: {type: str, required: true}
+      actor_role: {type: str, required: true}
+      now: {type: str, required: true}
+    returns: {type: StaffingDirectorInterview}
+  - name: revise_director_interview
+    description: Re-finalize an explicitly reopened director section using optimistic concurrency and append-only version/audit history.
+    inputs:
+      interview_id: {type: int, required: true}
+      expected_row_version: {type: int, required: true}
+      director_name: {type: str, required: true}
+      completed_date: {type: str, required: true}
+      rating: {type: float, required: true}
+      decision: {type: str, required: true}
+      decision_notes: {type: str, required: true}
+      proposed_shift_start: {type: str, required: true}
+      proposed_shift_end: {type: str, required: true}
+      proposed_classroom: {type: str, required: true}
+      follow_up_needed: {type: bool, required: true}
+      reason: {type: str, required: true}
+      actor: {type: str, required: true}
+      actor_role: {type: str, required: true}
+      now: {type: str, required: true}
+    returns: {type: StaffingDirectorInterview}
+  - name: list_director_interview_audit
+    inputs:
+      interview_id: {type: int, required: true}
+    returns: {type: 'list[dict[str, Any]]'}
   - name: list_director_interviews
     inputs:
       school:
@@ -462,6 +505,10 @@ classes:
       type: list[StaffingDirectorInterview]
     exceptions: []
     side_effects: Reads completed director interview records, optionally school-scoped.
+  - name: get_director_interview
+    inputs:
+      interview_id: {type: int, required: true}
+    returns: {type: StaffingDirectorInterview}
   - name: find_completed_director_interview
     inputs:
       history_id:
@@ -474,6 +521,14 @@ classes:
       type: StaffingDirectorInterview | None
     exceptions: []
     side_effects: Reads one hire decision matched by exact interview history ID and school without mutating staffing data.
+  - name: find_any_completed_director_interview
+    description: Read any completed Hire or No Hire director decision by exact history id and school for combined report display.
+    inputs:
+      history_id: {type: str, required: true}
+      school: {type: str, required: true}
+    returns: {type: 'StaffingDirectorInterview | None'}
+    exceptions: []
+    side_effects: Reads staffing data only.
   - name: list_classrooms
     inputs: {}
     returns:

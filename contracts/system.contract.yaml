@@ -72,6 +72,8 @@ modules:
     - setup_director_staffing
     - staffing_service
     - staffing_store
+    - candidate_report
+    - candidate_report_dialog
     - config_staffing_seed_json
   director_staffing_app:
     path: src/director_staffing_app.py
@@ -81,6 +83,8 @@ modules:
     - staffing_store
     - notification_service
     - PySide6
+    - candidate_report
+    - candidate_report_dialog
   setup_director_staffing:
     path: setup_director_staffing.ps1
     depends_on:
@@ -126,6 +130,20 @@ modules:
     - staffing_service
     - staffing_store
     - ui_mode_switch
+    - PySide6
+    - candidate_report
+    - candidate_report_dialog
+  candidate_report:
+    path: src/candidate_report.py
+    depends_on:
+    - scoring_reporting
+    - interview_history_db
+  candidate_report_dialog:
+    path: src/candidate_report_dialog.py
+    depends_on:
+    - candidate_report
+    - staffing_service
+    - staffing_store
     - PySide6
   staffing_referral_queue:
     path: src/staffing_referral_queue.py

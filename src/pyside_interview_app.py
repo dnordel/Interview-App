@@ -24,6 +24,13 @@ from types import SimpleNamespace
 from typing import Any, Callable, Sequence
 
 from admin_studio import DEFAULT_DEEPSEEK_MODEL, DEEPSEEK_MODEL_CHOICES, AdminStudio, AdminStudioPaths
+from candidate_report import (
+    CandidateReportNotFoundError,
+    CandidateReportPermissionError,
+    CandidateReportRepository,
+    resolve_legacy_report_path,
+)
+from candidate_report_dialog import CandidateInterviewReportDialog
 from docx import Document
 from data_store import (
     InterviewHistoryStore,
@@ -10936,12 +10943,146 @@ class PySideInterviewWindow:
             director_referral_removal_source=(
                 "director_staffing_dashboard" if self.director_staffing_mode else "admin_staffing_dashboard"
             ),
+            candidate_report_open_callback=self._open_staffing_candidate_report,
         )
         self.staffing_v2_dashboard = dashboard
         self._start_staffing_referral_queue_polling()
         if defer_director_sync:
             self.QtCore.QTimer.singleShot(100, self._sync_staffing_v2_director_referrals_after_first_paint)
         return dashboard.widget
+
+    def _open_staffing_candidate_report(self, history_id: str, school: str) -> None:
+        role = "director" if self.director_staffing_mode else "admin"
+        school_scope = self.director_staffing_school or school if role == "director" else ""
+        repository = CandidateReportRepository(self.model.history_path)
+        if not repository.exists(history_id):
+            self._open_legacy_staffing_candidate_report(history_id, school_scope=school_scope)
+            return
+        director_interview = self.staffing_store.find_any_completed_director_interview(
+            history_id=history_id,
+            school=school,
+        )
+        dialog = CandidateInterviewReportDialog(
+            QtCore=self.QtCore,
+            QtGui=self.QtGui,
+            QtWidgets=self.QtWidgets,
+            parent=self.window,
+            repository=repository,
+            history_id=history_id,
+            role=role,
+            actor=str(os.environ.get("USERNAME") or os.environ.get("USER") or role),
+            school_scope=school_scope,
+            rubric=self.model.rubric,
+            director_interview=director_interview,
+            director_service=StaffingService(self.staffing_store, notification_service=self._notification_service()),
+            finalized_callback=self._candidate_report_finalized if role == "admin" else None,
+        )
+        self.candidate_interview_report_dialog = dialog
+        dialog.show()
+
+    def _open_legacy_staffing_candidate_report(self, history_id: str, *, school_scope: str) -> None:
+        try:
+            path = resolve_legacy_report_path(self.model.history_path, history_id, school_scope=school_scope)
+        except (CandidateReportNotFoundError, CandidateReportPermissionError) as exc:
+            self.QtWidgets.QMessageBox.warning(self.window, "Candidate Interview Report", str(exc))
+            return
+        os.startfile(str(path))
+
+    def _candidate_report_finalized(self, record: Any) -> None:
+        previous_history = next(
+            (row for row in self.history_store.load() if self.history_store.build_row_key(row) == record.history_id),
+            {},
+        )
+        snapshot = record.snapshot if isinstance(getattr(record, "snapshot", None), dict) else {}
+        candidate = snapshot.get("candidate") if isinstance(snapshot.get("candidate"), dict) else {}
+        scoring = snapshot.get("scoring") if isinstance(snapshot.get("scoring"), dict) else {}
+        questions = snapshot.get("questions") if isinstance(snapshot.get("questions"), list) else []
+        flow_transcript = [
+            {
+                "flow_index": item.get("flow_index", index),
+                "id": item.get("question_id", ""),
+                "type": item.get("type", ""),
+                "title": item.get("title", ""),
+                "prompt": item.get("prompt", ""),
+                "candidate_transcript": item.get("transcript", ""),
+                "evaluator_notes": item.get("interviewer_notes", ""),
+                "skipped": bool(item.get("skipped", False)),
+                "skip_reason": item.get("skip_reason", ""),
+            }
+            for index, item in enumerate(questions)
+            if isinstance(item, dict)
+        ]
+        updates = {
+            "candidate_name": str(candidate.get("candidate_name") or candidate.get("name") or ""),
+            "interview_date": str(candidate.get("interview_date") or ""),
+            "school": str(candidate.get("school") or ""),
+            "track": str(candidate.get("track") or ""),
+            "qualification": candidate.get("qualification", {}),
+            "flow_transcript": flow_transcript,
+            "scoring": scoring,
+            "interview_score": scoring.get("percent_of_max", 0),
+            "determination": str(scoring.get("outcome") or "Incomplete"),
+        }
+        self.history_store.update_row(record.history_id, updates)
+        rating = _director_referral_rating(str(scoring.get("percent_of_max") or ""))
+        StaffingService(self.staffing_store, notification_service=self._notification_service()).reconcile_director_referral(
+            history_id=record.history_id,
+            candidate_name=updates["candidate_name"],
+            school=updates["school"],
+            position=updates["track"],
+            interviewer_rating=rating,
+            calculated_outcome=str(scoring.get("outcome") or ""),
+            interview_date=updates["interview_date"],
+        )
+        previous_school = str(previous_history.get("school") or "").strip()
+        current_school = str(updates["school"] or "").strip()
+        calculated_outcome = str(scoring.get("outcome") or "")
+        eligible_outcome = _director_referral_outcome(calculated_outcome)
+        removal_schools = set()
+        if previous_school and (not eligible_outcome or previous_school.casefold() != current_school.casefold()):
+            removal_schools.add(previous_school)
+        if current_school and not eligible_outcome:
+            removal_schools.add(current_school)
+        queue_events = [
+            (
+                "director_candidate_referral_reconciliation_removal",
+                {"history_id": record.history_id, "school": target_school},
+            )
+            for target_school in removal_schools
+        ]
+        if eligible_outcome and current_school:
+            queue_events.append(
+                (
+                    "director_candidate_referral_reconciliation",
+                    {
+                    "history_id": record.history_id,
+                    "candidate_name": updates["candidate_name"],
+                    "school": current_school,
+                    "position": updates["track"],
+                    "interviewer_rating": rating,
+                    "interviewer_outcome": eligible_outcome,
+                    "interview_date": updates["interview_date"],
+                    },
+                )
+            )
+        for operation, payload in queue_events:
+            try:
+                _append_staffing_referral_queue(payload, operation=operation)
+            except OSError:
+                continue
+        history_payload = next(
+            (row for row in self.history_store.load() if self.history_store.build_row_key(row) == record.history_id),
+            {},
+        )
+        job_path = Path(str(history_payload.get("deepseek_job_path") or ""))
+        if job_path.is_file():
+            threading.Thread(
+                target=lambda: regenerate_interview_notes_job(job_path, mode="document_only"),
+                daemon=True,
+            ).start()
+        self._reload_history_model()
+        if getattr(self, "staffing_v2_dashboard", None) is not None:
+            self.staffing_v2_dashboard.refresh()
 
     def _sync_staffing_v2_director_referrals_after_first_paint(self) -> None:
         if getattr(self, "_staffing_v2_director_referrals_sync_started", False):
@@ -10996,6 +11137,19 @@ class PySideInterviewWindow:
                             removed_by=str(payload.get("removed_by") or "unknown"),
                             removal_source=str(payload.get("removal_source") or "director_referral_queue"),
                         )
+                elif operation == "director_candidate_referral_reconciliation_removal":
+                    self.staffing_store.remove_pending_director_referral_for_reconciliation(str(payload["history_id"]))
+                elif operation == "director_candidate_referral_reconciliation":
+                    service.reconcile_director_referral(
+                        history_id=str(payload["history_id"]),
+                        candidate_name=str(payload["candidate_name"]),
+                        school=str(payload["school"]),
+                        position=str(payload.get("position", "")),
+                        interviewer_rating=payload.get("interviewer_rating"),
+                        calculated_outcome=str(payload["interviewer_outcome"]),
+                        interview_date=str(payload.get("interview_date", "")),
+                        candidate_email=str(payload.get("candidate_email", "")),
+                    )
                 else:
                     service.upsert_director_candidate_referral(
                         history_id=str(payload["history_id"]),

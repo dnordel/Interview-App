@@ -159,13 +159,29 @@ class StaffingDirectorInterview:
     rating: float
     decision: str
     decision_notes: str
+    history_id: str = ""
     proposed_shift_start: str = ""
     proposed_shift_end: str = ""
     proposed_classroom: str = ""
     follow_up_needed: bool = False
     owner_approval_status: str = "pending_owner_approval"
+    state: str = "finalized"
+    row_version: int = 1
+    version_number: int = 1
+    reopen_reason: str = ""
+    interviewer_rating_at_completion: float | None = None
+    interviewer_outcome_at_completion: str = ""
+    initial_report_amended: bool = False
     created_at: str = ""
     updated_at: str = ""
+
+
+@dataclass(frozen=True)
+class StaffingDirectorInterviewDifference:
+    field_name: str
+    saved_value: object
+    current_value: object
+    local_value: object
 
 
 @dataclass(frozen=True)

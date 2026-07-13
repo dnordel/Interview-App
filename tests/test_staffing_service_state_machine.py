@@ -4,8 +4,9 @@ from pathlib import Path
 from datetime import date
 import pytest
 
+from staffing_models import StaffingDirectorInterviewDifference
 from staffing_service import StaffingService
-from staffing_store import StaffingStore
+from staffing_store import StaffingStaleRevisionError, StaffingStore
 
 
 class _Clock:
@@ -602,3 +603,115 @@ def test_locked_director_referral_queues_and_replays_when_db_unlocks(tmp_path: P
     pending = service.list_pending_director_interviews(school="Hawthorne")
     assert [candidate.candidate_name for candidate in pending] == ["Queued Candidate"]
     assert pending[0].interviewer_rating == 8.8
+
+
+def test_director_can_reopen_submitted_director_section_with_reason(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    service = StaffingService(
+        store,
+        clock=_Clock(["2026-07-06T09:00:00Z", "2026-07-06T09:05:00Z", "2026-07-06T09:10:00Z", "2026-07-06T09:15:00Z"]),
+    )
+    referral = service.upsert_director_candidate_referral(
+        history_id="hist-reopen",
+        candidate_name="Jordan Lee",
+        school="Hawthorne",
+        interviewer_rating=8.5,
+        interviewer_outcome="hire",
+        interview_date="2026-07-05",
+    )
+    submitted = service.record_director_interview(
+        referral.id,
+        director_name="Avery Director",
+        completed_date="2026-07-06",
+        rating=4,
+        decision="no_hire",
+        decision_notes="Needs more experience.",
+    )
+    assert service.find_any_completed_director_interview(
+        history_id="hist-reopen", school="Hawthorne"
+    ) == submitted
+
+    reopened = service.reopen_director_interview(
+        submitted.id,
+        expected_row_version=submitted.row_version,
+        reason="Correct decision notes",
+        actor="Avery Director",
+        actor_role="director",
+    )
+
+    assert reopened.state == "reopened"
+    assert reopened.row_version == submitted.row_version + 1
+    assert reopened.reopen_reason == "Correct decision notes"
+    assert store.list_director_interview_audit(submitted.id)[0]["action"] == "director_interview_reopened"
+
+    revised = service.revise_director_interview(
+        reopened.id,
+        expected_row_version=reopened.row_version,
+        director_name="Avery Director",
+        completed_date="2026-07-06",
+        rating=4,
+        decision="no_hire",
+        decision_notes="Corrected notes.",
+        reason="Correct decision notes",
+        actor="Avery Director",
+        actor_role="director",
+    )
+    assert revised.state == "finalized"
+    assert revised.decision_notes == "Corrected notes."
+    audit = store.list_director_interview_audit(submitted.id)[0]
+    assert audit["action"] == "director_interview_refinalized"
+    assert audit["old_value"]["decision_notes"] == "Needs more experience."
+    assert audit["new_value"]["decision_notes"] == "Corrected notes."
+
+
+def test_report_outcome_reconciliation_removes_pending_without_blocking_later_readd(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    service = StaffingService(store, clock=_Clock(["2026-07-06T09:00:00Z", "2026-07-06T09:01:00Z", "2026-07-06T09:02:00Z"]))
+    payload = {
+        "history_id": "hist-reconcile",
+        "candidate_name": "Jordan Lee",
+        "school": "Hawthorne",
+        "position": "Teacher",
+        "interviewer_rating": 8.5,
+        "interview_date": "2026-07-05",
+    }
+
+    service.reconcile_director_referral(**payload, calculated_outcome="hire")
+    assert len(service.list_pending_director_interviews(school="Hawthorne")) == 1
+
+    service.reconcile_director_referral(**payload, calculated_outcome="no_hire")
+    assert service.list_pending_director_interviews(school="Hawthorne") == []
+    assert "hist-reconcile" not in store.list_dismissed_director_referral_history_ids()
+
+    service.reconcile_director_referral(**payload, calculated_outcome="borderline")
+    assert len(service.list_pending_director_interviews(school="Hawthorne")) == 1
+
+
+def test_director_revision_raises_typed_stale_error(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    service = StaffingService(store)
+    referral = service.upsert_director_candidate_referral(
+        history_id="hist-stale", candidate_name="Jordan Lee", school="Hawthorne",
+        interviewer_rating=8.0, interviewer_outcome="hire", interview_date="2026-07-05",
+    )
+    submitted = service.record_director_interview(
+        referral.id, director_name="Avery", completed_date="2026-07-06", rating=4,
+        decision="no_hire", decision_notes="Original notes.",
+    )
+    service.reopen_director_interview(
+        submitted.id, expected_row_version=submitted.row_version, reason="First editor",
+        actor="Avery", actor_role="director",
+    )
+
+    with pytest.raises(StaffingStaleRevisionError):
+        service.reopen_director_interview(
+            submitted.id, expected_row_version=submitted.row_version, reason="Stale editor",
+            actor="Other", actor_role="director",
+        )
+
+    differences = service.compare_director_interview_version(submitted, saved=submitted)
+    assert all(isinstance(item, StaffingDirectorInterviewDifference) for item in differences)
+    assert any(item.field_name == "state" and item.current_value == "reopened" for item in differences)

@@ -5,6 +5,8 @@ from types import SimpleNamespace
 
 import pytest
 
+from candidate_report import CandidateReportRepository
+from data_store import InterviewHistoryStore
 from interview_app.finalize_gateways import FinalizeGateways
 from interview_app.finalize_pipeline import FinalizePipelineController, PENDING_TRANSCRIPTION_WARNING
 
@@ -314,3 +316,57 @@ def test_finalize_gateway_persists_history_entry() -> None:
     assert history_entry["interview_notes_path"] == "/tmp/final-notes.docx"
     assert history_entry["transcript_path"] == ""
     assert history_entry["offer_status"] == "not_generated"
+
+
+def test_finalize_gateway_atomically_creates_structured_candidate_report(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _DatasetStore:
+        def __init__(self, _path: Path) -> None:
+            pass
+
+        def upsert_interview(self, *_args, **_kwargs) -> None:
+            pass
+
+    monkeypatch.setattr("interview_runtime.InterviewMLDatasetStore", _DatasetStore)
+    history_path = tmp_path / "interview_history.sqlite3"
+    app = _build_app(flow_recordings={1: {"base_name": "session1"}})
+    app.history_store = InterviewHistoryStore(history_path)
+    context = SimpleNamespace(
+        payload={
+            "candidate": {
+                "interview_date": "2026-07-13",
+                "name": "Ada Lovelace",
+                "school": "Hawthorne",
+                "track": "lead",
+                "qualification": {"ece_units": 24},
+            },
+            "flow_transcript": [
+                {
+                    "flow_index": 0,
+                    "id": "Q1",
+                    "type": "trait",
+                    "title": "Reliability",
+                    "prompt": "Tell me about a commitment.",
+                    "candidate_transcript": "I kept my commitment.",
+                    "evaluator_notes": "Specific example.",
+                    "rating": 4,
+                    "weight": 2,
+                }
+            ],
+        },
+        scoring={"earned": 8, "max": 10, "percent_of_max": 80, "outcome": "Hire"},
+        transcript_path="",
+        recording_metadata=[{"flow_index": 0}],
+        interview_notes_document_path=str(tmp_path / "Ada.docx"),
+    )
+
+    history_id = FinalizeGateways().persist_finalize_history(app, context, str(tmp_path / "Ada.docx"))
+
+    history_rows = app.history_store.load()
+    report = CandidateReportRepository(history_path).load_visible_version(history_id, role="admin")
+    assert len(history_rows) == 1
+    assert history_rows[0]["history_id"] == history_id
+    assert report.snapshot["candidate"]["candidate_name"] == "Ada Lovelace"
+    assert report.snapshot["scoring"]["outcome"] == "Hire"

@@ -2,7 +2,7 @@ module:
   name: staffing_models
   language: python
   path: src/staffing_models.py
-  version: 0.11.0
+  version: 0.13.0
   description: Dataclasses and enum constants for local staffing dashboard transactions, classroom records, employee/person permit metadata, current assignment display data, assignment history dashboard records, metrics, workbook-style display metadata, and director interview referral/completion tracking.
 functions: []
 classes: []
@@ -142,13 +142,28 @@ data_structures:
   - rating
   - decision
   - decision_notes
+  - history_id
   - proposed_shift_start
   - proposed_shift_end
   - proposed_classroom
   - follow_up_needed
   - owner_approval_status
+  - state
+  - row_version
+  - version_number
+  - reopen_reason
+  - interviewer_rating_at_completion
+  - interviewer_outcome_at_completion
+  - initial_report_amended
   - created_at
   - updated_at
+- name: StaffingDirectorInterviewDifference
+  type: dataclass
+  fields:
+  - field_name
+  - saved_value
+  - current_value
+  - local_value
 - name: StaffingDirectorReferralRemovalAudit
   fields:
   - id

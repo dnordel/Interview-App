@@ -598,6 +598,41 @@ class InterviewHistoryStore:
             self._write_history_row(conn, row_key, sort_order, entry)
             conn.commit()
 
+    def append_with_candidate_report(
+        self,
+        entry: dict[str, Any],
+        report_snapshot: dict[str, Any],
+        *,
+        actor: str,
+        actor_role: str = "admin",
+        app_version: str = "",
+    ) -> None:
+        """Atomically persist one history row and its initial structured report."""
+
+        if not isinstance(entry, dict) or not isinstance(report_snapshot, dict):
+            raise ValueError("History entry and candidate report snapshot are required.")
+        from candidate_report import CandidateReportRepository
+
+        self._ensure_db()
+        self._import_json_rows_if_needed()
+        history_id = self.build_row_key(entry)
+        if not history_id:
+            raise ValueError("Structured candidate report requires a stable history id.")
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            sort_order = self._next_sort_order(conn)
+            self._write_history_row(conn, history_id, sort_order, entry)
+            CandidateReportRepository.initialize_connection(conn)
+            CandidateReportRepository.insert_initial_on_connection(
+                conn,
+                history_id,
+                report_snapshot,
+                actor=actor,
+                actor_role=actor_role,
+                app_version=app_version,
+            )
+            conn.commit()
+
     @staticmethod
     def build_row_key(entry: dict[str, Any]) -> str:
         row_id = str(entry.get("history_id", "")).strip()

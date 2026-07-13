@@ -19,6 +19,7 @@ SRC = Path(__file__).resolve().parent
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+from candidate_report import CandidateReportNotFoundError, CandidateReportRepository
 from data_store import InterviewHistoryStore, InterviewMLDatasetStore, ml_dataset_path_for_history_path
 from interview_runtime import (
     DEFAULT_DEEPSEEK_PROGRESS_TASKS,
@@ -438,6 +439,7 @@ def _run_job_unlocked(job: dict[str, Any], job_path: Path) -> None:
             "deepseek_completed_at": _utc_timestamp(),
         }
         _update_history(job, updates)
+        _sync_candidate_report_document(job, out_path)
         _update_ml_dataset(job, payload, scoring, updates)
         _write_progress(job, "Complete", "complete")
         return
@@ -505,10 +507,25 @@ def _run_job_unlocked(job: dict[str, Any], job_path: Path) -> None:
         "deepseek_completed_at": _utc_timestamp(),
     }
     _update_history(job, updates)
+    _sync_candidate_report_document(job, out_path)
     job["deepseek_trace_events"] = list(getattr(config, "trace_events", []) or [])
     _checkpoint_job(job_path, job, payload, scoring)
     _update_ml_dataset(job, payload, scoring, updates, config)
     _write_progress(job, "Complete", "complete")
+
+
+def _sync_candidate_report_document(job: dict[str, Any], out_path: Path) -> None:
+    history_path = str(job.get("history_path") or "").strip()
+    history_id = str(job.get("history_id") or "").strip()
+    if not history_path or not history_id:
+        return
+    repository = CandidateReportRepository(Path(history_path))
+    if not repository.exists(history_id):
+        return
+    try:
+        repository.sync_report_path(history_id, Path(out_path))
+    except (CandidateReportNotFoundError, OSError, ValueError):
+        return
 
 
 def run_job(job_path: Path) -> None:

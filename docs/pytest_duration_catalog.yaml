@@ -241,6 +241,126 @@ entries:
   duration_source: collection_default
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_candidate_report.py::test_build_candidate_report_snapshot_preserves_original_transcript
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_candidate_report.py::test_director_sees_finalized_snapshot_while_admin_draft_exists
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_candidate_report.py::test_director_cannot_mutate_initial_report_and_school_scope_is_enforced
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_candidate_report.py::test_stale_write_fails_but_admin_force_creates_new_version
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_candidate_report.py::test_compare_version_returns_ordered_field_differences
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_candidate_report.py::test_finalize_blocks_invalid_rating_and_missing_skip_reason
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_candidate_report.py::test_save_changes_validates_but_keeps_report_private
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_candidate_report.py::test_finalize_appends_field_audit_and_immutable_version
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_candidate_report.py::test_recalculate_candidate_report_uses_scoring_engine_and_marks_narratives_for_review
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_candidate_report.py::test_legacy_report_path_requires_matching_school_existing_docx
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_candidate_report.py::test_system_can_advance_finalized_word_path_without_reopening_report
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_candidate_report.py::test_audit_csv_export_escapes_values_and_uses_explicit_destination
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_candidate_report_dialog.py::test_admin_dialog_matches_report_sections_and_has_no_editable_outcome
+  duration_seconds_n2: 0.11
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_candidate_report_dialog.py::test_admin_can_edit_skip_reason_and_approved_evaluation_flags
+  duration_seconds_n2: 0.173
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_candidate_report_dialog.py::test_rating_edit_immediately_recalculates_score_preview
+  duration_seconds_n2: 0.237
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_candidate_report_dialog.py::test_save_changes_validates_while_save_draft_accepts_incomplete_work
+  duration_seconds_n2: 0.142
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_candidate_report_dialog.py::test_field_and_report_revert_restore_saved_values_without_new_version
+  duration_seconds_n2: 0.18
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_candidate_report_dialog.py::test_validation_readiness_issue_navigates_to_missing_skip_reason
+  duration_seconds_n2: 0.128
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_candidate_report_dialog.py::test_answer_filters_and_expand_collapse_preserve_question_state
+  duration_seconds_n2: 0.125
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_candidate_report_dialog.py::test_keyboard_shortcuts_save_navigate_and_focus_search
+  duration_seconds_n2: 0.169
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_candidate_report_dialog.py::test_dialog_has_window_controls_and_parent_scrim_lifecycle
+  duration_seconds_n2: 0.087
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_candidate_report_dialog.py::test_dialog_fits_supported_dashboard_viewports
+  duration_seconds_n2: 0.145
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_candidate_report_dialog.py::test_director_reopened_section_edits_only_director_fields
+  duration_seconds_n2: 0.264
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_candidate_report_reconciliation_queue.py::test_reconciliation_removal_queue_drops_pending_without_durable_dismissal
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_candidate_title.py::test_normalize_candidate_title_accepts_allowed_values
   duration_seconds_n2: 0.0
   duration_source: collection_default
@@ -883,6 +1003,11 @@ entries:
   placement: fast
 - nodeid: tests/test_finalize_pipeline_gateways.py::test_finalize_gateway_persists_history_entry
   duration_seconds_n2: 0.0
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_finalize_pipeline_gateways.py::test_finalize_gateway_atomically_creates_structured_candidate_report
+  duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
@@ -7684,6 +7809,16 @@ entries:
   duration_source: collection_default
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_staffing_candidate_report_ui.py::test_pending_candidate_name_opens_report_without_changing_checkbox
+  duration_seconds_n2: 0.444
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_staffing_candidate_report_ui.py::test_completed_candidate_name_opens_structured_report
+  duration_seconds_n2: 0.588
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
 - nodeid: tests/test_staffing_referral_queue.py::test_referral_queue_pops_matching_school_and_preserves_other_schools
   duration_seconds_n2: 0.181
   duration_source: collection_default
@@ -7851,6 +7986,21 @@ entries:
   placement: fast
 - nodeid: tests/test_staffing_service_state_machine.py::test_locked_director_referral_queues_and_replays_when_db_unlocks
   duration_seconds_n2: 0.466
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_staffing_service_state_machine.py::test_director_can_reopen_submitted_director_section_with_reason
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_staffing_service_state_machine.py::test_report_outcome_reconciliation_removes_pending_without_blocking_later_readd
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_staffing_service_state_machine.py::test_director_revision_raises_typed_stale_error
+  duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast

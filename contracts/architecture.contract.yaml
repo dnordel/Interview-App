@@ -47,6 +47,8 @@ services:
     - staffing_store
     - staffing_service
     - staffing_dashboard_v2
+    - candidate_report
+    - candidate_report_dialog
   director_staffing_dashboard_service:
     description: Director-facing generated Windows launch paths, one per staffing seed school, for a minimal PySide Staffing v2 app; each launcher filters to its assigned school and avoids full interview, audio, transcription, DOCX, local AI, FFmpeg, VB-CABLE, OpenVINO, and GPU setup.
     modules:
@@ -54,6 +56,8 @@ services:
     - director_staffing_app
     - staffing_service
     - staffing_store
+    - candidate_report
+    - candidate_report_dialog
   web_scored_question_service:
     description: Static browser prototype for scored competency question UI, reading local rubric and merged weighted trait-signal JSON for teacher and Behavior Support Specialist roles without changing desktop session persistence.
     modules:
@@ -72,6 +76,8 @@ services:
     - notification_service
     - staffing_service
     - staffing_store
+    - candidate_report
+    - candidate_report_dialog
   shared_platform_service:
     description: Shared content/configuration loading, logging, persistence helpers, and runtime wrappers.
     modules:
@@ -105,6 +111,7 @@ datastores:
     - data_store
     - pyside_interview_app
     - web_app_backend
+    - candidate_report
   interview_ml_dataset_db:
     type: sqlite
     description: Derived normalized ML dataset lives outside Dropbox at G:\My Drive\Work\LaunchPad\Interview ML DB\interview_ml_dataset.sqlite3 by default, storing session/profile rows, exact per-answer prompt snapshots, human and AI scoring fields, DeepSeek prompt/output traces, signal evidence, export metadata, and pending-AI backlog rows. It is rebuilt or enriched from finalize, DeepSeek worker, history, job/session artifacts, and DOCX transcript recovery without making it canonical app history; INTERVIEW_ML_DATASET_DIR can override the directory for tests or alternate machines.

@@ -2,7 +2,7 @@ module:
   name: deepseek_finalize_worker
   language: python
   path: src/deepseek_finalize_worker.py
-  version: 1.10.0
+  version: 1.11.0
   description: Detached local DeepSeek finalize worker that refreshes interview notes
     documents and history status after the GUI finalize flow returns, keeping DeepSeek
     signal scoring advisory and human raw scores final. Workers serialize processing
@@ -475,7 +475,15 @@ functions:
   - RuntimeError
   side_effects: May start and call local Ollama except in document-only rerun mode,
     writes DOCX output, deletes a superseded same-folder basic notes DOCX after successful
-    rich export, and updates interview history through InterviewHistoryStore.
+    rich export, updates interview history, and advances a matching structured report DOCX version.
+- name: _sync_candidate_report_document
+  description: Advance an existing structured report to the successfully generated DOCX path while leaving legacy reports untouched.
+  inputs:
+    job: {type: 'dict[str, Any]', required: true}
+    out_path: {type: Path, required: true}
+  returns: {type: None}
+  exceptions: []
+  side_effects: May append a system-authored candidate report version and audit event.
 - name: run_job
   description: Load one persisted DeepSeek finalize job, acquire the per-job-directory
     DeepSeek lock, generate advisory trait signal/scoring output through local Ollama,

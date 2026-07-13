@@ -2,7 +2,7 @@ module:
   name: staffing_service
   language: python
   path: src/staffing_service.py
-  version: 0.17.0
+  version: 0.20.0
   description: Staffing assignment state machine, service-backed classroom, position, person creation, director interview referral/completion tracking with optional pending-queue fallback, mistaken-position deletion, queued Dropbox edit handling, staffing dashboard metrics with pending-operation projection and workbook display metadata, confirmed person moves, editable assignment details, person permit metadata updates, and post-commit notification emission for successful transactions.
 functions: []
 classes:
@@ -416,6 +416,19 @@ classes:
       type: list[StaffingDirectorCandidate]
     exceptions: []
     side_effects: Reads pending director interview referrals, optionally scoped to one school.
+  - name: reconcile_director_referral
+    description: Reconcile score-driven Hire/Borderline/No Hire report results into pending referrals, removing No Hire without durable dismissal so later score changes may re-add.
+    inputs:
+      history_id: {type: str, required: true}
+      candidate_name: {type: str, required: true}
+      school: {type: str, required: true}
+      calculated_outcome: {type: str, required: true}
+      position: {type: str, required: false, default: ''}
+      interviewer_rating: {type: 'float | int | str | None', required: false, default: null}
+      interview_date: {type: str, required: false, default: ''}
+      candidate_email: {type: str, required: false, default: ''}
+      referral_date: {type: str, required: false, default: ''}
+    returns: {type: 'StaffingDirectorCandidate | None'}
   - name: list_completed_director_interviews
     inputs:
       school:
@@ -438,6 +451,12 @@ classes:
       type: StaffingDirectorInterview | None
     exceptions: []
     side_effects: Reads one hire decision matched by exact interview history ID and school for downstream offer defaults.
+  - name: find_any_completed_director_interview
+    description: Read any completed director decision by exact history id and school for combined candidate-report display.
+    inputs:
+      history_id: {type: str, required: true}
+      school: {type: str, required: true}
+    returns: {type: 'StaffingDirectorInterview | None'}
   - name: delete_pending_director_interviews
     inputs:
       referral_ids:
@@ -516,6 +535,47 @@ classes:
     - ValueError
     - StaffingEditLock
     side_effects: Records a director interview with date, 1-10 rating, hire/no-hire decision, required notes, and hire-only proposed shift/classroom while leaving assignments and classroom status unchanged.
+  - name: reopen_director_interview
+    inputs:
+      interview_id: {type: int, required: true}
+      expected_row_version: {type: int, required: true}
+      reason: {type: str, required: true}
+      actor: {type: str, required: true}
+      actor_role: {type: str, required: true}
+    returns: {type: StaffingDirectorInterview}
+  - name: revise_director_interview
+    description: Validate and re-finalize one reopened director section with a required audited reason.
+    inputs:
+      interview_id: {type: int, required: true}
+      expected_row_version: {type: int, required: true}
+      director_name: {type: str, required: true}
+      completed_date: {type: str, required: true}
+      rating: {type: 'float | int | str', required: true}
+      decision: {type: str, required: true}
+      decision_notes: {type: str, required: true}
+      reason: {type: str, required: true}
+      actor: {type: str, required: true}
+      actor_role: {type: str, required: true}
+      proposed_shift_start: {type: str, required: false, default: ''}
+      proposed_shift_end: {type: str, required: false, default: ''}
+      proposed_classroom: {type: str, required: false, default: ''}
+      follow_up_needed: {type: bool, required: false, default: false}
+    returns: {type: StaffingDirectorInterview}
+  - name: list_director_interview_audit
+    description: Return immutable director-section audit events for chronological merge with initial-report audit history.
+    inputs:
+      interview_id: {type: int, required: true}
+    returns: {type: 'list[dict[str, Any]]'}
+  - name: compare_director_interview_version
+    description: Return ordered three-way differences between saved, current database, and local Director Interview versions.
+    inputs:
+      local: {type: StaffingDirectorInterview, required: true}
+      saved: {type: StaffingDirectorInterview, required: true}
+    returns: {type: 'list[StaffingDirectorInterviewDifference]'}
+  - name: load_director_interview
+    inputs:
+      interview_id: {type: int, required: true}
+    returns: {type: StaffingDirectorInterview}
   - name: flush_pending_operations
     inputs: {}
     returns:

@@ -2,7 +2,7 @@ module:
   name: data_store
   language: python
   path: src/data_store.py
-  version: 1.9.0
+  version: 1.10.0
   description: SQLite-backed interview history store plus JSON-backed stores and
     loaders for interview runtime and onboarding settings.
 functions:
@@ -374,6 +374,17 @@ classes:
       type: None
     side_effects: Inserts one row into the interview_history SQLite database without
       rewriting existing rows or mutating legacy JSON history files.
+  - name: append_with_candidate_report
+    description: Atomically persist one new interview-history row and its initial finalized structured candidate report/version/audit in the same SQLite transaction.
+    inputs:
+      entry: {type: 'dict[str, Any]', required: true}
+      report_snapshot: {type: 'dict[str, Any]', required: true}
+      actor: {type: str, required: true}
+      actor_role: {type: str, required: false, default: admin}
+      app_version: {type: str, required: false, default: ''}
+    returns: {type: None}
+    exceptions: [ValueError]
+    side_effects: Writes interview_history plus candidate_reports, candidate_report_versions, and candidate_report_audit_events atomically.
   - name: update_row
     inputs:
       row_key:

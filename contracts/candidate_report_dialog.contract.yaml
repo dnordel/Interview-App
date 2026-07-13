@@ -1,0 +1,49 @@
+module:
+  name: candidate_report_dialog
+  language: python
+  path: src/candidate_report_dialog.py
+  version: 1.1.0
+  description: Staffing v2 window-modal Candidate Interview Report matching supplied mockups with fixed navigation/header/footer, admin-only initial-report lifecycle, director-section correction, score-only outcome, audit, safe Word opening, accessibility, and stale/unsaved handling.
+functions: []
+classes:
+- name: CandidateInterviewReportDialog
+  description: Reusable report shell for admin and school-scoped director launchers.
+  methods:
+  - name: __init__
+    inputs:
+      repository: {type: CandidateReportRepository, required: true}
+      QtCore: {type: Any, required: false, default: QtCore}
+      QtGui: {type: Any, required: false, default: QtGui}
+      QtWidgets: {type: Any, required: false, default: QtWidgets}
+      history_id: {type: str, required: true}
+      role: {type: str, required: true}
+      actor: {type: str, required: true}
+      school_scope: {type: str, required: false, default: ''}
+      rubric: {type: 'dict[str, Any] | None', required: false, default: null}
+      director_interview: {type: 'Any | None', required: false, default: null}
+      director_service: {type: 'Any | None', required: false, default: null}
+      open_document: {type: 'Callable[[Path], None] | None', required: false, default: null}
+      finalized_callback: {type: 'Callable[[CandidateReportRecord], None] | None', required: false, default: null}
+      app_version: {type: str, required: false, default: ''}
+      parent: {type: 'Any | None', required: false, default: null}
+  - name: reopen_initial
+    inputs:
+      reason: {type: str, required: true}
+  - name: save_draft
+    inputs: {}
+  - name: save_changes
+    inputs: {}
+    description: Validate and persist a private reopened version while keeping the director-visible finalized snapshot unchanged.
+  - name: revert_unsaved_changes
+    inputs: {}
+    description: Restore last saved working snapshot without creating a version.
+  - name: finalize_report
+    inputs: {}
+data_structures:
+- name: REPORT_QSS
+  type: str
+dependencies:
+- module: candidate_report
+- module: staffing_service
+- module: staffing_store
+- module: PySide6

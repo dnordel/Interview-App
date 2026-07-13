@@ -2,7 +2,7 @@ module:
   name: interview_runtime
   language: python
   path: src/interview_runtime.py
-  version: 0.34.0
+  version: 0.35.0
   description: Flattened public interface for interview state, session management,
     audio/transcription runtime, transcript summary seam, controllers, history, and
     finalize pipeline; only active legacy adapters remain in the compatibility module
@@ -2517,9 +2517,7 @@ classes:
     exceptions: []
     side_effects: Writes integration export file.
   - name: persist_finalize_history
-    description: Append finalized interview history entry with generated basic notes
-      path, flow recording metadata, and not-started DeepSeek processing status;
-      returns row id used by later history-triggered detached worker updates.
+    description: Atomically append finalized history plus initial structured candidate report when supported, including basic notes path, full finalized snapshot, recording metadata, and not-started DeepSeek status; compatibility stores retain append-only behavior.
     locked: false
     inputs:
       app:
@@ -2534,7 +2532,7 @@ classes:
     returns:
       type: str
     exceptions: []
-    side_effects: Updates persistent history storage.
+    side_effects: Updates persistent history and structured candidate-report version/audit storage.
   - name: send_referral
     description: Build and optionally send director referral packet with dedupe protection.
     locked: false

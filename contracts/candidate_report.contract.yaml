@@ -1,0 +1,170 @@
+module:
+  name: candidate_report
+  language: python
+  path: src/candidate_report.py
+  version: 1.1.0
+  description: Versioned structured candidate-interview report domain, validation, score recalculation, school-scoped legacy DOCX resolution, optimistic concurrency, immutable snapshots, and append-only audit storage.
+functions:
+- name: utc_now
+  inputs: {}
+  returns: {type: str}
+- name: export_candidate_report_audit_csv
+  description: Export already-authorized merged audit events to an explicitly selected UTF-8 CSV destination.
+  inputs:
+    events: {type: 'Sequence[dict[str, Any]]', required: true}
+    destination: {type: Path, required: true}
+  returns: {type: Path}
+  exceptions: [CandidateReportError, OSError]
+- name: build_candidate_report_snapshot
+  description: Build canonical structured report data from finalized interview payload, canonical scoring output, and history metadata while preserving original transcript text.
+  inputs:
+    payload: {type: 'dict[str, Any]', required: true}
+    scoring: {type: 'dict[str, Any]', required: true}
+    history_entry: {type: 'dict[str, Any]', required: true}
+    report_path: {type: str, required: false, default: ''}
+  returns: {type: 'dict[str, Any]'}
+- name: validate_candidate_report
+  description: Return blocking, warning, and informational issues for rating, skipped-reason, disqualifier-evidence, and narrative-review state.
+  inputs:
+    snapshot: {type: 'dict[str, Any]', required: true}
+  returns: {type: 'list[CandidateReportValidationIssue]'}
+- name: recalculate_candidate_report
+  description: Recalculate score and system-owned recommendation through ScoringEngine, update question weights, and flag narratives for review without exposing manual outcome selection.
+  inputs:
+    snapshot: {type: 'dict[str, Any]', required: true}
+    rubric: {type: 'dict[str, Any]', required: true}
+    track_key: {type: str, required: true}
+  returns: {type: 'dict[str, Any]'}
+- name: resolve_legacy_report_path
+  description: Resolve an existing legacy DOCX by stable history id after enforcing optional school scope and rejecting missing or non-DOCX paths.
+  inputs:
+    history_path: {type: Path, required: true}
+    history_id: {type: str, required: true}
+    school_scope: {type: str, required: false, default: ''}
+  returns: {type: Path}
+  exceptions:
+  - CandidateReportNotFoundError
+  - CandidateReportPermissionError
+classes:
+- name: CandidateReportError
+  description: Base candidate-report lifecycle error.
+- name: CandidateReportNotFoundError
+- name: CandidateReportPermissionError
+- name: CandidateReportStaleError
+- name: CandidateReportValidationError
+- name: CandidateReportValidationIssue
+  description: Immutable severity, code, message, and field-path validation result.
+- name: CandidateReportDifference
+  description: Ordered three-way field comparison containing last-saved, current-database, and local values.
+- name: CandidateReportRecord
+  description: Current role-visible report snapshot plus lifecycle and optimistic concurrency metadata.
+- name: CandidateReportVersion
+  description: Immutable report snapshot revision.
+- name: CandidateReportAuditEvent
+  description: Append-only report field/action audit record.
+- name: CandidateReportRepository
+  description: Versioned structured reports stored beside interview history with admin-only initial-report mutations and director last-finalized visibility.
+  methods:
+  - name: __init__
+    inputs:
+      history_path: {type: Path, required: true}
+  - name: initialize
+    inputs: {}
+    side_effects: Creates candidate_reports, candidate_report_versions, candidate_report_audit_events, and indexes.
+  - name: initialize_connection
+    inputs:
+      conn: {type: sqlite3.Connection, required: true}
+  - name: insert_initial_on_connection
+    description: Insert initial finalized report/version/audit on caller-owned transaction.
+    inputs:
+      conn: {type: sqlite3.Connection, required: true}
+      history_id: {type: str, required: true}
+      snapshot: {type: 'dict[str, Any]', required: true}
+      actor: {type: str, required: true}
+      actor_role: {type: ReportRole, required: false, default: admin}
+      app_version: {type: str, required: false, default: ''}
+  - name: exists
+    inputs:
+      history_id: {type: str, required: true}
+    returns: {type: bool}
+  - name: load_visible_version
+    description: Load working copy for admin or last-finalized copy for director and enforce optional director school scope.
+    inputs:
+      history_id: {type: str, required: true}
+      role: {type: ReportRole, required: true}
+      school_scope: {type: str, required: false, default: ''}
+    returns: {type: CandidateReportRecord}
+  - name: reopen
+    inputs:
+      history_id: {type: str, required: true}
+      expected_row_version: {type: int, required: true}
+      reason: {type: str, required: true}
+      actor: {type: str, required: true}
+      role: {type: ReportRole, required: true}
+      app_version: {type: str, required: false, default: ''}
+    returns: {type: CandidateReportRecord}
+  - name: save_draft
+    inputs:
+      history_id: {type: str, required: true}
+      snapshot: {type: 'dict[str, Any]', required: true}
+      expected_row_version: {type: int, required: true}
+      actor: {type: str, required: true}
+      role: {type: ReportRole, required: true}
+      reason: {type: str, required: false, default: ''}
+      force: {type: bool, required: false, default: false}
+      app_version: {type: str, required: false, default: ''}
+    returns: {type: CandidateReportRecord}
+  - name: save_changes
+    description: Validate blocking issues and save a private reopened version without changing the director-visible finalized snapshot.
+    inputs:
+      history_id: {type: str, required: true}
+      snapshot: {type: 'dict[str, Any]', required: true}
+      expected_row_version: {type: int, required: true}
+      actor: {type: str, required: true}
+      role: {type: ReportRole, required: true}
+      reason: {type: str, required: false, default: ''}
+      force: {type: bool, required: false, default: false}
+      app_version: {type: str, required: false, default: ''}
+    returns: {type: CandidateReportRecord}
+    exceptions: [CandidateReportValidationError, CandidateReportPermissionError, CandidateReportStaleError]
+  - name: finalize
+    description: Validate and atomically publish a new finalized report version.
+    inputs:
+      history_id: {type: str, required: true}
+      snapshot: {type: 'dict[str, Any]', required: true}
+      expected_row_version: {type: int, required: true}
+      actor: {type: str, required: true}
+      role: {type: ReportRole, required: true}
+      reason: {type: str, required: false, default: ''}
+      force: {type: bool, required: false, default: false}
+      app_version: {type: str, required: false, default: ''}
+    returns: {type: CandidateReportRecord}
+  - name: compare_version
+    inputs:
+      history_id: {type: str, required: true}
+      local_snapshot: {type: 'dict[str, Any]', required: true}
+      role: {type: ReportRole, required: true}
+      saved_snapshot: {type: 'dict[str, Any] | None', required: false, default: null}
+    returns: {type: 'list[CandidateReportDifference]'}
+  - name: sync_report_path
+    description: Advance generated DOCX path in working/finalized snapshots as a system-authored immutable version.
+    inputs:
+      history_id: {type: str, required: true}
+      report_path: {type: Path, required: true}
+      app_version: {type: str, required: false, default: ''}
+    returns: {type: CandidateReportRecord}
+  - name: list_versions
+    inputs:
+      history_id: {type: str, required: true}
+    returns: {type: 'list[CandidateReportVersion]'}
+  - name: list_audit_events
+    inputs:
+      history_id: {type: str, required: true}
+    returns: {type: 'list[CandidateReportAuditEvent]'}
+data_structures:
+- name: ReportRole
+  type: Literal[admin, director]
+- name: ReportState
+  type: Literal[draft, finalized, reopened]
+dependencies:
+- module: scoring_reporting

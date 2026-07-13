@@ -927,6 +927,7 @@ QLabel#StaffingV2ClassroomListFooter {
 
 ActionCallback = Callable[[int], None]
 DirectorReferralDismissalCallback = Callable[[list[StaffingDirectorCandidate], str, str], None]
+CandidateReportOpenCallback = Callable[[str, str], None]
 
 
 class _StaffingV2OverlayPanel:
@@ -1082,6 +1083,7 @@ class StaffingDashboardV2Page:
         notification_store_path: Path | None = None,
         notification_service_factory: Callable[[], NotificationService] | None = None,
         director_referral_dismissal_callback: DirectorReferralDismissalCallback | None = None,
+        candidate_report_open_callback: CandidateReportOpenCallback | None = None,
         director_referral_removal_actor: str = "admin",
         director_referral_removal_source: str = "admin_staffing_dashboard",
     ) -> None:
@@ -1098,6 +1100,7 @@ class StaffingDashboardV2Page:
         )
         self.notification_service_factory = notification_service_factory
         self.director_referral_dismissal_callback = director_referral_dismissal_callback
+        self.candidate_report_open_callback = candidate_report_open_callback
         self.director_referral_removal_actor = str(director_referral_removal_actor or "admin").strip() or "admin"
         self.director_referral_removal_source = (
             str(director_referral_removal_source or "admin_staffing_dashboard").strip() or "admin_staffing_dashboard"
@@ -5091,9 +5094,23 @@ class StaffingDashboardV2Page:
                 table.setItem(row_index, column, item)
                 if column == 0:
                     checkbox = self.QtWidgets.QCheckBox(value)
+                    candidate_layout = self.QtWidgets.QHBoxLayout(checkbox)
+                    candidate_layout.setContentsMargins(22, 0, 4, 0)
+                    candidate_layout.setSpacing(6)
                     checkbox.setObjectName("StaffingV2DirectorInterviewCandidateSelect")
                     checkbox.setProperty("directorReferralId", candidate.id)
                     checkbox.setToolTip("Select candidate for deletion")
+                    checkbox.setStyleSheet("QCheckBox { color: transparent; }")
+                    link = self.QtWidgets.QPushButton(value)
+                    link.setObjectName("StaffingV2PendingCandidateReportLink")
+                    link.setFlat(True)
+                    link.setCursor(self.QtCore.Qt.CursorShape.PointingHandCursor)
+                    link.setToolTip(f"Open {value}'s candidate interview report")
+                    link.clicked.connect(
+                        lambda _checked=False, history_id=candidate.history_id, school=candidate.school:
+                        self._open_candidate_report(history_id, school)
+                    )
+                    candidate_layout.addWidget(link, 1)
                     table.setCellWidget(row_index, column, checkbox)
             button = self.QtWidgets.QPushButton("Record Interview")
             button.setObjectName("StaffingV2DirectorInterviewRecordButton")
@@ -5176,7 +5193,23 @@ class StaffingDashboardV2Page:
                 item = self.QtWidgets.QTableWidgetItem(value)
                 item.setData(self.QtCore.Qt.ItemDataRole.UserRole, interview.id)
                 table.setItem(row_index, column, item)
+                if column == 0:
+                    link = self.QtWidgets.QPushButton(value)
+                    link.setObjectName("StaffingV2CompletedCandidateReportLink")
+                    link.setFlat(True)
+                    link.setCursor(self.QtCore.Qt.CursorShape.PointingHandCursor)
+                    link.setToolTip(f"Open {value}'s candidate interview report")
+                    link.clicked.connect(
+                        lambda _checked=False, history_id=interview.history_id, school=interview.school:
+                        self._open_candidate_report(history_id, school)
+                    )
+                    table.setCellWidget(row_index, column, link)
         table.resizeColumnsToContents()
+
+    def _open_candidate_report(self, history_id: str, school: str) -> None:
+        if self.candidate_report_open_callback is None:
+            return
+        self.candidate_report_open_callback(str(history_id or ""), str(school or ""))
 
     def _open_director_interview_dialog(self, referral_id: int) -> None:
         candidate = next((item for item in self.pending_director_candidates if item.id == referral_id), None)

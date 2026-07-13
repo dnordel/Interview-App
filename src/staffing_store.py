@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
-from dataclasses import replace
+from dataclasses import asdict, replace
 from datetime import datetime, timezone
 import json
 import os
 import sqlite3
 from pathlib import Path
 from typing import Any, Sequence
+from uuid import uuid4
 
 from staffing_models import (
     ASSIGNMENT_STATUSES,
@@ -25,6 +26,10 @@ EDIT_LOCK_STALE_SECONDS = 15 * 60
 
 
 class StaffingEditLock(RuntimeError):
+    pass
+
+
+class StaffingStaleRevisionError(ValueError):
     pass
 
 
@@ -160,8 +165,38 @@ class StaffingStore:
                     proposed_classroom TEXT NOT NULL DEFAULT '',
                     follow_up_needed INTEGER NOT NULL DEFAULT 0,
                     owner_approval_status TEXT NOT NULL DEFAULT 'pending_owner_approval',
+                    state TEXT NOT NULL DEFAULT 'finalized',
+                    row_version INTEGER NOT NULL DEFAULT 1,
+                    version_number INTEGER NOT NULL DEFAULT 1,
+                    reopen_reason TEXT NOT NULL DEFAULT '',
+                    interviewer_rating_at_completion REAL,
+                    interviewer_outcome_at_completion TEXT NOT NULL DEFAULT '',
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS director_interview_versions (
+                    revision_id TEXT PRIMARY KEY,
+                    interview_id INTEGER NOT NULL,
+                    version_number INTEGER NOT NULL,
+                    state TEXT NOT NULL,
+                    snapshot_json TEXT NOT NULL,
+                    actor TEXT NOT NULL,
+                    actor_role TEXT NOT NULL,
+                    reason TEXT NOT NULL DEFAULT '',
+                    created_at TEXT NOT NULL,
+                    UNIQUE(interview_id, version_number)
+                );
+                CREATE TABLE IF NOT EXISTS director_interview_audit_events (
+                    id INTEGER PRIMARY KEY,
+                    interview_id INTEGER NOT NULL,
+                    revision_id TEXT NOT NULL,
+                    action TEXT NOT NULL,
+                    actor TEXT NOT NULL,
+                    actor_role TEXT NOT NULL,
+                    reason TEXT NOT NULL DEFAULT '',
+                    old_value_json TEXT NOT NULL DEFAULT 'null',
+                    new_value_json TEXT NOT NULL DEFAULT 'null',
+                    created_at TEXT NOT NULL
                 );
                 CREATE TABLE IF NOT EXISTS director_referral_dismissals (
                     history_id TEXT PRIMARY KEY,
@@ -199,6 +234,12 @@ class StaffingStore:
                 "owner_approval_status",
                 "TEXT NOT NULL DEFAULT 'pending_owner_approval'",
             )
+            self._ensure_column(conn, "director_interviews", "state", "TEXT NOT NULL DEFAULT 'finalized'")
+            self._ensure_column(conn, "director_interviews", "row_version", "INTEGER NOT NULL DEFAULT 1")
+            self._ensure_column(conn, "director_interviews", "version_number", "INTEGER NOT NULL DEFAULT 1")
+            self._ensure_column(conn, "director_interviews", "reopen_reason", "TEXT NOT NULL DEFAULT ''")
+            self._ensure_column(conn, "director_interviews", "interviewer_rating_at_completion", "REAL")
+            self._ensure_column(conn, "director_interviews", "interviewer_outcome_at_completion", "TEXT NOT NULL DEFAULT ''")
 
     def _ensure_column(self, conn: sqlite3.Connection, table: str, column: str, definition: str) -> None:
         existing = {str(row["name"]) for row in conn.execute(f"PRAGMA table_info({table})").fetchall()}
@@ -704,6 +745,46 @@ class StaffingStore:
             )
             return int(cursor.rowcount or 0)
 
+    def remove_pending_director_referral_for_reconciliation(
+        self,
+        history_id: str,
+        *,
+        removed_by: str = "system",
+        removal_source: str = "candidate_report_reconciliation",
+    ) -> int:
+        """Remove an ineligible pending referral without creating durable dismissal state."""
+
+        key = _required_text(history_id, "History ID")
+        with self.write_connection("director_candidate_referral_reconcile") as conn:
+            rows = conn.execute(
+                """
+                SELECT r.history_id, r.candidate_name, r.school
+                FROM director_candidate_referrals r
+                LEFT JOIN director_interviews i ON i.referral_id = r.id
+                WHERE r.history_id = ? AND i.id IS NULL
+                """,
+                (key,),
+            ).fetchall()
+            self._insert_director_referral_removal_audit(
+                conn,
+                rows,
+                removed_by=removed_by,
+                removal_source=removal_source,
+                removed_at=_utc_now_iso(),
+            )
+            cursor = conn.execute(
+                """
+                DELETE FROM director_candidate_referrals
+                WHERE history_id = ?
+                  AND NOT EXISTS (
+                      SELECT 1 FROM director_interviews i
+                      WHERE i.referral_id = director_candidate_referrals.id
+                  )
+                """,
+                (key,),
+            )
+            return int(cursor.rowcount or 0)
+
     def dismiss_director_referral_history_ids(
         self,
         history_ids: Sequence[str],
@@ -880,14 +961,22 @@ class StaffingStore:
         now: str,
     ) -> StaffingDirectorInterview:
         with self.write_connection("director_interview") as conn:
-            self.director_candidate_context(conn, int(referral_id))
+            candidate = self.director_candidate_context(conn, int(referral_id))
+            existing = conn.execute(
+                "SELECT id, version_number FROM director_interviews WHERE referral_id = ?",
+                (int(referral_id),),
+            ).fetchone()
+            previous = self.director_interview_context(conn, int(existing["id"])) if existing is not None else None
+            version_number = int(existing["version_number"] or 1) + 1 if existing is not None else 1
             conn.execute(
                 """
                 INSERT INTO director_interviews (
                     referral_id, director_name, completed_date, rating, decision, decision_notes,
                     proposed_shift_start, proposed_shift_end, proposed_classroom, follow_up_needed,
-                    owner_approval_status, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    owner_approval_status, state, row_version, version_number,
+                    interviewer_rating_at_completion, interviewer_outcome_at_completion,
+                    created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'finalized', 1, ?, ?, ?, ?, ?)
                 ON CONFLICT(referral_id) DO UPDATE SET
                     director_name = excluded.director_name,
                     completed_date = excluded.completed_date,
@@ -899,6 +988,9 @@ class StaffingStore:
                     proposed_classroom = excluded.proposed_classroom,
                     follow_up_needed = excluded.follow_up_needed,
                     owner_approval_status = excluded.owner_approval_status,
+                    state = 'finalized',
+                    row_version = director_interviews.row_version + 1,
+                    version_number = excluded.version_number,
                     updated_at = excluded.updated_at
                 """,
                 (
@@ -913,6 +1005,9 @@ class StaffingStore:
                     proposed_classroom,
                     1 if follow_up_needed else 0,
                     owner_approval_status,
+                    version_number,
+                    candidate.interviewer_rating,
+                    candidate.interviewer_outcome,
                     now,
                     now,
                 ),
@@ -921,7 +1016,151 @@ class StaffingStore:
                 "SELECT id FROM director_interviews WHERE referral_id = ?",
                 (int(referral_id),),
             ).fetchone()
-            return self.director_interview_context(conn, int(row["id"]))
+            interview = self.director_interview_context(conn, int(row["id"]))
+            self._append_director_interview_version(
+                conn,
+                interview,
+                action="director_interview_submitted" if existing is None else "director_interview_updated",
+                actor=director_name,
+                actor_role="director",
+                reason="",
+                now=now,
+                previous=previous,
+            )
+            return interview
+
+    def reopen_director_interview(
+        self,
+        interview_id: int,
+        *,
+        expected_row_version: int,
+        reason: str,
+        actor: str,
+        actor_role: str,
+        now: str,
+    ) -> StaffingDirectorInterview:
+        if actor_role not in {"admin", "director"}:
+            raise ValueError("Director interview role must be admin or director.")
+        clean_reason = _required_text(reason, "Reopen reason")
+        with self.write_connection("director_interview_reopen") as conn:
+            current = self.director_interview_context(conn, int(interview_id))
+            if current.row_version != int(expected_row_version):
+                raise StaffingStaleRevisionError("Director interview changed since it was opened.")
+            conn.execute(
+                """
+                UPDATE director_interviews
+                SET state = 'reopened', row_version = row_version + 1,
+                    version_number = version_number + 1, reopen_reason = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (clean_reason, now, int(interview_id)),
+            )
+            updated = self.director_interview_context(conn, int(interview_id))
+            self._append_director_interview_version(
+                conn, updated, action="director_interview_reopened", actor=actor,
+                actor_role=actor_role, reason=clean_reason, now=now, previous=current,
+            )
+            return updated
+
+    def revise_director_interview(
+        self,
+        interview_id: int,
+        *,
+        expected_row_version: int,
+        director_name: str,
+        completed_date: str,
+        rating: float,
+        decision: str,
+        decision_notes: str,
+        proposed_shift_start: str,
+        proposed_shift_end: str,
+        proposed_classroom: str,
+        follow_up_needed: bool,
+        reason: str,
+        actor: str,
+        actor_role: str,
+        now: str,
+    ) -> StaffingDirectorInterview:
+        if actor_role not in {"admin", "director"}:
+            raise ValueError("Director interview role must be admin or director.")
+        with self.write_connection("director_interview_revise") as conn:
+            current = self.director_interview_context(conn, int(interview_id))
+            if current.row_version != int(expected_row_version):
+                raise StaffingStaleRevisionError("Director interview changed since it was opened.")
+            if current.state != "reopened":
+                raise ValueError("Director interview must be reopened before revision.")
+            conn.execute(
+                """
+                UPDATE director_interviews
+                SET director_name = ?, completed_date = ?, rating = ?, decision = ?, decision_notes = ?,
+                    proposed_shift_start = ?, proposed_shift_end = ?, proposed_classroom = ?,
+                    follow_up_needed = ?, state = 'finalized', row_version = row_version + 1,
+                    version_number = version_number + 1, updated_at = ?
+                WHERE id = ?
+                """,
+                (
+                    str(director_name or "").strip(), completed_date, float(rating), decision, decision_notes,
+                    proposed_shift_start, proposed_shift_end, proposed_classroom,
+                    1 if follow_up_needed else 0, now, int(interview_id),
+                ),
+            )
+            updated = self.director_interview_context(conn, int(interview_id))
+            self._append_director_interview_version(
+                conn, updated, action="director_interview_refinalized", actor=actor,
+                actor_role=actor_role, reason=reason, now=now, previous=current,
+            )
+            return updated
+
+    def list_director_interview_audit(self, interview_id: int) -> list[dict[str, Any]]:
+        with self.connect() as conn:
+            rows = conn.execute(
+                "SELECT * FROM director_interview_audit_events WHERE interview_id = ? ORDER BY id DESC",
+                (int(interview_id),),
+            ).fetchall()
+        events: list[dict[str, Any]] = []
+        for row in rows:
+            event = dict(row)
+            event["old_value"] = json.loads(str(event.get("old_value_json") or "null"))
+            event["new_value"] = json.loads(str(event.get("new_value_json") or "null"))
+            events.append(event)
+        return events
+
+    def _append_director_interview_version(
+        self,
+        conn: sqlite3.Connection,
+        interview: StaffingDirectorInterview,
+        *,
+        action: str,
+        actor: str,
+        actor_role: str,
+        reason: str,
+        now: str,
+        previous: StaffingDirectorInterview | None = None,
+    ) -> None:
+        revision_id = str(uuid4())
+        snapshot = asdict(interview)
+        snapshot_json = json.dumps(snapshot, ensure_ascii=False, sort_keys=True)
+        previous_json = json.dumps(asdict(previous), ensure_ascii=False, sort_keys=True) if previous is not None else "null"
+        conn.execute(
+            """
+            INSERT INTO director_interview_versions (
+                revision_id, interview_id, version_number, state, snapshot_json,
+                actor, actor_role, reason, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (revision_id, interview.id, interview.version_number, interview.state, snapshot_json,
+             str(actor or "unknown"), actor_role, str(reason or ""), now),
+        )
+        conn.execute(
+            """
+            INSERT INTO director_interview_audit_events (
+                interview_id, revision_id, action, actor, actor_role, reason,
+                old_value_json, new_value_json, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (interview.id, revision_id, action, str(actor or "unknown"), actor_role,
+             str(reason or ""), previous_json, snapshot_json, now),
+        )
 
     def list_director_interviews(self, *, school: str = "") -> list[StaffingDirectorInterview]:
         school_filter = str(school or "").strip()
@@ -939,6 +1178,11 @@ class StaffingStore:
                 params,
             ).fetchall()
             return [self.director_interview_context(conn, int(row["id"])) for row in rows]
+
+    def get_director_interview(self, interview_id: int) -> StaffingDirectorInterview:
+        self.initialize()
+        with self.connect() as conn:
+            return self.director_interview_context(conn, int(interview_id))
 
     def find_completed_director_interview(
         self,
@@ -965,6 +1209,30 @@ class StaffingStore:
             if row is None:
                 return None
             return self.director_interview_context(conn, int(row["id"]))
+
+    def find_any_completed_director_interview(
+        self,
+        *,
+        history_id: str,
+        school: str,
+    ) -> StaffingDirectorInterview | None:
+        clean_history_id = str(history_id or "").strip()
+        clean_school = str(school or "").strip()
+        if not clean_history_id or not clean_school:
+            return None
+        with self.connect() as conn:
+            row = conn.execute(
+                """
+                SELECT i.id
+                FROM director_interviews i
+                JOIN director_candidate_referrals r ON r.id = i.referral_id
+                WHERE r.history_id = ? AND r.school = ?
+                ORDER BY i.completed_date DESC, i.id DESC
+                LIMIT 1
+                """,
+                (clean_history_id, clean_school),
+            ).fetchone()
+            return None if row is None else self.director_interview_context(conn, int(row["id"]))
 
     def list_assignments(self) -> list[StaffingAssignment]:
         with self.connect() as conn:
@@ -1099,7 +1367,7 @@ class StaffingStore:
     def director_interview_context(self, conn: sqlite3.Connection, interview_id: int) -> StaffingDirectorInterview:
         row = conn.execute(
             """
-            SELECT i.*, r.candidate_name, r.school, r.position, r.interviewer_rating, r.interviewer_outcome
+            SELECT i.*, r.history_id, r.candidate_name, r.school, r.position, r.interviewer_rating, r.interviewer_outcome
             FROM director_interviews i
             JOIN director_candidate_referrals r ON r.id = i.referral_id
             WHERE i.id = ?
@@ -1121,11 +1389,29 @@ class StaffingStore:
             rating=float(row["rating"]),
             decision=str(row["decision"] or ""),
             decision_notes=str(row["decision_notes"] or ""),
+            history_id=str(row["history_id"] or ""),
             proposed_shift_start=str(row["proposed_shift_start"] or ""),
             proposed_shift_end=str(row["proposed_shift_end"] or ""),
             proposed_classroom=str(row["proposed_classroom"] or ""),
             follow_up_needed=bool(row["follow_up_needed"]),
             owner_approval_status=str(row["owner_approval_status"] or ""),
+            state=str(row["state"] or "finalized"),
+            row_version=int(row["row_version"] or 1),
+            version_number=int(row["version_number"] or 1),
+            reopen_reason=str(row["reopen_reason"] or ""),
+            interviewer_rating_at_completion=(
+                float(row["interviewer_rating_at_completion"])
+                if row["interviewer_rating_at_completion"] is not None
+                else None
+            ),
+            interviewer_outcome_at_completion=str(row["interviewer_outcome_at_completion"] or ""),
+            initial_report_amended=(
+                row["interviewer_outcome_at_completion"] not in {None, ""}
+                and (
+                    str(row["interviewer_outcome_at_completion"] or "") != str(row["interviewer_outcome"] or "")
+                    or row["interviewer_rating_at_completion"] != row["interviewer_rating"]
+                )
+            ),
             created_at=str(row["created_at"] or ""),
             updated_at=str(row["updated_at"] or ""),
         )

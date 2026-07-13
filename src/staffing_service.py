@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import replace
+from dataclasses import asdict, replace
 from datetime import date, datetime, timezone
 import json
 from typing import TYPE_CHECKING, Any, Sequence
@@ -14,6 +14,7 @@ from staffing_models import (
     StaffingClassroom,
     StaffingDirectorCandidate,
     StaffingDirectorInterview,
+    StaffingDirectorInterviewDifference,
     StaffingMetricRow,
     StaffingMetrics,
     StaffingPerson,
@@ -357,6 +358,41 @@ class StaffingService:
     def list_pending_director_interviews(self, *, school: str = "") -> list[StaffingDirectorCandidate]:
         return self.store.list_director_candidate_referrals(school=school, include_completed=False)
 
+    def reconcile_director_referral(
+        self,
+        *,
+        history_id: str,
+        candidate_name: str,
+        school: str,
+        calculated_outcome: str,
+        position: str = "",
+        interviewer_rating: float | int | str | None = None,
+        interview_date: str = "",
+        candidate_email: str = "",
+        referral_date: str = "",
+    ) -> StaffingDirectorCandidate | None:
+        outcome = str(calculated_outcome or "").strip().lower().replace(" ", "_").replace("-", "_")
+        if outcome in DIRECTOR_REFERRAL_OUTCOMES:
+            return self.upsert_director_candidate_referral(
+                history_id=history_id,
+                candidate_name=candidate_name,
+                school=school,
+                position=position,
+                interviewer_rating=interviewer_rating,
+                interviewer_outcome=outcome,
+                interview_date=interview_date,
+                candidate_email=candidate_email,
+                referral_date=referral_date,
+            )
+        if outcome == "no_hire":
+            self.store.remove_pending_director_referral_for_reconciliation(
+                history_id,
+                removed_by="system",
+                removal_source="candidate_report_reconciliation",
+            )
+            return None
+        raise ValueError("Calculated outcome must be hire, borderline, or no_hire.")
+
     def list_completed_director_interviews(self, *, school: str = "") -> list[StaffingDirectorInterview]:
         return self.store.list_director_interviews(school=school)
 
@@ -370,6 +406,14 @@ class StaffingService:
             history_id=history_id,
             school=school,
         )
+
+    def find_any_completed_director_interview(
+        self,
+        *,
+        history_id: str,
+        school: str,
+    ) -> StaffingDirectorInterview | None:
+        return self.store.find_any_completed_director_interview(history_id=history_id, school=school)
 
     def delete_pending_director_interviews(
         self,
@@ -442,6 +486,104 @@ class StaffingService:
             owner_approval_status="pending_owner_approval",
             now=self.clock(),
         )
+
+    def reopen_director_interview(
+        self,
+        interview_id: int,
+        *,
+        expected_row_version: int,
+        reason: str,
+        actor: str,
+        actor_role: str,
+    ) -> StaffingDirectorInterview:
+        return self.store.reopen_director_interview(
+            int(interview_id),
+            expected_row_version=int(expected_row_version),
+            reason=reason,
+            actor=actor,
+            actor_role=actor_role,
+            now=self.clock(),
+        )
+
+    def revise_director_interview(
+        self,
+        interview_id: int,
+        *,
+        expected_row_version: int,
+        director_name: str,
+        completed_date: str,
+        rating: float | int | str,
+        decision: str,
+        decision_notes: str,
+        reason: str,
+        actor: str,
+        actor_role: str,
+        proposed_shift_start: str = "",
+        proposed_shift_end: str = "",
+        proposed_classroom: str = "",
+        follow_up_needed: bool = False,
+    ) -> StaffingDirectorInterview:
+        clean_date = _valid_date(completed_date, "Director interview date")
+        clean_rating = _required_rating(rating, "Director rating")
+        clean_decision = str(decision or "").strip().lower()
+        if clean_decision not in DIRECTOR_INTERVIEW_DECISIONS:
+            raise ValueError("Director decision must be hire or no_hire.")
+        notes = str(decision_notes or "").strip()
+        if not notes:
+            raise ValueError("Decision notes are required.")
+        shift_start = ""
+        shift_end = ""
+        classroom = ""
+        if clean_decision == "hire":
+            shift_start = _valid_shift_time(proposed_shift_start, "Shift start")
+            shift_end = _valid_shift_time(proposed_shift_end, "Shift end")
+            classroom = str(proposed_classroom or "").strip()
+            if not classroom:
+                raise ValueError("Proposed classroom is required for hire decisions.")
+        return self.store.revise_director_interview(
+            int(interview_id),
+            expected_row_version=int(expected_row_version),
+            director_name=director_name,
+            completed_date=clean_date,
+            rating=clean_rating,
+            decision=clean_decision,
+            decision_notes=notes,
+            proposed_shift_start=shift_start,
+            proposed_shift_end=shift_end,
+            proposed_classroom=classroom,
+            follow_up_needed=follow_up_needed,
+            reason=str(reason or "").strip(),
+            actor=actor,
+            actor_role=actor_role,
+            now=self.clock(),
+        )
+
+    def list_director_interview_audit(self, interview_id: int) -> list[dict[str, Any]]:
+        return self.store.list_director_interview_audit(int(interview_id))
+
+    def compare_director_interview_version(
+        self,
+        local: StaffingDirectorInterview,
+        *,
+        saved: StaffingDirectorInterview,
+    ) -> list[StaffingDirectorInterviewDifference]:
+        current = self.store.get_director_interview(local.id)
+        saved_values = asdict(saved)
+        current_values = asdict(current)
+        local_values = asdict(local)
+        return [
+            StaffingDirectorInterviewDifference(
+                field_name=field,
+                saved_value=saved_values.get(field),
+                current_value=current_values.get(field),
+                local_value=local_values.get(field),
+            )
+            for field in sorted(saved_values)
+            if current_values.get(field) != saved_values.get(field) or local_values.get(field) != saved_values.get(field)
+        ]
+
+    def load_director_interview(self, interview_id: int) -> StaffingDirectorInterview:
+        return self.store.get_director_interview(int(interview_id))
 
     def _add_position_impl(
         self,

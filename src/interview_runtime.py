@@ -28,6 +28,7 @@ from types import ModuleType
 from typing import Any, Callable, Deque, Mapping, Optional, Sequence, TypedDict
 from uuid import uuid4
 
+from candidate_report import build_candidate_report_snapshot
 from data_store import InterviewHistoryStore, InterviewMLDatasetStore, RubricLoader, ml_dataset_path_for_history_path
 from scoring_reporting import (
     CandidateQualification,
@@ -4756,7 +4757,25 @@ class FinalizeGateways:
             "deepseek_processing_status": "not_started",
             "deepseek_processing_warning": "",
         }
-        app.history_store.append(history_entry)
+        report_snapshot = build_candidate_report_snapshot(
+            context.payload,
+            context.scoring,
+            history_entry,
+            report_path=history_entry["interview_notes_path"],
+        )
+        actor = str(os.environ.get("USERNAME") or os.environ.get("USER") or "admin").strip() or "admin"
+        app_version = str(getattr(app, "app_version", "") or getattr(app, "version", "") or "")
+        structured_append = getattr(app.history_store, "append_with_candidate_report", None)
+        if callable(structured_append):
+            structured_append(
+                history_entry,
+                report_snapshot,
+                actor=actor,
+                actor_role="admin",
+                app_version=app_version,
+            )
+        else:
+            app.history_store.append(history_entry)
         history_path = str(getattr(app.history_store, "path", "")).strip()
         if history_path:
             InterviewMLDatasetStore(ml_dataset_path_for_history_path(Path(history_path))).upsert_interview(
