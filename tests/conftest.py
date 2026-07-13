@@ -32,6 +32,7 @@ _DOCX_IMPORT_HELP = (
 
 
 _MEASURED_SLOW_PYSIDE_TESTS = {
+    "test_pyside_history_offer_prefills_editable_shift_from_director_staffing_v2",
     "test_pyside_staffing_v2_assignment_history_dashboard_renders_history_from_db",
     "test_pyside_staffing_v2_validation_dashboard_and_filter_drawer_use_existing_staffing_data",
     "test_pyside_initial_window_fits_available_screen_after_display_scaling",

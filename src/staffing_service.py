@@ -360,6 +360,17 @@ class StaffingService:
     def list_completed_director_interviews(self, *, school: str = "") -> list[StaffingDirectorInterview]:
         return self.store.list_director_interviews(school=school)
 
+    def find_completed_director_interview(
+        self,
+        *,
+        history_id: str,
+        school: str,
+    ) -> StaffingDirectorInterview | None:
+        return self.store.find_completed_director_interview(
+            history_id=history_id,
+            school=school,
+        )
+
     def delete_pending_director_interviews(
         self,
         referral_ids: Sequence[int],

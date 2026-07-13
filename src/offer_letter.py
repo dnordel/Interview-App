@@ -6,6 +6,8 @@ from scoring_reporting import (
     OfferLetterService,
     OfferTemplateError,
     build_offer_filename,
+    build_school_offer_filename,
+    next_available_offer_path,
     parse_clock_12h,
 )
 
@@ -15,5 +17,7 @@ __all__ = [
     "OfferLetterService",
     "OfferTemplateError",
     "build_offer_filename",
+    "build_school_offer_filename",
+    "next_available_offer_path",
     "parse_clock_12h",
 ]

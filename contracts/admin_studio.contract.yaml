@@ -2,7 +2,7 @@ module:
   name: admin_studio
   language: python
   path: src/admin_studio.py
-  version: 1.14.0
+  version: 1.15.0
   description: Single admin boundary for local configuration review, draft editing,
     dirty tracking, validation, backup creation, and review-then-apply persistence
     for PySide Admin Studio, including contractor offer templates, checkpoint
@@ -353,7 +353,7 @@ classes:
       type: None
   - name: validate
     description: Validate prompt payloads, required version notes for changed DeepSeek
-      prompt templates, school folder paths, allowlisted DeepSeek model selection,
+      prompt templates, school folder and offer-template path safety, allowlisted DeepSeek model selection,
       rubric trait links to Questions & Flow, notification recipients, complete
       active notification rows, notification trigger timing/date-offset fields,
       and notification template placeholder syntax before any apply writes.

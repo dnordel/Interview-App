@@ -2,7 +2,7 @@ module:
   name: data_store
   language: python
   path: src/data_store.py
-  version: 1.8.0
+  version: 1.9.0
   description: SQLite-backed interview history store plus JSON-backed stores and
     loaders for interview runtime and onboarding settings.
 functions:
@@ -20,9 +20,9 @@ functions:
   exceptions: []
   side_effects: none
 - name: default_school_offer_settings
-  description: Return default per-school offer settings with full-time, part-time,
-    contractor template slots and portable interview-notes folder fragments for
-    known schools.
+  description: Return default per-school offer settings with portable full-time and
+    part-time template paths, offer output folders, contractor slots, and interview-notes
+    folder fragments for known schools.
   locked: false
   inputs: {}
   returns:
@@ -33,6 +33,47 @@ functions:
   description: Resolve the interview notes output directory for a school by applying
     editable per-school settings to the current computer's Dropbox root, falling
     back to base_dir/Indeed Interview Notes when no school folder is configured.
+  locked: false
+  inputs:
+    base_dir:
+      type: Path
+      required: true
+    school:
+      type: str
+      required: true
+    settings:
+      type: dict[str, dict[str, str]] | None
+      required: false
+      default: null
+  returns:
+    type: Path
+  exceptions:
+  - ValueError
+  side_effects: none
+- name: resolve_offer_template_path
+  description: Resolve the configured full-time or part-time template against the current Dropbox root using the 30-hour boundary.
+  locked: false
+  inputs:
+    base_dir:
+      type: Path
+      required: true
+    school:
+      type: str
+      required: true
+    hours:
+      type: int
+      required: true
+    settings:
+      type: dict[str, dict[str, str]] | None
+      required: false
+      default: null
+  returns:
+    type: Path
+  exceptions:
+  - ValueError
+  side_effects: none
+- name: resolve_offer_output_dir
+  description: Resolve a school's configured offer output folder against the current Dropbox root.
   locked: false
   inputs:
     base_dir:
@@ -622,5 +663,9 @@ data_structures:
 - name: DEFAULT_SCHOOL_INTERVIEW_NOTES_DIRS
   description: Portable default per-school interview notes folder fragments, rooted
     at the current computer's Dropbox folder during resolution.
+- name: DEFAULT_SCHOOL_OFFER_DIRS
+  description: Portable default PMD, NLB, and HAW offer output folder fragments.
+- name: DEFAULT_SCHOOL_OFFER_TEMPLATE_NAMES
+  description: Full-time and part-time offer template filenames keyed by school.
 dependencies:
 - module: platform_services

@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.69.0
+  version: 1.71.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, resizable splitter sections, school/classroom selectors, wider color-coded classroom list with per-classroom status-count overview, metric cards, positions table, fully editable right-side assignment/person details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics, parallel Staffing v2 navigation/page shell with its own mockup-style staffing sidebar and forced light Qt theme, People / Employee Management and Assignment History sub-dashboards for the mockup-driven rewrite backed by staffing_dashboard_v2 while the legacy Staffing page remains available,
@@ -106,6 +106,24 @@ functions:
     type: Path
   exceptions: []
   side_effects: none
+- name: director_offer_shift_for_history
+  description: Read proposed shift start and end values from a completed hire decision matched by exact history ID and school, checking the school-specific director Staffing v2 database before the shared staffing database.
+  locked: false
+  inputs:
+    history_id:
+      type: str
+      required: true
+    school:
+      type: str
+      required: true
+    base_path:
+      type: Path | None
+      required: false
+      default: null
+  returns:
+    type: tuple[str, str]
+  exceptions: []
+  side_effects: Reads existing staffing SQLite databases without creating missing database files.
 - name: staffing_referral_queue_db_path
   description: Return the central staffing referral queue SQLite path, deriving a sibling DB path from an injected legacy JSONL queue path for tests and migrations.
   locked: false
@@ -571,12 +589,20 @@ classes:
       created_on:
         type: date
         required: true
+      title:
+        type: str
+        required: false
+        default: ""
+      position:
+        type: str
+        required: false
+        default: ""
     returns:
       type: Path
     exceptions:
     - OfferTemplateError
     - OSError
-    side_effects: Writes rendered offer DOCX to the selected output directory.
+    side_effects: Writes a titled, school-branded offer DOCX to the selected output directory without overwriting an existing revision.
   - name: generate_interview_notes_document
     description: Compatibility wrapper that finalizes the PySide session through
       the shared desktop finalize path and returns the generated interview-notes
@@ -716,7 +742,11 @@ classes:
     omits manual Finalize Interview and Generate Offer actions because finalize
     runs from the final live question and offers are generated after director
     interview review; Open Notes opens the selected interview notes file and
-    Generate Offer opens the PySide offer wizard from selected history rows; Admin Studio exposes
+    Generate Offer opens a guided PySide offer form with required Mr./Ms. title,
+    calendar/time and numeric inputs, editable offer-only position choices, automatic
+    30-hour template selection, school-routed destinations, and post-generation open actions;
+    Admin Studio exposes per-school full-time template, part-time template, and offer
+    output-folder fields alongside interview-note routing; Admin Studio exposes
     checkpoint notification rule rows for editable custom event types, active/delete
     flags, date-offset trigger fields, templates, recipients, and an allowlisted
     local DeepSeek model choice controlled by card actions with only a hidden
@@ -731,6 +761,10 @@ classes:
       type: QMainWindow
     school_offer_store:
       type: SchoolOfferSettingsStore
+    offer_fields:
+      type: dict[str, QWidget]
+    generated_offer_path:
+      type: Path | None
     school_folder_settings_table:
       type: QTableWidget | None
     admin_studio:

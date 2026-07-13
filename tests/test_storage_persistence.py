@@ -14,8 +14,11 @@ from data_store import (
     QuestionOverridesStore,
     SchoolEmailTemplateStore,
     SchoolOfferSettingsStore,
+    default_school_offer_settings,
     ml_dataset_path_for_history_path,
     resolve_interview_notes_output_dir,
+    resolve_offer_output_dir,
+    resolve_offer_template_path,
 )
 from tools.backfill_interview_ml_dataset import backfill_ml_dataset
 from onboarding_operations import DEFAULT_EXPECTED_INTERVAL_HOURS
@@ -529,6 +532,44 @@ def test_school_offer_settings_store_save_and_load_round_trip(tmp_path: Path):
     store.save(payload)
 
     assert store.load() == payload
+
+
+def test_default_school_offer_settings_include_school_offer_paths() -> None:
+    settings = default_school_offer_settings()
+
+    assert settings["Palmdale"]["full_time_template"] == (
+        r"\Dropbox\HR-PMD\PMD Employment Offers\.Launch Pad Learning PMD Offer of Employment TEMPLATE - FULL TIME.docx"
+    )
+    assert settings["North Long Beach"]["part_time_template"] == (
+        r"\Dropbox\HR-NLB\NLB Employment Offers\.Launch Pad Learning NLB Offer of Employment TEMPLATE - PART TIME.docx"
+    )
+    assert settings["Hawthorne"]["offer_output_dir"] == r"\Dropbox\HR-HAW\HAW Employment Offers"
+
+
+@pytest.mark.parametrize(
+    ("hours", "expected_template"),
+    [(29, "part.docx"), (30, "full.docx")],
+)
+def test_offer_path_resolution_selects_template_from_weekly_hours(
+    tmp_path: Path,
+    hours: int,
+    expected_template: str,
+) -> None:
+    dropbox_root = tmp_path / "Dropbox (Test)"
+    base_dir = dropbox_root / "App" / "user_artifacts"
+    settings = {
+        "Palmdale": {
+            "full_time_template": r"\Dropbox\HR-PMD\PMD Employment Offers\full.docx",
+            "part_time_template": r"\Dropbox\HR-PMD\PMD Employment Offers\part.docx",
+            "offer_output_dir": r"\Dropbox\HR-PMD\PMD Employment Offers",
+        }
+    }
+
+    template = resolve_offer_template_path(base_dir, "Palmdale", hours, settings)
+    output = resolve_offer_output_dir(base_dir, "Palmdale", settings)
+
+    assert template == dropbox_root / "HR-PMD" / "PMD Employment Offers" / expected_template
+    assert output == dropbox_root / "HR-PMD" / "PMD Employment Offers"
 
 
 def test_resolve_interview_notes_output_dir_uses_school_setting_under_current_dropbox_root(tmp_path: Path):

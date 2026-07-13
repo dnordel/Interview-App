@@ -27,6 +27,32 @@ DEFAULT_SCHOOL_INTERVIEW_NOTES_DIRS: dict[str, str] = {
     "Palmdale": r"\Dropbox\LPL PMD Office Shared\Staff\Candidates",
 }
 
+DEFAULT_SCHOOL_OFFER_DIRS: dict[str, str] = {
+    "Hawthorne": r"\Dropbox\HR-HAW\HAW Employment Offers",
+    "Long Beach": r"\Dropbox\HR-NLB\NLB Employment Offers",
+    "North Long Beach": r"\Dropbox\HR-NLB\NLB Employment Offers",
+    "Palmdale": r"\Dropbox\HR-PMD\PMD Employment Offers",
+}
+
+DEFAULT_SCHOOL_OFFER_TEMPLATE_NAMES: dict[str, tuple[str, str]] = {
+    "Hawthorne": (
+        ".Preschool Partners Offer of Employment TEMPLATE - FULL TIME.docx",
+        ".Preschool Partners Offer of Employment TEMPLATE - PART TIME.docx",
+    ),
+    "Long Beach": (
+        ".Launch Pad Learning NLB Offer of Employment TEMPLATE - FULL TIME.docx",
+        ".Launch Pad Learning NLB Offer of Employment TEMPLATE - PART TIME.docx",
+    ),
+    "North Long Beach": (
+        ".Launch Pad Learning NLB Offer of Employment TEMPLATE - FULL TIME.docx",
+        ".Launch Pad Learning NLB Offer of Employment TEMPLATE - PART TIME.docx",
+    ),
+    "Palmdale": (
+        ".Launch Pad Learning PMD Offer of Employment TEMPLATE - FULL TIME.docx",
+        ".Launch Pad Learning PMD Offer of Employment TEMPLATE - PART TIME.docx",
+    ),
+}
+
 ML_DATASET_DB_NAME = "interview_ml_dataset.sqlite3"
 DEFAULT_ML_DATASET_DIR = Path(r"G:\My Drive\Work\LaunchPad\Interview ML DB")
 ML_DATASET_DIR_ENV = "INTERVIEW_ML_DATASET_DIR"
@@ -41,10 +67,10 @@ def ml_dataset_path_for_history_path(history_path: Path) -> Path:
 def default_school_offer_settings() -> dict[str, dict[str, str]]:
     return {
         school: {
-            "full_time_template": "",
-            "part_time_template": "",
+            "full_time_template": str(PureWindowsPath(DEFAULT_SCHOOL_OFFER_DIRS[school]) / DEFAULT_SCHOOL_OFFER_TEMPLATE_NAMES[school][0]),
+            "part_time_template": str(PureWindowsPath(DEFAULT_SCHOOL_OFFER_DIRS[school]) / DEFAULT_SCHOOL_OFFER_TEMPLATE_NAMES[school][1]),
             "contractor_template": "",
-            "offer_output_dir": "",
+            "offer_output_dir": DEFAULT_SCHOOL_OFFER_DIRS[school],
             "interview_notes_dir": notes_dir,
         }
         for school, notes_dir in DEFAULT_SCHOOL_INTERVIEW_NOTES_DIRS.items()
@@ -71,6 +97,55 @@ def resolve_interview_notes_output_dir(
         return Path(base_dir) / "Indeed Interview Notes"
     dropbox_root = _find_dropbox_root(Path(base_dir))
     return dropbox_root.joinpath(*parts)
+
+
+def resolve_offer_template_path(
+    base_dir: Path,
+    school: str,
+    hours: int,
+    settings: dict[str, dict[str, str]] | None = None,
+) -> Path:
+    field = "full_time_template" if int(hours) >= 30 else "part_time_template"
+    configured = _school_offer_config(school, settings).get(field, "")
+    if not configured:
+        label = "full-time" if field == "full_time_template" else "part-time"
+        raise ValueError(f"{label.capitalize()} offer template is not configured for {school}.")
+    return _resolve_configured_dropbox_path(base_dir, configured)
+
+
+def resolve_offer_output_dir(
+    base_dir: Path,
+    school: str,
+    settings: dict[str, dict[str, str]] | None = None,
+) -> Path:
+    configured = _school_offer_config(school, settings).get("offer_output_dir", "")
+    if not configured:
+        raise ValueError(f"Offer output folder is not configured for {school}.")
+    return _resolve_configured_dropbox_path(base_dir, configured)
+
+
+def _school_offer_config(
+    school: str,
+    settings: dict[str, dict[str, str]] | None,
+) -> dict[str, str]:
+    school_name = str(school or "").strip()
+    defaults = default_school_offer_settings().get(school_name, {})
+    configured = (settings or {}).get(school_name, {})
+    output = dict(defaults)
+    if isinstance(configured, dict):
+        output.update({str(key): str(value or "").strip() for key, value in configured.items()})
+    return output
+
+
+def _resolve_configured_dropbox_path(base_dir: Path, configured: str) -> Path:
+    configured_path = PureWindowsPath(str(configured or "").strip())
+    if configured_path.drive:
+        _reject_unsafe_path_parts(configured_path.parts)
+        return Path(str(configured_path)).expanduser()
+    parts = _portable_dropbox_path_parts(str(configured_path))
+    if not parts:
+        raise ValueError("Configured offer path is empty.")
+    return _find_dropbox_root(Path(base_dir)).joinpath(*parts)
 
 
 def _interview_notes_dir_for_school(

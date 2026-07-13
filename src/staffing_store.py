@@ -940,6 +940,32 @@ class StaffingStore:
             ).fetchall()
             return [self.director_interview_context(conn, int(row["id"])) for row in rows]
 
+    def find_completed_director_interview(
+        self,
+        *,
+        history_id: str,
+        school: str,
+    ) -> StaffingDirectorInterview | None:
+        clean_history_id = str(history_id or "").strip()
+        clean_school = str(school or "").strip()
+        if not clean_history_id or not clean_school:
+            return None
+        with self.connect() as conn:
+            row = conn.execute(
+                """
+                SELECT i.id
+                FROM director_interviews i
+                JOIN director_candidate_referrals r ON r.id = i.referral_id
+                WHERE r.history_id = ? AND r.school = ? AND i.decision = 'hire'
+                ORDER BY i.completed_date DESC, i.id DESC
+                LIMIT 1
+                """,
+                (clean_history_id, clean_school),
+            ).fetchone()
+            if row is None:
+                return None
+            return self.director_interview_context(conn, int(row["id"]))
+
     def list_assignments(self) -> list[StaffingAssignment]:
         with self.connect() as conn:
             rows = conn.execute(

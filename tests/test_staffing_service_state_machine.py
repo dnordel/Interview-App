@@ -460,6 +460,14 @@ def test_director_interview_completion_is_school_scoped_and_does_not_fill_positi
     assert result.decision == "hire"
     assert result.owner_approval_status == "pending_owner_approval"
     assert result.proposed_shift_start == "8:00 AM"
+    assert service.find_completed_director_interview(
+        history_id="hist-1",
+        school="Hawthorne",
+    ) == result
+    assert service.find_completed_director_interview(
+        history_id="hist-1",
+        school="Palmdale",
+    ) is None
     assert assignment.status == "need_now"
     assert assignment.person_name == ""
     assert assignment.classroom == "Harmony 1"

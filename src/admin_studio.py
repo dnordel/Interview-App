@@ -482,6 +482,28 @@ class AdminStudioDraft:
             if any(part.strip() == ".." for part in notes_dir.replace("/", "\\").split("\\")):
                 errors.append("Interview notes folder cannot contain '..'.")
                 break
+            offer_paths = [
+                str(cfg.get(key, "") or "")
+                for key in ("full_time_template", "part_time_template", "contractor_template", "offer_output_dir")
+            ]
+            if any(
+                part.strip() == ".."
+                for path in offer_paths
+                for part in path.replace("/", "\\").split("\\")
+            ):
+                errors.append("Offer paths cannot contain '..'.")
+                break
+            invalid_template = next(
+                (
+                    path
+                    for path in offer_paths[:3]
+                    if path and Path(path).suffix.casefold() not in {".docx", ".docm"}
+                ),
+                "",
+            )
+            if invalid_template:
+                errors.append("Offer templates must use .docx or .docm files.")
+                break
         selected_model = str(self.app_settings.get("deepseek_summary_model", "") or DEFAULT_DEEPSEEK_MODEL).strip()
         if selected_model not in DEEPSEEK_MODEL_CHOICES:
             errors.append(f"DeepSeek model must be one of: {', '.join(DEEPSEEK_MODEL_CHOICES)}.")

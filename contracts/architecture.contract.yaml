@@ -64,7 +64,7 @@ services:
     - web_app
     - web_app_backend
   pyside_interview_redesign_service:
-    description: PySide6 workflow-first desktop shell for interviews, candidates, offers, staffing, onboarding, guided Admin Studio, user-closable finalize progress with task/status rows, live history refresh, notification editing, basic finalize documents, and history-triggered DeepSeek document generation.
+    description: PySide6 workflow-first desktop shell for interviews, candidates, school-routed full-time and part-time offers with editable shift defaults from exact Director Staffing v2 hire decisions, staffing, onboarding, guided Admin Studio, user-closable finalize progress with task/status rows, live history refresh, notification editing, basic finalize documents, and history-triggered DeepSeek document generation.
     modules:
     - admin_studio
     - pyside_interview_app

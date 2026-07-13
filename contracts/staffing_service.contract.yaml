@@ -2,7 +2,7 @@ module:
   name: staffing_service
   language: python
   path: src/staffing_service.py
-  version: 0.16.0
+  version: 0.17.0
   description: Staffing assignment state machine, service-backed classroom, position, person creation, director interview referral/completion tracking with optional pending-queue fallback, mistaken-position deletion, queued Dropbox edit handling, staffing dashboard metrics with pending-operation projection and workbook display metadata, confirmed person moves, editable assignment details, person permit metadata updates, and post-commit notification emission for successful transactions.
 functions: []
 classes:
@@ -426,6 +426,18 @@ classes:
       type: list[StaffingDirectorInterview]
     exceptions: []
     side_effects: Reads completed director interviews, optionally scoped to one school.
+  - name: find_completed_director_interview
+    inputs:
+      history_id:
+        type: str
+        required: true
+      school:
+        type: str
+        required: true
+    returns:
+      type: StaffingDirectorInterview | None
+    exceptions: []
+    side_effects: Reads one hire decision matched by exact interview history ID and school for downstream offer defaults.
   - name: delete_pending_director_interviews
     inputs:
       referral_ids:

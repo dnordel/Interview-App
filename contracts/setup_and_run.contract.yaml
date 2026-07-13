@@ -2,14 +2,15 @@ module:
   name: setup_and_run
   language: powershell
   path: setup_and_run.ps1
-  version: 1.10.1
+  version: 1.10.2
   description: Windows launcher bootstrap that checks prerequisites, installs Python
     3.11 when needed, provisions a per-user virtual environment that can reuse system
     site packages under LOCALAPPDATA instead of the repository folder, installs
     local DeepSeek through Ollama, persists PySide as the selected UI mode, starts the
     PySide interview app through the runtime wrapper, and can launch the full
     PySide app in director staffing-only mode filtered to one school while reusing
-    the same setup path.
+    the same setup path. The root admin VBS launcher invokes this setup path in
+    PySide mode with its console window hidden.
 functions:
 - name: Write-Log
   description: Append launcher diagnostics to the setup log file.

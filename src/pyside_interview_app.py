@@ -7,6 +7,7 @@ import os
 import queue
 import re
 import shutil
+import sqlite3
 import subprocess
 import sys
 import threading
@@ -32,6 +33,8 @@ from data_store import (
     SchoolOfferSettingsStore,
     default_school_offer_settings,
     resolve_interview_notes_output_dir,
+    resolve_offer_output_dir,
+    resolve_offer_template_path,
 )
 from interview_runtime import (
     DEFAULT_WINDOWS_MIC_DEVICE,
@@ -78,7 +81,16 @@ from platform_services import (
     atomic_write_json,
     compose_intro_script,
 )
-from scoring_reporting import DocxExporter, OfferInput, OfferLetterService, ScoringEngine, build_offer_filename
+from scoring_reporting import (
+    POSITION_OPTIONS,
+    DocxExporter,
+    OfferInput,
+    OfferLetterService,
+    ScoringEngine,
+    build_offer_filename,
+    build_school_offer_filename,
+    next_available_offer_path,
+)
 from scoring_reporting import build_integration_payload, serialize_integration_payload
 from scoring_reporting import CANONICAL_DEGREE_TYPES, CandidateQualification, validate_candidate_qualification
 from staffing_dashboard_v2 import StaffingDashboardV2Page, apply_staffing_v2_light_theme, configure_v2_scroll_areas
@@ -532,21 +544,27 @@ class PySideInterviewSession:
         hourly_pay: float,
         hours: int,
         created_on: date,
+        title: str = "",
+        position: str = "",
     ) -> Path:
         first_name, last_name = _split_candidate_name(self.candidate_name)
         defaults = self.offer_review_defaults()
-        output_path = Path(output_dir) / build_offer_filename(first_name, last_name, created_on)
+        output_path = next_available_offer_path(
+            Path(output_dir),
+            build_school_offer_filename(self.school, self.candidate_name),
+        )
         data = OfferInput(
             first_name=first_name,
             last_name=last_name,
             city=self.school,
-            position=defaults["position"],
+            position=str(position or defaults["position"]).strip(),
             start_date=start_date,
             start_time_12h=start_time_12h,
             end_time_12h=end_time_12h,
             hourly_pay=float(hourly_pay),
             hours=int(hours),
             created_on=created_on,
+            title=title,
         )
         return OfferLetterService.render_offer(Path(template_path), output_path, data)
 
@@ -1019,6 +1037,33 @@ def staffing_db_path_for_school(school: str, *, base_path: Path | None = None) -
     if not slug:
         return resolved_base
     return resolved_base.with_name(f"{resolved_base.stem}_{slug}{resolved_base.suffix}")
+
+
+def director_offer_shift_for_history(
+    history_id: str,
+    school: str,
+    *,
+    base_path: Path | None = None,
+) -> tuple[str, str]:
+    clean_history_id = str(history_id or "").strip()
+    clean_school = str(school or "").strip()
+    if not clean_history_id or not clean_school:
+        return "", ""
+    shared_path = Path(base_path or STAFFING_DB_PATH)
+    school_path = staffing_db_path_for_school(clean_school, base_path=shared_path)
+    for path in dict.fromkeys((school_path, shared_path)):
+        if not path.exists():
+            continue
+        try:
+            interview = StaffingService(StaffingStore(path)).find_completed_director_interview(
+                history_id=clean_history_id,
+                school=clean_school,
+            )
+        except (OSError, sqlite3.Error, ValueError):
+            continue
+        if interview is not None:
+            return interview.proposed_shift_start, interview.proposed_shift_end
+    return "", ""
 
 
 def _bootstrap_school_staffing_db_from_base(school: str, school_path: Path, *, base_path: Path | None = None) -> None:
@@ -4781,69 +4826,307 @@ class PySideInterviewWindow:
         self._clear_layout(layout)
         layout.addWidget(self._label("Generate Offer", "Title"))
         frame, frame_layout = self._surface()
-        frame_layout.addWidget(self._label("Offer Review Wizard", "SectionTitle"))
+        frame_layout.addWidget(self._label("Review offer details", "SectionTitle"))
         if self.selected_history_offer_row is not None:
             defaults = self._history_offer_defaults(self.selected_history_offer_row)
         elif self.session is not None:
             defaults = self.session.offer_review_defaults()
         else:
             defaults = {}
-        form = self.QtWidgets.QFormLayout()
-        fields = [
-            ("Candidate", "candidate"),
-            ("School", "school"),
-            ("Position", "position"),
-            ("Determination", "determination"),
-            ("Employment type", "employment_type"),
-            ("Start date", "start_date"),
-            ("Start time", "start_time"),
-            ("End time", "end_time"),
-            ("Hourly pay", "hourly_pay"),
-            ("Hours/week", "hours_week"),
-            ("Template path", "template_path"),
-            ("Output folder", "output_dir"),
-        ]
+        defaults = dict(defaults)
+        history_id = self.selected_history_offer_row.row_key if self.selected_history_offer_row is not None else ""
+        if not history_id and self.session is not None:
+            for row in self.model.home.history_rows:
+                if row.candidate != self.session.candidate_name or row.school != self.session.school:
+                    continue
+                if self.session.interview_date and row.interview_date != self.session.interview_date:
+                    continue
+                history_id = row.row_key
+                break
+        staffing_shift_start, staffing_shift_end = director_offer_shift_for_history(
+            history_id,
+            str(defaults.get("school", "")),
+        )
+        if staffing_shift_start and staffing_shift_end:
+            defaults["start_time"] = staffing_shift_start
+            defaults["end_time"] = staffing_shift_end
         self.offer_fields = {}
-        for label, key in fields:
-            field = self.QtWidgets.QLineEdit()
-            field.setText(str(defaults.get(key, "")))
-            self.offer_fields[key] = field
-            form.addRow(label, field)
-        frame_layout.addLayout(form)
+
+        candidate_panel, candidate_layout = self._surface()
+        candidate_layout.addWidget(self._label("Candidate", "SectionTitle"))
+        candidate_form = self.QtWidgets.QFormLayout()
+        candidate = self.QtWidgets.QLineEdit(str(defaults.get("candidate", "")))
+        candidate.setObjectName("OfferCandidate")
+        candidate.setReadOnly(True)
+        title = self.QtWidgets.QComboBox()
+        title.setObjectName("OfferTitle")
+        title.addItems(["Select title", "Mr.", "Ms."])
+        self.offer_fields.update({"candidate": candidate, "title": title})
+        candidate_form.addRow("Candidate", candidate)
+        candidate_form.addRow("Title *", title)
+        candidate_layout.addLayout(candidate_form)
+        frame_layout.addWidget(candidate_panel)
+
+        details_panel, details_layout = self._surface()
+        details_layout.addWidget(self._label("Offer details", "SectionTitle"))
+        details_form = self.QtWidgets.QFormLayout()
+        school = self.QtWidgets.QComboBox()
+        school.setObjectName("OfferSchool")
+        school.setEditable(True)
+        school.addItems(self.model.school_options)
+        school.setCurrentText(str(defaults.get("school", "")))
+        position = self.QtWidgets.QComboBox()
+        position.setObjectName("OfferPosition")
+        position.setEditable(True)
+        position.addItems(POSITION_OPTIONS)
+        position.setCurrentText(str(defaults.get("position", "")))
+        determination = self.QtWidgets.QComboBox()
+        determination.setObjectName("OfferDetermination")
+        determination.setEditable(True)
+        determination.addItems(["Hire", "Borderline", "No Hire", "Incomplete"])
+        determination.setCurrentText(str(defaults.get("determination", "")))
+        self.offer_fields.update(
+            {"school": school, "position": position, "determination": determination}
+        )
+        details_form.addRow("School *", school)
+        details_form.addRow("Position *", position)
+        details_form.addRow("Determination", determination)
+        details_layout.addLayout(details_form)
+        frame_layout.addWidget(details_panel)
+
+        schedule_panel, schedule_layout = self._surface()
+        schedule_layout.addWidget(self._label("Schedule and pay", "SectionTitle"))
+        schedule_form = self.QtWidgets.QFormLayout()
+        start_date = self.QtWidgets.QDateEdit()
+        start_date.setObjectName("OfferStartDate")
+        start_date.setCalendarPopup(True)
+        start_date.setDisplayFormat("MM/dd/yyyy")
+        start_date.setMinimumDate(self.QtCore.QDate(1900, 1, 1))
+        start_date.setSpecialValueText("Select date")
+        raw_date = str(defaults.get("start_date", "")).strip()
+        start_date.setDate(
+            self.QtCore.QDate.fromString(raw_date, "yyyy-MM-dd")
+            if raw_date
+            else start_date.minimumDate()
+        )
+        start_time = self.QtWidgets.QTimeEdit()
+        start_time.setObjectName("OfferStartTime")
+        start_time.setDisplayFormat("h:mm AP")
+        start_time.setTime(self.QtCore.QTime.fromString(str(defaults.get("start_time", "08:00 AM")), "h:mm AP"))
+        end_time = self.QtWidgets.QTimeEdit()
+        end_time.setObjectName("OfferEndTime")
+        end_time.setDisplayFormat("h:mm AP")
+        end_time.setTime(self.QtCore.QTime.fromString(str(defaults.get("end_time", "05:00 PM")), "h:mm AP"))
+        hourly_pay = self.QtWidgets.QDoubleSpinBox()
+        hourly_pay.setObjectName("OfferHourlyPay")
+        hourly_pay.setPrefix("$")
+        hourly_pay.setDecimals(2)
+        hourly_pay.setRange(0.0, 999.99)
+        hourly_pay.setValue(float(defaults.get("hourly_pay", 0) or 0))
+        hours_week = self.QtWidgets.QSpinBox()
+        hours_week.setObjectName("OfferHoursWeek")
+        hours_week.setRange(0, 168)
+        hours_week.setValue(int(defaults.get("hours_week", 40) or 0))
+        self.offer_fields.update(
+            {
+                "start_date": start_date,
+                "start_time": start_time,
+                "end_time": end_time,
+                "hourly_pay": hourly_pay,
+                "hours_week": hours_week,
+            }
+        )
+        schedule_form.addRow("Start date *", start_date)
+        schedule_form.addRow("Start time *", start_time)
+        schedule_form.addRow("End time *", end_time)
+        schedule_form.addRow("Hourly pay *", hourly_pay)
+        schedule_form.addRow("Hours/week *", hours_week)
+        schedule_layout.addLayout(schedule_form)
+        frame_layout.addWidget(schedule_panel)
+
+        destination_panel, destination_layout = self._surface()
+        destination_layout.addWidget(self._label("Destination", "SectionTitle"))
+        self.offer_employment_type_label = self._label("", "OfferEmploymentType")
+        self.offer_template_label = self._label("", "OfferTemplateSummary")
+        self.offer_output_label = self._label("", "OfferOutputSummary")
+        self.offer_filename_label = self._label("", "OfferFilenamePreview")
+        for widget in (
+            self.offer_employment_type_label,
+            self.offer_template_label,
+            self.offer_output_label,
+            self.offer_filename_label,
+        ):
+            destination_layout.addWidget(widget)
+        frame_layout.addWidget(destination_panel)
         status = defaults.get("next_action") or "Complete interview review before generating offer."
         self.offer_status_label = self._label(f"Next action: {status}")
         frame_layout.addWidget(self.offer_status_label)
         generate = self._primary_button("Generate Offer")
+        generate.setObjectName("OfferGenerateButton")
         generate.clicked.connect(self._generate_offer_from_fields)
+        self.offer_generate_button = generate
         frame_layout.addWidget(generate)
+        success_actions = self.QtWidgets.QHBoxLayout()
+        self.offer_open_button = self.QtWidgets.QPushButton("Open Offer")
+        self.offer_open_button.setObjectName("OfferOpenButton")
+        self.offer_open_button.clicked.connect(self._open_generated_offer)
+        self.offer_open_button.setVisible(False)
+        self.offer_open_folder_button = self.QtWidgets.QPushButton("Open Folder")
+        self.offer_open_folder_button.setObjectName("OfferOpenFolderButton")
+        self.offer_open_folder_button.clicked.connect(self._open_generated_offer_folder)
+        self.offer_open_folder_button.setVisible(False)
+        success_actions.addWidget(self.offer_open_button)
+        success_actions.addWidget(self.offer_open_folder_button)
+        success_actions.addStretch(1)
+        frame_layout.addLayout(success_actions)
+        self.generated_offer_path: Path | None = None
+        for field in (title, school, position, determination):
+            field.currentTextChanged.connect(self._refresh_offer_destination)
+        for field in (start_date, start_time, end_time):
+            field.dateTimeChanged.connect(self._refresh_offer_destination)
+        for field in (hourly_pay, hours_week):
+            field.valueChanged.connect(self._refresh_offer_destination)
+        start_time.editingFinished.connect(lambda: self._snap_offer_time(start_time))
+        end_time.editingFinished.connect(lambda: self._snap_offer_time(end_time))
+        self._refresh_offer_destination()
         layout.addWidget(frame)
         layout.addStretch(1)
 
+    def _offer_text(self, key: str) -> str:
+        field = self.offer_fields[key]
+        if isinstance(field, self.QtWidgets.QComboBox):
+            return field.currentText().strip()
+        return field.text().strip()
+
+    def _offer_start_date(self) -> date:
+        field = self.offer_fields["start_date"]
+        if field.date() == field.minimumDate():
+            raise ValueError("Start date is required.")
+        selected = field.date()
+        return date(selected.year(), selected.month(), selected.day())
+
+    def _offer_time_text(self, key: str) -> str:
+        return self.offer_fields[key].time().toString("hh:mm AP")
+
+    def _offer_start_date_text(self) -> str:
+        try:
+            return self._offer_start_date().isoformat()
+        except ValueError:
+            return ""
+
+    def _snap_offer_time(self, field: Any) -> None:
+        current = field.time()
+        rounded_minutes = ((current.minute() + 7) // 15) * 15
+        snapped = self.QtCore.QTime(current.hour(), 0).addSecs(rounded_minutes * 60)
+        field.setTime(snapped)
+
+    def _offer_generation_paths(self) -> tuple[Path, Path]:
+        school = self._offer_text("school")
+        hours = self.offer_fields["hours_week"].value()
+        settings = self.school_offer_store.load()
+        template_path = resolve_offer_template_path(DEFAULT_BASE_DIR, school, hours, settings)
+        output_dir = resolve_offer_output_dir(DEFAULT_BASE_DIR, school, settings)
+        OfferLetterService.validate_template_path(template_path)
+        if not output_dir.exists() or not output_dir.is_dir():
+            raise ValueError(f"Offer output folder was not found: {output_dir}")
+        if not os.access(output_dir, os.W_OK):
+            raise ValueError(f"Offer output folder is not writable: {output_dir}")
+        return template_path, output_dir
+
+    def _offer_validation_error(self) -> str:
+        if self._offer_text("title") not in {"Mr.", "Ms."}:
+            return "Select Mr. or Ms."
+        if not self._offer_text("candidate"):
+            return "Candidate name is required."
+        if not self._offer_text("school"):
+            return "School is required."
+        if not self._offer_text("position"):
+            return "Position is required."
+        try:
+            self._offer_start_date()
+        except ValueError as exc:
+            return str(exc)
+        if self.offer_fields["hourly_pay"].value() <= 0:
+            return "Hourly pay must be greater than zero."
+        if self.offer_fields["hours_week"].value() <= 0:
+            return "Hours/week must be greater than zero."
+        if self.offer_fields["end_time"].time() <= self.offer_fields["start_time"].time():
+            return "End time must be later than start time."
+        try:
+            self._offer_generation_paths()
+            build_school_offer_filename(self._offer_text("school"), self._offer_text("candidate"))
+        except (OSError, ValueError) as exc:
+            return str(exc)
+        return ""
+
+    def _refresh_offer_destination(self, *_args: Any) -> None:
+        hours = self.offer_fields["hours_week"].value()
+        employment_type = "Full-time" if hours >= 30 else "Part-time"
+        self.offer_employment_type_label.setText(f"Employment type: {employment_type}")
+        try:
+            template_path = resolve_offer_template_path(
+                DEFAULT_BASE_DIR,
+                self._offer_text("school"),
+                hours,
+                self.school_offer_store.load(),
+            )
+            self.offer_template_label.setText(f"Template: {template_path.name}")
+        except ValueError as exc:
+            self.offer_template_label.setText(f"Template: {exc}")
+        try:
+            output_dir = resolve_offer_output_dir(
+                DEFAULT_BASE_DIR,
+                self._offer_text("school"),
+                self.school_offer_store.load(),
+            )
+            self.offer_output_label.setText(f"Folder: {output_dir}")
+        except ValueError as exc:
+            self.offer_output_label.setText(f"Folder: {exc}")
+        try:
+            filename = build_school_offer_filename(
+                self._offer_text("school"),
+                self._offer_text("candidate"),
+            )
+        except ValueError as exc:
+            filename = str(exc)
+        self.offer_filename_label.setText(f"Filename: {filename}")
+        error = self._offer_validation_error()
+        self.offer_generate_button.setEnabled(not error and (self.session is not None or self.selected_history_offer_row is not None))
+        if error:
+            self.offer_status_label.setText(f"Offer not ready: {error}")
+
     def _render_offer_document_from_fields(self) -> Path:
-        candidate_name = self.offer_fields["candidate"].text().strip()
+        candidate_name = self._offer_text("candidate")
         first_name, last_name = _split_candidate_name(candidate_name)
-        output_dir = Path(self.offer_fields["output_dir"].text().strip())
+        template_path, output_dir = self._offer_generation_paths()
         created_on = date.today()
-        output_path = output_dir / build_offer_filename(first_name, last_name, created_on)
+        output_path = next_available_offer_path(
+            output_dir,
+            build_school_offer_filename(self._offer_text("school"), candidate_name),
+        )
         data = OfferInput(
             first_name=first_name,
             last_name=last_name,
-            city=self.offer_fields["school"].text().strip(),
-            position=self.offer_fields["position"].text().strip(),
-            start_date=_parse_iso_or_us_date(self.offer_fields["start_date"].text().strip()),
-            start_time_12h=self.offer_fields["start_time"].text().strip(),
-            end_time_12h=self.offer_fields["end_time"].text().strip(),
-            hourly_pay=float(self.offer_fields["hourly_pay"].text().strip()),
-            hours=int(self.offer_fields["hours_week"].text().strip()),
+            city=self._offer_text("school"),
+            position=self._offer_text("position"),
+            start_date=self._offer_start_date(),
+            start_time_12h=self._offer_time_text("start_time"),
+            end_time_12h=self._offer_time_text("end_time"),
+            hourly_pay=self.offer_fields["hourly_pay"].value(),
+            hours=self.offer_fields["hours_week"].value(),
             created_on=created_on,
+            title=self._offer_text("title"),
         )
-        return OfferLetterService.render_offer(Path(self.offer_fields["template_path"].text().strip()), output_path, data)
+        return OfferLetterService.render_offer(template_path, output_path, data)
 
     def _generate_offer_from_fields(self) -> None:
         if self.session is None and self.selected_history_offer_row is None:
             self.offer_status_label.setText("Complete interview review before generating offer.")
             return
         try:
+            validation_error = self._offer_validation_error()
+            if validation_error:
+                raise ValueError(validation_error)
             if self.selected_history_offer_row is not None:
                 output_path = self._render_offer_document_from_fields()
                 updated = self._update_pyside_offer_status(
@@ -4856,21 +5139,46 @@ class PySideInterviewWindow:
                     raise ValueError("History row could not be updated.")
                 self._reload_history_model()
             else:
+                template_path, output_dir = self._offer_generation_paths()
                 output_path = self.session.generate_offer_document(
-                    template_path=Path(self.offer_fields["template_path"].text().strip()),
-                    output_dir=Path(self.offer_fields["output_dir"].text().strip()),
-                    start_date=_parse_iso_or_us_date(self.offer_fields["start_date"].text().strip()),
-                    start_time_12h=self.offer_fields["start_time"].text().strip(),
-                    end_time_12h=self.offer_fields["end_time"].text().strip(),
-                    hourly_pay=float(self.offer_fields["hourly_pay"].text().strip()),
-                    hours=int(self.offer_fields["hours_week"].text().strip()),
+                    template_path=template_path,
+                    output_dir=output_dir,
+                    start_date=self._offer_start_date(),
+                    start_time_12h=self._offer_time_text("start_time"),
+                    end_time_12h=self._offer_time_text("end_time"),
+                    hourly_pay=self.offer_fields["hourly_pay"].value(),
+                    hours=self.offer_fields["hours_week"].value(),
                     created_on=date.today(),
+                    title=self._offer_text("title"),
+                    position=self._offer_text("position"),
                 )
                 self._emit_pyside_session_offer_generated(output_path)
         except Exception as exc:
-            self.offer_status_label.setText(f"Offer not generated: {exc}")
+            self.offer_status_label.setText(f"Offer not generated: {exc} Configure offer paths in Admin if needed.")
             return
+        self.generated_offer_path = Path(output_path)
+        self.offer_open_button.setVisible(True)
+        self.offer_open_folder_button.setVisible(True)
         self.offer_status_label.setText(f"Offer generated: {output_path}")
+
+    def _open_generated_offer(self) -> None:
+        if self.generated_offer_path is not None:
+            self._open_offer_path(self.generated_offer_path)
+
+    def _open_generated_offer_folder(self) -> None:
+        if self.generated_offer_path is not None:
+            self._open_offer_path(self.generated_offer_path.parent)
+
+    def _open_offer_path(self, path: Path) -> None:
+        try:
+            if sys.platform.startswith("win"):
+                os.startfile(str(path))  # type: ignore[attr-defined]
+            elif sys.platform == "darwin":
+                subprocess.run(["open", str(path)], check=True)
+            else:
+                subprocess.run(["xdg-open", str(path)], check=True)
+        except OSError as exc:
+            self.offer_status_label.setText(f"Could not open {path}: {exc}")
 
     def _update_pyside_offer_status(self, row_key: str, status: str, offer_path: str = "", row: PySideHistoryRow | None = None) -> bool:
         updated = self.history_store.update_offer_state(row_key, status, offer_path)
@@ -4891,7 +5199,7 @@ class PySideInterviewWindow:
             "school_code": _offer_school_code(self.session.school),
             "school_location": _offer_school_location(self.session.school),
             "director_name": "",
-            "position": self.offer_fields["position"].text().strip() if hasattr(self, "offer_fields") else self.session.track_key,
+            "position": self._offer_text("position") if hasattr(self, "offer_fields") else self.session.track_key,
             "offer_status": "generated",
             "offer_path": str(output_path),
             "offer_pdf_path": "",
@@ -4899,7 +5207,7 @@ class PySideInterviewWindow:
             "reply_by_date": (date.today() + timedelta(days=3)).isoformat(),
             "generated_date": date.today().isoformat(),
             "interview_date": str(getattr(self.session, "interview_date", "") or ""),
-            "start_date": self.offer_fields["start_date"].text().strip() if hasattr(self, "offer_fields") and "start_date" in self.offer_fields else "",
+            "start_date": self._offer_start_date_text() if hasattr(self, "offer_fields") and "start_date" in self.offer_fields else "",
             "notice_given": "",
             "date_notice_given": "",
             "final_working_day": "",
@@ -4937,7 +5245,7 @@ class PySideInterviewWindow:
             "onboarding_guide_path": str(self.settings.get("welcome_onboarding_pdf_path", "")).strip() if hasattr(self, "settings") else "",
             "reply_by_date": (date.today() + timedelta(days=3)).isoformat(),
             "generated_date": date.today().isoformat(),
-            "start_date": self.offer_fields["start_date"].text().strip() if hasattr(self, "offer_fields") and "start_date" in self.offer_fields else "",
+            "start_date": self._offer_start_date_text() if hasattr(self, "offer_fields") and "start_date" in self.offer_fields else "",
             "notice_given": "",
             "date_notice_given": "",
             "final_working_day": "",
@@ -8722,6 +9030,55 @@ class PySideInterviewWindow:
                 button.clicked.connect(self._browse_admin_school_folder_path)
             actions.addWidget(button)
         drawer_layout.addLayout(actions)
+        drawer_layout.addWidget(self._label("Offer Generation", "AdminStudioConceptTitle"))
+        self.admin_school_full_time_template = self.QtWidgets.QLineEdit()
+        self.admin_school_full_time_template.setObjectName("AdminStudioSchoolFullTimeTemplate")
+        self.admin_school_full_time_template.setProperty("adminSchoolEdit", True)
+        self.admin_school_full_time_template.setEnabled(False)
+        full_time_row = self.QtWidgets.QHBoxLayout()
+        full_time_row.addWidget(self.admin_school_full_time_template, 1)
+        full_time_browse = self.QtWidgets.QPushButton("Browse Full-time Template")
+        full_time_browse.setObjectName("AdminStudioSchoolBrowseFullTimeTemplate")
+        full_time_browse.setProperty("adminRequiresEdit", True)
+        full_time_browse.setEnabled(False)
+        full_time_browse.clicked.connect(
+            lambda: self._browse_admin_offer_template(self.admin_school_full_time_template)
+        )
+        full_time_row.addWidget(full_time_browse)
+        drawer_layout.addWidget(self._label("Full-time template (30+ hours)"))
+        drawer_layout.addLayout(full_time_row)
+        self.admin_school_part_time_template = self.QtWidgets.QLineEdit()
+        self.admin_school_part_time_template.setObjectName("AdminStudioSchoolPartTimeTemplate")
+        self.admin_school_part_time_template.setProperty("adminSchoolEdit", True)
+        self.admin_school_part_time_template.setEnabled(False)
+        part_time_row = self.QtWidgets.QHBoxLayout()
+        part_time_row.addWidget(self.admin_school_part_time_template, 1)
+        part_time_browse = self.QtWidgets.QPushButton("Browse Part-time Template")
+        part_time_browse.setObjectName("AdminStudioSchoolBrowsePartTimeTemplate")
+        part_time_browse.setProperty("adminRequiresEdit", True)
+        part_time_browse.setEnabled(False)
+        part_time_browse.clicked.connect(
+            lambda: self._browse_admin_offer_template(self.admin_school_part_time_template)
+        )
+        part_time_row.addWidget(part_time_browse)
+        drawer_layout.addWidget(self._label("Part-time template (under 30 hours)"))
+        drawer_layout.addLayout(part_time_row)
+        self.admin_school_offer_output = self.QtWidgets.QLineEdit()
+        self.admin_school_offer_output.setObjectName("AdminStudioSchoolOfferOutputFolder")
+        self.admin_school_offer_output.setProperty("adminSchoolEdit", True)
+        self.admin_school_offer_output.setEnabled(False)
+        offer_output_row = self.QtWidgets.QHBoxLayout()
+        offer_output_row.addWidget(self.admin_school_offer_output, 1)
+        offer_output_browse = self.QtWidgets.QPushButton("Browse Offer Folder")
+        offer_output_browse.setObjectName("AdminStudioSchoolBrowseOfferOutput")
+        offer_output_browse.setProperty("adminRequiresEdit", True)
+        offer_output_browse.setEnabled(False)
+        offer_output_browse.clicked.connect(self._browse_admin_offer_output_folder)
+        offer_output_row.addWidget(offer_output_browse)
+        drawer_layout.addWidget(self._label("Offer output folder"))
+        drawer_layout.addLayout(offer_output_row)
+        self.admin_school_offer_validation = self._label("", "AdminStudioSchoolOfferValidation")
+        drawer_layout.addWidget(self.admin_school_offer_validation)
         drawer_layout.addWidget(self._label("Validation Notes", "AdminStudioConceptTitle"))
         self.admin_school_validation_notes = self._label("", "AdminStudioSchoolValidationNotes")
         drawer_layout.addWidget(self.admin_school_validation_notes)
@@ -8838,6 +9195,10 @@ class PySideInterviewWindow:
         self.admin_school_status.setText("Valid · Test write: Passed" if path else "Invalid · Test write: Not tested")
         self.admin_school_name.setText(str(school))
         self.admin_school_folder_path.setText(path)
+        self.admin_school_full_time_template.setText(str(cfg.get("full_time_template", "") or "").strip())
+        self.admin_school_part_time_template.setText(str(cfg.get("part_time_template", "") or "").strip())
+        self.admin_school_offer_output.setText(str(cfg.get("offer_output_dir", "") or "").strip())
+        self.admin_school_offer_validation.setText(self._admin_offer_settings_status(str(school), cfg))
         self.admin_school_validation_notes.setText(
             "Path exists and is accessible. Write permission confirmed. No invalid characters detected."
             if path
@@ -8872,6 +9233,10 @@ class PySideInterviewWindow:
         self.admin_school_status.setText("New draft")
         self.admin_school_name.setText("")
         self.admin_school_folder_path.setText("")
+        self.admin_school_full_time_template.setText("")
+        self.admin_school_part_time_template.setText("")
+        self.admin_school_offer_output.setText("")
+        self.admin_school_offer_validation.setText("Offer configuration needs full-time template, part-time template, and output folder.")
         self.admin_school_validation_notes.setText("Enter a school name and folder path, then save changes to the draft.")
         self.admin_school_last_test.setText("Result: Not tested")
         self.admin_school_linked_templates.setText("No linked templates configured.")
@@ -8935,6 +9300,49 @@ class PySideInterviewWindow:
         self.admin_school_validation_notes.setText("Selected folder. Run Test Write before saving.")
         self.admin_school_last_test.setText("Result: Not tested")
 
+    def _browse_admin_offer_template(self, field: Any) -> None:
+        selected_path, _selected_filter = self.QtWidgets.QFileDialog.getOpenFileName(
+            self.window,
+            "Select offer template",
+            field.text().strip() or str(Path.home()),
+            "Word documents (*.docx *.docm)",
+        )
+        if selected_path:
+            field.setText(str(selected_path))
+            self.admin_school_validation_notes.setText("Template selected. Save changes, then publish to apply.")
+
+    def _browse_admin_offer_output_folder(self) -> None:
+        selected_path = self.QtWidgets.QFileDialog.getExistingDirectory(
+            self.window,
+            "Select offer output folder",
+            self.admin_school_offer_output.text().strip() or str(Path.home()),
+        )
+        if selected_path:
+            self.admin_school_offer_output.setText(str(selected_path))
+            self.admin_school_validation_notes.setText("Offer folder selected. Save changes, then publish to apply.")
+
+    def _admin_offer_settings_status(self, school: str, cfg: dict[str, Any]) -> str:
+        issues: list[str] = []
+        scoped_settings = {str(school): {str(key): str(value or "") for key, value in cfg.items()}}
+        for hours, label in ((30, "Full-time template"), (29, "Part-time template")):
+            try:
+                template_path = resolve_offer_template_path(DEFAULT_BASE_DIR, school, hours, scoped_settings)
+                OfferLetterService.validate_template_path(template_path)
+                Document(str(template_path))
+            except Exception as exc:
+                issues.append(f"{label}: {exc}")
+        try:
+            output_dir = resolve_offer_output_dir(DEFAULT_BASE_DIR, school, scoped_settings)
+            if not output_dir.exists() or not output_dir.is_dir():
+                raise ValueError(f"Folder not found: {output_dir}")
+            if not os.access(output_dir, os.W_OK):
+                raise ValueError(f"Folder is not writable: {output_dir}")
+        except Exception as exc:
+            issues.append(f"Offer folder: {exc}")
+        if issues:
+            return "Offer configuration needs attention:\n" + "\n".join(issues)
+        return "Offer configuration ready. Both templates are readable and output folder exists."
+
     def _save_admin_school_folder_drawer(self) -> None:
         selected_school = str(getattr(self, "admin_selected_school_folder", "") or "").strip()
         school = self.admin_school_name.text().strip() if hasattr(self, "admin_school_name") else selected_school
@@ -8944,7 +9352,15 @@ class PySideInterviewWindow:
         path = self.admin_school_folder_path.text().strip()
         if selected_school and selected_school != school:
             self.admin_draft.school_settings.pop(selected_school, None)
-        self.admin_draft.update_school_settings(school, {"interview_notes_dir": path})
+        self.admin_draft.update_school_settings(
+            school,
+            {
+                "interview_notes_dir": path,
+                "full_time_template": self.admin_school_full_time_template.text().strip(),
+                "part_time_template": self.admin_school_part_time_template.text().strip(),
+                "offer_output_dir": self.admin_school_offer_output.text().strip(),
+            },
+        )
         self._sync_admin_school_folder_table()
         cfg = dict(self.admin_draft.school_settings.get(school, {}))
         self._select_admin_school_folder(school, cfg)

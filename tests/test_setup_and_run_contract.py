@@ -125,6 +125,16 @@ def test_primary_setup_launchers_force_pyside_mode() -> None:
         assert "-UiMode pyside" in launcher_text
 
 
+def test_primary_admin_vbs_launcher_starts_pyside_setup_hidden() -> None:
+    launcher_text = Path("..START PROGRAM.vbs").read_text(encoding="utf-8")
+
+    assert "setup_and_run.ps1" in launcher_text
+    assert "-UiMode pyside" in launcher_text
+    assert "shell.CurrentDirectory = appDir" in launcher_text
+    assert "shell.Run command, 0, False" in launcher_text
+    assert "..START PROGRAM.bat" not in launcher_text
+
+
 def test_setup_and_run_launches_runtime_wrapper_with_venv_python() -> None:
     script_text = SETUP_SCRIPT.read_text(encoding="utf-8")
 

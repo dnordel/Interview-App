@@ -11,7 +11,7 @@ from typing import Any
 
 import pytest
 import pyside_interview_app
-from data_store import InterviewHistoryStore
+from data_store import InterviewHistoryStore, SchoolOfferSettingsStore
 from docx import Document
 from notification_models import NotificationRecipient, NotificationRule, NotificationSendResult
 from notification_store import NotificationStore
@@ -1732,6 +1732,49 @@ def test_pyside_offer_review_defaults_are_prefilled_from_completed_session(tmp_p
     assert defaults["determination"] == "Hire"
     assert defaults["next_action"] == "Generate Offer"
 
+
+@pytest.mark.pyside_gui
+@pytest.mark.slow_pyside
+def test_pyside_offer_screen_uses_guided_offer_widgets_and_editable_positions(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale", "North Long Beach", "Hawthorne"],
+    )
+
+    window = _pyside_window_on_page(model, "Offers")
+
+    assert isinstance(window.offer_fields["title"], qt_widgets.QComboBox)
+    assert [window.offer_fields["title"].itemText(index) for index in range(3)] == ["Select title", "Mr.", "Ms."]
+    assert window.offer_fields["candidate"].isReadOnly()
+    assert window.offer_fields["school"].isEditable()
+    assert window.offer_fields["position"].isEditable()
+    assert [window.offer_fields["position"].itemText(index) for index in range(6)] == [
+        "Director",
+        "Assistant Director",
+        "Lead Teacher",
+        "Teacher",
+        "Teacher/Floater",
+        "Cook",
+    ]
+    assert isinstance(window.offer_fields["start_date"], qt_widgets.QDateEdit)
+    assert window.offer_fields["start_date"].calendarPopup()
+    assert isinstance(window.offer_fields["start_time"], qt_widgets.QTimeEdit)
+    assert window.offer_fields["start_time"].displayFormat() == "h:mm AP"
+    window.offer_fields["start_time"].setTime(window.QtCore.QTime(9, 7))
+    window.offer_fields["start_time"].editingFinished.emit()
+    assert window.offer_fields["start_time"].time() == window.QtCore.QTime(9, 0)
+    assert isinstance(window.offer_fields["hourly_pay"], qt_widgets.QDoubleSpinBox)
+    assert isinstance(window.offer_fields["hours_week"], qt_widgets.QSpinBox)
+    assert "template_path" not in window.offer_fields
+    assert "output_dir" not in window.offer_fields
+    window.window.close()
+    app.processEvents()
+
 def test_pyside_review_screen_hides_finalize_and_offer_actions(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -1885,7 +1928,7 @@ def test_pyside_session_generates_offer_document_from_template(tmp_path: Path) -
     session.save_answer_and_advance(notes="Warm child-centered example.", score="5")
     template_path = tmp_path / "template.docx"
     doc = Document()
-    doc.add_paragraph("[First Name] [Last Name] | [City] | [Position] | [HourlyPay] | [Hours]")
+    doc.add_paragraph("[Title] [First Name] [Last Name] | [City] | [Position] | [HourlyPay] | [Hours]")
     doc.save(template_path)
 
     output_path = session.generate_offer_document(
@@ -1897,11 +1940,45 @@ def test_pyside_session_generates_offer_document_from_template(tmp_path: Path) -
         hourly_pay=22.5,
         hours=40,
         created_on=date(2026, 6, 20),
+        title="Ms.",
     )
 
     assert output_path.exists()
+    assert output_path.name == "Launch Pad Learning PMD Offer of Employment to Latoya Nugent.docx"
     rendered = _docx_text(output_path)
-    assert "Latoya Nugent | Palmdale | Preschool | 22.50 | 40" in rendered
+    assert "Ms. Latoya Nugent | Palmdale | Preschool | 22.50 | 40" in rendered
+
+
+def test_pyside_session_offer_generation_preserves_prior_offer_revision(tmp_path: Path) -> None:
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
+    session.start(candidate_name="Latoya Nugent", school="Palmdale", track_key="preschool")
+    template_path = tmp_path / "template.docx"
+    document = Document()
+    document.add_paragraph("[Title] [First Name] [Last Name]")
+    document.save(template_path)
+    kwargs = {
+        "template_path": template_path,
+        "output_dir": tmp_path / "offers",
+        "start_date": date(2026, 6, 23),
+        "start_time_12h": "08:00 AM",
+        "end_time_12h": "05:00 PM",
+        "hourly_pay": 22.5,
+        "hours": 40,
+        "created_on": date(2026, 6, 20),
+        "title": "Ms.",
+    }
+
+    first = session.generate_offer_document(**kwargs)
+    second = session.generate_offer_document(**kwargs)
+
+    assert first.name == "Launch Pad Learning PMD Offer of Employment to Latoya Nugent.docx"
+    assert second.name == "Launch Pad Learning PMD Offer of Employment to Latoya Nugent (2).docx"
 
 def test_pyside_session_offer_generation_emits_start_date_notification(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -1920,8 +1997,20 @@ def test_pyside_session_offer_generation_emits_start_date_notification(tmp_path:
     session.save_answer_and_advance(notes="Warm child-centered example.", score="5")
     template_path = tmp_path / "template.docx"
     doc = Document()
-    doc.add_paragraph("[First Name] [Last Name] | [City] | [Position] | [HourlyPay] | [Hours]")
+    doc.add_paragraph("[Title] [First Name] [Last Name] | [City] | [Position] | [HourlyPay] | [Hours]")
     doc.save(template_path)
+    output_dir = tmp_path / "offers"
+    output_dir.mkdir()
+    settings_path = tmp_path / "school_offer_settings.json"
+    SchoolOfferSettingsStore(settings_path).save(
+        {
+            "Palmdale": {
+                "full_time_template": str(template_path),
+                "part_time_template": str(template_path),
+                "offer_output_dir": str(output_dir),
+            }
+        }
+    )
     notifications = []
 
     class FakeNotifications:
@@ -1932,12 +2021,12 @@ def test_pyside_session_offer_generation_emits_start_date_notification(tmp_path:
     window = _pyside_window_on_page(model, "Offers")
     window.session = session
     window.notification_service = FakeNotifications()
+    window.school_offer_store = SchoolOfferSettingsStore(settings_path)
     window._open_session_offer()
-    window.offer_fields["template_path"].setText(str(template_path))
-    window.offer_fields["output_dir"].setText(str(tmp_path / "offers"))
-    window.offer_fields["start_date"].setText("2026-07-10")
-    window.offer_fields["hourly_pay"].setText("22.50")
-    window.offer_fields["hours_week"].setText("40")
+    window.offer_fields["title"].setCurrentText("Ms.")
+    window.offer_fields["start_date"].setDate(window.QtCore.QDate(2026, 7, 10))
+    window.offer_fields["hourly_pay"].setValue(22.50)
+    window.offer_fields["hours_week"].setValue(40)
 
     window._generate_offer_from_fields()
 
@@ -1945,6 +2034,58 @@ def test_pyside_session_offer_generation_emits_start_date_notification(tmp_path:
     assert notifications[0][1]["candidate_name"] == "Latoya Nugent"
     assert notifications[0][1]["start_date"] == "2026-07-10"
     assert notifications[0][2].endswith(":offer.generated")
+    window.window.close()
+    app.processEvents()
+
+
+@pytest.mark.pyside_gui
+@pytest.mark.slow_pyside
+def test_pyside_offer_screen_uses_part_time_template_and_shows_success_actions(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
+    session.start(candidate_name="Latoya Nugent", school="Palmdale", track_key="preschool")
+    full_template = tmp_path / "full.docx"
+    part_template = tmp_path / "part.docx"
+    for path, marker in ((full_template, "FULL"), (part_template, "PART [Title] [First Name] [Position]")):
+        document = Document()
+        document.add_paragraph(marker)
+        document.save(path)
+    output_dir = tmp_path / "offers"
+    output_dir.mkdir()
+    settings_path = tmp_path / "school_offer_settings.json"
+    SchoolOfferSettingsStore(settings_path).save(
+        {
+            "Palmdale": {
+                "full_time_template": str(full_template),
+                "part_time_template": str(part_template),
+                "offer_output_dir": str(output_dir),
+            }
+        }
+    )
+    window = _pyside_window_on_page(model, "Offers")
+    window.session = session
+    window.school_offer_store = SchoolOfferSettingsStore(settings_path)
+    window._open_session_offer()
+    window.offer_fields["title"].setCurrentText("Ms.")
+    window.offer_fields["start_date"].setDate(window.QtCore.QDate(2026, 7, 27))
+    window.offer_fields["hourly_pay"].setValue(24.0)
+    window.offer_fields["hours_week"].setValue(29)
+    window.offer_fields["position"].setCurrentText("Curriculum Specialist")
+
+    window._generate_offer_from_fields()
+
+    assert "Employment type: Part-time" == window.offer_employment_type_label.text()
+    assert "PART Ms. Latoya Curriculum Specialist" in _docx_text(window.generated_offer_path)
+    assert not window.offer_open_button.isHidden()
+    assert not window.offer_open_folder_button.isHidden()
     window.window.close()
     app.processEvents()
 
@@ -1971,7 +2112,7 @@ def test_pyside_window_runs_due_notification_schedule_on_startup(tmp_path: Path,
         lambda **_kwargs: FakeNotifications(),
     )
 
-    window = pyside_interview_app.PySideInterviewWindow(model)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     window._schedule_startup_notifications()
     app.processEvents()
 
@@ -7430,27 +7571,44 @@ def test_pyside_admin_templates_school_drawer_saves_folder_draft(tmp_path: Path,
     hawthorne_button = window.window.findChild(qt_widgets.QPushButton, "AdminStudioSchoolFolderButton_Hawthorne")
     drawer_title = window.window.findChild(qt_widgets.QLabel, "AdminStudioSchoolDetailTitle")
     full_path = window.window.findChild(qt_widgets.QLineEdit, "AdminStudioSchoolFolderPath")
+    full_time_template = window.window.findChild(qt_widgets.QLineEdit, "AdminStudioSchoolFullTimeTemplate")
+    part_time_template = window.window.findChild(qt_widgets.QLineEdit, "AdminStudioSchoolPartTimeTemplate")
+    offer_output = window.window.findChild(qt_widgets.QLineEdit, "AdminStudioSchoolOfferOutputFolder")
     validation = window.window.findChild(qt_widgets.QLabel, "AdminStudioSchoolValidationNotes")
     linked_templates = window.window.findChild(qt_widgets.QLabel, "AdminStudioSchoolLinkedTemplates")
+    offer_validation = window.window.findChild(qt_widgets.QLabel, "AdminStudioSchoolOfferValidation")
     save = window.window.findChild(qt_widgets.QPushButton, "AdminStudioSchoolFolderSave")
 
     assert hawthorne_button is not None
     hawthorne_button.click()
     assert drawer_title.text() == "Hawthorne"
     assert full_path.text() == "C:/safe/hawthorne"
+    assert full_time_template.text() == "C:/templates/standard.docx"
+    assert part_time_template.text() == "C:/templates/part-time.docx"
     assert "Path exists and is accessible" in validation.text()
     assert "Standard Offer" in linked_templates.text()
     assert "standard.docx" in linked_templates.text()
+    assert "Offer configuration needs attention" in offer_validation.text()
+    assert "Template not found" in offer_validation.text()
     assert full_path.isEnabled() is False
     assert save.isEnabled() is False
 
     window.admin_edit_button.click()
     assert full_path.isEnabled() is True
+    assert full_time_template.isEnabled() is True
+    assert part_time_template.isEnabled() is True
+    assert offer_output.isEnabled() is True
     full_path.setText("C:/safe/hawthorne-updated")
+    full_time_template.setText("C:/templates/full-updated.docx")
+    part_time_template.setText("C:/templates/part-updated.docx")
+    offer_output.setText("C:/safe/hawthorne-offers")
     save.click()
     window.admin_save_draft_button.click()
 
     assert window.admin_draft.school_settings["Hawthorne"]["interview_notes_dir"] == "C:/safe/hawthorne-updated"
+    assert window.admin_draft.school_settings["Hawthorne"]["full_time_template"] == "C:/templates/full-updated.docx"
+    assert window.admin_draft.school_settings["Hawthorne"]["part_time_template"] == "C:/templates/part-updated.docx"
+    assert window.admin_draft.school_settings["Hawthorne"]["offer_output_dir"] == "C:/safe/hawthorne-offers"
     settings_table = window.window.findChild(qt_widgets.QTableWidget, "PySideSchoolFolderSettingsTable")
     hawthorne_row = next(
         row
@@ -9473,7 +9631,7 @@ def test_pyside_window_fit_does_not_cap_normal_window_maximum_size() -> None:
     assert fake_window.resize_calls == 0
     assert fake_window.move_calls == 1
 
-def test_pyside_history_generate_offer_button_prefills_offer_wizard(tmp_path: Path) -> None:
+def test_pyside_history_generate_offer_button_prefills_offer_wizard(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
     app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
@@ -9508,10 +9666,80 @@ def test_pyside_history_generate_offer_button_prefills_offer_wizard(tmp_path: Pa
 
     assert window.stack.currentIndex() == 2
     assert window.offer_fields["candidate"].text() == "Latoya Nugent"
-    assert window.offer_fields["school"].text() == "Palmdale"
-    assert window.offer_fields["position"].text() == "Preschool Teacher"
+    assert window.offer_fields["school"].currentText() == "Palmdale"
+    assert window.offer_fields["position"].currentText() == "Preschool Teacher"
     window.window.close()
     app.processEvents()
+
+@pytest.mark.pyside_gui
+@pytest.mark.slow_pyside
+def test_pyside_history_offer_prefills_editable_shift_from_director_staffing_v2(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    history_path = tmp_path / "interview_history.sqlite3"
+    InterviewHistoryStore(history_path).append(
+        {
+            "history_id": "hist-shift",
+            "candidate_name": "Latoya Nugent",
+            "school": "Palmdale",
+            "position": "Teacher",
+            "interview_date": date.today().isoformat(),
+            "outcome": "Hire",
+            "offer_status": "not_generated",
+        }
+    )
+    staffing_base_path = tmp_path / "staffing_dashboard.sqlite3"
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", staffing_base_path)
+    director_store = pyside_interview_app.StaffingStore(
+        pyside_interview_app.staffing_db_path_for_school("Palmdale")
+    )
+    director_store.initialize()
+    director_service = pyside_interview_app.StaffingService(director_store)
+    referral = director_service.upsert_director_candidate_referral(
+        history_id="hist-shift",
+        candidate_name="Latoya Nugent",
+        school="Palmdale",
+        position="Teacher",
+        interviewer_outcome="hire",
+    )
+    director_service.record_director_interview(
+        referral.id,
+        director_name="Director",
+        completed_date="2026-07-13",
+        rating=9,
+        decision="hire",
+        decision_notes="Hire for opening.",
+        proposed_shift_start="7:30 AM",
+        proposed_shift_end="4:15 PM",
+        proposed_classroom="Preschool",
+    )
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Palmdale"],
+    )
+    window = _pyside_window_on_page(model, "Offers")
+
+    window._open_history_offer(model.home.history_rows[0])
+
+    assert window.offer_fields["start_time"].time() == window.QtCore.QTime(7, 30)
+    assert window.offer_fields["end_time"].time() == window.QtCore.QTime(16, 15)
+    window.offer_fields["start_time"].setTime(window.QtCore.QTime(8, 0))
+    assert window.offer_fields["start_time"].time() == window.QtCore.QTime(8, 0)
+    session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
+    session.start(candidate_name="Latoya Nugent", school="Palmdale", track_key="preschool")
+    window.session = session
+    window._open_session_offer()
+    assert window.offer_fields["start_time"].time() == window.QtCore.QTime(7, 30)
+    assert window.offer_fields["end_time"].time() == window.QtCore.QTime(16, 15)
+    window.window.close()
+    app.processEvents()
+
 
 def test_pyside_history_offer_generation_updates_history_status(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -9530,8 +9758,20 @@ def test_pyside_history_offer_generation_updates_history_status(tmp_path: Path) 
     )
     template_path = tmp_path / "template.docx"
     doc = Document()
-    doc.add_paragraph("[First Name] [Last Name] | [City] | [Position]")
+    doc.add_paragraph("[Title] [First Name] [Last Name] | [City] | [Position]")
     doc.save(template_path)
+    output_dir = tmp_path / "offers"
+    output_dir.mkdir()
+    settings_path = tmp_path / "school_offer_settings.json"
+    SchoolOfferSettingsStore(settings_path).save(
+        {
+            "Palmdale": {
+                "full_time_template": str(template_path),
+                "part_time_template": str(template_path),
+                "offer_output_dir": str(output_dir),
+            }
+        }
+    )
     model = build_interview_redesign_model(
         rubric_path=_write_test_rubric(tmp_path),
         overrides_path=_write_test_overrides(tmp_path),
@@ -9547,12 +9787,12 @@ def test_pyside_history_offer_generation_updates_history_status(tmp_path: Path) 
             return []
 
     window.notification_service = FakeNotifications()
+    window.school_offer_store = SchoolOfferSettingsStore(settings_path)
     window._open_history_offer(model.home.history_rows[0])
-    window.offer_fields["template_path"].setText(str(template_path))
-    window.offer_fields["output_dir"].setText(str(tmp_path / "offers"))
-    window.offer_fields["start_date"].setText("2026-06-23")
-    window.offer_fields["hourly_pay"].setText("22.50")
-    window.offer_fields["hours_week"].setText("40")
+    window.offer_fields["title"].setCurrentText("Ms.")
+    window.offer_fields["start_date"].setDate(window.QtCore.QDate(2026, 6, 23))
+    window.offer_fields["hourly_pay"].setValue(22.50)
+    window.offer_fields["hours_week"].setValue(40)
 
     window._generate_offer_from_fields()
 
@@ -9560,9 +9800,59 @@ def test_pyside_history_offer_generation_updates_history_status(tmp_path: Path) 
     assert rows[0]["offer_status"] == "generated"
     assert notifications[0][0] == "offer.generated"
     assert notifications[0][1]["candidate_name"] == "Latoya Nugent"
-    expected_name = f"{date.today().isoformat()} - Offer - Latoya_Nugent.docx"
+    expected_name = "Launch Pad Learning PMD Offer of Employment to Latoya Nugent.docx"
     assert rows[0]["offer_letter_path"].endswith(expected_name)
     assert "Offer generated:" in window.offer_status_label.text()
+    window.window.close()
+    app.processEvents()
+
+
+@pytest.mark.pyside_gui
+@pytest.mark.slow_pyside
+def test_pyside_history_offer_generation_blocks_missing_template_without_status_change(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    history_path = tmp_path / "interview_history.sqlite3"
+    InterviewHistoryStore(history_path).append(
+        {
+            "history_id": "hist-1",
+            "candidate_name": "Latoya Nugent",
+            "school": "North Long Beach",
+            "position": "Teacher",
+            "outcome": "Hire",
+            "offer_status": "not_generated",
+        }
+    )
+    output_dir = tmp_path / "offers"
+    output_dir.mkdir()
+    settings_path = tmp_path / "school_offer_settings.json"
+    SchoolOfferSettingsStore(settings_path).save(
+        {
+            "North Long Beach": {
+                "full_time_template": str(tmp_path / "not-created-yet.docx"),
+                "part_time_template": str(tmp_path / "not-created-yet-part.docx"),
+                "offer_output_dir": str(output_dir),
+            }
+        }
+    )
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["North Long Beach"],
+    )
+    window = _pyside_window_on_page(model, "Offers")
+    window.school_offer_store = SchoolOfferSettingsStore(settings_path)
+    window._open_history_offer(model.home.history_rows[0])
+    window.offer_fields["title"].setCurrentText("Ms.")
+    window.offer_fields["start_date"].setDate(window.QtCore.QDate(2026, 7, 27))
+    window.offer_fields["hourly_pay"].setValue(24.0)
+
+    window._generate_offer_from_fields()
+
+    assert InterviewHistoryStore(history_path).load()[0]["offer_status"] == "not_generated"
+    assert "Configure offer paths in Admin" in window.offer_status_label.text()
     window.window.close()
     app.processEvents()
 

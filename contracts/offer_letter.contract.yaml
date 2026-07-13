@@ -2,7 +2,7 @@ module:
   name: offer_letter
   language: python
   path: src/offer_letter.py
-  version: 2.0.1
+  version: 2.1.0
   description: Deprecated compatibility wrapper for offer letter template validation, placeholder replacement, and output filename helpers implemented by scoring_reporting.
 functions:
 - name: build_offer_filename
@@ -22,6 +22,36 @@ functions:
     type: str
   exceptions: []
   side_effects: none
+- name: build_school_offer_filename
+  description: Build a safe school-branded offer filename using the candidate full name.
+  locked: false
+  inputs:
+    school:
+      type: str
+      required: true
+    candidate_full_name:
+      type: str
+      required: true
+  returns:
+    type: str
+  exceptions:
+  - ValueError
+  side_effects: none
+- name: next_available_offer_path
+  description: Return the first unused DOCX path, adding a numeric revision suffix when needed.
+  locked: false
+  inputs:
+    output_dir:
+      type: Path
+      required: true
+    filename:
+      type: str
+      required: true
+  returns:
+    type: Path
+  exceptions:
+  - ValueError
+  side_effects: Reads candidate output-path existence without writing.
 - name: parse_clock_12h
   description: Parse a 12-hour clock string into a datetime object.
   locked: false
@@ -59,6 +89,8 @@ classes:
       type: int
     created_on:
       type: date
+    title:
+      type: str
   methods:
   - name: pto
     description: Computed PTO value for the base accrual tier.

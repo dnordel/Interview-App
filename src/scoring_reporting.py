@@ -2705,12 +2705,12 @@ def _flow_slices(flow_transcript: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 POSITION_OPTIONS = [
-    "Teacher",
-    "Lead Teacher Floater/Teacher",
-    "Cook",
-    "Assistant Director",
     "Director",
-    "Site Supervisor",
+    "Assistant Director",
+    "Lead Teacher",
+    "Teacher",
+    "Teacher/Floater",
+    "Cook",
 ]
 
 
@@ -2726,6 +2726,7 @@ class OfferInput:
     hourly_pay: float
     hours: int
     created_on: date
+    title: str = ""
 
     @property
     def pto(self) -> int:
@@ -2747,6 +2748,7 @@ class OfferTemplateError(ValueError):
 class OfferLetterService:
     ALLOWED_TEMPLATE_SUFFIXES = {".docx", ".docm"}
     PLACEHOLDER_ORDER = [
+        "[Title]",
         "[First Name]",
         "[Last Name]",
         "[City]",
@@ -2775,6 +2777,7 @@ class OfferLetterService:
     @classmethod
     def build_replacements(cls, data: OfferInput) -> dict[str, str]:
         return {
+            "[Title]": data.title.strip(),
             "[First Name]": data.first_name.strip(),
             "[Last Name]": data.last_name.strip(),
             "[City]": data.city.strip(),
@@ -2829,6 +2832,39 @@ def build_offer_filename(first_name: str, last_name: str, created_on: date) -> s
     date_part = created_on.strftime("%Y-%m-%d")
     name_part = sanitize_filename(f"{first_name.strip()}_{last_name.strip()}")
     return f"{date_part} - Offer - {name_part}.docx"
+
+
+def build_school_offer_filename(school: str, candidate_full_name: str) -> str:
+    normalized_school = str(school or "").strip().casefold()
+    prefix = {
+        "palmdale": "Launch Pad Learning PMD Offer of Employment to",
+        "north long beach": "Launch Pad Learning NLB Offer of Employment to",
+        "long beach": "Launch Pad Learning NLB Offer of Employment to",
+        "hawthorne": "Preschool Partners, LLC Offer of Employment to",
+    }.get(normalized_school)
+    if prefix is None:
+        raise ValueError(f"Offer filename is not configured for school: {school}")
+    safe_name = re.sub(r"[\x00-\x1f]", "", sanitize_filename(candidate_full_name)).rstrip(" .")
+    if not safe_name:
+        raise ValueError("Candidate name is required for offer filename.")
+    return f"{prefix} {safe_name}.docx"
+
+
+def next_available_offer_path(output_dir: Path, filename: str) -> Path:
+    safe_filename = Path(str(filename or "")).name
+    if not safe_filename or safe_filename != str(filename) or Path(safe_filename).suffix.casefold() != ".docx":
+        raise ValueError("Offer filename must be a plain .docx filename.")
+    output_dir = Path(output_dir)
+    candidate = output_dir / safe_filename
+    if not candidate.exists():
+        return candidate
+    stem = candidate.stem
+    revision = 2
+    while True:
+        revised = output_dir / f"{stem} ({revision}){candidate.suffix}"
+        if not revised.exists():
+            return revised
+        revision += 1
 
 
 def parse_clock_12h(value: str) -> datetime:

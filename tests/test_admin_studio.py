@@ -350,6 +350,18 @@ def test_admin_studio_validation_blocks_invalid_paths_and_writes_nothing(tmp_pat
     assert json.loads(studio.paths.school_settings_path.read_text(encoding="utf-8")) == {}
 
 
+def test_admin_studio_validation_blocks_unsafe_offer_paths(tmp_path: Path) -> None:
+    studio = AdminStudio.load(_write_admin_files(tmp_path))
+    draft = studio.create_draft()
+    draft.update_school_settings("Palmdale", {"offer_output_dir": r"..\Employment Offers"})
+
+    result = studio.apply_draft(draft, confirm=True)
+
+    assert result.applied is False
+    assert "Offer paths cannot contain '..'." in result.validation_errors
+    assert json.loads(studio.paths.school_settings_path.read_text(encoding="utf-8")) == {}
+
+
 def test_admin_studio_discard_restores_clean_draft(tmp_path: Path) -> None:
     studio = AdminStudio.load(_write_admin_files(tmp_path))
     draft = studio.create_draft()
