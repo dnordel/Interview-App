@@ -13,6 +13,9 @@ from candidate_report import (
     resolve_legacy_report_path,
 )
 from candidate_report_dialog import CandidateInterviewReportDialog
+from data_store import InterviewHistoryStore
+from notification_models import NotificationTestPayload
+from notification_templates import notification_payload_from_mapping
 from staffing_dashboard_v2 import StaffingDashboardV2Page
 from staffing_service import StaffingService
 from staffing_store import StaffingStore
@@ -87,11 +90,82 @@ class StaffingDashboardHost:
             school_filter=access.school_scope,
             notification_store_path=notification_store_path,
             notification_service_factory=notification_service_factory,
+            notification_test_payload_provider=self.notification_test_payloads,
             director_referral_dismissal_callback=director_referral_dismissal_callback,
             candidate_report_open_callback=self.open_candidate_report,
             director_referral_removal_actor=access.actor,
             director_referral_removal_source=access.removal_source,
         )
+
+    def notification_test_payloads(self, event_type: str) -> list[NotificationTestPayload]:
+        event = str(event_type or "").strip()
+        if not (event.startswith("offer.") or event.startswith("interview.rating.")):
+            return []
+        rows = InterviewHistoryStore(self.history_path).load()
+        options: list[NotificationTestPayload] = []
+        for row in reversed(rows):
+            school = str(row.get("school", "") or "").strip()
+            if self.access.role == "director" and self.access.school_scope:
+                if school.casefold() != self.access.school_scope.casefold():
+                    continue
+            offer_path = str(row.get("offer_path", "") or "").strip()
+            offer_pdf = ""
+            if offer_path:
+                candidate_pdf = Path(offer_path).with_suffix(".pdf")
+                if candidate_pdf.is_file():
+                    offer_pdf = str(candidate_pdf)
+            candidate = str(row.get("candidate", row.get("candidate_name", "")) or "").strip()
+            payload = notification_payload_from_mapping(self._notification_payload_source(row, school))
+            for key, value in {
+                "candidate": candidate,
+                "candidate_name": candidate,
+                "candidate_email": str(row.get("candidate_email", "") or ""),
+                "school": school,
+                "position": str(row.get("position", "") or ""),
+                "offer_status": str(row.get("offer_status", "") or ""),
+                "offer_path": offer_path,
+                "offer_pdf_path": offer_pdf,
+                "interview_date": str(row.get("interview_date", row.get("date", "")) or ""),
+                "history_id": str(row.get("id", row.get("history_id", "")) or ""),
+                "outcome": str(row.get("outcome", "") or ""),
+                "score": str(row.get("score", "") or ""),
+            }.items():
+                if value or key not in payload:
+                    payload[key] = value
+            options.append(
+                NotificationTestPayload(
+                    label=f"{candidate or 'Candidate'} · {school or 'No school'} · {payload['interview_date'] or 'No date'}",
+                    event_type=event,
+                    payload=payload,
+                    source_kind="interview_history",
+                )
+            )
+            if len(options) >= 10:
+                break
+        return options
+
+    def _notification_payload_source(self, row: dict[str, Any], school: str) -> dict[str, Any]:
+        source = dict(row)
+        history_id = str(row.get("id", row.get("history_id", "")) or "").strip()
+        if not history_id:
+            return source
+        try:
+            repository = CandidateReportRepository(self.history_path)
+            if not repository.exists(history_id):
+                return source
+            record = repository.load_visible_version(
+                history_id,
+                role=self.access.role,
+                school_scope=self.access.school_scope if self.access.role == "director" else "",
+            )
+        except (CandidateReportNotFoundError, CandidateReportPermissionError, sqlite3.DatabaseError, OSError):
+            return source
+        snapshot = dict(record.snapshot)
+        snapshot.setdefault("history_id", history_id)
+        snapshot.setdefault("position", row.get("position", ""))
+        snapshot.setdefault("offer_status", row.get("offer_status", ""))
+        snapshot.setdefault("school", school)
+        return {**source, **snapshot}
 
     @property
     def widget(self) -> Any:

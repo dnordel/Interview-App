@@ -2,7 +2,7 @@ module:
   name: notification_service
   language: python
   path: src/notification_service.py
-  version: 1.7.0
+  version: 1.8.0
   description: Generic checkpoint notification emitter that renders safe dynamic payload templates including staffing, offer, start, notice-given, last-working-day, school-code, reply-by-date, candidate-email, and attachment fields, resolves explicit-email and role recipients including Candidate, school Director, Hiring Manager, and Executive Director, supports event-triggered and queued date-offset rules, supports selected-rule test sends from Staffing v2 without enabling disabled rules, auto-sends via local notification SMTP settings or onboarding-compatible SMTP settings, attaches approved-offer PDFs, and records sanitized audit outcomes without importing DOCX/reporting modules.
 functions:
 - name: _send_email_message
@@ -22,6 +22,10 @@ functions:
       required: true
     attachment_paths:
       type: list[Path] | None
+      required: false
+      default: null
+    html_body:
+      type: str | None
       required: false
       default: null
   returns:
@@ -189,6 +193,15 @@ classes:
     exceptions:
     - ValueError
     side_effects: Reads the selected rule by id, bypasses only the rule active flag and date-offset trigger gate, enforces recipients, SMTP settings, and template variables, may send email, and writes sanitized audit outcomes.
+  - name: send_test_preview
+    inputs:
+      rule: {type: NotificationRule, required: true}
+      payload: {type: 'dict[str, str]', required: true}
+      recipient_email: {type: str, required: true}
+      idempotency_key: {type: str, required: true}
+    returns: {type: NotificationSendResult}
+    exceptions: [ValueError]
+    side_effects: Sends the current draft as multipart plain text and safe HTML to one explicit validated recipient; saved rules write sanitized audit rows while unsaved rules remain session-only.
   - name: run_due_notifications
     inputs: {}
     returns:
@@ -215,6 +228,7 @@ data_structures:
 dependencies:
 - notification_models
 - notification_store
+- notification_templates
 - onboarding_operations
 - platform_services
 - email_security

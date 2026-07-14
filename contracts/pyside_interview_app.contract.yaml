@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.75.0
+  version: 2.0.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, resizable splitter sections, school/classroom selectors, wider color-coded classroom list with per-classroom status-count overview, metric cards, positions table, fully editable right-side assignment/person details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics, parallel Staffing v2 navigation/page shell with its own mockup-style staffing sidebar and forced light Qt theme, People / Employee Management and Assignment History sub-dashboards for the mockup-driven rewrite backed by staffing_dashboard_v2 while the legacy Staffing page remains available,
@@ -10,7 +10,7 @@ module:
     compact home draft actions beside the start action, guided review-then-apply Admin Studio backed by admin_studio
     with dashboard-first grouped admin-console navigation, standard icons on each
     selectable Admin Studio nav item, Environment/User cards at the bottom of the Admin Studio rail, distinct status pills,
-    icon-labeled Admin Dashboard cards with wired Quick Links shortcuts including edit-mode notification rule creation, inline
+    icon-labeled Admin Dashboard cards with a Notifications shortcut routed directly to Staffing v2, inline
     clickable Validation Review blocker list, refreshed Draft Changes file summaries,
     Publishing Readiness checklist rows, and validation-gated Publish Changes action,
     screen-aware initial window sizing and available-screen maximum-size clamping, adaptive resize behavior for narrow and desktop widths, font-metric-aware responsive navigation/action sizing for Windows text/display scaling, viewport-clamped main pages that allow vertical overflow without forcing a hard page width, horizontally scrollable workspace action bars,
@@ -23,13 +23,11 @@ module:
     trait editor with edit-gated weight minus/plus stepper, applicable-track checkboxes, descriptor and sample-answer text controls, validation impact, selected-trait-synced linked question preview/jump action, sample-answer
     rows, and publish-rule checklist panels, searchable read-only Signal Hints groups with category chips, selected-card state, selectable detail reference, colored High/Moderate/Low signal-level cards, and no legacy raw table fallback
     panel, selectable Templates & Folders school cards with wired Browse/Copy/Test Write actions, Add School draft flow, Delete School draft removal, offer template health cards with edit-gated New Template draft path picker, edit-gated detail drawer, folder picker, clipboard copy, and safe write-test probe action,
-    selectable Notifications rule cards with enabled-status filtering, sort controls, edit-gated create-rule/editor flow, removable recipient chips backed by the draft recipients field, subject variable insertion controls, email body toolbar insertion controls, user-friendly trigger and modular relative-date scheduling controls for before/on/after any supported or typed date field, live validation,
-    notification variable insertion chips, selected rule state, editor metadata,
-    variables preview and validation panels, and template preview dialog, selectable
+    selectable
     DeepSeek Model comparison cards with hidden backing selector, hardware, Ollama compatibility, and performance guidance panels,
     DeepSeek Prompt templates with mockup feature summary strip, searchable prompt cards, selected-prompt status/metadata header, edit-gated new-template draft flow, edit-gated prompt editor, edit-gated prompt version note field that unblocks publish validation, right-side Inspector/Activity tab panel, explicit JSON/Text format dropdown, expanded prompt editor dialog, nine visible variable insertion chips, required-variable validation, live editor footer
     showing line, column, spacing, encoding, newline, and selected format status, clickable variable
-    insertion chips, Prompt Settings dialog with required-variable and validation policy, sample-data Prompt Preview dialog, prompt-specific Version History dialog, dashboard-level Version History dialog covering prompts/rubrics/notifications/JSON files, selectable Advanced JSON
+    insertion chips, Prompt Settings dialog with required-variable and validation policy, sample-data Prompt Preview dialog, prompt-specific Version History dialog, dashboard-level Version History dialog covering prompts/rubrics/JSON files, selectable Advanced JSON
     file cards with mockup summary strip, selected-card state, read-only code viewer controls, JSON syntax highlighting, line-number gutter with warning marker, highlighted validation issue line, copy-to-clipboard actions for viewer text and file path, read-only expanded viewer dialog, viewer footer, issue/read-only detail panels with jump-to-line action, no legacy raw table fallback, and guarded JSON
     Editor draft dialog gated by global Start Editing mode, shared Email Settings account setup screen with compact
     identity/incoming/outgoing panels, working IMAP/POP3 default switching, and
@@ -746,11 +744,10 @@ classes:
     calendar/time and numeric inputs, editable offer-only position choices, automatic
     30-hour template selection, school-routed destinations, and post-generation open actions;
     Admin Studio exposes per-school full-time template, part-time template, and offer
-    output-folder fields alongside interview-note routing; Admin Studio exposes
-    checkpoint notification rule rows for editable custom event types, active/delete
-    flags, date-offset trigger fields, templates, recipients, and an allowlisted
-    local DeepSeek model choice controlled by card actions with only a hidden
-    selector retained as a backing field.
+    output-folder fields alongside interview-note routing; Admin Studio routes its
+    Notifications shortcut directly to the shared Staffing v2 manager and exposes
+    an allowlisted local DeepSeek model choice controlled by card actions with only
+    a hidden selector retained as a backing field.
     Staffing dashboard view ownership is inline in this PySide shell rather than a
     separate staffing_dashboard_view module.
   locked: false
@@ -771,8 +768,6 @@ classes:
       type: AdminStudio
     admin_draft:
       type: AdminStudioDraft
-    admin_notification_template_button:
-      type: QPushButton | None
     admin_sidebar_rail:
       type: QFrame | None
     _main_nav_page_names:
@@ -1106,8 +1101,7 @@ classes:
     side_effects: none
   - name: _run_admin_dashboard_action
     description: Execute an Admin Dashboard or Quick Links action by navigating to
-      its target section and invoking any specific routed action such as blank
-      notification rule creation while edit mode is active.
+      its target section or opening the shared Staffing v2 Notifications manager.
     locked: false
     inputs:
       action:
@@ -1119,8 +1113,15 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Updates the selected Admin Studio section and may clear the
-      Notifications editor into a new draft rule state.
+    side_effects: Updates the selected Admin Studio section or routes directly to
+      the shared Staffing v2 Notifications manager.
+  - name: _open_v2_notifications_manager
+    description: Route Admin Studio notification shortcuts to the sole shared Staffing v2 manager.
+    locked: false
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Selects the Staffing v2 main page and opens its Notifications dashboard.
   - name: _admin_dashboard_validation_panel
     description: Build the Admin Dashboard Validation Review panel with blocker
       count, clickable top issue rows routed to affected admin sections, and Review
@@ -1152,7 +1153,7 @@ classes:
       Review Changes dialog.
   - name: _admin_dashboard_publishing_readiness_panel
     description: Build the Admin Dashboard Publishing Readiness checklist with
-      folder health, prompt validation, notification completeness, JSON file health,
+      folder health, prompt validation, JSON file health,
       overall blocked/ready status, and View System Health navigation.
     locked: false
     inputs:
@@ -1916,366 +1917,6 @@ classes:
     exceptions: []
     side_effects: Opens an SMTP or SMTP_SSL connection through verify_email_connection
       and updates visible connection status label.
-  - name: _admin_notification_rule_cards
-    description: Build the Notifications screen rule-card list, toolbar filters,
-      event/enabled/timing/recipient/template-completeness filter controls, sort/view
-      controls, visible rule IDs, per-card Open actions, and editor panel while
-      rendering every draft notification rule instead of a capped preview subset.
-    locked: false
-    inputs: {}
-    returns:
-      type: QWidget
-    exceptions: []
-    side_effects: Creates Notifications rule cards for all draft rules, stores card
-      metadata for filtering/sorting, builds editor widgets, and selects the first
-      available rule.
-  - name: _filter_admin_notification_rules
-    description: Apply the Notifications event, enabled-status, trigger-timing,
-      recipient-count, and subject/body-template completeness filters to rule cards
-      while preserving filter-match metadata for tests and UI state.
-    locked: false
-    inputs: {}
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Updates visible notification rule card visibility and
-      adminNotificationFilterMatch properties.
-  - name: _sort_admin_notification_rules
-    description: Apply the Notifications sort control to rule cards by event key
-      or active-recipient count while preserving enabled-status filter state.
-    locked: false
-    inputs: {}
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Reorders visible notification rule widgets in the rule list panel,
-      updates adminNotificationSortRank properties, and reapplies the enabled-status
-      filter.
-  - name: _set_admin_notification_view_mode
-    description: Apply the Notifications Grid/List toggle to the rule list panel
-      and rule card metadata without mutating notification rules.
-    locked: false
-    inputs: {}
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Updates adminNotificationViewMode properties on the rule list
-      panel and visible notification rule cards.
-  - name: _clear_admin_notification_filters
-    description: Reset Notifications filters to All statuses and show all rule
-      cards.
-    locked: false
-    inputs: {}
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Updates the enabled-status filter control and rule card visibility.
-  - name: _refresh_admin_notification_rule_cards
-    description: Rebuild the visible Notifications rule cards/editor after draft
-      rule create, update, or delete actions and optionally reselect one event.
-    locked: false
-    inputs:
-      selected_event:
-        type: str
-        required: false
-        default: ''
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Replaces visible notification card/editor widgets and reapplies
-      Admin Studio edit-mode enablement.
-  - name: _create_admin_notification_rule_editor
-    description: Clear the Notifications editor into a blank draft notification
-      rule state so Start Editing users can create a new rule from the card toolbar.
-    locked: false
-    inputs: {}
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Clears selected notification metadata, deselects visible cards,
-      resets rule editor fields to inactive event-trigger defaults, clears recipients,
-      refreshes recipient chips and validation, and focuses the event field.
-  - name: _admin_notification_date_fields
-    description: Return suggested notification date-field names for relative-date
-      scheduling, including start date, offer generated date, date notice given,
-      last working day, and legacy alias keys while leaving the editor combo editable
-      for future event date payload keys.
-    locked: false
-    inputs: {}
-    returns:
-      type: list[str]
-    exceptions: []
-    side_effects: none
-  - name: _admin_notification_timing_label
-    description: Convert a persisted notification trigger timing key into an
-      admin-facing label for event or relative-date scheduling.
-    locked: false
-    inputs:
-      timing:
-        type: str
-        required: true
-    returns:
-      type: str
-    exceptions: []
-    side_effects: none
-  - name: _admin_notification_selected_timing
-    description: Return the persisted notification trigger timing key selected
-      by the trigger combo.
-    locked: false
-    inputs: {}
-    returns:
-      type: str
-    exceptions: []
-    side_effects: Reads the current Notifications editor trigger combo-box item data.
-  - name: _admin_notification_date_field_label
-    description: Convert a persisted notification date-field key or supported alias
-      into an admin-facing label for relative-date scheduling controls.
-    locked: false
-    inputs:
-      field:
-        type: str
-        required: true
-    returns:
-      type: str
-    exceptions: []
-    side_effects: none
-  - name: _admin_notification_selected_date_field
-    description: Return the persisted notification date-field key selected by the
-      editable date-field combo, preserving custom typed payload keys.
-    locked: false
-    inputs: {}
-    returns:
-      type: str
-    exceptions: []
-    side_effects: Reads the current Notifications editor combo-box text and item data.
-  - name: _admin_notification_schedule_text
-    description: Format a notification rule's event or date-offset timing into
-      readable before/on/after scheduling text.
-    locked: false
-    inputs:
-      rule:
-        type: NotificationRule
-        required: true
-    returns:
-      type: str
-    exceptions: []
-    side_effects: none
-  - name: _set_admin_notification_offset_controls
-    description: Populate the Notifications editor before/on/after direction and
-      absolute day count controls from a signed offset_days value.
-    locked: false
-    inputs:
-      offset_days:
-        type: int
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Updates visible Notifications date-offset controls.
-  - name: _admin_notification_signed_offset_days
-    description: Convert the Notifications editor direction and absolute day count
-      controls into signed offset_days where negative means before and positive
-      means after.
-    locked: false
-    inputs: {}
-    returns:
-      type: int
-    exceptions: []
-    side_effects: none
-  - name: _sync_admin_notification_schedule_summary
-    description: Refresh the visible Notifications schedule summary from current
-      event/date-field/direction/day controls.
-    locked: false
-    inputs: {}
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Updates visible Notifications schedule summary label.
-  - name: _sync_admin_notification_recipients_from_text
-    description: Synchronize removable Notifications recipient chips from the
-      comma-separated recipient text field while preserving known role/name labels.
-    locked: false
-    inputs: {}
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Updates selected recipient metadata, visible recipient chips, and
-      notification validation.
-  - name: _admin_notification_recipient_emails
-    description: Parse normalized recipient email entries from the Notifications
-      editor recipient text field.
-    locked: false
-    inputs: {}
-    returns:
-      type: list[str]
-    exceptions: []
-    side_effects: none
-  - name: _render_admin_notification_recipient_chips
-    description: Render the Notifications recipient selector chips with role/email
-      labels and edit-gated Remove actions.
-    locked: false
-    inputs: {}
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Rebuilds visible recipient chip widgets and remove buttons.
-  - name: _remove_admin_notification_recipient
-    description: Remove one recipient from the Notifications editor chip selector,
-      update the backing recipient text field, and refresh validation.
-    locked: false
-    inputs:
-      email:
-        type: str
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Updates selected recipient metadata, backing recipient text, visible
-      recipient chips, and notification validation.
-  - name: _select_admin_notification_rule
-    description: Populate the Admin Studio Notifications rule editor from the selected
-      rule card, including selected-card state, rule ID/event metadata, editable
-      date field, before/on/after direction, absolute day count, recipient chips,
-      and schedule summary.
-    locked: false
-    inputs:
-      rule:
-        type: NotificationRule
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Updates notification editor fields, selected notification rule
-      state, selected-card styling, editor metadata, recipient chips, and date-offset
-      controls.
-  - name: _delete_admin_notification_rule_editor
-    description: Remove the selected Notifications rule from the in-memory admin
-      draft, visible rule card list, and mirrored notification review table without
-      writing files until the existing Save Draft/Review/Publish flow runs.
-    locked: false
-    inputs: {}
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Mutates AdminStudioDraft notification rules, removes the selected
-      notification card and table row, selects the next available rule or clears
-      the editor, and refreshes Admin Studio status.
-  - name: _cancel_admin_notification_rule_editor
-    description: Restore the Notifications editor to the selected draft rule without
-      saving any partial field edits; if no selected rule remains, selects the first
-      available rule or clears into a blank draft rule state.
-    locked: false
-    inputs: {}
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Re-populates visible notification editor fields and selected card
-      state from AdminStudioDraft notification rules.
-  - name: _insert_admin_notification_variable
-    description: Insert a notification template variable token at the current
-      notification body editor cursor when edit mode has enabled the editor.
-    locked: false
-    inputs:
-      token:
-        type: str
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Mutates visible notification body text and refreshes validation
-      label.
-  - name: _insert_admin_notification_subject_variable
-    description: Insert a notification template variable token at the current
-      notification subject editor cursor when edit mode has enabled the editor.
-    locked: false
-    inputs:
-      token:
-        type: str
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Mutates visible notification subject text and refreshes
-      validation label.
-  - name: _insert_admin_notification_body_snippet
-    description: Insert a notification email body toolbar snippet or variable token
-      at the current body editor cursor when edit mode has enabled the editor.
-    locked: false
-    inputs:
-      text:
-        type: str
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Mutates visible notification body text and refreshes validation
-      label.
-  - name: _sync_admin_notification_rule_validation
-    description: Refresh the Notifications rule editor validation summary for active
-      rules missing subject, body, recipients, selected date-field basis, or recognized template variables,
-      including live subject/body/recipient edits before Save Changes.
-    locked: false
-    inputs: {}
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Updates visible notification validation label, schedule summary,
-      and Variables Preview content.
-  - name: _show_admin_notification_preview_dialog
-    description: Show the Notifications template preview dialog for the currently
-      selected rule editor subject and body.
-    locked: false
-    inputs: {}
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Creates and shows a PySide preview dialog.
-  - name: _build_admin_notification_preview_dialog
-    description: Build the Notifications template preview dialog with rendered
-      sample subject/body output and unresolved variable warnings.
-    locked: false
-    inputs: {}
-    returns:
-      type: QDialog
-    exceptions: []
-    side_effects: Creates PySide dialog widgets.
-  - name: _admin_notification_preview_sample
-    description: Return deterministic sample staffing data for rendering notification
-      template previews without external data access.
-    locked: false
-    inputs: {}
-    returns:
-      type: dict[str, str]
-    exceptions: []
-    side_effects: none
-  - name: _render_admin_notification_template
-    description: Render a notification template with sample data while preserving
-      and reporting unresolved placeholders.
-    locked: false
-    inputs:
-      template:
-        type: str
-        required: true
-      sample:
-        type: dict[str, str]
-        required: true
-    returns:
-      type: tuple[str, list[str]]
-    exceptions: []
-    side_effects: none
-  - name: _save_admin_notification_rule_editor
-    description: Save the selected Notifications rule editor fields into the in-memory
-      admin draft and mirrored notifications review table, including typed date
-      field and signed before/after offset; file writes still require the existing
-      draft/review/apply flow.
-    locked: false
-    inputs: {}
-    returns:
-      type: None
-    exceptions:
-    - ValueError
-    side_effects: Mutates AdminStudioDraft notification rules and visible notifications
-      table text for the selected rule.
   - name: _select_admin_prompt_template
     description: Populate the Admin Studio DeepSeek Prompts editor from the selected
       prompt template card and refresh validation plus editor footer state.
@@ -2873,7 +2514,7 @@ classes:
     description: Build the Admin Studio validation review content with functional
       issue filter controls, one card per blocking issue, plain-language Why this
       matters and What to do sections, targeted fix hint, action button that opens
-      the affected Admin Studio section and exact affected notification/prompt when
+      the affected Admin Studio section and exact affected prompt when
       available, View Details action for technical diagnostics, and a publish availability
       panel with a disabled Publish blocked button while blockers remain.
     locked: false
@@ -2908,8 +2549,8 @@ classes:
       properties.
   - name: _route_admin_validation_issue
     description: Route one Validation Review issue action to the affected Admin
-      Studio section and select the specific notification rule, DeepSeek prompt,
-      or Advanced JSON file/line when the validation message names one.
+      Studio section and select the specific DeepSeek prompt or Advanced JSON
+      file/line when the validation message names one.
     locked: false
     inputs:
       error:
@@ -2922,20 +2563,7 @@ classes:
       type: None
     exceptions: []
     side_effects: Changes the selected Admin Studio section and may update the
-      selected notification rule/editor fields, selected prompt editor, or selected
-      Advanced JSON file viewer and issue line.
-  - name: _admin_validation_notification_event
-    description: Extract a notification event key from a validation error message
-      that references a named notification rule.
-    locked: false
-    inputs:
-      error:
-        type: str
-        required: true
-    returns:
-      type: str
-    exceptions: []
-    side_effects: none
+      selected prompt editor or selected Advanced JSON file viewer and issue line.
   - name: _admin_validation_prompt_key
     description: Extract a DeepSeek prompt key from a validation error message that
       references a named prompt or blank prompt key.
@@ -4280,18 +3908,6 @@ classes:
       type: None
     exceptions: []
     side_effects: May convert an approved-offer DOCX to PDF, read notification settings, and write notification audit/send email.
-  - name: _open_notification_template_dialog
-    description: Open a PySide pop-up for creating or modifying one Admin Studio
-      notification template row, including custom system event, active/delete state,
-      event/date-offset trigger controls, subject/body templates, recipients, and
-      visible supported placeholder fields.
-    locked: false
-    inputs: {}
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Shows a modal dialog and writes accepted edits back to the visible
-      Admin Studio notification table for later review/apply.
   - name: _emit_pyside_rating_notification
     description: Emit generic interview rating notification events for Hire and Borderline
       PySide finalize outcomes only, including dynamic candidate, qualification,
@@ -4687,7 +4303,7 @@ data_structures:
 - name: pyside_desktop_surface
   type: documented_surface_map
   description: Single supported desktop GUI surface. PySide implements interview finalize/history,
-    onboarding, Admin Studio, settings, validation, notification editing, path-safety,
+    onboarding, Admin Studio, settings, validation, Staffing v2 notification routing, path-safety,
     and UI-mode behavior directly with setup_and_run/runtime_wrapper launch support while
     shared runtime/services remain toolkit-neutral.
 dependencies:

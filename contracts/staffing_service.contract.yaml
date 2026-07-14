@@ -2,9 +2,17 @@ module:
   name: staffing_service
   language: python
   path: src/staffing_service.py
-  version: 0.20.0
+  version: 0.22.0
   description: Staffing assignment state machine, service-backed classroom, position, person creation, director interview referral/completion tracking with optional pending-queue fallback, mistaken-position deletion, queued Dropbox edit handling, staffing dashboard metrics with pending-operation projection and workbook display metadata, confirmed person moves, editable assignment details, person permit metadata updates, and post-commit notification emission for successful transactions.
-functions: []
+functions:
+- name: staffing_notification_payload
+  locked: false
+  inputs:
+    assignment: {type: StaffingAssignment, required: true}
+    person: {type: 'StaffingPerson | None', required: false, default: null}
+  returns: {type: 'dict[str, str]'}
+  exceptions: []
+  side_effects: none
 classes:
 - name: StaffingService
   description: Applies staffing transactions and director interview completion records through StaffingStore and emits checkpoint notifications after successful assignment commits.

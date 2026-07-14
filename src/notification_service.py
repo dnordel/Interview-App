@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import inspect
 import re
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, timedelta
 from email.message import EmailMessage
 from pathlib import Path
@@ -13,6 +14,11 @@ from typing import Any
 from email_security import is_valid_email_address, sanitize_email_subject
 from notification_models import NotificationRecipient, NotificationRule, NotificationSendResult
 from notification_store import NotificationStore
+from notification_templates import (
+    NOTIFICATION_TEMPLATE_FIELDS,
+    render_notification_templates,
+    validate_notification_rule,
+)
 from platform_services import USER_ARTIFACTS_DIR, atomic_write_json, safe_read_json
 
 
@@ -43,55 +49,6 @@ DIRECTOR_EMAILS_BY_SCHOOL = {
     "north long beach": "director@launchpadpreschoolNLB.com",
     "palmdale": "director@launchpadpreschoolPMD.com",
 }
-NOTIFICATION_TEMPLATE_FIELDS = (
-    "candidate_name",
-    "candidate",
-    "candidate_email",
-    "person_name",
-    "school",
-    "school_code",
-    "school_location",
-    "director_name",
-    "hiring_manager_name",
-    "recruiter_name",
-    "company_name",
-    "department",
-    "location",
-    "program",
-    "position",
-    "position_name",
-    "position_type",
-    "outcome",
-    "score",
-    "offer_status",
-    "offer_path",
-    "offer_pdf_path",
-    "onboarding_guide_path",
-    "reply_by_date",
-    "interview_date",
-    "history_id",
-    "generated_date",
-    "start_date",
-    "date_notice_given",
-    "shift_start",
-    "shift_end",
-    "notice_given",
-    "final_working_day",
-    "last_working_day",
-    "has_degree",
-    "degree_type",
-    "degree_in_ece",
-    "ece_units_completed",
-    "total_units_completed",
-    "infant_toddler_class_completed",
-    "years_experience",
-    "permit_status",
-    "assignment_status",
-    "classroom",
-    "slot_group",
-)
-
-
 @dataclass
 class EmailSettings:
     account_label: str = ""
@@ -195,6 +152,7 @@ def _send_email_message(
     subject: str,
     body: str,
     attachment_paths: list[Path] | None = None,
+    html_body: str | None = None,
 ) -> None:
     username = str(getattr(settings, "username", "") or getattr(settings, "smtp_username", "") or "")
     password = str(getattr(settings, "password", "") or getattr(settings, "smtp_password", "") or "")
@@ -211,6 +169,8 @@ def _send_email_message(
     message["From"] = settings.sender_email
     message["To"] = ", ".join(recipients)
     message.set_content(body)
+    if html_body:
+        message.add_alternative(str(html_body), subtype="html")
 
     for path in attachment_paths or []:
         data = Path(path).read_bytes()
@@ -243,7 +203,7 @@ class NotificationService:
     ) -> None:
         self.store = store or NotificationStore(NOTIFICATION_RULES_PATH)
         self.email_settings = email_settings or EmailSettings()
-        self.send_email = send_email or _send_email_message
+        self.send_email = send_email
         self.current_date = current_date or date.today
 
     def emit_event(
@@ -279,6 +239,65 @@ class NotificationService:
             str(idempotency_key or "").strip(),
             bypass_trigger=True,
         )
+
+    def send_test_preview(
+        self,
+        rule: NotificationRule,
+        payload: dict[str, str],
+        recipient_email: str,
+        idempotency_key: str,
+    ) -> NotificationSendResult:
+        recipient = str(recipient_email or "").strip()
+        if not is_valid_email_address(recipient):
+            raise ValueError("A valid test recipient email is required.")
+        key = str(idempotency_key or "").strip()
+        if not key:
+            raise ValueError("Notification idempotency key is required.")
+
+        event_type = f"{rule.event_type}.test"
+
+        def finish(status: str, *, recipient_count: int = 0, error: str = "") -> NotificationSendResult:
+            safe_error = _sanitize_error(error)
+            if rule.id is not None:
+                self.store.record_send_attempt(
+                    event_type=event_type,
+                    rule_id=rule.id,
+                    idempotency_key=key,
+                    recipient_count=recipient_count,
+                    status=status,
+                    error=safe_error,
+                )
+            return NotificationSendResult(event_type, rule.id, status, recipient_count, safe_error)
+
+        validation_rule = replace(
+            rule,
+            active=True,
+            recipients=[NotificationRecipient(email=recipient)],
+        )
+        blocking = [issue for issue in validate_notification_rule(validation_rule) if issue.blocking]
+        if blocking:
+            return finish("blocked", error=blocking[0].message)
+
+        rendered = render_notification_templates(rule, payload)
+        if rendered.unresolved_fields:
+            return finish(
+                "blocked",
+                error=f"Missing template values: {', '.join(rendered.unresolved_fields)}.",
+            )
+        attachment_paths, attachment_error = _notification_attachment_paths(f"{rule.event_type}.test", payload)
+        if attachment_error:
+            return finish("blocked", recipient_count=1, error=attachment_error)
+        try:
+            self._deliver_message(
+                [recipient],
+                rendered.subject,
+                rendered.plain_body,
+                rendered.html_body,
+                attachment_paths,
+            )
+        except Exception as exc:
+            return finish("failed", recipient_count=1, error=str(exc))
+        return finish("sent", recipient_count=1)
 
     def _send_for_rule(
         self,
@@ -320,9 +339,9 @@ class NotificationService:
             )
             return NotificationSendResult(event_type=event_type, rule_id=rule_id, status="blocked", recipient_count=len(recipients), error=blocked_error)
 
-        values = {str(key): str(value) for key, value in payload.items()}
-        subject = _render_notification_template(rule.subject_template, values)
-        body = _render_notification_template(rule.body_template, values)
+        rendered = render_notification_templates(rule, payload)
+        subject = rendered.subject
+        body = rendered.plain_body
         attachment_paths, attachment_error = _notification_attachment_paths(event_type, payload)
         if attachment_error:
             self.store.record_send_attempt(
@@ -335,10 +354,13 @@ class NotificationService:
             )
             return NotificationSendResult(event_type=event_type, rule_id=rule_id, status="blocked", recipient_count=len(recipients), error=attachment_error)
         try:
-            if attachment_paths:
-                self.send_email(self.email_settings, recipients, subject, body, attachment_paths)
-            else:
-                self.send_email(self.email_settings, recipients, subject, body)
+            self._deliver_message(
+                recipients,
+                subject,
+                body,
+                rendered.html_body,
+                attachment_paths,
+            )
         except Exception as exc:
             error = _sanitize_error(str(exc))
             self.store.record_send_attempt(
@@ -359,6 +381,35 @@ class NotificationService:
             status="sent",
         )
         return NotificationSendResult(event_type=event_type, rule_id=rule_id, status="sent", recipient_count=len(recipients))
+
+    def _deliver_message(
+        self,
+        recipients: list[str],
+        subject: str,
+        plain_body: str,
+        html_body: str,
+        attachment_paths: list[str],
+    ) -> None:
+        if self.send_email is None:
+            parameters = inspect.signature(_send_email_message).parameters
+            if "html_body" in parameters:
+                _send_email_message(
+                    self.email_settings,
+                    recipients,
+                    subject,
+                    plain_body,
+                    attachment_paths or None,
+                    html_body=html_body,
+                )
+            elif attachment_paths:
+                _send_email_message(self.email_settings, recipients, subject, plain_body, attachment_paths)
+            else:
+                _send_email_message(self.email_settings, recipients, subject, plain_body)
+            return
+        if attachment_paths:
+            self.send_email(self.email_settings, recipients, subject, plain_body, attachment_paths)
+            return
+        self.send_email(self.email_settings, recipients, subject, plain_body)
 
     def run_due_notifications(self) -> list[NotificationSendResult]:
         results: list[NotificationSendResult] = []

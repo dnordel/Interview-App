@@ -6,15 +6,10 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from string import Formatter
 from typing import Any
 
 from data_store import InterviewAppSettingsStore, QuestionOverridesStore, SchoolOfferSettingsStore
-from email_security import is_valid_email_address
 from interview_runtime import normalize_deepseek_prompt_templates
-from notification_models import NotificationRecipient, NotificationRule
-from notification_service import NOTIFICATION_RULES_PATH
-from notification_store import NotificationStore
 from platform_services import (
     DEFAULT_RUBRIC_PATH,
     INTERVIEW_APP_SETTINGS_PATH,
@@ -28,7 +23,6 @@ from question_settings_service import QuestionSettingsService
 DEFAULT_PROMPTS_PATH = Path(__file__).resolve().parent.parent / "config" / "deepseek_prompts.json"
 DEEPSEEK_MODEL_CHOICES = ("deepseek-r1:1.5b", "deepseek-r1:8b", "deepseek-r1:14b")
 DEFAULT_DEEPSEEK_MODEL = "deepseek-r1:8b"
-NOTIFICATION_TRIGGER_TIMINGS = {"event", "date_offset"}
 
 
 @dataclass(frozen=True)
@@ -38,7 +32,6 @@ class AdminStudioPaths:
     school_settings_path: Path = SCHOOL_OFFER_SETTINGS_PATH
     prompts_path: Path = DEFAULT_PROMPTS_PATH
     app_settings_path: Path = INTERVIEW_APP_SETTINGS_PATH
-    notification_rules_path: Path = NOTIFICATION_RULES_PATH
     backup_dir: Path | None = None
 
 
@@ -81,13 +74,11 @@ class AdminStudioDraft:
     baseline_school_settings: dict[str, dict[str, str]]
     baseline_prompts: dict[str, Any]
     baseline_app_settings: dict[str, Any]
-    baseline_notification_rules: list[NotificationRule]
     rubric: dict[str, Any]
     overrides: dict[str, Any]
     school_settings: dict[str, dict[str, str]]
     prompts: dict[str, Any]
     app_settings: dict[str, Any]
-    notification_rules: list[NotificationRule]
     prompt_version_notes: dict[str, str] = field(default_factory=dict)
 
     @classmethod
@@ -99,7 +90,6 @@ class AdminStudioDraft:
         school_settings: dict[str, dict[str, str]],
         prompts: dict[str, Any],
         app_settings: dict[str, Any] | None = None,
-        notification_rules: list[NotificationRule] | None = None,
     ) -> "AdminStudioDraft":
         app_settings = app_settings or {}
         return cls(
@@ -108,13 +98,11 @@ class AdminStudioDraft:
             baseline_school_settings=deepcopy(school_settings),
             baseline_prompts=deepcopy(prompts),
             baseline_app_settings=deepcopy(app_settings),
-            baseline_notification_rules=deepcopy(notification_rules or []),
             rubric=deepcopy(rubric),
             overrides=deepcopy(overrides),
             school_settings=deepcopy(school_settings),
             prompts=deepcopy(prompts),
             app_settings=deepcopy(app_settings),
-            notification_rules=deepcopy(notification_rules or []),
         )
 
     @property
@@ -129,10 +117,6 @@ class AdminStudioDraft:
             "school_offer_settings.json": (self.baseline_school_settings, self.school_settings),
             "deepseek_prompts.json": (self.baseline_prompts, self.prompts),
             "interview_app_settings.json": (self.baseline_app_settings, self.app_settings),
-            "notification_rules.sqlite3": (
-                _notification_rule_snapshot(self.baseline_notification_rules),
-                _notification_rule_snapshot(self.notification_rules),
-            ),
         }
         for filename, (before, after) in pairs.items():
             if before != after:
@@ -147,7 +131,6 @@ class AdminStudioDraft:
         lines.extend(_school_change_lines(self.baseline_school_settings, self.school_settings))
         lines.extend(_prompt_change_lines(self.baseline_prompts, self.prompts))
         lines.extend(_app_settings_change_lines(self.baseline_app_settings, self.app_settings))
-        lines.extend(_notification_change_lines(self.baseline_notification_rules, self.notification_rules))
         if self.baseline_overrides != self.overrides:
             lines.append("Question flow or custom question settings changed.")
         return AdminChangeSummary(changed_files=list(changed), lines=lines)
@@ -159,7 +142,6 @@ class AdminStudioDraft:
             school_settings=self.baseline_school_settings,
             prompts=self.baseline_prompts,
             app_settings=self.baseline_app_settings,
-            notification_rules=self.baseline_notification_rules,
         )
 
     def update_trait(self, trait_id: str, updates: dict[str, Any]) -> None:
@@ -416,54 +398,6 @@ class AdminStudioDraft:
         clean_model = str(model or "").strip()
         self.app_settings["deepseek_summary_model"] = clean_model
 
-    def update_notification_rule(self, event_type: str, updates: dict[str, str]) -> None:
-        event_type = str(event_type or "").strip()
-        if not event_type:
-            raise ValueError("Notification event type is required.")
-        current: NotificationRule | None = None
-        for rule in self.notification_rules:
-            update_id = str(updates.get("id", "")).strip()
-            if update_id and rule.id is not None and str(rule.id) == update_id:
-                current = rule
-                break
-            if not update_id and rule.event_type == event_type:
-                current = rule
-                break
-        recipients_text = str(updates.get("recipients", "")).strip()
-        recipients = [
-            NotificationRecipient(email=email.strip())
-            for email in recipients_text.split(",")
-            if email.strip()
-        ]
-        active = _parse_notification_active(updates.get("active", current.active if current else "true"))
-        trigger_timing = str(updates.get("trigger_timing", current.trigger_timing if current else "event")).strip() or "event"
-        if trigger_timing not in NOTIFICATION_TRIGGER_TIMINGS:
-            raise ValueError("Notification trigger timing must be event or date_offset.")
-        date_field = str(updates.get("date_field", current.date_field if current else "")).strip()
-        offset_days = _parse_notification_offset_days(updates.get("offset_days", current.offset_days if current else "0"))
-        replacement = NotificationRule(
-            id=current.id if current else None,
-            event_type=event_type,
-            label=str(updates.get("label", current.label if current else event_type)).strip(),
-            subject_template=str(updates.get("subject_template", current.subject_template if current else "")).strip(),
-            body_template=str(updates.get("body_template", current.body_template if current else "")).strip(),
-            recipients=recipients if recipients_text else (current.recipients if current else []),
-            active=active,
-            trigger_timing=trigger_timing,
-            date_field=date_field,
-            offset_days=offset_days,
-            created_at=current.created_at if current else "",
-            updated_at=current.updated_at if current else "",
-        )
-        self.notification_rules = [
-            rule for rule in self.notification_rules
-            if not (rule.event_type == event_type and rule.id == replacement.id)
-        ]
-        self.notification_rules.append(replacement)
-
-    def delete_notification_rule(self, rule_id: int) -> None:
-        self.notification_rules = [rule for rule in self.notification_rules if rule.id != int(rule_id)]
-
     def validate(self) -> list[str]:
         errors: list[str] = []
         try:
@@ -521,41 +455,6 @@ class AdminStudioDraft:
             if not _trait_has_linked_question(question_flow, trait_id, applicable_tracks):
                 errors.append(f"Rubric trait '{trait_id}' is missing a linked question in Questions & Flow.")
                 break
-        for rule in self.notification_rules:
-            if not rule.event_type.strip():
-                errors.append("Notification event type is required.")
-                break
-            if not rule.label.strip():
-                errors.append("Notification label is required.")
-                break
-            if rule.active and not rule.subject_template.strip():
-                errors.append(f"Active notification rule '{rule.event_type}' requires a subject template.")
-                break
-            if rule.active and not rule.body_template.strip():
-                errors.append(f"Active notification rule '{rule.event_type}' requires a body template.")
-                break
-            if rule.active and not [recipient for recipient in rule.recipients if recipient.active]:
-                errors.append(f"Active notification rule '{rule.event_type}' requires at least one active recipient.")
-                break
-            if rule.trigger_timing not in NOTIFICATION_TRIGGER_TIMINGS:
-                errors.append(f"Notification rule '{rule.event_type}' trigger timing must be event or date_offset.")
-                break
-            if rule.trigger_timing == "date_offset" and not rule.date_field.strip():
-                errors.append(f"Date-offset notification rule '{rule.event_type}' requires a date field.")
-                break
-            template_errors = _notification_template_errors(rule)
-            if template_errors:
-                errors.extend(template_errors)
-                break
-            for recipient in rule.recipients:
-                if str(recipient.recipient_type or "email").strip() == "role":
-                    if not str(recipient.role_key or "").strip():
-                        errors.append("Notification role recipient requires a role key.")
-                        return errors
-                    continue
-                if not is_valid_email_address(recipient.email):
-                    errors.append("Invalid notification recipient email.")
-                    return errors
         return errors
 
 
@@ -569,7 +468,6 @@ class AdminStudio:
         school_settings: dict[str, dict[str, str]],
         prompts: dict[str, Any],
         app_settings: dict[str, Any],
-        notification_rules: list[NotificationRule],
     ) -> None:
         self.paths = _normalize_paths(paths)
         self.rubric = deepcopy(rubric)
@@ -577,7 +475,6 @@ class AdminStudio:
         self.school_settings = deepcopy(school_settings)
         self.prompts = deepcopy(prompts)
         self.app_settings = deepcopy(app_settings)
-        self.notification_rules = deepcopy(notification_rules)
 
     @classmethod
     def load(cls, paths: AdminStudioPaths | None = None) -> "AdminStudio":
@@ -587,10 +484,6 @@ class AdminStudio:
         school_store = SchoolOfferSettingsStore(paths.school_settings_path)
         prompts = normalize_deepseek_prompt_templates(_read_json_object(paths.prompts_path))
         app_settings = InterviewAppSettingsStore(paths.app_settings_path).load()
-        notification_store = NotificationStore(paths.notification_rules_path)
-        if not notification_store.list_rules():
-            notification_store.ensure_default_rules()
-        notification_rules = notification_store.list_rules()
         return cls(
             paths=paths,
             rubric=rubric,
@@ -598,7 +491,6 @@ class AdminStudio:
             school_settings=school_store.load(),
             prompts=prompts,
             app_settings=app_settings,
-            notification_rules=notification_rules,
         )
 
     def create_draft(self) -> AdminStudioDraft:
@@ -608,7 +500,6 @@ class AdminStudio:
             school_settings=self.school_settings,
             prompts=self.prompts,
             app_settings=self.app_settings,
-            notification_rules=self.notification_rules,
         )
 
     def summary(self, draft: AdminStudioDraft | None = None) -> AdminStudioSummary:
@@ -622,7 +513,6 @@ class AdminStudio:
             AdminSection("Configuration", "rubrics", "Rubrics", "Tune scored trait cards, weights, and descriptors.", len(traits)),
             AdminSection("Configuration", "signals", "Signal Hints", "Search trait signal definitions by category.", len(traits)),
             AdminSection("Configuration", "templates", "Templates & Folders", "Check school output folders and template health.", len(active.school_settings)),
-            AdminSection("Configuration", "notifications", "Notifications", "Manage checkpoint rule cards, recipients, and previews.", len(active.notification_rules)),
             AdminSection("AI Settings", "deepseek_model", "DeepSeek Model", "Choose local model speed, quality, and hardware fit.", 1),
             AdminSection("AI Settings", "prompts", "DeepSeek Prompts", "Edit prompt templates with variables, preview, and validation.", len(active.prompts)),
             AdminSection("System", "advanced", "Advanced JSON", "Review source JSON health in a guarded read-only layout.", 5),
@@ -655,20 +545,11 @@ class AdminStudio:
             atomic_write_json(self.paths.prompts_path, normalize_deepseek_prompt_templates(draft.prompts), indent=2, ensure_ascii=False)
         if "interview_app_settings.json" in changed:
             InterviewAppSettingsStore(self.paths.app_settings_path).save(draft.app_settings)
-        if "notification_rules.sqlite3" in changed:
-            store = NotificationStore(self.paths.notification_rules_path)
-            current_ids = {rule.id for rule in self.notification_rules if rule.id is not None}
-            draft_ids = {rule.id for rule in draft.notification_rules if rule.id is not None}
-            for rule_id in sorted(current_ids - draft_ids):
-                store.delete_rule(rule_id)
-            for rule in draft.notification_rules:
-                store.save_rule(rule)
         self.rubric = deepcopy(draft.rubric)
         self.overrides = deepcopy(draft.overrides)
         self.school_settings = deepcopy(draft.school_settings)
         self.prompts = deepcopy(draft.prompts)
         self.app_settings = deepcopy(draft.app_settings)
-        self.notification_rules = deepcopy(draft.notification_rules)
         return AdminApplyResult(applied=True, changed_files=list(changed), backup_paths=backup_paths)
 
     def _backup_changed_files(self, changed: dict[str, tuple[Any, Any]]) -> list[Path]:
@@ -681,7 +562,6 @@ class AdminStudio:
             "school_offer_settings.json": self.paths.school_settings_path,
             "deepseek_prompts.json": self.paths.prompts_path,
             "interview_app_settings.json": self.paths.app_settings_path,
-            "notification_rules.sqlite3": self.paths.notification_rules_path,
         }
         backups: list[Path] = []
         for filename in changed:
@@ -703,7 +583,6 @@ def _normalize_paths(paths: AdminStudioPaths) -> AdminStudioPaths:
         school_settings_path=Path(paths.school_settings_path),
         prompts_path=Path(paths.prompts_path),
         app_settings_path=Path(paths.app_settings_path),
-        notification_rules_path=Path(paths.notification_rules_path),
         backup_dir=backup_dir,
     )
 
@@ -716,24 +595,6 @@ def _read_json_object(path: Path) -> dict[str, Any]:
     return data if isinstance(data, dict) else {}
 
 
-def _parse_notification_active(value: Any) -> bool:
-    if isinstance(value, bool):
-        return value
-    text = str(value or "").strip().lower()
-    if text in {"1", "true", "yes", "on", "active"}:
-        return True
-    if text in {"0", "false", "no", "off", "inactive"}:
-        return False
-    raise ValueError("Notification Active must be true or false.")
-
-
-def _parse_notification_offset_days(value: Any) -> int:
-    try:
-        return int(str(value if value is not None else "0").strip() or "0")
-    except ValueError as exc:
-        raise ValueError("Notification offset days must be an integer.") from exc
-
-
 def _trait_has_linked_question(question_flow: dict[str, Any], trait_id: str, tracks: Any) -> bool:
     track_list = tracks if isinstance(tracks, list) else []
     for track in track_list:
@@ -741,19 +602,6 @@ def _trait_has_linked_question(question_flow: dict[str, Any], trait_id: str, tra
             if isinstance(item, dict) and item.get("type") == "trait" and str(item.get("id", "")) == trait_id:
                 return True
     return False
-
-
-def _notification_template_errors(rule: NotificationRule) -> list[str]:
-    errors: list[str] = []
-    for field_name, template in (
-        ("subject", rule.subject_template),
-        ("body", rule.body_template),
-    ):
-        try:
-            list(Formatter().parse(template))
-        except ValueError:
-            errors.append(f"Notification {field_name} template for '{rule.event_type}' has invalid placeholders.")
-    return errors
 
 
 def _track_change_lines(before: dict[str, Any], after: dict[str, Any]) -> list[str]:
@@ -808,35 +656,3 @@ def _app_settings_change_lines(before: dict[str, Any], after: dict[str, Any]) ->
     if old_model != new_model:
         return [f"DeepSeek model: {old_model} -> {new_model}"]
     return []
-
-
-def _notification_rule_snapshot(rules: list[NotificationRule]) -> list[dict[str, Any]]:
-    return [
-        {
-            "id": rule.id,
-            "event_type": rule.event_type,
-            "label": rule.label,
-            "active": rule.active,
-            "subject_template": rule.subject_template,
-            "body_template": rule.body_template,
-            "trigger_timing": rule.trigger_timing,
-            "date_field": rule.date_field,
-            "offset_days": rule.offset_days,
-            "recipients": [
-                {
-                    "email": recipient.email,
-                    "name": recipient.name,
-                    "role_label": recipient.role_label,
-                    "active": recipient.active,
-                }
-                for recipient in rule.recipients
-            ],
-        }
-        for rule in sorted(rules, key=lambda item: (item.event_type, item.id or 0, item.label))
-    ]
-
-
-def _notification_change_lines(before: list[NotificationRule], after: list[NotificationRule]) -> list[str]:
-    if _notification_rule_snapshot(before) == _notification_rule_snapshot(after):
-        return []
-    return ["Notification rules changed."]

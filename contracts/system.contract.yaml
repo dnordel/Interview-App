@@ -40,10 +40,17 @@ modules:
     depends_on:
     - notification_models
     - notification_store
+    - notification_templates
     - onboarding_operations
     - platform_services
   notification_store:
     path: src/notification_store.py
+    depends_on:
+    - notification_models
+    - notification_templates
+    - email_security
+  notification_templates:
+    path: src/notification_templates.py
     depends_on:
     - notification_models
     - email_security

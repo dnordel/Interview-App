@@ -5,7 +5,7 @@ from datetime import date
 import pytest
 
 from staffing_models import StaffingDirectorInterviewDifference
-from staffing_service import StaffingService
+from staffing_service import StaffingService, staffing_notification_payload
 from staffing_store import StaffingStaleRevisionError, StaffingStore
 
 
@@ -279,6 +279,13 @@ def test_update_permit_status_records_effective_date_units_and_notes(tmp_path: P
     assert person.units == 24
     assert person.permit_documentation_received is True
     assert person.permit_notes == "Permit file received."
+
+    payload = staffing_notification_payload(updated, person)
+    assert payload["permit_status"] == "teacher_permit_approved"
+    assert payload["permit_effective_date"] == "2026-07-06"
+    assert payload["ece_units"] == "24"
+    assert payload["ece_units_completed"] == "24"
+    assert payload["permit_notes"] == "Permit file received."
 
 
 def test_add_person_creates_active_employee_record(tmp_path: Path) -> None:

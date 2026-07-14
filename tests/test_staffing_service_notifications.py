@@ -59,27 +59,28 @@ def test_open_position_commits_then_emits_need_now_notification(store: StaffingS
     assert result.status == "need_now"
     assert assignment.status == "need_now"
     assert store.active_history_count(assignment_id) == 1
-    assert notifications.events == [
-        (
-            "staffing.assignment.need_now",
-            {
-                "school": "Hawthorne",
-                "classroom": "Tranquility",
-                "position_name": "Teacher 2",
-                "position_type": "Teacher",
-                "slot_group": "",
-                "assignment_status": "need_now",
-                "person_name": "",
-                "start_date": "",
-                "shift_start": "",
-                "shift_end": "",
-                "notice_given": "",
-                "final_working_day": "",
-                "permit_status": "",
-            },
-            "staffing:1:staffing.assignment.need_now:2026-07-01T10:00:00Z",
-        )
-    ]
+    assert len(notifications.events) == 1
+    event_type, payload, idempotency_key = notifications.events[0]
+    assert event_type == "staffing.assignment.need_now"
+    assert idempotency_key == "staffing:1:staffing.assignment.need_now:2026-07-01T10:00:00Z"
+    assert payload | {
+        "school": "Hawthorne",
+        "classroom": "Tranquility",
+        "position_name": "Teacher 2",
+        "position": "Teacher 2",
+        "position_type": "Teacher",
+        "slot_group": "",
+        "assignment_status": "need_now",
+        "person_name": "",
+        "start_date": "",
+        "shift_start": "",
+        "shift_end": "",
+        "notice_given": "",
+        "notice_date": "",
+        "final_working_day": "",
+        "final_day": "",
+        "permit_status": "",
+    } == payload
 
 
 def test_successful_staffing_transitions_emit_matching_events(store: StaffingStore) -> None:

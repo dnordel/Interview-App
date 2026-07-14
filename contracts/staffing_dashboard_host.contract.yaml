@@ -2,8 +2,8 @@ module:
   name: staffing_dashboard_host
   language: python
   path: src/staffing_dashboard_host.py
-  version: 1.0.0
-  description: Shared role-aware Staffing v2 host used by embedded admin/director mode and standalone director launchers; owns one StaffingDashboardV2Page construction path, school-scoped candidate-report authorization, structured/legacy report opening, dialog retention, and privacy-safe failures.
+  version: 1.2.0
+  description: Shared role-aware Staffing v2 host used by embedded admin/director mode and standalone director launchers; owns one StaffingDashboardV2Page construction path, school-scoped candidate-report authorization, curated notification test payload enrichment from structured interview reports, structured/legacy report opening, dialog retention, and privacy-safe failures.
 functions: []
 classes:
 - name: StaffingDashboardAccess
@@ -43,6 +43,19 @@ classes:
     returns: {type: Any}
     exceptions: []
     side_effects: none
+  - name: notification_test_payloads
+    inputs:
+      event_type: {type: str, required: true}
+    returns: {type: 'list[NotificationTestPayload]'}
+    exceptions: []
+    side_effects: Reads school-authorized recent interview history and structured candidate reports, then returns sanitized offer/interview payload choices for Staffing v2 Test Send.
+  - name: _notification_payload_source
+    inputs:
+      row: {type: 'dict[str, Any]', required: true}
+      school: {type: str, required: true}
+    returns: {type: 'dict[str, Any]'}
+    exceptions: []
+    side_effects: Reads one authorized structured candidate report snapshot when available and merges it with the history row for curated notification payload extraction.
   - name: open_candidate_report
     inputs:
       history_id: {type: str, required: true}
@@ -76,6 +89,7 @@ data_structures:
 dependencies:
 - module: candidate_report
 - module: candidate_report_dialog
+- module: notification_templates
 - module: staffing_dashboard_v2
 - module: staffing_service
 - module: staffing_store

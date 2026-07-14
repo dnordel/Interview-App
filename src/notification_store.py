@@ -8,6 +8,7 @@ from typing import Any
 
 from email_security import is_valid_email_address
 from notification_models import NotificationRecipient, NotificationRule
+from notification_templates import validate_notification_rule
 
 
 STAFFING_NOTIFICATION_ROLE_RECIPIENTS = [
@@ -256,6 +257,9 @@ class NotificationStore:
         )
 
     def save_rule(self, rule: NotificationRule) -> NotificationRule:
+        blocking_issues = [issue for issue in validate_notification_rule(rule) if issue.blocking]
+        if blocking_issues:
+            raise ValueError(blocking_issues[0].message)
         event_type = str(rule.event_type or "").strip()
         label = str(rule.label or "").strip()
         if not event_type:

@@ -2,12 +2,12 @@ module:
   name: admin_studio
   language: python
   path: src/admin_studio.py
-  version: 1.15.0
+  version: 2.0.0
   description: Single admin boundary for local configuration review, draft editing,
     dirty tracking, validation, backup creation, and review-then-apply persistence
-    for PySide Admin Studio, including contractor offer templates, checkpoint
-    notification rules, shared email settings navigation, and draft-only rubric
-    trait duplication/deletion.
+    for PySide Admin Studio, including contractor offer templates, shared email
+    settings navigation, and draft-only rubric trait duplication/deletion. Notification
+    management is owned exclusively by Staffing v2.
 functions:
 - name: _trait_has_linked_question
   description: Return whether a rubric trait appears as a trait question in any
@@ -40,8 +40,6 @@ classes:
     prompts_path:
       type: Path
     app_settings_path:
-      type: Path
-    notification_rules_path:
       type: Path
     backup_dir:
       type: Path | None
@@ -97,10 +95,6 @@ classes:
         required: true
       app_settings:
         type: dict[str, Any]
-        required: false
-        default: None
-      notification_rules:
-        type: list[NotificationRule] | None
         required: false
         default: None
     returns:
@@ -326,37 +320,10 @@ classes:
         required: true
     returns:
       type: None
-  - name: update_notification_rule
-    description: Draft one notification rule create/update without writing the notification database;
-      event types may be any system event string, date-offset rules carry date field
-      and offset-days metadata, and Active values must be explicit true/false variants
-      so typos fail closed.
-    inputs:
-      event_type:
-        type: str
-        required: true
-      updates:
-        type: dict[str, str]
-        required: true
-    returns:
-      type: None
-    exceptions:
-    - ValueError
-  - name: delete_notification_rule
-    description: Draft deletion of one notification rule by persisted rule id without
-      writing the notification database until confirmed apply.
-    inputs:
-      rule_id:
-        type: int
-        required: true
-    returns:
-      type: None
   - name: validate
     description: Validate prompt payloads, required version notes for changed DeepSeek
       prompt templates, school folder and offer-template path safety, allowlisted DeepSeek model selection,
-      rubric trait links to Questions & Flow, notification recipients, complete
-      active notification rows, notification trigger timing/date-offset fields,
-      and notification template placeholder syntax before any apply writes.
+      and rubric trait links to Questions & Flow before any apply writes.
     inputs: {}
     returns:
       type: list[str]
@@ -374,8 +341,7 @@ classes:
     returns:
       type: AdminStudio
     side_effects: Reads rubric, question override, school settings, prompt JSON,
-      app settings, and notification rules; creates inactive default notification
-      examples when missing.
+      and app settings.
   - name: create_draft
     inputs: {}
     returns:
@@ -399,14 +365,11 @@ classes:
     returns:
       type: AdminApplyResult
     side_effects: When confirm is true and validation passes, writes changed JSON
-      files and creates/updates/deletes notification rules after creating backups.
+      files after creating backups.
 data_structures: []
 dependencies:
 - data_store
 - interview_runtime
 - platform_services
 - question_settings_service
-- notification_models
-- notification_service
-- notification_store
 - email_security

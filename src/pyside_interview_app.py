@@ -62,8 +62,6 @@ from interview_runtime import (
 from notification_service import (
     EMAIL_ACCOUNT_SETTINGS_PATH,
     NOTIFICATION_RULES_PATH,
-    NOTIFICATION_TEMPLATE_FIELDS,
-    SUPPORTED_NOTIFICATION_EVENTS,
     load_email_account_settings,
     notification_service_from_onboarding,
     notification_service_from_email_account_settings,
@@ -2132,8 +2130,6 @@ def _apply_styles(app: Any) -> None:
         QFrame#AdminStudioTraitDetailPanel,
         QFrame#AdminStudioSignalHintListPanel,
         QFrame#AdminStudioSignalDetailPanel,
-        QFrame#AdminStudioNotificationRuleListPanel,
-        QFrame#AdminStudioNotificationEditPanel,
         QFrame#AdminStudioPromptTemplateListPanel,
         QFrame#AdminStudioPromptEditorPanel,
         QFrame#AdminStudioPromptInspectorPanel,
@@ -2157,7 +2153,6 @@ def _apply_styles(app: Any) -> None:
         QFrame#AdminStudioQuestionCard:hover,
         QFrame#AdminStudioTraitCard:hover,
         QFrame#AdminStudioSchoolFolderCard:hover,
-        QFrame#AdminStudioNotificationRuleCard:hover,
         QFrame#AdminStudioPromptTemplateCard:hover {
             border-color: #93c5fd;
             background: #f8fbff;
@@ -5490,6 +5485,12 @@ class PySideInterviewWindow:
             self.admin_section_list.addItem(nav_item)
             self._admin_nav_stack_indexes[self.admin_section_list.count() - 1] = self.admin_stack.count()
             self.admin_stack.addWidget(self._admin_section_page(section.key, section.title, section.description))
+            if section.key == "templates":
+                notifications_shortcut = self.QtWidgets.QListWidgetItem("Notifications  ↗")
+                notifications_shortcut.setIcon(self._admin_nav_icon("notifications"))
+                notifications_shortcut.setToolTip("Opens V2 Notifications Manager")
+                notifications_shortcut.setData(self.QtCore.Qt.ItemDataRole.UserRole, "notifications")
+                self.admin_section_list.addItem(notifications_shortcut)
         self.admin_section_list.currentRowChanged.connect(self._select_admin_nav_row)
         admin_rail_layout.addWidget(self.admin_section_list, 1)
         environment_card, environment_layout = self._surface()
@@ -5531,6 +5532,10 @@ class PySideInterviewWindow:
         return self.window.style().standardIcon(icon_key)
 
     def _select_admin_nav_row(self, row: int) -> None:
+        item = self.admin_section_list.item(row)
+        if item and item.data(self.QtCore.Qt.ItemDataRole.UserRole) == "notifications":
+            self._open_v2_notifications_manager()
+            return
         stack_index = self._admin_nav_stack_indexes.get(row)
         if stack_index is None:
             for next_row in range(row + 1, self.admin_section_list.count()):
@@ -5538,7 +5543,6 @@ class PySideInterviewWindow:
                     self.admin_section_list.setCurrentRow(next_row)
                     return
             return
-        item = self.admin_section_list.item(row)
         if item and item.data(self.QtCore.Qt.ItemDataRole.UserRole) == "dashboard":
             self._refresh_admin_dashboard_page()
         if item and item.data(self.QtCore.Qt.ItemDataRole.UserRole) == "validation":
@@ -5591,7 +5595,6 @@ class PySideInterviewWindow:
             school_settings_path=SCHOOL_OFFER_SETTINGS_PATH,
             prompts_path=DEEPSEEK_PROMPTS_CONFIG_PATH,
             app_settings_path=INTERVIEW_APP_SETTINGS_PATH,
-            notification_rules_path=NOTIFICATION_RULES_PATH,
         )
 
     def _configure_admin_v2_scroll_areas(self) -> None:
@@ -5628,21 +5631,6 @@ class PySideInterviewWindow:
         if key == "templates":
             tab_layout.addWidget(self._admin_templates_cards(), 2)
             table = self._admin_school_settings_table()
-            tab_layout.addWidget(self._admin_backing_table_container(table))
-            return tab
-        if key == "notifications":
-            self.admin_notifications_layout = tab_layout
-            self.admin_notification_rule_widget = self._admin_notification_rule_cards()
-            tab_layout.addWidget(self.admin_notification_rule_widget, 2)
-            controls = self.QtWidgets.QHBoxLayout()
-            edit_button = self.QtWidgets.QPushButton("Create/Modify Template")
-            edit_button.setObjectName("AdminStudioNotificationTemplateButton")
-            edit_button.clicked.connect(self._open_notification_template_dialog)
-            self.admin_notification_template_button = edit_button
-            controls.addWidget(edit_button)
-            controls.addStretch(1)
-            tab_layout.addLayout(controls)
-            table = self._admin_notifications_table()
             tab_layout.addWidget(self._admin_backing_table_container(table))
             return tab
         if key == "deepseek_model":
@@ -5793,12 +5781,10 @@ class PySideInterviewWindow:
         lowered = [str(error).lower() for error in validation_errors]
         folder_issue = any("folder" in error or "path" in error or "school" in error for error in lowered)
         prompt_issue = any("prompt" in error for error in lowered)
-        notification_issue = any("notification" in error or "recipient" in error or "rule" in error for error in lowered)
         json_issue = any("json" in error for error in lowered)
         return [
             ("Folder health", "Needs attention" if folder_issue else "Healthy"),
             ("Prompt validation", "Needs attention" if prompt_issue else "Up to date"),
-            ("Notification completeness", "Needs attention" if notification_issue else "Good"),
             ("JSON file health", "Needs attention" if json_issue else "Healthy"),
         ]
 
@@ -5849,9 +5835,19 @@ class PySideInterviewWindow:
         }.get(str(action or "").strip(), "")
 
     def _run_admin_dashboard_action(self, action: str, target_key: str) -> None:
+        if target_key == "notifications":
+            self._open_v2_notifications_manager()
+            return
         self._select_admin_section_by_key(target_key)
-        if str(action or "").strip() == "Create / Modify Notification Template" and bool(getattr(self, "admin_edit_mode", False)):
-            self._create_admin_notification_rule_editor()
+
+    def _open_v2_notifications_manager(self) -> None:
+        for row in range(self.sidebar.count()):
+            if self.sidebar.item(row).text() == "Staffing v2":
+                self.sidebar.setCurrentRow(row)
+                break
+        dashboard = getattr(self, "staffing_v2_dashboard", None)
+        if dashboard is not None:
+            dashboard._show_notifications_view()
 
     def _select_admin_section_by_key(self, key: str) -> None:
         for row in range(self.admin_section_list.count()):
@@ -7084,868 +7080,6 @@ class PySideInterviewWindow:
             if category in categories:
                 return category
         return "Other"
-
-    def _admin_notification_rule_cards(self) -> Any:
-        group = self.QtWidgets.QWidget()
-        layout = self.QtWidgets.QHBoxLayout(group)
-        layout.setContentsMargins(0, 0, 0, 0)
-        rules_panel, rules_layout = self._surface()
-        rules_panel.setObjectName("AdminStudioNotificationRuleListPanel")
-        rules_panel.setProperty("adminNotificationViewMode", "list")
-        header = self.QtWidgets.QHBoxLayout()
-        header.addWidget(self._label("Rule cards", "AdminStudioConceptTitle"))
-        header.addStretch(1)
-        header.addWidget(self._label(f"{len(self.admin_draft.notification_rules)} rules", "AdminStudioChip"))
-        rules_layout.addLayout(header)
-        rules_toolbar = self.QtWidgets.QHBoxLayout()
-        create_button = self.QtWidgets.QPushButton("Create / Modify Template")
-        create_button.setObjectName("AdminStudioNotificationCreateTemplateButton")
-        create_button.setProperty("adminRequiresEdit", True)
-        create_button.setEnabled(False)
-        create_button.clicked.connect(self._create_admin_notification_rule_editor)
-        self._make_button_readable(create_button)
-        rules_toolbar.addWidget(create_button)
-        self.admin_notification_event_filter = self.QtWidgets.QComboBox()
-        self.admin_notification_event_filter.setObjectName("AdminStudioNotificationEventFilter")
-        self.admin_notification_event_filter.setEditable(True)
-        self.admin_notification_event_filter.addItem("All events")
-        for event_type in sorted({str(rule.event_type or "").strip() for rule in self.admin_draft.notification_rules if str(rule.event_type or "").strip()}):
-            self.admin_notification_event_filter.addItem(event_type)
-        self.admin_notification_event_filter.currentTextChanged.connect(self._filter_admin_notification_rules)
-        rules_toolbar.addWidget(self.admin_notification_event_filter)
-        self.admin_notification_enabled_filter = self.QtWidgets.QComboBox()
-        self.admin_notification_enabled_filter.setObjectName("AdminStudioNotificationEnabledStatusFilter")
-        self.admin_notification_enabled_filter.addItems(["All statuses", "Enabled", "Disabled"])
-        self.admin_notification_enabled_filter.currentTextChanged.connect(self._filter_admin_notification_rules)
-        rules_toolbar.addWidget(self.admin_notification_enabled_filter)
-        self.admin_notification_timing_filter = self.QtWidgets.QComboBox()
-        self.admin_notification_timing_filter.setObjectName("AdminStudioNotificationTimingFilter")
-        self.admin_notification_timing_filter.addItems(["All timings", "When event happens", "Reference date"])
-        self.admin_notification_timing_filter.currentTextChanged.connect(self._filter_admin_notification_rules)
-        rules_toolbar.addWidget(self.admin_notification_timing_filter)
-        self.admin_notification_recipients_filter = self.QtWidgets.QComboBox()
-        self.admin_notification_recipients_filter.setObjectName("AdminStudioNotificationRecipientsFilter")
-        self.admin_notification_recipients_filter.addItems(["All recipients", "Has recipients", "No recipients"])
-        self.admin_notification_recipients_filter.currentTextChanged.connect(self._filter_admin_notification_rules)
-        rules_toolbar.addWidget(self.admin_notification_recipients_filter)
-        self.admin_notification_template_filter = self.QtWidgets.QComboBox()
-        self.admin_notification_template_filter.setObjectName("AdminStudioNotificationTemplateFilter")
-        self.admin_notification_template_filter.addItems(["All templates", "Complete templates", "Missing subject", "Missing body"])
-        self.admin_notification_template_filter.currentTextChanged.connect(self._filter_admin_notification_rules)
-        rules_toolbar.addWidget(self.admin_notification_template_filter)
-        self.admin_notification_sort = self.QtWidgets.QComboBox()
-        self.admin_notification_sort.setObjectName("AdminStudioNotificationSortBy")
-        self.admin_notification_sort.addItems(["Sort by: Event", "Sort by: Recipients"])
-        self.admin_notification_sort.currentTextChanged.connect(self._sort_admin_notification_rules)
-        rules_toolbar.addWidget(self.admin_notification_sort)
-        self.admin_notification_view_toggle = self.QtWidgets.QComboBox()
-        self.admin_notification_view_toggle.setObjectName("AdminStudioNotificationViewToggle")
-        self.admin_notification_view_toggle.addItems(["List", "Grid"])
-        self.admin_notification_view_toggle.currentTextChanged.connect(self._set_admin_notification_view_mode)
-        rules_toolbar.addWidget(self.admin_notification_view_toggle)
-        for chip in ("Event", "Timing", "Recipients", "Subject/body preview"):
-            rules_toolbar.addWidget(self._label(chip, "AdminStudioChip"))
-        clear_filters = self.QtWidgets.QPushButton("Clear filters")
-        clear_filters.setObjectName("AdminStudioNotificationClearFilters")
-        clear_filters.clicked.connect(self._clear_admin_notification_filters)
-        rules_toolbar.addWidget(clear_filters)
-        rules_toolbar.addStretch(1)
-        rules_layout.addWidget(self._horizontal_scroll_panel(rules_toolbar, "AdminStudioNotificationToolbarScroll"))
-        self.admin_notification_rules_layout = rules_layout
-        self.admin_notification_rule_cards = []
-        for rule in self.admin_draft.notification_rules:
-            card, card_layout = self._surface()
-            card.setObjectName("AdminStudioNotificationRuleCard")
-            card.setProperty("adminNotificationEvent", str(rule.event_type or ""))
-            card.setProperty("adminNotificationObjectSuffix", self._admin_object_suffix(rule.event_type))
-            card.setProperty("adminNotificationActive", bool(rule.active))
-            card.setProperty("adminNotificationFilterMatch", True)
-            card.setProperty("adminNotificationSelected", False)
-            card.setProperty("adminNotificationSortRank", 0)
-            card.setProperty("adminNotificationViewMode", "list")
-            card.setStyleSheet("QFrame#AdminStudioNotificationRuleCard { background: #ffffff; border: 1px solid #d9dee7; border-radius: 8px; }")
-            button = self.QtWidgets.QPushButton(rule.event_type)
-            button.setObjectName(f"AdminStudioNotificationRuleButton_{self._admin_object_suffix(rule.event_type)}")
-            self._make_button_readable(button)
-            button.clicked.connect(lambda _checked=False, selected_rule=rule: self._select_admin_notification_rule(selected_rule))
-            card_layout.addWidget(button)
-            card_layout.addWidget(self._label(f"ID: {rule.id if rule.id is not None else 'Draft'}"))
-            card_layout.addWidget(self._label(rule.label or rule.event_type))
-            card_layout.addWidget(self._label("Enabled" if rule.active else "Disabled", "AdminStudioChip"))
-            meta = self.QtWidgets.QHBoxLayout()
-            meta.addWidget(self._label(f"Send timing\n{self._admin_notification_schedule_text(rule)}"))
-            meta.addWidget(self._label(f"Recipients\n{len([recipient for recipient in rule.recipients if recipient.active])}"))
-            card_layout.addLayout(meta)
-            card_layout.addWidget(self._label(f"Subject\n{rule.subject_template or 'Missing subject template'}"))
-            card_layout.addWidget(self._label(f"Body preview\n{rule.body_template[:180] if rule.body_template else 'Missing body template'}"))
-            open_rule = self.QtWidgets.QPushButton("Open >")
-            open_rule.setObjectName(f"AdminStudioNotificationOpenRule_{self._admin_object_suffix(rule.event_type)}")
-            open_rule.clicked.connect(lambda _checked=False, selected_rule=rule: self._select_admin_notification_rule(selected_rule))
-            self._make_button_readable(open_rule)
-            card_layout.addWidget(open_rule)
-            rules_layout.addWidget(card)
-            self.admin_notification_rule_cards.append((card, rule))
-        self._sort_admin_notification_rules()
-        layout.addWidget(rules_panel, 2)
-        editor, editor_layout = self._surface()
-        editor.setObjectName("AdminStudioNotificationEditPanel")
-        editor_layout.addWidget(self._label("Edit Notification Rule", "AdminStudioNotificationEditorTitle"))
-        self.admin_notification_editor_meta = self._label("", "AdminStudioNotificationEditorMeta")
-        editor_layout.addWidget(self.admin_notification_editor_meta)
-        editor_layout.addWidget(self._label("Rule basics · Recipients · Email template", "AdminStudioChip"))
-        form = self.QtWidgets.QFormLayout()
-        self.admin_notification_rule_label = self.QtWidgets.QLineEdit()
-        self.admin_notification_rule_label.setObjectName("AdminStudioNotificationRuleLabel")
-        self.admin_notification_rule_event = self.QtWidgets.QLineEdit()
-        self.admin_notification_rule_event.setObjectName("AdminStudioNotificationRuleEvent")
-        self.admin_notification_rule_active = self.QtWidgets.QCheckBox("Enabled")
-        self.admin_notification_rule_active.setObjectName("AdminStudioNotificationRuleActive")
-        self.admin_notification_rule_timing = self.QtWidgets.QComboBox()
-        self.admin_notification_rule_timing.setObjectName("AdminStudioNotificationRuleTiming")
-        for timing_key in ("event", "date_offset"):
-            self.admin_notification_rule_timing.addItem(self._admin_notification_timing_label(timing_key), timing_key)
-        self.admin_notification_date_field = self.QtWidgets.QComboBox()
-        self.admin_notification_date_field.setObjectName("AdminStudioNotificationDateField")
-        self.admin_notification_date_field.setEditable(True)
-        for date_key in self._admin_notification_date_fields():
-            self.admin_notification_date_field.addItem(self._admin_notification_date_field_label(date_key), date_key)
-        self.admin_notification_offset_direction = self.QtWidgets.QComboBox()
-        self.admin_notification_offset_direction.setObjectName("AdminStudioNotificationOffsetDirection")
-        self.admin_notification_offset_direction.addItems(["Before", "On", "After"])
-        self.admin_notification_rule_offset = self.QtWidgets.QSpinBox()
-        self.admin_notification_rule_offset.setObjectName("AdminStudioNotificationRuleOffsetDays")
-        self.admin_notification_rule_offset.setRange(0, 365)
-        self.admin_notification_rule_recipients = self.QtWidgets.QLineEdit()
-        self.admin_notification_rule_recipients.setObjectName("AdminStudioNotificationRuleRecipients")
-        self.admin_notification_rule_subject = self.QtWidgets.QLineEdit()
-        self.admin_notification_rule_subject.setObjectName("AdminStudioNotificationRuleSubject")
-        self.admin_notification_rule_body = self.QtWidgets.QPlainTextEdit()
-        self.admin_notification_rule_body.setObjectName("AdminStudioNotificationRuleBody")
-        self.admin_notification_rule_body.setMinimumHeight(140)
-        for widget in (
-            self.admin_notification_rule_label,
-            self.admin_notification_rule_event,
-            self.admin_notification_rule_active,
-            self.admin_notification_rule_timing,
-            self.admin_notification_date_field,
-            self.admin_notification_offset_direction,
-            self.admin_notification_rule_offset,
-            self.admin_notification_rule_recipients,
-            self.admin_notification_rule_subject,
-            self.admin_notification_rule_body,
-        ):
-            widget.setProperty("adminNotificationEdit", True)
-            widget.setEnabled(False)
-        self.admin_notification_rule_active.toggled.connect(self._sync_admin_notification_rule_validation)
-        self.admin_notification_rule_timing.currentTextChanged.connect(self._sync_admin_notification_rule_validation)
-        self.admin_notification_date_field.currentTextChanged.connect(self._sync_admin_notification_rule_validation)
-        self.admin_notification_offset_direction.currentTextChanged.connect(self._sync_admin_notification_rule_validation)
-        self.admin_notification_rule_offset.valueChanged.connect(self._sync_admin_notification_rule_validation)
-        self.admin_notification_rule_recipients.textChanged.connect(self._sync_admin_notification_recipients_from_text)
-        self.admin_notification_rule_subject.textChanged.connect(self._sync_admin_notification_rule_validation)
-        self.admin_notification_rule_body.textChanged.connect(self._sync_admin_notification_rule_validation)
-        form.addRow("Label", self.admin_notification_rule_label)
-        form.addRow("Event", self.admin_notification_rule_event)
-        form.addRow("Enabled", self.admin_notification_rule_active)
-        form.addRow("Trigger type", self.admin_notification_rule_timing)
-        form.addRow("Reference date", self.admin_notification_date_field)
-        form.addRow("Send timing", self.admin_notification_offset_direction)
-        form.addRow("Number of days", self.admin_notification_rule_offset)
-        form.addRow("Recipients", self.admin_notification_rule_recipients)
-        form.addRow("Subject", self.admin_notification_rule_subject)
-        form.addRow("Body", self.admin_notification_rule_body)
-        editor_layout.addLayout(form)
-        subject_tools, subject_tools_layout = self._surface()
-        subject_tools.setObjectName("AdminStudioNotificationSubjectTools")
-        subject_tools_layout.addWidget(self._label("Subject Variables", "AdminStudioConceptTitle"))
-        subject_variable_row = self.QtWidgets.QHBoxLayout()
-        for variable in ("position_name", "candidate_name", "school", "company_name"):
-            button = self.QtWidgets.QPushButton(f"{{{variable}}}")
-            button.setObjectName(f"AdminStudioNotificationSubjectVariable_{variable}")
-            button.setProperty("adminRequiresEdit", True)
-            button.setEnabled(False)
-            button.clicked.connect(lambda _checked=False, token=f"{{{variable}}}": self._insert_admin_notification_subject_variable(token))
-            subject_variable_row.addWidget(button)
-        subject_variable_row.addStretch(1)
-        subject_tools_layout.addLayout(subject_variable_row)
-        editor_layout.addWidget(subject_tools)
-        body_toolbar, body_toolbar_layout = self._surface()
-        body_toolbar.setObjectName("AdminStudioNotificationBodyToolbar")
-        body_toolbar_layout.addWidget(self._label("Email Template Tools", "AdminStudioConceptTitle"))
-        toolbar_row = self.QtWidgets.QHBoxLayout()
-        for label, object_name, snippet in (
-            ("Bold", "AdminStudioNotificationBodyBold", "**bold text**"),
-            ("Italic", "AdminStudioNotificationBodyItalic", "_italic text_"),
-            ("Bullets", "AdminStudioNotificationBodyBullets", "\n- list item"),
-            ("Variables", "AdminStudioNotificationBodyVariables", "{position_name}"),
-        ):
-            button = self.QtWidgets.QPushButton(label)
-            button.setObjectName(object_name)
-            button.setProperty("adminRequiresEdit", True)
-            button.setEnabled(False)
-            button.clicked.connect(lambda _checked=False, text=snippet: self._insert_admin_notification_body_snippet(text))
-            toolbar_row.addWidget(button)
-        toolbar_row.addStretch(1)
-        body_toolbar_layout.addLayout(toolbar_row)
-        editor_layout.addWidget(body_toolbar)
-        self.admin_notification_schedule_summary = self._label("", "AdminStudioNotificationScheduleSummary")
-        editor_layout.addWidget(self.admin_notification_schedule_summary)
-        self.admin_notification_recipient_chips, self.admin_notification_recipient_chips_layout = self._surface()
-        self.admin_notification_recipient_chips.setObjectName("AdminStudioNotificationRecipientChips")
-        self.admin_notification_recipient_chips_layout.addWidget(self._label("Recipients", "AdminStudioConceptTitle"))
-        editor_layout.addWidget(self.admin_notification_recipient_chips)
-        editor_layout.addWidget(self._label("{hiring_manager_name}  {position_name}  {candidate_name}  {company_name}", "AdminStudioChip"))
-        variable_row = self.QtWidgets.QHBoxLayout()
-        for variable in ("hiring_manager_name", "position_name", "candidate_name", "company_name"):
-            button = self.QtWidgets.QPushButton(f"{{{variable}}}")
-            button.setObjectName(f"AdminStudioNotificationVariable_{variable}")
-            button.setProperty("adminRequiresEdit", True)
-            button.setEnabled(False)
-            button.clicked.connect(lambda _checked=False, token=f"{{{variable}}}": self._insert_admin_notification_variable(token))
-            variable_row.addWidget(button)
-        variable_row.addStretch(1)
-        editor_layout.addLayout(variable_row)
-        self.admin_notification_variables_panel, variables_layout = self._surface()
-        self.admin_notification_variables_panel.setObjectName("AdminStudioNotificationVariablesPreviewPanel")
-        variables_layout.addWidget(self._label("Variables Preview", "AdminStudioConceptTitle"))
-        self.admin_notification_variables_preview = self._label("", "AdminStudioNotificationVariablesPreview")
-        variables_layout.addWidget(self.admin_notification_variables_preview)
-        editor_layout.addWidget(self.admin_notification_variables_panel)
-        self.admin_notification_validation_panel, validation_layout = self._surface()
-        self.admin_notification_validation_panel.setObjectName("AdminStudioNotificationValidationPanel")
-        validation_layout.addWidget(self._label("Validation", "AdminStudioConceptTitle"))
-        self.admin_notification_rule_validation = self._label("", "AdminStudioNotificationRuleValidation")
-        validation_layout.addWidget(self.admin_notification_rule_validation)
-        editor_layout.addWidget(self.admin_notification_validation_panel)
-        actions = self.QtWidgets.QHBoxLayout()
-        delete_button = self.QtWidgets.QPushButton("Delete Rule")
-        delete_button.setObjectName("AdminStudioNotificationRuleDelete")
-        delete_button.setProperty("adminRequiresEdit", True)
-        delete_button.setEnabled(False)
-        delete_button.clicked.connect(self._delete_admin_notification_rule_editor)
-        actions.addWidget(delete_button)
-        actions.addStretch(1)
-        preview = self.QtWidgets.QPushButton("Preview")
-        preview.setObjectName("AdminStudioNotificationPreviewButton")
-        preview.clicked.connect(self._show_admin_notification_preview_dialog)
-        actions.addWidget(preview)
-        cancel = self.QtWidgets.QPushButton("Cancel")
-        cancel.setObjectName("AdminStudioNotificationRuleCancel")
-        cancel.clicked.connect(self._cancel_admin_notification_rule_editor)
-        actions.addWidget(cancel)
-        self.admin_notification_rule_save = self._primary_button("Save Changes")
-        self.admin_notification_rule_save.setObjectName("AdminStudioNotificationRuleSave")
-        self.admin_notification_rule_save.setProperty("adminRequiresEdit", True)
-        self.admin_notification_rule_save.setEnabled(False)
-        self.admin_notification_rule_save.clicked.connect(self._save_admin_notification_rule_editor)
-        actions.addWidget(self.admin_notification_rule_save)
-        editor_layout.addLayout(actions)
-        layout.addWidget(editor, 1)
-        if self.admin_draft.notification_rules:
-            self._select_admin_notification_rule(self.admin_draft.notification_rules[0])
-        return group
-
-    def _sort_admin_notification_rules(self) -> None:
-        sort_text = self.admin_notification_sort.currentText() if hasattr(self, "admin_notification_sort") else "Sort by: Event"
-
-        def active_recipient_count(rule: Any) -> int:
-            return len([recipient for recipient in getattr(rule, "recipients", []) if getattr(recipient, "active", True)])
-
-        if sort_text == "Sort by: Recipients":
-            ordered = sorted(
-                getattr(self, "admin_notification_rule_cards", []),
-                key=lambda item: (-active_recipient_count(item[1]), str(item[1].event_type or "")),
-            )
-        else:
-            ordered = sorted(
-                getattr(self, "admin_notification_rule_cards", []),
-                key=lambda item: str(item[1].event_type or ""),
-            )
-
-        layout = getattr(self, "admin_notification_rules_layout", None)
-        if layout is None:
-            self.admin_notification_rule_cards = ordered
-            return
-        for card, _rule in ordered:
-            layout.removeWidget(card)
-        for rank, (card, _rule) in enumerate(ordered):
-            card.setProperty("adminNotificationSortRank", rank)
-            layout.insertWidget(2 + rank, card)
-        self.admin_notification_rule_cards = ordered
-        self._filter_admin_notification_rules()
-
-    def _set_admin_notification_view_mode(self) -> None:
-        selected_text = self.admin_notification_view_toggle.currentText() if hasattr(self, "admin_notification_view_toggle") else "List"
-        mode = "grid" if selected_text == "Grid" else "list"
-        panel = getattr(self, "admin_notification_rules_layout", None)
-        parent_widget = panel.parentWidget() if panel is not None else None
-        if parent_widget is not None:
-            parent_widget.setProperty("adminNotificationViewMode", mode)
-        for card, _rule in getattr(self, "admin_notification_rule_cards", []):
-            card.setProperty("adminNotificationViewMode", mode)
-
-    def _filter_admin_notification_rules(self) -> None:
-        selected_event = self.admin_notification_event_filter.currentText().strip() if hasattr(self, "admin_notification_event_filter") else "All events"
-        selected_status = self.admin_notification_enabled_filter.currentText()
-        selected_timing = self.admin_notification_timing_filter.currentText() if hasattr(self, "admin_notification_timing_filter") else "All timings"
-        selected_recipients = self.admin_notification_recipients_filter.currentText() if hasattr(self, "admin_notification_recipients_filter") else "All recipients"
-        selected_template = self.admin_notification_template_filter.currentText() if hasattr(self, "admin_notification_template_filter") else "All templates"
-        for card, rule in getattr(self, "admin_notification_rule_cards", []):
-            event_type = str(getattr(rule, "event_type", "") or "").strip()
-            event_matches = selected_event in {"", "All events"} or event_type == selected_event
-            status_matches = (
-                selected_status == "All statuses"
-                or (selected_status == "Enabled" and bool(rule.active))
-                or (selected_status == "Disabled" and not bool(rule.active))
-            )
-            timing = str(getattr(rule, "trigger_timing", "event") or "event").strip()
-            timing_matches = (
-                selected_timing == "All timings"
-                or (selected_timing == "When event happens" and timing == "event")
-                or (selected_timing == "Reference date" and timing == "date_offset")
-            )
-            active_recipient_count = len([recipient for recipient in getattr(rule, "recipients", []) if getattr(recipient, "active", True)])
-            recipient_matches = (
-                selected_recipients == "All recipients"
-                or (selected_recipients == "Has recipients" and active_recipient_count > 0)
-                or (selected_recipients == "No recipients" and active_recipient_count == 0)
-            )
-            has_subject = bool(str(getattr(rule, "subject_template", "") or "").strip())
-            has_body = bool(str(getattr(rule, "body_template", "") or "").strip())
-            template_matches = (
-                selected_template == "All templates"
-                or (selected_template == "Complete templates" and has_subject and has_body)
-                or (selected_template == "Missing subject" and not has_subject)
-                or (selected_template == "Missing body" and not has_body)
-            )
-            matches = event_matches and status_matches and timing_matches and recipient_matches and template_matches
-            card.setProperty("adminNotificationFilterMatch", matches)
-            card.setVisible(matches)
-
-    def _clear_admin_notification_filters(self) -> None:
-        if hasattr(self, "admin_notification_event_filter"):
-            self.admin_notification_event_filter.setCurrentText("All events")
-        self.admin_notification_enabled_filter.setCurrentText("All statuses")
-        if hasattr(self, "admin_notification_timing_filter"):
-            self.admin_notification_timing_filter.setCurrentText("All timings")
-        if hasattr(self, "admin_notification_recipients_filter"):
-            self.admin_notification_recipients_filter.setCurrentText("All recipients")
-        if hasattr(self, "admin_notification_template_filter"):
-            self.admin_notification_template_filter.setCurrentText("All templates")
-        self._filter_admin_notification_rules()
-
-    def _refresh_admin_notification_rule_cards(self, selected_event: str = "") -> None:
-        layout = getattr(self, "admin_notifications_layout", None)
-        current = getattr(self, "admin_notification_rule_widget", None)
-        if layout is None or current is None:
-            return
-        index = layout.indexOf(current)
-        if index < 0:
-            return
-        layout.removeWidget(current)
-        current.setParent(None)
-        current.deleteLater()
-        replacement = self._admin_notification_rule_cards()
-        self.admin_notification_rule_widget = replacement
-        layout.insertWidget(index, replacement, 2)
-        if self.admin_edit_mode:
-            self._set_admin_editing_enabled(True)
-        if selected_event:
-            selected = next(
-                (rule for rule in self.admin_draft.notification_rules if str(rule.event_type or "") == selected_event),
-                None,
-            )
-            if selected is not None:
-                self._select_admin_notification_rule(selected)
-
-    def _create_admin_notification_rule_editor(self) -> None:
-        self.admin_selected_notification_rule_id = ""
-        self.admin_selected_notification_event = ""
-        for card, _rule in getattr(self, "admin_notification_rule_cards", []):
-            card.setProperty("adminNotificationSelected", False)
-            card.setStyleSheet("QFrame#AdminStudioNotificationRuleCard { background: #ffffff; border: 1px solid #d9dee7; border-radius: 8px; }")
-        self.admin_notification_editor_meta.setText("ID: draft · new notification rule")
-        self.admin_notification_rule_label.clear()
-        self.admin_notification_rule_event.clear()
-        self.admin_notification_rule_active.setChecked(False)
-        self.admin_notification_rule_timing.setCurrentIndex(0)
-        self.admin_notification_date_field.setCurrentIndex(0)
-        self._set_admin_notification_offset_controls(0)
-        self.admin_notification_selected_recipients = []
-        self.admin_notification_rule_recipients.clear()
-        self._render_admin_notification_recipient_chips()
-        self.admin_notification_rule_subject.clear()
-        self.admin_notification_rule_body.clear()
-        self._sync_admin_notification_rule_validation()
-        self.admin_notification_rule_event.setFocus()
-
-    def _admin_notification_date_fields(self) -> list[str]:
-        preferred = [
-            "start_date",
-            "generated_date",
-            "date_notice_given",
-            "last_working_day",
-            "notice_given",
-            "final_working_day",
-            "interview_date",
-        ]
-        known_fields = [
-            str(field)
-            for field in NOTIFICATION_TEMPLATE_FIELDS
-            if str(field).endswith("_date") or str(field).endswith("_day") or str(field) in preferred
-        ]
-        return list(dict.fromkeys(preferred + known_fields))
-
-    def _admin_notification_timing_label(self, timing: str) -> str:
-        labels = {
-            "event": "When event happens",
-            "date_offset": "Before/on/after a reference date",
-        }
-        key = str(timing or "").strip()
-        return labels.get(key, key.replace("_", " ").strip() or "Trigger type")
-
-    def _admin_notification_selected_timing(self) -> str:
-        data = self.admin_notification_rule_timing.currentData(self.QtCore.Qt.ItemDataRole.UserRole)
-        if data:
-            return str(data).strip()
-        return self.admin_notification_rule_timing.currentText().strip()
-
-    def _admin_notification_date_field_label(self, field: str) -> str:
-        labels = {
-            "start_date": "Employee start date",
-            "generated_date": "Offer generated date",
-            "date_notice_given": "Date notice given",
-            "last_working_day": "Last working day",
-            "notice_given": "Date notice given",
-            "final_working_day": "Last working day",
-            "interview_date": "Interview date",
-        }
-        key = str(field or "").strip()
-        if key in labels:
-            return labels[key]
-        return key.replace("_", " ").strip() or "Date field"
-
-    def _admin_notification_selected_date_field(self) -> str:
-        typed = self.admin_notification_date_field.currentText().strip()
-        current_index = self.admin_notification_date_field.currentIndex()
-        if current_index >= 0 and typed != self.admin_notification_date_field.itemText(current_index):
-            return typed
-        data = self.admin_notification_date_field.currentData(self.QtCore.Qt.ItemDataRole.UserRole)
-        if data:
-            return str(data).strip()
-        return typed
-
-    def _admin_notification_schedule_text(self, rule: Any) -> str:
-        timing = str(getattr(rule, "trigger_timing", "") or "event").strip()
-        if timing != "date_offset":
-            return "When event happens"
-        field = str(getattr(rule, "date_field", "") or "start_date").strip() or "start_date"
-        field_label = self._admin_notification_date_field_label(field).lower()
-        try:
-            offset = int(getattr(rule, "offset_days", 0) or 0)
-        except (TypeError, ValueError):
-            offset = 0
-        if offset < 0:
-            return f"{abs(offset)} {'day' if abs(offset) == 1 else 'days'} before {field_label}"
-        if offset > 0:
-            return f"{offset} {'day' if offset == 1 else 'days'} after {field_label}"
-        return f"On {field_label}"
-
-    def _set_admin_notification_offset_controls(self, offset_days: int) -> None:
-        if offset_days < 0:
-            self.admin_notification_offset_direction.setCurrentText("Before")
-        elif offset_days > 0:
-            self.admin_notification_offset_direction.setCurrentText("After")
-        else:
-            self.admin_notification_offset_direction.setCurrentText("On")
-        self.admin_notification_rule_offset.setValue(abs(int(offset_days or 0)))
-
-    def _admin_notification_signed_offset_days(self) -> int:
-        days = abs(int(self.admin_notification_rule_offset.value()))
-        direction = self.admin_notification_offset_direction.currentText()
-        if direction == "Before":
-            return -days
-        if direction == "After":
-            return days
-        return 0
-
-    def _sync_admin_notification_schedule_summary(self) -> None:
-        if not hasattr(self, "admin_notification_schedule_summary"):
-            return
-        rule = SimpleNamespace(
-            trigger_timing=self._admin_notification_selected_timing(),
-            date_field=self._admin_notification_selected_date_field(),
-            offset_days=self._admin_notification_signed_offset_days(),
-        )
-        self.admin_notification_schedule_summary.setText(self._admin_notification_schedule_text(rule))
-
-    def _sync_admin_notification_recipients_from_text(self) -> None:
-        existing = {
-            str(recipient.get("email", "")).strip(): recipient
-            for recipient in getattr(self, "admin_notification_selected_recipients", [])
-        }
-        recipients: list[dict[str, str]] = []
-        for email in self._admin_notification_recipient_emails():
-            original = existing.get(email, {})
-            recipients.append(
-                {
-                    "email": email,
-                    "role_label": str(original.get("role_label", "") or "").strip(),
-                    "name": str(original.get("name", "") or "").strip(),
-                }
-            )
-        self.admin_notification_selected_recipients = recipients
-        self._render_admin_notification_recipient_chips()
-        self._sync_admin_notification_rule_validation()
-
-    def _admin_notification_recipient_emails(self) -> list[str]:
-        text = self.admin_notification_rule_recipients.text() if hasattr(self, "admin_notification_rule_recipients") else ""
-        return [email.strip() for email in str(text or "").split(",") if email.strip()]
-
-    def _render_admin_notification_recipient_chips(self) -> None:
-        layout = getattr(self, "admin_notification_recipient_chips_layout", None)
-        if layout is None:
-            return
-        self._clear_layout(layout)
-        layout.addWidget(self._label("Recipients", "AdminStudioConceptTitle"))
-        for recipient in getattr(self, "admin_notification_selected_recipients", []):
-            email = str(recipient.get("email", "") or "").strip()
-            if not email:
-                continue
-            label = str(recipient.get("role_label", "") or recipient.get("name", "") or "Recipient").strip()
-            row = self.QtWidgets.QHBoxLayout()
-            row.addWidget(self._label(f"{label}  {email}", "AdminStudioChip"))
-            remove = self.QtWidgets.QPushButton("Remove")
-            remove.setObjectName(f"AdminStudioNotificationRecipientRemove_{self._admin_object_suffix(email)}")
-            remove.setProperty("adminRequiresEdit", True)
-            remove.setEnabled(bool(getattr(self, "admin_edit_mode", False)))
-            remove.clicked.connect(lambda _checked=False, selected_email=email: self._remove_admin_notification_recipient(selected_email))
-            row.addWidget(remove)
-            row.addStretch(1)
-            layout.addLayout(row)
-        if not getattr(self, "admin_notification_selected_recipients", []):
-            layout.addWidget(self._label("No recipients configured.", "AdminStudioValidationBlocked"))
-
-    def _remove_admin_notification_recipient(self, email: str) -> None:
-        selected_email = str(email or "").strip()
-        remaining = [recipient for recipient in getattr(self, "admin_notification_selected_recipients", []) if recipient.get("email") != selected_email]
-        self.admin_notification_selected_recipients = remaining
-        self.admin_notification_rule_recipients.setText(", ".join(recipient["email"] for recipient in remaining))
-        self._render_admin_notification_recipient_chips()
-        self._sync_admin_notification_rule_validation()
-
-    def _select_admin_notification_rule(self, rule: Any) -> None:
-        self.admin_selected_notification_rule_id = str(rule.id or "")
-        self.admin_selected_notification_event = str(rule.event_type or "")
-        for card, stored_rule in getattr(self, "admin_notification_rule_cards", []):
-            selected = str(stored_rule.event_type or "") == self.admin_selected_notification_event
-            card.setProperty("adminNotificationSelected", selected)
-            if selected:
-                card.setStyleSheet("QFrame#AdminStudioNotificationRuleCard { background: #eff6ff; border: 1px solid #2563eb; border-radius: 8px; }")
-            else:
-                card.setStyleSheet("QFrame#AdminStudioNotificationRuleCard { background: #ffffff; border: 1px solid #d9dee7; border-radius: 8px; }")
-        self.admin_notification_editor_meta.setText(
-            f"ID: {self.admin_selected_notification_rule_id or 'draft'} · {self.admin_selected_notification_event}"
-        )
-        self.admin_notification_rule_label.setText(str(rule.label or rule.event_type))
-        self.admin_notification_rule_event.setText(str(rule.event_type or ""))
-        self.admin_notification_rule_active.setChecked(bool(rule.active))
-        timing_index = self.admin_notification_rule_timing.findData(str(rule.trigger_timing or "event"), self.QtCore.Qt.ItemDataRole.UserRole)
-        self.admin_notification_rule_timing.setCurrentIndex(timing_index if timing_index >= 0 else 0)
-        date_field = str(getattr(rule, "date_field", "") or "start_date").strip()
-        date_index = self.admin_notification_date_field.findData(date_field, self.QtCore.Qt.ItemDataRole.UserRole)
-        if date_index >= 0:
-            self.admin_notification_date_field.setCurrentIndex(date_index)
-        else:
-            self.admin_notification_date_field.setEditText(date_field)
-        self._set_admin_notification_offset_controls(int(rule.offset_days or 0))
-        self.admin_notification_selected_recipients = [
-            {"email": recipient.email, "role_label": recipient.role_label, "name": recipient.name}
-            for recipient in rule.recipients
-            if recipient.active
-        ]
-        self.admin_notification_rule_recipients.setText(", ".join(recipient["email"] for recipient in self.admin_notification_selected_recipients))
-        self._render_admin_notification_recipient_chips()
-        self.admin_notification_rule_subject.setText(str(rule.subject_template or ""))
-        self.admin_notification_rule_body.setPlainText(str(rule.body_template or ""))
-        self._sync_admin_notification_rule_validation()
-
-    def _delete_admin_notification_rule_editor(self) -> None:
-        rule_id = str(getattr(self, "admin_selected_notification_rule_id", "") or "").strip()
-        event_type = str(getattr(self, "admin_selected_notification_event", "") or "").strip()
-        if rule_id:
-            self.admin_draft.delete_notification_rule(int(rule_id))
-        elif event_type:
-            self.admin_draft.notification_rules = [
-                rule for rule in self.admin_draft.notification_rules if str(rule.event_type or "") != event_type
-            ]
-        else:
-            return
-
-        layout = getattr(self, "admin_notification_rules_layout", None)
-        remaining_cards = []
-        for card, rule in getattr(self, "admin_notification_rule_cards", []):
-            rule_matches = (rule_id and str(rule.id or "") == rule_id) or (not rule_id and str(rule.event_type or "") == event_type)
-            if rule_matches:
-                if layout is not None:
-                    layout.removeWidget(card)
-                card.setParent(None)
-                card.deleteLater()
-                continue
-            remaining_cards.append((card, rule))
-        self.admin_notification_rule_cards = remaining_cards
-
-        notifications = self._admin_tables.get("notifications")
-        if notifications is not None:
-            for row_index in range(notifications.rowCount() - 1, -1, -1):
-                id_item = notifications.item(row_index, 0)
-                event_item = notifications.item(row_index, 1)
-                id_matches = bool(rule_id) and id_item is not None and id_item.text().strip() == rule_id
-                event_matches = event_item is not None and event_item.text().strip() == event_type
-                if id_matches or event_matches:
-                    notifications.removeRow(row_index)
-                    break
-
-        self.admin_selected_notification_rule_id = ""
-        self.admin_selected_notification_event = ""
-        if self.admin_notification_rule_cards:
-            self._sort_admin_notification_rules()
-            self._select_admin_notification_rule(self.admin_notification_rule_cards[0][1])
-        else:
-            self.admin_notification_editor_meta.setText("No notification rule selected")
-            self.admin_notification_rule_label.clear()
-            self.admin_notification_rule_event.clear()
-            self.admin_notification_rule_active.setChecked(False)
-            self.admin_notification_rule_timing.setCurrentIndex(0)
-            self.admin_notification_date_field.setCurrentIndex(0)
-            self.admin_notification_offset_direction.setCurrentText("On")
-            self.admin_notification_rule_offset.setValue(0)
-            self.admin_notification_rule_recipients.clear()
-            self.admin_notification_selected_recipients = []
-            self._render_admin_notification_recipient_chips()
-            self.admin_notification_rule_subject.clear()
-            self.admin_notification_rule_body.clear()
-            self._sync_admin_notification_rule_validation()
-        self._sync_admin_status()
-
-    def _cancel_admin_notification_rule_editor(self) -> None:
-        rule_id = str(getattr(self, "admin_selected_notification_rule_id", "") or "").strip()
-        event_type = str(getattr(self, "admin_selected_notification_event", "") or "").strip()
-        for rule in self.admin_draft.notification_rules:
-            id_matches = bool(rule_id) and str(rule.id or "") == rule_id
-            event_matches = bool(event_type) and str(rule.event_type or "") == event_type
-            if id_matches or event_matches:
-                self._select_admin_notification_rule(rule)
-                return
-        if self.admin_draft.notification_rules:
-            self._select_admin_notification_rule(self.admin_draft.notification_rules[0])
-            return
-        self._create_admin_notification_rule_editor()
-
-    def _insert_admin_notification_variable(self, token: str) -> None:
-        if not self.admin_notification_rule_body.isEnabled():
-            return
-        self._insert_admin_notification_body_snippet(str(token or ""))
-
-    def _insert_admin_notification_subject_variable(self, token: str) -> None:
-        if not self.admin_notification_rule_subject.isEnabled():
-            return
-        text = self.admin_notification_rule_subject.text()
-        position = self.admin_notification_rule_subject.cursorPosition()
-        inserted = str(token or "")
-        self.admin_notification_rule_subject.setText(text[:position] + inserted + text[position:])
-        self.admin_notification_rule_subject.setCursorPosition(position + len(inserted))
-        self._sync_admin_notification_rule_validation()
-
-    def _insert_admin_notification_body_snippet(self, text: str) -> None:
-        if not self.admin_notification_rule_body.isEnabled():
-            return
-        cursor = self.admin_notification_rule_body.textCursor()
-        cursor.insertText(str(text or ""))
-        self.admin_notification_rule_body.setTextCursor(cursor)
-        self._sync_admin_notification_rule_validation()
-
-    def _sync_admin_notification_rule_validation(self) -> None:
-        self._sync_admin_notification_schedule_summary()
-        subject = self.admin_notification_rule_subject.text().strip()
-        body = self.admin_notification_rule_body.toPlainText().strip()
-        recipients = self.admin_notification_rule_recipients.text().strip()
-        active = self.admin_notification_rule_active.isChecked()
-        timing = self._admin_notification_selected_timing()
-        date_field = self._admin_notification_selected_date_field()
-        issues: list[str] = []
-        if active and not subject:
-            issues.append("Missing subject template.")
-        if active and not body:
-            issues.append("Missing body template.")
-        if active and not recipients:
-            issues.append("At least one recipient is required.")
-        if active and timing == "date_offset" and not date_field:
-            issues.append("Choose which date field controls this notification.")
-        sample = self._admin_notification_preview_sample()
-        if date_field and date_field not in sample:
-            sample[date_field] = "2026-07-10"
-        _, subject_unresolved = self._render_admin_notification_template(subject, sample)
-        _, body_unresolved = self._render_admin_notification_template(body, sample)
-        unresolved = sorted(set(subject_unresolved + body_unresolved))
-        fields: list[str] = []
-        try:
-            fields = [
-                field_name.split(".", 1)[0].split("[", 1)[0]
-                for _, field_name, _, _ in Formatter().parse(f"{subject} {body}")
-                if field_name
-            ]
-        except ValueError:
-            fields = ["invalid template"]
-        visible_fields = fields or list(NOTIFICATION_TEMPLATE_FIELDS[:4])
-        self.admin_notification_variables_preview.setText("  ".join(f"{{{field}}}" for field in dict.fromkeys(visible_fields)))
-        if unresolved:
-            issues.append(f"Unknown variables: {', '.join(unresolved)}.")
-        if issues:
-            self.admin_notification_rule_validation.setText(" ".join(issues))
-            return
-        self.admin_notification_rule_validation.setText("No issues found. Subject and body templates look good.")
-
-    def _show_admin_notification_preview_dialog(self) -> None:
-        dialog = self._build_admin_notification_preview_dialog()
-        self.admin_notification_preview_dialog = dialog
-        dialog.show()
-
-    def _build_admin_notification_preview_dialog(self) -> Any:
-        sample = self._admin_notification_preview_sample()
-        date_field = self._admin_notification_selected_date_field()
-        if date_field and date_field not in sample:
-            sample[date_field] = "2026-07-10"
-        subject, subject_unresolved = self._render_admin_notification_template(
-            self.admin_notification_rule_subject.text(),
-            sample,
-        )
-        body, body_unresolved = self._render_admin_notification_template(
-            self.admin_notification_rule_body.toPlainText(),
-            sample,
-        )
-        unresolved = sorted(set(subject_unresolved + body_unresolved))
-        dialog = self.QtWidgets.QDialog(self.window)
-        dialog.setObjectName("AdminStudioNotificationPreviewDialog")
-        dialog.setWindowTitle("Notification Template Preview")
-        dialog.resize(680, 520)
-        layout = self.QtWidgets.QVBoxLayout(dialog)
-        layout.addWidget(self._label("Notification Template Preview", "SectionTitle"))
-        layout.addWidget(self._label("Rendered with sample staffing data."))
-        layout.addWidget(self._label("Subject", "AdminStudioConceptTitle"))
-        layout.addWidget(self._label(subject or "(blank subject)"))
-        layout.addWidget(self._label("Body", "AdminStudioConceptTitle"))
-        layout.addWidget(self._label(body or "(blank body)"))
-        body_view = self.QtWidgets.QPlainTextEdit(body or "(blank body)")
-        body_view.setObjectName("AdminStudioNotificationPreviewBody")
-        body_view.setReadOnly(True)
-        body_view.setMinimumHeight(180)
-        layout.addWidget(body_view, 1)
-        if unresolved:
-            layout.addWidget(self._label(f"Unresolved variables: {', '.join(unresolved)}", "AdminStudioValidationBlocked"))
-        else:
-            layout.addWidget(self._label("All variables resolved.", "AdminStudioChip"))
-        actions = self.QtWidgets.QHBoxLayout()
-        actions.addStretch(1)
-        close = self.QtWidgets.QPushButton("Close")
-        close.clicked.connect(dialog.close)
-        actions.addWidget(close)
-        layout.addLayout(actions)
-        return dialog
-
-    def _admin_notification_preview_sample(self) -> dict[str, str]:
-        return {
-            "candidate_name": "Jordan Rivera",
-            "company_name": "Launch Pad Learning",
-            "department": "Education",
-            "hiring_manager_name": "Harper Lee",
-            "location": "Palmdale",
-            "final_working_day": "2026-07-31",
-            "generated_date": "2026-07-05",
-            "notice_given": "2026-07-17",
-            "date_notice_given": "2026-07-17",
-            "last_working_day": "2026-07-31",
-            "position": "Preschool Teacher",
-            "position_name": "Preschool Teacher",
-            "recruiter_name": "David Nord",
-            "school": "Palmdale",
-            "start_date": "2026-07-10",
-        }
-
-    def _render_admin_notification_template(self, template: str, sample: dict[str, str]) -> tuple[str, list[str]]:
-        unresolved: list[str] = []
-        try:
-            fields = [field_name for _, field_name, _, _ in Formatter().parse(str(template or "")) if field_name]
-        except ValueError:
-            return str(template or ""), ["invalid template"]
-        rendered = str(template or "")
-        for field_name in fields:
-            root = field_name.split(".", 1)[0].split("[", 1)[0]
-            if root not in sample:
-                unresolved.append(root)
-                continue
-            rendered = rendered.replace("{" + field_name + "}", sample[root])
-        return rendered, unresolved
-
-    def _save_admin_notification_rule_editor(self) -> None:
-        event_type = self.admin_notification_rule_event.text().strip()
-        if not event_type:
-            return
-        self.admin_draft.update_notification_rule(
-            event_type,
-            {
-                "id": str(getattr(self, "admin_selected_notification_rule_id", "") or ""),
-                "label": self.admin_notification_rule_label.text().strip(),
-                "active": "true" if self.admin_notification_rule_active.isChecked() else "false",
-                "trigger_timing": self._admin_notification_selected_timing(),
-                "date_field": self._admin_notification_selected_date_field(),
-                "offset_days": str(self._admin_notification_signed_offset_days()),
-                "subject_template": self.admin_notification_rule_subject.text().strip(),
-                "body_template": self.admin_notification_rule_body.toPlainText().strip(),
-                "recipients": self.admin_notification_rule_recipients.text().strip(),
-            },
-        )
-        notifications = self._admin_tables.get("notifications")
-        table_updated = False
-        if notifications is not None:
-            for row_index in range(notifications.rowCount()):
-                id_item = notifications.item(row_index, 0)
-                event_item = notifications.item(row_index, 1)
-                if event_item is None:
-                    continue
-                id_matches = bool(self.admin_selected_notification_rule_id) and id_item is not None and id_item.text().strip() == self.admin_selected_notification_rule_id
-                event_matches = event_item.text().strip() == event_type
-                if id_matches or event_matches:
-                    notifications.item(row_index, 2).setText(self.admin_notification_rule_label.text().strip())
-                    notifications.item(row_index, 3).setText("true" if self.admin_notification_rule_active.isChecked() else "false")
-                    notifications.item(row_index, 4).setText(self._admin_notification_selected_timing())
-                    notifications.item(row_index, 5).setText(self._admin_notification_selected_date_field())
-                    notifications.item(row_index, 6).setText(str(self._admin_notification_signed_offset_days()))
-                    notifications.item(row_index, 7).setText(self.admin_notification_rule_subject.text().strip())
-                    notifications.item(row_index, 8).setText(self.admin_notification_rule_body.toPlainText().strip())
-                    notifications.item(row_index, 9).setText(self.admin_notification_rule_recipients.text().strip())
-                    table_updated = True
-                    break
-            if not table_updated:
-                insert_at = max(0, notifications.rowCount() - 1)
-                notifications.insertRow(insert_at)
-                values = [
-                    str(getattr(self, "admin_selected_notification_rule_id", "") or ""),
-                    event_type,
-                    self.admin_notification_rule_label.text().strip(),
-                    "true" if self.admin_notification_rule_active.isChecked() else "false",
-                    self._admin_notification_selected_timing(),
-                    self._admin_notification_selected_date_field(),
-                    str(self._admin_notification_signed_offset_days()),
-                    self.admin_notification_rule_subject.text().strip(),
-                    self.admin_notification_rule_body.toPlainText().strip(),
-                    self.admin_notification_rule_recipients.text().strip(),
-                ]
-                for column, value in enumerate(values):
-                    notifications.setItem(insert_at, column, self.QtWidgets.QTableWidgetItem(value))
-        self._sync_admin_notification_rule_validation()
-        self._sync_admin_status()
-        self._refresh_admin_notification_rule_cards(event_type)
 
     def _admin_prompt_summary_strip(self) -> Any:
         strip, layout = self._surface()
@@ -9914,12 +9048,6 @@ class PySideInterviewWindow:
 
     def _route_admin_validation_issue(self, error: str, target_key: str) -> None:
         self._select_admin_section_by_key(target_key)
-        if target_key == "notifications":
-            event_type = self._admin_validation_notification_event(error)
-            for _card, rule in getattr(self, "admin_notification_rule_cards", []):
-                if str(rule.event_type or "") == event_type:
-                    self._select_admin_notification_rule(rule)
-                    break
         if target_key == "prompts":
             prompt_key = self._admin_validation_prompt_key(error)
             prompt_value = self.admin_draft.prompts.get(prompt_key)
@@ -9934,10 +9062,6 @@ class PySideInterviewWindow:
                     self.admin_json_issue_line = line
                     self._jump_admin_json_issue_line()
                     self.admin_json_viewer_footer.setText(f"JSON | Line {line}, Column 1 | 1 issue on this line")
-
-    def _admin_validation_notification_event(self, error: str) -> str:
-        match = re.search(r"notification rule ['\"]([^'\"]+)['\"]", str(error or ""), re.IGNORECASE)
-        return match.group(1).strip() if match else ""
 
     def _admin_validation_prompt_key(self, error: str) -> str:
         prompt_match = re.search(r"(?:DeepSeek prompt|Prompt cannot be blank:) ['\"]?([^'\".\s\]]+)['\"]?", str(error or ""), re.IGNORECASE)
@@ -10121,120 +9245,6 @@ class PySideInterviewWindow:
         layout.addWidget(self.admin_deepseek_model_selector)
         layout.addStretch(1)
         return group
-
-    def _admin_notifications_table(self) -> Any:
-        by_event = {rule.event_type: rule for rule in self.admin_draft.notification_rules}
-        rows: list[list[str]] = []
-        event_types = list(SUPPORTED_NOTIFICATION_EVENTS)
-        for rule in sorted(self.admin_draft.notification_rules, key=lambda item: (item.event_type, item.id or 0)):
-            if rule.event_type not in event_types:
-                event_types.append(rule.event_type)
-        for event_type in event_types:
-            rule = by_event.get(event_type)
-            if rule is None:
-                rows.append(["", event_type, event_type, "false", "event", "", "0", "", "", ""])
-                continue
-            recipients = ", ".join(recipient.email for recipient in rule.recipients if recipient.active)
-            rows.append([
-                str(rule.id or ""),
-                rule.event_type,
-                rule.label,
-                "true" if rule.active else "false",
-                rule.trigger_timing,
-                rule.date_field,
-                str(rule.offset_days),
-                rule.subject_template,
-                rule.body_template,
-                recipients,
-            ])
-        rows.append(["", "", "", "false", "event", "", "0", "", "", ""])
-        table = self._admin_table(
-            "notifications",
-            ["ID", "Event", "Label", "Active/Delete", "Timing", "Date Field", "Offset Days", "Subject", "Body", "Recipients"],
-            rows,
-            {1, 2, 3, 4, 5, 6, 7, 8, 9},
-        )
-        self.admin_notifications_table = table
-        return table
-
-    def _open_notification_template_dialog(self) -> None:
-        table = getattr(self, "admin_notifications_table", None)
-        if table is None:
-            return
-        row_index = table.currentRow()
-        if row_index < 0:
-            row_index = table.rowCount() - 1
-            table.selectRow(row_index)
-
-        dialog = self.QtWidgets.QDialog(self.window)
-        dialog.setWindowTitle("Notification Template")
-        layout = self.QtWidgets.QVBoxLayout(dialog)
-        form = self.QtWidgets.QFormLayout()
-
-        event_field = self.QtWidgets.QLineEdit(_table_text(table, row_index, 1))
-        label_field = self.QtWidgets.QLineEdit(_table_text(table, row_index, 2))
-        active_field = self.QtWidgets.QComboBox()
-        active_field.addItems(["true", "false", "delete"])
-        active_text = _table_text(table, row_index, 3).lower()
-        active_field.setCurrentText(active_text if active_text in {"true", "false", "delete"} else "false")
-        timing_field = self.QtWidgets.QComboBox()
-        timing_field.addItems(["event", "date_offset"])
-        timing_text = _table_text(table, row_index, 4)
-        timing_field.setCurrentText(timing_text if timing_text in {"event", "date_offset"} else "event")
-        date_field = self.QtWidgets.QLineEdit(_table_text(table, row_index, 5))
-        offset_field = self.QtWidgets.QSpinBox()
-        offset_field.setRange(-365, 365)
-        try:
-            offset_field.setValue(int(_table_text(table, row_index, 6) or "0"))
-        except ValueError:
-            offset_field.setValue(0)
-        subject_field = self.QtWidgets.QLineEdit(_table_text(table, row_index, 7))
-        body_field = self.QtWidgets.QPlainTextEdit(_table_text(table, row_index, 8))
-        body_field.setMinimumHeight(120)
-        recipients_field = self.QtWidgets.QLineEdit(_table_text(table, row_index, 9))
-
-        form.addRow("System event", event_field)
-        form.addRow("Label", label_field)
-        form.addRow("Active", active_field)
-        form.addRow("Timing", timing_field)
-        form.addRow("Date field", date_field)
-        form.addRow("Offset days", offset_field)
-        form.addRow("Subject", subject_field)
-        form.addRow("Body", body_field)
-        form.addRow("Recipients", recipients_field)
-        layout.addLayout(form)
-
-        fields_label = self._label("Available fields: " + ", ".join(f"{{{name}}}" for name in NOTIFICATION_TEMPLATE_FIELDS))
-        fields_label.setWordWrap(True)
-        layout.addWidget(fields_label)
-
-        buttons = self.QtWidgets.QDialogButtonBox(
-            self.QtWidgets.QDialogButtonBox.StandardButton.Ok | self.QtWidgets.QDialogButtonBox.StandardButton.Cancel
-        )
-        buttons.accepted.connect(dialog.accept)
-        buttons.rejected.connect(dialog.reject)
-        layout.addWidget(buttons)
-
-        if dialog.exec() != self.QtWidgets.QDialog.DialogCode.Accepted:
-            return
-        values = [
-            _table_text(table, row_index, 0),
-            event_field.text().strip(),
-            label_field.text().strip(),
-            active_field.currentText().strip(),
-            timing_field.currentText().strip(),
-            date_field.text().strip(),
-            str(offset_field.value()),
-            subject_field.text().strip(),
-            body_field.toPlainText().strip(),
-            recipients_field.text().strip(),
-        ]
-        for column, value in enumerate(values):
-            item = table.item(row_index, column)
-            if item is None:
-                item = self.QtWidgets.QTableWidgetItem("")
-                table.setItem(row_index, column, item)
-            item.setText(value)
 
     def _admin_readonly_rows(self, key: str) -> list[list[str]]:
         if key == "signals":

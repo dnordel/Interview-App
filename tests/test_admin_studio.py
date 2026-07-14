@@ -4,8 +4,6 @@ from pathlib import Path
 import pytest
 
 from admin_studio import AdminStudio, AdminStudioPaths
-from notification_models import NotificationRecipient, NotificationRule
-from notification_store import NotificationStore
 
 
 def _rubric() -> dict:
@@ -32,7 +30,6 @@ def _write_admin_files(tmp_path: Path) -> AdminStudioPaths:
     school_settings_path = tmp_path / "school_offer_settings.json"
     prompts_path = tmp_path / "deepseek_prompts.json"
     app_settings_path = tmp_path / "interview_app_settings.json"
-    notification_rules_path = tmp_path / "notification_rules.sqlite3"
     rubric_path.write_text(json.dumps(_rubric()), encoding="utf-8")
     overrides_path.write_text(
         json.dumps(
@@ -54,7 +51,6 @@ def _write_admin_files(tmp_path: Path) -> AdminStudioPaths:
         school_settings_path=school_settings_path,
         prompts_path=prompts_path,
         app_settings_path=app_settings_path,
-        notification_rules_path=notification_rules_path,
         backup_dir=tmp_path / "backups",
     )
 
@@ -390,157 +386,6 @@ def test_admin_studio_changed_prompt_requires_version_note_before_apply(tmp_path
     assert json.loads(studio.paths.prompts_path.read_text(encoding="utf-8"))["answer_summary_user"] == "Updated prompt."
 
 
-def test_admin_studio_manages_notification_rules_in_draft_then_applies(tmp_path: Path) -> None:
-    paths = _write_admin_files(tmp_path)
-    NotificationStore(paths.notification_rules_path).save_rule(
-        NotificationRule(
-            event_type="offer.accepted",
-            label="Offer accepted",
-            subject_template="Accepted: {candidate_name}",
-            body_template="{candidate_name} accepted.",
-            recipients=[NotificationRecipient(email="director@example.org")],
-        )
-    )
-    studio = AdminStudio.load(paths)
-    draft = studio.create_draft()
-
-    draft.update_notification_rule(
-        "offer.accepted",
-        {
-            "label": "Offer accepted",
-            "subject_template": "Accepted offer: {candidate_name}",
-            "body_template": "{candidate_name} accepted {position}.",
-            "recipients": "director@example.org, office@example.org",
-            "active": "true",
-        },
-    )
-    result = studio.apply_draft(draft, confirm=True)
-
-    rules = NotificationStore(paths.notification_rules_path).list_rules("offer.accepted")
-    assert result.applied is True
-    assert "notification_rules.sqlite3" in result.changed_files
-    assert rules[0].subject_template == "Accepted offer: {candidate_name}"
-    assert [recipient.email for recipient in rules[0].recipients] == ["director@example.org", "office@example.org"]
-
-
-def test_admin_studio_creates_custom_date_offset_notification_rule(tmp_path: Path) -> None:
-    paths = _write_admin_files(tmp_path)
-    studio = AdminStudio.load(paths)
-    draft = studio.create_draft()
-
-    draft.update_notification_rule(
-        "staffing.assignment.coming",
-        {
-            "label": "Three days before start",
-            "subject_template": "Start soon: {person_name}",
-            "body_template": "{person_name} starts on {start_date}.",
-            "recipients": "director@example.org",
-            "active": "true",
-            "trigger_timing": "date_offset",
-            "date_field": "start_date",
-            "offset_days": "-3",
-        },
-    )
-    result = studio.apply_draft(draft, confirm=True)
-
-    [rule] = NotificationStore(paths.notification_rules_path).list_rules("staffing.assignment.coming")
-    assert result.applied is True
-    assert rule.trigger_timing == "date_offset"
-    assert rule.date_field == "start_date"
-    assert rule.offset_days == -3
-
-
-def test_admin_studio_deletes_notification_rule_from_draft_then_applies(tmp_path: Path) -> None:
-    paths = _write_admin_files(tmp_path)
-    saved = NotificationStore(paths.notification_rules_path).save_rule(
-        NotificationRule(
-            event_type="offer.accepted",
-            label="Offer accepted",
-            subject_template="Accepted",
-            body_template="Accepted",
-            recipients=[NotificationRecipient(email="director@example.org")],
-        )
-    )
-    studio = AdminStudio.load(paths)
-    draft = studio.create_draft()
-
-    draft.delete_notification_rule(saved.id or 0)
-    result = studio.apply_draft(draft, confirm=True)
-
-    assert result.applied is True
-    assert NotificationStore(paths.notification_rules_path).list_rules("offer.accepted") == []
-
-
-def test_admin_studio_rejects_invalid_notification_recipient(tmp_path: Path) -> None:
-    studio = AdminStudio.load(_write_admin_files(tmp_path))
-    draft = studio.create_draft()
-
-    draft.update_notification_rule(
-        "offer.accepted",
-        {
-            "label": "Offer accepted",
-            "subject_template": "Accepted",
-            "body_template": "Accepted",
-            "recipients": "bad-email",
-        },
-    )
-
-    assert "Invalid notification recipient email." in draft.validate()
-
-
-def test_admin_studio_rejects_ambiguous_notification_active_value(tmp_path: Path) -> None:
-    studio = AdminStudio.load(_write_admin_files(tmp_path))
-    draft = studio.create_draft()
-
-    with pytest.raises(ValueError, match="Notification Active must be true or false."):
-        draft.update_notification_rule(
-            "offer.accepted",
-            {
-                "label": "Offer accepted",
-                "active": "tru",
-                "subject_template": "Accepted",
-                "body_template": "Accepted",
-                "recipients": "director@example.org",
-            },
-        )
-
-
-def test_admin_studio_requires_complete_active_notification_rule(tmp_path: Path) -> None:
-    studio = AdminStudio.load(_write_admin_files(tmp_path))
-    draft = studio.create_draft()
-
-    draft.update_notification_rule(
-        "offer.accepted",
-        {
-            "label": "Offer accepted",
-            "active": "true",
-            "subject_template": "",
-            "body_template": "Accepted",
-            "recipients": "director@example.org",
-        },
-    )
-
-    assert "Active notification rule 'offer.accepted' requires a subject template." in draft.validate()
-
-
-def test_admin_studio_rejects_malformed_notification_template(tmp_path: Path) -> None:
-    studio = AdminStudio.load(_write_admin_files(tmp_path))
-    draft = studio.create_draft()
-
-    draft.update_notification_rule(
-        "offer.accepted",
-        {
-            "label": "Offer accepted",
-            "active": "true",
-            "subject_template": "Accepted {candidate_name",
-            "body_template": "Accepted",
-            "recipients": "director@example.org",
-        },
-    )
-
-    assert "Notification subject template for 'offer.accepted' has invalid placeholders." in draft.validate()
-
-
 def test_admin_studio_persists_allowed_deepseek_model_choice(tmp_path: Path) -> None:
     paths = _write_admin_files(tmp_path)
     studio = AdminStudio.load(paths)
@@ -576,7 +421,6 @@ def test_admin_studio_summary_groups_sections_for_admin_console_navigation(tmp_p
         ("Configuration", "Rubrics"),
         ("Configuration", "Signal Hints"),
         ("Configuration", "Templates & Folders"),
-        ("Configuration", "Notifications"),
         ("AI Settings", "DeepSeek Model"),
         ("AI Settings", "DeepSeek Prompts"),
         ("System", "Advanced JSON"),

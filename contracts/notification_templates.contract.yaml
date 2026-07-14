@@ -1,0 +1,67 @@
+module:
+  name: notification_templates
+  language: python
+  path: src/notification_templates.py
+  version: 1.1.0
+  description: Shared curated notification template field catalog, structured rule validation, safe stored-data payload extraction, template extraction, and safe Markdown-to-multipart rendering.
+functions:
+- name: notification_payload_from_mapping
+  locked: false
+  inputs:
+    source: {type: 'Mapping[str, Any]', required: true}
+  returns: {type: 'dict[str, str]'}
+  exceptions: []
+  side_effects: none
+- name: notification_template_fields
+  locked: false
+  inputs:
+    rule: {type: NotificationRule, required: true}
+  returns: {type: 'tuple[str, ...]'}
+  exceptions: []
+  side_effects: none
+- name: validate_notification_rule
+  locked: false
+  inputs:
+    rule: {type: NotificationRule, required: true}
+  returns: {type: 'tuple[NotificationRuleIssue, ...]'}
+  exceptions: []
+  side_effects: none
+- name: render_notification_templates
+  locked: false
+  inputs:
+    rule: {type: NotificationRule, required: true}
+    payload: {type: 'dict[str, str]', required: true}
+  returns: {type: RenderedNotification}
+  exceptions: []
+  side_effects: none
+classes:
+- name: NotificationTemplateField
+  type: dataclass
+  locked: false
+  attributes:
+    key: {type: str}
+    label: {type: str}
+    group: {type: str}
+- name: NotificationRuleIssue
+  type: dataclass
+  locked: false
+  attributes:
+    code: {type: str}
+    message: {type: str}
+    blocking: {type: bool}
+- name: RenderedNotification
+  type: dataclass
+  locked: false
+  attributes:
+    subject: {type: str}
+    plain_body: {type: str}
+    html_body: {type: str}
+    unresolved_fields: {type: 'tuple[str, ...]'}
+data_structures:
+- name: NOTIFICATION_TEMPLATE_FIELD_CATALOG
+  type: 'tuple[NotificationTemplateField, ...]'
+- name: NOTIFICATION_TEMPLATE_FIELDS
+  type: 'tuple[str, ...]'
+dependencies:
+- notification_models
+- email_security

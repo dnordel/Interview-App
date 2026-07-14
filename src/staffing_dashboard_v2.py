@@ -3,12 +3,19 @@ from __future__ import annotations
 from collections.abc import Callable
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
-from string import Formatter
+import threading
 from typing import Any
 
-from notification_models import NotificationRecipient, NotificationRule
-from notification_service import EXECUTIVE_DIRECTOR_EMAIL, HIRING_MANAGER_EMAIL, NOTIFICATION_TEMPLATE_FIELDS, NotificationService
+from notification_models import NotificationRecipient, NotificationRule, NotificationTestPayload
+from notification_service import EXECUTIVE_DIRECTOR_EMAIL, HIRING_MANAGER_EMAIL, NotificationService
 from notification_store import NotificationStore
+from notification_templates import (
+    NOTIFICATION_TEMPLATE_FIELD_CATALOG,
+    NOTIFICATION_TEMPLATE_FIELDS,
+    notification_template_fields,
+    render_notification_templates,
+    validate_notification_rule,
+)
 from staffing_models import (
     StaffingClassroom,
     StaffingDirectorCandidate,
@@ -17,7 +24,7 @@ from staffing_models import (
     StaffingMetricRow,
     StaffingPerson,
 )
-from staffing_service import StaffingService
+from staffing_service import StaffingService, staffing_notification_payload
 from staffing_store import StaffingStore
 
 
@@ -958,6 +965,7 @@ QLabel#StaffingV2ClassroomListFooter {
 ActionCallback = Callable[[int], None]
 DirectorReferralDismissalCallback = Callable[[list[StaffingDirectorCandidate], str, str], None]
 CandidateReportOpenCallback = Callable[[str, str], None]
+NotificationTestPayloadProvider = Callable[[str], list[NotificationTestPayload]]
 
 
 class _StaffingV2OverlayPanel:
@@ -977,15 +985,22 @@ class _StaffingV2OverlayPanel:
         self.frame = QtWidgets.QFrame(parent)
         self.frame.setObjectName(object_name)
         self.frame.setFixedWidth(width)
+        self.frame.setMinimumHeight(0)
         self.frame.hide()
 
         root = QtWidgets.QVBoxLayout(self.frame)
+        root.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetNoConstraint)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
 
         self.scroll_area = QtWidgets.QScrollArea()
         self.scroll_area.setObjectName(f"{object_name}Scroll")
         self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setMinimumHeight(0)
+        self.scroll_area.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Ignored,
+        )
         self.scroll_area.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
         self.scroll_area.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.scroll_area.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
@@ -1007,6 +1022,10 @@ class _StaffingV2OverlayPanel:
         self.footer = QtWidgets.QWidget()
         self.footer.setObjectName(f"{object_name}Footer")
         self.footer.setMinimumWidth(0)
+        self.footer.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Fixed,
+        )
         self.footer_layout = QtWidgets.QVBoxLayout(self.footer)
         self.footer_layout.setContentsMargins(14, 8, 14, 12)
         self.footer_layout.setSpacing(8)
@@ -1075,10 +1094,11 @@ class _StaffingV2OverlayPanel:
         configure_v2_scroll_areas(self.QtWidgets, self.frame, self.QtCore)
 
     def reposition(self) -> None:
-        height = max(self.parent.height(), 640)
+        height = max(self.parent.height(), 1)
         width = min(self.width, max(320, self.parent.width()))
         x = max(0, self.parent.width() - width)
         self.frame.setFixedWidth(width)
+        self.frame.setMaximumHeight(height)
         self.frame.setGeometry(x, 0, width, height)
         self._sync_body_width()
 
@@ -1112,6 +1132,7 @@ class StaffingDashboardV2Page:
         school_filter: str = "",
         notification_store_path: Path | None = None,
         notification_service_factory: Callable[[], NotificationService] | None = None,
+        notification_test_payload_provider: NotificationTestPayloadProvider | None = None,
         director_referral_dismissal_callback: DirectorReferralDismissalCallback | None = None,
         candidate_report_open_callback: CandidateReportOpenCallback | None = None,
         director_referral_removal_actor: str = "admin",
@@ -1129,6 +1150,7 @@ class StaffingDashboardV2Page:
             Path(notification_store_path) if notification_store_path is not None else Path("notification_rules.sqlite3")
         )
         self.notification_service_factory = notification_service_factory
+        self.notification_test_payload_provider = notification_test_payload_provider
         self.director_referral_dismissal_callback = director_referral_dismissal_callback
         self.candidate_report_open_callback = candidate_report_open_callback
         self.director_referral_removal_actor = str(director_referral_removal_actor or "admin").strip() or "admin"
@@ -1142,6 +1164,7 @@ class StaffingDashboardV2Page:
         self.visible_notification_rules: list[NotificationRule] = []
         self.selected_notification_rule_id: int | None = None
         self.notification_selected_recipients: list[NotificationRecipient] = []
+        self.notification_test_payloads: list[NotificationTestPayload] = []
         self.people: list[StaffingPerson] = []
         self.visible_people: list[StaffingPerson] = []
         self.history_records: list[StaffingHistoryRecord] = []
@@ -1238,6 +1261,10 @@ class StaffingDashboardV2Page:
         content_layout.setContentsMargins(24, 18, 24, 18)
         content_layout.setSpacing(14)
         self.page_stack = self.QtWidgets.QStackedWidget()
+        self.page_stack.setSizePolicy(
+            self.QtWidgets.QSizePolicy.Policy.Ignored,
+            self.QtWidgets.QSizePolicy.Policy.Expanding,
+        )
         content_layout.addWidget(self.page_stack, 1)
         shell_layout.addWidget(content, 1)
 
@@ -1503,16 +1530,22 @@ class StaffingDashboardV2Page:
             button.update()
 
     def _show_dashboard_view(self) -> None:
+        if not self._can_leave_notifications_view():
+            return
         self._set_active_nav(self.dashboard_nav_button)
         self.page_stack.setCurrentWidget(self.dashboard_view)
 
     def _show_classrooms_view(self) -> None:
+        if not self._can_leave_notifications_view():
+            return
         self._ensure_lazy_view("classrooms")
         self._set_active_nav(self.classrooms_nav_button)
         self._refresh_classrooms()
         self.page_stack.setCurrentWidget(self.classrooms_view)
 
     def _show_validation_view(self) -> None:
+        if not self._can_leave_notifications_view():
+            return
         self._ensure_lazy_view("validation")
         self._set_active_nav(self.validation_nav_button)
         self._refresh_validation()
@@ -3101,8 +3134,8 @@ class StaffingDashboardV2Page:
         self.page_stack.addWidget(self.notifications_view)
 
         left, left_layout = self._panel("StaffingV2NotificationPanel")
-        left.setMinimumWidth(520)
-        outer.addWidget(left, 3)
+        left.setMinimumWidth(320)
+        outer.addWidget(left, 1)
         header = self.QtWidgets.QHBoxLayout()
         title_block = self.QtWidgets.QVBoxLayout()
         title_block.addWidget(self._label("Notifications", "StaffingV2NotificationsTitle"))
@@ -3161,7 +3194,7 @@ class StaffingDashboardV2Page:
         clear_filters.clicked.connect(self._clear_notification_filters)
         filters.addWidget(clear_filters)
         filters.addStretch(1)
-        self.notifications_create_button = self.QtWidgets.QPushButton("Create / Modify")
+        self.notifications_create_button = self.QtWidgets.QPushButton("Create Rule")
         self.notifications_create_button.setObjectName("StaffingV2NotificationsCreateButton")
         self._set_button_icon(self.notifications_create_button, "add")
         self.notifications_create_button.clicked.connect(self._create_notification_rule)
@@ -3171,12 +3204,42 @@ class StaffingDashboardV2Page:
         self.notifications_rule_list = self.QtWidgets.QListWidget()
         self.notifications_rule_list.setObjectName("StaffingV2NotificationsRuleList")
         self.notifications_rule_list.currentRowChanged.connect(self._select_notification_rule_from_list)
+        self.notifications_rule_list.itemClicked.connect(self._open_selected_notification_rule)
+        class NotificationListResizeFilter(self.QtCore.QObject):
+            def __init__(self, dashboard: "StaffingDashboardV2Page") -> None:
+                super().__init__(dashboard.notifications_rule_list)
+                self.dashboard = dashboard
+
+            def eventFilter(self, watched: Any, event: Any) -> bool:  # noqa: N802
+                if event.type() == self.dashboard.QtCore.QEvent.Type.Resize:
+                    self.dashboard.QtCore.QTimer.singleShot(0, self.dashboard._set_notification_view_mode)
+                return False
+
+        self.notification_list_resize_filter = NotificationListResizeFilter(self)
+        self.notifications_rule_list.viewport().installEventFilter(self.notification_list_resize_filter)
         left_layout.addWidget(self.notifications_rule_list, 1)
 
-        right, right_layout = self._panel("StaffingV2NotificationEditor")
-        right.setMinimumWidth(520)
-        outer.addWidget(right, 2)
-        right_layout.addWidget(self._label("Edit Notification Rule", "StaffingV2NotificationEditorTitle"))
+        self.notification_editor_overlay = _StaffingV2OverlayPanel(
+            QtCore=self.QtCore,
+            QtWidgets=self.QtWidgets,
+            parent=self.notifications_view,
+            object_name="StaffingV2NotificationEditor",
+            width=680,
+        )
+        right_layout = self.notification_editor_overlay.body_layout
+        class NotificationTestSignals(self.QtCore.QObject):
+            finished = self.QtCore.Signal(object)
+
+        self.notification_test_signals = NotificationTestSignals(self.notifications_view)
+        self.notification_test_signals.finished.connect(self._finish_notification_test_send)
+        close = self.notification_editor_overlay.add_header(
+            title="Edit Notification Rule",
+            title_object_name="StaffingV2NotificationEditorTitle",
+            close_object_name="StaffingV2NotificationEditorClose",
+            close_icon=self._standard_icon("close"),
+        )
+        close.clicked.disconnect()
+        close.clicked.connect(self._request_close_notification_editor)
         self.notifications_status = self._label("", "StaffingV2NotificationsStatus")
         right_layout.addWidget(self.notifications_status)
 
@@ -3191,9 +3254,15 @@ class StaffingDashboardV2Page:
         self.notification_rule_timing = self.QtWidgets.QComboBox()
         self.notification_rule_timing.setObjectName("StaffingV2NotificationTiming")
         self.notification_rule_timing.addItems(["Event", "Reference date"])
-        self.notification_rule_date_field = self.QtWidgets.QLineEdit()
+        self.notification_rule_date_field = self.QtWidgets.QComboBox()
         self.notification_rule_date_field.setObjectName("StaffingV2NotificationDateField")
-        self.notification_rule_date_field.setPlaceholderText("start_date")
+        self.notification_rule_date_field.setEditable(True)
+        self.notification_rule_date_field.addItems(
+            ["start_date", "reply_by_date", "interview_date", "generated_date", "date_notice_given", "final_working_day"]
+        )
+        self.notification_rule_offset_direction = self.QtWidgets.QComboBox()
+        self.notification_rule_offset_direction.setObjectName("StaffingV2NotificationOffsetDirection")
+        self.notification_rule_offset_direction.addItems(["Before", "On", "After"])
         self.notification_rule_offset = self.QtWidgets.QSpinBox()
         self.notification_rule_offset.setObjectName("StaffingV2NotificationOffsetDays")
         self.notification_rule_offset.setRange(0, 365)
@@ -3205,19 +3274,42 @@ class StaffingDashboardV2Page:
         self.notification_rule_body = self.QtWidgets.QPlainTextEdit()
         self.notification_rule_body.setObjectName("StaffingV2NotificationBody")
         self.notification_rule_body.setMinimumHeight(150)
+        self._notification_variable_target = self.notification_rule_body
+
+        class NotificationEditorFocusFilter(self.QtCore.QObject):
+            def __init__(filter_self, owner: "StaffingDashboardV2Page") -> None:
+                super().__init__(owner.widget)
+                filter_self.owner = owner
+
+            def eventFilter(filter_self, watched: Any, event: Any) -> bool:  # noqa: N802
+                if event.type() == filter_self.owner.QtCore.QEvent.Type.FocusIn:
+                    filter_self.owner._notification_variable_target = watched
+                return False
+
+        self._notification_editor_focus_filter = NotificationEditorFocusFilter(self)
+        self.notification_rule_subject.installEventFilter(self._notification_editor_focus_filter)
+        self.notification_rule_body.installEventFilter(self._notification_editor_focus_filter)
         self.notification_rule_label.textChanged.connect(self._sync_notification_rule_validation)
         self.notification_rule_event.currentTextChanged.connect(self._sync_notification_rule_validation)
         self.notification_rule_enabled.toggled.connect(self._sync_notification_rule_validation)
         self.notification_rule_timing.currentTextChanged.connect(self._sync_notification_rule_validation)
-        self.notification_rule_date_field.textChanged.connect(self._sync_notification_rule_validation)
+        self.notification_rule_date_field.currentTextChanged.connect(self._sync_notification_rule_validation)
+        self.notification_rule_offset_direction.currentTextChanged.connect(self._sync_notification_rule_validation)
         self.notification_rule_offset.valueChanged.connect(self._sync_notification_rule_validation)
         self.notification_rule_subject.textChanged.connect(self._sync_notification_rule_validation)
         self.notification_rule_body.textChanged.connect(self._sync_notification_rule_validation)
+        self.notification_rule_subject.cursorPositionChanged.connect(
+            lambda _old, _new: setattr(self, "_notification_variable_target", self.notification_rule_subject)
+        )
+        self.notification_rule_body.cursorPositionChanged.connect(
+            lambda: setattr(self, "_notification_variable_target", self.notification_rule_body)
+        )
         form.addRow("Label", self.notification_rule_label)
         form.addRow("Event", self.notification_rule_event)
         form.addRow("Enabled", self.notification_rule_enabled)
         form.addRow("Timing", self.notification_rule_timing)
         form.addRow("Date field", self.notification_rule_date_field)
+        form.addRow("Send timing", self.notification_rule_offset_direction)
         form.addRow("Offset days", self.notification_rule_offset)
         recipient_row = self.QtWidgets.QHBoxLayout()
         recipient_row.addWidget(self.notification_rule_recipients, 1)
@@ -3225,26 +3317,33 @@ class StaffingDashboardV2Page:
         self.notification_recipient_add.setObjectName("StaffingV2NotificationRecipientAdd")
         self.notification_recipient_add.clicked.connect(self._add_notification_recipient_from_text)
         recipient_row.addWidget(self.notification_recipient_add)
+        self.notification_recipient_picker = self.QtWidgets.QComboBox()
+        self.notification_recipient_picker.setObjectName("StaffingV2NotificationRecipientPicker")
+        self.notification_recipient_picker.addItems(
+            ["Add role recipient…", "Candidate", "Hiring Manager", "Director", "Executive Director"]
+        )
+        self.notification_recipient_picker.currentIndexChanged.connect(self._add_notification_recipient_from_picker)
+        recipient_row.addWidget(self.notification_recipient_picker)
         self.notification_recipient_candidate = self.QtWidgets.QPushButton("Candidate")
         self.notification_recipient_candidate.setObjectName("StaffingV2NotificationRecipientCandidate")
         self.notification_recipient_candidate.clicked.connect(lambda _checked=False: self._add_notification_role_recipient("candidate"))
-        recipient_row.addWidget(self.notification_recipient_candidate)
+        self.notification_recipient_candidate.hide()
         self.notification_recipient_hiring_manager = self.QtWidgets.QPushButton("Hiring Manager")
         self.notification_recipient_hiring_manager.setObjectName("StaffingV2NotificationRecipientHiringManager")
         self.notification_recipient_hiring_manager.clicked.connect(
             lambda _checked=False: self._add_notification_role_recipient("hiring_manager")
         )
-        recipient_row.addWidget(self.notification_recipient_hiring_manager)
+        self.notification_recipient_hiring_manager.hide()
         self.notification_recipient_director = self.QtWidgets.QPushButton("Director")
         self.notification_recipient_director.setObjectName("StaffingV2NotificationRecipientDirector")
         self.notification_recipient_director.clicked.connect(lambda _checked=False: self._add_notification_role_recipient("director"))
-        recipient_row.addWidget(self.notification_recipient_director)
+        self.notification_recipient_director.hide()
         self.notification_recipient_executive_director = self.QtWidgets.QPushButton("Executive Director")
         self.notification_recipient_executive_director.setObjectName("StaffingV2NotificationRecipientExecutiveDirector")
         self.notification_recipient_executive_director.clicked.connect(
             lambda _checked=False: self._add_notification_role_recipient("executive_director")
         )
-        recipient_row.addWidget(self.notification_recipient_executive_director)
+        self.notification_recipient_executive_director.hide()
         form.addRow("Recipients", recipient_row)
         form.addRow("Subject", self.notification_rule_subject)
         form.addRow("Body", self.notification_rule_body)
@@ -3284,12 +3383,28 @@ class StaffingDashboardV2Page:
         self.notification_variables_preview = self._label("", "StaffingV2NotificationVariablesPreview")
         variables_layout.addWidget(self.notification_variables_preview)
         variable_buttons = self.QtWidgets.QGridLayout()
-        for index, variable in enumerate(NOTIFICATION_TEMPLATE_FIELDS[:12]):
-            button = self.QtWidgets.QPushButton(f"{{{variable}}}")
-            button.setObjectName(f"StaffingV2NotificationVariable_{variable}")
+        row = 0
+        current_group = ""
+        column = 0
+        for field in NOTIFICATION_TEMPLATE_FIELD_CATALOG:
+            if field.group != current_group:
+                if current_group and column:
+                    row += 1
+                current_group = field.group
+                column = 0
+                group_label = self._label(current_group, "StaffingV2Muted")
+                variable_buttons.addWidget(group_label, row, 0, 1, 3)
+                row += 1
+            button = self.QtWidgets.QPushButton(f"{{{field.key}}}")
+            button.setToolTip(field.label)
+            button.setObjectName(f"StaffingV2NotificationVariable_{_safe_object_suffix(field.key)}")
             button.setMinimumWidth(120)
-            button.clicked.connect(lambda _checked=False, token=f"{{{variable}}}": self._insert_notification_body_text(token))
-            variable_buttons.addWidget(button, index // 3, index % 3)
+            button.clicked.connect(lambda _checked=False, token=f"{{{field.key}}}": self._insert_notification_variable(token))
+            variable_buttons.addWidget(button, row, column)
+            column += 1
+            if column >= 3:
+                column = 0
+                row += 1
         variables_layout.addLayout(variable_buttons)
         right_layout.addWidget(self.notification_variables_panel)
         self.notification_validation_panel, validation_layout = self._panel("StaffingV2NotificationValidationPanel")
@@ -3297,11 +3412,26 @@ class StaffingDashboardV2Page:
         self.notification_validation = self._label("", "StaffingV2NotificationValidation")
         validation_layout.addWidget(self.notification_validation)
         right_layout.addWidget(self.notification_validation_panel)
+        self.notification_delivery_toggle = self.QtWidgets.QPushButton("Delivery & Testing  ▸")
+        self.notification_delivery_toggle.setObjectName("StaffingV2NotificationDeliveryToggle")
+        self.notification_delivery_toggle.setCheckable(True)
+        right_layout.addWidget(self.notification_delivery_toggle)
         self.notification_audit_panel, audit_layout = self._panel("StaffingV2NotificationAuditPanel")
+        self.notification_test_recipient = self.QtWidgets.QLineEdit()
+        self.notification_test_recipient.setObjectName("StaffingV2NotificationTestRecipient")
+        self.notification_test_recipient.setPlaceholderText("Explicit test recipient email")
+        audit_layout.addWidget(self._label("Test recipient", "StaffingV2Muted"))
+        audit_layout.addWidget(self.notification_test_recipient)
+        self.notification_test_payload_selector = self.QtWidgets.QComboBox()
+        self.notification_test_payload_selector.setObjectName("StaffingV2NotificationTestPayload")
+        audit_layout.addWidget(self._label("Test payload", "StaffingV2Muted"))
+        audit_layout.addWidget(self.notification_test_payload_selector)
         audit_layout.addWidget(self._label("Recent Sends", "StaffingV2SectionTitle"))
         self.notification_audit_summary = self._label("", "StaffingV2NotificationAuditSummary")
         audit_layout.addWidget(self.notification_audit_summary)
         right_layout.addWidget(self.notification_audit_panel)
+        self.notification_audit_panel.setVisible(False)
+        self.notification_delivery_toggle.toggled.connect(self._toggle_notification_delivery_panel)
 
         actions = self.QtWidgets.QHBoxLayout()
         self.notification_delete = self.QtWidgets.QPushButton("Delete Rule")
@@ -3319,21 +3449,27 @@ class StaffingDashboardV2Page:
         actions.addWidget(self.notification_test_send)
         self.notification_cancel = self.QtWidgets.QPushButton("Cancel")
         self.notification_cancel.setObjectName("StaffingV2NotificationCancel")
-        self.notification_cancel.clicked.connect(self._cancel_notification_rule)
+        self.notification_cancel.clicked.connect(self._request_close_notification_editor)
         actions.addWidget(self.notification_cancel)
         self.notification_save = self.QtWidgets.QPushButton("Save Changes")
         self.notification_save.setObjectName("StaffingV2NotificationSave")
         self._set_button_icon(self.notification_save, "export")
         self.notification_save.clicked.connect(self._save_notification_rule)
         actions.addWidget(self.notification_save)
-        right_layout.addLayout(actions)
+        self.notification_editor_overlay.footer_layout.addLayout(actions)
+
+    def _toggle_notification_delivery_panel(self, expanded: bool) -> None:
+        self.notification_audit_panel.setVisible(expanded)
+        self.notification_delivery_toggle.setText(f"Delivery & Testing  {'▾' if expanded else '▸'}")
 
     def _refresh_notifications(self) -> None:
         if not hasattr(self, "notifications_rule_list"):
             return
         store = self._notification_store()
-        if not store.list_rules():
-            store.ensure_default_rules()
+        if not getattr(self, "_notification_defaults_checked", False):
+            self._notification_defaults_checked = True
+            if not store.list_rules():
+                store.ensure_default_rules()
         self.notification_rules = [
             rule for rule in store.list_rules() if _show_rule_in_staffing_v2_notifications(rule)
         ]
@@ -3423,9 +3559,14 @@ class StaffingDashboardV2Page:
                 f"Body preview: {(rule.body_template or 'Missing body template')[:140]}\n{template_status}"
             )
             item.setData(self.QtCore.Qt.ItemDataRole.UserRole, rule.id)
+            item.setSizeHint(self.QtCore.QSize(440, 150))
             self.notifications_rule_list.addItem(item)
+            self.notifications_rule_list.setItemWidget(item, self._notification_rule_card_widget(rule))
         self.notifications_rule_list.blockSignals(False)
-        self.notifications_rule_count.setText(f"{len(self.visible_notification_rules)} rules")
+        issue_count = sum(bool(validate_notification_rule(rule)) for rule in self.visible_notification_rules)
+        self.notifications_rule_count.setText(
+            f"{len(self.visible_notification_rules)} rules" + (f" · {issue_count} issues" if issue_count else "")
+        )
         selected_index = 0
         if self.selected_notification_rule_id is not None:
             for index, rule in enumerate(self.visible_notification_rules):
@@ -3437,11 +3578,62 @@ class StaffingDashboardV2Page:
             self._load_notification_rule(self.visible_notification_rules[selected_index])
         else:
             self._load_notification_rule(None)
+        self._set_notification_view_mode()
+
+    def _notification_rule_card_widget(self, rule: NotificationRule) -> Any:
+        card = self.QtWidgets.QFrame()
+        card.setObjectName("StaffingV2NotificationRuleCard")
+        layout = self.QtWidgets.QGridLayout(card)
+        layout.setContentsMargins(14, 12, 14, 12)
+        layout.setHorizontalSpacing(14)
+        layout.setVerticalSpacing(4)
+        event = self._label(rule.event_type or "Missing event", "StaffingV2NotificationCardEvent")
+        event.setWordWrap(True)
+        layout.addWidget(event, 0, 0)
+        layout.addWidget(self._label(f"ID: {rule.id if rule.id is not None else 'new'}", "StaffingV2Muted"), 1, 0)
+        label = self._label(rule.label or "Untitled notification", "StaffingV2SectionTitle")
+        label.setWordWrap(True)
+        layout.addWidget(label, 0, 1)
+        status = "Enabled" if rule.active else "Disabled"
+        status_label = self._label(status, "StaffingV2HealthyChip" if rule.active else "StaffingV2NeutralChip")
+        layout.addWidget(status_label, 0, 2)
+        timing = "Event" if rule.trigger_timing == "event" else _notification_schedule_text(rule)
+        recipients = sum(1 for recipient in rule.recipients if recipient.active)
+        layout.addWidget(self._label(f"Timing\n{timing}", "StaffingV2Muted"), 1, 1)
+        layout.addWidget(self._label(f"Recipients\n{recipients}", "StaffingV2Muted"), 1, 2)
+        subject = self._label(f"Subject\n{rule.subject_template or 'Missing subject template'}", "StaffingV2Muted")
+        subject.setWordWrap(True)
+        layout.addWidget(subject, 0, 3, 2, 1)
+        body = self._label(f"Body preview\n{(rule.body_template or 'Missing body template')[:120]}", "StaffingV2Muted")
+        body.setWordWrap(True)
+        layout.addWidget(body, 0, 4, 2, 1)
+        issues = validate_notification_rule(rule)
+        if issues:
+            blocking = any(issue.blocking for issue in issues)
+            issue_label = self._label(
+                f"{'Blocked' if blocking else 'Warning'}: {issues[0].message}",
+                "StaffingV2NeedNowChip" if blocking else "StaffingV2ComingChip",
+            )
+            issue_label.setWordWrap(True)
+            layout.addWidget(issue_label, 2, 0, 1, 5)
+        layout.setColumnStretch(1, 2)
+        layout.setColumnStretch(3, 3)
+        layout.setColumnStretch(4, 3)
+        return card
 
     def _select_notification_rule_from_list(self, row: int) -> None:
         if row < 0 or row >= len(self.visible_notification_rules):
             return
         self._load_notification_rule(self.visible_notification_rules[row])
+
+    def _open_selected_notification_rule(self, item: Any) -> None:
+        if not self._confirm_notification_editor_switch():
+            return
+        row = self.notifications_rule_list.row(item)
+        if row < 0 or row >= len(self.visible_notification_rules):
+            return
+        self._load_notification_rule(self.visible_notification_rules[row])
+        self.notification_editor_overlay.show_overlay()
 
     def _load_notification_rule(self, rule: NotificationRule | None) -> None:
         if rule is None:
@@ -3450,7 +3642,8 @@ class StaffingDashboardV2Page:
             self.notification_rule_event.setCurrentText("staffing.assignment.need_now")
             self.notification_rule_enabled.setChecked(False)
             self.notification_rule_timing.setCurrentText("Event")
-            self.notification_rule_date_field.clear()
+            self.notification_rule_date_field.setCurrentText("")
+            self.notification_rule_offset_direction.setCurrentText("On")
             self.notification_rule_offset.setValue(0)
             self.notification_rule_recipients.clear()
             self.notification_rule_subject.clear()
@@ -3460,14 +3653,18 @@ class StaffingDashboardV2Page:
             self.notification_validation.setText("No rule selected.")
             self.notification_variables_preview.setText("")
             self.notification_audit_summary.setText("")
+            self.notification_editor_baseline = self._notification_rule_from_editor()
             return
         self.selected_notification_rule_id = rule.id
         self.notification_rule_label.setText(rule.label)
         self.notification_rule_event.setCurrentText(rule.event_type)
         self.notification_rule_enabled.setChecked(rule.active)
         self.notification_rule_timing.setCurrentText("Reference date" if rule.trigger_timing == "date_offset" else "Event")
-        self.notification_rule_date_field.setText(rule.date_field)
-        self.notification_rule_offset.setValue(int(rule.offset_days))
+        self.notification_rule_date_field.setCurrentText(rule.date_field)
+        self.notification_rule_offset_direction.setCurrentText(
+            "Before" if int(rule.offset_days) < 0 else "After" if int(rule.offset_days) > 0 else "On"
+        )
+        self.notification_rule_offset.setValue(abs(int(rule.offset_days)))
         self.notification_selected_recipients = [recipient for recipient in rule.recipients if recipient.active]
         self.notification_rule_recipients.setText("")
         self._render_notification_recipient_chips()
@@ -3475,13 +3672,17 @@ class StaffingDashboardV2Page:
         self.notification_rule_body.setPlainText(rule.body_template)
         self._sync_notification_rule_validation()
         self._refresh_notification_audit()
+        self._refresh_notification_test_payloads(rule.event_type)
+        self.notification_editor_baseline = self._notification_rule_from_editor()
 
     def _create_notification_rule(self) -> None:
+        if not self._confirm_notification_editor_switch():
+            return
         self.selected_notification_rule_id = None
         self._load_notification_rule(
             NotificationRule(
-                event_type="staffing.assignment.need_now",
-                label="New notification rule",
+                event_type="",
+                label="",
                 subject_template="",
                 body_template="",
                 recipients=[],
@@ -3491,17 +3692,24 @@ class StaffingDashboardV2Page:
         )
         self.notifications_status.setText("New notification rule ready.")
         self._render_notification_recipient_chips()
+        self.notification_editor_baseline = self._notification_rule_from_editor()
+        self.notification_editor_overlay.show_overlay()
 
     def _save_notification_rule(self) -> None:
         timing = "date_offset" if self.notification_rule_timing.currentText() == "Reference date" else "event"
+        offset_days = self.notification_rule_offset.value()
+        if self.notification_rule_offset_direction.currentText() == "Before":
+            offset_days *= -1
+        elif self.notification_rule_offset_direction.currentText() == "On":
+            offset_days = 0
         rule = NotificationRule(
             id=self.selected_notification_rule_id,
             event_type=self.notification_rule_event.currentText(),
             label=self.notification_rule_label.text(),
             active=self.notification_rule_enabled.isChecked(),
             trigger_timing=timing,
-            date_field=self.notification_rule_date_field.text(),
-            offset_days=self.notification_rule_offset.value(),
+            date_field=self.notification_rule_date_field.currentText(),
+            offset_days=offset_days,
             subject_template=self.notification_rule_subject.text(),
             body_template=self.notification_rule_body.toPlainText(),
             recipients=self._current_notification_recipients(),
@@ -3515,14 +3723,26 @@ class StaffingDashboardV2Page:
         self.selected_notification_rule_id = saved.id
         self.notifications_status.setText("Notification rule saved.")
         self._refresh_notifications()
+        self.notification_editor_overlay.hide()
 
     def _delete_notification_rule(self) -> None:
         if self.selected_notification_rule_id is None:
+            return
+        label = self.notification_rule_label.text().strip() or self.notification_rule_event.currentText().strip()
+        answer = self.QtWidgets.QMessageBox.question(
+            self.widget,
+            "Delete Notification Rule",
+            f"Delete notification rule '{label}'? This cannot be undone.",
+            self.QtWidgets.QMessageBox.StandardButton.Yes | self.QtWidgets.QMessageBox.StandardButton.No,
+            self.QtWidgets.QMessageBox.StandardButton.No,
+        )
+        if answer != self.QtWidgets.QMessageBox.StandardButton.Yes:
             return
         self._notification_store().delete_rule(self.selected_notification_rule_id)
         self.selected_notification_rule_id = None
         self.notifications_status.setText("Notification rule deleted.")
         self._refresh_notifications()
+        self.notification_editor_overlay.hide()
 
     def _clear_notification_filters(self) -> None:
         self.notifications_event_filter.setCurrentText("All events")
@@ -3536,6 +3756,19 @@ class StaffingDashboardV2Page:
     def _set_notification_view_mode(self) -> None:
         mode = self.notifications_view_toggle.currentText().casefold()
         self.notifications_rule_list.setProperty("staffingV2NotificationViewMode", mode)
+        if mode == "grid":
+            self.notifications_rule_list.setViewMode(self.QtWidgets.QListView.ViewMode.IconMode)
+            self.notifications_rule_list.setResizeMode(self.QtWidgets.QListView.ResizeMode.Adjust)
+            self.notifications_rule_list.setWrapping(True)
+            viewport_width = self.notifications_rule_list.viewport().width()
+            width = max(420, (viewport_width - 28) // 2) if viewport_width >= 868 else max(300, viewport_width - 14)
+            grid_size = self.QtCore.QSize(width, 205)
+            if self.notifications_rule_list.gridSize() != grid_size:
+                self.notifications_rule_list.setGridSize(grid_size)
+        else:
+            self.notifications_rule_list.setViewMode(self.QtWidgets.QListView.ViewMode.ListMode)
+            self.notifications_rule_list.setWrapping(False)
+            self.notifications_rule_list.setGridSize(self.QtCore.QSize())
         self.notifications_rule_list.style().unpolish(self.notifications_rule_list)
         self.notifications_rule_list.style().polish(self.notifications_rule_list)
 
@@ -3569,6 +3802,19 @@ class StaffingDashboardV2Page:
             self.notification_selected_recipients.append(recipient)
         self._render_notification_recipient_chips()
         self._sync_notification_rule_validation()
+
+    def _add_notification_recipient_from_picker(self, index: int) -> None:
+        role_key = {
+            1: "candidate",
+            2: "hiring_manager",
+            3: "director",
+            4: "executive_director",
+        }.get(int(index), "")
+        if role_key:
+            self._add_notification_role_recipient(role_key)
+        self.notification_recipient_picker.blockSignals(True)
+        self.notification_recipient_picker.setCurrentIndex(0)
+        self.notification_recipient_picker.blockSignals(False)
 
     def _render_notification_recipient_chips(self) -> None:
         layout = getattr(self, "notification_recipient_chips_layout", None)
@@ -3604,19 +3850,33 @@ class StaffingDashboardV2Page:
         if not hasattr(self, "notification_validation"):
             return
         rule = self._notification_rule_from_editor()
-        self.notification_validation.setText(_notification_validation_text(rule))
-        self.notification_variables_preview.setText("  ".join(f"{{{field}}}" for field in _notification_template_fields(rule)))
+        issues = validate_notification_rule(rule)
+        self.notification_validation.setText(
+            "No issues found" if not issues else "\n".join(f"{'Blocked' if issue.blocking else 'Warning'}: {issue.message}" for issue in issues)
+        )
+        self.notification_variables_preview.setText("  ".join(f"{{{field}}}" for field in notification_template_fields(rule)))
+        reference_date = rule.trigger_timing == "date_offset"
+        self.notification_rule_date_field.setEnabled(reference_date)
+        self.notification_rule_offset_direction.setEnabled(reference_date)
+        self.notification_rule_offset.setEnabled(reference_date and self.notification_rule_offset_direction.currentText() != "On")
+        if hasattr(self, "notification_save"):
+            self.notification_save.setEnabled(not any(issue.blocking for issue in issues))
 
     def _notification_rule_from_editor(self) -> NotificationRule:
         timing = "date_offset" if self.notification_rule_timing.currentText() == "Reference date" else "event"
+        offset_days = self.notification_rule_offset.value()
+        if self.notification_rule_offset_direction.currentText() == "Before":
+            offset_days *= -1
+        elif self.notification_rule_offset_direction.currentText() == "On":
+            offset_days = 0
         return NotificationRule(
             id=self.selected_notification_rule_id,
             event_type=self.notification_rule_event.currentText(),
             label=self.notification_rule_label.text(),
             active=self.notification_rule_enabled.isChecked(),
             trigger_timing=timing,
-            date_field=self.notification_rule_date_field.text(),
-            offset_days=self.notification_rule_offset.value(),
+            date_field=self.notification_rule_date_field.currentText(),
+            offset_days=offset_days,
             subject_template=self.notification_rule_subject.text(),
             body_template=self.notification_rule_body.toPlainText(),
             recipients=self._current_notification_recipients(),
@@ -3635,12 +3895,20 @@ class StaffingDashboardV2Page:
         self.notification_rule_body.setTextCursor(cursor)
         self._sync_notification_rule_validation()
 
+    def _insert_notification_variable(self, token: str) -> None:
+        focused = self.QtWidgets.QApplication.focusWidget()
+        target = focused if focused in {self.notification_rule_subject, self.notification_rule_body} else getattr(
+            self, "_notification_variable_target", None
+        )
+        if target is self.notification_rule_subject:
+            self._insert_notification_subject_variable(token)
+            return
+        self._insert_notification_body_text(token)
+
     def _open_notification_preview_dialog(self) -> None:
         rule = self._notification_rule_from_editor()
         sample = _notification_preview_sample()
-        subject, subject_unresolved = _render_notification_preview(rule.subject_template, sample)
-        body, body_unresolved = _render_notification_preview(rule.body_template, sample)
-        unresolved = sorted(set(subject_unresolved + body_unresolved))
+        rendered = render_notification_templates(rule, sample)
         dialog = self.QtWidgets.QDialog(self.widget)
         dialog.setObjectName("StaffingV2NotificationPreviewDialog")
         dialog.setWindowTitle("Notification Preview")
@@ -3648,14 +3916,15 @@ class StaffingDashboardV2Page:
         layout = self.QtWidgets.QVBoxLayout(dialog)
         layout.addWidget(self._label("Notification Preview", "StaffingV2DrawerTitle"))
         layout.addWidget(self._label("Subject", "StaffingV2SectionTitle"))
-        layout.addWidget(self._label(subject or "(blank subject)", "StaffingV2Muted"))
+        layout.addWidget(self._label(rendered.subject or "(blank subject)", "StaffingV2Muted"))
         layout.addWidget(self._label("Body", "StaffingV2SectionTitle"))
-        body_view = self.QtWidgets.QPlainTextEdit(body or "(blank body)")
+        body_view = self.QtWidgets.QTextBrowser()
         body_view.setObjectName("StaffingV2NotificationPreviewBody")
-        body_view.setReadOnly(True)
+        body_view.setHtml(rendered.html_body or "<p>(blank body)</p>")
+        body_view.setOpenExternalLinks(False)
         layout.addWidget(body_view, 1)
-        if unresolved:
-            layout.addWidget(self._label(f"Unresolved variables: {', '.join(unresolved)}", "StaffingV2NeedNowChip"))
+        if rendered.unresolved_fields:
+            layout.addWidget(self._label(f"Unresolved variables: {', '.join(rendered.unresolved_fields)}", "StaffingV2NeedNowChip"))
         else:
             layout.addWidget(self._label("All variables resolved.", "StaffingV2HealthyChip"))
         close = self.QtWidgets.QPushButton("Close")
@@ -3664,25 +3933,112 @@ class StaffingDashboardV2Page:
         dialog.show()
 
     def _send_notification_test(self) -> None:
-        if self.selected_notification_rule_id is None:
-            self.notifications_status.setText("Save the notification rule before sending a test.")
+        recipient = self.notification_test_recipient.text().strip()
+        if not recipient:
+            self.notifications_status.setText("Enter an explicit test recipient email.")
             return
-        try:
-            service = self.notification_service_factory() if self.notification_service_factory else NotificationService(store=self._notification_store())
-            result = service.send_test(
-                int(self.selected_notification_rule_id),
-                _notification_preview_sample(),
-                (
-                    f"staffing-v2-test:{self.selected_notification_rule_id}:"
-                    f"{datetime.now(timezone.utc).isoformat()}"
-                ),
-            )
-        except Exception as exc:  # noqa: BLE001 - operator-facing status only.
-            self.notifications_status.setText(str(exc))
-            self._refresh_notification_audit()
+        payload = self._selected_notification_test_payload()
+        if payload is None:
             return
-        self.notifications_status.setText(f"Test send {result.status}.")
+        rule = self._notification_rule_from_editor()
+        key = f"staffing-v2-test:{self.selected_notification_rule_id or 'draft'}:{datetime.now(timezone.utc).isoformat()}"
+        self.notification_test_send.setEnabled(False)
+        self.notifications_status.setText("Sending test notification…")
+
+        def send() -> None:
+            try:
+                service = self.notification_service_factory() if self.notification_service_factory else NotificationService(store=self._notification_store())
+                result: object = service.send_test_preview(rule, payload, recipient, key)
+            except Exception as exc:  # noqa: BLE001 - passed through sanitizer on GUI thread.
+                result = exc
+            try:
+                self.notification_test_signals.finished.emit(result)
+            except RuntimeError:
+                return
+
+        threading.Thread(target=send, name="notification-test-send", daemon=True).start()
+
+    def _finish_notification_test_send(self, result: object) -> None:
+        self.notification_test_send.setEnabled(True)
+        if isinstance(result, Exception):
+            self.notifications_status.setText(_safe_notification_error(result))
+        else:
+            self.notifications_status.setText(f"Test send {getattr(result, 'status', 'failed')}.")
         self._refresh_notification_audit()
+
+    def _refresh_notification_test_payloads(self, event_type: str) -> None:
+        if not hasattr(self, "notification_test_payload_selector"):
+            return
+        options: list[NotificationTestPayload] = []
+        if str(event_type or "").startswith("staffing."):
+            for assignment in reversed(self.store.list_assignments()[-10:]):
+                options.append(
+                    NotificationTestPayload(
+                        label=f"{assignment.school} · {assignment.classroom} · {assignment.position_name}",
+                        event_type=str(event_type or ""),
+                        payload=staffing_notification_payload(assignment),
+                        source_kind="staffing",
+                    )
+                )
+        if self.notification_test_payload_provider is not None:
+            options.extend(self.notification_test_payload_provider(str(event_type or "")))
+        self.notification_test_payloads = options[:10]
+        self.notification_test_payload_selector.clear()
+        self.notification_test_payload_selector.addItem("Manual payload…", -1)
+        for index, option in enumerate(self.notification_test_payloads):
+            self.notification_test_payload_selector.addItem(option.label, index)
+
+    def _selected_notification_test_payload(self) -> dict[str, str] | None:
+        index = self.notification_test_payload_selector.currentData()
+        if isinstance(index, int) and index >= 0 and index < len(self.notification_test_payloads):
+            return dict(self.notification_test_payloads[index].payload)
+        return self._manual_notification_test_payload()
+
+    def _manual_notification_test_payload(self) -> dict[str, str] | None:
+        rule = self._notification_rule_from_editor()
+        fields = list(notification_template_fields(rule))
+        for attachment_field in _notification_attachment_fields(rule.event_type):
+            if attachment_field not in fields:
+                fields.append(attachment_field)
+        if not fields:
+            return _notification_preview_sample()
+        dialog = self.QtWidgets.QDialog(self.widget)
+        dialog.setObjectName("StaffingV2NotificationManualPayloadDialog")
+        dialog.setWindowTitle("Manual Test Payload")
+        layout = self.QtWidgets.QVBoxLayout(dialog)
+        layout.addWidget(self._label("Manual Test Payload", "StaffingV2DrawerTitle"))
+        form = self.QtWidgets.QFormLayout()
+        editors: dict[str, Any] = {}
+        sample = _notification_preview_sample()
+        attachment_fields = set(_notification_attachment_fields(rule.event_type))
+        for field in fields:
+            row = self.QtWidgets.QWidget()
+            row_layout = self.QtWidgets.QHBoxLayout(row)
+            row_layout.setContentsMargins(0, 0, 0, 0)
+            editor = self.QtWidgets.QLineEdit(sample.get(field, ""))
+            editor.setObjectName(f"StaffingV2NotificationManualPayload_{_safe_object_suffix(field)}")
+            row_layout.addWidget(editor, 1)
+            if field in attachment_fields:
+                browse = self.QtWidgets.QPushButton("Browse")
+                browse.clicked.connect(
+                    lambda _checked=False, target=editor: target.setText(
+                        self.QtWidgets.QFileDialog.getOpenFileName(dialog, "Select attachment")[0]
+                    )
+                )
+                row_layout.addWidget(browse)
+            form.addRow(field, row)
+            editors[field] = editor
+        layout.addLayout(form)
+        buttons = self.QtWidgets.QDialogButtonBox(
+            self.QtWidgets.QDialogButtonBox.StandardButton.Ok | self.QtWidgets.QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        layout.addWidget(buttons)
+        if dialog.exec() != self.QtWidgets.QDialog.DialogCode.Accepted:
+            self.notifications_status.setText("Test send cancelled.")
+            return None
+        return {field: editor.text().strip() for field, editor in editors.items()}
 
     def _refresh_notification_audit(self) -> None:
         if self.selected_notification_rule_id is None or not hasattr(self, "notification_audit_summary"):
@@ -3702,11 +4058,54 @@ class StaffingDashboardV2Page:
     def _cancel_notification_rule(self) -> None:
         if self.selected_notification_rule_id is None:
             self._refresh_notifications()
+            self.notification_editor_overlay.hide()
             return
         try:
             self._load_notification_rule(self._notification_store().get_rule(self.selected_notification_rule_id))
         except ValueError:
             self._refresh_notifications()
+        self.notification_editor_overlay.hide()
+
+    def _request_close_notification_editor(self) -> None:
+        if not self._confirm_notification_editor_switch():
+            return
+        self._cancel_notification_rule()
+
+    def _can_leave_notifications_view(self) -> bool:
+        notifications_view = getattr(self, "notifications_view", None)
+        if notifications_view is None or self.page_stack.currentWidget() is not notifications_view:
+            return True
+        overlay = getattr(self, "notification_editor_overlay", None)
+        if overlay is None or overlay.frame.isHidden():
+            return True
+        if not self._confirm_notification_editor_switch():
+            return False
+        self._cancel_notification_rule()
+        return True
+
+    def _confirm_notification_editor_switch(self) -> bool:
+        overlay = getattr(self, "notification_editor_overlay", None)
+        if overlay is None or overlay.frame.isHidden() or not self._notification_editor_is_dirty():
+            return True
+        box = self.QtWidgets.QMessageBox(self.widget)
+        box.setWindowTitle("Unsaved Notification Changes")
+        box.setText("Save changes before leaving this notification rule?")
+        save = box.addButton("Save", self.QtWidgets.QMessageBox.ButtonRole.AcceptRole)
+        discard = box.addButton("Discard", self.QtWidgets.QMessageBox.ButtonRole.DestructiveRole)
+        keep = box.addButton("Keep Editing", self.QtWidgets.QMessageBox.ButtonRole.RejectRole)
+        save.setEnabled(self.notification_save.isEnabled())
+        box.exec()
+        clicked = box.clickedButton()
+        if clicked is keep or clicked is None:
+            return False
+        if clicked is save:
+            self._save_notification_rule()
+            return self.notifications_status.text() == "Notification rule saved."
+        return clicked is discard
+
+    def _notification_editor_is_dirty(self) -> bool:
+        baseline = getattr(self, "notification_editor_baseline", None)
+        return baseline is not None and self._notification_rule_from_editor() != baseline
 
     def _build_people_view(self) -> None:
         self.people_view = self.QtWidgets.QWidget()
@@ -3981,12 +4380,16 @@ class StaffingDashboardV2Page:
         dialog.show()
 
     def _show_people_view(self) -> None:
+        if not self._can_leave_notifications_view():
+            return
         self._ensure_lazy_view("people")
         self._set_active_nav(self.people_nav_button)
         self._refresh_people()
         self.page_stack.setCurrentWidget(self.people_view)
 
     def _show_history_view(self) -> None:
+        if not self._can_leave_notifications_view():
+            return
         self._ensure_lazy_view("history")
         self._set_active_nav(self.history_nav_button)
         self._refresh_history()
@@ -7589,15 +7992,6 @@ def _safe_object_suffix(value: str) -> str:
     return suffix.strip("_") or "item"
 
 
-def _notification_template_fields(rule: NotificationRule) -> list[str]:
-    fields: set[str] = set()
-    for template in [rule.subject_template, rule.body_template]:
-        for _, field_name, _, _ in Formatter().parse(str(template or "")):
-            if field_name:
-                fields.add(field_name.split(".", 1)[0].split("[", 1)[0])
-    if not fields:
-        fields.update(["position_name", "person_name", "school", "company_name"])
-    return sorted(fields)
 
 
 def _notification_preview_sample() -> dict[str, str]:
@@ -7610,10 +8004,32 @@ def _notification_preview_sample() -> dict[str, str]:
         "department": "Preschool",
         "hiring_manager_name": "Alex Morgan",
         "location": "Hawthorne",
+        "notice_given": date.today().isoformat(),
+        "notice_date": date.today().isoformat(),
+        "date_notice_given": date.today().isoformat(),
+        "final_working_day": (date.today() + timedelta(days=14)).isoformat(),
+        "final_day": (date.today() + timedelta(days=14)).isoformat(),
+        "last_working_day": (date.today() + timedelta(days=14)).isoformat(),
         "permit_status": "Permit in Process",
+        "permit_effective_date": date.today().isoformat(),
+        "permit_documentation_received": "Yes",
+        "permit_notes": "Permit file received.",
         "person_name": "Imani Carter",
         "position_name": "Teacher 1",
+        "position": "Teacher 1",
+        "position_type": "Teacher",
         "program": "Preschool",
+        "ece_units": "24",
+        "ece_units_completed": "24",
+        "degree": "BA",
+        "degree_type": "BA",
+        "years_experience": "5",
+        "experience_years": "5",
+        "interview_answer_1": "I use routines and calm redirection.",
+        "interview_answers_summary": "Classroom guidance: I use routines and calm redirection.",
+        "deepseek_summary": "Strong classroom presence and clear family communication.",
+        "deepseek_recommendation": "Recommend hire.",
+        "deepseek_concerns": "Needs permit follow-up.",
         "recruiter_name": "Taylor Smith",
         "reply_by_date": (date.today() + timedelta(days=3)).isoformat(),
         "school": "Hawthorne",
@@ -7626,15 +8042,30 @@ def _notification_preview_sample() -> dict[str, str]:
     }
 
 
-def _render_notification_preview(template: str, payload: dict[str, str]) -> tuple[str, list[str]]:
-    unresolved: list[str] = []
+def _notification_schedule_text(rule: NotificationRule) -> str:
+    if rule.trigger_timing != "date_offset":
+        return "Event"
+    days = abs(int(rule.offset_days))
+    if int(rule.offset_days) < 0:
+        direction = "before"
+    elif int(rule.offset_days) > 0:
+        direction = "after"
+    else:
+        direction = "on"
+    if direction == "on":
+        return f"On {rule.date_field or 'reference date'}"
+    return f"{days} day{'s' if days != 1 else ''} {direction} {rule.date_field or 'reference date'}"
 
-    class SafePayload(dict[str, str]):
-        def __missing__(self, key: str) -> str:
-            unresolved.append(key)
-            return "{" + key + "}"
 
-    return str(template or "").format_map(SafePayload(payload)), unresolved
+def _notification_attachment_fields(event_type: str) -> tuple[str, ...]:
+    normalized = str(event_type or "").removesuffix(".test")
+    if normalized == "offer.approved":
+        return ("offer_pdf_path",)
+    if normalized == "offer.accepted":
+        return ("onboarding_guide_path",)
+    return ()
+
+
 
 
 def _safe_notification_error(value: object) -> str:
@@ -7662,50 +8093,10 @@ def _safe_staffing_error(value: object) -> str:
 
 
 def _notification_validation_text(rule: NotificationRule) -> str:
-    problems: list[str] = []
-    if not str(rule.event_type or "").strip():
-        problems.append("Missing event")
-    if not str(rule.label or "").strip():
-        problems.append("Missing label")
-    if not str(rule.subject_template or "").strip():
-        problems.append("Missing subject template")
-    if not str(rule.body_template or "").strip():
-        problems.append("Missing body template")
-    if not [recipient for recipient in rule.recipients if recipient.active]:
-        problems.append("Missing active recipients")
-    elif any(recipient.recipient_type == "role" and recipient.role_key == "candidate" for recipient in rule.recipients):
-        problems.append("Candidate resolves from payload email")
-    elif any(recipient.recipient_type == "role" and recipient.role_key == "director" for recipient in rule.recipients):
-        problems.append("Director resolves from payload school")
-    if rule.trigger_timing == "date_offset" and not str(rule.date_field or "").strip():
-        problems.append("Missing date field")
-    unknown_fields = sorted(set(_notification_template_fields(rule)) - set(NOTIFICATION_TEMPLATE_FIELDS))
-    if unknown_fields:
-        problems.append(f"Unknown variables: {', '.join(unknown_fields)}")
-    if problems == ["Director resolves from payload school"]:
-        return "No issues found; Director resolves from payload school."
-    if problems == ["Candidate resolves from payload email"]:
-        return "No issues found; Candidate resolves from payload email."
-    return "No issues found" if not problems else "; ".join(problems)
+    issues = validate_notification_rule(rule)
+    return "No issues found" if not issues else "; ".join(issue.message for issue in issues)
 
 
-def _notification_template_fields(rule: NotificationRule) -> list[str]:
-    fields: set[str] = set()
-    for template in (rule.subject_template, rule.body_template, rule.date_field):
-        text = str(template or "")
-        cursor = 0
-        while cursor < len(text):
-            start = text.find("{", cursor)
-            if start == -1:
-                break
-            end = text.find("}", start + 1)
-            if end == -1:
-                break
-            field = text[start + 1 : end].strip()
-            if field:
-                fields.add(field)
-            cursor = end + 1
-    return sorted(fields)
 
 
 def _metric_icon_key(label: str) -> str:

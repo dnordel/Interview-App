@@ -76,41 +76,6 @@ entries:
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_admin_studio.py::test_admin_studio_manages_notification_rules_in_draft_then_applies
-  duration_seconds_n2: 0.262
-  duration_source: collection_default
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_admin_studio.py::test_admin_studio_creates_custom_date_offset_notification_rule
-  duration_seconds_n2: 0.738
-  duration_source: collection_default
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_admin_studio.py::test_admin_studio_deletes_notification_rule_from_draft_then_applies
-  duration_seconds_n2: 0.271
-  duration_source: collection_default
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_admin_studio.py::test_admin_studio_rejects_invalid_notification_recipient
-  duration_seconds_n2: 0.465
-  duration_source: collection_default
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_admin_studio.py::test_admin_studio_rejects_ambiguous_notification_active_value
-  duration_seconds_n2: 0.458
-  duration_source: collection_default
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_admin_studio.py::test_admin_studio_requires_complete_active_notification_rule
-  duration_seconds_n2: 0.483
-  duration_source: collection_default
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_admin_studio.py::test_admin_studio_rejects_malformed_notification_template
-  duration_seconds_n2: 0.453
-  duration_source: collection_default
-  gui_heavy: false
-  placement: fast
 - nodeid: tests/test_admin_studio.py::test_admin_studio_persists_allowed_deepseek_model_choice
   duration_seconds_n2: 0.477
   duration_source: collection_default
@@ -1026,17 +991,22 @@ entries:
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_full_pytest_runner.py::test_full_suite_runs_parallel_metadata_phase_before_main_suite
+- nodeid: tests/test_full_pytest_runner.py::test_full_suite_runs_gui_timing_preflight_before_combined_full_suite
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_full_pytest_runner.py::test_full_suite_stops_after_parallel_metadata_failures
+- nodeid: tests/test_full_pytest_runner.py::test_full_suite_returns_combined_full_suite_failure_after_preflight_passes
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_full_pytest_runner.py::test_full_suite_starts_main_phase_after_metadata_passes
+- nodeid: tests/test_full_pytest_runner.py::test_full_suite_stops_after_gui_timing_preflight_failures
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_full_pytest_runner.py::test_full_suite_starts_combined_full_phase_after_preflight_passes
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
@@ -2751,8 +2721,28 @@ entries:
   duration_source: collection_default
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_notification_service.py::test_notification_sender_builds_plain_and_html_alternatives
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_notification_service.py::test_notification_service_sends_current_draft_to_explicit_test_recipient_without_unsaved_audit
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_notification_service.py::test_notification_service_saved_draft_test_blocks_invalid_template_and_audits
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_notification_service.py::test_notification_rule_crud_supports_multiple_recipients
   duration_seconds_n2: 0.209
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_notification_service.py::test_notification_store_blocks_incomplete_enabled_rule_but_allows_disabled_draft
+  duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
@@ -2838,6 +2828,31 @@ entries:
   placement: fast
 - nodeid: tests/test_notification_service.py::test_notification_store_rejects_invalid_rule_email_before_save
   duration_seconds_n2: 0.188
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_notification_templates.py::test_notification_templates_render_safe_multipart_content
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_notification_templates.py::test_notification_validation_blocks_incomplete_enabled_rule_but_warns_when_disabled
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_notification_templates.py::test_notification_validation_blocks_unknown_variable_only_when_enabled
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_notification_templates.py::test_notification_catalog_exposes_curated_staffing_interview_and_deepseek_fields
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_notification_templates.py::test_notification_payload_from_mapping_extracts_safe_nested_report_values
+  duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
@@ -5004,11 +5019,6 @@ entries:
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_validation_issue_action_opens_affected_section
-  duration_seconds_n2: 3.184
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_validation_issue_action_selects_affected_prompt
   duration_seconds_n2: 3.534
   duration_source: measured
@@ -5019,41 +5029,6 @@ entries:
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_validation_details_dialog_shows_technical_payload
-  duration_seconds_n2: 3.016
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_validation_review_shows_blocked_banner_summary_and_guidance
-  duration_seconds_n2: 2.795
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_validation_review_issue_cards_show_filter_why_and_what
-  duration_seconds_n2: 2.996
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_validation_issue_card_has_collapsed_raw_details
-  duration_seconds_n2: 2.514
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_validation_issue_filter_hides_nonmatching_cards
-  duration_seconds_n2: 3.209
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_validation_publish_availability_uses_disabled_button_when_blocked
-  duration_seconds_n2: 3.003
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_publish_button_tracks_validation_blockers_after_fix
-  duration_seconds_n2: 2.812
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_review_changes_button_opens_grouped_diff_dialog
   duration_seconds_n2: 2.947
   duration_source: measured
@@ -5061,11 +5036,6 @@ entries:
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_dashboard_draft_changes_lists_all_dirty_files
   duration_seconds_n2: 3.49
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_dashboard_validation_issue_opens_affected_notification_rule
-  duration_seconds_n2: 2.327
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -5146,96 +5116,6 @@ entries:
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_signal_hints_renders_all_hint_groups
   duration_seconds_n2: 3.22
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_notification_rule_editor_saves_draft
-  duration_seconds_n2: 2.86
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_notifications_create_button_opens_blank_rule_and_saves_card
-  duration_seconds_n2: 3.424
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_notifications_editor_shows_mockup_status_panels
-  duration_seconds_n2: 2.126
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_notifications_recipient_chips_remove_and_save
-  duration_seconds_n2: 3.251
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_notifications_body_toolbar_inserts_template_markup
-  duration_seconds_n2: 3.222
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_notifications_subject_variable_button_inserts_and_saves
-  duration_seconds_n2: 3.297
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_notifications_date_offset_uses_clear_before_after_controls
-  duration_seconds_n2: 3.596
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_notifications_delete_rule_removes_draft_card_and_table_row
-  duration_seconds_n2: 2.887
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_notification_preview_modal_renders_sample_data
-  duration_seconds_n2: 2.459
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_notifications_enabled_filter_hides_nonmatching_rule_cards
-  duration_seconds_n2: 2.373
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_notifications_timing_filter_hides_nonmatching_rule_cards
-  duration_seconds_n2: 2.792
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_notifications_recipients_filter_hides_empty_recipient_rules
-  duration_seconds_n2: 2.95
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_notifications_event_filter_hides_nonmatching_rule_cards
-  duration_seconds_n2: 2.638
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_notifications_template_filter_hides_by_subject_body_completeness
-  duration_seconds_n2: 3.081
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_notifications_renders_all_rule_cards
-  duration_seconds_n2: 2.947
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_notifications_sort_reorders_rule_cards
-  duration_seconds_n2: 3.085
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_notifications_toolbar_scrolls_and_toggles_card_view
-  duration_seconds_n2: 3.018
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_admin_notification_validation_warns_on_unknown_variables
-  duration_seconds_n2: 2.828
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -5509,7 +5389,43 @@ entries:
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_notifications_nav_opens_rule_dashboard_and_editor
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_notifications_dirty_exit_choices_use_real_dialog[Save]
+  duration_seconds_n2: 0.64
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_notifications_dirty_exit_choices_use_real_dialog[Discard]
+  duration_seconds_n2: 2.88
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_notifications_dirty_exit_choices_use_real_dialog[Keep
+    Editing]
+  duration_seconds_n2: 0.6
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_notifications_named_delete_confirmation_controls_deletion[No]
+  duration_seconds_n2: 2.71
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_notifications_named_delete_confirmation_controls_deletion[Yes]
+  duration_seconds_n2: 5.67
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_notifications_grid_collapses_and_restores_actual_columns
+  duration_seconds_n2: 5.35
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_notifications_manual_payload_uses_attachment_picker_and_unsaved_draft
+  duration_seconds_n2: 9.4
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_notifications_manager_dashboard_scenario
   duration_seconds_n2: 12.061
   duration_source: measured
   gui_heavy: true
@@ -5816,6 +5732,16 @@ entries:
   placement: non_gui_tail
 - nodeid: tests/test_pytest_duration_catalog.py::test_gui_scenario_catalog_entries_have_measured_scheduler_durations
   duration_seconds_n2: 0.481
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_pytest_duration_catalog.py::test_marked_pyside_gui_tests_are_scenarios_or_focused_exceptions
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_pytest_duration_catalog.py::test_required_pyside_gui_surfaces_have_named_scenarios
+  duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
@@ -7870,6 +7796,16 @@ entries:
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_dashboard_host.py::test_access_config_is_immutable_normalized_and_rejects_unknown_role
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_staffing_dashboard_host.py::test_director_notification_test_payloads_are_school_scoped
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_staffing_dashboard_host.py::test_notification_test_payloads_include_curated_candidate_report_fields
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false

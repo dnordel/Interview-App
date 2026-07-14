@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -56,6 +57,97 @@ def test_notification_sender_accepts_onboarding_email_settings_shape(monkeypatch
     assert calls[3] == ("send", "Hello World")
 
 
+def test_notification_sender_builds_plain_and_html_alternatives(monkeypatch: pytest.MonkeyPatch) -> None:
+    messages: list[object] = []
+
+    class FakeSmtp:
+        def __init__(self, *_args: object, **_kwargs: object) -> None:
+            pass
+
+        def __enter__(self) -> "FakeSmtp":
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+        def starttls(self, **_kwargs: object) -> None:
+            pass
+
+        def send_message(self, message: object) -> None:
+            messages.append(message)
+
+    monkeypatch.setattr(notification_service.smtplib, "SMTP", FakeSmtp)
+
+    notification_service._send_email_message(
+        _settings(),
+        ["to@example.org"],
+        "Hello",
+        "Hello Alex",
+        html_body="<p>Hello <strong>Alex</strong></p>",
+    )
+
+    message = messages[0]
+    assert message.get_body(preferencelist=("plain",)).get_content().strip() == "Hello Alex"
+    assert "<strong>Alex</strong>" in message.get_body(preferencelist=("html",)).get_content()
+
+
+def test_notification_service_sends_current_draft_to_explicit_test_recipient_without_unsaved_audit(tmp_path: Path) -> None:
+    store = NotificationStore(tmp_path / "notifications.sqlite3")
+    sent: list[tuple[list[str], str, str]] = []
+    service = NotificationService(
+        store=store,
+        email_settings=_settings(),
+        send_email=lambda _settings, recipients, subject, body: sent.append((recipients, subject, body)),
+    )
+    draft = NotificationRule(
+        event_type="custom.preview",
+        label="Unsaved",
+        subject_template="Hello {person_name}",
+        body_template="Hi **{person_name}**",
+        recipients=[],
+        active=False,
+    )
+
+    result = service.send_test_preview(
+        draft,
+        {"person_name": "Alex"},
+        "tester@example.org",
+        "draft-preview-1",
+    )
+
+    assert result.status == "sent"
+    assert sent == [(["tester@example.org"], "Hello Alex", "Hi Alex")]
+    assert store.list_audit() == []
+
+
+def test_notification_service_saved_draft_test_blocks_invalid_template_and_audits(tmp_path: Path) -> None:
+    store = NotificationStore(tmp_path / "notifications.sqlite3")
+    saved = store.save_rule(
+        NotificationRule(
+            event_type="custom.preview",
+            label="Saved",
+            subject_template="Hello {person_name}",
+            body_template="Body",
+            recipients=[],
+            active=False,
+        )
+    )
+    service = NotificationService(store=store, email_settings=_settings(), send_email=lambda *_args: None)
+
+    result = service.send_test_preview(
+        replace(saved, body_template="Unknown {secret_token}"),
+        {"person_name": "Alex"},
+        "tester@example.org",
+        "saved-preview-invalid",
+    )
+
+    assert result.status == "blocked"
+    assert "Unknown template variables" in result.error
+    [audit] = store.list_audit(saved.id, limit=1)
+    assert audit["status"] == "blocked"
+    assert "tester@example.org" not in audit["error"]
+
+
 def test_notification_rule_crud_supports_multiple_recipients(tmp_path: Path) -> None:
     store = NotificationStore(tmp_path / "notifications.sqlite3")
 
@@ -76,6 +168,24 @@ def test_notification_rule_crud_supports_multiple_recipients(tmp_path: Path) -> 
     assert len(rules) == 1
     assert rules[0].id == saved.id
     assert [recipient.email for recipient in rules[0].recipients] == ["hm@example.org", "director@example.org"]
+
+
+def test_notification_store_blocks_incomplete_enabled_rule_but_allows_disabled_draft(tmp_path: Path) -> None:
+    store = NotificationStore(tmp_path / "notifications.sqlite3")
+    incomplete = NotificationRule(
+        event_type="custom.reminder",
+        label="Draft",
+        subject_template="",
+        body_template="",
+        recipients=[],
+        active=True,
+    )
+
+    with pytest.raises(ValueError, match="Subject template"):
+        store.save_rule(incomplete)
+
+    saved = store.save_rule(NotificationRule(**{**incomplete.__dict__, "active": False}))
+    assert saved.active is False
 
 
 def test_notification_rule_crud_persists_date_offset_trigger_and_delete(tmp_path: Path) -> None:
@@ -149,6 +259,7 @@ def test_notification_store_seeds_offer_generated_default_rule(tmp_path: Path) -
             label="Custom existing",
             subject_template="Custom {position_name}",
             body_template="Custom body",
+            recipients=events["staffing.assignment.need_now"].recipients,
             active=True,
         )
     )
@@ -183,7 +294,7 @@ def test_notification_store_backfills_recipients_only_for_untouched_defaults(tmp
             subject_template=accepted.subject_template,
             body_template=accepted.body_template,
             recipients=[],
-            active=True,
+            active=False,
         )
     )
 
@@ -569,21 +680,16 @@ def test_notification_service_can_schedule_from_offer_generated_date(tmp_path: P
 
 def test_notification_service_blocks_unknown_placeholders(tmp_path: Path) -> None:
     store = NotificationStore(tmp_path / "notifications.sqlite3")
-    store.save_rule(
-        NotificationRule(
-            event_type="offer.accepted",
-            label="Broken template",
-            subject_template="Accepted: {missing}",
-            body_template="Body",
-            recipients=[NotificationRecipient(email="director@example.org")],
+    with pytest.raises(ValueError, match="Unknown template variables: missing"):
+        store.save_rule(
+            NotificationRule(
+                event_type="offer.accepted",
+                label="Broken template",
+                subject_template="Accepted: {missing}",
+                body_template="Body",
+                recipients=[NotificationRecipient(email="director@example.org")],
+            )
         )
-    )
-    service = NotificationService(store=store, email_settings=_settings(), send_email=lambda *_: None)
-
-    results = service.emit_event("offer.accepted", {"candidate_name": "Jane Doe"}, "offer-2-accepted")
-
-    assert [result.status for result in results] == ["blocked"]
-    assert all("@" not in result.error for result in results)
 
 
 def test_notification_store_rejects_invalid_rule_email_before_save(tmp_path: Path) -> None:

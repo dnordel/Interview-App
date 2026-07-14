@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from candidate_report import CandidateReportRepository
+from data_store import InterviewHistoryStore
 from staffing_dashboard_host import StaffingDashboardAccess, StaffingDashboardHost
 from staffing_service import StaffingService
 from staffing_store import StaffingStore
@@ -111,6 +112,76 @@ def test_access_config_is_immutable_normalized_and_rejects_unknown_role() -> Non
         StaffingDashboardAccess(role="owner", actor="owner")
     with pytest.raises(Exception):
         access.role = "admin"
+
+
+def test_director_notification_test_payloads_are_school_scoped(tmp_path: Path) -> None:
+    history_path = tmp_path / "interview_history.sqlite3"
+    history = InterviewHistoryStore(history_path)
+    history.append({"history_id": "hawthorne", "candidate_name": "Ari Lane", "school": "Hawthorne", "interview_date": "2026-07-10"})
+    history.append({"history_id": "palmdale", "candidate_name": "Sam Cruz", "school": "Palmdale", "interview_date": "2026-07-11"})
+    store = _store(tmp_path)
+    host = _host(tmp_path, role="director", store=store, history_path=history_path)
+
+    payloads = host.notification_test_payloads("offer.approved")
+
+    assert [choice.payload["history_id"] for choice in payloads] == ["hawthorne"]
+    assert payloads[0].source_kind == "interview_history"
+    assert host.notification_test_payloads("staffing.assignment.need_now") == []
+
+
+def test_notification_test_payloads_include_curated_candidate_report_fields(tmp_path: Path) -> None:
+    history_path = tmp_path / "interview_history.sqlite3"
+    history = InterviewHistoryStore(history_path)
+    snapshot = {
+        "schema_version": 1,
+        "history_id": "hist-rich",
+        "candidate": {
+            "candidate_name": "Jordan Lee",
+            "school": "Hawthorne",
+            "track": "Preschool",
+            "interview_date": "2026-07-10",
+            "qualification": {
+                "degree_type": "BA",
+                "ece_units_completed": 24,
+                "years_experience": 5,
+            },
+        },
+        "questions": [
+            {"prompt": "Why preschool?", "transcript": "Because early learning matters."},
+        ],
+        "scoring": {"outcome": "Hire", "percent_of_max": 92},
+        "summaries": {
+            "executive_summary": "Strong classroom presence.",
+            "recommendation_rationale": "Recommend hire.",
+            "concerns": ["Needs permit follow-up."],
+        },
+        "report_path": "",
+    }
+    history.append_with_candidate_report(
+        {
+            "history_id": "hist-rich",
+            "candidate_name": "Jordan Lee",
+            "school": "Hawthorne",
+            "interview_date": "2026-07-10",
+            "position": "Lead Teacher",
+        },
+        snapshot,
+        actor="admin-user",
+    )
+    store = _store(tmp_path)
+    host = _host(tmp_path, role="director", store=store, history_path=history_path)
+
+    payload = host.notification_test_payloads("offer.approved")[0].payload
+
+    assert payload["candidate_name"] == "Jordan Lee"
+    assert payload["position"] == "Lead Teacher"
+    assert payload["degree"] == "BA"
+    assert payload["ece_units"] == "24"
+    assert payload["years_experience"] == "5"
+    assert payload["score"] == "92"
+    assert payload["interview_answer_1"] == "Because early learning matters."
+    assert payload["deepseek_summary"] == "Strong classroom presence."
+    assert payload["deepseek_recommendation"] == "Recommend hire."
 
 
 def test_admin_and_director_hosts_share_v2_widget_and_native_actions(tmp_path: Path) -> None:

@@ -1334,12 +1334,21 @@ class StaffingService:
     def _emit_assignment_event(self, action: str, assignment: StaffingAssignment) -> None:
         event_type = STAFFING_NOTIFICATION_EVENTS[action]
         key = f"staffing:{assignment.id}:{event_type}:{assignment.updated_at}"
-        self._emit(event_type, _payload(assignment), key)
+        self._emit(event_type, staffing_notification_payload(assignment, self._notification_person(assignment)), key)
 
     def _emit_person_event(self, person_id: int, assignment: StaffingAssignment) -> None:
         event_type = STAFFING_NOTIFICATION_EVENTS["update_permit_status"]
         key = f"staffing:person:{person_id}:{event_type}:{assignment.updated_at}"
-        self._emit(event_type, _payload(assignment), key)
+        self._emit(event_type, staffing_notification_payload(assignment, self._notification_person(assignment)), key)
+
+    def _notification_person(self, assignment: StaffingAssignment) -> StaffingPerson | None:
+        if not assignment.person_id:
+            return None
+        try:
+            with self.store.connect() as conn:
+                return self.store.person_context(conn, assignment.person_id)
+        except (ValueError, StaffingEditLock):
+            return None
 
     def _emit(self, event_type: str, payload: dict[str, str], idempotency_key: str) -> None:
         if self.notification_service is None:
@@ -1350,11 +1359,16 @@ class StaffingService:
             return
 
 
-def _payload(assignment: StaffingAssignment) -> dict[str, str]:
-    return {
+def staffing_notification_payload(
+    assignment: StaffingAssignment,
+    person: StaffingPerson | None = None,
+) -> dict[str, str]:
+    payload = {
         "school": assignment.school,
         "classroom": assignment.classroom,
+        "program": assignment.classroom_program,
         "position_name": assignment.position_name,
+        "position": assignment.position_name,
         "position_type": assignment.position_type,
         "slot_group": assignment.slot_group,
         "assignment_status": assignment.status,
@@ -1363,9 +1377,36 @@ def _payload(assignment: StaffingAssignment) -> dict[str, str]:
         "shift_start": assignment.shift_start,
         "shift_end": assignment.shift_end,
         "notice_given": assignment.notice_given,
+        "notice_date": assignment.notice_given,
+        "date_notice_given": assignment.notice_given,
         "final_working_day": assignment.final_working_day,
+        "final_day": assignment.final_working_day,
+        "last_working_day": assignment.final_working_day,
         "permit_status": assignment.permit_status,
+        "classroom_capacity": str(assignment.classroom_capacity or ""),
+        "ratio_group": assignment.ratio_group,
+        "notes": assignment.notes,
     }
+    if person is not None:
+        units = "" if person.units is None else f"{person.units:g}"
+        payload.update(
+            {
+                "person_name": person.name or payload["person_name"],
+                "permit_status": person.permit_status or payload["permit_status"],
+                "permit_effective_date": person.permit_effective_date,
+                "permit_documentation_received": "Yes" if person.permit_documentation_received else "No",
+                "permit_notes": person.permit_notes,
+                "notice_given": person.notice_given or payload["notice_given"],
+                "notice_date": person.notice_given or payload["notice_date"],
+                "date_notice_given": person.notice_given or payload["date_notice_given"],
+                "final_working_day": person.final_working_day or payload["final_working_day"],
+                "final_day": person.final_working_day or payload["final_day"],
+                "last_working_day": person.final_working_day or payload["last_working_day"],
+                "ece_units": units,
+                "ece_units_completed": units,
+            }
+        )
+    return {key: str(value) for key, value in payload.items()}
 
 
 def _result(assignment: StaffingAssignment) -> StaffingTransitionResult:

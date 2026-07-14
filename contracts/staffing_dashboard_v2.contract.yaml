@@ -2,7 +2,7 @@ module:
   name: staffing_dashboard_v2
   language: python
   path: src/staffing_dashboard_v2.py
-  version: 0.24.1
+  version: 0.26.0
   description: Parallel PySide Staffing v2 dashboard page module for the mockup-driven rewrite; renders a standalone mockup-style staffing shell/sidebar with forced light Fusion Qt palette/style, active nav state, Qt icons plus custom primary-blue add and person-add icons, styled light scrollbars/tables/inputs, and disabled placeholder nav entries for unimplemented mockup destinations, main Staffing Dashboard with stable dashboard objectName, labeled filters/icon-owned Add Position and a shared selected-school summary/action row containing semantic compact icon-bearing summary chips plus Export/View History actions, validation worklist chip drilldown, mockup colon labels, icon-bearing overview cards, icon-bearing classroom priority chip, custom always-scrollable auto-height classroom list rows filled by dominant status-key color with selection borders, status dots, chevrons, padded three-line position count text, and taller selected-card minimums, icon-only classroom list filter dialog for status/permit/open-days filters, classroom list footer count, vertically scrollable classroom detail area with refresh-synced scroll range, page-wide per-pixel Qt scroll behavior for Staffing v2 lists/tables/text edits/scroll areas, position table with explicit row-number column, normalized date/program display, fixed readable status/permit/action columns sized to show action and permit labels, fully status-key-filled icon-bearing status and permit chips plus menu-style row actions including mistaken-position deletion for unassigned positions, icon-bearing dashed Add Position drop zone, director-interview pending/completed section for new hire/borderline referrals with first-interview score visibility, one-line pending/completed count header, visible pending-candidate checkbox controls plus no-modifier multi-row selection for multi-delete, school-selector-synced pending/completed director interview lists, shortened wrapped pending-table headers, wider fixed pending-table column spacing with full-value cell tooltips, fully visible Record Interview action buttons, and hire-only proposed shift/classroom capture that hides those fields when director decision is No-Hire, status key, service-backed Add Position dialog with first-class Director position type and icon-only close, filtered Export read-only preview dialog, shared overlay side-panel template with top-aligned viewport-width-clamped scrollable body and fixed footer plus shared compact detail-card builder, Classroom Management sub-dashboard with icon-owned Add Classroom header action, service-backed Add Classroom dialog, Export read-only filtered-classrooms preview dialog, pagination footer, readable fixed-width table columns with status/active chips, icon-bearing compact detail/metric/health cards, row View detail selection, always-visible-scrollbar classroom detail overlay with pinned Save Changes/Deactivate controls, and an overlay side filter drawer with draft-only controls and active-count badges, Staffing Validation sub-dashboard with metric cards, active-state issue severity tabs, lifecycle/permit/date worklist issues, pagination footer, icon-bearing export/filter/search/table-row/detail-footer actions, row View drawer navigation, Run Full Validation refresh action, Export Validation Report read-only filtered-issues preview dialog, View Validation Rules read-only dialog, and icon-bearing overlay filter/right-panel controls, read-only position detail overlay drawer with icon-only close, normalized date/program display, icon-bearing action buttons including Delete Position for unassigned positions, icon-bearing related-person placeholder action, and icon-bearing footer actions, v2 Mark Coming / Mark Filled dialogs with Director role preservation, icon-only close, and icon-bearing footer actions, v2 Manage Filled chooser with icon-only close, v2 Update Permit dialog with icon-only close, v2 Mark Need Now dialog with icon-only close, v2 Delete Position confirmation dialog, People / Employee Management sub-dashboard with icon-owned Add Person action text, Director role filtering/addition, active-state detail tabs, pagination footer, icon-bearing header/filter/search/table-row/detail/footer actions, row View detail selection, service-backed Add Person dialog, and icon-bearing overlay detail/filter controls with compact reusable cards, full Staffing v2 Notifications dashboard with editable free-form events, filters, sorting, list/grid toggle, recipient chips, template variables, preview, test send, validation, sanitized audit errors, scheduled counts, save/cancel/delete backed by NotificationStore and NotificationService, and Assignment History sub-dashboard with icon-bearing header/date-range/table-row/detail-footer actions, View Validation navigation, View Assignment drawer navigation, Open Employee navigation, header Export read-only filtered-records preview dialog, Export Record read-only preview dialog, pagination footer, overlay detail panel with compact reusable cards, a neutral assignment-ID detail chip, icon-bearing lifecycle event rows, and validation checklist rows while the legacy Staffing page remains available.
 functions:
 - name: apply_staffing_v2_light_theme
@@ -348,37 +348,12 @@ functions:
     type: str
   exceptions: []
   side_effects: none
-- name: _notification_template_fields
-  description: Extract template variable field names from a notification rule subject and body for variable previews and unknown-variable validation.
-  locked: false
-  inputs:
-    rule:
-      type: NotificationRule
-      required: true
-  returns:
-    type: list[str]
-  exceptions: []
-  side_effects: none
 - name: _notification_preview_sample
   description: Return sample staffing and offer payload values used by Staffing v2 notification preview and test send.
   locked: false
   inputs: {}
   returns:
     type: dict[str, str]
-  exceptions: []
-  side_effects: none
-- name: _render_notification_preview
-  description: Render a notification template with a sample payload while returning unresolved variable names instead of failing open.
-  locked: false
-  inputs:
-    template:
-      type: str
-      required: true
-    payload:
-      type: dict[str, str]
-      required: true
-  returns:
-    type: tuple[str, list[str]]
   exceptions: []
   side_effects: none
 - name: _safe_notification_error
@@ -604,6 +579,10 @@ classes:
         default: null
       notification_service_factory:
         type: Callable[[], NotificationService] | None
+        required: false
+        default: null
+      notification_test_payload_provider:
+        type: NotificationTestPayloadProvider | None
         required: false
         default: null
       director_referral_dismissal_callback:
@@ -1292,6 +1271,18 @@ classes:
       type: None
     exceptions: []
     side_effects: Rebuilds the Notifications rule list and loads the selected visible rule into the editor.
+  - name: _notification_rule_card_widget
+    inputs:
+      rule: {type: NotificationRule, required: true}
+    returns: {type: QFrame}
+    exceptions: []
+    side_effects: Builds one detailed event, ID, label, status, timing, recipient, subject, body-preview, and validation card.
+  - name: _open_selected_notification_rule
+    inputs:
+      item: {type: QListWidgetItem, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Protects any dirty draft, loads the clicked rule, and opens the reusable overlay drawer.
   - name: _select_notification_rule_from_list
     inputs:
       row:
@@ -1339,7 +1330,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Stores the selected list/grid view mode on the notification rule list widget for mockup styling without mutating rules.
+    side_effects: Switches QListWidget between full-width list and responsive two-column icon-grid behavior, recalculating the grid on resize without mutating rules.
   - name: _current_notification_recipients
     inputs: {}
     returns:
@@ -1406,6 +1397,15 @@ classes:
       type: None
     exceptions: []
     side_effects: Inserts plain-text template toolbar text or a variable token into the body editor at the cursor and refreshes validation.
+  - name: _insert_notification_variable
+    inputs:
+      token:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Inserts a selected curated template variable into the last-focused subject or body editor and refreshes validation.
   - name: _open_notification_preview_dialog
     inputs: {}
     returns:
@@ -1417,7 +1417,55 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Sends a selected-rule test notification through NotificationService without changing the rule active flag, updates status text, and refreshes audit.
+    side_effects: Validates an explicit recipient and selected recent/manual payload, then sends the current unsaved draft through a background worker without changing the saved active flag.
+  - name: _toggle_notification_delivery_panel
+    inputs:
+      expanded: {type: bool, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Expands or collapses Delivery and Testing controls.
+  - name: _request_close_notification_editor
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Closes the rule drawer only after Save, Discard, or a clean exit.
+  - name: _confirm_notification_editor_switch
+    inputs: {}
+    returns: {type: bool}
+    exceptions: []
+    side_effects: Shows Save, Discard, and Keep Editing choices for dirty rule drafts.
+  - name: _notification_editor_is_dirty
+    inputs: {}
+    returns: {type: bool}
+    exceptions: []
+    side_effects: none
+  - name: _can_leave_notifications_view
+    inputs: {}
+    returns: {type: bool}
+    exceptions: []
+    side_effects: Protects dirty notification drafts when navigating to another Staffing v2 page.
+  - name: _finish_notification_test_send
+    inputs:
+      result: {type: object, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Restores Test Send controls, displays a sanitized result, and refreshes audit rows.
+  - name: _refresh_notification_test_payloads
+    inputs:
+      event_type: {type: str, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Rebuilds school-authorized recent staffing, offer, or interview payload choices plus a manual option.
+  - name: _selected_notification_test_payload
+    inputs: {}
+    returns: {type: 'dict[str, str] | None'}
+    exceptions: []
+    side_effects: May open the generated manual payload form.
+  - name: _manual_notification_test_payload
+    inputs: {}
+    returns: {type: 'dict[str, str] | None'}
+    exceptions: []
+    side_effects: Opens a generated variable form with validated attachment file pickers.
   - name: _refresh_notification_audit
     inputs: {}
     returns:

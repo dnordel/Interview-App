@@ -44,3 +44,11 @@ class NotificationSendResult:
     status: str
     recipient_count: int = 0
     error: str = ""
+
+
+@dataclass(frozen=True)
+class NotificationTestPayload:
+    label: str
+    event_type: str
+    payload: dict[str, str]
+    source_kind: str = "manual"
