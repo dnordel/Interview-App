@@ -998,17 +998,16 @@ def _question_prompt_score(prompt: str, spoken: str) -> float:
     spoken_tokens = _question_match_tokens(spoken)
     if not prompt_tokens or not spoken_tokens:
         return 0.0
-    overlap = len(prompt_tokens & spoken_tokens) / max(1, min(len(prompt_tokens), len(spoken_tokens)))
-    partial_overlap = sum(
+    prompt_coverage = len(prompt_tokens & spoken_tokens) / len(prompt_tokens)
+    partial_coverage = sum(
         1
         for prompt_token in prompt_tokens
         if any(prompt_token in spoken_token or spoken_token in prompt_token for spoken_token in spoken_tokens)
-    ) / max(1, len(prompt_tokens))
+    ) / len(prompt_tokens)
     exact = 1.0 if str(prompt).lower().strip() and str(prompt).lower().strip() in str(spoken).lower() else 0.0
-    compact_prompt = " ".join(sorted(prompt_tokens))
-    compact_spoken = " ".join(sorted(spoken_tokens))
-    fuzzy = SequenceMatcher(None, compact_prompt, compact_spoken).ratio() if (overlap or partial_overlap) else 0.0
-    return max(overlap, partial_overlap, exact, fuzzy)
+    fuzzy = SequenceMatcher(None, " ".join(sorted(prompt_tokens)), " ".join(sorted(spoken_tokens))).ratio()
+    fuzzy_with_evidence = fuzzy if partial_coverage >= 0.35 else 0.0
+    return max(prompt_coverage, partial_coverage, exact, fuzzy_with_evidence)
 
 
 def infer_indeed_interviewer_speaker(
@@ -1033,7 +1032,7 @@ def map_indeed_transcript_to_questions(
     questions: Sequence[Mapping[str, Any]],
     *,
     interviewer_speaker: str | None = None,
-    min_question_score: float = 0.25,
+    min_question_score: float = 0.45,
 ) -> IndeedTranscriptImportResult:
     cleaned_questions = [
         {
@@ -1054,6 +1053,7 @@ def map_indeed_transcript_to_questions(
     used_question_ids: set[str] = set()
     matches: list[IndeedTranscriptQuestionMatch] = []
     active_question: dict[str, Any] | None = None
+    active_question_position = -1
     active_interviewer_text = ""
     active_candidate_parts: list[str] = []
 
@@ -1082,17 +1082,28 @@ def map_indeed_transcript_to_questions(
         if turn.speaker == interviewer:
             best_question: dict[str, Any] | None = None
             best_score = 0.0
-            for question in cleaned_questions:
+            best_position = -1
+            for position, question in enumerate(cleaned_questions):
                 question_id = str(question["question_id"])
-                if question_id in used_question_ids:
+                if question_id in used_question_ids or position <= active_question_position:
                     continue
                 score = _question_prompt_score(str(question["prompt"]), turn.text)
                 if score > best_score:
                     best_score = score
                     best_question = question
+                    best_position = position
+            active_score = (
+                _question_prompt_score(str(active_question["prompt"]), turn.text)
+                if active_question is not None
+                else 0.0
+            )
+            if active_question is not None and active_score >= min_question_score and active_score >= best_score:
+                active_interviewer_text = f"{active_interviewer_text} {turn.text}".strip()
+                continue
             if best_question is not None and best_score >= min_question_score:
                 flush_active()
                 active_question = best_question
+                active_question_position = best_position
                 used_question_ids.add(str(best_question["question_id"]))
                 active_interviewer_text = turn.text
                 active_candidate_parts = []

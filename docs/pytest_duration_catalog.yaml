@@ -1021,6 +1021,21 @@ entries:
   duration_source: collection_default
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_full_pytest_runner.py::test_full_suite_runs_parallel_metadata_phase_before_main_suite
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_full_pytest_runner.py::test_full_suite_stops_after_parallel_metadata_failures
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_full_pytest_runner.py::test_full_suite_starts_main_phase_after_metadata_passes
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_full_test_suite_ci.py::test_full_test_suite_ci_runs_pytest_on_pull_requests_and_main_pushes
   duration_seconds_n2: 0.004
   duration_source: collection_default
@@ -4524,6 +4539,16 @@ entries:
   duration_source: collection_default
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_indeed_import_keeps_follow_up_with_active_scored_answer
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_indeed_import_uses_questions_supplied_by_new_track
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_staffing_v2_validation_helpers_hide_seed_dates_and_build_worklist
   duration_seconds_n2: 0.0
   duration_source: collection_default
@@ -4621,6 +4646,16 @@ entries:
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_home_import_indeed_transcript_creates_history_row_from_metadata
   duration_seconds_n2: 0.609
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_home_import_reuses_matching_scored_history_row
+  duration_seconds_n2: 0.215
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_home_import_recovers_scores_from_finalize_job
+  duration_seconds_n2: 0.208
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3

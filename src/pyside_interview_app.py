@@ -37,7 +37,6 @@ from data_store import (
     resolve_offer_template_path,
 )
 from interview_runtime import (
-    DEFAULT_WINDOWS_MIC_DEVICE,
     DEEPSEEK_PROMPTS_CONFIG_PATH,
     DEFAULT_DEEPSEEK_PROGRESS_TASKS,
     FinalizeGateways,
@@ -54,6 +53,7 @@ from interview_runtime import (
     parse_indeed_transcript_text,
     regenerate_interview_notes_job,
     resolve_deepseek_regeneration_job_path,
+    resolve_default_windows_microphone_device,
     resolve_default_windows_system_device,
     resolve_runtime,
     _local_deepseek_settings_source,
@@ -3237,13 +3237,31 @@ class PySideInterviewWindow:
         track_key = str(request.get("track_key") or "").strip()
         interview_date = str(request.get("interview_date") or "").strip()
         source_path = Path(str(request.get("transcript_path") or ""))
-        draft_path = self._default_draft_path(candidate_name or "Candidate")
-        session = PySideInterviewSession(model=self.model, draft_path=draft_path)
+        existing_row = self._matching_history_row_for_indeed_import(
+            candidate_name=candidate_name,
+            interview_date=interview_date,
+            school=school,
+            track_key=track_key,
+        )
         try:
-            session.start(candidate_name=candidate_name, school=school, track_key=track_key)
-            session.interview_date = interview_date or date.today().isoformat()
-            result = session.import_indeed_transcript_file(source_path)
-            history_id = self._persist_new_indeed_import_history_row(session, result, source_path)
+            if existing_row is not None:
+                session = self._session_from_history_row(existing_row)
+                result = session.import_indeed_transcript_file(source_path)
+                artifact_updates = self._regenerate_history_import_artifacts(existing_row, session)
+                updated = self.history_store.update_row(
+                    existing_row.row_key,
+                    self._history_import_updates(existing_row, session, result, source_path, artifact_updates),
+                )
+                if not updated:
+                    raise ValueError("Matching history entry was not found.")
+                history_id = existing_row.row_key
+            else:
+                draft_path = self._default_draft_path(candidate_name or "Candidate")
+                session = PySideInterviewSession(model=self.model, draft_path=draft_path)
+                session.start(candidate_name=candidate_name, school=school, track_key=track_key)
+                session.interview_date = interview_date or date.today().isoformat()
+                result = session.import_indeed_transcript_file(source_path)
+                history_id = self._persist_new_indeed_import_history_row(session, result, source_path)
         except Exception as exc:  # noqa: BLE001
             self.QtWidgets.QMessageBox.warning(self.window, "Indeed Transcript", f"Could not import transcript: {exc}")
             return
@@ -3264,6 +3282,44 @@ class PySideInterviewWindow:
             self.home_draft_label.setText(
                 f"Imported Indeed transcript: {result.mapped_count} answers split, {skipped_count} questions marked skipped."
             )
+
+    def _matching_history_row_for_indeed_import(
+        self,
+        *,
+        candidate_name: str,
+        interview_date: str,
+        school: str,
+        track_key: str,
+    ) -> PySideHistoryRow | None:
+        def normalized(value: Any) -> str:
+            return " ".join(str(value or "").split()).casefold()
+
+        matches = [
+            row
+            for row in self.model.home.history_rows
+            if normalized(row.candidate) == normalized(candidate_name)
+            and normalized(row.interview_date) == normalized(interview_date)
+            and normalized(row.school) == normalized(school)
+            and self._track_key_for_history_row(row) == track_key
+        ]
+        if not matches:
+            return None
+
+        def existing_score_count(row: PySideHistoryRow) -> tuple[int, int]:
+            payload = self._history_payload_for_row(row)
+            answers = payload.get("answers", {}) if isinstance(payload, dict) else {}
+            score_count = sum(
+                1
+                for answer in answers.values()
+                if isinstance(answer, dict) and str(answer.get("score") or "").strip()
+            ) if isinstance(answers, dict) else 0
+            review_scores = payload.get("review_scores", {}) if isinstance(payload, dict) else {}
+            if isinstance(review_scores, dict):
+                score_count = max(score_count, sum(1 for score in review_scores.values() if str(score or "").strip()))
+            original_row = 0 if str(row.row_key).startswith("indeed-import-") else 1
+            return score_count, original_row
+
+        return max(matches, key=existing_score_count)
 
     def _collect_indeed_transcript_import_request(self) -> dict[str, Any] | None:
         dialog = self.QtWidgets.QDialog(self.window)
@@ -3405,7 +3461,40 @@ class PySideInterviewWindow:
             session.interview_date = row.interview_date
         payload = self._history_payload_for_row(row)
         self._hydrate_session_from_history_payload(session, payload)
+        has_saved_scores = any(
+            isinstance(answer, dict) and str(answer.get("score") or "").strip()
+            for answer in session.answers.values()
+        )
+        if not has_saved_scores:
+            self._hydrate_session_from_history_payload(session, self._history_finalize_job_payload(row, payload))
         return session
+
+    def _history_finalize_job_payload(
+        self,
+        row: PySideHistoryRow,
+        history_payload: dict[str, Any],
+    ) -> dict[str, Any]:
+        job_dir = (Path(DEFAULT_BASE_DIR) / "deepseek_jobs").resolve()
+        candidates: list[Path] = []
+        configured_path = str(history_payload.get("deepseek_job_path") or "").strip()
+        if configured_path:
+            candidates.append(Path(configured_path))
+        history_id = str(history_payload.get("history_id") or row.row_key or "").strip()
+        if history_id and Path(history_id).name == history_id and history_id not in {".", ".."}:
+            candidates.append(job_dir / f"deepseek-finalize-{history_id}.json")
+        for candidate in candidates:
+            try:
+                resolved = candidate.resolve()
+                if resolved.suffix.lower() != ".json" or not resolved.is_relative_to(job_dir):
+                    continue
+                if not resolved.is_file() or resolved.stat().st_size > 25_000_000:
+                    continue
+                payload = json.loads(resolved.read_text(encoding="utf-8"))
+            except (OSError, ValueError, json.JSONDecodeError):
+                continue
+            if isinstance(payload, dict):
+                return payload
+        return {}
 
     def _history_payload_for_row(self, row: PySideHistoryRow) -> dict[str, Any]:
         key = str(row.row_key or "").strip()
@@ -3685,12 +3774,15 @@ class PySideInterviewWindow:
 
             runtime_config = resolve_runtime(self._recording_runtime_settings())
             system_device = resolve_default_windows_system_device() if sys.platform.startswith("win") else None
+            microphone_device = (
+                resolve_default_windows_microphone_device() if sys.platform.startswith("win") else None
+            )
             self.recording_system_device = str(system_device or "")
             self.recording_session = start_recording(
                 os_name="windows" if sys.platform.startswith("win") else "linux",
                 output_dir=DEFAULT_BASE_DIR,
                 base_name=self.recording_base_name,
-                win_mic_device=DEFAULT_WINDOWS_MIC_DEVICE,
+                win_mic_device=microphone_device,
                 win_sys_device=system_device,
                 whisper_model=runtime_config.model,
                 whisper_device=runtime_config.device,

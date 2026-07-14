@@ -123,16 +123,18 @@ Optional standardized dev setup:
 pip install -r requirements-dev.txt
 ```
 
-Run the complete automated test suite:
+Run the complete automated test suite. Metadata tests run first with 8 workers;
+all metadata failures are reported together. The 24-worker main suite starts only
+after metadata passes:
 
-```bash
-python -m pytest
+```powershell
+& "$env:LOCALAPPDATA\LPL_InterviewTool\py311\.venv\Scripts\python.exe" tools/full_pytest_runner.py
 ```
 
-For the fastest full-suite run on the current Windows dev workstation, use a capped worker count with one-test xdist scheduling chunks:
+The equivalent main-phase scheduler is a capped worker count with one-test xdist scheduling chunks:
 
-```bash
-python -m pytest -n 24 --dist=load --maxschedchunk=1
+```powershell
+& "$env:LOCALAPPDATA\LPL_InterviewTool\py311\.venv\Scripts\python.exe" tools/full_pytest_runner.py --metadata-workers 8 --full-workers 24
 ```
 
 The test configuration spreads measured heavy PySide GUI tests through the collected test list when xdist is active, using measured durations so several heavy tests run in parallel without clustering the longest cases.
@@ -429,8 +431,8 @@ python -m json.tool config/disqualifier_signals.json > /dev/null
 python -m pip check
 ```
 
-```bash
-python -m pytest
+```powershell
+& "$env:LOCALAPPDATA\LPL_InterviewTool\py311\.venv\Scripts\python.exe" tools/full_pytest_runner.py
 ```
 
 For local iteration, split heavy PySide GUI coverage from parallel-safe tests:

@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.73.0
+  version: 1.74.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, resizable splitter sections, school/classroom selectors, wider color-coded classroom list with per-classroom status-count overview, metric cards, positions table, fully editable right-side assignment/person details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics, parallel Staffing v2 navigation/page shell with its own mockup-style staffing sidebar and forced light Qt theme, People / Employee Management and Assignment History sub-dashboards for the mockup-driven rewrite backed by staffing_dashboard_v2 while the legacy Staffing page remains available,
@@ -3303,9 +3303,10 @@ classes:
   - name: _start_pyside_interview_recording
     description: Start optional continuous PySide interview recording at Begin Interview
       using the shared local recorder and the same runtime settings warmed after
-      startup, store the selected Windows system-audio capture device, or record
-      a non-blocking warning when recording dependencies or audio-device selection
-      are unavailable.
+      startup, resolve the available Windows microphone independently from meeting
+      and system defaults, store the selected Windows system-audio capture device,
+      or record a non-blocking warning when recording dependencies or audio-device
+      selection are unavailable.
     locked: false
     inputs: {}
     returns:
@@ -4435,17 +4436,40 @@ classes:
     side_effects: none
   - name: _import_indeed_transcript_from_home
     description: Collect candidate name, interview date, school, track, and transcript
-      file metadata for a new Indeed transcript import, import mapped transcript
-      answers into a PySide session, immediately create an Incomplete candidate
-      history row, and open the existing live rating flow without starting recording.
+      file metadata for an Indeed transcript import; reuse an exact matching history
+      row and its saved scores when present, otherwise create an Incomplete candidate
+      history row, then open the existing rating flow without starting recording.
     locked: false
     inputs: {}
     returns:
       type: None
     exceptions: []
     side_effects: Opens import metadata/file UI, reads a local .txt transcript,
-      writes PySide draft/session snapshots, appends InterviewHistoryStore row,
-      refreshes history tables, and opens the live rating tab.
+      writes PySide draft/session snapshots, updates an exact matching InterviewHistoryStore
+      row or appends a new row, may regenerate interview artifacts, refreshes history
+      tables, and opens the rating tab.
+  - name: _matching_history_row_for_indeed_import
+    description: Find an existing history row matching normalized candidate name,
+      interview date, school, and active track; when duplicates exist, prefer the
+      row with the most saved scores and then a non-import row.
+    locked: false
+    inputs:
+      candidate_name:
+        type: str
+        required: true
+      interview_date:
+        type: str
+        required: true
+      school:
+        type: str
+        required: true
+      track_key:
+        type: str
+        required: true
+    returns:
+      type: PySideHistoryRow | None
+    exceptions: []
+    side_effects: Reads candidate history payloads without mutation.
   - name: _collect_indeed_transcript_import_request
     description: Show the new-transcript import dialog for candidate name, interview
       date, school, track, and .txt transcript file path.
@@ -4490,7 +4514,8 @@ classes:
     description: Build a PySideInterviewSession for a finalized history row so an
       imported Indeed transcript can be attached to the existing candidate and
       opened for review-score edits while preserving prior answers, review scores,
-      and scoring-row raw scores from history payload data.
+      and scoring-row raw scores from history payload data or its saved finalize
+      job when legacy history contains only an aggregate score.
     locked: false
     inputs:
       row:
@@ -4500,7 +4525,24 @@ classes:
       type: PySideInterviewSession
     exceptions:
     - ValueError
-    side_effects: Writes the new draft through PySideInterviewSession.start.
+    side_effects: Writes the new draft through PySideInterviewSession.start and may
+      read a bounded local finalize-job JSON file under DEFAULT_BASE_DIR/deepseek_jobs.
+  - name: _history_finalize_job_payload
+    description: Load a bounded finalize-job JSON payload for one history row from
+      the configured deepseek_jobs directory, rejecting paths outside that directory,
+      non-JSON files, malformed payloads, and files over 25 MB.
+    locked: false
+    inputs:
+      row:
+        type: PySideHistoryRow
+        required: true
+      history_payload:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: dict[str, Any]
+    exceptions: []
+    side_effects: Reads at most one local finalize-job JSON file.
   - name: _history_payload_for_row
     description: Load the full persisted history payload for a rendered history row key.
     locked: false

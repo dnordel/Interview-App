@@ -13,6 +13,7 @@ import pytest
 import pyside_interview_app
 from data_store import InterviewHistoryStore, SchoolOfferSettingsStore
 from docx import Document
+from interview_runtime import map_indeed_transcript_to_questions, parse_indeed_transcript_text
 from notification_models import NotificationRecipient, NotificationRule, NotificationSendResult
 from notification_store import NotificationStore
 from staffing_dashboard_v2 import (
@@ -123,6 +124,69 @@ Speaker 1: I noticed frustration, paused, and helped the child use words.
     assert result.candidate_speaker == "Speaker 1"
     assert session.answers["trait_1"]["notes"].startswith("I noticed frustration")
     assert session.answers["trait_1"]["score"] == ""
+
+
+def test_indeed_import_keeps_follow_up_with_active_scored_answer() -> None:
+    turns = parse_indeed_transcript_text(
+        """
+Speaker 0: Tell me about a time a child was having a really hard moment emotionally. What did you notice and how did you respond?
+Speaker 1: I stayed calm and gave the child space.
+Speaker 0: What did you do at that time after the child calmed down?
+Speaker 1: I checked in and helped the child return to play.
+Speaker 0: Tell me about a time you felt overwhelmed or stressed at work with children present. What did you do to regulate yourself?
+Speaker 1: I took a breath and asked another teacher for support.
+"""
+    )
+    result = map_indeed_transcript_to_questions(
+        turns,
+        [
+            {
+                "flow_index": 3,
+                "question_id": "trait_1",
+                "prompt": "Tell me about a time a child was having a really hard moment emotionally. "
+                "What did you notice about what they were feeling, and how did you respond?",
+            },
+            {
+                "flow_index": 4,
+                "question_id": "trait_2",
+                "prompt": "Tell me about a time you felt overwhelmed or stressed at work with children present. "
+                "What did you do to regulate yourself and manage your stress?",
+            },
+            {
+                "flow_index": 12,
+                "question_id": "FT-or-PT",
+                "prompt": "Are you looking for full-time or part-time?",
+            },
+        ],
+    )
+    by_id = {match.question_id: match.candidate_transcript for match in result.matches}
+
+    assert by_id["trait_1"] == (
+        "I stayed calm and gave the child space. "
+        "I checked in and helped the child return to play."
+    )
+    assert by_id["trait_2"] == "I took a breath and asked another teacher for support."
+    assert result.unmatched_question_ids == ["FT-or-PT"]
+
+
+def test_indeed_import_uses_questions_supplied_by_new_track() -> None:
+    result = map_indeed_transcript_to_questions(
+        parse_indeed_transcript_text(
+            "Speaker 3: Describe how you safely operate a pottery kiln.\n"
+            "Speaker 7: I inspect ventilation, verify temperature controls, and use protective equipment.\n"
+        ),
+        [
+            {
+                "flow_index": 1,
+                "question_id": "ceramics_safety",
+                "prompt": "How would you safely operate and monitor a pottery kiln?",
+            }
+        ],
+    )
+
+    assert result.mapped_count == 1
+    assert result.matches[0].question_id == "ceramics_safety"
+    assert result.matches[0].candidate_transcript.startswith("I inspect ventilation")
 
 
 def _widget_text(widget) -> str:
@@ -1024,6 +1088,129 @@ Speaker 0: I noticed the child was upset and helped them name the feeling.
     window.window.close()
     app.processEvents()
 
+
+def test_pyside_home_import_reuses_matching_scored_history_row(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    history_path = tmp_path / "interview_history.sqlite3"
+    store = InterviewHistoryStore(history_path)
+    store.append(
+        {
+            "history_id": "hist-michelle",
+            "candidate_name": "Michelle Oropeza",
+            "school": "Palmdale",
+            "position": "Preschool",
+            "track_key": "preschool",
+            "interview_date": "2026-07-14",
+            "outcome": "Hire",
+            "review_scores": {"trait_1": "4"},
+            "answers": {"trait_1": {"kind": "trait", "score": "4", "notes": "Prior notes"}},
+        }
+    )
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Palmdale"],
+    )
+    transcript_path = tmp_path / "michelle.txt"
+    transcript_path.write_text(
+        "Speaker 0: Tell me about a hard child moment.\n"
+        "Speaker 1: I stayed calm, named the feeling, and helped the child recover.\n",
+        encoding="utf-8",
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    monkeypatch.setattr(
+        window,
+        "_collect_indeed_transcript_import_request",
+        lambda: {
+            "candidate_name": " Michelle Oropeza ",
+            "interview_date": "2026-07-14",
+            "school": "Palmdale",
+            "track_key": "preschool",
+            "transcript_path": transcript_path,
+        },
+    )
+    monkeypatch.setattr(window, "_regenerate_history_import_artifacts", lambda _row, _session: {})
+
+    window._import_indeed_transcript_from_home()
+
+    rows = store.load()
+    assert len(rows) == 1
+    assert rows[0]["history_id"] == "hist-michelle"
+    assert rows[0]["answers"]["trait_1"]["score"] == "4"
+    assert rows[0]["answers"]["trait_1"]["notes"].startswith("I stayed calm")
+    assert window._review_history_id == "hist-michelle"
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_home_import_recovers_scores_from_finalize_job(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    monkeypatch.setattr(pyside_interview_app, "DEFAULT_BASE_DIR", tmp_path)
+    history_path = tmp_path / "interview_history.sqlite3"
+    store = InterviewHistoryStore(history_path)
+    store.append(
+        {
+            "history_id": "hist-michelle-job",
+            "candidate_name": "Michelle Oropeza",
+            "school": "Palmdale",
+            "position": "Preschool",
+            "track_key": "preschool",
+            "interview_date": "2026-07-14",
+            "interview_score": 80.0,
+        }
+    )
+    job_path = tmp_path / "deepseek_jobs" / "deepseek-finalize-hist-michelle-job.json"
+    job_path.parent.mkdir(parents=True)
+    job_path.write_text(
+        json.dumps({"scoring": {"rows": [{"trait_id": "trait_1", "raw_score": 4}]}}),
+        encoding="utf-8",
+    )
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Palmdale"],
+    )
+    transcript_path = tmp_path / "michelle-job.txt"
+    transcript_path.write_text(
+        "Speaker 0: Tell me about a hard child moment.\n"
+        "Speaker 1: I stayed calm and helped the child recover.\n",
+        encoding="utf-8",
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    monkeypatch.setattr(
+        window,
+        "_collect_indeed_transcript_import_request",
+        lambda: {
+            "candidate_name": "Michelle Oropeza",
+            "interview_date": "2026-07-14",
+            "school": "Palmdale",
+            "track_key": "preschool",
+            "transcript_path": transcript_path,
+        },
+    )
+    monkeypatch.setattr(window, "_regenerate_history_import_artifacts", lambda _row, _session: {})
+
+    window._import_indeed_transcript_from_home()
+
+    rows = store.load()
+    assert len(rows) == 1
+    assert rows[0]["answers"]["trait_1"]["score"] == "4"
+    assert rows[0]["review_scores"] == {"trait_1": "4"}
+    window.window.close()
+    app.processEvents()
+
 def test_pyside_history_import_indeed_transcript_opens_review_for_existing_candidate(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -1435,10 +1622,18 @@ def test_pyside_recording_start_failure_shows_audio_device_warning(tmp_path: Pat
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     monkeypatch.setattr(pyside_interview_app.sys, "platform", "win32")
     monkeypatch.setattr(pyside_interview_app, "resolve_default_windows_system_device", lambda: "Wrong Output Device")
+    monkeypatch.setattr(
+        pyside_interview_app,
+        "resolve_default_windows_microphone_device",
+        lambda: "Microphone (3- Realtek(R) Audio)",
+    )
 
     import interview_audio_recorder
 
-    def _raise_bad_device(**_kwargs: object) -> object:
+    recording_kwargs = {}
+
+    def _raise_bad_device(**kwargs: object) -> object:
+        recording_kwargs.update(kwargs)
         raise RuntimeError("Recording process exited immediately. Check configured audio device names.")
 
     monkeypatch.setattr(interview_audio_recorder, "start_recording", _raise_bad_device)
@@ -1454,6 +1649,7 @@ def test_pyside_recording_start_failure_shows_audio_device_warning(tmp_path: Pat
     assert window.recording_session is None
     assert window.recording_started_monotonic is None
     assert window.recording_system_device == "Wrong Output Device"
+    assert recording_kwargs["win_mic_device"] == "Microphone (3- Realtek(R) Audio)"
     window.window.close()
     app.processEvents()
 

@@ -2,7 +2,7 @@ module:
   name: interview_runtime
   language: python
   path: src/interview_runtime.py
-  version: 0.35.0
+  version: 0.35.1
   description: Flattened public interface for interview state, session management,
     audio/transcription runtime, transcript summary seam, controllers, history, and
     finalize pipeline; only active legacy adapters remain in the compatibility module
@@ -253,7 +253,7 @@ functions:
   - ValueError
   side_effects: none
 - name: map_indeed_transcript_to_questions
-  description: Map parsed Indeed speaker turns onto configured interview questions, returning candidate answer transcripts, inferred interviewer/candidate speakers, and unmatched question ids that callers should treat as skipped.
+  description: Map parsed Indeed speaker turns onto the active track's configured interview questions in configured order, using fuzzy prompt markers while retaining unmatched interviewer follow-ups and repeated prompts inside the active answer, and return candidate answer transcripts, inferred speakers, and unmatched question ids that callers should treat as skipped.
   locked: false
   inputs:
     turns:
@@ -269,7 +269,7 @@ functions:
     min_question_score:
       type: float
       required: false
-      default: 0.25
+      default: 0.45
   returns:
     type: IndeedTranscriptImportResult
   exceptions:
