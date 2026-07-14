@@ -2,7 +2,7 @@ module:
   name: candidate_report_dialog
   language: python
   path: src/candidate_report_dialog.py
-  version: 1.1.0
+  version: 1.1.1
   description: Staffing v2 window-modal Candidate Interview Report matching supplied mockups with fixed navigation/header/footer, admin-only initial-report lifecycle, director-section correction, score-only outcome, audit, safe Word opening, accessibility, and stale/unsaved handling.
 functions: []
 classes:
@@ -39,6 +39,9 @@ classes:
     description: Restore last saved working snapshot without creating a version.
   - name: finalize_report
     inputs: {}
+  - name: _open_word
+    inputs: {}
+    description: Open the validated stored DOCX through the injected document opener and surface missing, invalid, or operating-system access failures in the dialog status.
 data_structures:
 - name: REPORT_QSS
   type: str

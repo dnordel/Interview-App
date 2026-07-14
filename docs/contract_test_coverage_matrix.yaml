@@ -1,4 +1,4 @@
-last_updated: '2026-07-13'
+last_updated: '2026-07-14'
 sections:
 - name: interview_app
   tests:
@@ -12,7 +12,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-13T23:28:30.898771+00:00'
+generated_at_utc: '2026-07-14T15:56:06.227513+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -756,6 +756,15 @@ entries:
     - return_type
 - contract: contracts/candidate_report_dialog.contract.yaml
   symbol: candidate_report_dialog.CandidateInterviewReportDialog.__init__
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/candidate_report_dialog.contract.yaml
+  symbol: candidate_report_dialog.CandidateInterviewReportDialog._open_word
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -10282,15 +10291,6 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._open_legacy_staffing_candidate_report
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._open_notification_template_dialog
   kind: method
   tests:
@@ -10319,15 +10319,6 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._open_staffing_assignment_details_from_table
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._open_staffing_candidate_report
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -14369,6 +14360,69 @@ entries:
     - behavior
     - parameter_validation
     - return_type
+- contract: contracts/staffing_dashboard_host.contract.yaml
+  symbol: staffing_dashboard_host.StaffingDashboardAccess.__post_init__
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_host.contract.yaml
+  symbol: staffing_dashboard_host.StaffingDashboardHost.__init__
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_host.contract.yaml
+  symbol: staffing_dashboard_host.StaffingDashboardHost._default_open_document
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_host.contract.yaml
+  symbol: staffing_dashboard_host.StaffingDashboardHost._open_legacy_report
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_host.contract.yaml
+  symbol: staffing_dashboard_host.StaffingDashboardHost._warn
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_host.contract.yaml
+  symbol: staffing_dashboard_host.StaffingDashboardHost.open_candidate_report
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_host.contract.yaml
+  symbol: staffing_dashboard_host.StaffingDashboardHost.widget
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
 - contract: contracts/staffing_dashboard_v2.contract.yaml
   symbol: staffing_dashboard_v2.StaffingDashboardV2Page.__init__
   kind: method
@@ -14785,6 +14839,15 @@ entries:
     - return_type
 - contract: contracts/staffing_dashboard_v2.contract.yaml
   symbol: staffing_dashboard_v2.StaffingDashboardV2Page._mark_layout_widgets_stale
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_v2.contract.yaml
+  symbol: staffing_dashboard_v2.StaffingDashboardV2Page._mark_not_needed_from_drawer
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py

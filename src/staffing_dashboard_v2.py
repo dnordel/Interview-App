@@ -5034,17 +5034,27 @@ class StaffingDashboardV2Page:
         self.director_interview_history_table.setHorizontalHeaderLabels(
             [
                 "Candidate",
-                "First Interview Score",
+                "First Interview\nScore",
                 "Date",
-                "Director Rating",
+                "Director\nRating",
                 "Decision",
-                "Proposed Classroom",
-                "Proposed Shift",
-                "Owner Status",
+                "Proposed\nClassroom",
+                "Proposed\nShift",
+                "Owner\nStatus",
             ]
         )
         self.director_interview_history_table.verticalHeader().hide()
-        self.director_interview_history_table.horizontalHeader().setStretchLastSection(True)
+        self.director_interview_history_table.setWordWrap(True)
+        self.director_interview_history_table.setHorizontalScrollBarPolicy(
+            self.QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded
+        )
+        history_header = self.director_interview_history_table.horizontalHeader()
+        history_header.setStretchLastSection(False)
+        history_header.setDefaultAlignment(self.QtCore.Qt.AlignmentFlag.AlignCenter)
+        history_header.setMinimumHeight(54)
+        for column, width in enumerate([200, 160, 110, 140, 120, 190, 190, 150]):
+            self.director_interview_history_table.setColumnWidth(column, width)
+            history_header.setSectionResizeMode(column, self.QtWidgets.QHeaderView.ResizeMode.Fixed)
         self.director_interview_history_table.setMaximumHeight(150)
         layout.addWidget(self.director_interview_history_table)
         return panel
@@ -5190,8 +5200,9 @@ class StaffingDashboardV2Page:
                 interview.owner_approval_status.replace("_", " ").title(),
             ]
             for column, value in enumerate(values):
-                item = self.QtWidgets.QTableWidgetItem(value)
+                item = self.QtWidgets.QTableWidgetItem("" if column == 0 else value)
                 item.setData(self.QtCore.Qt.ItemDataRole.UserRole, interview.id)
+                item.setToolTip(value)
                 table.setItem(row_index, column, item)
                 if column == 0:
                     link = self.QtWidgets.QPushButton(value)
@@ -5204,8 +5215,6 @@ class StaffingDashboardV2Page:
                         self._open_candidate_report(history_id, school)
                     )
                     table.setCellWidget(row_index, column, link)
-        table.resizeColumnsToContents()
-
     def _open_candidate_report(self, history_id: str, school: str) -> None:
         if self.candidate_report_open_callback is None:
             return
@@ -5558,6 +5567,9 @@ class StaffingDashboardV2Page:
         if action_key == "mark_coming":
             action.triggered.connect(lambda _checked=False, item=assignment_id: self._open_mark_coming_dialog(item))
             return
+        if action_key == "mark_dont_need":
+            action.triggered.connect(lambda _checked=False, item=assignment_id: self._mark_not_needed_from_drawer(item))
+            return
         if action_key == "mark_filled":
             action.triggered.connect(lambda _checked=False, item=assignment_id: self._open_mark_filled_dialog(item))
             return
@@ -5597,6 +5609,9 @@ class StaffingDashboardV2Page:
             return
         if action_key == "mark_coming":
             button.clicked.connect(lambda _checked=False, item=assignment_id: self._open_mark_coming_dialog(item))
+            return
+        if action_key == "mark_dont_need":
+            button.clicked.connect(lambda _checked=False, item=assignment_id: self._mark_not_needed_from_drawer(item))
             return
         if action_key == "mark_filled":
             button.clicked.connect(lambda _checked=False, item=assignment_id: self._open_mark_filled_dialog(item))
@@ -5642,6 +5657,21 @@ class StaffingDashboardV2Page:
         self._run_position_transition(
             assignment_id,
             lambda service: service.revert_coming(assignment_id),
+        )
+
+    def _mark_not_needed_from_drawer(self, assignment_id: int) -> None:
+        response = self.QtWidgets.QMessageBox.question(
+            self.widget,
+            "Mark Position Not Needed",
+            "Mark this position not needed?",
+            self.QtWidgets.QMessageBox.StandardButton.Yes | self.QtWidgets.QMessageBox.StandardButton.No,
+            self.QtWidgets.QMessageBox.StandardButton.No,
+        )
+        if response != self.QtWidgets.QMessageBox.StandardButton.Yes:
+            return
+        self._run_position_transition(
+            assignment_id,
+            lambda service: service.mark_not_needed(assignment_id, confirmed=True),
         )
 
     def _run_position_transition(self, assignment_id: int, action: Callable[[StaffingService], Any]) -> None:

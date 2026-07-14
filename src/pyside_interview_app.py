@@ -24,13 +24,6 @@ from types import SimpleNamespace
 from typing import Any, Callable, Sequence
 
 from admin_studio import DEFAULT_DEEPSEEK_MODEL, DEEPSEEK_MODEL_CHOICES, AdminStudio, AdminStudioPaths
-from candidate_report import (
-    CandidateReportNotFoundError,
-    CandidateReportPermissionError,
-    CandidateReportRepository,
-    resolve_legacy_report_path,
-)
-from candidate_report_dialog import CandidateInterviewReportDialog
 from docx import Document
 from data_store import (
     InterviewHistoryStore,
@@ -100,7 +93,8 @@ from scoring_reporting import (
 )
 from scoring_reporting import build_integration_payload, serialize_integration_payload
 from scoring_reporting import CANONICAL_DEGREE_TYPES, CandidateQualification, validate_candidate_qualification
-from staffing_dashboard_v2 import StaffingDashboardV2Page, apply_staffing_v2_light_theme, configure_v2_scroll_areas
+from staffing_dashboard_host import StaffingDashboardAccess, StaffingDashboardHost
+from staffing_dashboard_v2 import apply_staffing_v2_light_theme, configure_v2_scroll_areas
 from staffing_referral_queue import StaffingReferralQueueStore
 from staffing_service import StaffingService
 from staffing_store import StaffingEditLock, StaffingStore
@@ -10918,75 +10912,36 @@ class PySideInterviewWindow:
         if not defer_director_sync:
             self._import_queued_staffing_director_referrals()
             self._sync_staffing_director_referrals_from_history()
-        dashboard = StaffingDashboardV2Page(
+        role = "director" if self.director_staffing_mode else "admin"
+        host = StaffingDashboardHost(
             QtCore=self.QtCore,
             QtGui=self.QtGui,
             QtWidgets=self.QtWidgets,
+            parent=self.window,
             store=self.staffing_store,
             service_factory=lambda: StaffingService(self.staffing_store, notification_service=self._notification_service()),
-            actions={
-                "open_position": self._open_staffing_position,
-                "mark_coming": self._mark_staffing_coming,
-                "mark_filled": self._mark_staffing_filled,
-                "mark_dont_need": self._mark_staffing_not_needed,
-                "revert_coming": self._revert_staffing_coming,
-                "clear_replacement": self._clear_staffing_replacement,
-                "update_permit": self._update_staffing_permit,
-                "replace_employee": self._mark_staffing_replacing,
-                "view_details": self._open_staffing_assignment_details,
-            },
-            school_filter=self.director_staffing_school,
+            access=StaffingDashboardAccess(
+                role=role,
+                actor=str(os.environ.get("USERNAME") or os.environ.get("USER") or role),
+                school_scope=self.director_staffing_school if role == "director" else "",
+                removal_source=(
+                    "director_staffing_dashboard" if role == "director" else "admin_staffing_dashboard"
+                ),
+            ),
+            history_path=self.model.history_path,
             notification_store_path=NOTIFICATION_RULES_PATH,
             notification_service_factory=self._notification_service,
             director_referral_dismissal_callback=self._queue_director_referral_dismissals,
-            director_referral_removal_actor="director" if self.director_staffing_mode else "admin",
-            director_referral_removal_source=(
-                "director_staffing_dashboard" if self.director_staffing_mode else "admin_staffing_dashboard"
-            ),
-            candidate_report_open_callback=self._open_staffing_candidate_report,
+            rubric=self.model.rubric,
+            finalized_callback=self._candidate_report_finalized if role == "admin" else None,
         )
+        self.staffing_v2_host = host
+        dashboard = host.page
         self.staffing_v2_dashboard = dashboard
         self._start_staffing_referral_queue_polling()
         if defer_director_sync:
             self.QtCore.QTimer.singleShot(100, self._sync_staffing_v2_director_referrals_after_first_paint)
         return dashboard.widget
-
-    def _open_staffing_candidate_report(self, history_id: str, school: str) -> None:
-        role = "director" if self.director_staffing_mode else "admin"
-        school_scope = self.director_staffing_school or school if role == "director" else ""
-        repository = CandidateReportRepository(self.model.history_path)
-        if not repository.exists(history_id):
-            self._open_legacy_staffing_candidate_report(history_id, school_scope=school_scope)
-            return
-        director_interview = self.staffing_store.find_any_completed_director_interview(
-            history_id=history_id,
-            school=school,
-        )
-        dialog = CandidateInterviewReportDialog(
-            QtCore=self.QtCore,
-            QtGui=self.QtGui,
-            QtWidgets=self.QtWidgets,
-            parent=self.window,
-            repository=repository,
-            history_id=history_id,
-            role=role,
-            actor=str(os.environ.get("USERNAME") or os.environ.get("USER") or role),
-            school_scope=school_scope,
-            rubric=self.model.rubric,
-            director_interview=director_interview,
-            director_service=StaffingService(self.staffing_store, notification_service=self._notification_service()),
-            finalized_callback=self._candidate_report_finalized if role == "admin" else None,
-        )
-        self.candidate_interview_report_dialog = dialog
-        dialog.show()
-
-    def _open_legacy_staffing_candidate_report(self, history_id: str, *, school_scope: str) -> None:
-        try:
-            path = resolve_legacy_report_path(self.model.history_path, history_id, school_scope=school_scope)
-        except (CandidateReportNotFoundError, CandidateReportPermissionError) as exc:
-            self.QtWidgets.QMessageBox.warning(self.window, "Candidate Interview Report", str(exc))
-            return
-        os.startfile(str(path))
 
     def _candidate_report_finalized(self, record: Any) -> None:
         previous_history = next(

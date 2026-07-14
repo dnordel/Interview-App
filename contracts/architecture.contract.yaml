@@ -47,6 +47,7 @@ services:
     - staffing_store
     - staffing_service
     - staffing_dashboard_v2
+    - staffing_dashboard_host
     - candidate_report
     - candidate_report_dialog
   director_staffing_dashboard_service:
@@ -54,6 +55,7 @@ services:
     modules:
     - director_staffing_launcher
     - director_staffing_app
+    - staffing_dashboard_host
     - staffing_service
     - staffing_store
     - candidate_report
@@ -73,6 +75,7 @@ services:
     - admin_studio
     - pyside_interview_app
     - staffing_dashboard_v2
+    - staffing_dashboard_host
     - notification_service
     - staffing_service
     - staffing_store

@@ -1256,7 +1256,10 @@ class CandidateInterviewReportDialog(QtWidgets.QDialog):
         if path.suffix.casefold() != ".docx" or not path.is_file():
             self.status_label.setText("Saved Word report is missing or invalid.")
             return
-        self.open_document(path.resolve())
+        try:
+            self.open_document(path.resolve())
+        except OSError as exc:
+            self.status_label.setText(f"Saved Word report could not be opened: {exc}")
 
     @staticmethod
     def _default_open_document(path: Path) -> None:

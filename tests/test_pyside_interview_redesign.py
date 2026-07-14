@@ -15180,7 +15180,8 @@ def test_staffing_v2_director_interviews_sync_pending_history_and_record_complet
     assert table.rowCount() == 0
     history_table = window.window.findChild(qt_widgets.QTableWidget, "StaffingV2DirectorInterviewHistoryTable")
     assert history_table.rowCount() == 1
-    assert history_table.item(0, 0).text() == "Jordan Lee"
+    assert history_table.item(0, 0).text() == ""
+    assert history_table.cellWidget(0, 0).text() == "Jordan Lee"
     assignment = next(row for row in window.staffing_store.list_assignments() if row.school == "Hawthorne")
     assert assignment.status == "need_now"
     assert assignment.person_name == ""

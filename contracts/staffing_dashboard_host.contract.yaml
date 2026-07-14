@@ -1,0 +1,82 @@
+module:
+  name: staffing_dashboard_host
+  language: python
+  path: src/staffing_dashboard_host.py
+  version: 1.0.0
+  description: Shared role-aware Staffing v2 host used by embedded admin/director mode and standalone director launchers; owns one StaffingDashboardV2Page construction path, school-scoped candidate-report authorization, structured/legacy report opening, dialog retention, and privacy-safe failures.
+functions: []
+classes:
+- name: StaffingDashboardAccess
+  description: Immutable normalized role, actor, school-scope, and removal-source configuration for one Staffing v2 host.
+  methods:
+  - name: __post_init__
+    inputs: {}
+    returns: {type: None}
+    exceptions: [ValueError]
+    side_effects: Normalizes immutable role/access values and rejects roles other than admin or director.
+- name: StaffingDashboardHost
+  description: Shared Staffing v2 page composer and candidate-report controller for admin and director entrypoints.
+  methods:
+  - name: __init__
+    inputs:
+      QtCore: {type: Any, required: true}
+      QtGui: {type: Any, required: true}
+      QtWidgets: {type: Any, required: true}
+      parent: {type: Any, required: true}
+      store: {type: StaffingStore, required: true}
+      service_factory: {type: 'Callable[[], StaffingService]', required: true}
+      access: {type: StaffingDashboardAccess, required: true}
+      history_path: {type: Path, required: true}
+      notification_store_path: {type: Path, required: true}
+      notification_service_factory: {type: 'Callable[[], Any] | None', required: false, default: null}
+      director_referral_dismissal_callback: {type: 'Callable[[list[Any], str, str], None] | None', required: false, default: null}
+      rubric: {type: 'dict[str, Any] | None', required: false, default: null}
+      finalized_callback: {type: 'Callable[[Any], None] | None', required: false, default: null}
+      open_document: {type: 'Callable[[Path], None] | None', required: false, default: null}
+      actions: {type: 'dict[str, Callable[[int], None]] | None', required: false, default: null}
+      app_version: {type: str, required: false, default: ''}
+    returns: {type: None}
+    exceptions: [ValueError]
+    side_effects: Builds one shared StaffingDashboardV2Page with role/school/removal configuration and shared candidate-report callback; admin-only finalization callback is discarded for director access.
+  - name: widget
+    inputs: {}
+    returns: {type: Any}
+    exceptions: []
+    side_effects: none
+  - name: open_candidate_report
+    inputs:
+      history_id: {type: str, required: true}
+      school: {type: str, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Enforces director school scope, opens and retains one shared structured report dialog, routes legacy rows to validated DOCX opening, or shows a privacy-safe warning.
+  - name: _open_legacy_report
+    inputs:
+      history_id: {type: str, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Resolves one authorized legacy report path and opens it, or shows a privacy-safe warning for missing, invalid, inaccessible, or malformed storage.
+  - name: _warn
+    inputs:
+      message: {type: str, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Shows a Candidate Interview Report warning parented to the shared dashboard window.
+  - name: _default_open_document
+    inputs:
+      path: {type: Path, required: true}
+    returns: {type: None}
+    exceptions: [OSError]
+    side_effects: Opens one validated local document through the operating system.
+data_structures:
+- name: StaffingDashboardRole
+  type: Literal[admin, director]
+- name: StaffingDashboardAccess
+  type: frozen dataclass
+dependencies:
+- module: candidate_report
+- module: candidate_report_dialog
+- module: staffing_dashboard_v2
+- module: staffing_service
+- module: staffing_store
+- module: PySide6

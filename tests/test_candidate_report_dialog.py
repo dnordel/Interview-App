@@ -311,6 +311,64 @@ def test_dialog_fits_supported_dashboard_viewports(tmp_path: Path):
         app.processEvents()
 
 
+def test_open_word_surfaces_os_error(tmp_path: Path) -> None:
+    qt_core = pytest.importorskip("PySide6.QtCore")
+    qt_gui = pytest.importorskip("PySide6.QtGui")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    report_path = tmp_path / "Jordan.docx"
+    report_path.write_bytes(b"test")
+    repository = _repository(tmp_path)
+    repository.sync_report_path("hist-dialog", report_path)
+
+    def fail_open(_path: Path) -> None:
+        raise OSError("access denied")
+
+    dialog = CandidateInterviewReportDialog(
+        QtCore=qt_core,
+        QtGui=qt_gui,
+        QtWidgets=qt_widgets,
+        repository=repository,
+        history_id="hist-dialog",
+        role="director",
+        actor="director-user",
+        school_scope="Hawthorne",
+        open_document=fail_open,
+    )
+    dialog._open_word()
+
+    assert dialog.status_label.text() == "Saved Word report could not be opened: access denied"
+    dialog.close()
+    app.processEvents()
+
+
+def test_open_word_rejects_missing_and_non_docx_paths(tmp_path: Path) -> None:
+    qt_core = pytest.importorskip("PySide6.QtCore")
+    qt_gui = pytest.importorskip("PySide6.QtGui")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    dialog = CandidateInterviewReportDialog(
+        QtCore=qt_core,
+        QtGui=qt_gui,
+        QtWidgets=qt_widgets,
+        repository=_repository(tmp_path),
+        history_id="hist-dialog",
+        role="director",
+        actor="director-user",
+        school_scope="Hawthorne",
+    )
+    invalid_path = tmp_path / "Jordan.txt"
+    invalid_path.write_text("not a Word report", encoding="utf-8")
+
+    for path in (tmp_path / "missing.docx", invalid_path):
+        dialog.working_snapshot["report_path"] = str(path)
+        dialog._open_word()
+        assert dialog.status_label.text() == "Saved Word report is missing or invalid."
+
+    dialog.close()
+    app.processEvents()
+
+
 def test_director_reopened_section_edits_only_director_fields(tmp_path: Path):
     qt_core = pytest.importorskip("PySide6.QtCore")
     qt_gui = pytest.importorskip("PySide6.QtGui")

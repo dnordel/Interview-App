@@ -351,6 +351,16 @@ entries:
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
+- nodeid: tests/test_candidate_report_dialog.py::test_open_word_surfaces_os_error
+  duration_seconds_n2: 0.1
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_candidate_report_dialog.py::test_open_word_rejects_missing_and_non_docx_paths
+  duration_seconds_n2: 0.06
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
 - nodeid: tests/test_candidate_report_dialog.py::test_director_reopened_section_edits_only_director_fields
   duration_seconds_n2: 0.264
   duration_source: measured
@@ -7816,6 +7826,31 @@ entries:
   placement: gui_wave_3
 - nodeid: tests/test_staffing_candidate_report_ui.py::test_completed_candidate_name_opens_structured_report
   duration_seconds_n2: 0.588
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_staffing_dashboard_host.py::test_access_config_is_immutable_normalized_and_rejects_unknown_role
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_staffing_dashboard_host.py::test_admin_and_director_hosts_share_v2_widget_and_native_actions
+  duration_seconds_n2: 1.41
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_staffing_dashboard_host.py::test_native_mark_not_needed_works_without_entrypoint_callback
+  duration_seconds_n2: 2.3
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_staffing_dashboard_host.py::test_shared_report_opener_enforces_scope_and_opens_word_for_both_roles
+  duration_seconds_n2: 8.98
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_staffing_dashboard_host.py::test_shared_legacy_report_open_failure_surfaces_warning
+  duration_seconds_n2: 6.14
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3

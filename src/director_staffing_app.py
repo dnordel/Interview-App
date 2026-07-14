@@ -12,15 +12,9 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from notification_service import NotificationService, NOTIFICATION_RULES_PATH
-from candidate_report import (
-    CandidateReportNotFoundError,
-    CandidateReportPermissionError,
-    CandidateReportRepository,
-    resolve_legacy_report_path,
-)
-from candidate_report_dialog import CandidateInterviewReportDialog
 from staffing_referral_queue import StaffingReferralQueueStore
-from staffing_dashboard_v2 import StaffingDashboardV2Page, apply_staffing_v2_light_theme
+from staffing_dashboard_host import StaffingDashboardAccess, StaffingDashboardHost
+from staffing_dashboard_v2 import apply_staffing_v2_light_theme
 from staffing_service import StaffingService
 from staffing_store import StaffingEditLock, StaffingStore
 
@@ -352,54 +346,29 @@ def launch_director_staffing_app(*, director_school: str = "") -> int:
 
     notification_service = lambda: NotificationService()
 
-    def open_candidate_report(history_id: str, school: str) -> None:
-        repository = CandidateReportRepository(INTERVIEW_HISTORY_DB_PATH)
-        if not repository.exists(history_id):
-            try:
-                path = resolve_legacy_report_path(
-                    INTERVIEW_HISTORY_DB_PATH,
-                    history_id,
-                    school_scope=director_school or school,
-                )
-            except (CandidateReportNotFoundError, CandidateReportPermissionError) as exc:
-                QtWidgets.QMessageBox.warning(window, "Candidate Interview Report", str(exc))
-                return
-            os.startfile(str(path))
-            return
-        completed = store.find_any_completed_director_interview(history_id=history_id, school=school)
-        dialog = CandidateInterviewReportDialog(
-            QtCore=QtCore,
-            QtGui=QtGui,
-            QtWidgets=QtWidgets,
-            parent=window,
-            repository=repository,
-            history_id=history_id,
-            role="director",
-            actor=str(os.environ.get("USERNAME") or os.environ.get("USER") or "director"),
-            school_scope=director_school or school,
-            director_interview=completed,
-            director_service=StaffingService(store, notification_service=notification_service()),
-        )
-        setattr(app, "_candidate_interview_report_dialog", dialog)
-        dialog.show()
-
-    dashboard = StaffingDashboardV2Page(
+    host = StaffingDashboardHost(
         QtCore=QtCore,
         QtGui=QtGui,
         QtWidgets=QtWidgets,
+        parent=window,
         store=store,
         service_factory=lambda: StaffingService(store, notification_service=notification_service()),
-        school_filter=director_school,
+        access=StaffingDashboardAccess(
+            role="director",
+            actor=str(os.environ.get("USERNAME") or os.environ.get("USER") or "director"),
+            school_scope=director_school,
+            removal_source="director_staffing_dashboard",
+        ),
+        history_path=INTERVIEW_HISTORY_DB_PATH,
         notification_store_path=NOTIFICATION_RULES_PATH,
         notification_service_factory=notification_service,
         director_referral_dismissal_callback=_queue_dashboard_director_referral_dismissals,
-        director_referral_removal_actor="director",
-        director_referral_removal_source="director_staffing_dashboard",
-        candidate_report_open_callback=open_candidate_report,
     )
+    dashboard = host.page
     window.setCentralWidget(dashboard.widget)
     setattr(app, "_director_staffing_window", window)
     setattr(app, "_director_staffing_dashboard", dashboard)
+    setattr(app, "_director_staffing_host", host)
     _show_director_staffing_window_maximized(window, QtWidgets)
 
     def sync_referrals_after_first_paint() -> None:

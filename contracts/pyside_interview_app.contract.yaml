@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.72.0
+  version: 1.73.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, resizable splitter sections, school/classroom selectors, wider color-coded classroom list with per-classroom status-count overview, metric cards, positions table, fully editable right-side assignment/person details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics, parallel Staffing v2 navigation/page shell with its own mockup-style staffing sidebar and forced light Qt theme, People / Employee Management and Assignment History sub-dashboards for the mockup-driven rewrite backed by staffing_dashboard_v2 while the legacy Staffing page remains available,
@@ -3689,28 +3689,13 @@ classes:
     side_effects: May construct one page widget, replace the matching stacked-widget
       placeholder, and mark that navigation index as loaded.
   - name: _staffing_v2_page
-    description: Build the Staffing v2 page from staffing_dashboard_v2 for the mockup-driven rewrite and director staffing-only launch surface, passing the shared notification rules store path and shared notification service factory into the V2 Notifications dashboard; normal embedded launches import queued referral events and sync hire/borderline history rows immediately, while director staffing-only launches defer that referral sync until after first paint and start live referral queue polling.
+    description: Build one shared role-aware StaffingDashboardHost for the mockup-driven admin or director Staffing v2 surface, passing notification, report, school-scope, and referral callbacks through the common composition path; normal embedded launches sync referrals immediately while director staffing-only launches defer sync until after first paint.
     locked: false
     inputs: {}
     returns:
       type: QWidget
     exceptions: []
-    side_effects: Initializes local or school-specific staffing storage, with first-use school DB copies from the existing shared staffing DB when present; imports staffing seed data when the DB is empty or clearly missing seed assignments, creates a lazy StaffingDashboardV2Page, stores it on the PySide window, wires service-backed staffing actions and director-referral dismissal queue callbacks from existing handlers, imports/syncs director referrals immediately for non-director embedded launches, schedules post-first-paint referral sync for director staffing-only launches, starts periodic queue polling only for assigned director-school launches, and connects the V2 Notifications dashboard to the shared notification rules SQLite path and shared email notification service.
-  - name: _open_staffing_candidate_report
-    description: Open a role-scoped structured Candidate Interview Report for new rows or route legacy rows to their validated DOCX.
-    inputs:
-      history_id: {type: str, required: true}
-      school: {type: str, required: true}
-    returns: {type: None}
-    exceptions: []
-    side_effects: Opens a window-modal structured report for new interviews, or opens the exact stored legacy DOCX after extension, existence, history-id, and director-school validation.
-  - name: _open_legacy_staffing_candidate_report
-    inputs:
-      history_id: {type: str, required: true}
-      school_scope: {type: str, required: true}
-    returns: {type: None}
-    exceptions: []
-    side_effects: Opens the validated stored DOCX or shows a privacy-safe warning without creating structured data.
+    side_effects: Initializes local or school-specific staffing storage, imports seed data when needed, creates and stores one shared StaffingDashboardHost plus its StaffingDashboardV2Page, delegates standard v2 action and candidate-report wiring to that host/page, imports/syncs director referrals at the appropriate launch phase, starts assigned-school queue polling, and connects shared notification services.
   - name: _candidate_report_finalized
     inputs:
       record: {type: Any, required: true}
@@ -4656,6 +4641,7 @@ dependencies:
 - module: onboarding_operations
 - module: platform_services
 - module: scoring_reporting
+- module: staffing_dashboard_host
 - module: staffing_dashboard_v2
 - module: staffing_referral_queue
 - module: staffing_service

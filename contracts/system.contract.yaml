@@ -72,6 +72,15 @@ modules:
     - setup_director_staffing
     - staffing_service
     - staffing_store
+  staffing_dashboard_host:
+    path: src/staffing_dashboard_host.py
+    depends_on:
+    - candidate_report
+    - candidate_report_dialog
+    - staffing_dashboard_v2
+    - staffing_service
+    - staffing_store
+    - PySide6
     - candidate_report
     - candidate_report_dialog
     - config_staffing_seed_json
@@ -79,12 +88,11 @@ modules:
     path: src/director_staffing_app.py
     depends_on:
     - staffing_dashboard_v2
+    - staffing_dashboard_host
     - staffing_service
     - staffing_store
     - notification_service
     - PySide6
-    - candidate_report
-    - candidate_report_dialog
   setup_director_staffing:
     path: setup_director_staffing.ps1
     depends_on:
@@ -125,14 +133,13 @@ modules:
     - onboarding_operations
     - platform_services
     - scoring_reporting
+    - staffing_dashboard_host
     - staffing_dashboard_v2
     - staffing_referral_queue
     - staffing_service
     - staffing_store
     - ui_mode_switch
     - PySide6
-    - candidate_report
-    - candidate_report_dialog
   candidate_report:
     path: src/candidate_report.py
     depends_on:

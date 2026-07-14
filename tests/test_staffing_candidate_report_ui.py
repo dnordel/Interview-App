@@ -78,6 +78,19 @@ def test_completed_candidate_name_opens_structured_report(tmp_path: Path):
 
     link = page.widget.findChild(qt_widgets.QPushButton, "StaffingV2CompletedCandidateReportLink")
     assert link is not None
+    table = page.widget.findChild(qt_widgets.QTableWidget, "StaffingV2DirectorInterviewHistoryTable")
+    assert table is not None
+    assert link.text() == "Jordan Lee"
+    assert table.item(0, 0).text() == ""
+    assert table.horizontalHeaderItem(1).text() == "First Interview\nScore"
+    assert table.horizontalHeaderItem(5).text() == "Proposed\nClassroom"
+    assert [table.columnWidth(column) for column in range(table.columnCount())] == [
+        200, 160, 110, 140, 120, 190, 190, 150,
+    ]
+    assert all(
+        table.horizontalHeader().sectionResizeMode(column) == qt_widgets.QHeaderView.ResizeMode.Fixed
+        for column in range(table.columnCount())
+    )
     link.click()
     app.processEvents()
 
