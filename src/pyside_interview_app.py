@@ -24,6 +24,7 @@ from types import SimpleNamespace
 from typing import Any, Callable, Sequence
 
 from admin_studio import DEFAULT_DEEPSEEK_MODEL, DEEPSEEK_MODEL_CHOICES, AdminStudio, AdminStudioPaths
+from candidate_report import CandidateReportRepository
 from docx import Document
 from data_store import (
     InterviewHistoryStore,
@@ -3262,6 +3263,7 @@ class PySideInterviewWindow:
                 session.interview_date = interview_date or date.today().isoformat()
                 result = session.import_indeed_transcript_file(source_path)
                 history_id = self._persist_new_indeed_import_history_row(session, result, source_path)
+            self._sync_candidate_report_import(history_id, result)
         except Exception as exc:  # noqa: BLE001
             self.QtWidgets.QMessageBox.warning(self.window, "Indeed Transcript", f"Could not import transcript: {exc}")
             return
@@ -3320,6 +3322,19 @@ class PySideInterviewWindow:
             return score_count, original_row
 
         return max(matches, key=existing_score_count)
+
+    def _sync_candidate_report_import(
+        self,
+        history_id: str,
+        result: IndeedTranscriptImportResult,
+    ) -> None:
+        repository = CandidateReportRepository(self.model.history_path)
+        if not repository.exists(history_id):
+            return
+        repository.sync_imported_transcripts(
+            history_id,
+            {match.question_id: match.candidate_transcript for match in result.matches},
+        )
 
     def _collect_indeed_transcript_import_request(self) -> dict[str, Any] | None:
         dialog = self.QtWidgets.QDialog(self.window)
@@ -3669,6 +3684,8 @@ class PySideInterviewWindow:
                 row.row_key,
                 self._history_import_updates(row, session, result, source_path, artifact_updates),
             )
+            if updated:
+                self._sync_candidate_report_import(row.row_key, result)
         except Exception as exc:  # noqa: BLE001
             self.QtWidgets.QMessageBox.warning(self.window, "Indeed Transcript", f"Could not import transcript: {exc}")
             return

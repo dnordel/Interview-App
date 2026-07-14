@@ -2,7 +2,7 @@ module:
   name: candidate_report
   language: python
   path: src/candidate_report.py
-  version: 1.1.0
+  version: 1.2.0
   description: Versioned structured candidate-interview report domain, validation, score recalculation, school-scoped legacy DOCX resolution, optimistic concurrency, immutable snapshots, and append-only audit storage.
 functions:
 - name: utc_now
@@ -153,6 +153,14 @@ classes:
       report_path: {type: Path, required: true}
       app_version: {type: str, required: false, default: ''}
     returns: {type: CandidateReportRecord}
+  - name: sync_imported_transcripts
+    description: Version and audit imported candidate transcripts into both the admin working snapshot and director-visible finalized snapshot by configured question id while preserving ratings, notes, and other report fields.
+    inputs:
+      history_id: {type: str, required: true}
+      transcripts_by_question_id: {type: 'dict[str, str]', required: true}
+      app_version: {type: str, required: false, default: ''}
+    returns: {type: CandidateReportRecord}
+    exceptions: [CandidateReportNotFoundError]
   - name: list_versions
     inputs:
       history_id: {type: str, required: true}

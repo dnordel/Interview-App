@@ -637,11 +637,27 @@ QFrame#StaffingV2HistoryAssignmentIdChip {
     font-weight: 700;
 }
 QLabel#StaffingV2ChipText {
+    background-color: transparent;
     font-weight: 700;
 }
 QLabel#StaffingV2CardIcon,
 QLabel#StaffingV2ChipIcon {
     background-color: transparent;
+}
+QWidget#PySideStaffingV2Page QFrame#StaffingV2NeedNowChip {
+    background-color: #fee2e2;
+}
+QWidget#PySideStaffingV2Page QFrame#StaffingV2ReplaceChip {
+    background-color: #ffedd5;
+}
+QWidget#PySideStaffingV2Page QFrame#StaffingV2ComingChip {
+    background-color: #fef3c7;
+}
+QWidget#PySideStaffingV2Page QFrame#StaffingV2FilledChip {
+    background-color: #dcfce7;
+}
+QWidget#PySideStaffingV2Page QFrame#StaffingV2NeutralChip {
+    background-color: #f1f5f9;
 }
 QPushButton#StaffingV2PrimaryButton {
     background-color: #2563eb;
@@ -890,8 +906,22 @@ QFrame#StaffingV2ClassroomListItem {
     border-radius: 8px;
 }
 QFrame#StaffingV2ClassroomListItem[staffingV2Selected="true"] {
-    background-color: #eff6ff;
     border: 2px solid #2563eb;
+}
+QWidget#PySideStaffingV2Page QFrame#StaffingV2ClassroomListItem[staffingV2StatusFill="need_now"] {
+    background-color: #fee2e2;
+}
+QWidget#PySideStaffingV2Page QFrame#StaffingV2ClassroomListItem[staffingV2StatusFill="replace"] {
+    background-color: #ffedd5;
+}
+QWidget#PySideStaffingV2Page QFrame#StaffingV2ClassroomListItem[staffingV2StatusFill="coming"] {
+    background-color: #fef3c7;
+}
+QWidget#PySideStaffingV2Page QFrame#StaffingV2ClassroomListItem[staffingV2StatusFill="filled"] {
+    background-color: #dcfce7;
+}
+QWidget#PySideStaffingV2Page QFrame#StaffingV2ClassroomListItem[staffingV2StatusFill="dont_need_now"] {
+    background-color: #f1f5f9;
 }
 QFrame#StaffingV2ClassroomStatusDot {
     border-radius: 5px;
@@ -4967,6 +4997,7 @@ class StaffingDashboardV2Page:
         frame = self.QtWidgets.QFrame()
         frame.setObjectName("StaffingV2ClassroomListItem")
         frame.setProperty("staffingV2Selected", False)
+        frame.setProperty("staffingV2StatusFill", _classroom_status_key(rows))
         frame.setMinimumHeight(120)
         layout = self.QtWidgets.QHBoxLayout(frame)
         layout.setContentsMargins(10, 8, 10, 8)
@@ -7106,6 +7137,7 @@ class StaffingDashboardV2Page:
     def _chip(self, text: str, status: str) -> Any:
         frame = self.QtWidgets.QFrame()
         frame.setObjectName(_chip_object_name(status))
+        frame.setProperty("staffingV2StatusFill", status)
         layout = self.QtWidgets.QHBoxLayout(frame)
         layout.setContentsMargins(6, 2, 6, 2)
         layout.setSpacing(4)

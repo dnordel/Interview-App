@@ -74,6 +74,24 @@ def test_build_candidate_report_snapshot_preserves_original_transcript():
     assert snapshot["candidate"]["qualification"]["ece_units_completed"] == 12
 
 
+def test_sync_imported_transcripts_updates_director_snapshot_and_preserves_scores(tmp_path: Path):
+    repo = _repo(tmp_path)
+
+    updated = repo.sync_imported_transcripts(
+        "hist-1",
+        {"q1": "Imported candidate answer"},
+        app_version="test",
+    )
+
+    director = repo.load_visible_version("hist-1", role="director", school_scope="Palmdale")
+    question = director.snapshot["questions"][0]
+    assert updated.version_number == 2
+    assert question["transcript"] == "Imported candidate answer"
+    assert question["original_transcript"] == "Imported candidate answer"
+    assert question["rating"] == 4
+    assert repo.list_audit_events("hist-1")[0].action == "report_transcripts_imported"
+
+
 def test_director_sees_finalized_snapshot_while_admin_draft_exists(tmp_path: Path):
     repo = _repo(tmp_path)
     initial = repo.load_visible_version("hist-1", role="admin")

@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 1.74.0
+  version: 1.75.0
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, resizable splitter sections, school/classroom selectors, wider color-coded classroom list with per-classroom status-count overview, metric cards, positions table, fully editable right-side assignment/person details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics, parallel Staffing v2 navigation/page shell with its own mockup-style staffing sidebar and forced light Qt theme, People / Employee Management and Assignment History sub-dashboards for the mockup-driven rewrite backed by staffing_dashboard_v2 while the legacy Staffing page remains available,
@@ -4470,6 +4470,21 @@ classes:
       type: PySideHistoryRow | None
     exceptions: []
     side_effects: Reads candidate history payloads without mutation.
+  - name: _sync_candidate_report_import
+    description: Version imported candidate answer transcripts into any existing structured Candidate Interview Report so both admin and director snapshots display the same question-aligned transcript text.
+    locked: false
+    inputs:
+      history_id:
+        type: str
+        required: true
+      result:
+        type: IndeedTranscriptImportResult
+        required: true
+    returns:
+      type: None
+    exceptions:
+    - CandidateReportError
+    side_effects: May version and audit working and finalized candidate-report snapshots in the interview-history database.
   - name: _collect_indeed_transcript_import_request
     description: Show the new-transcript import dialog for candidate name, interview
       date, school, track, and .txt transcript file path.
@@ -4677,6 +4692,7 @@ data_structures:
     shared runtime/services remain toolkit-neutral.
 dependencies:
 - module: admin_studio
+- module: candidate_report
 - module: data_store
 - module: interview_runtime
 - module: notification_service

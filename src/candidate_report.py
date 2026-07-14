@@ -658,6 +658,75 @@ class CandidateReportRepository:
             conn.commit()
         return self.load_visible_version(key, role="admin")
 
+    def sync_imported_transcripts(
+        self,
+        history_id: str,
+        transcripts_by_question_id: dict[str, str],
+        *,
+        app_version: str = "",
+    ) -> CandidateReportRecord:
+        clean_transcripts = {
+            str(question_id).strip(): str(transcript).strip()
+            for question_id, transcript in transcripts_by_question_id.items()
+            if str(question_id).strip() and str(transcript).strip()
+        }
+        self.initialize()
+        key = self._required(history_id, "History id")
+        if not clean_transcripts:
+            return self.load_visible_version(key, role="admin")
+
+        def apply_transcripts(snapshot: dict[str, Any]) -> set[str]:
+            changed: set[str] = set()
+            questions = snapshot.get("questions") if isinstance(snapshot.get("questions"), list) else []
+            for question in questions:
+                if not isinstance(question, dict):
+                    continue
+                question_id = str(question.get("question_id") or "").strip()
+                transcript = clean_transcripts.get(question_id)
+                if transcript is None or str(question.get("transcript") or "") == transcript:
+                    continue
+                question["transcript"] = transcript
+                question["original_transcript"] = transcript
+                changed.add(question_id)
+            return changed
+
+        now = utc_now()
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute("SELECT * FROM candidate_reports WHERE history_id = ?", (key,)).fetchone()
+            if row is None:
+                raise CandidateReportNotFoundError("Structured candidate report not found.")
+            working = self._decode_object(row["working_snapshot_json"])
+            finalized = self._decode_object(row["finalized_snapshot_json"])
+            changed_ids = apply_transcripts(working) | apply_transcripts(finalized)
+            if not changed_ids:
+                conn.rollback()
+                return self.load_visible_version(key, role="admin")
+            version_number = int(row["version_number"]) + 1
+            revision_id = str(uuid4())
+            reason = "Imported interview transcripts synchronized"
+            conn.execute(
+                """
+                UPDATE candidate_reports
+                SET working_snapshot_json = ?, finalized_snapshot_json = ?, row_version = row_version + 1,
+                    version_number = ?, updated_by = 'system', updated_role = 'admin', updated_at = ?
+                WHERE history_id = ?
+                """,
+                (self._json(working), self._json(finalized), version_number, now, key),
+            )
+            self._insert_version(
+                conn, revision_id, key, version_number, str(row["state"]),
+                working, "system", "admin", reason, now,
+            )
+            self._insert_audit(
+                conn, key, revision_id, "report_transcripts_imported", "questions", None,
+                {"question_ids": sorted(changed_ids), "count": len(changed_ids)},
+                "system", "admin", reason, "interviewer", app_version, now,
+            )
+            conn.commit()
+        return self.load_visible_version(key, role="admin")
+
     def list_versions(self, history_id: str) -> list[CandidateReportVersion]:
         self.initialize()
         with sqlite3.connect(self.db_path) as conn:

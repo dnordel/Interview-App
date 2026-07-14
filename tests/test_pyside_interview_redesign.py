@@ -11,6 +11,7 @@ from typing import Any
 
 import pytest
 import pyside_interview_app
+from candidate_report import CandidateReportRepository
 from data_store import InterviewHistoryStore, SchoolOfferSettingsStore
 from docx import Document
 from interview_runtime import map_indeed_transcript_to_questions, parse_indeed_transcript_text
@@ -1098,7 +1099,7 @@ def test_pyside_home_import_reuses_matching_scored_history_row(
     app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
     history_path = tmp_path / "interview_history.sqlite3"
     store = InterviewHistoryStore(history_path)
-    store.append(
+    history_entry = (
         {
             "history_id": "hist-michelle",
             "candidate_name": "Michelle Oropeza",
@@ -1110,6 +1111,29 @@ def test_pyside_home_import_reuses_matching_scored_history_row(
             "review_scores": {"trait_1": "4"},
             "answers": {"trait_1": {"kind": "trait", "score": "4", "notes": "Prior notes"}},
         }
+    )
+    store.append_with_candidate_report(
+        history_entry,
+        {
+            "schema_version": 1,
+            "history_id": "hist-michelle",
+            "candidate": {"candidate_name": "Michelle Oropeza", "school": "Palmdale", "track": "preschool"},
+            "questions": [
+                {
+                    "question_id": "trait_1",
+                    "type": "trait",
+                    "title": "Empathy",
+                    "prompt": "Tell me about a hard child moment.",
+                    "transcript": "",
+                    "original_transcript": "",
+                    "rating": 4,
+                }
+            ],
+            "scoring": {"percent_of_max": 80.0, "outcome": "Hire", "rows": []},
+            "summaries": {},
+            "report_path": "",
+        },
+        actor="admin-user",
     )
     model = build_interview_redesign_model(
         rubric_path=_write_test_rubric(tmp_path),
@@ -1145,6 +1169,10 @@ def test_pyside_home_import_reuses_matching_scored_history_row(
     assert rows[0]["answers"]["trait_1"]["score"] == "4"
     assert rows[0]["answers"]["trait_1"]["notes"].startswith("I stayed calm")
     assert window._review_history_id == "hist-michelle"
+    director_report = CandidateReportRepository(history_path).load_visible_version(
+        "hist-michelle", role="director", school_scope="Palmdale"
+    )
+    assert director_report.snapshot["questions"][0]["transcript"].startswith("I stayed calm")
     window.window.close()
     app.processEvents()
 
@@ -10434,6 +10462,8 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
     first_row_widget = classroom_list.itemWidget(classroom_list.item(0))
     assert first_row_widget is not None
     assert first_row_widget.objectName() == "StaffingV2ClassroomListItem"
+    assert first_row_widget.property("staffingV2StatusFill") == "need_now"
+    assert first_row_widget.grab().toImage().pixelColor(4, first_row_widget.height() // 2).name().upper() == "#FEE2E2"
     assert first_row_widget.testAttribute(qt_core.Qt.WidgetAttribute.WA_TransparentForMouseEvents)
     assert first_row_widget.findChild(qt_widgets.QFrame, "StaffingV2ClassroomStatusDot") is not None
     assert first_row_widget.findChild(qt_widgets.QFrame, "StaffingV2ClassroomStatusDot").property("staffingV2Status") == "need_now"
@@ -10527,6 +10557,10 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
     assert table.item(filled_row, 0).text() == "2"
     assert table.cellWidget(need_now_row, 3).objectName() == "StaffingV2NeedNowChip"
     assert table.cellWidget(filled_row, 3).objectName() == "StaffingV2FilledChip"
+    assert table.cellWidget(need_now_row, 3).property("staffingV2StatusFill") == "need_now"
+    assert table.cellWidget(filled_row, 3).property("staffingV2StatusFill") == "filled"
+    assert table.cellWidget(need_now_row, 3).grab().toImage().pixelColor(4, 12).name().upper() == "#FEE2E2"
+    assert table.cellWidget(filled_row, 3).grab().toImage().pixelColor(4, 12).name().upper() == "#DCFCE7"
     assert table.cellWidget(need_now_row, 6).objectName() == "StaffingV2NeutralChip"
     assert table.cellWidget(filled_row, 6).objectName() == "StaffingV2ComingChip"
     for chip in (

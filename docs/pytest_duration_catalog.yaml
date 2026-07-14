@@ -246,6 +246,11 @@ entries:
   duration_source: collection_default
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_candidate_report.py::test_sync_imported_transcripts_updates_director_snapshot_and_preserves_scores
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_candidate_report.py::test_director_sees_finalized_snapshot_while_admin_draft_exists
   duration_seconds_n2: 0.001
   duration_source: collection_default
