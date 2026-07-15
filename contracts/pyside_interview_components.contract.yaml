@@ -1,0 +1,37 @@
+module:
+  name: pyside_interview_components
+  language: python
+  path: src/pyside_interview_components.py
+  version: 1.0.0
+  description: Shared toolkit-injected candidate identity and responsive two-column helpers used by live and completed interview pages.
+functions:
+- name: build_candidate_identity
+  description: Build a consistently named candidate identity block from safe display strings.
+  locked: false
+  inputs:
+    QtWidgets: {type: Any, required: true}
+    candidate_name: {type: str, required: true}
+    school: {type: str, required: true}
+    position: {type: str, required: true}
+    interview_type: {type: str, required: false, default: ''}
+    object_prefix: {type: str, required: true}
+  returns: {type: Any}
+  exceptions: []
+  side_effects: Creates Qt widgets without reading or writing candidate records.
+classes:
+- name: AdaptiveTwoColumn
+  description: Reusable two-panel Qt container that switches between weighted columns and vertical narrow layout.
+  locked: false
+  attributes: {}
+  methods:
+  - name: set_narrow
+    description: Apply desktop columns or equal-width vertical stacking.
+    locked: false
+    inputs:
+      narrow: {type: bool, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Changes Qt layout direction, stretches, and style state.
+data_structures: []
+dependencies:
+- module: PySide6

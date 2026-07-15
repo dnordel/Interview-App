@@ -2,9 +2,10 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 5.0.0
-  description: PySide6 operations shell and headless view-model builder for Staffing v2-native hiring,
-    interviews, candidate reports, onboarding, staffing, notifications, and admin-only
+  version: 5.3.0
+  description: PySide6 operations shell and headless view-model builder for a mockup-driven
+    New Interview setup/live flow, Candidates-owned pipeline/history, candidate reports,
+    onboarding, staffing, notifications, and admin-only
     Staffing v2 Settings. Settings is lazily hosted inside the Staffing v2 shell, delegates
     draft validation, backup, and confirmed persistence to admin_studio, hides global
     configuration from director mode, and guards navigation or close when unpublished
@@ -384,11 +385,49 @@ classes:
       type: list[dict[str, Any]]
     flow_candidate_transcripts:
       type: dict[int, str]
+    flow_live_transcripts:
+      type: dict[int, str]
+    flow_transcript_overrides:
+      type: dict[int, str]
     flow_recordings:
       type: dict[int, dict[str, Any]]
     application_id:
       type: str
   methods:
+  - name: append_live_transcript
+    description: Append new candidate-only provisional text for a flow index while preserving any manual override prefix.
+    locked: false
+    inputs:
+      flow_index: {type: int, required: true}
+      text: {type: str, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Autosaves draft and canonical in-progress session state.
+  - name: replace_live_transcript
+    description: Replace the current question transcript with an explicit manual override.
+    locked: false
+    inputs:
+      flow_index: {type: int, required: true}
+      text: {type: str, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Autosaves draft and canonical in-progress session state.
+  - name: live_transcript
+    description: Return effective provisional text with manual override precedence and later candidate segments appended.
+    locked: false
+    inputs:
+      flow_index: {type: int, required: true}
+    returns: {type: str}
+    exceptions: []
+    side_effects: none
+  - name: apply_canonical_transcripts
+    description: Apply final canonical question transcripts while preserving manual overrides and falling back to provisional text when canonical ASR is unavailable.
+    locked: false
+    inputs:
+      canonical: {type: 'dict[int, str]', required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Updates in-memory final transcript mappings.
   - name: start
     description: Start a new guided interview session at the school-specific intro script, assign the current interview date, and persist initial draft/session state.
     locked: false
@@ -617,6 +656,19 @@ classes:
       per-school Dropbox candidate folder when configured, backfills the history notes
       paths, writes integration export, and preserves any PySide recording/transcript
       payload in history/session data for later history-triggered DeepSeek generation.
+  - name: update_completed_artifacts
+    description: Idempotently regenerate completed interview scoring, base DOCX, history payload, and candidate-report snapshot for an existing history ID after overview edits or Back navigation.
+    locked: false
+    inputs:
+      history_id: {type: str, required: true}
+      base_dir: {type: Path, required: false, default: DEFAULT_BASE_DIR}
+      history_path: {type: Path, required: false, default: INTERVIEW_HISTORY_PATH}
+    returns: {type: 'dict[str, Any]'}
+    exceptions:
+    - ValueError
+    - ReportingValidationError
+    - OSError
+    side_effects: Updates one existing history row and its base DOCX and candidate-report snapshot without creating duplicate history, application, referral, notification, or DeepSeek records.
   - name: _transcript_metadata
     description: Build complete/partial transcript metadata from PySide flow transcript
       and recording state for finalize/history payloads.
@@ -690,9 +742,10 @@ classes:
     - ValueError
     side_effects: Reads PySide draft JSON.
 - name: PySideInterviewWindow
-  description: Main PySide6 operations shell. Hiring v2 is the sole interview, candidate,
-    history, and offer surface. Its internal router owns pipeline, candidate setup,
-    focused live interview, recording/transcription status, draft recovery, closeout,
+  description: Main PySide6 operations shell. Interviews owns mockup-driven setup, focused
+    live interview, recording/transcription status, and closeout. Candidates owns roster,
+    application pipeline, history, transcript import, and draft recovery. Hiring v2 owns
+    those candidate and offer surfaces plus immutable offer approval preview,
     immutable offer approval preview, delivery, negotiation, and acceptance. Staffing,
     Staffing v2, Onboarding, and Admin remain separate navigation surfaces. Deferred
     construction builds only the actual default Staffing v2 page and leaves every
@@ -733,13 +786,134 @@ classes:
     exceptions: []
     side_effects: Renders and validates approved offer artifacts, presents approval review, persists approval, attempts candidate-only delivery, and refreshes Hiring v2.
   - name: _populate_home_candidate_profile
-    description: Populate editable candidate profile and contact fields from the selected Hiring v2 profile while preserving new-profile entry.
+    description: Compatibility no-op retained after profile/contact editing moved from New Interview to Candidates.
     locked: false
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Updates candidate name, preferred name, email, and phone widgets.
+    side_effects: none
+  - name: _hiring_candidates_workspace
+    description: Build temporary Candidates tabs that own Candidate Roster and Pipeline / History plus transcript-import and saved-draft actions.
+    locked: false
+    inputs: {}
+    returns: {type: QWidget}
+    exceptions: []
+    side_effects: Reparents Hiring v2 roster and pipeline widgets into Candidates and refreshes draft action state.
+  - name: _mark_new_interview_setup_dirty
+    description: Mark New Interview form as edited for discard confirmation.
+    locked: false
+    inputs: {_args: {type: Any, required: false}}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Updates in-memory dirty state.
+  - name: _cancel_new_interview_setup
+    description: Confirm discard when needed, reset setup, and return to Staffing v2 Dashboard.
+    locked: false
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: May show confirmation, clears setup, and changes dashboard route.
+  - name: _reset_new_interview_setup
+    description: Restore blank candidate and first configured school, track, and First Interview defaults.
+    locked: false
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Updates setup widgets and clears validation/dirty state.
+  - name: _start_manual_audio_preflight
+    description: Start optional non-blocking 15-second setup audio test once for selected system source.
+    locked: false
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Disables duplicate Test Audio clicks and starts daemon worker plus Qt result poller.
+  - name: _run_manual_audio_preflight
+    description: Capture temporary mic/system WAVs for 15 seconds, transcribe candidate/system speech, evaluate readiness, and delete temporary artifacts.
+    locked: false
+    inputs:
+      system_device: {type: str, required: true}
+    returns: {type: AudioPreflightResult}
+    exceptions: []
+    side_effects: Starts/stops temporary FFmpeg capture, invokes local transcription, and removes temporary directory.
+  - name: _poll_manual_audio_preflight
+    description: Poll manual audio-test worker and apply its speech-free readiness result.
+    locked: false
+    inputs:
+      results: {type: 'queue.Queue[AudioPreflightResult]', required: true}
+      timer: {type: Any, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Stops timer, reenables Test Audio, and updates setup statuses.
+  - name: _apply_setup_audio_preflight_result
+    description: Render microphone, system-audio, and candidate-transcription readiness plus safe warning text on Setup.
+    locked: false
+    inputs:
+      result: {type: AudioPreflightResult, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Updates and restyles setup labels.
+  - name: _probe_recording_interface
+    description: Warm transcription runtime and enumerate/resolve Windows microphone and system-audio devices without opening WAV capture.
+    locked: false
+    inputs: {}
+    returns: {type: 'dict[str, Any]'}
+    exceptions: [Exception]
+    side_effects: May initialize local runtime and execute cached FFmpeg device enumeration.
+  - name: _poll_recording_interface_preload
+    description: Poll background preload and render truthful setup readiness/device choices.
+    locked: false
+    inputs:
+      results: {type: 'queue.Queue[dict[str, Any]]', required: true}
+      timer: {type: Any, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Stops timer and updates setup probe state.
+  - name: _apply_setup_audio_probe
+    description: Populate detected audio sources with preferred system device first and render probe readiness.
+    locked: false
+    inputs:
+      available_devices: {type: 'Sequence[str]', required: true}
+      microphone_device: {type: str, required: true}
+      system_device: {type: str, required: true}
+      transcription_ready: {type: bool, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Updates setup combo, status labels, and Test Audio availability.
+  - name: _set_setup_probe_status
+    description: Apply one probe readiness state and text to a setup label.
+    locked: false
+    inputs:
+      widget: {type: Any, required: true}
+      ready: {type: bool, required: true}
+      ready_text: {type: str, required: true}
+      failed_text: {type: str, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Updates and restyles one label.
+  - name: _evaluate_pyside_intro_audio_preflight
+    description: Evaluate active first-15-second mic/system WAV signal and candidate-only transcription.
+    locked: false
+    inputs:
+      session: {type: Any, required: true}
+    returns: {type: AudioPreflightResult}
+    exceptions: [Exception]
+    side_effects: Runs incremental local transcription and reads active WAV files.
+  - name: _apply_pyside_intro_audio_preflight_result
+    description: Apply automatic post-Begin readiness to setup state and persistent non-blocking live/review warning banner.
+    locked: false
+    inputs:
+      result: {type: AudioPreflightResult, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Updates recording warning and rerenders live/review pages without ending session.
+  - name: _selected_setup_audio_source
+    description: Return selected detected system-audio device, excluding unavailable placeholder rows.
+    locked: false
+    inputs: {}
+    returns: {type: str}
+    exceptions: []
+    side_effects: none
   - name: show
     description: Expand the redesigned PySide6 main window to current usable screen geometry before showing it maximized, then schedule startup notification draining and recording-interface preload after first paint for full interview launches while skipping those interview/audio warmups for director staffing-only launches.
     locked: false
@@ -777,14 +951,14 @@ classes:
     exceptions: []
     side_effects: none
   - name: _preload_recording_interface_async
-    description: Start a daemon thread that warms the recording runtime interface
-      without blocking first paint or Begin Interview UI responsiveness.
+    description: Start a daemon thread that warms recording runtime/device lookup and
+      poll its result into Setup without blocking first paint or Begin Interview.
     locked: false
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Starts a daemon thread.
+    side_effects: Starts a daemon thread and Qt poll timer.
   - name: _preload_recording_interface
     description: Resolve the configured recording runtime and warm the cached Windows
       system-audio device lookup without starting a recording session.
@@ -793,7 +967,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: May run ffmpeg device enumeration through interview_runtime cache
+    side_effects: Stores probed runtime/device state, may run cached FFmpeg enumeration,
       and stores a non-blocking recording warning if preload fails.
   - name: _recording_warning_text
     description: Return operator-facing PySide recording warning text including the
@@ -1119,8 +1293,9 @@ classes:
     side_effects: Writes PySide draft JSON and re-renders the live interview page.
   - name: _go_back_live_question
     description: Return the live interview view to the previous question while preserving
-      saved answers for review or overwrite, and mark the next save as a timestamp-boundary
-      overwrite.
+      saved answers and its original transcript start timestamp; mark the next save to
+      extend that question's end timestamp and move the following question's start timestamp
+      to the same new boundary.
     locked: false
     inputs: {}
     returns:
@@ -1357,13 +1532,13 @@ classes:
     exceptions: []
     side_effects: Starts a one-shot Qt timer that closes the progress dialog.
   - name: _exit_live_interview
-    description: Persist current PySide draft state and return to the interview home tab.
+    description: Persist current PySide draft, stop capture asynchronously, clear active session, and return to fresh New Interview Setup.
     locked: false
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Writes PySide draft JSON and changes visible tab.
+    side_effects: Writes PySide draft JSON, starts recorder-stop worker when needed, clears session state, unlocks navigation, and changes visible tab.
   - name: _select_main_nav_row
     description: Ensure a deferred main navigation page is built, switch the main PySide stack to the selected navigation row, hide the legacy Interview Assistant sidebar when the temporary Staffing v2 page is active so Staffing v2 can render its own mockup-style shell, and resynchronize the shared StaffingDashboardV2Page scroll behavior after full/admin navigation activates Staffing v2.
     locked: false
@@ -1421,7 +1596,7 @@ classes:
     inputs: {}
     returns: {type: bool}
     exceptions: []
-    side_effects: Delegates application-close guarding to the loaded Settings page; returns true before Settings is constructed.
+    side_effects: Delegates application-close guarding to loaded Settings; after confirmed close, asynchronously stops any active temporary manual audio preflight capture.
   - name: _invalidate_notification_service
     inputs: {}
     returns: {type: None}
@@ -2186,11 +2361,11 @@ data_structures:
   type: dataclass
   description: Render-ready intro, qualification, custom, or scored interview question data; scored
     trait followups may come from followups, follow_up_prompts, or follow_up_probes
-    rubric fields.
+    rubric fields and may carry semantic stage, priority, and weight metadata.
 - name: ScoreCard
   type: dataclass
   description: One selectable score value and full plain-language rubric descriptor
-    shown beside the PySide rating selection.
+    shown beside the PySide rating selection, plus an optional configured sample-answer anchor.
 - name: PySideReviewSummary
   type: dataclass
   description: Score, determination, missing scores, strongest evidence, concerns, and recommended next action for PySide review.
@@ -2212,6 +2387,10 @@ dependencies:
 - module: dashboard_v2_ui
 - module: data_store
 - module: interview_runtime
+- module: interview_audio_preflight
+- module: pyside_completed_interview
+- module: pyside_interview_components
+- module: pyside_live_interview
 - module: hiring_pipeline
 - module: hiring_workspace_v2
 - module: notification_service

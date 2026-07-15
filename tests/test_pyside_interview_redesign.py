@@ -36,6 +36,12 @@ from pyside_interview_app import (
     standard_window_control_flags,
 )
 from scoring_reporting import CandidateQualification
+from visual_test_support import (
+    TYPOGRAPHY_STRESS_TEXT,
+    VisualTestDatabaseRegistry,
+    assert_vertical_text_fits,
+    configure_visual_test_app,
+)
 
 
 def _pyside_window_on_page(model, page_name: str):
@@ -50,6 +56,356 @@ def _pyside_window_on_page(model, page_name: str):
         window.staffing_v2_dashboard.show_external_page(page_name.casefold())
     window.QtWidgets.QApplication.processEvents()
     return window
+
+
+@pytest.mark.pyside_gui
+def test_pyside_new_interview_setup_scenario(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    seed_path = tmp_path / "staffing_seed.json"
+    seed_path.write_text('{"schools":[]}', encoding="utf-8")
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", tmp_path / "staffing.sqlite3")
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", seed_path)
+    monkeypatch.setattr(pyside_interview_app, "NOTIFICATION_RULES_PATH", tmp_path / "notifications.sqlite3")
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.sqlite3",
+        school_options=["Hawthorne"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+
+    window.staffing_v2_dashboard.external_nav_buttons["interviews"].click()
+    app.processEvents()
+
+    assert window.hiring_v2_router.current_route == "interview"
+    assert window.interview_tabs.currentIndex() == 0
+    assert window.interview_tabs.currentWidget().findChild(qt_widgets.QLabel, "Title").text() == "New Interview"
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_new_interview_setup_matches_mockup_controls(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.sqlite3",
+        school_options=["Hawthorne", "Palmdale"],
+    )
+    window = _pyside_window_on_page(model, "Interviews")
+    setup = window.interview_tabs.widget(0)
+
+    assert setup.objectName() == "HiringV2NewInterviewSetup"
+    assert setup.findChild(qt_widgets.QLineEdit, "HiringV2SetupCandidateName").text() == ""
+    assert setup.findChild(qt_widgets.QComboBox, "HiringV2SetupSchool").currentText() == "Hawthorne"
+    assert setup.findChild(qt_widgets.QComboBox, "HiringV2SetupTrack").currentText() == next(
+        iter(model.track_labels.values())
+    )
+    interview_type = setup.findChild(qt_widgets.QComboBox, "HiringV2SetupInterviewType")
+    assert [interview_type.itemText(index) for index in range(interview_type.count())] == ["First Interview"]
+    progress = setup.findChild(qt_widgets.QFrame, "HiringV2SetupProgress")
+    assert [label.text() for label in progress.findChildren(qt_widgets.QLabel, "HiringV2SetupProgressLabel")] == [
+        "Setup",
+        "Introduction",
+        "Questions",
+        "Review",
+    ]
+    buttons = {button.text() for button in setup.findChildren(qt_widgets.QPushButton)}
+    assert buttons == {"Test Audio", "Cancel", "Begin Interview"}
+    assert setup.findChild(qt_widgets.QComboBox, "HiringV2SetupAudioSource") is not None
+    assert setup.findChild(qt_widgets.QLabel, "HiringV2SetupMicrophoneStatus") is not None
+    assert setup.findChild(qt_widgets.QLabel, "HiringV2SetupSystemAudioStatus") is not None
+    assert setup.findChild(qt_widgets.QLabel, "HiringV2SetupTranscriptStatus") is not None
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_new_interview_setup_begins_first_interview_without_contact_fields(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    from hiring_pipeline import HiringPipelineStore
+
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    history_path = tmp_path / "interview_history.sqlite3"
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Hawthorne"],
+    )
+    window = _pyside_window_on_page(model, "Interviews")
+    capture_started: list[bool] = []
+    monkeypatch.setattr(window, "_start_pyside_interview_recording", lambda: capture_started.append(True))
+    window.home_candidate_input.setText("Sofia Ramirez")
+
+    window.home_begin_button.click()
+    app.processEvents()
+
+    applications = HiringPipelineStore(history_path).list_applications()
+    candidate = HiringPipelineStore(history_path).get_candidate(applications[0].candidate_id)
+    assert candidate.legal_name == "Sofia Ramirez"
+    assert candidate.email == ""
+    assert candidate.phone == ""
+    assert window.session is not None
+    assert window.session.candidate_name == "Sofia Ramirez"
+    assert window.interview_tabs.currentIndex() == 2
+    assert capture_started == [True]
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_new_interview_cancel_discards_changes_and_returns_dashboard(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.sqlite3",
+        school_options=["Hawthorne"],
+    )
+    window = _pyside_window_on_page(model, "Interviews")
+    yes = window.QtWidgets.QMessageBox.StandardButton.Yes
+    monkeypatch.setattr(window.QtWidgets.QMessageBox, "question", lambda *_args, **_kwargs: yes)
+    window.home_candidate_input.setText("Discard Me")
+
+    window.interview_tabs.widget(0).findChild(qt_widgets.QPushButton, "HiringV2SetupCancel").click()
+    app.processEvents()
+
+    assert window.home_candidate_input.text() == ""
+    assert window.staffing_v2_dashboard.current_page_id == "staffing_dashboard"
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_exit_live_interview_saves_draft_and_returns_fresh_setup(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.sqlite3",
+        school_options=["Hawthorne"],
+    )
+    window = _pyside_window_on_page(model, "Interviews")
+    draft_path = tmp_path / "drafts" / "application.json"
+    session = PySideInterviewSession(model=model, draft_path=draft_path, application_id="application")
+    session.start(candidate_name="Sofia Ramirez", school="Hawthorne", track_key=next(iter(model.flows)))
+    window.session = session
+    window.interview_tabs.setCurrentIndex(2)
+
+    window._exit_live_interview()
+    app.processEvents()
+
+    assert draft_path.exists()
+    assert window.session is None
+    assert window.hiring_v2_router.current_route == "interview"
+    assert window.interview_tabs.currentIndex() == 0
+    assert window.home_candidate_input.text() == ""
+    assert window.staffing_v2_dashboard.current_page_id == "interviews"
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_manual_audio_preflight_updates_setup_without_starting_interview(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    from PySide6 import QtTest
+    from interview_audio_preflight import AudioPreflightResult
+
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.sqlite3",
+        school_options=["Hawthorne"],
+    )
+    window = _pyside_window_on_page(model, "Interviews")
+    tested_sources: list[str] = []
+
+    def ready_result(source: str):
+        tested_sources.append(source)
+        return AudioPreflightResult(True, True, True, "")
+
+    monkeypatch.setattr(window, "_run_manual_audio_preflight", ready_result)
+    window.home_audio_source_combo.clear()
+    window.home_audio_source_combo.addItem("CABLE Output", "CABLE Output")
+
+    window.home_test_audio_button.click()
+    assert window.home_test_audio_button.isEnabled() is False
+    for _ in range(20):
+        app.processEvents()
+        QtTest.QTest.qWait(10)
+        if window.home_test_audio_button.isEnabled():
+            break
+
+    assert tested_sources == ["CABLE Output"]
+    assert window.home_microphone_status.text() == "✓ Microphone connected"
+    assert window.home_system_audio_status.text() == "✓ System audio connected"
+    assert window.home_transcript_status.text() == "✓ Live transcription ready"
+    assert window.session is None
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_window_close_stops_active_manual_audio_preflight(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.sqlite3",
+        school_options=["Hawthorne"],
+    )
+    window = _pyside_window_on_page(model, "Interviews")
+    stopped = threading.Event()
+    window._manual_audio_preflight_session = SimpleNamespace(stop=stopped.set)
+
+    assert window._request_window_close() is True
+    assert stopped.wait(0.5)
+    window._manual_audio_preflight_session = None
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_setup_audio_probe_populates_detected_source_and_readiness(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.sqlite3",
+        school_options=["Hawthorne"],
+    )
+    window = _pyside_window_on_page(model, "Interviews")
+
+    window._apply_setup_audio_probe(
+        available_devices=["Default Microphone", "CABLE Output (VB-Audio Virtual Cable)"],
+        microphone_device="Default Microphone",
+        system_device="CABLE Output (VB-Audio Virtual Cable)",
+        transcription_ready=True,
+    )
+
+    assert window.home_audio_source_combo.currentText() == "CABLE Output (VB-Audio Virtual Cable)"
+    assert window.home_audio_source_combo.count() == 2
+    assert window.home_microphone_status.text() == "✓ Microphone connected"
+    assert window.home_system_audio_status.text() == "✓ System audio connected"
+    assert window.home_transcript_status.text() == "✓ Live transcription ready"
+    assert window.session is None
+    window.window.close()
+    app.processEvents()
+
+
+@pytest.mark.pyside_gui
+@pytest.mark.visual_inspection
+def test_pyside_new_interview_setup_responsive_visual_scenario(
+    tmp_path: Path,
+    visual_test_databases: VisualTestDatabaseRegistry,
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    from PySide6 import QtGui
+
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    configure_visual_test_app(app)
+    original_font = app.font()
+    history_path = visual_test_databases.database("new_interview_setup.sqlite3")
+    visual_test_databases.expect_seeded(history_path, table="interview_history")
+    InterviewHistoryStore(history_path).append(
+        {
+            "history_id": "setup-visual-fixture",
+            "candidate_name": "Ghjypq Avery",
+            "school": "Hawthorne",
+            "position": "Infant/Toddler Teacher",
+            "interview_date": "2026-07-15",
+            "outcome": "Incomplete",
+            "score": "0.0%",
+        }
+    )
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Hawthorne"],
+    )
+    window = _pyside_window_on_page(model, "Interviews")
+    setup = window.interview_tabs.widget(0)
+    window.home_candidate_input.setText(TYPOGRAPHY_STRESS_TEXT)
+    window.home_microphone_status.setText(TYPOGRAPHY_STRESS_TEXT)
+    window.home_begin_button.setText(f"Begin {TYPOGRAPHY_STRESS_TEXT}")
+    try:
+        for width, height, scale in (
+            (1680, 945, 1.0),
+            (1366, 768, 1.0),
+            (1366, 768, 1.25),
+            (1366, 768, 1.5),
+        ):
+            font = QtGui.QFont(original_font)
+            font.setPointSizeF(max(8.0, original_font.pointSizeF() * scale))
+            app.setFont(font)
+            window.window.resize(width, height)
+            window.window.show()
+            app.processEvents()
+            rendered = window.window.grab()
+            assert rendered.save(str(tmp_path / f"new-interview-{width}x{height}-{scale}.png"))
+            assert setup.horizontalScrollBar().maximum() == 0
+            card_width = setup.findChild(qt_widgets.QFrame, "HiringV2CandidateSetupCard").width()
+            assert 820 <= card_width <= 940
+            assert_vertical_text_fits(window.home_candidate_input, TYPOGRAPHY_STRESS_TEXT)
+            assert_vertical_text_fits(window.home_microphone_status, TYPOGRAPHY_STRESS_TEXT)
+            assert_vertical_text_fits(window.home_begin_button, f"Begin {TYPOGRAPHY_STRESS_TEXT}")
+    finally:
+        app.setFont(original_font)
+        window.window.close()
+        app.processEvents()
+
+
+def test_pyside_candidates_owns_roster_pipeline_history_and_legacy_interview_actions(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.sqlite3",
+        school_options=["Hawthorne"],
+    )
+    window = _pyside_window_on_page(model, "Candidates")
+    candidates = window.staffing_v2_dashboard.external_pages["candidates"]
+    tabs = candidates.findChild(qt_widgets.QTabWidget, "HiringV2CandidatesTabs")
+
+    assert [tabs.tabText(index) for index in range(tabs.count())] == ["Candidate Roster", "Pipeline / History"]
+    pipeline_tab = tabs.widget(1)
+    assert pipeline_tab.findChild(qt_widgets.QTableWidget, "HiringV2ApplicationList") is not None
+    assert {button.text() for button in pipeline_tab.findChildren(qt_widgets.QPushButton)} >= {
+        "Import Indeed Transcript",
+        "Continue Saved Draft",
+        "Delete Saved Draft",
+    }
+    interviews = window.staffing_v2_dashboard.external_pages["interviews"]
+    assert interviews.findChild(qt_widgets.QTableWidget, "HiringV2ApplicationList") is None
+    assert interviews.findChild(qt_widgets.QPushButton, "ImportIndeedTranscriptButton") is None
+    window.window.close()
+    app.processEvents()
 
 
 @pytest.mark.pyside_gui
@@ -763,17 +1119,18 @@ def test_pyside_live_footer_blocks_unrated_scored_next_and_keeps_skip_enabled(tm
         for button in window.interview_tabs.widget(2).findChildren(qt_widgets.QPushButton)
         if button.property("pyside_live_footer_action")
     }
-    capture_bar = window.interview_tabs.widget(2).findChild(qt_widgets.QFrame, "HiringV2CaptureBar")
-    question_rail = window.interview_tabs.widget(2).findChild(qt_widgets.QListWidget, "HiringV2QuestionRail")
+    capture_bar = window.interview_tabs.widget(2).findChild(qt_widgets.QFrame, "LiveInterviewHeader")
+    question_rail = window.interview_tabs.widget(2).findChild(qt_widgets.QFrame, "LiveInterviewStageRail")
 
     assert footer_buttons["back"].isEnabled()
     assert footer_buttons["skip"].isEnabled()
     assert not footer_buttons["finalize"].isEnabled()
     assert window.interview_tabs.tabBar().isHidden()
     assert capture_bar is not None
-    assert capture_bar.property("semanticState") in {"neutral", "warning", "critical"}
-    assert question_rail.item(0).data(window.QtCore.Qt.ItemDataRole.UserRole) == "success"
-    assert question_rail.item(question_rail.currentRow()).data(window.QtCore.Qt.ItemDataRole.UserRole) == "active"
+    assert capture_bar.property("captureState") in {"inactive", "warning", "recording"}
+    stage_states = [row.property("stageState") for row in question_rail.findChildren(qt_widgets.QFrame)]
+    assert "complete" in stage_states
+    assert "active" in stage_states
 
     window.score_group.buttons()[0].setChecked(True)
     app.processEvents()
@@ -1125,14 +1482,14 @@ Speaker 1: I gave a long transcript answer that should not replace the saved log
     assert window.session.answers["trait_1"]["score"] == "4"
     assert window.interview_tabs.currentIndex() == 3
     review_page = window.interview_tabs.widget(3)
-    assert "I got low, named the feeling" in _table_text(
-        review_page.findChild(qt_widgets.QTableWidget, "PySideReviewQuestionTable"),
+    assert "I got low, named the feeling" in _widget_text(review_page)
+    trait_card = next(
+        card
+        for card in review_page.findChildren(qt_widgets.QFrame, "CompletedTranscriptCard")
+        if card.property("questionId") == "trait_1"
     )
-    rating = review_page.findChild(qt_widgets.QSpinBox, "PySideReviewRating_trait_1")
-    assert rating is not None
-    rating.setValue(4)
-    app.processEvents()
-    window._apply_review_score_updates()
+    assert "Rating 4 / 5" in _widget_text(trait_card)
+    assert trait_card.findChild(qt_widgets.QPushButton, "CompletedTranscriptDetail") is not None
 
     stored = InterviewHistoryStore(history_path).load()[0]
     assert stored["review_scores"]["trait_1"] == "4"
@@ -1147,6 +1504,7 @@ Speaker 1: I gave a long transcript answer that should not replace the saved log
         for item in stored["flow_transcript"]
     )
     assert stored["flow_recordings"][0]["candidate_transcript"].startswith("I got low")
+    assert Path(stored["report_path"]).resolve().is_relative_to(tmp_path.resolve())
     window.window.close()
     app.processEvents()
 
@@ -1274,7 +1632,7 @@ def test_pyside_home_delete_saved_draft_requires_confirmation(tmp_path: Path, mo
     window.window.close()
     app.processEvents()
 
-def test_pyside_home_draft_actions_share_start_panel_to_prioritize_history(tmp_path: Path) -> None:
+def test_pyside_draft_actions_live_under_candidates_not_new_interview(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
     app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
@@ -1286,15 +1644,17 @@ def test_pyside_home_draft_actions_share_start_panel_to_prioritize_history(tmp_p
     )
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
 
-    buttons = {button.text(): button for button in window.interview_tabs.widget(0).findChildren(qt_widgets.QPushButton)}
-    section_titles = [
-        label.text()
-        for label in window.interview_tabs.widget(0).findChildren(qt_widgets.QLabel, "SectionTitle")
-    ]
+    start_buttons = {
+        button.text() for button in window.interview_tabs.widget(0).findChildren(qt_widgets.QPushButton)
+    }
+    candidate_tabs = window.staffing_v2_dashboard.external_pages["candidates"].findChild(
+        qt_widgets.QTabWidget,
+        "HiringV2CandidatesTabs",
+    )
+    draft_buttons = {button.text() for button in candidate_tabs.widget(1).findChildren(qt_widgets.QPushButton)}
 
-    assert buttons["Continue"].parent() == buttons["Begin Interview"].parent()
-    assert buttons["Delete Saved Draft"].parent() == buttons["Begin Interview"].parent()
-    assert "Continue Draft" not in section_titles
+    assert start_buttons == {"Test Audio", "Cancel", "Begin Interview"}
+    assert {"Continue Saved Draft", "Delete Saved Draft"} <= draft_buttons
     assert window.window.findChild(qt_widgets.QTableWidget, "PySideHistoryGrid") is None
     window.window.close()
     app.processEvents()
@@ -1429,7 +1789,6 @@ def test_pyside_recording_starts_on_begin_for_intro_audio_check(tmp_path: Path, 
     assert starts == ["start"]
     assert window.session.active_question().kind == "intro"
 
-    window.live_notes.setPlainText("Intro read by interviewer.")
     window._save_and_next()
 
     assert starts == ["start"]
@@ -1481,6 +1840,44 @@ def test_pyside_recording_start_failure_shows_audio_device_warning(tmp_path: Pat
     window.window.close()
     app.processEvents()
 
+def test_pyside_begin_uses_selected_setup_system_audio_source(tmp_path: Path, monkeypatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    monkeypatch.setattr(pyside_interview_app.sys, "platform", "win32")
+    monkeypatch.setattr(pyside_interview_app, "resolve_default_windows_system_device", lambda: "Default Cable")
+    monkeypatch.setattr(
+        pyside_interview_app,
+        "resolve_default_windows_microphone_device",
+        lambda: "Default Microphone",
+    )
+    import interview_audio_recorder
+
+    recording_kwargs: dict[str, object] = {}
+
+    def capture_then_fail(**kwargs: object) -> object:
+        recording_kwargs.update(kwargs)
+        raise RuntimeError("test stop")
+
+    monkeypatch.setattr(interview_audio_recorder, "start_recording", capture_then_fail)
+    window.home_audio_source_combo.clear()
+    window.home_audio_source_combo.addItem("Selected Cable", "Selected Cable")
+    window.home_candidate_input.setText("Latoya Nugent")
+
+    window._begin_selected_interview()
+
+    assert recording_kwargs["win_sys_device"] == "Selected Cable"
+    assert window.recording_system_device == "Selected Cable"
+    window.window.close()
+    app.processEvents()
+
 def test_pyside_intro_audio_check_warns_on_blank_transcription(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -1503,6 +1900,46 @@ def test_pyside_intro_audio_check_warns_on_blank_transcription(tmp_path: Path, m
     assert warning is not None
     assert "No speech was transcribed from the first 15 seconds" in warning.text()
     assert "Record the interview in Zoom" in warning.text()
+    window.window.close()
+    app.processEvents()
+
+def test_pyside_intro_audio_preflight_warns_without_blocking_active_interview(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    from interview_audio_preflight import AudioPreflightResult
+
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    monkeypatch.setattr(window, "_start_pyside_interview_recording", lambda: None)
+    window.home_candidate_input.setText("Latoya Nugent")
+    window._begin_selected_interview()
+    result = AudioPreflightResult(
+        microphone_ready=True,
+        system_audio_ready=False,
+        transcription_ready=False,
+        warning=(
+            "Audio check did not verify candidate/system audio, candidate transcription. "
+            "Check audio settings and record the interview in Zoom as a backup."
+        ),
+    )
+
+    window._apply_pyside_intro_audio_preflight_result(result)
+    app.processEvents()
+
+    warning = window.interview_tabs.widget(2).findChild(qt_widgets.QLabel, "PySideRecordingWarning")
+    assert warning is not None
+    assert "candidate/system audio" in warning.text()
+    assert window.session is not None
+    assert window.session.active_question() is not None
     window.window.close()
     app.processEvents()
 
@@ -1543,7 +1980,6 @@ def test_pyside_system_audio_route_check_warns_when_capture_is_silent(tmp_path: 
     monkeypatch.setattr(window, "_start_pyside_interview_recording", lambda: None)
     window.home_candidate_input.setText("Latoya Nugent")
     window._begin_selected_interview()
-    window.live_notes.setPlainText("Intro read.")
     window.session.save_answer_and_advance(notes="Intro read.")
     window.session_index = window.session.current_index
     window._render_live_question_page()
@@ -1757,7 +2193,7 @@ def test_pyside_offer_review_defaults_are_prefilled_from_completed_session(tmp_p
     assert defaults["next_action"] == "Generate Offer"
 
 
-def test_pyside_back_then_next_resets_answer_timestamps(tmp_path: Path, monkeypatch) -> None:
+def test_pyside_back_then_next_preserves_answer_start_and_moves_boundary(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
     app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
@@ -1783,7 +2219,7 @@ def test_pyside_back_then_next_resets_answer_timestamps(tmp_path: Path, monkeypa
     window._save_and_next()
 
     assert session.flow_time_marks == [
-        {"flow_index": 1, "t": 12.0, "end_t": 12.0},
+        {"flow_index": 1, "t": 2.0, "end_t": 12.0},
         {"flow_index": 2, "t": 12.0},
     ]
     window.window.close()
@@ -1842,48 +2278,25 @@ def test_pyside_review_screen_shows_interviewer_closeout_without_slow_outputs(tm
 
     review_page = window.interview_tabs.widget(3)
     visible_text = _widget_text(review_page)
-    assert "Interviewer Closeout" in visible_text
+    assert "Interview Complete" in visible_text
     assert "Latoya Nugent" in visible_text
     assert "Palmdale" in visible_text
-    assert "Interview saved" in visible_text
-    assert "Report files are being prepared in the background" in visible_text
-    assert "Manual Score:" in visible_text
-    assert "Determination:" in visible_text
-    assert "Next Step:" in visible_text
-    assert "Captured 3 of 3 configured interview responses." in visible_text
-    assert "Send candidate to director interview if required by your hiring workflow." in visible_text
+    assert "Finalizing interview" in visible_text
+    assert "Score Summary" in visible_text
+    assert "Captured Transcripts" in visible_text
     assert "DeepSeek" not in visible_text
     assert "AI" not in visible_text
-    assert "Candidate transcript should stay hidden." not in visible_text
-    assert "Transcript text should not render." not in visible_text
+    assert "Transcript text should not render." in visible_text
 
-    needs = review_page.findChild(qt_widgets.QListWidget, "PySideReviewNeedsList")
-    assert needs is not None
-    assert [needs.item(row).text() for row in range(needs.count())] == [
-        "Missing score: Empathy",
-        "Skipped: Non-scored question",
-    ]
-
-    table = review_page.findChild(qt_widgets.QTableWidget, "PySideReviewQuestionTable")
+    table = review_page.findChild(qt_widgets.QTableWidget, "CompletedInterviewTraitTable")
     assert table is not None
-    assert table.columnCount() == 5
-    assert [table.horizontalHeaderItem(column).text() for column in range(5)] == [
-        "Question",
-        "Score",
-        "Notes",
-        "Transcript",
-        "Flags",
-    ]
-    assert table.item(2, 0).text() == "Empathy"
-    rating = table.cellWidget(2, 1)
-    assert isinstance(rating, qt_widgets.QSpinBox)
-    assert rating.value() == 0
-    assert table.item(2, 2).text() == "Yes"
-    assert table.item(2, 3).text() == "Transcript text should not render."
+    assert table.columnCount() == 4
+    assert table.item(0, 0).text() == "Empathy"
+    assert table.item(0, 1).text() == "Missing"
     window.window.close()
     app.processEvents()
 
-def test_pyside_review_screen_allows_rating_change_from_transcript(tmp_path: Path, monkeypatch) -> None:
+def test_pyside_completed_review_exposes_transcript_detail_for_rating_change(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
     app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
@@ -1905,21 +2318,13 @@ def test_pyside_review_screen_allows_rating_change_from_transcript(tmp_path: Pat
 
     window._render_review_page()
     review_page = window.interview_tabs.widget(3)
-    rating = review_page.findChild(qt_widgets.QSpinBox, "PySideReviewRating_trait_1")
-    assert rating is not None
-    assert rating.value() == 0
-    assert "Candidate described calming a child" in _table_text(
-        review_page.findChild(qt_widgets.QTableWidget, "PySideReviewQuestionTable"),
+    card = next(
+        card
+        for card in review_page.findChildren(qt_widgets.QFrame, "CompletedTranscriptCard")
+        if card.property("questionId") == "trait_1"
     )
-
-    rating.setValue(5)
-    app.processEvents()
-
-    assert session.answers["trait_1"]["score"] == "5"
-    assert "Determination: Hire" in _widget_text(review_page)
-    needs = review_page.findChild(qt_widgets.QListWidget, "PySideReviewNeedsList")
-    assert needs is not None
-    assert "Missing score: Empathy" not in [needs.item(row).text() for row in range(needs.count())]
+    assert "Candidate described calming a child" in _widget_text(card)
+    assert card.findChild(qt_widgets.QPushButton, "CompletedTranscriptDetail") is not None
     window.window.close()
     app.processEvents()
 
@@ -2190,29 +2595,38 @@ def test_pyside_last_question_footer_finalizes_and_shows_complete_home(tmp_path:
     while window.session is not None and window.session.active_question() is not None:
         question = window.session.active_question()
         buttons = {
-            button.text(): button
+            button.property("pyside_live_footer_action"): button
             for button in window.window.findChildren(qt_widgets.QPushButton)
             if button.property("pyside_live_footer_action")
         }
-        assert "Exit" in buttons
+        assert "exit" in buttons
         if question == window.session._workflow_items()[-1]:
-            assert "Finalize" in buttons
+            assert "finalize" in buttons
             if question.score_cards:
                 window.score_group.buttons()[0].setChecked(True)
-            buttons["Finalize"].click()
+            buttons["finalize"].click()
             break
-        assert "Next" in buttons
-        window.live_notes.setPlainText(f"notes for {question.question_id}")
+        assert "next" in buttons
+        notes = window.interview_tabs.widget(2).findChild(qt_widgets.QTextEdit, "LiveInterviewerNotes")
+        if notes is not None:
+            notes.setPlainText(f"notes for {question.question_id}")
         if question.score_cards:
             window.score_group.buttons()[0].setChecked(True)
-        buttons["Next"].click()
+        buttons["next"].click()
 
     app.processEvents()
 
     assert finalized == [True]
     assert window.interview_tabs.currentIndex() == 3
-    assert "Interviewer Closeout" in window.interview_tabs.currentWidget().findChild(qt_widgets.QLabel, "Title").text()
-    assert any(button.text() == "Home" for button in window.window.findChildren(qt_widgets.QPushButton))
+    assert window.interview_tabs.currentWidget().findChild(qt_widgets.QLabel, "CompletedInterviewTitle").text() == "Interview Complete"
+    assert window.interview_tabs.currentWidget().findChild(
+        qt_widgets.QLabel, "CompletedInterviewStatus"
+    ).text() == "Finalizing interview"
+    finish = window.interview_tabs.currentWidget().findChild(
+        qt_widgets.QPushButton, "CompletedInterviewFinish"
+    )
+    assert finish is not None
+    assert not finish.isEnabled()
     window.window.close()
     app.processEvents()
 
@@ -2235,7 +2649,6 @@ def test_pyside_next_marks_new_question_at_click_boundary(tmp_path: Path, monkey
     window._begin_selected_interview()
     window.recording_started_monotonic = 100.0
     window._render_live_question_page()
-    window.live_notes.setPlainText("Intro read.")
     window._save_and_next()
 
     marks = window.session.flow_time_marks
@@ -2268,17 +2681,14 @@ def test_pyside_review_table_shows_generated_transcripts(tmp_path: Path) -> None
 
     window._render_review_page()
 
-    table = window.window.findChild(qt_widgets.QTableWidget, "PySideReviewQuestionTable")
-    headers = [table.horizontalHeaderItem(index).text() for index in range(table.columnCount())]
-    assert "Transcript" in headers
-    transcript_column = headers.index("Transcript")
-    transcript_values = [
-        table.item(row, transcript_column).text()
-        for row in range(table.rowCount())
-        if table.item(row, transcript_column) is not None
-    ]
-    assert "Generated custom transcript." in transcript_values
-    assert "Generated scored transcript." in transcript_values
+    review_page = window.interview_tabs.widget(3)
+    transcript_text = " ".join(
+        label.text()
+        for card in review_page.findChildren(qt_widgets.QFrame, "CompletedTranscriptCard")
+        for label in card.findChildren(qt_widgets.QLabel)
+    )
+    assert "Generated custom transcript." in transcript_text
+    assert "Generated scored transcript." in transcript_text
     window.window.close()
     app.processEvents()
 
@@ -2324,7 +2734,9 @@ def test_pyside_last_scored_question_routes_to_review_before_transcription(tmp_p
 
     while window.session is not None and window.session.active_question() is not None:
         question = window.session.active_question()
-        window.live_notes.setPlainText(f"notes for {question.question_id}")
+        notes = window.interview_tabs.widget(2).findChild(qt_widgets.QTextEdit, "LiveInterviewerNotes")
+        if notes is not None:
+            notes.setPlainText(f"notes for {question.question_id}")
         if question.score_cards:
             window.score_group.buttons()[0].setChecked(True)
         if question == window.session._workflow_items()[-1]:
@@ -2344,7 +2756,7 @@ def test_pyside_last_scored_question_routes_to_review_before_transcription(tmp_p
 
     assert stopped == []
     assert window.interview_tabs.currentIndex() == 3
-    assert "Interviewer Closeout" in window.interview_tabs.currentWidget().findChild(qt_widgets.QLabel, "Title").text()
+    assert window.interview_tabs.currentWidget().findChild(qt_widgets.QLabel, "CompletedInterviewTitle").text() == "Interview Complete"
     assert window.recording_session is not None
     window.window.close()
     app.processEvents()
@@ -2667,9 +3079,17 @@ def test_pyside_review_table_updates_transcript_when_finalize_worker_reports_tra
         }
     window.session.current_index = len(window.session._workflow_items())
     window._render_review_page()
-    table = window.window.findChild(qt_widgets.QTableWidget, "PySideReviewQuestionTable")
-    trait_row = next(row for row in range(table.rowCount()) if table.cellWidget(row, 1) is not None)
-    assert table.item(trait_row, 3).text() == "Not generated"
+    review_page = window.interview_tabs.widget(3)
+    trait_card = next(
+        card
+        for card in review_page.findChildren(qt_widgets.QFrame, "CompletedTranscriptCard")
+        if card.property("category") == "Scored"
+    )
+    question_id = str(trait_card.property("questionId"))
+    trait_row = next(
+        index for index, item in enumerate(window.session._workflow_items()) if item.question_id == question_id
+    )
+    assert "No candidate transcript captured" in _widget_text(trait_card)
 
     messages: queue.Queue[dict[str, Any]] = queue.Queue()
     window.session.flow_candidate_transcripts[trait_row] = "Candidate described a calm redirect."
@@ -2679,7 +3099,13 @@ def test_pyside_review_table_updates_transcript_when_finalize_worker_reports_tra
     window._poll_pyside_finalize_worker(messages, fake_timer)
     app.processEvents()
 
-    assert table.item(trait_row, 3).text() == "Candidate described a calm redirect."
+    refreshed_page = window.interview_tabs.widget(3)
+    refreshed_card = next(
+        card
+        for card in refreshed_page.findChildren(qt_widgets.QFrame, "CompletedTranscriptCard")
+        if card.property("questionId") == question_id
+    )
+    assert "Candidate described a calm redirect." in _widget_text(refreshed_card)
     window.window.close()
     app.processEvents()
 
@@ -2710,7 +3136,7 @@ def _write_two_trait_rubric(tmp_path: Path) -> Path:
     rubric_path.write_text(json.dumps(rubric), encoding="utf-8")
     return rubric_path
 
-def test_pyside_review_apply_scores_updates_history_and_queues_director_referral(
+def test_pyside_completed_review_has_no_inline_score_update_or_referral_side_effect(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -2752,36 +3178,12 @@ def test_pyside_review_apply_scores_updates_history_and_queues_director_referral
     window._review_history_id = "hist-review"
     window._render_review_page()
 
-    trait_rows = [row for row in range(window.review_question_table.rowCount()) if window.review_question_table.cellWidget(row, 1)]
-    first_rating = window.review_question_table.cellWidget(trait_rows[0], 1)
-    first_rating.setValue(4)
-    app.processEvents()
-    window.window.findChild(qt_widgets.QPushButton, "PySideReviewApplyScoresButton").click()
-    app.processEvents()
-
-    row = InterviewHistoryStore(history_path).load()[0]
-    assert row["outcome"] == "Borderline"
-    assert row["review_scores"]["trait_1"] == "4"
-    assert window.review_status_label.text().startswith("Scores updated:")
-    queued = pyside_interview_app._pop_staffing_referral_queue_for_school("Palmdale", queue_path=referral_queue_path)
-    assert queued[0]["_operation"] == "director_candidate_referral"
-    assert queued[0]["history_id"] == "hist-review"
-    assert queued[0]["interviewer_outcome"] == "borderline"
-
-    refreshed_trait_rows = [
-        row for row in range(window.review_question_table.rowCount()) if window.review_question_table.cellWidget(row, 1)
-    ]
-    refreshed_first_rating = window.review_question_table.cellWidget(refreshed_trait_rows[0], 1)
-    refreshed_first_rating.setValue(3)
-    app.processEvents()
-    window.window.findChild(qt_widgets.QPushButton, "PySideReviewApplyScoresButton").click()
-    app.processEvents()
-
-    updated_row = InterviewHistoryStore(history_path).load()[0]
-    assert updated_row["outcome"] == "No Hire"
-    queued = pyside_interview_app._pop_staffing_referral_queue_for_school("Palmdale", queue_path=referral_queue_path)
-    assert queued[-1]["_operation"] == "director_candidate_referral_dismissal"
-    assert queued[-1]["history_id"] == "hist-review"
+    table = window.window.findChild(qt_widgets.QTableWidget, "CompletedInterviewTraitTable")
+    assert table is not None
+    assert window.window.findChild(qt_widgets.QPushButton, "PySideReviewApplyScoresButton") is None
+    assert pyside_interview_app._pop_staffing_referral_queue_for_school(
+        "Palmdale", queue_path=referral_queue_path
+    ) == []
     window.window.close()
     app.processEvents()
 
@@ -8688,12 +9090,17 @@ def test_pyside_update_permit_uses_guided_dialog_and_saves_people_status(
     window.window.close()
     app.processEvents()
 
-def test_pyside_staffing_dashboard_visual_render_uses_real_seed_from_any_cwd(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.pyside_gui
+@pytest.mark.visual_inspection
+def test_pyside_staffing_dashboard_real_seed_visual_scenario(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    visual_test_databases: VisualTestDatabaseRegistry,
 ) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
     app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    configure_visual_test_app(app)
     repo_root = Path(__file__).resolve().parents[1]
     seed_path = repo_root / "config" / "staffing_seed.json"
     seed_data = json.loads(seed_path.read_text(encoding="utf-8"))
@@ -8707,7 +9114,8 @@ def test_pyside_staffing_dashboard_visual_render_uses_real_seed_from_any_cwd(
         for school in seed_data["schools"]
         for row in school.get("support_rows", [])
     )
-    db_path = tmp_path / "staffing.sqlite3"
+    db_path = visual_test_databases.database("staffing_dashboard.sqlite3")
+    visual_test_databases.expect_seeded(db_path, table="assignments")
     partial_store = pyside_interview_app.StaffingStore(db_path)
     partial_store.initialize()
     partial_store.seed_assignment(
@@ -8720,10 +9128,23 @@ def test_pyside_staffing_dashboard_visual_render_uses_real_seed_from_any_cwd(
     )
     monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", db_path)
     monkeypatch.chdir(repo_root / "src")
+    history_path = visual_test_databases.database("staffing_interview_history.sqlite3")
+    visual_test_databases.expect_seeded(history_path, table="interview_history")
+    InterviewHistoryStore(history_path).append(
+        {
+            "history_id": "staffing-visual-fixture",
+            "candidate_name": "Ghjypq Avery",
+            "school": "Hawthorne",
+            "position": "Teacher",
+            "interview_date": "2026-07-15",
+            "outcome": "Hire",
+            "score": "100.0%",
+        }
+    )
     model = build_interview_redesign_model(
         rubric_path=_write_test_rubric(tmp_path),
         overrides_path=_write_test_overrides(tmp_path),
-        history_path=tmp_path / "interview_history.sqlite3",
+        history_path=history_path,
         school_options=["Hawthorne"],
     )
 

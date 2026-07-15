@@ -28,6 +28,23 @@ modules:
     - interview_app_history_actions
     - interview_app_session_manager
     - interview_ml_dataset_db
+  interview_audio_preflight:
+    path: src/interview_audio_preflight.py
+    depends_on: []
+  pyside_live_interview:
+    path: src/pyside_live_interview.py
+    depends_on:
+    - pyside_interview_components
+    - PySide6
+  pyside_interview_components:
+    path: src/pyside_interview_components.py
+    depends_on:
+    - PySide6
+  pyside_completed_interview:
+    path: src/pyside_completed_interview.py
+    depends_on:
+    - pyside_interview_components
+    - PySide6
   deepseek_finalize_worker:
     path: src/deepseek_finalize_worker.py
     depends_on:
@@ -154,6 +171,10 @@ modules:
     - dashboard_v2_ui
     - data_store
     - interview_runtime
+    - interview_audio_preflight
+    - pyside_completed_interview
+    - pyside_interview_components
+    - pyside_live_interview
     - hiring_pipeline
     - hiring_workspace_v2
     - notification_service
@@ -414,7 +435,10 @@ module_metadata:
     - Offer generation resolves school-specific full-time or part-time templates and output folders from school_offer_settings_json, requires Mr. or Ms. title selection, preserves existing offers with revision suffixes, and prefills editable shift times from the exact school-scoped completed Director Staffing v2 hire decision.
     - Finalize progress is user-closable and does not cancel background transcription or finalize work.
     - Finalize progress renders sanitized task rows with right-side statuses limited to Processing, Finished, Timed-out, or Queued.
-    - Home and Candidates history tables refresh after finalize, open the basic notes document immediately, and expose history Generate as the only GUI path that launches detached DeepSeek processing.
+    - Completed overview uses existing ScoringEngine totals, marks only ratings of 5 as strengths, marks ratings of 3 or below as review items, treats ratings of 4 as neutral, and shows an explicit empty state when either summary has no score-derived items.
+    - Completed overview core finalization never starts or monitors DeepSeek; history Generate remains the only DeepSeek launch path.
+    - Completed overview edits update the existing history artifact set idempotently without duplicate history, application, referral, or notification records.
+    - Candidates-owned pipeline/history refreshes after finalize, opens the basic notes document immediately, and exposes history Generate as the only GUI path that launches detached DeepSeek processing; Interviews contains setup/live/review only.
   scoring_reporting:
     constraints:
     - Referral payload document attachment path must resolve from interview_notes_document_path.

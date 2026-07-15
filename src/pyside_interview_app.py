@@ -10,6 +10,7 @@ import shutil
 import sqlite3
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 import wave
@@ -24,7 +25,7 @@ from types import SimpleNamespace
 from typing import Any, Callable, Sequence
 
 from admin_studio import DEFAULT_DEEPSEEK_MODEL, DEEPSEEK_MODEL_CHOICES, AdminStudio, AdminStudioPaths
-from candidate_report import CandidateReportRepository
+from candidate_report import CandidateReportRepository, build_candidate_report_snapshot
 from docx import Document
 from data_store import (
     InterviewHistoryStore,
@@ -51,6 +52,7 @@ from interview_runtime import (
     map_indeed_transcript_to_questions,
     load_candidate_segments,
     map_segments_to_flow_indices,
+    list_windows_dshow_audio_devices,
     parse_indeed_transcript_text,
     regenerate_interview_notes_job,
     resolve_deepseek_regeneration_job_path,
@@ -58,6 +60,23 @@ from interview_runtime import (
     resolve_default_windows_system_device,
     resolve_runtime,
     _local_deepseek_settings_source,
+)
+from interview_audio_preflight import AudioPreflightResult, evaluate_audio_preflight, recent_wav_signal_level
+from pyside_live_interview import (
+    LiveInterviewCallbacks,
+    LiveInterviewPage,
+    LiveInterviewViewModel,
+    LiveQuestionSpec,
+    LiveRatingOption,
+    derive_live_stages,
+)
+from pyside_completed_interview import (
+    CompletedInterviewCallbacks,
+    CompletedInterviewPage,
+    CompletedInterviewViewModel,
+    CompletionState,
+    build_completed_interview_view_model,
+    build_completed_transcript_export,
 )
 from hiring_pipeline import (
     HiringOfferNotificationAdapter,
@@ -137,7 +156,14 @@ PYSIDE_FINALIZE_PROGRESS_TASKS = (
     "Queueing DeepSeek processing",
     *DEFAULT_DEEPSEEK_PROGRESS_TASKS,
 )
+PYSIDE_CORE_FINALIZE_PROGRESS_TASKS = (
+    "Stopping recording and transcribing",
+    "Building interview notes",
+    "Saving interview artifacts",
+)
 PYSIDE_INTRO_AUDIO_CHECK_DELAY_MS = 15000
+LIVE_TRANSCRIPT_INTERVAL_MS = 10000
+LIVE_AUDIO_INTERVAL_MS = 500
 
 
 @dataclass(frozen=True)
@@ -190,6 +216,7 @@ class ReadinessCheck:
 class ScoreCard:
     label: str
     description: str
+    sample_answer: str = ""
 
 
 @dataclass(frozen=True)
@@ -203,6 +230,9 @@ class FlowQuestion:
     score_cards: list[ScoreCard] = field(default_factory=list)
     quick_actions: list[str] = field(default_factory=list)
     disqualifiers: list[str] = field(default_factory=list)
+    stage: str = ""
+    priority: str = ""
+    weight: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -266,6 +296,8 @@ class PySideInterviewSession:
     qualification: dict[str, Any] = field(default_factory=dict)
     flow_time_marks: list[dict[str, Any]] = field(default_factory=list)
     flow_candidate_transcripts: dict[int, str] = field(default_factory=dict)
+    flow_live_transcripts: dict[int, str] = field(default_factory=dict)
+    flow_transcript_overrides: dict[int, str] = field(default_factory=dict)
     flow_recordings: dict[int, dict[str, Any]] = field(default_factory=dict)
     application_id: str = ""
 
@@ -281,6 +313,8 @@ class PySideInterviewSession:
         self.qualification = {}
         self.flow_time_marks = []
         self.flow_candidate_transcripts = {}
+        self.flow_live_transcripts = {}
+        self.flow_transcript_overrides = {}
         self.flow_recordings = {}
         self.save_draft()
 
@@ -341,6 +375,41 @@ class PySideInterviewSession:
 
     def skip_active_question(self, *, notes: str = "", quick_actions: Sequence[str] = ()) -> None:
         self.save_answer_and_advance(notes=notes, score="", quick_actions=quick_actions, skipped=True)
+
+    def append_live_transcript(self, flow_index: int, text: str) -> None:
+        index = int(flow_index)
+        clean = " ".join(str(text or "").split()).strip()
+        if not clean:
+            return
+        target = self.flow_transcript_overrides if index in self.flow_transcript_overrides else self.flow_live_transcripts
+        existing = str(target.get(index, "") or "").strip()
+        target[index] = f"{existing} {clean}".strip()
+        self.save_draft()
+
+    def replace_live_transcript(self, flow_index: int, text: str) -> None:
+        index = int(flow_index)
+        self.flow_transcript_overrides[index] = " ".join(str(text or "").split()).strip()
+        self.save_draft()
+
+    def live_transcript(self, flow_index: int) -> str:
+        index = int(flow_index)
+        if index in self.flow_transcript_overrides:
+            return str(self.flow_transcript_overrides[index] or "").strip()
+        return str(self.flow_live_transcripts.get(index, "") or "").strip()
+
+    def apply_canonical_transcripts(self, canonical: dict[int, str]) -> None:
+        indices = set(canonical) | set(self.flow_live_transcripts) | set(self.flow_transcript_overrides)
+        resolved: dict[int, str] = {}
+        for index in indices:
+            if index in self.flow_transcript_overrides:
+                text = self.flow_transcript_overrides[index]
+            else:
+                text = str(canonical.get(index, "") or "").strip() or self.flow_live_transcripts.get(index, "")
+            clean = str(text or "").strip()
+            if clean:
+                resolved[int(index)] = clean
+        self.flow_candidate_transcripts = resolved
+        self.save_draft()
 
     def update_review_score(self, question_id: str, score: int | str | None) -> None:
         target_id = str(question_id).strip()
@@ -618,6 +687,9 @@ class PySideInterviewSession:
                 "report_path": str(out_path),
             },
         )
+        report_repository = CandidateReportRepository(Path(history_path))
+        if report_repository.exists(history_id):
+            report_repository.sync_report_path(history_id, Path(out_path))
         history_row = next(
             (
                 row
@@ -666,6 +738,84 @@ class PySideInterviewSession:
             "history_id": history_id,
         }
 
+    def update_completed_artifacts(
+        self,
+        *,
+        history_id: str,
+        base_dir: Path = DEFAULT_BASE_DIR,
+        history_path: Path = INTERVIEW_HISTORY_PATH,
+    ) -> dict[str, Any]:
+        key = str(history_id or "").strip()
+        if not key:
+            raise ValueError("Completed interview history id is required.")
+        adapter = _PySideFinalizeAdapter(self, base_dir=Path(base_dir), history_path=Path(history_path))
+        scoring = ScoringEngine.evaluate(
+            adapter._rubric_with_question_overrides(), adapter.state.track, adapter.state.trait_inputs
+        )
+        context = build_finalize_context(adapter, scoring, [], self._transcript_metadata(), run_deepseek=False)
+        existing = next(
+            (row for row in adapter.history_store.load() if adapter.history_store.build_row_key(row) == key),
+            None,
+        )
+        if existing is None:
+            raise ValueError("Completed interview history row was not found.")
+        existing_path = Path(
+            str(existing.get("saved_report_path") or existing.get("report_path") or existing.get("interview_notes_path") or "")
+        )
+        output_dir = existing_path.parent if existing_path.suffix.casefold() == ".docx" else adapter._interview_notes_output_dir()
+        out_path = DocxExporter(output_dir).export_basic_interview_notes(
+            adapter._rubric_with_question_overrides(), context.payload, scoring
+        )
+        percent = float(scoring.get("percent_of_max", 0.0) or 0.0)
+        percent_label = str(scoring.get("percent_of_max_label") or f"{percent}%")
+        outcome = str(scoring.get("outcome", "Incomplete") or "Incomplete")
+        updates = {
+            "answers": self.answers,
+            "review_scores": {
+                question_id: str(answer.get("score") or "")
+                for question_id, answer in self.answers.items()
+                if isinstance(answer, dict) and str(answer.get("kind") or "") == "trait"
+            },
+            "flow_candidate_transcripts": {
+                str(index): text for index, text in sorted(self.flow_candidate_transcripts.items())
+            },
+            "scoring": scoring,
+            "interview_score": percent,
+            "score": percent_label,
+            "percent_of_max": percent,
+            "percent_of_max_label": percent_label,
+            "determination": outcome,
+            "outcome": outcome,
+            "status": outcome,
+            "interview_status": outcome,
+            "next_action": _next_action_for_outcome(outcome),
+            "saved_report_path": str(out_path),
+            "interview_notes_path": str(out_path),
+            "notes_path": str(out_path),
+            "report_path": str(out_path),
+            "completed_overview_updated_at": datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
+        }
+        if not adapter.history_store.update_row(key, updates):
+            raise ValueError("Completed interview history row was not found.")
+        merged = {**existing, **updates}
+        snapshot = build_candidate_report_snapshot(context.payload, scoring, merged, report_path=str(out_path))
+        repository = CandidateReportRepository(Path(history_path))
+        if repository.exists(key):
+            record = repository.load_visible_version(key, role="admin")
+            if record.snapshot != snapshot:
+                repository.finalize(
+                    key,
+                    snapshot,
+                    expected_row_version=record.row_version,
+                    actor="Admin User",
+                    role="admin",
+                    reason="Completed interview overview update",
+                    force=True,
+                )
+            repository.sync_report_path(key, Path(out_path))
+        self.save_draft()
+        return {"history_id": key, "out_path": str(out_path), "scoring": scoring}
+
     def _transcript_metadata(self) -> dict[str, Any]:
         total = len(self._workflow_items())
         missing: list[int] = []
@@ -698,6 +848,8 @@ class PySideInterviewSession:
             "answers": self.answers,
             "flow_time_marks": self.flow_time_marks,
             "flow_candidate_transcripts": {str(key): value for key, value in self.flow_candidate_transcripts.items()},
+            "flow_live_transcripts": {str(key): value for key, value in self.flow_live_transcripts.items()},
+            "flow_transcript_overrides": {str(key): value for key, value in self.flow_transcript_overrides.items()},
             "flow_recordings": {str(key): value for key, value in self.flow_recordings.items()},
         }
 
@@ -781,6 +933,12 @@ class PySideInterviewSession:
         flow_candidate_transcripts = payload.get("flow_candidate_transcripts", {})
         if not isinstance(flow_candidate_transcripts, dict):
             flow_candidate_transcripts = {}
+        flow_live_transcripts = payload.get("flow_live_transcripts", {})
+        if not isinstance(flow_live_transcripts, dict):
+            flow_live_transcripts = {}
+        flow_transcript_overrides = payload.get("flow_transcript_overrides", {})
+        if not isinstance(flow_transcript_overrides, dict):
+            flow_transcript_overrides = {}
         flow_recordings = payload.get("flow_recordings", {})
         if not isinstance(flow_recordings, dict):
             flow_recordings = {}
@@ -799,6 +957,16 @@ class PySideInterviewSession:
             flow_candidate_transcripts={
                 int(key): str(value)
                 for key, value in flow_candidate_transcripts.items()
+                if str(key).lstrip("-").isdigit()
+            },
+            flow_live_transcripts={
+                int(key): str(value)
+                for key, value in flow_live_transcripts.items()
+                if str(key).lstrip("-").isdigit()
+            },
+            flow_transcript_overrides={
+                int(key): str(value)
+                for key, value in flow_transcript_overrides.items()
                 if str(key).lstrip("-").isdigit()
             },
             flow_recordings={
@@ -1478,12 +1646,19 @@ def _ordered_traits(loader: RubricLoader, store: QuestionOverridesStore, track_k
 
 def _score_cards(trait: dict[str, Any]) -> list[ScoreCard]:
     descriptors = trait.get("descriptors", {}) or {}
+    sample_answers = trait.get("sample_answers", {}) or {}
     cards: list[ScoreCard] = []
     for score in ["1", "2", "3", "4", "5"]:
         description = str(descriptors.get(score, "")).strip()
         if not description:
             description = f"Score {score}"
-        cards.append(ScoreCard(label=score, description=description))
+        cards.append(
+            ScoreCard(
+                label=score,
+                description=description,
+                sample_answer=str(sample_answers.get(score, "") or "").strip(),
+            )
+        )
     return cards
 
 
@@ -1514,6 +1689,9 @@ def _flow_question_for_trait(
         score_cards=_score_cards(trait),
         quick_actions=list(QUICK_ACTIONS),
         disqualifiers=disqualifiers,
+        stage="scored",
+        priority=str(trait.get("priority", "") or "").strip(),
+        weight=float(trait.get("weight", 0) or 0),
     )
 
 
@@ -1991,6 +2169,40 @@ def _apply_styles(app: Any) -> None:
         QWidget#HiringV2InterviewGuide {
             background: #f8fafc;
         }
+        QScrollArea#HiringV2NewInterviewSetup,
+        QScrollArea#HiringV2NewInterviewSetup > QWidget > QWidget {
+            background: #f8fafc;
+        }
+        QLabel#HiringV2SetupSubtitle,
+        QLabel#HiringV2SetupAudioNote {
+            color: #64748b;
+        }
+        QFrame#HiringV2SetupProgress {
+            background: transparent;
+            border: 0;
+        }
+        QLabel#HiringV2SetupProgressBadge {
+            color: #ffffff;
+            background: #8792a2;
+            border-radius: 14px;
+            font-weight: 700;
+        }
+        QLabel#HiringV2SetupProgressBadge[activeStep="true"] {
+            background: #2563eb;
+        }
+        QLabel#HiringV2SetupProgressLabel {
+            color: #64748b;
+            font-weight: 500;
+        }
+        QLabel#HiringV2SetupProgressLabel[activeStep="true"] {
+            color: #2563eb;
+            font-weight: 700;
+        }
+        QFrame#HiringV2SetupProgressConnector,
+        QFrame#HiringV2SetupDivider {
+            background: #d8dee8;
+            border: 0;
+        }
         QFrame#HiringV2CandidateSetupCard,
         QFrame#HiringV2CapturePreflight,
         QFrame#HiringV2StructuredResponseCard,
@@ -1998,6 +2210,46 @@ def _apply_styles(app: Any) -> None:
             background: #ffffff;
             border: 1px solid #e2e8f0;
             border-radius: 10px;
+        }
+        QFrame#HiringV2CandidateSetupCard {
+            border-radius: 11px;
+        }
+        QLabel#HiringV2SetupFieldLabel,
+        QLabel#HiringV2SetupStatusName {
+            color: #23324a;
+        }
+        QLabel#HiringV2SetupMicrophoneStatus,
+        QLabel#HiringV2SetupSystemAudioStatus,
+        QLabel#HiringV2SetupTranscriptStatus {
+            color: #b45309;
+        }
+        QLabel#HiringV2SetupMicrophoneStatus[readinessState="ready"],
+        QLabel#HiringV2SetupSystemAudioStatus[readinessState="ready"],
+        QLabel#HiringV2SetupTranscriptStatus[readinessState="ready"] {
+            color: #07913f;
+        }
+        QLabel#HiringV2SetupMicrophoneStatus[readinessState="failed"],
+        QLabel#HiringV2SetupSystemAudioStatus[readinessState="failed"],
+        QLabel#HiringV2SetupTranscriptStatus[readinessState="failed"] {
+            color: #b91c1c;
+        }
+        QLabel#HiringV2SetupValidation {
+            color: #991b1b;
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            border-radius: 7px;
+            padding: 8px;
+        }
+        QPushButton#HiringV2SetupCancel,
+        QPushButton#HiringV2SetupBegin {
+            font-size: 15px;
+            font-weight: 650;
+        }
+        QPushButton#HiringV2SetupBegin {
+            color: #ffffff;
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #275eea, stop:1 #0b63f6);
+            border: 1px solid #2563eb;
+            border-radius: 8px;
         }
         QFrame#HiringV2RubricCard:focus-within {
             border: 2px solid #2563eb;
@@ -2191,6 +2443,9 @@ class PySideInterviewWindow:
         self._pyside_intro_audio_check_queue: queue.Queue[dict[str, Any]] | None = None
         self._pyside_intro_audio_check_timer: Any | None = None
         self._pyside_finalize_running = False
+        self._completed_finalize_error = ""
+        self._completed_artifacts_dirty = False
+        self._pyside_finalize_tracks_deepseek = False
         self._pyside_finalize_progress_step = ""
         self._pyside_finalize_progress_tasks: list[dict[str, str]] = []
         self.pyside_finalize_progress_dialog: Any | None = None
@@ -2209,6 +2464,11 @@ class PySideInterviewWindow:
         self._overwrite_next_live_boundary_timestamp = False
         self._startup_notifications_scheduled = False
         self._recording_interface_preload_started = False
+        self._live_transcription_lock = threading.Lock()
+        self._live_transcript_queue: queue.Queue[dict[str, Any]] | None = None
+        self._live_transcript_timer: Any | None = None
+        self._live_transcript_poll_timer: Any | None = None
+        self._live_audio_timer: Any | None = None
         class ResponsiveMainWindow(QtWidgets.QMainWindow):
             def resize(inner_self, *args: Any) -> None:
                 super().resize(*args)
@@ -2323,6 +2583,8 @@ class PySideInterviewWindow:
             dashboard.set_navigation_mode("full")
             self.hiring_v2_router.show_interview()
             self.interview_tabs.setCurrentIndex(0)
+            if self.session is None:
+                self._reset_new_interview_setup()
 
         def resume_interview(application: Any) -> None:
             new_interview()
@@ -2389,21 +2651,68 @@ class PySideInterviewWindow:
                 "import_transcript": import_transcript,
             },
         )
+        candidates_workspace = self._hiring_candidates_workspace()
         self.hiring_v2_router = HiringInterviewGuidePage(
             QtWidgets=self.QtWidgets,
-            pipeline_widget=self.hiring_v2_page.widget,
+            pipeline_widget=None,
             interview_widget=guide_widget,
+            initial_route="interview",
         )
         dashboard.register_external_section("hiring", "HIRING")
-        dashboard.register_external_page(
+        interviews_nav = dashboard.register_external_page(
             "hiring", "interviews", "Interviews", self.hiring_v2_router.widget, icon_key="people"
         )
+        interviews_nav.clicked.connect(lambda _checked=False: new_interview())
         dashboard.register_external_page(
-            "hiring", "candidates", "Candidates", self.hiring_v2_page.candidates_widget, icon_key="people"
+            "hiring", "candidates", "Candidates", candidates_workspace, icon_key="people"
         )
         dashboard.register_external_page(
             "hiring", "offers", "Offers", self.hiring_v2_page.offers_widget, icon_key="history"
         )
+
+    def _hiring_candidates_workspace(self) -> Any:
+        workspace = self.QtWidgets.QWidget()
+        workspace.setObjectName("HiringV2CandidatesWorkspace")
+        layout = self.QtWidgets.QVBoxLayout(workspace)
+        layout.setContentsMargins(0, 0, 0, 0)
+        tabs = self.QtWidgets.QTabWidget()
+        tabs.setObjectName("HiringV2CandidatesTabs")
+        tabs.addTab(self.hiring_v2_page.candidates_widget, "Candidate Roster")
+
+        pipeline_tab = self.QtWidgets.QWidget()
+        pipeline_tab.setObjectName("HiringV2CandidatesPipelineHistory")
+        pipeline_layout = self.QtWidgets.QVBoxLayout(pipeline_tab)
+        pipeline_layout.setContentsMargins(0, 0, 0, 0)
+        pipeline_layout.setSpacing(10)
+        tools = self.QtWidgets.QFrame()
+        tools.setObjectName("HiringV2CandidateHistoryTools")
+        tools_layout = self.QtWidgets.QHBoxLayout(tools)
+        tools_layout.setContentsMargins(12, 10, 12, 10)
+        self.candidate_draft_label = self._label("No saved draft available.", "HiringV2CandidateDraftStatus")
+        tools_layout.addWidget(self.candidate_draft_label, 1)
+        import_button = self.QtWidgets.QPushButton("Import Indeed Transcript")
+        import_button.setObjectName("ImportIndeedTranscriptButton")
+        import_button.clicked.connect(self._import_indeed_transcript_from_home)
+        tools_layout.addWidget(import_button)
+        continue_button = self.QtWidgets.QPushButton("Continue Saved Draft")
+        continue_button.setObjectName("HiringV2CandidateContinueDraft")
+        continue_button.clicked.connect(self._continue_latest_draft)
+        tools_layout.addWidget(continue_button)
+        delete_button = self.QtWidgets.QPushButton("Delete Saved Draft")
+        delete_button.setObjectName("HiringV2CandidateDeleteDraft")
+        delete_button.clicked.connect(self._delete_latest_draft)
+        tools_layout.addWidget(delete_button)
+        pipeline_layout.addWidget(tools)
+        pipeline_layout.addWidget(self.hiring_v2_page.widget, 1)
+        tabs.addTab(pipeline_tab, "Pipeline / History")
+        layout.addWidget(tabs, 1)
+        self.hiring_v2_candidates_tabs = tabs
+        self.candidate_continue_draft_button = continue_button
+        self.candidate_delete_draft_button = delete_button
+        self.home_continue_button = continue_button
+        self.home_delete_draft_button = delete_button
+        self._refresh_home_draft_panel()
+        return workspace
 
     def _review_hiring_offer_approval(
         self,
@@ -2624,16 +2933,130 @@ class PySideInterviewWindow:
         }
 
     def _preload_recording_interface_async(self) -> None:
-        worker = threading.Thread(target=self._preload_recording_interface, daemon=True)
-        worker.start()
+        results: queue.Queue[dict[str, Any]] = queue.Queue()
+        self._recording_preload_queue = results
+
+        def worker() -> None:
+            try:
+                results.put({"ok": True, "state": self._probe_recording_interface()})
+            except Exception as exc:
+                self.recording_warning = f"Recording preload unavailable: {exc}"
+                results.put({"ok": False})
+
+        threading.Thread(target=worker, daemon=True).start()
+        timer = self.QtCore.QTimer(self.window)
+        self._recording_preload_timer = timer
+        timer.timeout.connect(lambda: self._poll_recording_interface_preload(results, timer))
+        timer.start(50)
 
     def _preload_recording_interface(self) -> None:
         try:
-            resolve_runtime(self._recording_runtime_settings())
-            if sys.platform.startswith("win"):
-                resolve_default_windows_system_device()
+            self._recording_preload_state = self._probe_recording_interface()
         except Exception as exc:
             self.recording_warning = f"Recording preload unavailable: {exc}"
+
+    def _probe_recording_interface(self) -> dict[str, Any]:
+        resolve_runtime(self._recording_runtime_settings())
+        if not sys.platform.startswith("win"):
+            return {
+                "available_devices": [],
+                "microphone_device": "",
+                "system_device": "",
+                "transcription_ready": True,
+            }
+        available_devices = list_windows_dshow_audio_devices()
+        return {
+            "available_devices": available_devices,
+            "microphone_device": resolve_default_windows_microphone_device(),
+            "system_device": resolve_default_windows_system_device(),
+            "transcription_ready": True,
+        }
+
+    def _poll_recording_interface_preload(
+        self,
+        results: queue.Queue[dict[str, Any]],
+        timer: Any,
+    ) -> None:
+        try:
+            message = results.get_nowait()
+        except queue.Empty:
+            return
+        timer.stop()
+        timer.deleteLater()
+        if getattr(self, "_recording_preload_queue", None) is results:
+            self._recording_preload_queue = None
+            self._recording_preload_timer = None
+        if message.get("ok") and isinstance(message.get("state"), dict):
+            self._apply_setup_audio_probe(**message["state"])
+            return
+        self._apply_setup_audio_probe(
+            available_devices=[],
+            microphone_device="",
+            system_device="",
+            transcription_ready=False,
+        )
+
+    def _apply_setup_audio_probe(
+        self,
+        *,
+        available_devices: Sequence[str],
+        microphone_device: str,
+        system_device: str,
+        transcription_ready: bool,
+    ) -> None:
+        devices = list(dict.fromkeys(str(item or "").strip() for item in available_devices if str(item or "").strip()))
+        folded = {item.casefold(): item for item in devices}
+        resolved_system = folded.get(str(system_device or "").strip().casefold(), "")
+        resolved_microphone = folded.get(str(microphone_device or "").strip().casefold(), "")
+        combo = getattr(self, "home_audio_source_combo", None)
+        if combo is not None:
+            combo.blockSignals(True)
+            combo.clear()
+            ordered = ([resolved_system] if resolved_system else []) + [
+                item for item in devices if item != resolved_system
+            ]
+            if ordered:
+                for item in ordered:
+                    combo.addItem(item, item)
+                combo.setCurrentIndex(0)
+            else:
+                combo.addItem("No system audio device detected", "")
+            combo.blockSignals(False)
+        self._set_setup_probe_status(
+            getattr(self, "home_microphone_status", None),
+            ready=bool(resolved_microphone),
+            ready_text="✓ Microphone connected",
+            failed_text="✕ Microphone not detected",
+        )
+        self._set_setup_probe_status(
+            getattr(self, "home_system_audio_status", None),
+            ready=bool(resolved_system),
+            ready_text="✓ System audio connected",
+            failed_text="✕ System audio not detected",
+        )
+        self._set_setup_probe_status(
+            getattr(self, "home_transcript_status", None),
+            ready=bool(transcription_ready),
+            ready_text="✓ Live transcription ready",
+            failed_text="✕ Live transcription unavailable",
+        )
+        button = getattr(self, "home_test_audio_button", None)
+        if button is not None and getattr(self, "_manual_audio_preflight_queue", None) is None:
+            button.setEnabled(bool(resolved_system))
+
+    def _set_setup_probe_status(
+        self,
+        widget: Any,
+        *,
+        ready: bool,
+        ready_text: str,
+        failed_text: str,
+    ) -> None:
+        if widget is None:
+            return
+        widget.setText(ready_text if ready else failed_text)
+        widget.setProperty("readinessState", "ready" if ready else "failed")
+        self._refresh_widget_style(widget)
 
     def _recording_warning_text(self) -> str:
         warning = str(self.recording_warning or "").strip()
@@ -2661,8 +3084,8 @@ class PySideInterviewWindow:
 
         def _worker() -> None:
             try:
-                transcript = self._transcribe_pyside_intro_audio_sample(session)
-                results.put({"ok": True, "transcript": transcript})
+                result = self._evaluate_pyside_intro_audio_preflight(session)
+                results.put({"ok": True, "result": result})
             except Exception as exc:  # noqa: BLE001
                 results.put({"ok": False, "error": exc})
 
@@ -2676,7 +3099,8 @@ class PySideInterviewWindow:
         transcribe = getattr(session, "transcribe_new_segments", None)
         if not callable(transcribe):
             return ""
-        segments = transcribe(language="en")
+        with self._live_transcription_lock:
+            segments = transcribe(language="en")
         chunks: list[str] = []
         for segment in segments or []:
             speaker = str(getattr(segment, "speaker", "") or "").strip()
@@ -2698,14 +3122,131 @@ class PySideInterviewWindow:
             self._pyside_intro_audio_check_queue = None
             self._pyside_intro_audio_check_timer = None
         if message.get("ok"):
-            self._apply_pyside_intro_audio_check_result(str(message.get("transcript") or ""))
+            result = message.get("result")
+            if isinstance(result, AudioPreflightResult):
+                self._apply_pyside_intro_audio_preflight_result(result)
             return
         self.recording_warning = (
             f"Audio transcription check failed: {message.get('error')}. "
             "Check audio settings. Record the interview in Zoom as a backup so transcripts can be generated outside this app."
         )
         LOGGER.error("pyside_intro_audio_check_failed")
-        self._render_live_question_page()
+        if getattr(self, "live_page", None) is not None:
+            self.live_page.update_warning(self._recording_warning_text())
+
+    def _evaluate_pyside_intro_audio_preflight(self, session: Any) -> AudioPreflightResult:
+        with self._live_transcription_lock:
+            segments = session.transcribe_new_segments(language="en")
+        return evaluate_audio_preflight(
+            microphone_wav=Path(str(getattr(session, "mic_wav", "") or "")),
+            system_audio_wav=Path(str(getattr(session, "sys_wav", "") or "")),
+            transcript_segments=segments or [],
+            candidate_label=str(getattr(session, "sys_label", "") or self.recording_candidate_label),
+        )
+
+    def _start_live_capture_monitor(self) -> None:
+        self._stop_live_capture_monitor()
+        if self.recording_session is None or self.session is None:
+            return
+        transcript_timer = self.QtCore.QTimer(self.window)
+        transcript_timer.timeout.connect(self._run_live_transcript_async)
+        transcript_timer.start(max(1, int(LIVE_TRANSCRIPT_INTERVAL_MS)))
+        self._live_transcript_timer = transcript_timer
+        audio_timer = self.QtCore.QTimer(self.window)
+        audio_timer.timeout.connect(self._update_live_candidate_audio)
+        audio_timer.start(max(50, int(LIVE_AUDIO_INTERVAL_MS)))
+        self._live_audio_timer = audio_timer
+
+    def _stop_live_capture_monitor(self) -> None:
+        for name in ("_live_transcript_timer", "_live_transcript_poll_timer", "_live_audio_timer"):
+            timer = getattr(self, name, None)
+            if timer is not None:
+                timer.stop()
+                timer.deleteLater()
+            setattr(self, name, None)
+        self._live_transcript_queue = None
+
+    def _run_live_transcript_async(self) -> None:
+        recorder = self.recording_session
+        interview_session = self.session
+        if recorder is None or interview_session is None or self._live_transcript_queue is not None:
+            return
+        results: queue.Queue[dict[str, Any]] = queue.Queue()
+        self._live_transcript_queue = results
+
+        def _worker() -> None:
+            try:
+                with self._live_transcription_lock:
+                    segments = recorder.transcribe_new_segments(language="en")
+                results.put({"ok": True, "segments": list(segments or []), "recorder": recorder, "session": interview_session})
+            except Exception as exc:  # noqa: BLE001
+                results.put({"ok": False, "error": exc, "recorder": recorder, "session": interview_session})
+
+        threading.Thread(target=_worker, daemon=True).start()
+        poll = self.QtCore.QTimer(self.window)
+        poll.timeout.connect(lambda: self._poll_live_transcript(results, poll))
+        poll.start(50)
+        self._live_transcript_poll_timer = poll
+
+    def _poll_live_transcript(self, results: queue.Queue[dict[str, Any]], timer: Any) -> None:
+        try:
+            message = results.get_nowait()
+        except queue.Empty:
+            return
+        timer.stop()
+        timer.deleteLater()
+        if self._live_transcript_queue is results:
+            self._live_transcript_queue = None
+            self._live_transcript_poll_timer = None
+        if message.get("recorder") is not self.recording_session or message.get("session") is not self.session:
+            return
+        if not message.get("ok"):
+            self.recording_warning = (
+                f"Live transcription temporarily unavailable: {message.get('error')}. "
+                "Recording continues and final transcription will retry from the saved audio."
+            )
+            LOGGER.error("pyside_live_transcription_failed")
+            return
+        candidate_segments: list[dict[str, Any]] = []
+        for segment in message.get("segments", []) or []:
+            speaker = str(getattr(segment, "speaker", "") or "").strip()
+            if speaker.casefold() != self.recording_candidate_label.casefold():
+                continue
+            text = str(getattr(segment, "text", "") or "").strip()
+            if not text:
+                continue
+            candidate_segments.append(
+                {
+                    "start": float(getattr(segment, "start", 0.0) or 0.0),
+                    "end": float(getattr(segment, "end", 0.0) or 0.0),
+                    "text": text,
+                }
+            )
+        windows = build_flow_time_windows(self.session.flow_time_marks)
+        mapped = map_segments_to_flow_indices(candidate_segments, windows) if windows else {}
+        if candidate_segments and not mapped:
+            mapped = {self.session.current_index: " ".join(item["text"] for item in candidate_segments)}
+        for flow_index, text in mapped.items():
+            self.session.append_live_transcript(flow_index, text)
+        if getattr(self, "live_page", None) is not None:
+            self.live_page.update_transcript(self.session.live_transcript(self.session.current_index))
+
+    def _update_live_candidate_audio(self) -> None:
+        recorder = self.recording_session
+        page = getattr(self, "live_page", None)
+        if recorder is None or page is None:
+            return
+        sys_wav_text = str(getattr(recorder, "sys_wav", "") or "").strip()
+        level = recent_wav_signal_level(Path(sys_wav_text)) if sys_wav_text else 0.0
+        page.update_audio(level, level >= (8.0 / 32768.0))
+
+    def _apply_pyside_intro_audio_preflight_result(self, result: AudioPreflightResult) -> None:
+        self._apply_setup_audio_preflight_result(result)
+        self.recording_warning = result.warning
+        if getattr(self, "live_page", None) is not None:
+            self.live_page.update_warning(self._recording_warning_text())
+        if hasattr(self, "review_layout"):
+            self._render_review_page()
 
     def _apply_pyside_intro_audio_check_result(self, transcript_text: str) -> None:
         if str(transcript_text or "").strip():
@@ -2716,8 +3257,8 @@ class PySideInterviewWindow:
             "Record the interview in Zoom as a backup so transcripts can be generated outside this app."
         )
         LOGGER.warning("pyside_intro_audio_check_blank")
-        if hasattr(self, "live_question_layout"):
-            self._render_live_question_page()
+        if getattr(self, "live_page", None) is not None:
+            self.live_page.update_warning(self._recording_warning_text())
 
     def _wav_has_detectable_signal(self, wav_path: Path, *, min_average_abs: float = 8.0) -> bool:
         try:
@@ -2820,6 +3361,36 @@ class PySideInterviewWindow:
         if section_list is not None:
             section_list.setMinimumWidth(admin_min)
             section_list.setMaximumWidth(admin_max)
+        live_page = getattr(self, "live_page", None)
+        if live_page is not None and hasattr(self, "interview_tabs"):
+            staffing_sidebar = getattr(getattr(self, "staffing_v2_dashboard", None), "staffing_sidebar", None)
+            sidebar_width = int(staffing_sidebar.width()) if staffing_sidebar is not None else 0
+            live_page.set_narrow(max(0, int(self.window.width()) - sidebar_width - 40) < 1180)
+            live_scroll = self.interview_tabs.widget(2).findChild(
+                self.QtWidgets.QScrollArea,
+                "LiveInterviewScroll",
+            )
+            if live_scroll is not None and live_scroll.widget() is not None:
+                available = max(0, int(live_scroll.viewport().width()) - 12)
+                live_scroll.widget().setMaximumWidth(available)
+                live_scroll.widget().resize(available, live_scroll.widget().height())
+        completed_page = getattr(self, "completed_interview_page", None)
+        if completed_page is not None and hasattr(self, "interview_tabs"):
+            staffing_sidebar = getattr(getattr(self, "staffing_v2_dashboard", None), "staffing_sidebar", None)
+            completed_sidebar_width = int(staffing_sidebar.width()) if staffing_sidebar is not None else 0
+            completed_page.set_narrow(max(0, int(self.window.width()) - completed_sidebar_width - 40) < 1180)
+            completed_scroll = self.interview_tabs.widget(3).findChild(
+                self.QtWidgets.QScrollArea,
+                "CompletedInterviewScroll",
+            )
+            if completed_scroll is not None and completed_scroll.widget() is not None:
+                content = completed_scroll.widget()
+                if completed_scroll.isVisible():
+                    available = max(0, int(completed_scroll.viewport().width()))
+                    content.setMaximumWidth(available)
+                    content.resize(available, content.height())
+                else:
+                    content.setMaximumWidth(16777215)
 
     def _page(self) -> Any:
         QtWidgets = self.QtWidgets
@@ -2941,6 +3512,7 @@ class PySideInterviewWindow:
     def _hiring_interview_guide_widget(self) -> Any:
         page, layout = self._page()
         page.setObjectName("HiringV2InterviewGuide")
+        page.setHorizontalScrollBarPolicy(self.QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.interview_tabs = self.QtWidgets.QTabWidget()
         self.interview_tabs.setObjectName("HiringV2InterviewRouteStack")
         self.interview_tabs.addTab(self._home_tab(), "Home")
@@ -2953,98 +3525,360 @@ class PySideInterviewWindow:
 
     def _home_tab(self) -> Any:
         page, layout = self._page()
+        page.setObjectName("HiringV2NewInterviewSetup")
+        page.setHorizontalScrollBarPolicy(self.QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        layout.setContentsMargins(34, 22, 34, 24)
+        layout.setSpacing(16)
 
-        setup, setup_layout = self._surface()
-        setup.setObjectName("HiringV2CandidateSetupCard")
-        setup_layout.addWidget(self._label("New Interview", "Title"))
-        setup_layout.addWidget(self._label("Select or create a candidate, confirm role, then verify capture readiness."))
-        form = self.QtWidgets.QFormLayout()
-        profile = self.QtWidgets.QComboBox()
-        profile.setEditable(True)
-        profile.addItem("New candidate profile", "")
-        profile_store = HiringPipelineStore(self.model.history_path)
-        for item in profile_store.search_candidate_profiles():
-            profile.addItem(
-                f"{item.preferred_name or item.legal_name} — {item.email or 'no email'}",
-                item.candidate_id,
+        header = self.QtWidgets.QWidget()
+        header.setObjectName("HiringV2SetupHeader")
+        header_layout = self.QtWidgets.QVBoxLayout(header)
+        header_layout.setContentsMargins(0, 0, 0, 0)
+        header_layout.setSpacing(3)
+        header_layout.addWidget(self._label("New Interview", "Title"))
+        header_layout.addWidget(
+            self._label(
+                "Enter the candidate details and confirm audio capture before beginning.",
+                "HiringV2SetupSubtitle",
             )
+        )
+        layout.addWidget(header)
+
+        progress = self.QtWidgets.QFrame()
+        progress.setObjectName("HiringV2SetupProgress")
+        progress_layout = self.QtWidgets.QHBoxLayout(progress)
+        progress_layout.setContentsMargins(120, 4, 120, 2)
+        progress_layout.setSpacing(10)
+        for index, step in enumerate(("Setup", "Introduction", "Questions", "Review"), start=1):
+            step_box = self.QtWidgets.QWidget()
+            step_layout = self.QtWidgets.QVBoxLayout(step_box)
+            step_layout.setContentsMargins(0, 0, 0, 0)
+            step_layout.setSpacing(4)
+            badge = self._label(str(index), "HiringV2SetupProgressBadge")
+            badge.setAlignment(self.QtCore.Qt.AlignmentFlag.AlignCenter)
+            badge.setProperty("activeStep", index == 1)
+            badge.setFixedSize(28, 28)
+            step_layout.addWidget(badge, 0, self.QtCore.Qt.AlignmentFlag.AlignHCenter)
+            label = self._label(step, "HiringV2SetupProgressLabel")
+            label.setAlignment(self.QtCore.Qt.AlignmentFlag.AlignCenter)
+            label.setProperty("activeStep", index == 1)
+            step_layout.addWidget(label)
+            progress_layout.addWidget(step_box, 0)
+            if index < 4:
+                connector = self.QtWidgets.QFrame()
+                connector.setObjectName("HiringV2SetupProgressConnector")
+                connector.setFixedHeight(1)
+                connector.setSizePolicy(
+                    self.QtWidgets.QSizePolicy.Policy.Expanding,
+                    self.QtWidgets.QSizePolicy.Policy.Fixed,
+                )
+                progress_layout.addWidget(connector, 1)
+        layout.addWidget(progress)
+
+        setup = self.QtWidgets.QFrame()
+        setup.setObjectName("HiringV2CandidateSetupCard")
+        setup.setMinimumWidth(860)
+        setup.setMaximumWidth(940)
+        setup.setSizePolicy(
+            self.QtWidgets.QSizePolicy.Policy.Expanding,
+            self.QtWidgets.QSizePolicy.Policy.Preferred,
+        )
+        setup_layout = self.QtWidgets.QVBoxLayout(setup)
+        setup_layout.setContentsMargins(0, 0, 0, 0)
+        setup_layout.setSpacing(0)
+
+        candidate_section = self.QtWidgets.QWidget()
+        candidate_layout = self.QtWidgets.QVBoxLayout(candidate_section)
+        candidate_layout.setContentsMargins(24, 22, 24, 22)
+        candidate_layout.setSpacing(14)
+        candidate_layout.addWidget(self._label("1. Candidate & Interview", "SectionTitle"))
+        form = self.QtWidgets.QGridLayout()
+        form.setHorizontalSpacing(18)
+        form.setVerticalSpacing(12)
+        form.setColumnMinimumWidth(0, 150)
+        form.setColumnStretch(1, 1)
+
         candidate = self.QtWidgets.QLineEdit()
-        preferred_name = self.QtWidgets.QLineEdit()
-        candidate_email = self.QtWidgets.QLineEdit()
-        candidate_phone = self.QtWidgets.QLineEdit()
+        candidate.setObjectName("HiringV2SetupCandidateName")
+        candidate.setPlaceholderText("Enter candidate name")
         school = self.QtWidgets.QComboBox()
+        school.setObjectName("HiringV2SetupSchool")
         school.addItems(self.model.school_options)
         role = self.QtWidgets.QComboBox()
+        role.setObjectName("HiringV2SetupTrack")
         role.addItems(list(self.model.track_labels.values()))
-        self.home_role_combo = role
-        form.addRow("Candidate profile", profile)
-        form.addRow("Legal name", candidate)
-        self.home_candidate_input = candidate
-        self.home_profile_combo = profile
-        self.home_preferred_name_input = preferred_name
-        self.home_candidate_email_input = candidate_email
-        self.home_candidate_phone_input = candidate_phone
-        form.addRow("Preferred name", preferred_name)
-        form.addRow("Email", candidate_email)
-        form.addRow("Phone", candidate_phone)
-        form.addRow("School", school)
-        self.home_school_combo = school
-        form.addRow("Role", role)
-        profile.currentIndexChanged.connect(self._populate_home_candidate_profile)
-        setup_layout.addLayout(form)
+        interview_type = self.QtWidgets.QComboBox()
+        interview_type.setObjectName("HiringV2SetupInterviewType")
+        interview_type.addItem("First Interview")
+        for row, (label_text, field) in enumerate(
+            (
+                ("Candidate Name", candidate),
+                ("School", school),
+                ("Position / Track", role),
+                ("Interview Type", interview_type),
+            )
+        ):
+            form.addWidget(self._label(label_text, "HiringV2SetupFieldLabel"), row, 0)
+            form.addWidget(field, row, 1)
+            field.setMinimumHeight(40)
+        candidate_layout.addLayout(form)
+        setup_layout.addWidget(candidate_section)
 
-        latest_draft = latest_pyside_draft_path(self._drafts_dir())
-        self.home_draft_label = self._label(
-            f"Saved draft: {latest_draft.name}" if latest_draft else "No saved draft available."
+        divider = self.QtWidgets.QFrame()
+        divider.setObjectName("HiringV2SetupDivider")
+        divider.setFixedHeight(1)
+        setup_layout.addWidget(divider)
+
+        audio_section = self.QtWidgets.QWidget()
+        audio_layout = self.QtWidgets.QVBoxLayout(audio_section)
+        audio_layout.setContentsMargins(24, 20, 24, 22)
+        audio_layout.setSpacing(12)
+        audio_layout.addWidget(self._label("2. Audio & Transcript Check", "SectionTitle"))
+        status_grid = self.QtWidgets.QGridLayout()
+        status_grid.setHorizontalSpacing(18)
+        status_grid.setVerticalSpacing(10)
+        status_grid.setColumnMinimumWidth(0, 150)
+        statuses = (
+            ("Microphone", "HiringV2SetupMicrophoneStatus"),
+            ("System audio", "HiringV2SetupSystemAudioStatus"),
+            ("Transcript", "HiringV2SetupTranscriptStatus"),
         )
-        if latest_draft:
-            self.home_draft_label.setToolTip(str(latest_draft))
-        setup_layout.addWidget(self.home_draft_label)
+        status_widgets: list[Any] = []
+        for row, (label_text, object_name) in enumerate(statuses):
+            status_grid.addWidget(self._label(label_text, "HiringV2SetupStatusName"), row, 0)
+            status = self._label("Checking…", object_name)
+            status.setProperty("readinessState", "checking")
+            status_grid.addWidget(status, row, 1)
+            status_widgets.append(status)
+        audio_layout.addLayout(status_grid)
 
-        preflight, preflight_layout = self._surface()
-        preflight.setObjectName("HiringV2CapturePreflight")
-        preflight_layout.addWidget(self._label("Audio & transcript preflight", "SectionTitle"))
-        preflight_text = self._recording_warning_text() or "Capture devices will be verified when interview begins."
-        self.home_capture_preflight_status = self._label(preflight_text)
-        self.home_capture_preflight_status.setObjectName("HiringV2CapturePreflightStatus")
-        preflight_layout.addWidget(self.home_capture_preflight_status)
-        setup_layout.addWidget(preflight)
+        source_row = self.QtWidgets.QGridLayout()
+        source_row.setHorizontalSpacing(16)
+        source_row.setColumnMinimumWidth(0, 150)
+        source_row.addWidget(self._label("Audio source", "HiringV2SetupFieldLabel"), 0, 0)
+        audio_source = self.QtWidgets.QComboBox()
+        audio_source.setObjectName("HiringV2SetupAudioSource")
+        audio_source.addItem("Detecting system audio…", "")
+        audio_source.setMinimumHeight(40)
+        source_row.addWidget(audio_source, 0, 1)
+        test_audio = self.QtWidgets.QPushButton("Test Audio")
+        test_audio.setObjectName("HiringV2SetupTestAudio")
+        test_audio.setMinimumHeight(40)
+        test_audio.clicked.connect(self._start_manual_audio_preflight)
+        source_row.addWidget(test_audio, 0, 2)
+        source_row.setColumnStretch(1, 1)
+        audio_layout.addLayout(source_row)
+        note = self._label(
+            "ⓘ  Recording and autosave begin when the interview starts.",
+            "HiringV2SetupAudioNote",
+        )
+        audio_layout.addWidget(note)
 
-        action_row = self.QtWidgets.QHBoxLayout()
+        validation = self._label("", "HiringV2SetupValidation")
+        validation.hide()
+        audio_layout.addWidget(validation)
+
+        actions = self.QtWidgets.QHBoxLayout()
+        actions.setSpacing(16)
+        cancel = self.QtWidgets.QPushButton("Cancel")
+        cancel.setObjectName("HiringV2SetupCancel")
+        cancel.setMinimumHeight(50)
+        cancel.clicked.connect(self._cancel_new_interview_setup)
+        actions.addWidget(cancel, 1)
         begin = self._primary_button("Begin Interview")
+        begin.setObjectName("HiringV2SetupBegin")
+        begin.setMinimumHeight(50)
         begin.clicked.connect(self._begin_selected_interview)
-        action_row.addWidget(begin, 2)
-        import_button = self.QtWidgets.QPushButton("Import Indeed Transcript")
-        import_button.setObjectName("ImportIndeedTranscriptButton")
-        import_button.clicked.connect(self._import_indeed_transcript_from_home)
-        action_row.addWidget(import_button, 2)
-        continue_button = self.QtWidgets.QPushButton("Continue")
-        self.home_continue_button = continue_button
-        continue_button.setEnabled(latest_draft is not None)
-        continue_button.clicked.connect(lambda: self._continue_latest_draft())
-        action_row.addWidget(continue_button, 1)
-        delete_draft = self.QtWidgets.QPushButton("Delete Saved Draft")
-        self.home_delete_draft_button = delete_draft
-        delete_draft.setEnabled(latest_draft is not None)
-        delete_draft.clicked.connect(self._delete_latest_draft)
-        action_row.addWidget(delete_draft, 1)
-        setup_layout.addLayout(action_row)
-        layout.addWidget(setup)
+        actions.addWidget(begin, 1)
+        audio_layout.addSpacing(18)
+        audio_layout.addLayout(actions)
+        setup_layout.addWidget(audio_section)
+
+        card_row = self.QtWidgets.QHBoxLayout()
+        card_row.addWidget(setup, 1, self.QtCore.Qt.AlignmentFlag.AlignHCenter)
+        layout.addLayout(card_row)
         layout.addStretch(1)
+
+        self.home_candidate_input = candidate
+        self.home_school_combo = school
+        self.home_role_combo = role
+        self.home_interview_type_combo = interview_type
+        self.home_audio_source_combo = audio_source
+        self.home_microphone_status = status_widgets[0]
+        self.home_system_audio_status = status_widgets[1]
+        self.home_transcript_status = status_widgets[2]
+        self.home_setup_validation = validation
+        self.home_test_audio_button = test_audio
+        self.home_begin_button = begin
+        self._setup_form_dirty = False
+        candidate.textChanged.connect(self._mark_new_interview_setup_dirty)
+        school.currentIndexChanged.connect(self._mark_new_interview_setup_dirty)
+        role.currentIndexChanged.connect(self._mark_new_interview_setup_dirty)
         return page
 
-    def _populate_home_candidate_profile(self) -> None:
-        candidate_id = str(self.home_profile_combo.currentData() or "").strip()
-        if not candidate_id:
+    def _mark_new_interview_setup_dirty(self, *_args: Any) -> None:
+        self._setup_form_dirty = True
+
+    def _cancel_new_interview_setup(self) -> None:
+        if getattr(self, "_setup_form_dirty", False):
+            confirmed = self.QtWidgets.QMessageBox.question(
+                self.window,
+                "Cancel new interview",
+                "Discard entered interview details?",
+                self.QtWidgets.QMessageBox.StandardButton.Yes | self.QtWidgets.QMessageBox.StandardButton.No,
+                self.QtWidgets.QMessageBox.StandardButton.No,
+            )
+            if confirmed != self.QtWidgets.QMessageBox.StandardButton.Yes:
+                return
+        self._reset_new_interview_setup()
+        dashboard = getattr(self, "staffing_v2_dashboard", None)
+        if dashboard is not None:
+            dashboard._show_dashboard_view()
+
+    def _reset_new_interview_setup(self) -> None:
+        if hasattr(self, "home_candidate_input"):
+            self.home_candidate_input.clear()
+        for combo_name in ("home_school_combo", "home_role_combo", "home_interview_type_combo"):
+            combo = getattr(self, combo_name, None)
+            if combo is not None and combo.count():
+                combo.setCurrentIndex(0)
+        validation = getattr(self, "home_setup_validation", None)
+        if validation is not None:
+            validation.clear()
+            validation.hide()
+        self._setup_form_dirty = False
+
+    def _start_manual_audio_preflight(self) -> None:
+        button = getattr(self, "home_test_audio_button", None)
+        if button is None or not button.isEnabled():
             return
+        source_combo = getattr(self, "home_audio_source_combo", None)
+        source = self._selected_setup_audio_source() if source_combo is not None else ""
+        if not source:
+            result = AudioPreflightResult(
+                False,
+                False,
+                False,
+                "No system audio source is available. Check audio settings and record the interview in Zoom as a backup.",
+            )
+            self._apply_setup_audio_preflight_result(result)
+            return
+        button.setEnabled(False)
+        button.setText("Testing 15 seconds…")
+        results: queue.Queue[AudioPreflightResult] = queue.Queue()
+        self._manual_audio_preflight_queue = results
+
+        def worker() -> None:
+            results.put(self._run_manual_audio_preflight(source))
+
+        threading.Thread(target=worker, daemon=True).start()
+        timer = self.QtCore.QTimer(self.window)
+        self._manual_audio_preflight_timer = timer
+        timer.timeout.connect(lambda: self._poll_manual_audio_preflight(results, timer))
+        timer.start(50)
+
+    def _run_manual_audio_preflight(self, system_device: str) -> AudioPreflightResult:
+        session: Any | None = None
         try:
-            candidate = HiringPipelineStore(self.model.history_path).get_candidate(candidate_id)
-        except ValueError:
+            from interview_audio_recorder import start_recording
+
+            with tempfile.TemporaryDirectory(prefix="lpl-audio-preflight-") as temp_dir:
+                runtime_config = resolve_runtime(self._recording_runtime_settings())
+                microphone_device = (
+                    resolve_default_windows_microphone_device() if sys.platform.startswith("win") else None
+                )
+                session = start_recording(
+                    os_name="windows" if sys.platform.startswith("win") else "linux",
+                    output_dir=Path(temp_dir),
+                    base_name=f"audio_preflight_{uuid4().hex}",
+                    win_mic_device=microphone_device,
+                    win_sys_device=system_device,
+                    whisper_model=runtime_config.model,
+                    whisper_device=runtime_config.device,
+                    whisper_compute_type=runtime_config.compute_type,
+                    whisper_backend=runtime_config.backend,
+                )
+                self._manual_audio_preflight_session = session
+                time.sleep(15)
+                session.stop()
+                segments = session.transcribe_new_segments(language="en")
+                return evaluate_audio_preflight(
+                    microphone_wav=Path(session.mic_wav),
+                    system_audio_wav=Path(session.sys_wav),
+                    transcript_segments=segments,
+                    candidate_label=str(session.sys_label or self.recording_candidate_label),
+                )
+        except (Exception, SystemExit):
+            if session is not None:
+                try:
+                    session.stop()
+                except Exception:
+                    pass
+            LOGGER.exception("manual_audio_preflight_failed")
+            return AudioPreflightResult(
+                False,
+                False,
+                False,
+                "Audio test could not complete. Check audio settings and record the interview in Zoom as a backup.",
+            )
+        finally:
+            if getattr(self, "_manual_audio_preflight_session", None) is session:
+                self._manual_audio_preflight_session = None
+
+    def _poll_manual_audio_preflight(
+        self,
+        results: queue.Queue[AudioPreflightResult],
+        timer: Any,
+    ) -> None:
+        try:
+            result = results.get_nowait()
+        except queue.Empty:
             return
-        self.home_candidate_input.setText(candidate.legal_name)
-        self.home_preferred_name_input.setText(candidate.preferred_name)
-        self.home_candidate_email_input.setText(candidate.email)
-        self.home_candidate_phone_input.setText(candidate.phone)
+        timer.stop()
+        timer.deleteLater()
+        if getattr(self, "_manual_audio_preflight_queue", None) is results:
+            self._manual_audio_preflight_queue = None
+            self._manual_audio_preflight_timer = None
+        button = getattr(self, "home_test_audio_button", None)
+        if button is not None:
+            button.setText("Test Audio")
+            button.setEnabled(True)
+        self._apply_setup_audio_preflight_result(result)
+
+    def _apply_setup_audio_preflight_result(self, result: AudioPreflightResult) -> None:
+        rows = (
+            (
+                getattr(self, "home_microphone_status", None),
+                result.microphone_ready,
+                "✓ Microphone connected",
+                "✕ Microphone audio not detected",
+            ),
+            (
+                getattr(self, "home_system_audio_status", None),
+                result.system_audio_ready,
+                "✓ System audio connected",
+                "✕ System audio not detected",
+            ),
+            (
+                getattr(self, "home_transcript_status", None),
+                result.transcription_ready,
+                "✓ Live transcription ready",
+                "✕ Candidate transcription not detected",
+            ),
+        )
+        for widget, ready, ready_text, failed_text in rows:
+            if widget is None:
+                continue
+            widget.setText(ready_text if ready else failed_text)
+            widget.setProperty("readinessState", "ready" if ready else "failed")
+            self._refresh_widget_style(widget)
+        validation = getattr(self, "home_setup_validation", None)
+        if validation is not None:
+            validation.setText(result.warning)
+            validation.setVisible(bool(result.warning))
+
+    def _populate_home_candidate_profile(self) -> None:
+        return
 
     def _setup_tab(self) -> Any:
         page, layout = self._page()
@@ -3096,12 +3930,19 @@ class PySideInterviewWindow:
         outer_layout = self.QtWidgets.QVBoxLayout(page)
         outer_layout.setContentsMargins(0, 0, 0, 0)
         scroll = self.QtWidgets.QScrollArea()
+        scroll.setObjectName("LiveInterviewScroll")
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(self.QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setVerticalScrollBarPolicy(self.QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         scroll.setFrameShape(self.QtWidgets.QFrame.Shape.NoFrame)
         content = self.QtWidgets.QWidget()
+        content.setMinimumWidth(0)
+        content.setSizePolicy(
+            self.QtWidgets.QSizePolicy.Policy.Expanding,
+            self.QtWidgets.QSizePolicy.Policy.Minimum,
+        )
         layout = self.QtWidgets.QVBoxLayout(content)
+        layout.setSizeConstraint(self.QtWidgets.QLayout.SizeConstraint.SetNoConstraint)
         layout.setContentsMargins(24, 20, 24, 20)
         layout.setSpacing(14)
         scroll.setWidget(content)
@@ -3117,6 +3958,17 @@ class PySideInterviewWindow:
 
     def _review_tab(self) -> Any:
         page, layout = self._scrollable_page()
+        scroll = page.findChild(self.QtWidgets.QScrollArea)
+        if scroll is not None:
+            scroll.setObjectName("CompletedInterviewScroll")
+            content = scroll.widget()
+            if content is not None:
+                content.setMinimumWidth(0)
+                content.setSizePolicy(
+                    self.QtWidgets.QSizePolicy.Policy.Expanding,
+                    self.QtWidgets.QSizePolicy.Policy.Minimum,
+                )
+                content.layout().setSizeConstraint(self.QtWidgets.QLayout.SizeConstraint.SetNoConstraint)
         self.review_layout = layout
         self._render_review_page()
         return page
@@ -3148,16 +4000,25 @@ class PySideInterviewWindow:
         self.session_answers = {}
         candidate_name = self.home_candidate_input.text().strip() if hasattr(self, "home_candidate_input") else ""
         school = self.home_school_combo.currentText().strip() if hasattr(self, "home_school_combo") else ""
-        preferred_name = self.home_preferred_name_input.text().strip()
-        email = self.home_candidate_email_input.text().strip()
-        phone = self.home_candidate_phone_input.text().strip()
+        preferred_name = ""
+        email = ""
+        phone = ""
         if not candidate_name or not school or not label:
-            self.QtWidgets.QMessageBox.warning(
-                self.window,
-                "New interview",
-                "Candidate name, school, and role are required.",
-            )
+            validation = getattr(self, "home_setup_validation", None)
+            if validation is not None:
+                validation.setText("Candidate name, school, and position / track are required.")
+                validation.show()
+            else:
+                self.QtWidgets.QMessageBox.warning(
+                    self.window,
+                    "New interview",
+                    "Candidate name, school, and role are required.",
+                )
             return
+        validation = getattr(self, "home_setup_validation", None)
+        if validation is not None:
+            validation.clear()
+            validation.hide()
         hiring_service = HiringWorkflowService(HiringPipelineStore(self.model.history_path))
         application = hiring_service.start_application(
             legal_name=candidate_name,
@@ -3236,6 +4097,12 @@ class PySideInterviewWindow:
         self._render_live_question_page()
         self._render_review_page()
         self._refresh_home_draft_panel()
+        dashboard = getattr(self, "staffing_v2_dashboard", None)
+        if dashboard is not None and "interviews" in dashboard.external_pages:
+            dashboard.show_external_page("interviews")
+        router = getattr(self, "hiring_v2_router", None)
+        if router is not None:
+            router.show_interview()
         self.interview_tabs.setCurrentIndex(2 if session.active_question() is not None else 3)
         if hasattr(self, "home_draft_label"):
             self.home_draft_label.setText(
@@ -3574,8 +4441,9 @@ class PySideInterviewWindow:
         warnings: list[str] = []
         scoring = ScoringEngine.evaluate(adapter._rubric_with_question_overrides(), adapter.state.track, adapter.state.trait_inputs)
         context = build_finalize_context(adapter, scoring, warnings, session._transcript_metadata(), run_deepseek=False)
-        existing_notes_path = Path(str(row.notes_path or row.report_path or ""))
-        output_dir = existing_notes_path.parent if str(existing_notes_path).strip() else adapter._interview_notes_output_dir()
+        existing_notes_text = str(row.notes_path or row.report_path or "").strip()
+        existing_notes_path = Path(existing_notes_text) if existing_notes_text else None
+        output_dir = existing_notes_path.parent if existing_notes_path is not None else adapter._interview_notes_output_dir()
         output_dir.mkdir(parents=True, exist_ok=True)
         out_path = DocxExporter(output_dir).export_basic_interview_notes(
             adapter._rubric_with_question_overrides(),
@@ -3681,6 +4549,12 @@ class PySideInterviewWindow:
         self._render_live_question_page()
         self._render_review_page()
         self._start_pyside_interview_recording()
+        dashboard = getattr(self, "staffing_v2_dashboard", None)
+        if dashboard is not None and "interviews" in dashboard.external_pages:
+            dashboard.show_external_page("interviews")
+        router = getattr(self, "hiring_v2_router", None)
+        if router is not None:
+            router.show_interview()
         self.interview_tabs.setCurrentIndex(2 if self.session.active_question() is not None else 3)
         self._set_hiring_focus_mode(self.session.active_question() is not None)
 
@@ -3692,6 +4566,12 @@ class PySideInterviewWindow:
         if label is not None:
             label.setText(f"Saved draft: {latest_draft.name}" if latest_draft else "No saved draft available.")
             label.setToolTip(str(latest_draft) if latest_draft else "")
+        candidate_label = getattr(self, "candidate_draft_label", None)
+        if candidate_label is not None:
+            candidate_label.setText(
+                f"Saved draft: {latest_draft.name}" if latest_draft else "No saved draft available."
+            )
+            candidate_label.setToolTip(str(latest_draft) if latest_draft else "")
         continue_button = getattr(self, "home_continue_button", None)
         if continue_button is not None:
             continue_button.setEnabled(latest_draft is not None)
@@ -3732,6 +4612,15 @@ class PySideInterviewWindow:
         safe = "".join(ch if ch.isalnum() else "_" for ch in raw).strip("_")
         return safe or "Candidate"
 
+    def _selected_setup_audio_source(self) -> str:
+        combo = getattr(self, "home_audio_source_combo", None)
+        if combo is None:
+            return ""
+        data = combo.currentData()
+        if data is not None:
+            return str(data or "").strip()
+        return str(combo.currentText() or "").strip()
+
     def _start_pyside_interview_recording(self) -> None:
         if self.session is None:
             return
@@ -3745,7 +4634,9 @@ class PySideInterviewWindow:
             from interview_audio_recorder import start_recording
 
             runtime_config = resolve_runtime(self._recording_runtime_settings())
-            system_device = resolve_default_windows_system_device() if sys.platform.startswith("win") else None
+            system_device = None
+            if sys.platform.startswith("win"):
+                system_device = self._selected_setup_audio_source() or resolve_default_windows_system_device()
             microphone_device = (
                 resolve_default_windows_microphone_device() if sys.platform.startswith("win") else None
             )
@@ -3764,6 +4655,7 @@ class PySideInterviewWindow:
             if sys.platform.startswith("win"):
                 self.QtCore.QTimer.singleShot(2500, self._check_pyside_system_audio_capture)
             self._schedule_pyside_intro_audio_transcription_check()
+            self._start_live_capture_monitor()
         except (Exception, SystemExit) as exc:
             self.recording_session = None
             self.recording_started_monotonic = None
@@ -3810,12 +4702,14 @@ class PySideInterviewWindow:
     def _stop_pyside_interview_recording(self) -> None:
         if self.session is None or self.recording_session is None:
             return
+        self._stop_live_capture_monitor()
         try:
-            result = self.recording_session.stop_and_transcribe(
-                output_dir=DEFAULT_BASE_DIR,
-                base_name=self.recording_base_name or self._safe_base_name(),
-                language="en",
-            )
+            with self._live_transcription_lock:
+                result = self.recording_session.stop_and_transcribe(
+                    output_dir=DEFAULT_BASE_DIR,
+                    base_name=self.recording_base_name or self._safe_base_name(),
+                    language="en",
+                )
             payload = {
                 "flow_index": -1,
                 "base_name": self.recording_base_name,
@@ -3829,6 +4723,7 @@ class PySideInterviewWindow:
             self._apply_pyside_recording_result(payload)
         except Exception as exc:
             self.recording_warning = f"Recording/transcription failed: {exc}"
+            self.session.apply_canonical_transcripts({})
             LOGGER.exception("pyside_recording_stop_failed")
         finally:
             self.recording_session = None
@@ -3845,12 +4740,12 @@ class PySideInterviewWindow:
         segments = load_candidate_segments(jsonl_path, self.recording_candidate_label)
         windows = build_flow_time_windows(self.session.flow_time_marks)
         by_flow_index = map_segments_to_flow_indices(segments, windows)
+        self.session.apply_canonical_transcripts(by_flow_index)
         for flow_idx, candidate_transcript in by_flow_index.items():
             payload = dict(recording_result)
             payload["flow_index"] = flow_idx
-            payload["candidate_transcript"] = candidate_transcript
+            payload["candidate_transcript"] = self.session.flow_candidate_transcripts.get(flow_idx, candidate_transcript)
             self.session.flow_recordings[flow_idx] = payload
-            self.session.flow_candidate_transcripts[flow_idx] = candidate_transcript
         self.session.save_draft()
 
     def _active_question(self) -> FlowQuestion | None:
@@ -3874,22 +4769,23 @@ class PySideInterviewWindow:
             qualification = self._collect_qualification_from_fields()
             if qualification is None:
                 return
-        score = ""
-        if hasattr(self, "score_group"):
+        live_snapshot = self.live_page.input_snapshot() if getattr(self, "live_page", None) is not None else None
+        score = live_snapshot.score if live_snapshot is not None else ""
+        if live_snapshot is None and hasattr(self, "score_group"):
             checked = self.score_group.checkedButton()
             score = checked.text().split(" ", 1)[0] if checked is not None else ""
         if item.score_cards and not score and not skip:
             self._update_live_next_enabled(item)
             return
         boundary_elapsed = self._close_flow_timestamp(current_index)
-        notes = self.live_notes.toPlainText() if hasattr(self, "live_notes") else ""
+        notes = live_snapshot.notes if live_snapshot is not None else (
+            self.live_notes.toPlainText() if hasattr(self, "live_notes") else ""
+        )
         structured_notes = self._structured_live_notes()
         if structured_notes and structured_notes not in notes:
             notes = f"{structured_notes}\n{notes}".strip()
-        quick_actions = [
-            checkbox.text()
-            for checkbox in getattr(self, "quick_action_checks", [])
-            if checkbox.isChecked()
+        quick_actions = list(live_snapshot.quick_actions) if live_snapshot is not None else [
+            checkbox.text() for checkbox in getattr(self, "quick_action_checks", []) if checkbox.isChecked()
         ]
         if self.session is not None:
             if skip:
@@ -3931,11 +4827,12 @@ class PySideInterviewWindow:
                 )
             self._overwrite_next_live_boundary_timestamp = False
         if self._active_question() is None:
+            self._stop_live_capture_monitor()
+            if finalize:
+                self._generate_interview_notes_from_session()
             self._render_review_page()
             self.interview_tabs.setCurrentIndex(3)
             self._show_hiring_closeout()
-            if finalize:
-                self._generate_interview_notes_from_session()
             return
         if finalize:
             self._render_review_page()
@@ -3952,23 +4849,62 @@ class PySideInterviewWindow:
         self._save_and_next(skip=True)
 
     def _go_back_live_question(self) -> None:
+        self._save_live_snapshot_without_navigation()
         if self.session is not None:
             self.session.go_back()
             self.session_index = self.session.current_index
             self.session_answers = dict(self.session.answers)
-            self._overwrite_next_live_timestamp = True
             self._overwrite_next_live_boundary_timestamp = True
         elif self.session_index > 0:
             self.session_index -= 1
-            self._overwrite_next_live_timestamp = True
             self._overwrite_next_live_boundary_timestamp = True
         self._render_live_question_page()
         self._render_review_page()
 
     def _exit_live_interview(self) -> None:
+        if self.session is not None and getattr(self, "live_page", None) is not None:
+            self._save_live_snapshot_without_navigation()
         if self.session is not None:
             self.session.save_draft()
-        self._show_hiring_pipeline()
+        self._stop_live_capture_monitor()
+        recording = self.recording_session
+        self.recording_session = None
+        self.recording_started_monotonic = None
+        if recording is not None:
+            threading.Thread(target=recording.stop, daemon=True).start()
+        self.session = None
+        self.session_index = 0
+        self.session_answers = {}
+        self._set_hiring_focus_mode(False)
+        dashboard = getattr(self, "staffing_v2_dashboard", None)
+        if dashboard is not None and "interviews" in dashboard.external_pages:
+            dashboard.show_external_page("interviews")
+        router = getattr(self, "hiring_v2_router", None)
+        if router is not None:
+            router.show_interview()
+        self._reset_new_interview_setup()
+        self.interview_tabs.setCurrentIndex(0)
+
+    def _save_live_snapshot_without_navigation(self) -> None:
+        if getattr(self, "session", None) is None or getattr(self, "live_page", None) is None:
+            return
+        item = self.session.active_question()
+        if item is None:
+            return
+        snapshot = self.live_page.input_snapshot()
+        existing = dict(self.session.answers.get(item.question_id, {}) or {})
+        existing.update(
+            {
+                "kind": item.kind,
+                "title": item.title,
+                "prompt": item.prompt,
+                "notes": snapshot.notes,
+                "score": snapshot.score,
+                "quick_actions": list(snapshot.quick_actions),
+            }
+        )
+        self.session.answers[item.question_id] = existing
+        self.session.save_draft()
 
     def _show_hiring_pipeline(self) -> None:
         self._set_hiring_focus_mode(False)
@@ -3990,6 +4926,10 @@ class PySideInterviewWindow:
         router = getattr(self, "hiring_v2_router", None)
         if router is not None:
             router.show_closeout()
+        self.QtCore.QTimer.singleShot(
+            0,
+            lambda: self.QtCore.QTimer.singleShot(0, self._apply_responsive_layout),
+        )
 
     def _set_hiring_focus_mode(self, active: bool) -> None:
         dashboard = getattr(self, "staffing_v2_dashboard", None)
@@ -4006,13 +4946,22 @@ class PySideInterviewWindow:
         if layout is None:
             return
         self._clear_layout(layout)
-        item = self._active_question() or self._first_flow_item(kind="trait") or self._first_flow_item()
+        item = self._active_question()
+        if self.session is not None and item is None:
+            self.live_page = None
+            layout.addWidget(self._label("Interview responses complete. Continue to review."))
+            return
+        item = item or self._first_flow_item(kind="trait") or self._first_flow_item()
         if item is None:
             layout.addWidget(self._label("No configured interview questions."))
             self._render_live_footer(None)
             return
         current_index = self.session.current_index if self.session is not None else self.session_index
         self._mark_flow_timestamp(current_index)
+        if item.kind in {"intro", "qualification", "custom", "trait"} and self.session is not None:
+            self._render_mockup_live_page(layout, item, current_index)
+            return
+        self.live_page = None
 
         header, header_layout = self._surface()
         header_row = self.QtWidgets.QHBoxLayout()
@@ -4151,6 +5100,165 @@ class PySideInterviewWindow:
         self._render_live_footer(item)
         self._restore_live_answer(item)
         self._update_live_next_enabled(item)
+
+    def _render_mockup_live_page(self, layout: Any, item: FlowQuestion, current_index: int) -> None:
+        if self.session is None:
+            return
+        workflow = self.session._workflow_items()
+        stages = derive_live_stages(
+            [LiveQuestionSpec(question.question_id, question.kind) for question in workflow],
+            current_index=current_index,
+        )
+        answer = self.session.answers.get(item.question_id, {})
+        active_stage = next(stage for stage in stages if stage.first_index <= current_index <= stage.last_index)
+        structured_widget = None
+        self.live_structured_response = None
+        if item.kind == "qualification":
+            structured_widget = self.QtWidgets.QWidget()
+            structured_widget.setObjectName("LiveQualificationFields")
+            structured_layout = self.QtWidgets.QVBoxLayout(structured_widget)
+            structured_layout.setContentsMargins(0, 0, 0, 0)
+            self._render_qualification_fields(structured_layout)
+        elif item.kind == "custom":
+            candidate_widget = self.QtWidgets.QWidget()
+            candidate_layout = self.QtWidgets.QVBoxLayout(candidate_widget)
+            candidate_layout.setContentsMargins(0, 0, 0, 0)
+            self._render_structured_live_response(candidate_layout, item)
+            if self.live_structured_response is not None:
+                structured_widget = candidate_widget
+        page_title = {
+            "intro": "Live Interview Introduction Script",
+            "qualification": "Live Interview Candidate Qualifications",
+            "trait": "Live Interview Scored Question and Rating",
+        }.get(item.kind, "Live Interview Availability & Pay" if active_stage.key == "availability" else "Live Interview Non-Scored Questions")
+        subtitle = {
+            "intro": "Guide the candidate through the introduction and confirm they're ready to continue.",
+            "qualification": "Capture the candidate's background and early childhood education qualifications.",
+            "trait": "Rate the candidate's response using the configured scoring anchors.",
+        }.get(item.kind, "Answer a few questions to give the interviewer more insight into the candidate's experience and approach.")
+        is_last = current_index == len(workflow) - 1
+        page = LiveInterviewPage(
+            QtCore=self.QtCore,
+            QtWidgets=self.QtWidgets,
+            callbacks=LiveInterviewCallbacks(
+                back=self._go_back_live_question,
+                next=self._finalize_from_live_question if is_last else self._save_and_next,
+                exit=self._exit_live_interview,
+                skip=self._skip_live_question,
+                edit_transcript=self._edit_live_transcript,
+                view_anchor=self._show_live_rating_anchor,
+            ),
+        )
+        root, footer_widget = page.render(
+            LiveInterviewViewModel(
+                kind=item.kind,
+                page_title=page_title,
+                page_subtitle=subtitle,
+                candidate_name=self.session.candidate_name,
+                school=self.session.school,
+                position=self._session_position_label(),
+                stage_label=active_stage.label,
+                current_index=current_index,
+                total_steps=len(workflow),
+                stages=stages,
+                prompt=item.prompt,
+                question_title=item.title,
+                group_question_index=current_index - active_stage.first_index + 1,
+                group_question_count=active_stage.last_index - active_stage.first_index + 1,
+                transcript=self.session.live_transcript(current_index),
+                notes=str(answer.get("notes", "") or ""),
+                quick_actions=frozenset(str(value) for value in answer.get("quick_actions", []) or []),
+                structured_widget=structured_widget,
+                priority=item.priority,
+                weight=item.weight,
+                rating_options=tuple(
+                    LiveRatingOption(
+                        score=int(card.label),
+                        description=card.description,
+                        sample_answer=card.sample_answer,
+                    )
+                    for card in item.score_cards
+                ),
+                selected_score=str(answer.get("score", "") or ""),
+                is_last=is_last,
+                recording_active=self.recording_session is not None,
+                transcript_active=self.recording_session is not None and not bool(self._recording_warning_text()),
+                audio_source=str(self.recording_system_device or "Default capture device"),
+                warning=self._recording_warning_text(),
+                intro_actions=frozenset(str(value) for value in answer.get("quick_actions", []) or []),
+            )
+        )
+        layout.addWidget(root, 1)
+        footer = getattr(self, "live_footer_layout", None)
+        if footer is not None:
+            self._clear_layout(footer)
+            footer.addWidget(footer_widget)
+        self.live_page = page
+        self.live_next_button = footer_widget.findChild(self.QtWidgets.QPushButton, "LiveInterviewPrimaryAction")
+        if page.notes_editor is not None:
+            self.live_notes = page.notes_editor
+        elif hasattr(self, "live_notes"):
+            del self.live_notes
+        if page.rating_group is not None:
+            self.score_group = page.rating_group
+        elif hasattr(self, "score_group"):
+            del self.score_group
+        self.QtCore.QTimer.singleShot(0, self._apply_responsive_layout)
+
+    def _show_live_rating_anchor(self, score: int) -> None:
+        item = self._active_question()
+        if item is None or item.kind != "trait":
+            return
+        card = next((option for option in item.score_cards if int(option.label) == int(score)), None)
+        if card is None:
+            return
+        dialog = self.QtWidgets.QDialog(self.window)
+        dialog.setObjectName("LiveRatingAnchorDialog")
+        dialog.setWindowTitle(f"Rating {score} anchor")
+        dialog.resize(600, 360)
+        layout = self.QtWidgets.QVBoxLayout(dialog)
+        heading = self._label(f"Rating {score} anchor", "SectionTitle")
+        layout.addWidget(heading)
+        descriptor = self._label(card.description)
+        descriptor.setWordWrap(True)
+        layout.addWidget(descriptor)
+        layout.addWidget(self._label("Sample answer", "SectionTitle"))
+        sample = self._label(card.sample_answer or "No sample answer configured.")
+        sample.setWordWrap(True)
+        layout.addWidget(sample, 1)
+        close = self._primary_button("Close")
+        close.clicked.connect(dialog.accept)
+        layout.addWidget(close)
+        dialog.exec()
+
+    def _edit_live_transcript(self) -> None:
+        if self.session is None or getattr(self, "live_page", None) is None:
+            return
+        flow_index = self.session.current_index
+        dialog = self.QtWidgets.QDialog(self.window)
+        dialog.setObjectName("LiveTranscriptEditor")
+        dialog.setWindowTitle("Edit transcript")
+        dialog.resize(620, 360)
+        layout = self.QtWidgets.QVBoxLayout(dialog)
+        layout.addWidget(self._label("Edit the candidate transcript for this question.", "SectionTitle"))
+        editor = self.QtWidgets.QTextEdit()
+        editor.setObjectName("LiveTranscriptEditorText")
+        editor.setPlainText(self.session.live_transcript(flow_index))
+        layout.addWidget(editor, 1)
+        actions = self.QtWidgets.QHBoxLayout()
+        actions.addStretch(1)
+        cancel = self.QtWidgets.QPushButton("Cancel")
+        cancel.clicked.connect(dialog.reject)
+        save = self._primary_button("Save")
+        save.setObjectName("LiveTranscriptEditorSave")
+        save.clicked.connect(dialog.accept)
+        actions.addWidget(cancel)
+        actions.addWidget(save)
+        layout.addLayout(actions)
+        if dialog.exec() != self.QtWidgets.QDialog.DialogCode.Accepted:
+            return
+        self.session.replace_live_transcript(flow_index, editor.toPlainText())
+        self.live_page.update_transcript(self.session.live_transcript(flow_index))
 
     def _render_structured_live_response(self, layout: Any, item: FlowQuestion) -> None:
         prompt = item.prompt.casefold()
@@ -4343,6 +5451,53 @@ class PySideInterviewWindow:
         if layout is None:
             return
         self._clear_layout(layout)
+        if self.session is not None:
+            state = (
+                CompletionState.PROCESSING
+                if self._pyside_finalize_running
+                else CompletionState.COMPLETE
+                if self._review_history_id
+                else CompletionState.FAILED
+                if self._completed_finalize_error
+                else CompletionState.PROCESSING
+            )
+            workflow_items = self.session._workflow_items()
+            scoring = self._review_scoring()
+            transcripts = {
+                index: self.session.flow_candidate_transcripts.get(index, "") or self.session.live_transcript(index)
+                for index in range(len(workflow_items))
+            }
+            page = CompletedInterviewPage(
+                QtCore=self.QtCore,
+                QtWidgets=self.QtWidgets,
+                callbacks=CompletedInterviewCallbacks(
+                    back=self._back_to_last_completed_question,
+                    open_report=self._open_completed_candidate_report,
+                    export=self._show_completed_export_menu,
+                    finish=self._finish_completed_interview,
+                    retry=self._generate_interview_notes_from_session,
+                    edit_question=self._edit_completed_question,
+                ),
+            )
+            self.completed_interview_page = page
+            layout.addWidget(
+                page.render(
+                    build_completed_interview_view_model(
+                        candidate_name=self.session.candidate_name,
+                        school=self.session.school,
+                        position=self._session_position_label(),
+                        workflow=workflow_items,
+                        answers=self.session.answers,
+                        transcripts=transcripts,
+                        scoring=scoring,
+                        completion_state=state,
+                        warning=self._completed_finalize_error if state is CompletionState.FAILED else "",
+                    )
+                )
+            )
+            layout.addStretch(1)
+            self.QtCore.QTimer.singleShot(0, self._reset_completed_overview_scroll)
+            return
         workflow_items = self.session._workflow_items() if self.session is not None else []
         total = len(workflow_items)
         answers = self.session.answers if self.session is not None else self.session_answers
@@ -4472,6 +5627,266 @@ class PySideInterviewWindow:
         layout.addWidget(summary)
         layout.addStretch(1)
 
+    def _edit_completed_question(self, question_id: str) -> None:
+        if self.session is None or self._pyside_finalize_running:
+            return
+        workflow = self.session._workflow_items()
+        match = next(
+            ((index, item) for index, item in enumerate(workflow) if item.question_id == str(question_id)),
+            None,
+        )
+        if match is None:
+            return
+        flow_index, item = match
+        answer = dict(self.session.answers.get(item.question_id, {}) or {})
+        dialog = self.QtWidgets.QDialog(self.window)
+        dialog.setObjectName("CompletedQuestionDetailDialog")
+        dialog.setWindowTitle(item.title or "Interview response")
+        dialog.resize(720, 620)
+        layout = self.QtWidgets.QVBoxLayout(dialog)
+        prompt = self.QtWidgets.QLabel(item.prompt)
+        prompt.setWordWrap(True)
+        layout.addWidget(prompt)
+        layout.addWidget(self._label("Candidate Transcript", "SectionTitle"))
+        transcript = self.QtWidgets.QTextEdit()
+        transcript.setObjectName("CompletedQuestionTranscriptEdit")
+        transcript.setPlainText(self.session.live_transcript(flow_index) or self.session.flow_candidate_transcripts.get(flow_index, ""))
+        layout.addWidget(transcript)
+        layout.addWidget(self._label("Interviewer Notes", "SectionTitle"))
+        notes = self.QtWidgets.QTextEdit()
+        notes.setObjectName("CompletedQuestionNotesEdit")
+        notes.setPlainText(str(answer.get("notes", "") or ""))
+        layout.addWidget(notes)
+        rating = None
+        anchor = None
+        if item.kind == "trait":
+            rating_row = self.QtWidgets.QHBoxLayout()
+            rating_row.addWidget(self.QtWidgets.QLabel("Rating"))
+            rating = self.QtWidgets.QSpinBox()
+            rating.setObjectName("CompletedQuestionRatingEdit")
+            rating.setRange(1, 5)
+            rating.setValue(_coerce_session_score(answer.get("score")) or 1)
+            rating_row.addWidget(rating)
+            rating_row.addStretch(1)
+            layout.addLayout(rating_row)
+            anchor = self.QtWidgets.QLabel()
+            anchor.setObjectName("CompletedQuestionRatingAnchor")
+            anchor.setWordWrap(True)
+            layout.addWidget(anchor)
+
+            def update_anchor(value: int) -> None:
+                card = next((option for option in item.score_cards if int(option.label) == int(value)), None)
+                anchor.setText(
+                    "\n\n".join(
+                        value
+                        for value in (
+                            str(card.description if card is not None else ""),
+                            f"Sample answer: {card.sample_answer}" if card is not None and card.sample_answer else "",
+                        )
+                        if value
+                    )
+                )
+
+            rating.valueChanged.connect(update_anchor)
+            update_anchor(rating.value())
+        quick_actions = set(str(value) for value in answer.get("quick_actions", []) or [])
+        flags: list[tuple[Any, str]] = []
+        for object_name, visible, canonical in (
+            ("CompletedQuestionNeedsFollowUp", "Needs follow-up", "Needs follow-up"),
+            ("CompletedQuestionNoExample", "No example after follow-ups", "Candidate gave no example"),
+            ("CompletedQuestionDisqualifier", "Absolute disqualifier", "Disqualifier observed"),
+        ):
+            checkbox = self.QtWidgets.QCheckBox(visible)
+            checkbox.setObjectName(object_name)
+            checkbox.setChecked(canonical in quick_actions)
+            flags.append((checkbox, canonical))
+            layout.addWidget(checkbox)
+        buttons = self.QtWidgets.QDialogButtonBox()
+        cancel = buttons.addButton("Cancel", self.QtWidgets.QDialogButtonBox.ButtonRole.RejectRole)
+        save = buttons.addButton("Save", self.QtWidgets.QDialogButtonBox.ButtonRole.AcceptRole)
+        save.setObjectName("CompletedQuestionSave")
+        cancel.clicked.connect(dialog.reject)
+        save.clicked.connect(dialog.accept)
+        layout.addWidget(buttons)
+        if dialog.exec() != self.QtWidgets.QDialog.DialogCode.Accepted:
+            return
+        self.session.replace_live_transcript(flow_index, transcript.toPlainText())
+        self.session.flow_candidate_transcripts[flow_index] = self.session.live_transcript(flow_index)
+        answer.update(
+            {
+                "kind": item.kind,
+                "title": item.title,
+                "prompt": item.prompt,
+                "notes": notes.toPlainText(),
+                "quick_actions": [canonical for checkbox, canonical in flags if checkbox.isChecked()],
+            }
+        )
+        if rating is not None:
+            answer["score"] = str(rating.value())
+            answer.pop("skipped", None)
+        self.session.answers[item.question_id] = answer
+        self.session.save_draft()
+        self.session_answers = dict(self.session.answers)
+        self._completed_artifacts_dirty = True
+        self._generate_interview_notes_from_session()
+        self._render_review_page()
+
+    def _back_to_last_completed_question(self) -> None:
+        if self.session is None or self._pyside_finalize_running or not self._review_history_id:
+            return
+        workflow = self.session._workflow_items()
+        if not workflow:
+            return
+        self.recording_session = None
+        self._stop_live_capture_monitor()
+        self.session.current_index = len(workflow) - 1
+        self.session_index = self.session.current_index
+        self.session.save_draft()
+        self._render_live_question_page()
+        self.interview_tabs.setCurrentIndex(2)
+        self._set_hiring_focus_mode(True)
+
+    def _open_completed_candidate_report(self) -> None:
+        if not self._review_history_id or self.session is None or self._pyside_finalize_running:
+            return
+        host = getattr(self, "staffing_v2_host", None)
+        if host is None:
+            self.QtWidgets.QMessageBox.warning(self.window, "Candidate Report", "Candidate report is not available yet.")
+            return
+        host.open_candidate_report(self._review_history_id, self.session.school)
+
+    def _show_completed_export_menu(self) -> None:
+        if self.session is None or self._pyside_finalize_running or not self._review_history_id:
+            return
+        menu = self.QtWidgets.QMenu()
+        menu.setObjectName("CompletedInterviewExportMenu")
+        menu.addAction("Word report (.docx)", self._export_completed_word_report)
+        menu.addAction("PDF report (.pdf)", self._export_completed_pdf_report)
+        menu.addAction("Transcript (.txt)", self._export_completed_transcript)
+        self.completed_export_menu = menu
+        menu.popup(self.QtGui.QCursor.pos())
+
+    def _completed_history_row(self) -> dict[str, Any]:
+        if not self._review_history_id:
+            return {}
+        return next(
+            (
+                row
+                for row in self.history_store.load()
+                if self.history_store.build_row_key(row) == self._review_history_id
+            ),
+            {},
+        )
+
+    def _completed_report_path(self) -> Path | None:
+        row = self._completed_history_row()
+        value = str(
+            row.get("saved_report_path")
+            or row.get("report_path")
+            or row.get("interview_notes_path")
+            or ""
+        ).strip()
+        path = Path(value) if value else None
+        return path if path is not None and path.is_file() else None
+
+    def _export_completed_word_report(self) -> None:
+        source = self._completed_report_path()
+        if source is None:
+            self.QtWidgets.QMessageBox.warning(self.window, "Export Interview", "Word report is not available yet.")
+            return
+        destination, _selected = self.QtWidgets.QFileDialog.getSaveFileName(
+            self.window,
+            "Export Word Interview Report",
+            source.name,
+            "Word Documents (*.docx)",
+        )
+        if not destination:
+            return
+        target = Path(destination).with_suffix(".docx")
+        try:
+            shutil.copy2(source, target)
+        except OSError as exc:
+            self.QtWidgets.QMessageBox.warning(self.window, "Export Interview", f"Could not export Word report: {exc}")
+
+    def _export_completed_pdf_report(self) -> None:
+        source = self._completed_report_path()
+        if source is None:
+            self.QtWidgets.QMessageBox.warning(self.window, "Export Interview", "Word report is not available yet.")
+            return
+        generated = _ensure_offer_pdf_path(str(source))
+        if not generated:
+            self.QtWidgets.QMessageBox.warning(self.window, "Export Interview", "PDF conversion failed. Confirm Microsoft Word is installed.")
+            return
+        destination, _selected = self.QtWidgets.QFileDialog.getSaveFileName(
+            self.window,
+            "Export PDF Interview Report",
+            source.with_suffix(".pdf").name,
+            "PDF Files (*.pdf)",
+        )
+        if not destination:
+            return
+        try:
+            shutil.copy2(Path(generated), Path(destination).with_suffix(".pdf"))
+        except OSError as exc:
+            self.QtWidgets.QMessageBox.warning(self.window, "Export Interview", f"Could not export PDF report: {exc}")
+
+    def _export_completed_transcript(self) -> None:
+        if self.session is None:
+            return
+        destination, _selected = self.QtWidgets.QFileDialog.getSaveFileName(
+            self.window,
+            "Export Candidate Transcript",
+            f"{self.session.candidate_name} - transcript.txt",
+            "Text Files (*.txt)",
+        )
+        if not destination:
+            return
+        workflow = self.session._workflow_items()
+        model = build_completed_interview_view_model(
+            candidate_name=self.session.candidate_name,
+            school=self.session.school,
+            position=self._session_position_label(),
+            workflow=workflow,
+            answers=self.session.answers,
+            transcripts={
+                index: self.session.flow_candidate_transcripts.get(index, "") or self.session.live_transcript(index)
+                for index in range(len(workflow))
+            },
+            scoring=self._review_scoring(),
+            completion_state=CompletionState.COMPLETE,
+        )
+        try:
+            Path(destination).with_suffix(".txt").write_text(build_completed_transcript_export(model), encoding="utf-8")
+        except OSError as exc:
+            self.QtWidgets.QMessageBox.warning(self.window, "Export Interview", f"Could not export transcript: {exc}")
+
+    def _finish_completed_interview(self) -> None:
+        if self.session is None or self._pyside_finalize_running or self._completed_finalize_error:
+            return
+        if self.session.review_summary().missing_scores:
+            return
+        draft_path = Path(self.session.draft_path)
+        try:
+            draft_path.unlink(missing_ok=True)
+        except OSError:
+            return
+        self._stop_live_capture_monitor()
+        self.recording_session = None
+        self.session = None
+        self.session_index = 0
+        self.session_answers = {}
+        self._review_history_id = ""
+        self._completed_artifacts_dirty = False
+        self._set_hiring_focus_mode(False)
+        self._reset_new_interview_setup()
+        self.interview_tabs.setCurrentIndex(0)
+        dashboard = getattr(self, "staffing_v2_dashboard", None)
+        if dashboard is not None and "interviews" in dashboard.external_pages:
+            dashboard.show_external_page("interviews")
+        router = getattr(self, "hiring_v2_router", None)
+        if router is not None:
+            router.show_interview()
+
     def _update_review_rating(self, question_id: str, value: int) -> None:
         if self.session is None:
             return
@@ -4585,6 +6000,9 @@ class PySideInterviewWindow:
         self.review_status_label.setText(f"Scores updated: {percent_label} {outcome}.")
 
     def _refresh_review_transcript_cells(self) -> None:
+        if getattr(self, "completed_interview_page", None) is not None:
+            self._render_review_page()
+            return
         table = self.review_question_table
         if self.session is None or table is None:
             return
@@ -4611,14 +6029,15 @@ class PySideInterviewWindow:
 
     def _generate_interview_notes_from_session(self) -> None:
         if self.session is None:
-            self.review_status_label.setText("Start an interview before generating notes.")
+            self._set_review_status("Start an interview before generating notes.")
             return
         if self._pyside_finalize_running:
-            self.review_status_label.setText("Finalizing interview. Recording and notes are still processing.")
+            self._set_review_status("Finalizing interview. Recording and notes are still processing.")
             return
         self._pyside_finalize_running = True
+        self._completed_finalize_error = ""
         self._show_pyside_finalize_progress("Preparing finalize")
-        self.review_status_label.setText("Finalizing interview. Recording and notes are processing in the background.")
+        self._set_review_status("Finalizing interview. Recording and notes are processing in the background.")
         results: queue.Queue[dict[str, Any]] = queue.Queue()
         session = self.session
 
@@ -4630,17 +6049,32 @@ class PySideInterviewWindow:
 
         def _worker() -> None:
             try:
+                artifact_update = bool(self._review_history_id)
                 self._report_pyside_finalize_progress("Stopping recording and transcribing")
                 self._stop_pyside_interview_recording()
                 results.put({"ok": True, "event": "transcripts_updated"})
                 self._report_pyside_finalize_progress("Building interview notes")
-                result = session.finalize_interview(
-                    base_dir=DEFAULT_BASE_DIR,
-                    history_path=INTERVIEW_HISTORY_PATH,
-                    gateways=_PySideLiveRefreshFinalizeGateways(),
+                if self._review_history_id:
+                    result = session.update_completed_artifacts(
+                        history_id=self._review_history_id,
+                        base_dir=DEFAULT_BASE_DIR,
+                        history_path=self.model.history_path,
+                    )
+                else:
+                    result = session.finalize_interview(
+                        base_dir=DEFAULT_BASE_DIR,
+                        history_path=self.model.history_path,
+                        gateways=_PySideLiveRefreshFinalizeGateways(),
+                    )
+                self._report_pyside_finalize_progress("Saving interview artifacts")
+                results.put(
+                    {
+                        "ok": True,
+                        "result": result,
+                        "warning": self.recording_warning,
+                        "artifact_update": artifact_update,
+                    }
                 )
-                self._report_pyside_finalize_progress("Queueing DeepSeek processing")
-                results.put({"ok": True, "result": result, "warning": self.recording_warning})
             except Exception as exc:  # noqa: BLE001
                 results.put({"ok": False, "error": exc})
 
@@ -4666,9 +6100,11 @@ class PySideInterviewWindow:
         timer.deleteLater()
         self._pyside_finalize_running = False
         if not message.get("ok"):
-            self.review_status_label.setText(f"Interview notes not generated: {message.get('error')}")
+            self._completed_finalize_error = f"Interview could not be finalized: {message.get('error')}"
+            self._set_review_status(self._completed_finalize_error)
             self._report_pyside_finalize_progress("Interview notes not generated")
             self._refresh_pyside_finalize_progress()
+            self._render_review_page()
             return
         result = message.get("result", {})
         if isinstance(result, dict):
@@ -4676,24 +6112,54 @@ class PySideInterviewWindow:
         output_path = result.get("out_path", "") if isinstance(result, dict) else ""
         warning_text = str(message.get("warning") or "").strip()
         warning = f" {warning_text}" if warning_text else ""
-        self.review_status_label.setText(f"Interview finalized: {output_path}{warning}")
-        self._emit_pyside_rating_notification(result)
-        self._record_staffing_director_referral_from_finalize_result(result)
+        self._set_review_status(f"Interview finalized: {output_path}{warning}")
+        self._completed_finalize_error = ""
+        self._completed_artifacts_dirty = False
+        if not message.get("artifact_update"):
+            self._emit_pyside_rating_notification(result)
+            self._record_staffing_director_referral_from_finalize_result(result)
         self._reload_history_model()
-        if isinstance(result, dict) and result.get("deepseek_progress_path"):
-            self._watch_pyside_deepseek_finalize_progress(result.get("deepseek_progress_path"))
-        else:
-            self._report_pyside_finalize_progress("Interview finalized")
-            self._refresh_pyside_finalize_progress()
-            self._schedule_close_pyside_finalize_progress()
+        self._report_pyside_finalize_progress("Interview finalized")
+        self._refresh_pyside_finalize_progress()
+        self._schedule_close_pyside_finalize_progress()
+        self._render_review_page()
+
+    def _set_review_status(self, text: str) -> None:
+        label = getattr(self, "review_status_label", None)
+        if label is None:
+            return
+        try:
+            label.setText(str(text or ""))
+        except RuntimeError:
+            self.review_status_label = None
+
+    def _reset_completed_overview_scroll(self) -> None:
+        if not hasattr(self, "interview_tabs"):
+            return
+        review_page = self.interview_tabs.widget(3)
+        scroll = review_page.findChild(self.QtWidgets.QScrollArea, "CompletedInterviewScroll")
+        if scroll is not None:
+            scroll.horizontalScrollBar().setValue(0)
+            scroll.verticalScrollBar().setValue(0)
+        outer = getattr(self, "hiring_v2_router", None)
+        guide = outer.interview_widget if outer is not None else None
+        if isinstance(guide, self.QtWidgets.QScrollArea):
+            guide.horizontalScrollBar().setValue(0)
+            guide.verticalScrollBar().setValue(0)
 
     def _show_pyside_finalize_progress(self, step: str) -> None:
         normalized = str(step or "").strip() or "Preparing finalize"
+        self._pyside_finalize_tracks_deepseek = "deepseek" in normalized.lower()
+        queued_steps = (
+            PYSIDE_FINALIZE_PROGRESS_TASKS
+            if self._pyside_finalize_tracks_deepseek
+            else PYSIDE_CORE_FINALIZE_PROGRESS_TASKS
+        )
         self._pyside_finalize_progress_step = normalized
         self._pyside_finalize_progress_tasks = build_finalize_progress_tasks(
             normalized,
             existing_tasks=getattr(self, "_pyside_finalize_progress_tasks", []),
-            queued_steps=PYSIDE_FINALIZE_PROGRESS_TASKS,
+            queued_steps=queued_steps,
         )
         if self.pyside_finalize_progress_dialog is not None:
             self._refresh_pyside_finalize_progress()
@@ -4775,10 +6241,15 @@ class PySideInterviewWindow:
         normalized = str(step or "").strip()
         if not normalized:
             return
+        queued_steps = (
+            PYSIDE_FINALIZE_PROGRESS_TASKS
+            if self._pyside_finalize_tracks_deepseek
+            else PYSIDE_CORE_FINALIZE_PROGRESS_TASKS
+        )
         self._pyside_finalize_progress_tasks = build_finalize_progress_tasks(
             normalized,
             existing_tasks=getattr(self, "_pyside_finalize_progress_tasks", []),
-            queued_steps=PYSIDE_FINALIZE_PROGRESS_TASKS,
+            queued_steps=queued_steps,
         )
         progress_queue = self._pyside_finalize_progress_queue
         if progress_queue is None:
@@ -4795,18 +6266,24 @@ class PySideInterviewWindow:
             while True:
                 try:
                     self._pyside_finalize_progress_step = progress_queue.get_nowait()
+                    queued_steps = (
+                        PYSIDE_FINALIZE_PROGRESS_TASKS
+                        if self._pyside_finalize_tracks_deepseek
+                        else PYSIDE_CORE_FINALIZE_PROGRESS_TASKS
+                    )
                     self._pyside_finalize_progress_tasks = build_finalize_progress_tasks(
                         self._pyside_finalize_progress_step,
                         existing_tasks=getattr(self, "_pyside_finalize_progress_tasks", []),
-                        queued_steps=PYSIDE_FINALIZE_PROGRESS_TASKS,
+                        queued_steps=queued_steps,
                     )
                 except queue.Empty:
                     break
-        self._attach_latest_deepseek_progress_from_history()
-        deepseek_step, _status = self._read_pyside_deepseek_progress_step()
-        if deepseek_step:
-            self._pyside_finalize_progress_step = deepseek_step
-            self._pyside_finalize_progress_tasks = self._read_pyside_deepseek_progress_tasks()
+        if self._pyside_finalize_tracks_deepseek:
+            self._attach_latest_deepseek_progress_from_history()
+            deepseek_step, _status = self._read_pyside_deepseek_progress_step()
+            if deepseek_step:
+                self._pyside_finalize_progress_step = deepseek_step
+                self._pyside_finalize_progress_tasks = self._read_pyside_deepseek_progress_tasks()
         label = self.pyside_finalize_progress_label
         if label is not None and self._pyside_finalize_progress_step:
             label.setText(
@@ -5238,7 +6715,15 @@ class PySideInterviewWindow:
 
     def _request_window_close(self) -> bool:
         page = getattr(self, "staffing_settings_v2_page", None)
-        return True if page is None else bool(page.request_close())
+        allowed = True if page is None else bool(page.request_close())
+        if not allowed:
+            return False
+        manual_session = getattr(self, "_manual_audio_preflight_session", None)
+        if manual_session is not None:
+            threading.Thread(target=manual_session.stop, daemon=True).start()
+        self._save_live_snapshot_without_navigation()
+        self._stop_live_capture_monitor()
+        return True
 
     def _invalidate_notification_service(self) -> None:
         if hasattr(self, "notification_service"):

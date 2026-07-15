@@ -1,0 +1,43 @@
+module:
+  name: interview_audio_preflight
+  language: python
+  path: src/interview_audio_preflight.py
+  version: 1.1.0
+  description: Privacy-safe evaluation of microphone signal, candidate/system signal,
+    and candidate transcription readiness for manual and post-Begin interview checks.
+functions:
+- name: recent_wav_signal_level
+  description: Return a normalized recent-tail signal level without retaining or logging captured audio.
+  locked: false
+  inputs:
+    wav_path: {type: Path, required: true}
+    tail_seconds: {type: float, required: false, default: 0.5}
+  returns: {type: float}
+  exceptions: []
+  side_effects: Reads a bounded tail from one WAV file.
+- name: evaluate_audio_preflight
+  description: Evaluate both WAV channels and candidate-only transcript segments without
+    returning or logging captured speech.
+  locked: false
+  inputs:
+    microphone_wav: {type: Path, required: true}
+    system_audio_wav: {type: Path, required: true}
+    transcript_segments: {type: 'Sequence[Any]', required: true}
+    candidate_label: {type: str, required: true}
+    min_average_abs: {type: float, required: false, default: 8.0}
+  returns: {type: AudioPreflightResult}
+  exceptions: []
+  side_effects: Reads at most one second from each WAV file.
+classes:
+- name: AudioPreflightResult
+  description: Immutable readiness result with channel booleans and speech-free warning text.
+  locked: false
+  attributes:
+    microphone_ready: {type: bool}
+    system_audio_ready: {type: bool}
+    transcription_ready: {type: bool}
+    warning: {type: str}
+    ready: {type: bool}
+  methods: []
+data_structures: []
+dependencies: []

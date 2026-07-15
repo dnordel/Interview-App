@@ -1,0 +1,107 @@
+module:
+  name: pyside_live_interview
+  language: python
+  path: src/pyside_live_interview.py
+  version: 1.0.1
+  description: Reusable PySide live-interview presentation components for dynamic stage progress, candidate capture status, provisional transcripts, notes, scored ratings, and responsive layouts.
+functions:
+- name: derive_live_stages
+  description: Group the active configured flow into non-empty semantic stages and derive each stage range and state from the current question index.
+  locked: false
+  inputs:
+    questions: {type: 'Sequence[LiveQuestionSpec]', required: true}
+    current_index: {type: int, required: true}
+  returns: {type: 'list[LiveStage]'}
+  exceptions: []
+  side_effects: none
+classes:
+- name: LiveInterviewPage
+  description: Toolkit-injected reusable live interview page renderer with public snapshots, transcript/audio updates, and responsive layout switching.
+  locked: false
+  attributes: {}
+  methods:
+  - name: render
+    description: Render the shared live page and footer for the supplied view model.
+    locked: false
+    inputs:
+      model: {type: LiveInterviewViewModel, required: true}
+    returns: {type: 'tuple[Any, Any]'}
+    exceptions: []
+    side_effects: Creates and connects Qt widgets.
+  - name: input_snapshot
+    description: Return current notes, rating, and canonical quick-action values without navigating.
+    locked: false
+    inputs: {}
+    returns: {type: LiveInputSnapshot}
+    exceptions: []
+    side_effects: none
+  - name: notes_editor
+    description: Return the page notes editor, or None for Introduction.
+    locked: false
+    inputs: {}
+    returns: {type: 'Any | None'}
+    exceptions: []
+    side_effects: none
+  - name: rating_group
+    description: Return the scored-page rating group, or None on non-scored pages.
+    locked: false
+    inputs: {}
+    returns: {type: 'Any | None'}
+    exceptions: []
+    side_effects: none
+  - name: update_transcript
+    description: Replace displayed provisional transcript text.
+    locked: false
+    inputs:
+      text: {type: str, required: true}
+      _status: {type: str, required: false, default: active}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Updates a Qt label when present.
+  - name: update_warning
+    description: Replace or clear the persistent non-blocking capture warning without rerendering current inputs.
+    locked: false
+    inputs:
+      text: {type: str, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Updates visibility and text of the Qt warning label.
+  - name: update_audio
+    description: Update candidate signal waveform and detection status.
+    locked: false
+    inputs:
+      level: {type: float, required: true}
+      detected: {type: bool, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Updates Qt audio status widgets when present.
+  - name: set_narrow
+    description: Switch the adaptive main and side panels between desktop columns and vertical stacking.
+    locked: false
+    inputs:
+      narrow: {type: bool, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Reparents layout items inside the live page.
+data_structures:
+- name: LiveQuestionSpec
+  type: dataclass
+  description: Minimal question identity and kind used for stage derivation.
+- name: LiveStage
+  type: dataclass
+  description: Derived semantic stage with inclusive flow indices, total steps, state, and display range.
+- name: LiveInterviewCallbacks
+  type: dataclass
+  description: Injected navigation, transcript-edit, and rating-anchor callbacks.
+- name: LiveInterviewViewModel
+  type: dataclass
+  description: Render-ready state shared by Introduction, non-scored, and scored live pages.
+- name: LiveInputSnapshot
+  type: dataclass
+  description: Navigation snapshot containing notes, rating, and canonical quick actions.
+- name: LiveRatingOption
+  type: dataclass
+  description: One score descriptor and optional configured sample-answer anchor.
+dependencies:
+- module: pyside_interview_components
+- module: PySide6

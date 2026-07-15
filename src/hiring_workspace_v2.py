@@ -121,10 +121,13 @@ class HiringInterviewGuidePage:
         self,
         *,
         QtWidgets: Any,
-        pipeline_widget: Any,
+        pipeline_widget: Any | None,
         interview_widget: Any,
         closeout_widget: Any | None = None,
+        initial_route: str = "pipeline",
     ) -> None:
+        if initial_route not in {"pipeline", "interview"}:
+            raise ValueError("Hiring interview initial route must be pipeline or interview.")
         self.widget = QtWidgets.QWidget()
         layout = QtWidgets.QVBoxLayout(self.widget)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -133,13 +136,19 @@ class HiringInterviewGuidePage:
         self.pipeline_widget = pipeline_widget
         self.interview_widget = interview_widget
         self.closeout_widget = closeout_widget or interview_widget
-        self.stack.addWidget(self.pipeline_widget)
+        if self.pipeline_widget is not None:
+            self.stack.addWidget(self.pipeline_widget)
         self.stack.addWidget(self.interview_widget)
         if self.closeout_widget is not self.interview_widget:
             self.stack.addWidget(self.closeout_widget)
         self.current_route = "pipeline"
+        if initial_route == "interview" or self.pipeline_widget is None:
+            self.show_interview()
 
     def show_pipeline(self) -> None:
+        if self.pipeline_widget is None:
+            self.show_interview()
+            return
         self.current_route = "pipeline"
         self.stack.setCurrentWidget(self.pipeline_widget)
 
@@ -228,6 +237,11 @@ class HiringWorkspaceV2Page:
         self.stage_buttons: dict[HiringStage, Any] = {}
         for stage, label in STAGE_LABELS.items():
             button = self.QtWidgets.QPushButton(label)
+            button.setMinimumWidth(0)
+            button.setSizePolicy(
+                self.QtWidgets.QSizePolicy.Policy.Ignored,
+                self.QtWidgets.QSizePolicy.Policy.Fixed,
+            )
             button.setCheckable(True)
             button.clicked.connect(lambda checked=False, value=stage: self._select_stage(value, checked))
             self.stage_buttons[stage] = button
@@ -236,12 +250,15 @@ class HiringWorkspaceV2Page:
 
         filters = self.QtWidgets.QHBoxLayout()
         self.search = self.QtWidgets.QLineEdit()
+        self.search.setMinimumWidth(0)
         self.search.setPlaceholderText("Search candidate, school, or position")
         self.search.textChanged.connect(self._apply_filters)
         self.school_filter = self.QtWidgets.QComboBox()
+        self.school_filter.setMinimumWidth(0)
         self.school_filter.addItem("All schools")
         self.school_filter.currentTextChanged.connect(self._apply_filters)
         self.position_filter = self.QtWidgets.QComboBox()
+        self.position_filter.setMinimumWidth(0)
         self.position_filter.addItem("All positions")
         self.position_filter.currentTextChanged.connect(self._apply_filters)
         self.attention_filter = self.QtWidgets.QCheckBox("Attention only")

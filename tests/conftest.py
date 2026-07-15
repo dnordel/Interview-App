@@ -12,6 +12,7 @@ import pytest
 import yaml
 
 from tools.pytest_duration_catalog import CATALOG_PATH, determine_placement, load_catalog
+from visual_test_support import VisualTestDatabaseRegistry
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -181,3 +182,12 @@ def src_cwd(monkeypatch: pytest.MonkeyPatch) -> Path:
 
     monkeypatch.chdir(SRC)
     return SRC
+
+
+@pytest.fixture()
+def visual_test_databases(tmp_path: Path) -> VisualTestDatabaseRegistry:
+    """Provide and verify each domain-specific SQLite DB used by screenshot tests."""
+
+    registry = VisualTestDatabaseRegistry(tmp_path / "visual_databases")
+    yield registry
+    registry.verify()

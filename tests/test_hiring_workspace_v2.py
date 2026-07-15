@@ -3,8 +3,11 @@ from datetime import date
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 from data_store import InterviewHistoryStore
 from hiring_pipeline import HiringPipelineStore, HiringWorkflowService
+from visual_test_support import VisualTestDatabaseRegistry, configure_visual_test_app
 
 
 def test_hiring_workspace_uses_unified_pipeline_without_horizontal_page_scroll(tmp_path: Path) -> None:
@@ -219,13 +222,29 @@ def test_hiring_workspace_create_offer_action_submits_selected_version(tmp_path:
     app.processEvents()
 
 
-def test_hiring_workspace_visual_sizes_have_no_page_horizontal_scroll(tmp_path: Path) -> None:
+@pytest.mark.pyside_gui
+@pytest.mark.visual_inspection
+def test_hiring_workspace_visual_sizes_have_no_page_horizontal_scroll(
+    tmp_path: Path,
+    visual_test_databases: VisualTestDatabaseRegistry,
+) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     from PySide6 import QtCore, QtGui, QtWidgets
     from hiring_workspace_v2 import HiringWorkspaceV2Page
 
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-    service = HiringWorkflowService(HiringPipelineStore(tmp_path / "visual.sqlite3"))
+    configure_visual_test_app(app)
+    pipeline_path = visual_test_databases.database("hiring_pipeline.sqlite3")
+    visual_test_databases.expect_seeded(pipeline_path, table="hiring_applications")
+    service = HiringWorkflowService(HiringPipelineStore(pipeline_path))
+    service.start_application(
+        legal_name="Ghjypq Avery",
+        email="avery@example.test",
+        phone="555-0100",
+        school="Hawthorne",
+        position="Infant/Toddler Teacher",
+        actor="Visual Test",
+    )
     page = HiringWorkspaceV2Page(QtCore=QtCore, QtWidgets=QtWidgets, service=service)
     original_font = app.font()
     for width, height, scale in (

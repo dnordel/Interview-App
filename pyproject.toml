@@ -29,5 +29,6 @@ testpaths = ["tests"]
 pythonpath = ["src", "."]
 markers = [
   "pyside_gui: tests that construct real PySide widgets or windows",
+  "visual_inspection: GUI tests that render screenshots from seeded visual_test_databases fixtures",
   "slow_pyside: full-window or high-memory PySide tests best run with a capped worker count",
 ]

@@ -2,8 +2,8 @@ module:
   name: hiring_workspace_v2
   language: python
   path: src/hiring_workspace_v2.py
-  version: 3.1.1
-  description: Native Staffing v2 Interviews, Candidates, and Offers surfaces for the seven-stage application pipeline, with shared overlays, semantic metrics, contextual lifecycle actions, prior cycles, documents, an initially closed and explicitly closable application detail overlay, a readable icon-and-color Role column replacing Active cycles in Candidate History, and a three-step offer editor readable through 150 percent font scaling.
+  version: 3.2.0
+  description: Native Staffing v2 Candidates pipeline/history and Offers surfaces for the seven-stage application pipeline, with shared overlays, semantic metrics, contextual lifecycle actions, prior cycles, documents, compressible stage/filter controls that avoid page-width overflow, an initially closed and explicitly closable application detail overlay, a readable icon-and-color Role column replacing Active cycles in Candidate History, and a three-step offer editor readable through 150 percent font scaling.
 functions: []
 classes:
 - name: HiringOfferApprovalDialog
@@ -32,7 +32,7 @@ classes:
     exceptions: []
     side_effects: Closes PDF document and dialog.
 - name: HiringInterviewGuidePage
-  description: Internal Hiring v2 route owner for pipeline, focused interview guide, and closeout.
+  description: Internal focused interview/closeout route owner that retains optional pipeline compatibility while allowing Interviews to start directly on interview setup.
   locked: false
   attributes:
     widget: {type: QWidget}
@@ -40,13 +40,14 @@ classes:
     candidates_widget: {type: QWidget}
     offers_widget: {type: QWidget}
     stack: {type: QStackedWidget}
+    pipeline_widget: {type: 'QWidget | None'}
     current_route: {type: str}
   methods:
   - name: show_pipeline
     inputs: {}
     returns: {type: None}
     exceptions: []
-    side_effects: Shows pipeline route.
+    side_effects: Shows pipeline route when owned; otherwise keeps interview route visible.
   - name: show_interview
     inputs: {}
     returns: {type: None}
