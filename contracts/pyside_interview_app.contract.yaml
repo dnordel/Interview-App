@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 2.0.0
+  version: 4.0.1
   description: PySide6 redesign shell and headless view-model builder for guided
     interview workflow with searchable, filterable, sortable, outcome-colored,
     content-sized history table behavior, mockup-aligned staffing classroom detail dashboard with full left rail, resizable splitter sections, school/classroom selectors, wider color-coded classroom list with per-classroom status-count overview, metric cards, positions table, fully editable right-side assignment/person details drawer, guided action dialogs, legacy workbook compatibility tabs, actions, and metrics, parallel Staffing v2 navigation/page shell with its own mockup-style staffing sidebar and forced light Qt theme, People / Employee Management and Assignment History sub-dashboards for the mockup-driven rewrite backed by staffing_dashboard_v2 while the legacy Staffing page remains available,
@@ -46,6 +46,10 @@ module:
     finalize progress with immediate ordered task/status rows in a compact scrollable
     dialog, successful-completion auto-close, live history refresh, and single supported desktop GUI documentation
     while preserving shared finalize, history, document, and DeepSeek runtime services.
+    The visible Hiring v2 workflow adds candidate contact/profile selection, a focused
+    one-question interview guide with recording/transcription state, progress rail,
+    compact rubric cards, collapsed closeout details, and fail-closed immutable offer
+    approval review routed through approved DOCX/PDF rendering and candidate-only delivery.
 functions:
 - name: build_interview_redesign_model
   description: Build workflow-first home, setup, live interview, review, offer, classroom-detail staffing, onboarding, and admin view data from rubric, intro script, question flow, and InterviewHistoryStore rows, importing legacy JSON only through the store when applicable.
@@ -423,6 +427,8 @@ classes:
       type: dict[int, str]
     flow_recordings:
       type: dict[int, dict[str, Any]]
+    application_id:
+      type: str
   methods:
   - name: start
     description: Start a new guided interview session at the school-specific intro script, assign the current interview date, and persist initial draft/session state.
@@ -725,31 +731,13 @@ classes:
     - ValueError
     side_effects: Reads PySide draft JSON.
 - name: PySideInterviewWindow
-  description: Main PySide6 window with navigation for Interviews, Candidates, Offers,
-    Onboarding, Admin Studio, top-level Tk/PySide UI switching, and scrollable
-    live interview panes with wrapped long question and score text, plus an
-    interviewer-facing review closeout that shows immediate manual scoring,
-    missing/skipped checks, and question score status without DeepSeek analysis,
-    AI scoring text, transcript text, or offer/finalize actions. The
-    home start panel places Continue/Delete Saved Draft actions beside Begin Interview
-    so the Home history grid remains visually prioritized; home and Candidates history grids share the same Date, Candidate, School, Position, Score, Status,
-    Interview Notes, Regenerate, Offer, and confirmed Delete actions; supports column sorting, fuzzy search,
-    school/outcome filters, hiring-outcome row color, content-sized text columns,
-    compact notes/offer/delete action columns, Processing notes state during detached
-    DeepSeek work, and live refresh after finalize; the completed review screen
-    omits manual Finalize Interview and Generate Offer actions because finalize
-    runs from the final live question and offers are generated after director
-    interview review; Open Notes opens the selected interview notes file and
-    Generate Offer opens a guided PySide offer form with required Mr./Ms. title,
-    calendar/time and numeric inputs, editable offer-only position choices, automatic
-    30-hour template selection, school-routed destinations, and post-generation open actions;
-    Admin Studio exposes per-school full-time template, part-time template, and offer
-    output-folder fields alongside interview-note routing; Admin Studio routes its
-    Notifications shortcut directly to the shared Staffing v2 manager and exposes
-    an allowlisted local DeepSeek model choice controlled by card actions with only
-    a hidden selector retained as a backing field.
-    Staffing dashboard view ownership is inline in this PySide shell rather than a
-    separate staffing_dashboard_view module.
+  description: Main PySide6 operations shell. Hiring v2 is the sole interview, candidate,
+    history, and offer surface. Its internal router owns pipeline, candidate setup,
+    focused live interview, recording/transcription status, draft recovery, closeout,
+    immutable offer approval preview, delivery, negotiation, and acceptance. Staffing,
+    Staffing v2, Onboarding, and Admin remain separate navigation surfaces. Deferred
+    construction builds only the actual default Staffing v2 page and leaves every
+    other outer page as a placeholder until selected.
   locked: false
   attributes:
     model:
@@ -775,6 +763,28 @@ classes:
     _main_nav_pages_built:
       type: set[int]
   methods:
+  - name: _review_hiring_offer_approval
+    description: Preview and approve the exact pending Hiring v2 offer version after validating candidate email, template, rendered DOCX/PDF, terms, and typed approver identity; compensation revisions use the admin-only revision approval path.
+    locked: false
+    inputs:
+      service:
+        type: HiringWorkflowService
+        required: true
+      application:
+        type: HiringApplication
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Renders and validates approved offer artifacts, presents approval review, persists approval, attempts candidate-only delivery, and refreshes Hiring v2.
+  - name: _populate_home_candidate_profile
+    description: Populate editable candidate profile and contact fields from the selected Hiring v2 profile while preserving new-profile entry.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Updates candidate name, preferred name, email, and phone widgets.
   - name: show
     description: Expand the redesigned PySide6 main window to current usable screen geometry before showing it maximized, then schedule startup notification draining and recording-interface preload after first paint for full interview launches while skipping those interview/audio warmups for director staffing-only launches.
     locked: false
@@ -2928,6 +2938,17 @@ classes:
       type: None
     exceptions: []
     side_effects: Updates Admin Studio table item baseline data.
+  - name: _resume_hiring_application
+    description: Resume the selected application-keyed Hiring v2 draft in the shared live interview guide and restart shared audio capture without discarding prior transcripts.
+    locked: false
+    inputs:
+      application_id:
+        type: str
+        required: true
+    returns:
+      type: None
+    exceptions: [ValueError]
+    side_effects: Loads a path-safe application draft, renders live/review/offer state, and starts shared recording/transcription capture.
   - name: _start_pyside_interview_recording
     description: Start optional continuous PySide interview recording at Begin Interview
       using the shared local recorder and the same runtime settings warmed after
@@ -2940,8 +2961,8 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Resets PySide session transcript state for candidate-answer questions,
-      may start FFmpeg-backed local recording, schedules non-blocking system-audio
+    side_effects: Starts a fresh recording timing window while preserving autosaved prior
+      candidate transcripts and recording artifacts, may start FFmpeg-backed local recording, schedules non-blocking system-audio
       route and 15-second intro transcription checks, and clears recording timing
       state when audio capture cannot start.
   - name: _stop_pyside_interview_recording
@@ -3824,90 +3845,6 @@ classes:
     exceptions: []
     side_effects: May launch the OS default document application, show a missing-file
       warning dialog, or start regeneration for failed rows without a document.
-  - name: _open_history_offer
-    description: Advance generated/approved/accepted history offer rows through PySide offer transitions with notification emission, or open the offer wizard for not_generated rows.
-    locked: false
-    inputs:
-      row:
-        type: PySideHistoryRow
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: May update interview history offer status, emit checkpoint notifications,
-      reload visible history tables, switch to Offers, or switch to Onboarding.
-  - name: _advance_pyside_offer_status
-    description: Persist one PySide history offer status transition and emit the matching checkpoint notification.
-    locked: false
-    inputs:
-      row:
-        type: PySideHistoryRow
-        required: true
-      status:
-        type: str
-        required: true
-      message:
-        type: str
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Writes interview history through InterviewHistoryStore, emits notification, reloads visible history model, and shows status-bar message.
-  - name: _update_pyside_offer_status
-    description: Update one PySide history row offer status and optionally emit notification.
-    locked: false
-    inputs:
-      row_key:
-        type: str
-        required: true
-      status:
-        type: str
-        required: true
-      offer_path:
-        type: str
-        required: false
-        default: ''
-      row:
-        type: PySideHistoryRow | None
-        required: false
-        default: null
-    returns:
-      type: bool
-    exceptions: []
-    side_effects: Writes interview history through InterviewHistoryStore and may emit notification.
-  - name: _emit_pyside_session_offer_generated
-    description: Emit generic offer.generated notification for an active PySide
-      interview session offer document, including candidate aliases, school code/location,
-      position, offer path, reply-by date, interview date when available, generated-date,
-      start-date, notice, and final-working-day payload fields used by immediate or queued
-      date-offset notification rules.
-    locked: false
-    inputs:
-      output_path:
-        type: Path
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: May read notification settings and write notification audit/send
-      email or queue future date-offset notification schedules.
-  - name: _emit_pyside_offer_notification
-    description: Emit generic offer notification event for a PySide history offer status,
-      including dynamic candidate aliases/email, qualification, school code/location,
-      position, generated-date, reply-by date, offer path/PDF path for approved offers,
-      start-date, notice, final-working-day, and status placeholder payload fields.
-    locked: false
-    inputs:
-      row:
-        type: PySideHistoryRow
-        required: true
-      status:
-        type: str
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: May convert an approved-offer DOCX to PDF, read notification settings, and write notification audit/send email.
   - name: _emit_pyside_rating_notification
     description: Emit generic interview rating notification events for Hire and Borderline
       PySide finalize outcomes only, including dynamic candidate, qualification,
@@ -3921,124 +3858,6 @@ classes:
       type: None
     exceptions: []
     side_effects: May read notification settings and write notification audit/send email.
-  - name: _open_session_offer
-    description: Route a completed active PySide session to the Offers wizard,
-      clearing any selected history offer row so fields are prefilled from current
-      session answers. This helper is not exposed as a completed-review-screen
-      action because offers occur after director interview review.
-    locked: false
-    inputs: {}
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Re-renders the offer page and switches sidebar/stack navigation
-      to Offers.
-  - name: _delete_history_row
-    description: Confirm with the operator, delete one selected PySide history row
-      by stable row key, and reload Home/Candidates history tables when deletion succeeds.
-    locked: false
-    inputs:
-      row:
-        type: PySideHistoryRow
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Shows a PySide confirmation dialog, may update persisted history,
-      and refreshes visible history tables.
-  - name: _set_history_search_text
-    description: Update the in-memory PySide history fuzzy search text and refresh the visible history table.
-    locked: false
-    inputs:
-      value:
-        type: str
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Re-renders the visible PySide history table.
-  - name: _set_history_school_filter
-    description: Update the selected school filter and refresh the visible PySide history table.
-    locked: false
-    inputs:
-      value:
-        type: str
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Re-renders the visible PySide history table.
-  - name: _set_history_outcome_filter
-    description: Update the optional hiring outcome filter and refresh the visible PySide history table.
-    locked: false
-    inputs:
-      value:
-        type: str
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Re-renders the visible PySide history table.
-  - name: _refresh_history_table
-    description: Rebuild a visible PySide history table from supplied rows or current in-memory search and filter state while preserving action buttons and sortable columns.
-    locked: false
-    inputs:
-      table:
-        type: QTableWidget | None
-        required: false
-        default: null
-      rows:
-        type: Sequence[PySideHistoryRow] | None
-        required: false
-        default: null
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Re-renders the visible PySide history table.
-  - name: _refresh_all_history_tables
-    description: Refresh every PySide table that renders finalized interview history,
-      including Home and Candidates, through the same row rendering code path.
-    locked: false
-    inputs: {}
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Re-renders registered PySide history table widgets.
-  - name: _history_notes_action_state
-    description: Return the Notes-column label, enabled state, and tooltip for a PySide
-      history row, showing Processing during detached DeepSeek work, Failed/Retry
-      when detached DeepSeek failed, and preventing missing-path opens.
-    locked: false
-    inputs:
-      row:
-        type: PySideHistoryRow
-        required: true
-    returns:
-      type: tuple[str, bool, str]
-    exceptions: []
-    side_effects: none
-  - name: _create_history_table
-    description: Create a shared expanding PySide history-grid table with Date, Candidate, School, Position, Score, Status, Notes, Regenerate, Transcript, Offer, and Delete columns.
-    locked: false
-    inputs:
-      object_name:
-        type: str
-        required: true
-    returns:
-      type: QTableWidget
-    exceptions: []
-    side_effects: Creates a PySide table widget.
-  - name: _size_history_table_columns
-    description: Size PySide history text columns to visible content while keeping Notes, Regenerate, Transcript, Offer, and Delete action columns compact.
-    locked: false
-    inputs:
-      table:
-        type: QTableWidget
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Updates visible PySide history table column widths.
   - name: _track_key_for_label
     description: Resolve a displayed role label to a configured interview track key.
     locked: false
@@ -4309,8 +4128,11 @@ data_structures:
 dependencies:
 - module: admin_studio
 - module: candidate_report
+- module: dashboard_v2_ui
 - module: data_store
 - module: interview_runtime
+- module: hiring_pipeline
+- module: hiring_workspace_v2
 - module: notification_service
 - module: onboarding_operations
 - module: platform_services

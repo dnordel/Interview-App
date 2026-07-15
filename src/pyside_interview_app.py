@@ -59,6 +59,14 @@ from interview_runtime import (
     resolve_runtime,
     _local_deepseek_settings_source,
 )
+from hiring_pipeline import (
+    HiringOfferNotificationAdapter,
+    HiringPipelineStore,
+    HiringWorkflowService,
+    OfferApprovalArtifactStage,
+)
+from hiring_workspace_v2 import HiringInterviewGuidePage, HiringOfferApprovalDialog, HiringWorkspaceV2Page
+from dashboard_v2_ui import SEMANTIC_COLORS
 from notification_service import (
     EMAIL_ACCOUNT_SETTINGS_PATH,
     NOTIFICATION_RULES_PATH,
@@ -101,7 +109,7 @@ from staffing_store import StaffingEditLock, StaffingStore
 
 APP_TITLE = "Interview Assistant"
 LOGGER = logging.getLogger(__name__)
-NAVIGATION = ["Interviews", "Candidates", "Offers", "Staffing", "Staffing v2", "Onboarding", "Admin"]
+NAVIGATION = ["Staffing", "Staffing v2", "Onboarding", "Admin"]
 DIRECTOR_STAFFING_NAVIGATION = ["Staffing v2"]
 SETUP_STEPS = ["Candidate", "Interview Plan", "Ready"]
 STAFFING_DB_PATH = DEFAULT_BASE_DIR / "staffing_dashboard.sqlite3"
@@ -260,6 +268,7 @@ class PySideInterviewSession:
     flow_time_marks: list[dict[str, Any]] = field(default_factory=list)
     flow_candidate_transcripts: dict[int, str] = field(default_factory=dict)
     flow_recordings: dict[int, dict[str, Any]] = field(default_factory=dict)
+    application_id: str = ""
 
     def start(self, *, candidate_name: str, school: str, track_key: str) -> None:
         if track_key not in self.model.flows:
@@ -610,6 +619,36 @@ class PySideInterviewSession:
                 "report_path": str(out_path),
             },
         )
+        history_row = next(
+            (
+                row
+                for row in adapter.history_store.load()
+                if adapter.history_store.build_row_key(row) == history_id
+            ),
+            {},
+        )
+        track = self.model.flows.get(self.track_key)
+        hiring_service = HiringWorkflowService(HiringPipelineStore(Path(history_path)))
+        completion = {
+            "history_id": history_id,
+            "score": float(scoring.get("percent_of_max", 0.0) or 0.0),
+            "outcome": str(scoring.get("outcome") or ""),
+        }
+        if self.application_id:
+            hiring_service.finalize_initial_interview(
+                self.application_id,
+                **completion,
+                actor="Admin User",
+            )
+        else:
+            hiring_service.record_initial_interview(
+                **completion,
+                legal_name=self.candidate_name,
+                email=str(history_row.get("candidate_email") or history_row.get("email") or ""),
+                phone=str(history_row.get("candidate_phone") or history_row.get("phone") or ""),
+                school=self.school,
+                position=track.label if track is not None else self.track_key,
+            )
         integration_path = active_gateways.export_integration(adapter, context)
         director_packet, comm_log_path = active_gateways.send_referral(adapter, context, out_path, integration_path)
         return {
@@ -650,6 +689,7 @@ class PySideInterviewSession:
     def to_draft(self) -> dict[str, Any]:
         return {
             "schema": "pyside_interview_draft.v1",
+            "application_id": self.application_id,
             "candidate_name": self.candidate_name,
             "interview_date": self.interview_date,
             "school": self.school,
@@ -748,6 +788,7 @@ class PySideInterviewSession:
         return cls(
             model=model,
             draft_path=Path(draft_path),
+            application_id=str(payload.get("application_id", "")).strip(),
             candidate_name=str(payload.get("candidate_name", "")).strip(),
             interview_date=str(payload.get("interview_date", "") or date.today().isoformat()).strip(),
             school=str(payload.get("school", "")).strip(),
@@ -1876,12 +1917,12 @@ class PySide6UnavailableError(RuntimeError):
 
 def _import_qt() -> Any:
     try:
-        from PySide6 import QtCore, QtGui, QtWidgets
+        from PySide6 import QtCore, QtGui, QtPdf, QtPdfWidgets, QtWidgets
     except ImportError as exc:
         raise PySide6UnavailableError(
             "PySide6 is not installed. Install requirements, then launch this redesign."
         ) from exc
-    return QtCore, QtGui, QtWidgets
+    return QtCore, QtGui, QtPdf, QtPdfWidgets, QtWidgets
 
 
 def standard_window_control_flags(QtCore: Any) -> Any:
@@ -1947,6 +1988,42 @@ def _apply_styles(app: Any) -> None:
             background: #ffffff;
             border: 1px solid #d9dee7;
             border-radius: 8px;
+        }
+        QWidget#HiringV2InterviewGuide {
+            background: #f8fafc;
+        }
+        QFrame#HiringV2CandidateSetupCard,
+        QFrame#HiringV2CapturePreflight,
+        QFrame#HiringV2StructuredResponseCard,
+        QFrame#HiringV2RubricCard {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+        }
+        QFrame#HiringV2RubricCard:focus-within {
+            border: 2px solid #2563eb;
+            background: #eff6ff;
+        }
+        QListWidget#HiringV2QuestionRail {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 6px;
+        }
+        QListWidget#HiringV2QuestionRail::item {
+            padding: 8px;
+            border-radius: 6px;
+        }
+        QListWidget#HiringV2QuestionRail::item:selected {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+        QLabel#PySideRecordingWarning {
+            color: #991b1b;
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 8px;
         }
         QFrame#PySideSidebar {
             background: #061831;
@@ -2272,9 +2349,11 @@ def _apply_styles(app: Any) -> None:
 
 class PySideInterviewWindow:
     def __init__(self, model: InterviewRedesignModel, *, defer_secondary_pages: bool = False) -> None:
-        QtCore, QtGui, QtWidgets = _import_qt()
+        QtCore, QtGui, QtPdf, QtPdfWidgets, QtWidgets = _import_qt()
         self.QtCore = QtCore
         self.QtGui = QtGui
+        self.QtPdf = QtPdf
+        self.QtPdfWidgets = QtPdfWidgets
         self.QtWidgets = QtWidgets
         self.model = model
         self.director_staffing_mode = list(model.navigation) == DIRECTOR_STAFFING_NAVIGATION
@@ -2283,7 +2362,6 @@ class PySideInterviewWindow:
         self.session_index = 0
         self.session_answers: dict[str, dict[str, Any]] = {}
         self.session: PySideInterviewSession | None = None
-        self.selected_history_offer_row: PySideHistoryRow | None = None
         self.history_store = InterviewHistoryStore(model.history_path)
         self.school_offer_store = SchoolOfferSettingsStore(SCHOOL_OFFER_SETTINGS_PATH)
         staffing_db_path = (
@@ -2401,9 +2479,6 @@ class PySideInterviewWindow:
         self.window.setCentralWidget(root)
 
         page_builders = {
-            "Interviews": self._interviews_page,
-            "Candidates": self._candidates_page,
-            "Offers": self._offer_page,
             "Staffing": self._staffing_page,
             "Staffing v2": self._staffing_v2_page,
             "Onboarding": self._onboarding_page,
@@ -2412,10 +2487,19 @@ class PySideInterviewWindow:
         self._main_nav_page_builders = page_builders
         self._main_nav_page_names = list(model.navigation)
         self._main_nav_pages_built: set[int] = set()
+        default_row = (
+            list(model.navigation).index("Staffing v2")
+            if not self.director_staffing_mode and "Staffing v2" in model.navigation
+            else 0
+        )
         for index, name in enumerate(model.navigation):
             builder = page_builders.get(name)
             if builder is not None:
-                should_build_now = (not defer_secondary_pages) or index == 0 or self.director_staffing_mode
+                should_build_now = (
+                    (not defer_secondary_pages)
+                    or index == default_row
+                    or self.director_staffing_mode
+                )
                 if should_build_now:
                     self.stack.addWidget(builder())
                     self._main_nav_pages_built.add(index)
@@ -2423,8 +2507,261 @@ class PySideInterviewWindow:
                     self.stack.addWidget(self._deferred_main_nav_page(name))
         if self.director_staffing_mode:
             self.sidebar_panel.hide()
-        self.sidebar.setCurrentRow(0)
+        self.sidebar.setCurrentRow(default_row)
         self._apply_responsive_layout()
+
+    def _register_hiring_v2_pages(self, dashboard: Any) -> None:
+        service = HiringWorkflowService(
+            HiringPipelineStore(self.model.history_path),
+            send_offer=HiringOfferNotificationAdapter(self._notification_service()),
+        )
+        service.backfill_history()
+        self._sync_hiring_v2_director_decisions(service)
+        guide_widget = self._hiring_interview_guide_widget()
+
+        def new_interview() -> None:
+            dashboard.show_external_page("interviews")
+            dashboard.set_navigation_locked(False)
+            dashboard.set_navigation_mode("full")
+            self.hiring_v2_router.show_interview()
+            self.interview_tabs.setCurrentIndex(0)
+
+        def resume_interview(application: Any) -> None:
+            new_interview()
+            self._resume_hiring_application(application.application_id)
+
+        def review_approval(application: Any) -> None:
+            self._review_hiring_offer_approval(service, application)
+
+        def director_review(_application: Any) -> None:
+            items = [self.sidebar.item(index).text() for index in range(self.sidebar.count())]
+            if "Staffing v2" in items:
+                self.sidebar.setCurrentRow(items.index("Staffing v2"))
+
+        def view_closeout(application: Any) -> None:
+            row = next(
+                (item for item in self.model.home.history_rows if item.row_key == application.history_id),
+                None,
+            )
+            if row is None:
+                self.QtWidgets.QMessageBox.warning(self.window, "Closeout", "Interview history record not found.")
+                return
+            new_interview()
+            self.session = self._session_from_history_row(row)
+            self._review_history_id = row.row_key
+            self._render_review_page()
+            self.interview_tabs.setCurrentIndex(3)
+            self._show_hiring_closeout()
+
+        def history_row(application: Any) -> PySideHistoryRow | None:
+            return next(
+                (item for item in self.model.home.history_rows if item.row_key == application.history_id),
+                None,
+            )
+
+        def open_notes(application: Any) -> None:
+            row = history_row(application)
+            if row is not None:
+                self._open_history_notes(row)
+
+        def regenerate_notes(application: Any) -> None:
+            row = history_row(application)
+            if row is not None:
+                self._retry_history_deepseek(row)
+
+        def import_transcript(application: Any) -> None:
+            row = history_row(application)
+            if row is not None:
+                self._import_indeed_transcript_for_history_row(row)
+
+        self.hiring_v2_page = HiringWorkspaceV2Page(
+            QtCore=self.QtCore,
+            QtWidgets=self.QtWidgets,
+            service=service,
+            actions={
+                "new_interview": new_interview,
+                "resume_interview": resume_interview,
+                "review_approval": review_approval,
+                "approve_revision": review_approval,
+                "director_review": director_review,
+                "view_closeout": view_closeout,
+                "view_acceptance": lambda _application: None,
+                "open_notes": open_notes,
+                "regenerate_notes": regenerate_notes,
+                "import_transcript": import_transcript,
+            },
+        )
+        self.hiring_v2_router = HiringInterviewGuidePage(
+            QtWidgets=self.QtWidgets,
+            pipeline_widget=self.hiring_v2_page.widget,
+            interview_widget=guide_widget,
+        )
+        dashboard.register_external_section("hiring", "HIRING")
+        dashboard.register_external_page(
+            "hiring", "interviews", "Interviews", self.hiring_v2_router.widget, icon_key="people"
+        )
+        dashboard.register_external_page(
+            "hiring", "candidates", "Candidates", self.hiring_v2_page.candidates_widget, icon_key="people"
+        )
+        dashboard.register_external_page(
+            "hiring", "offers", "Offers", self.hiring_v2_page.offers_widget, icon_key="history"
+        )
+
+    def _review_hiring_offer_approval(
+        self,
+        service: HiringWorkflowService,
+        application: Any,
+    ) -> None:
+        pending = [
+            version
+            for version in service.store.list_offer_versions(application.application_id)
+            if version.status == "pending_approval"
+        ]
+        if not pending:
+            self.QtWidgets.QMessageBox.warning(self.window, "Executive approval", "No pending offer version found.")
+            return
+        version = max(pending, key=lambda item: item.version_number)
+        candidate = service.store.get_candidate(application.candidate_id)
+        terms = version.terms
+        artifact_stage: OfferApprovalArtifactStage | None = None
+        try:
+            template_path = Path(str(terms.get("template_path") or "")).expanduser().resolve()
+            output_dir = Path(str(terms.get("output_dir") or "")).expanduser().resolve()
+            if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", candidate.email):
+                raise ValueError("Valid candidate email is required before approval.")
+            if not template_path.is_file():
+                raise ValueError("Validated offer template is required before approval.")
+            first_name, last_name = _split_candidate_name(candidate.legal_name)
+            approval_date = date.today()
+            output_path = next_available_offer_path(
+                output_dir,
+                build_school_offer_filename(application.school, candidate.legal_name),
+            )
+            artifact_stage = OfferApprovalArtifactStage(output_path)
+            data = OfferInput(
+                first_name=first_name,
+                last_name=last_name,
+                city=application.school,
+                position=application.position,
+                start_date=approval_date,
+                start_time_12h=str(terms.get("start_time") or "08:00 AM"),
+                end_time_12h=str(terms.get("end_time") or "05:00 PM"),
+                hourly_pay=float(terms.get("hourly_pay") or 0),
+                hours=int(float(terms.get("weekly_hours") or terms.get("hours_week") or 0)),
+                created_on=approval_date,
+                title=str(terms.get("title") or ""),
+            )
+            OfferLetterService.render_approved_offer(
+                template_path,
+                artifact_stage.staged_docx_path,
+                data,
+                approval_date=approval_date,
+            )
+            pdf_text = _ensure_offer_pdf_path(str(artifact_stage.staged_docx_path))
+            if not pdf_text:
+                raise ValueError("Approved PDF could not be rendered and validated.")
+            pdf_path = Path(pdf_text).resolve()
+            if pdf_path != artifact_stage.staged_pdf_path:
+                raise ValueError("Approved PDF staging path is invalid.")
+            artifact_stage.hashes()
+        except (OSError, TypeError, ValueError) as exc:
+            if artifact_stage is not None:
+                artifact_stage.cleanup()
+            self.QtWidgets.QMessageBox.warning(self.window, "Executive approval", str(exc))
+            return
+
+        rendered_email = (
+            f"Subject: Offer of Employment - {application.position}\n\n"
+            f"Hello {candidate.preferred_name or first_name},\n\n"
+            "Your approved offer is attached as a PDF."
+        )
+        approval_dialog = HiringOfferApprovalDialog(
+            QtCore=self.QtCore,
+            QtPdf=self.QtPdf,
+            QtPdfWidgets=self.QtPdfWidgets,
+            QtWidgets=self.QtWidgets,
+            parent=self.window,
+            title=f"Approve offer v{version.version_number}",
+            summary=(
+            f"Candidate: {candidate.legal_name}\nEmail: {candidate.email}\n"
+            f"Position: {application.position}\nPay: ${float(terms.get('hourly_pay') or 0):.2f}/hour\n"
+            f"Hours: {terms.get('weekly_hours') or terms.get('hours_week')} weekly\n"
+                f"Destination DOCX: {output_path}\nDestination PDF: {output_path.with_suffix('.pdf')}"
+            ),
+            rendered_email=rendered_email,
+            pdf_path=pdf_path,
+        )
+        if not approval_dialog.exec():
+            approval_dialog.close()
+            artifact_stage.cleanup()
+            return
+        approver_name = approval_dialog.approver_name()
+        approval_dialog.close()
+        try:
+            promoted = artifact_stage.promote()
+            if application.stage.value == "offer_sent":
+                service.approve_compensation_revision(
+                    application.application_id,
+                    version.version_id,
+                    admin_name=approver_name,
+                    approval_date=approval_date,
+                    docx_path=promoted.docx_path,
+                    pdf_path=promoted.pdf_path,
+                    rendered_email=rendered_email,
+                )
+            else:
+                service.approve_offer(
+                    application.application_id,
+                    version.version_id,
+                    approver_name=approver_name,
+                    approver_role="Executive Director",
+                    approval_date=approval_date,
+                    docx_path=promoted.docx_path,
+                    pdf_path=promoted.pdf_path,
+                    rendered_email=rendered_email,
+                )
+            self.hiring_v2_page.refresh()
+        except ValueError as exc:
+            self.QtWidgets.QMessageBox.warning(self.window, "Executive approval", str(exc))
+
+    def _resume_hiring_application(self, application_id: str) -> None:
+        clean_id = str(application_id or "").strip()
+        if not clean_id or Path(clean_id).name != clean_id:
+            raise ValueError("Valid application ID is required.")
+        draft_path = self._drafts_dir() / f"{clean_id}.json"
+        self.session = PySideInterviewSession.load(model=self.model, draft_path=draft_path)
+        if self.session.application_id != clean_id:
+            raise ValueError("Interview draft does not match the selected application.")
+        self.session_track_key = self.session.track_key
+        self.session_index = self.session.current_index
+        self.session_answers = dict(self.session.answers)
+        self._render_live_question_page()
+        self._render_review_page()
+        self._start_pyside_interview_recording()
+        self.interview_tabs.setCurrentIndex(2 if self.session.active_question() is not None else 3)
+        self._set_hiring_focus_mode(self.session.active_question() is not None)
+
+    def _sync_hiring_v2_director_decisions(self, service: HiringWorkflowService) -> None:
+        shared_path = Path(STAFFING_DB_PATH)
+        for application in service.store.list_applications():
+            if application.stage.value != "director_review":
+                continue
+            school_path = staffing_db_path_for_school(application.school, base_path=shared_path)
+            for path in dict.fromkeys((school_path, shared_path)):
+                if not path.exists():
+                    continue
+                interview = StaffingService(StaffingStore(path)).find_any_completed_director_interview(
+                    history_id=application.history_id,
+                    school=application.school,
+                )
+                if interview is None:
+                    continue
+                service.synchronize_director_outcome(
+                    application.history_id,
+                    decision=interview.decision,
+                    actor=interview.director_name or "Staffing v2",
+                )
+                break
 
     def _select_main_nav_row(self, index: int) -> None:
         if index < 0:
@@ -2688,13 +3025,21 @@ class PySideInterviewWindow:
 
     def _page(self) -> Any:
         QtWidgets = self.QtWidgets
+        QtCore = self.QtCore
 
         class ResponsivePageScrollArea(QtWidgets.QScrollArea):
             def resizeEvent(inner_self, event: Any) -> None:
                 super().resizeEvent(event)
+                inner_self._clamp_child_width()
+                QtCore.QTimer.singleShot(0, inner_self._clamp_child_width)
+
+            def _clamp_child_width(inner_self) -> None:
                 child = inner_self.widget()
                 if child is not None:
-                    child.setMaximumWidth(inner_self.viewport().width())
+                    width = max(0, inner_self.viewport().width())
+                    child.setMaximumWidth(width)
+                    if child.width() > width:
+                        child.resize(width, child.height())
 
         page = ResponsivePageScrollArea()
         page.setObjectName("PySidePageScrollArea")
@@ -2712,6 +3057,8 @@ class PySideInterviewWindow:
         layout.setContentsMargins(24, 20, 24, 20)
         layout.setSpacing(14)
         page.setWidget(content)
+        page.verticalScrollBar().rangeChanged.connect(lambda _minimum, _maximum: page._clamp_child_width())
+        page.horizontalScrollBar().rangeChanged.connect(lambda _minimum, _maximum: page._clamp_child_width())
         content.setMaximumWidth(page.viewport().width())
         return page, layout
 
@@ -2844,15 +3191,16 @@ class PySideInterviewWindow:
         scroll.setWidget(content)
         return scroll
 
-    def _interviews_page(self) -> Any:
+    def _hiring_interview_guide_widget(self) -> Any:
         page, layout = self._page()
-        layout.addWidget(self._label(self.model.app_title, "Title"))
-        layout.addWidget(self._label("Guided hiring workflow: setup, interview, scoring, notes, next action."))
+        page.setObjectName("HiringV2InterviewGuide")
         self.interview_tabs = self.QtWidgets.QTabWidget()
+        self.interview_tabs.setObjectName("HiringV2InterviewRouteStack")
         self.interview_tabs.addTab(self._home_tab(), "Home")
         self.interview_tabs.addTab(self._setup_tab(), "Setup")
         self.interview_tabs.addTab(self._live_question_tab(), "Live Interview")
         self.interview_tabs.addTab(self._review_tab(), "Review")
+        self.interview_tabs.tabBar().hide()
         layout.addWidget(self.interview_tabs, 1)
         return page
 
@@ -2860,19 +3208,42 @@ class PySideInterviewWindow:
         page, layout = self._page()
 
         setup, setup_layout = self._surface()
-        setup_layout.addWidget(self._label(self.model.home.primary_action, "SectionTitle"))
+        setup.setObjectName("HiringV2CandidateSetupCard")
+        setup_layout.addWidget(self._label("New Interview", "Title"))
+        setup_layout.addWidget(self._label("Select or create a candidate, confirm role, then verify capture readiness."))
         form = self.QtWidgets.QFormLayout()
+        profile = self.QtWidgets.QComboBox()
+        profile.setEditable(True)
+        profile.addItem("New candidate profile", "")
+        profile_store = HiringPipelineStore(self.model.history_path)
+        for item in profile_store.search_candidate_profiles():
+            profile.addItem(
+                f"{item.preferred_name or item.legal_name} — {item.email or 'no email'}",
+                item.candidate_id,
+            )
         candidate = self.QtWidgets.QLineEdit()
+        preferred_name = self.QtWidgets.QLineEdit()
+        candidate_email = self.QtWidgets.QLineEdit()
+        candidate_phone = self.QtWidgets.QLineEdit()
         school = self.QtWidgets.QComboBox()
         school.addItems(self.model.school_options)
         role = self.QtWidgets.QComboBox()
         role.addItems(list(self.model.track_labels.values()))
         self.home_role_combo = role
-        form.addRow("Candidate name", candidate)
+        form.addRow("Candidate profile", profile)
+        form.addRow("Legal name", candidate)
         self.home_candidate_input = candidate
+        self.home_profile_combo = profile
+        self.home_preferred_name_input = preferred_name
+        self.home_candidate_email_input = candidate_email
+        self.home_candidate_phone_input = candidate_phone
+        form.addRow("Preferred name", preferred_name)
+        form.addRow("Email", candidate_email)
+        form.addRow("Phone", candidate_phone)
         form.addRow("School", school)
         self.home_school_combo = school
         form.addRow("Role", role)
+        profile.currentIndexChanged.connect(self._populate_home_candidate_profile)
         setup_layout.addLayout(form)
 
         latest_draft = latest_pyside_draft_path(self._drafts_dir())
@@ -2882,6 +3253,15 @@ class PySideInterviewWindow:
         if latest_draft:
             self.home_draft_label.setToolTip(str(latest_draft))
         setup_layout.addWidget(self.home_draft_label)
+
+        preflight, preflight_layout = self._surface()
+        preflight.setObjectName("HiringV2CapturePreflight")
+        preflight_layout.addWidget(self._label("Audio & transcript preflight", "SectionTitle"))
+        preflight_text = self._recording_warning_text() or "Capture devices will be verified when interview begins."
+        self.home_capture_preflight_status = self._label(preflight_text)
+        self.home_capture_preflight_status.setObjectName("HiringV2CapturePreflightStatus")
+        preflight_layout.addWidget(self.home_capture_preflight_status)
+        setup_layout.addWidget(preflight)
 
         action_row = self.QtWidgets.QHBoxLayout()
         begin = self._primary_button("Begin Interview")
@@ -2903,215 +3283,21 @@ class PySideInterviewWindow:
         action_row.addWidget(delete_draft, 1)
         setup_layout.addLayout(action_row)
         layout.addWidget(setup)
-
-        recent, recent_layout = self._surface()
-        recent_layout.addWidget(self._label("Interview History", "SectionTitle"))
-        controls = self.QtWidgets.QHBoxLayout()
-        search = self.QtWidgets.QLineEdit()
-        search.setPlaceholderText("Search history")
-        search.textChanged.connect(self._set_history_search_text)
-        self.history_search_input = search
-        controls.addWidget(search, 2)
-
-        school_filter = self.QtWidgets.QComboBox()
-        school_filter.addItems(["All schools", *self._history_school_options()])
-        school_filter.currentTextChanged.connect(self._set_history_school_filter)
-        self.history_school_filter = school_filter
-        controls.addWidget(school_filter, 1)
-
-        outcome_filter = self.QtWidgets.QComboBox()
-        outcome_filter.addItems(["All outcomes", *self._history_outcome_options()])
-        outcome_filter.currentTextChanged.connect(self._set_history_outcome_filter)
-        self.history_outcome_filter = outcome_filter
-        controls.addWidget(outcome_filter, 1)
-        recent_layout.addLayout(controls)
-
-        table = self._create_history_table("PySideHistoryGrid")
-        self.history_table = table
-        self._refresh_history_table()
-        recent_layout.addWidget(table, 1)
-        layout.addWidget(recent, 1)
+        layout.addStretch(1)
         return page
 
-    def _history_school_options(self) -> list[str]:
-        values = {row.school for row in self.model.home.history_rows if row.school}
-        return sorted(values, key=str.lower)
-
-    def _history_outcome_options(self) -> list[str]:
-        values = {row.status for row in self.model.home.history_rows if row.status}
-        return sorted(values, key=str.lower)
-
-    def _set_history_search_text(self, value: str) -> None:
-        self.history_search_text = value.strip()
-        self._refresh_history_table()
-
-    def _set_history_school_filter(self, value: str) -> None:
-        self.history_school_filter_text = "" if value == "All schools" else value.strip()
-        self._refresh_history_table()
-
-    def _set_history_outcome_filter(self, value: str) -> None:
-        self.history_outcome_filter_text = "" if value == "All outcomes" else value.strip()
-        self._refresh_history_table()
-
-    def _filtered_history_rows(self) -> list[PySideHistoryRow]:
-        rows = _build_pyside_history_rows(
-            self.model.history_path,
-            school=self.history_school_filter_text,
-            outcome=self.history_outcome_filter_text,
-        )
-        if not self.history_search_text:
-            return rows
-        filtered: list[PySideHistoryRow] = []
-        for row in rows:
-            if not self._history_row_matches_search(row, self.history_search_text):
-                continue
-            filtered.append(row)
-        return filtered
-
-    def _history_row_matches_search(self, row: PySideHistoryRow, search_text: str) -> bool:
-        query = _normalize_history_search(search_text)
-        if not query:
-            return True
-        blob = _normalize_history_search(
-            " ".join([row.interview_date, row.candidate, row.school, row.position, row.score, row.status])
-        )
-        if query in blob:
-            return True
-        blob_tokens = blob.split()
-        return all(_history_token_matches(term, blob_tokens) for term in query.split())
-
-    def _create_history_table(self, object_name: str) -> Any:
-        table = self.QtWidgets.QTableWidget(0, 11)
-        table.setObjectName(object_name)
-        table.setHorizontalHeaderLabels(
-            [
-                "Date",
-                "Candidate",
-                "School",
-                "Position",
-                "Score",
-                "Status",
-                "Notes",
-                "Regenerate",
-                "Transcript",
-                "Offer",
-                "Delete",
-            ]
-        )
-        table.horizontalHeader().setStretchLastSection(True)
-        table.setSortingEnabled(True)
-        policy = table.sizePolicy()
-        policy.setVerticalStretch(1)
-        table.setSizePolicy(policy)
-        self._history_table_widgets[object_name] = table
-        return table
-
-    def _refresh_history_table(self, table: Any | None = None, rows: Sequence[PySideHistoryRow] | None = None) -> None:
-        table = table or getattr(self, "history_table", None)
-        if table is None:
+    def _populate_home_candidate_profile(self) -> None:
+        candidate_id = str(self.home_profile_combo.currentData() or "").strip()
+        if not candidate_id:
             return
-        visible_rows = list(rows) if rows is not None else self._filtered_history_rows()
-        table.setSortingEnabled(False)
-        table.setRowCount(len(visible_rows))
-        for row_index, row in enumerate(visible_rows):
-            self._populate_history_table_row(table, row_index, row)
-        self._size_history_table_columns(table)
-        table.setSortingEnabled(True)
-
-    def _refresh_all_history_tables(self) -> None:
-        home_table = getattr(self, "history_table", None)
-        if home_table is not None:
-            self._refresh_history_table(home_table)
-        candidate_table = getattr(self, "candidate_history_table", None)
-        if candidate_table is not None:
-            self._refresh_history_table(candidate_table, self.model.home.history_rows)
-
-    def _populate_history_table_row(self, table: Any, row_index: int, row: PySideHistoryRow) -> None:
-        values = [row.interview_date, row.candidate, row.school, row.position, row.score, row.status]
-        background = self._history_outcome_brush(row.status)
-        for column, value in enumerate(values):
-            item = self.QtWidgets.QTableWidgetItem(value)
-            item.setData(self.QtCore.Qt.ItemDataRole.UserRole, row.row_key)
-            if background is not None:
-                item.setData(self.QtCore.Qt.ItemDataRole.BackgroundRole, background)
-            table.setItem(row_index, column, item)
-        notes_label, notes_enabled, notes_tooltip = self._history_notes_action_state(row)
-        notes_button = self.QtWidgets.QPushButton(notes_label)
-        notes_button.setMaximumWidth(95)
-        notes_button.setProperty("history_row_key", row.row_key)
-        notes_button.setEnabled(notes_enabled)
-        if notes_tooltip:
-            notes_button.setToolTip(notes_tooltip)
-        notes_button.clicked.connect(lambda _checked=False, item=row: self._open_history_notes(item))
-        table.setCellWidget(row_index, 6, notes_button)
-        generate_label = "Generate" if row.deepseek_processing_status.strip().lower() == "not_started" else "Regenerate"
-        regenerate_button = self.QtWidgets.QPushButton(generate_label)
-        regenerate_button.setMaximumWidth(105)
-        regenerate_button.setProperty("history_row_key", row.row_key)
-        regenerate_button.setEnabled(bool(row.row_key) and row.deepseek_processing_status.strip().lower() != "processing")
-        regenerate_button.setToolTip("Generate or regenerate DeepSeek interview notes from saved interview data.")
-        regenerate_button.clicked.connect(lambda _checked=False, item=row: self._retry_history_deepseek(item))
-        table.setCellWidget(row_index, 7, regenerate_button)
-        transcript_button = self.QtWidgets.QPushButton("Import")
-        transcript_button.setMaximumWidth(95)
-        transcript_button.setProperty("history_row_key", row.row_key)
-        transcript_button.setEnabled(bool(row.row_key))
-        transcript_button.setToolTip("Import an Indeed transcript for this candidate and open review.")
-        transcript_button.clicked.connect(lambda _checked=False, item=row: self._import_indeed_transcript_for_history_row(item))
-        table.setCellWidget(row_index, 8, transcript_button)
-        offer_button = self.QtWidgets.QPushButton(row.offer_action)
-        offer_button.setMaximumWidth(115)
-        offer_button.setProperty("history_row_key", row.row_key)
-        offer_button.setEnabled(bool(row.row_key))
-        offer_button.clicked.connect(lambda _checked=False, item=row: self._open_history_offer(item))
-        table.setCellWidget(row_index, 9, offer_button)
-        delete_button = self.QtWidgets.QPushButton("Delete")
-        delete_button.setMaximumWidth(80)
-        delete_button.setProperty("history_row_key", row.row_key)
-        delete_button.setEnabled(bool(row.row_key))
-        delete_button.clicked.connect(lambda _checked=False, item=row: self._delete_history_row(item))
-        table.setCellWidget(row_index, 10, delete_button)
-
-    def _history_notes_action_state(self, row: PySideHistoryRow) -> tuple[str, bool, str]:
-        status = row.deepseek_processing_status.strip().lower()
-        if status == "processing":
-            return "Processing", False, "DeepSeek is still processing interview notes."
-        if row.notes_path and Path(row.notes_path).exists():
-            warning = row.deepseek_processing_warning.strip()
-            return "Open Notes", True, warning
-        if status == "failed":
-            warning = row.deepseek_processing_warning.strip() or "DeepSeek processing failed."
-            return "Failed/Retry", True, warning
-        return "Unavailable", False, "Interview notes file was not found."
-
-    def _size_history_table_columns(self, table: Any) -> None:
-        table.resizeColumnsToContents()
-        minimums = {
-            0: 115,
-            1: 170,
-            2: 190,
-            3: 210,
-            4: 75,
-            5: 130,
-            6: 90,
-            7: 105,
-            8: 95,
-            9: 110,
-            10: 80,
-        }
-        for column, minimum in minimums.items():
-            table.setColumnWidth(column, max(table.columnWidth(column), table.sizeHintForColumn(column), minimum))
-        table.setColumnWidth(6, min(table.columnWidth(6), 105))
-        table.setColumnWidth(7, min(table.columnWidth(7), 115))
-        table.setColumnWidth(8, min(table.columnWidth(8), 105))
-        table.setColumnWidth(9, min(table.columnWidth(9), 125))
-        table.setColumnWidth(10, min(table.columnWidth(10), 95))
-
-    def _history_outcome_brush(self, outcome: str) -> Any:
-        color = _history_outcome_color(outcome)
-        if not color:
-            return None
-        return self.QtGui.QBrush(self.QtGui.QColor(color))
+        try:
+            candidate = HiringPipelineStore(self.model.history_path).get_candidate(candidate_id)
+        except ValueError:
+            return
+        self.home_candidate_input.setText(candidate.legal_name)
+        self.home_preferred_name_input.setText(candidate.preferred_name)
+        self.home_candidate_email_input.setText(candidate.email)
+        self.home_candidate_phone_input.setText(candidate.phone)
 
     def _setup_tab(self) -> Any:
         page, layout = self._page()
@@ -3215,14 +3401,44 @@ class PySideInterviewWindow:
         self.session_answers = {}
         candidate_name = self.home_candidate_input.text().strip() if hasattr(self, "home_candidate_input") else ""
         school = self.home_school_combo.currentText().strip() if hasattr(self, "home_school_combo") else ""
-        draft_path = self._default_draft_path(candidate_name or "Candidate")
-        self.session = PySideInterviewSession(model=self.model, draft_path=draft_path)
+        preferred_name = self.home_preferred_name_input.text().strip()
+        email = self.home_candidate_email_input.text().strip()
+        phone = self.home_candidate_phone_input.text().strip()
+        if not candidate_name or not school or not label:
+            self.QtWidgets.QMessageBox.warning(
+                self.window,
+                "New interview",
+                "Candidate name, school, and role are required.",
+            )
+            return
+        hiring_service = HiringWorkflowService(HiringPipelineStore(self.model.history_path))
+        application = hiring_service.start_application(
+            legal_name=candidate_name,
+            email=email,
+            phone=phone,
+            school=school,
+            position=label,
+            actor="Admin User",
+        )
+        hiring_service.update_candidate_profile(
+            application.candidate_id,
+            legal_name=candidate_name,
+            preferred_name=preferred_name,
+            email=email,
+            phone=phone,
+        )
+        draft_path = self._drafts_dir() / f"{application.application_id}.json"
+        self.session = PySideInterviewSession(
+            model=self.model,
+            draft_path=draft_path,
+            application_id=application.application_id,
+        )
         self.session.start(candidate_name=candidate_name, school=school, track_key=self.session_track_key)
         self._start_pyside_interview_recording()
         self._render_live_question_page()
         self._render_review_page()
-        self._render_offer_page()
         self.interview_tabs.setCurrentIndex(2)
+        self._set_hiring_focus_mode(True)
 
     def _import_indeed_transcript_from_home(self) -> None:
         request = self._collect_indeed_transcript_import_request()
@@ -3272,7 +3488,6 @@ class PySideInterviewWindow:
         self._reload_history_model()
         self._render_live_question_page()
         self._render_review_page()
-        self._render_offer_page()
         self._refresh_home_draft_panel()
         self.interview_tabs.setCurrentIndex(2 if session.active_question() is not None else 3)
         if hasattr(self, "home_draft_label"):
@@ -3696,7 +3911,6 @@ class PySideInterviewWindow:
         self._reload_history_model()
         self._render_live_question_page()
         self._render_review_page()
-        self._render_offer_page()
         self._refresh_home_draft_panel()
         self.interview_tabs.setCurrentIndex(3)
         if hasattr(self, "home_draft_label"):
@@ -3719,8 +3933,9 @@ class PySideInterviewWindow:
         self.session_answers = dict(self.session.answers)
         self._render_live_question_page()
         self._render_review_page()
-        self._render_offer_page()
+        self._start_pyside_interview_recording()
         self.interview_tabs.setCurrentIndex(2 if self.session.active_question() is not None else 3)
+        self._set_hiring_focus_mode(self.session.active_question() is not None)
 
     def _refresh_home_draft_panel(self) -> None:
         latest_draft = latest_pyside_draft_path(self._drafts_dir())
@@ -3774,8 +3989,6 @@ class PySideInterviewWindow:
         if self.session is None:
             return
         self.session.flow_time_marks = []
-        self.session.flow_candidate_transcripts = {}
-        self.session.flow_recordings = {}
         self.recording_warning = ""
         self.recording_started_monotonic = time.monotonic()
         self.recording_base_name = self._safe_base_name()
@@ -3923,6 +4136,9 @@ class PySideInterviewWindow:
             return
         boundary_elapsed = self._close_flow_timestamp(current_index)
         notes = self.live_notes.toPlainText() if hasattr(self, "live_notes") else ""
+        structured_notes = self._structured_live_notes()
+        if structured_notes and structured_notes not in notes:
+            notes = f"{structured_notes}\n{notes}".strip()
         quick_actions = [
             checkbox.text()
             for checkbox in getattr(self, "quick_action_checks", [])
@@ -3969,19 +4185,18 @@ class PySideInterviewWindow:
             self._overwrite_next_live_boundary_timestamp = False
         if self._active_question() is None:
             self._render_review_page()
-            self._render_offer_page()
             self.interview_tabs.setCurrentIndex(3)
+            self._show_hiring_closeout()
             if finalize:
                 self._generate_interview_notes_from_session()
             return
         if finalize:
             self._render_review_page()
-            self._render_offer_page()
             self.interview_tabs.setCurrentIndex(3)
+            self._show_hiring_closeout()
             self._generate_interview_notes_from_session()
             return
         self._render_live_question_page()
-        self._render_offer_page()
 
     def _finalize_from_live_question(self) -> None:
         self._save_and_next(finalize=True)
@@ -4002,12 +4217,42 @@ class PySideInterviewWindow:
             self._overwrite_next_live_boundary_timestamp = True
         self._render_live_question_page()
         self._render_review_page()
-        self._render_offer_page()
 
     def _exit_live_interview(self) -> None:
         if self.session is not None:
             self.session.save_draft()
-        self.interview_tabs.setCurrentIndex(0)
+        self._show_hiring_pipeline()
+
+    def _show_hiring_pipeline(self) -> None:
+        self._set_hiring_focus_mode(False)
+        dashboard = getattr(self, "staffing_v2_dashboard", None)
+        if dashboard is not None and "interviews" in dashboard.external_pages:
+            dashboard.show_external_page("interviews")
+        router = getattr(self, "hiring_v2_router", None)
+        if router is not None:
+            router.show_pipeline()
+        page = getattr(self, "hiring_v2_page", None)
+        if page is not None:
+            page.refresh()
+
+    def _show_hiring_closeout(self) -> None:
+        self._set_hiring_focus_mode(False)
+        dashboard = getattr(self, "staffing_v2_dashboard", None)
+        if dashboard is not None and "interviews" in dashboard.external_pages:
+            dashboard.show_external_page("interviews")
+        router = getattr(self, "hiring_v2_router", None)
+        if router is not None:
+            router.show_closeout()
+
+    def _set_hiring_focus_mode(self, active: bool) -> None:
+        dashboard = getattr(self, "staffing_v2_dashboard", None)
+        if dashboard is None:
+            return
+        dashboard.set_navigation_locked(False)
+        dashboard.set_navigation_mode("rail" if active else "full")
+        if active and "interviews" in dashboard.external_pages:
+            dashboard.show_external_page("interviews")
+        dashboard.set_navigation_locked(active)
 
     def _render_live_question_page(self) -> None:
         layout = getattr(self, "live_question_layout", None)
@@ -4022,18 +4267,88 @@ class PySideInterviewWindow:
         current_index = self.session.current_index if self.session is not None else self.session_index
         self._mark_flow_timestamp(current_index)
 
-        layout.addWidget(self._label(item.progress_label, "SectionTitle"))
+        header, header_layout = self._surface()
+        header_row = self.QtWidgets.QHBoxLayout()
+        candidate_name = self.session.candidate_name if self.session is not None else "Candidate"
+        school = self.session.school if self.session is not None else ""
+        position = self._session_position_label() if self.session is not None else self.session_track_key
+        header_row.addWidget(self._label(f"{candidate_name}  ·  {school}  ·  {position}", "SectionTitle"))
+        header_row.addStretch(1)
+        application_id = str(getattr(self.session, "application_id", "") or "") if self.session is not None else ""
+        if application_id:
+            header_row.addWidget(self._label(f"Application {application_id[:8]}"))
+        header_layout.addLayout(header_row)
+        progress = self.QtWidgets.QProgressBar()
+        total_questions = len(self.session._workflow_items()) if self.session is not None else 1
+        progress.setRange(0, max(1, total_questions))
+        progress.setValue(current_index + 1)
+        progress.setFormat(f"{item.progress_label}  ·  %p%")
+        progress.setObjectName("HiringV2InterviewProgress")
+        header_layout.addWidget(progress)
+        capture = self.QtWidgets.QFrame()
+        capture.setObjectName("HiringV2CaptureBar")
+        capture_layout = self.QtWidgets.QHBoxLayout(capture)
+        capture_layout.setContentsMargins(10, 6, 10, 6)
+        capture_layout.setSpacing(10)
+        capture_active = self.recording_session is not None
+        capture_state = "critical" if capture_active else "warning" if self._recording_warning_text() else "neutral"
+        capture.setProperty("semanticState", capture_state)
+        recording_text = "● Recording" if capture_active else "○ Recording unavailable"
+        capture_status = self._label(recording_text)
+        capture_status.setObjectName("HiringV2CaptureStatus")
+        capture_layout.addWidget(capture_status)
+        device = str(getattr(self, "recording_system_device", "") or "Default capture device")
+        capture_layout.addWidget(self._label(device))
+        capture_layout.addStretch(1)
+        transcript_text = "Transcript capture active" if capture_active else "Transcript pending"
+        if self._recording_warning_text():
+            transcript_text = "Transcript attention required"
+        transcript_status = self._label(transcript_text)
+        transcript_status.setObjectName("HiringV2TranscriptStatus")
+        capture_layout.addWidget(transcript_status)
+        autosave = self._label("Autosave on")
+        autosave.setObjectName("HiringV2AutosaveStatus")
+        capture_layout.addWidget(autosave)
+        background, foreground = SEMANTIC_COLORS[capture_state]
+        capture.setStyleSheet(
+            f"QFrame#HiringV2CaptureBar {{ background: {background}; color: {foreground}; "
+            "border: 1px solid #cbd5e1; border-radius: 8px; }}"
+        )
+        header_layout.addWidget(capture)
+        layout.addWidget(header)
         recording_warning_text = self._recording_warning_text()
         if recording_warning_text:
             recording_warning_label = self._label(recording_warning_text)
             recording_warning_label.setObjectName("PySideRecordingWarning")
             layout.addWidget(recording_warning_label)
         split = self.QtWidgets.QHBoxLayout()
+        rail = self.QtWidgets.QListWidget()
+        rail.setObjectName("HiringV2QuestionRail")
+        rail.setMaximumWidth(190)
+        workflow = self.session._workflow_items() if self.session is not None else [item]
+        for index, question in enumerate(workflow):
+            answer = self.session.answers.get(question.question_id, {}) if self.session is not None else {}
+            if index == current_index:
+                prefix, state = "●", "active"
+            elif answer.get("skipped"):
+                prefix, state = "↷", "warning"
+            elif index < current_index:
+                prefix, state = "✓", "success"
+            else:
+                prefix, state = "○", "neutral"
+            rail_item = self.QtWidgets.QListWidgetItem(f"{prefix} {index + 1}. {question.title}")
+            rail_item.setData(self.QtCore.Qt.ItemDataRole.UserRole, state)
+            rail_item.setToolTip(f"{question.title}: {state}")
+            rail.addItem(rail_item)
+        rail.setCurrentRow(current_index)
+        rail.setFocusPolicy(self.QtCore.Qt.FocusPolicy.NoFocus)
+        split.addWidget(rail)
         left, left_layout = self._surface()
         left_layout.addWidget(self._label(item.title, "SectionTitle"))
         left_layout.addWidget(self._label(item.prompt))
         if item.kind == "qualification":
             self._render_qualification_fields(left_layout)
+        self._render_structured_live_response(left_layout, item)
         if item.followups:
             followups = self.QtWidgets.QListWidget()
             followups.addItems(item.followups)
@@ -4043,7 +4358,7 @@ class PySideInterviewWindow:
         notes.setPlaceholderText("Type optional notes here...")
         self.live_notes = notes
         stored_answer = self.session.answers.get(item.question_id, {}) if self.session is not None else {}
-        notes_label = "Imported Answer Transcript" if stored_answer.get("imported_transcript") else "Manual Notes"
+        notes_label = "Imported Answer Transcript" if stored_answer.get("imported_transcript") else "Notes & evidence"
         left_layout.addWidget(self._label(notes_label))
         left_layout.addWidget(notes, 1)
         split.addWidget(left, 2)
@@ -4052,15 +4367,25 @@ class PySideInterviewWindow:
         right_layout.addWidget(self._label("Score", "SectionTitle"))
         self.score_group = self.QtWidgets.QButtonGroup()
         for card in item.score_cards:
-            row = self.QtWidgets.QWidget()
-            row_layout = self.QtWidgets.QHBoxLayout(row)
-            row_layout.setContentsMargins(0, 0, 0, 0)
-            row_layout.setSpacing(8)
-            radio = self.QtWidgets.QRadioButton(card.label)
+            row = self.QtWidgets.QFrame()
+            row.setObjectName("HiringV2RubricCard")
+            row_layout = self.QtWidgets.QVBoxLayout(row)
+            row_layout.setContentsMargins(8, 6, 8, 6)
+            radio = self.QtWidgets.QRadioButton(f"{card.label}  {card.description.split('.', 1)[0]}")
             radio.toggled.connect(lambda _checked, question=item: self._update_live_next_enabled(question))
             option_text = self._label(card.description, "ScoreOptionText")
-            row_layout.addWidget(radio, 0)
-            row_layout.addWidget(option_text, 1)
+            option_text.setWordWrap(True)
+            option_text.hide()
+            expand = self.QtWidgets.QToolButton()
+            expand.setText("Show details")
+            expand.setCheckable(True)
+            expand.toggled.connect(option_text.setVisible)
+            expand.toggled.connect(lambda checked, button=expand: button.setText("Hide details" if checked else "Show details"))
+            rubric_header = self.QtWidgets.QHBoxLayout()
+            rubric_header.addWidget(radio, 1)
+            rubric_header.addWidget(expand)
+            row_layout.addLayout(rubric_header)
+            row_layout.addWidget(option_text)
             self.score_group.addButton(radio)
             right_layout.addWidget(row)
         if item.score_cards:
@@ -4079,6 +4404,64 @@ class PySideInterviewWindow:
         self._render_live_footer(item)
         self._restore_live_answer(item)
         self._update_live_next_enabled(item)
+
+    def _render_structured_live_response(self, layout: Any, item: FlowQuestion) -> None:
+        prompt = item.prompt.casefold()
+        self.live_structured_response = None
+        if "full-time or part-time" in prompt:
+            field = self.QtWidgets.QComboBox()
+            field.addItems(["", "Full-time", "Part-time", "Flexible"])
+            layout.addWidget(self._labeled_live_field("Employment preference", field))
+            self.live_structured_response = ("Employment preference", field)
+        elif "hours" in prompt and "not available" in prompt:
+            field = self.QtWidgets.QLineEdit()
+            field.setPlaceholderText("Example: weekdays before 7:00 AM")
+            layout.addWidget(self._labeled_live_field("Unavailable hours", field))
+            self.live_structured_response = ("Unavailable hours", field)
+        elif "pay" in prompt and "looking" in prompt:
+            container = self.QtWidgets.QWidget()
+            row = self.QtWidgets.QHBoxLayout(container)
+            row.setContentsMargins(0, 0, 0, 0)
+            pay = self.QtWidgets.QDoubleSpinBox()
+            pay.setRange(0, 500)
+            pay.setPrefix("$")
+            pay.setSuffix(" / hour")
+            negotiable = self.QtWidgets.QComboBox()
+            negotiable.addItems(["Negotiability unknown", "Negotiable", "Not negotiable"])
+            row.addWidget(pay)
+            row.addWidget(negotiable)
+            layout.addWidget(self._labeled_live_field("Requested compensation", container))
+            self.live_structured_response = ("Requested compensation", (pay, negotiable))
+        elif "when could you start" in prompt:
+            field = self.QtWidgets.QDateEdit()
+            field.setCalendarPopup(True)
+            field.setDisplayFormat("MM/dd/yyyy")
+            field.setDate(self.QtCore.QDate.currentDate())
+            layout.addWidget(self._labeled_live_field("Available start date", field))
+            self.live_structured_response = ("Available start date", field)
+
+    def _labeled_live_field(self, label: str, field: Any) -> Any:
+        panel, panel_layout = self._surface()
+        panel.setObjectName("HiringV2StructuredResponseCard")
+        panel_layout.addWidget(self._label(label, "SectionTitle"))
+        panel_layout.addWidget(field)
+        return panel
+
+    def _structured_live_notes(self) -> str:
+        response = getattr(self, "live_structured_response", None)
+        if response is None:
+            return ""
+        label, field = response
+        if isinstance(field, tuple):
+            pay, negotiable = field
+            return f"{label}: ${pay.value():.2f}/hour; {negotiable.currentText()}"
+        if isinstance(field, self.QtWidgets.QComboBox):
+            value = field.currentText().strip()
+        elif isinstance(field, self.QtWidgets.QDateEdit):
+            value = field.date().toString("yyyy-MM-dd")
+        else:
+            value = field.text().strip()
+        return f"{label}: {value}" if value else ""
 
     def _render_live_footer(self, item: FlowQuestion | None) -> None:
         footer = getattr(self, "live_footer_layout", None)
@@ -4311,7 +4694,19 @@ class PySideInterviewWindow:
                 )
                 question_table.setCellWidget(row, 1, rating)
         question_table.resizeColumnsToContents()
+        table_toggle = self.QtWidgets.QToolButton()
+        table_toggle.setText("Show full score & transcript review")
+        table_toggle.setCheckable(True)
+        table_toggle.setObjectName("HiringV2CloseoutDetailsToggle")
+        question_table.hide()
+        table_toggle.toggled.connect(question_table.setVisible)
+        table_toggle.toggled.connect(
+            lambda checked: table_toggle.setText(
+                "Hide full score & transcript review" if checked else "Show full score & transcript review"
+            )
+        )
         summary_layout.addWidget(self._label("Question Score Review", "SectionTitle"))
+        summary_layout.addWidget(table_toggle)
         summary_layout.addWidget(question_table)
         summary_layout.addWidget(self._label("Send candidate to director interview if required by your hiring workflow."))
         actions = self.QtWidgets.QHBoxLayout()
@@ -4322,7 +4717,7 @@ class PySideInterviewWindow:
         self.review_apply_scores_button = apply_scores_button
         actions.addWidget(apply_scores_button)
         home_button = self.QtWidgets.QPushButton("Home")
-        home_button.clicked.connect(lambda: self.interview_tabs.setCurrentIndex(0))
+        home_button.clicked.connect(self._show_hiring_pipeline)
         actions.addWidget(home_button)
         summary_layout.addLayout(actions)
         self.review_status_label = self._label("")
@@ -4766,53 +5161,6 @@ class PySideInterviewWindow:
             self._pyside_deepseek_progress_timer = timer
             timer.start(1000)
 
-    def _history_offer_defaults(self, row: PySideHistoryRow) -> dict[str, str]:
-        return {
-            "candidate": row.candidate,
-            "school": row.school,
-            "position": row.position,
-            "determination": row.status,
-            "next_action": row.offer_action,
-            "employment_type": "Full-time",
-            "start_date": "",
-            "start_time": "08:00 AM",
-            "end_time": "05:00 PM",
-            "hourly_pay": "",
-            "hours_week": "40",
-            "template_path": "",
-            "output_dir": str(DEFAULT_BASE_DIR / "offers"),
-        }
-
-    def _open_history_offer(self, row: PySideHistoryRow) -> None:
-        if not row.row_key:
-            return
-        if row.offer_status == "generated":
-            self._advance_pyside_offer_status(row, "approved", "Offer marked approved.")
-            return
-        if row.offer_status == "approved":
-            self._advance_pyside_offer_status(row, "accepted", "Offer marked accepted.")
-            return
-        if row.offer_status == "accepted":
-            self._advance_pyside_offer_status(row, "welcome_email_sent", "Welcome email marked sent.")
-            self.sidebar.setCurrentRow(4)
-            self.stack.setCurrentIndex(4)
-            return
-        self.selected_history_offer_row = row
-        self._render_offer_page()
-        self.sidebar.setCurrentRow(2)
-        self.stack.setCurrentIndex(2)
-
-    def _advance_pyside_offer_status(self, row: PySideHistoryRow, status: str, message: str) -> None:
-        if self._update_pyside_offer_status(row.row_key, status, "", row):
-            self._reload_history_model()
-            self.window.statusBar().showMessage(message, 3500)
-
-    def _open_session_offer(self) -> None:
-        self.selected_history_offer_row = None
-        self._render_offer_page()
-        self.sidebar.setCurrentRow(2)
-        self.stack.setCurrentIndex(2)
-
     def _reload_history_model(self) -> None:
         history_rows = _build_pyside_history_rows(self.model.history_path)
         self.model = replace(
@@ -4823,7 +5171,6 @@ class PySideInterviewWindow:
                 recent_interviews=_recent_interviews_from_history_rows(history_rows),
             ),
         )
-        self._refresh_all_history_tables()
 
     def _deepseek_retry_job_path_for_row(self, row: PySideHistoryRow) -> Path | None:
         return resolve_deepseek_regeneration_job_path(
@@ -4900,467 +5247,6 @@ class PySideInterviewWindow:
                 subprocess.run(["xdg-open", str(path)], check=True)
         except OSError as exc:
             self.QtWidgets.QMessageBox.warning(self.window, "Interview Notes", f"Could not open interview notes: {exc}")
-
-    def _delete_history_row(self, row: PySideHistoryRow) -> None:
-        if not row.row_key:
-            return
-        result = self.QtWidgets.QMessageBox.question(
-            self.window,
-            "Delete History Entry",
-            f"Delete history entry for {row.candidate}?\n\nThis removes the row from interview history.",
-            self.QtWidgets.QMessageBox.StandardButton.Yes | self.QtWidgets.QMessageBox.StandardButton.No,
-            self.QtWidgets.QMessageBox.StandardButton.No,
-        )
-        if result != self.QtWidgets.QMessageBox.StandardButton.Yes:
-            return
-        if not self.history_store.delete_row(row.row_key):
-            self.QtWidgets.QMessageBox.warning(self.window, "Delete History Entry", "History entry was not found.")
-            return
-        self._reload_history_model()
-
-    def _offer_page(self) -> Any:
-        page, layout = self._page()
-        self.offer_page_layout = layout
-        self._render_offer_page()
-        return page
-
-    def _render_offer_page(self) -> None:
-        layout = getattr(self, "offer_page_layout", None)
-        if layout is None:
-            return
-        self._clear_layout(layout)
-        layout.addWidget(self._label("Generate Offer", "Title"))
-        frame, frame_layout = self._surface()
-        frame_layout.addWidget(self._label("Review offer details", "SectionTitle"))
-        if self.selected_history_offer_row is not None:
-            defaults = self._history_offer_defaults(self.selected_history_offer_row)
-        elif self.session is not None:
-            defaults = self.session.offer_review_defaults()
-        else:
-            defaults = {}
-        defaults = dict(defaults)
-        history_id = self.selected_history_offer_row.row_key if self.selected_history_offer_row is not None else ""
-        if not history_id and self.session is not None:
-            for row in self.model.home.history_rows:
-                if row.candidate != self.session.candidate_name or row.school != self.session.school:
-                    continue
-                if self.session.interview_date and row.interview_date != self.session.interview_date:
-                    continue
-                history_id = row.row_key
-                break
-        staffing_shift_start, staffing_shift_end = director_offer_shift_for_history(
-            history_id,
-            str(defaults.get("school", "")),
-        )
-        if staffing_shift_start and staffing_shift_end:
-            defaults["start_time"] = staffing_shift_start
-            defaults["end_time"] = staffing_shift_end
-        self.offer_fields = {}
-
-        candidate_panel, candidate_layout = self._surface()
-        candidate_layout.addWidget(self._label("Candidate", "SectionTitle"))
-        candidate_form = self.QtWidgets.QFormLayout()
-        candidate = self.QtWidgets.QLineEdit(str(defaults.get("candidate", "")))
-        candidate.setObjectName("OfferCandidate")
-        candidate.setReadOnly(True)
-        title = self.QtWidgets.QComboBox()
-        title.setObjectName("OfferTitle")
-        title.addItems(["Select title", "Mr.", "Ms."])
-        self.offer_fields.update({"candidate": candidate, "title": title})
-        candidate_form.addRow("Candidate", candidate)
-        candidate_form.addRow("Title *", title)
-        candidate_layout.addLayout(candidate_form)
-        frame_layout.addWidget(candidate_panel)
-
-        details_panel, details_layout = self._surface()
-        details_layout.addWidget(self._label("Offer details", "SectionTitle"))
-        details_form = self.QtWidgets.QFormLayout()
-        school = self.QtWidgets.QComboBox()
-        school.setObjectName("OfferSchool")
-        school.setEditable(True)
-        school.addItems(self.model.school_options)
-        school.setCurrentText(str(defaults.get("school", "")))
-        position = self.QtWidgets.QComboBox()
-        position.setObjectName("OfferPosition")
-        position.setEditable(True)
-        position.addItems(POSITION_OPTIONS)
-        position.setCurrentText(str(defaults.get("position", "")))
-        determination = self.QtWidgets.QComboBox()
-        determination.setObjectName("OfferDetermination")
-        determination.setEditable(True)
-        determination.addItems(["Hire", "Borderline", "No Hire", "Incomplete"])
-        determination.setCurrentText(str(defaults.get("determination", "")))
-        self.offer_fields.update(
-            {"school": school, "position": position, "determination": determination}
-        )
-        details_form.addRow("School *", school)
-        details_form.addRow("Position *", position)
-        details_form.addRow("Determination", determination)
-        details_layout.addLayout(details_form)
-        frame_layout.addWidget(details_panel)
-
-        schedule_panel, schedule_layout = self._surface()
-        schedule_layout.addWidget(self._label("Schedule and pay", "SectionTitle"))
-        schedule_form = self.QtWidgets.QFormLayout()
-        start_date = self.QtWidgets.QDateEdit()
-        start_date.setObjectName("OfferStartDate")
-        start_date.setCalendarPopup(True)
-        start_date.setDisplayFormat("MM/dd/yyyy")
-        start_date.setMinimumDate(self.QtCore.QDate(1900, 1, 1))
-        start_date.setSpecialValueText("Select date")
-        raw_date = str(defaults.get("start_date", "")).strip()
-        start_date.setDate(
-            self.QtCore.QDate.fromString(raw_date, "yyyy-MM-dd")
-            if raw_date
-            else start_date.minimumDate()
-        )
-        start_time = self.QtWidgets.QTimeEdit()
-        start_time.setObjectName("OfferStartTime")
-        start_time.setDisplayFormat("h:mm AP")
-        start_time.setTime(self.QtCore.QTime.fromString(str(defaults.get("start_time", "08:00 AM")), "h:mm AP"))
-        end_time = self.QtWidgets.QTimeEdit()
-        end_time.setObjectName("OfferEndTime")
-        end_time.setDisplayFormat("h:mm AP")
-        end_time.setTime(self.QtCore.QTime.fromString(str(defaults.get("end_time", "05:00 PM")), "h:mm AP"))
-        hourly_pay = self.QtWidgets.QDoubleSpinBox()
-        hourly_pay.setObjectName("OfferHourlyPay")
-        hourly_pay.setPrefix("$")
-        hourly_pay.setDecimals(2)
-        hourly_pay.setRange(0.0, 999.99)
-        hourly_pay.setValue(float(defaults.get("hourly_pay", 0) or 0))
-        hours_week = self.QtWidgets.QSpinBox()
-        hours_week.setObjectName("OfferHoursWeek")
-        hours_week.setRange(0, 168)
-        hours_week.setValue(int(defaults.get("hours_week", 40) or 0))
-        self.offer_fields.update(
-            {
-                "start_date": start_date,
-                "start_time": start_time,
-                "end_time": end_time,
-                "hourly_pay": hourly_pay,
-                "hours_week": hours_week,
-            }
-        )
-        schedule_form.addRow("Start date *", start_date)
-        schedule_form.addRow("Start time *", start_time)
-        schedule_form.addRow("End time *", end_time)
-        schedule_form.addRow("Hourly pay *", hourly_pay)
-        schedule_form.addRow("Hours/week *", hours_week)
-        schedule_layout.addLayout(schedule_form)
-        frame_layout.addWidget(schedule_panel)
-
-        destination_panel, destination_layout = self._surface()
-        destination_layout.addWidget(self._label("Destination", "SectionTitle"))
-        self.offer_employment_type_label = self._label("", "OfferEmploymentType")
-        self.offer_template_label = self._label("", "OfferTemplateSummary")
-        self.offer_output_label = self._label("", "OfferOutputSummary")
-        self.offer_filename_label = self._label("", "OfferFilenamePreview")
-        for widget in (
-            self.offer_employment_type_label,
-            self.offer_template_label,
-            self.offer_output_label,
-            self.offer_filename_label,
-        ):
-            destination_layout.addWidget(widget)
-        frame_layout.addWidget(destination_panel)
-        status = defaults.get("next_action") or "Complete interview review before generating offer."
-        self.offer_status_label = self._label(f"Next action: {status}")
-        frame_layout.addWidget(self.offer_status_label)
-        generate = self._primary_button("Generate Offer")
-        generate.setObjectName("OfferGenerateButton")
-        generate.clicked.connect(self._generate_offer_from_fields)
-        self.offer_generate_button = generate
-        frame_layout.addWidget(generate)
-        success_actions = self.QtWidgets.QHBoxLayout()
-        self.offer_open_button = self.QtWidgets.QPushButton("Open Offer")
-        self.offer_open_button.setObjectName("OfferOpenButton")
-        self.offer_open_button.clicked.connect(self._open_generated_offer)
-        self.offer_open_button.setVisible(False)
-        self.offer_open_folder_button = self.QtWidgets.QPushButton("Open Folder")
-        self.offer_open_folder_button.setObjectName("OfferOpenFolderButton")
-        self.offer_open_folder_button.clicked.connect(self._open_generated_offer_folder)
-        self.offer_open_folder_button.setVisible(False)
-        success_actions.addWidget(self.offer_open_button)
-        success_actions.addWidget(self.offer_open_folder_button)
-        success_actions.addStretch(1)
-        frame_layout.addLayout(success_actions)
-        self.generated_offer_path: Path | None = None
-        for field in (title, school, position, determination):
-            field.currentTextChanged.connect(self._refresh_offer_destination)
-        for field in (start_date, start_time, end_time):
-            field.dateTimeChanged.connect(self._refresh_offer_destination)
-        for field in (hourly_pay, hours_week):
-            field.valueChanged.connect(self._refresh_offer_destination)
-        start_time.editingFinished.connect(lambda: self._snap_offer_time(start_time))
-        end_time.editingFinished.connect(lambda: self._snap_offer_time(end_time))
-        self._refresh_offer_destination()
-        layout.addWidget(frame)
-        layout.addStretch(1)
-
-    def _offer_text(self, key: str) -> str:
-        field = self.offer_fields[key]
-        if isinstance(field, self.QtWidgets.QComboBox):
-            return field.currentText().strip()
-        return field.text().strip()
-
-    def _offer_start_date(self) -> date:
-        field = self.offer_fields["start_date"]
-        if field.date() == field.minimumDate():
-            raise ValueError("Start date is required.")
-        selected = field.date()
-        return date(selected.year(), selected.month(), selected.day())
-
-    def _offer_time_text(self, key: str) -> str:
-        return self.offer_fields[key].time().toString("hh:mm AP")
-
-    def _offer_start_date_text(self) -> str:
-        try:
-            return self._offer_start_date().isoformat()
-        except ValueError:
-            return ""
-
-    def _snap_offer_time(self, field: Any) -> None:
-        current = field.time()
-        rounded_minutes = ((current.minute() + 7) // 15) * 15
-        snapped = self.QtCore.QTime(current.hour(), 0).addSecs(rounded_minutes * 60)
-        field.setTime(snapped)
-
-    def _offer_generation_paths(self) -> tuple[Path, Path]:
-        school = self._offer_text("school")
-        hours = self.offer_fields["hours_week"].value()
-        settings = self.school_offer_store.load()
-        template_path = resolve_offer_template_path(DEFAULT_BASE_DIR, school, hours, settings)
-        output_dir = resolve_offer_output_dir(DEFAULT_BASE_DIR, school, settings)
-        OfferLetterService.validate_template_path(template_path)
-        if not output_dir.exists() or not output_dir.is_dir():
-            raise ValueError(f"Offer output folder was not found: {output_dir}")
-        if not os.access(output_dir, os.W_OK):
-            raise ValueError(f"Offer output folder is not writable: {output_dir}")
-        return template_path, output_dir
-
-    def _offer_validation_error(self) -> str:
-        if self._offer_text("title") not in {"Mr.", "Ms."}:
-            return "Select Mr. or Ms."
-        if not self._offer_text("candidate"):
-            return "Candidate name is required."
-        if not self._offer_text("school"):
-            return "School is required."
-        if not self._offer_text("position"):
-            return "Position is required."
-        try:
-            self._offer_start_date()
-        except ValueError as exc:
-            return str(exc)
-        if self.offer_fields["hourly_pay"].value() <= 0:
-            return "Hourly pay must be greater than zero."
-        if self.offer_fields["hours_week"].value() <= 0:
-            return "Hours/week must be greater than zero."
-        if self.offer_fields["end_time"].time() <= self.offer_fields["start_time"].time():
-            return "End time must be later than start time."
-        try:
-            self._offer_generation_paths()
-            build_school_offer_filename(self._offer_text("school"), self._offer_text("candidate"))
-        except (OSError, ValueError) as exc:
-            return str(exc)
-        return ""
-
-    def _refresh_offer_destination(self, *_args: Any) -> None:
-        hours = self.offer_fields["hours_week"].value()
-        employment_type = "Full-time" if hours >= 30 else "Part-time"
-        self.offer_employment_type_label.setText(f"Employment type: {employment_type}")
-        try:
-            template_path = resolve_offer_template_path(
-                DEFAULT_BASE_DIR,
-                self._offer_text("school"),
-                hours,
-                self.school_offer_store.load(),
-            )
-            self.offer_template_label.setText(f"Template: {template_path.name}")
-        except ValueError as exc:
-            self.offer_template_label.setText(f"Template: {exc}")
-        try:
-            output_dir = resolve_offer_output_dir(
-                DEFAULT_BASE_DIR,
-                self._offer_text("school"),
-                self.school_offer_store.load(),
-            )
-            self.offer_output_label.setText(f"Folder: {output_dir}")
-        except ValueError as exc:
-            self.offer_output_label.setText(f"Folder: {exc}")
-        try:
-            filename = build_school_offer_filename(
-                self._offer_text("school"),
-                self._offer_text("candidate"),
-            )
-        except ValueError as exc:
-            filename = str(exc)
-        self.offer_filename_label.setText(f"Filename: {filename}")
-        error = self._offer_validation_error()
-        self.offer_generate_button.setEnabled(not error and (self.session is not None or self.selected_history_offer_row is not None))
-        if error:
-            self.offer_status_label.setText(f"Offer not ready: {error}")
-
-    def _render_offer_document_from_fields(self) -> Path:
-        candidate_name = self._offer_text("candidate")
-        first_name, last_name = _split_candidate_name(candidate_name)
-        template_path, output_dir = self._offer_generation_paths()
-        created_on = date.today()
-        output_path = next_available_offer_path(
-            output_dir,
-            build_school_offer_filename(self._offer_text("school"), candidate_name),
-        )
-        data = OfferInput(
-            first_name=first_name,
-            last_name=last_name,
-            city=self._offer_text("school"),
-            position=self._offer_text("position"),
-            start_date=self._offer_start_date(),
-            start_time_12h=self._offer_time_text("start_time"),
-            end_time_12h=self._offer_time_text("end_time"),
-            hourly_pay=self.offer_fields["hourly_pay"].value(),
-            hours=self.offer_fields["hours_week"].value(),
-            created_on=created_on,
-            title=self._offer_text("title"),
-        )
-        return OfferLetterService.render_offer(template_path, output_path, data)
-
-    def _generate_offer_from_fields(self) -> None:
-        if self.session is None and self.selected_history_offer_row is None:
-            self.offer_status_label.setText("Complete interview review before generating offer.")
-            return
-        try:
-            validation_error = self._offer_validation_error()
-            if validation_error:
-                raise ValueError(validation_error)
-            if self.selected_history_offer_row is not None:
-                output_path = self._render_offer_document_from_fields()
-                updated = self._update_pyside_offer_status(
-                    self.selected_history_offer_row.row_key,
-                    "generated",
-                    str(output_path),
-                    self.selected_history_offer_row,
-                )
-                if not updated:
-                    raise ValueError("History row could not be updated.")
-                self._reload_history_model()
-            else:
-                template_path, output_dir = self._offer_generation_paths()
-                output_path = self.session.generate_offer_document(
-                    template_path=template_path,
-                    output_dir=output_dir,
-                    start_date=self._offer_start_date(),
-                    start_time_12h=self._offer_time_text("start_time"),
-                    end_time_12h=self._offer_time_text("end_time"),
-                    hourly_pay=self.offer_fields["hourly_pay"].value(),
-                    hours=self.offer_fields["hours_week"].value(),
-                    created_on=date.today(),
-                    title=self._offer_text("title"),
-                    position=self._offer_text("position"),
-                )
-                self._emit_pyside_session_offer_generated(output_path)
-        except Exception as exc:
-            self.offer_status_label.setText(f"Offer not generated: {exc} Configure offer paths in Admin if needed.")
-            return
-        self.generated_offer_path = Path(output_path)
-        self.offer_open_button.setVisible(True)
-        self.offer_open_folder_button.setVisible(True)
-        self.offer_status_label.setText(f"Offer generated: {output_path}")
-
-    def _open_generated_offer(self) -> None:
-        if self.generated_offer_path is not None:
-            self._open_offer_path(self.generated_offer_path)
-
-    def _open_generated_offer_folder(self) -> None:
-        if self.generated_offer_path is not None:
-            self._open_offer_path(self.generated_offer_path.parent)
-
-    def _open_offer_path(self, path: Path) -> None:
-        try:
-            if sys.platform.startswith("win"):
-                os.startfile(str(path))  # type: ignore[attr-defined]
-            elif sys.platform == "darwin":
-                subprocess.run(["open", str(path)], check=True)
-            else:
-                subprocess.run(["xdg-open", str(path)], check=True)
-        except OSError as exc:
-            self.offer_status_label.setText(f"Could not open {path}: {exc}")
-
-    def _update_pyside_offer_status(self, row_key: str, status: str, offer_path: str = "", row: PySideHistoryRow | None = None) -> bool:
-        updated = self.history_store.update_offer_state(row_key, status, offer_path)
-        if not updated:
-            return False
-        if row is not None:
-            self._emit_pyside_offer_notification(row, status)
-        return True
-
-    def _emit_pyside_session_offer_generated(self, output_path: Path) -> None:
-        if self.session is None:
-            return
-        payload = {
-            "candidate": self.session.candidate_name,
-            "candidate_name": self.session.candidate_name,
-            "candidate_email": "",
-            "school": self.session.school,
-            "school_code": _offer_school_code(self.session.school),
-            "school_location": _offer_school_location(self.session.school),
-            "director_name": "",
-            "position": self._offer_text("position") if hasattr(self, "offer_fields") else self.session.track_key,
-            "offer_status": "generated",
-            "offer_path": str(output_path),
-            "offer_pdf_path": "",
-            "onboarding_guide_path": str(self.settings.get("welcome_onboarding_pdf_path", "")).strip() if hasattr(self, "settings") else "",
-            "reply_by_date": (date.today() + timedelta(days=3)).isoformat(),
-            "generated_date": date.today().isoformat(),
-            "interview_date": str(getattr(self.session, "interview_date", "") or ""),
-            "start_date": self._offer_start_date_text() if hasattr(self, "offer_fields") and "start_date" in self.offer_fields else "",
-            "notice_given": "",
-            "date_notice_given": "",
-            "final_working_day": "",
-            "last_working_day": "",
-        }
-        payload.update(_qualification_notification_payload(getattr(self.session, "qualification", None)))
-        key = f"{self.session.candidate_name}:{payload['interview_date']}:{output_path}"
-        try:
-            self._notification_service().emit_event("offer.generated", payload, f"{key}:offer.generated")
-        except Exception:
-            return
-
-    def _emit_pyside_offer_notification(self, row: PySideHistoryRow, status: str) -> None:
-        event_type = {
-            "generated": "offer.generated",
-            "approved": "offer.approved",
-            "accepted": "offer.accepted",
-            "welcome_email_sent": "offer.welcome_email_sent",
-        }.get(str(status or "").strip().lower())
-        if not event_type:
-            return
-        offer_pdf_path = _ensure_offer_pdf_path(row.offer_path) if event_type == "offer.approved" else ""
-        payload = {
-            "candidate": row.candidate,
-            "candidate_name": row.candidate,
-            "candidate_email": row.candidate_email,
-            "school": row.school,
-            "school_code": _offer_school_code(row.school),
-            "school_location": _offer_school_location(row.school),
-            "director_name": "",
-            "position": row.position,
-            "offer_status": str(status or "").strip().lower(),
-            "offer_path": row.offer_path,
-            "offer_pdf_path": offer_pdf_path,
-            "onboarding_guide_path": str(self.settings.get("welcome_onboarding_pdf_path", "")).strip() if hasattr(self, "settings") else "",
-            "reply_by_date": (date.today() + timedelta(days=3)).isoformat(),
-            "generated_date": date.today().isoformat(),
-            "start_date": self._offer_start_date_text() if hasattr(self, "offer_fields") and "start_date" in self.offer_fields else "",
-            "notice_given": "",
-            "date_notice_given": "",
-            "final_working_day": "",
-            "last_working_day": "",
-        }
-        payload.update(_qualification_notification_payload(getattr(self.session, "qualification", None)))
-        try:
-            self._notification_service().emit_event(event_type, payload, f"{row.row_key}:{event_type}")
-        except Exception:
-            return
 
     def _emit_pyside_rating_notification(self, result: dict[str, Any]) -> None:
         scoring = result.get("scoring", {}) if isinstance(result, dict) else {}
@@ -10057,6 +9943,8 @@ class PySideInterviewWindow:
         self.staffing_v2_host = host
         dashboard = host.page
         self.staffing_v2_dashboard = dashboard
+        if role == "admin":
+            self._register_hiring_v2_pages(dashboard)
         self._start_staffing_referral_queue_polling()
         if defer_director_sync:
             self.QtCore.QTimer.singleShot(100, self._sync_staffing_v2_director_referrals_after_first_paint)
@@ -11190,24 +11078,6 @@ class PySideInterviewWindow:
         except Exception:
             return
 
-    def _candidates_page(self) -> Any:
-        page, layout = self._page()
-        layout.addWidget(self._label("Candidates", "Title"))
-        board = build_pyside_candidate_board(self.model.home.history_rows)
-        summary, summary_layout = self._surface()
-        summary_layout.addWidget(self._label(f"{board.total_candidates} candidates", "SectionTitle"))
-        summary_layout.addWidget(self._label("Candidate list, interview notes, and hiring status."))
-        layout.addWidget(summary)
-
-        table_frame, table_layout = self._surface()
-        table_layout.addWidget(self._label("Candidate List", "SectionTitle"))
-        table = self._create_history_table("PySideCandidateHistoryGrid")
-        self.candidate_history_table = table
-        self._refresh_history_table(table, board.history_rows)
-        table_layout.addWidget(table)
-        layout.addWidget(table_frame, 1)
-        return page
-
     def _placeholder_page(self, title: str, body: str) -> Any:
         page, layout = self._page()
         layout.addWidget(self._label(title, "Title"))
@@ -11231,7 +11101,7 @@ def launch_pyside_interview_app(
     director_staffing: bool = False,
     director_school: str = "",
 ) -> int:
-    _QtCore, _QtGui, QtWidgets = _import_qt()
+    _QtCore, _QtGui, _QtPdf, _QtPdfWidgets, QtWidgets = _import_qt()
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv)
     apply_staffing_v2_light_theme(QtWidgets, _QtGui, app)
     _apply_styles(app)

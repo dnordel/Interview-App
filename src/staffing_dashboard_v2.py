@@ -5,7 +5,9 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 import threading
 from typing import Any
+import weakref
 
+from dashboard_v2_ui import apply_dashboard_v2_light_theme
 from notification_models import NotificationRecipient, NotificationRule, NotificationTestPayload
 from notification_service import EXECUTIVE_DIRECTOR_EMAIL, HIRING_MANAGER_EMAIL, NotificationService
 from notification_store import NotificationStore
@@ -34,13 +36,7 @@ def apply_staffing_v2_light_theme(QtWidgets: Any, QtGui: Any, app: Any | None = 
     if application is None:
         return
 
-    style_factory = getattr(QtWidgets, "QStyleFactory", None)
-    if style_factory is not None:
-        try:
-            if "Fusion" in style_factory.keys():
-                application.setStyle("Fusion")
-        except RuntimeError:
-            pass
+    apply_dashboard_v2_light_theme(QtWidgets, QtGui, application)
 
     color_role = QtGui.QPalette.ColorRole
     color_group = QtGui.QPalette.ColorGroup
@@ -111,6 +107,12 @@ def _install_v2_application_wheel_router(QtCore: Any, QtWidgets: Any, root: Any)
         router = _StaffingV2ApplicationWheelRouter(QtCore, QtWidgets, root)
         routers[router_key] = router
         app.installEventFilter(router)
+
+        def remove_router(*_args: Any) -> None:
+            app.removeEventFilter(router)
+            routers.pop(router_key, None)
+
+        root.destroyed.connect(remove_router)
     setattr(root, "_staffing_v2_application_wheel_router", router)
 
 
@@ -189,16 +191,18 @@ class _StaffingV2ApplicationWheelRouter:
     def __new__(cls, QtCore: Any, QtWidgets: Any, root: Any) -> Any:
         class ApplicationWheelRouter(QtCore.QObject):
             def __init__(self) -> None:
-                super().__init__(root)
+                app = QtWidgets.QApplication.instance()
+                super().__init__(app)
                 self.QtWidgets = QtWidgets
-                self.root = root
+                self._root_ref = weakref.ref(root)
 
             def eventFilter(self, watched: Any, event: Any) -> bool:  # noqa: N802
                 try:
-                    if event.type() != QtCore.QEvent.Type.Wheel or not self.root.isVisible():
+                    root_widget = self._root_ref()
+                    if root_widget is None or event.type() != QtCore.QEvent.Type.Wheel or not root_widget.isVisible():
                         return False
                     global_position = _v2_wheel_global_position(event)
-                    if not self.root.rect().contains(self.root.mapFromGlobal(global_position)):
+                    if not root_widget.rect().contains(root_widget.mapFromGlobal(global_position)):
                         return False
                     for scroll_area in self._scroll_areas_at(global_position):
                         if _scroll_v2_area_from_wheel(scroll_area, event):
@@ -208,8 +212,11 @@ class _StaffingV2ApplicationWheelRouter:
                     return False
 
             def _scroll_areas_at(self, global_position: Any) -> list[Any]:
+                root_widget = self._root_ref()
+                if root_widget is None:
+                    return []
                 candidates = []
-                for scroll_area in self.root.findChildren(self.QtWidgets.QAbstractScrollArea):
+                for scroll_area in root_widget.findChildren(self.QtWidgets.QAbstractScrollArea):
                     if not scroll_area.isVisible():
                         continue
                     viewport = scroll_area.viewport() if hasattr(scroll_area, "viewport") else None
@@ -1180,6 +1187,12 @@ class StaffingDashboardV2Page:
         self.validation_issues: list[dict[str, str]] = []
         self.visible_validation_issues: list[dict[str, str]] = []
         self._lazy_views_built: set[str] = set()
+        self.external_sections: dict[str, Any] = {}
+        self.external_nav_buttons: dict[str, Any] = {}
+        self.external_pages: dict[str, Any] = {}
+        self._navigation_locked = False
+        self._navigation_labels: dict[Any, str] = {}
+        self._navigation_enabled_before_lock: dict[Any, bool] = {}
         self.widget = QtWidgets.QWidget()
         self.widget.setObjectName("PySideStaffingV2Page")
         self.widget.setStyleSheet(APP_QSS)
@@ -1203,6 +1216,7 @@ class StaffingDashboardV2Page:
         self.staffing_sidebar.setObjectName("StaffingV2Sidebar")
         self.staffing_sidebar.setFixedWidth(252)
         sidebar_layout = self.QtWidgets.QVBoxLayout(self.staffing_sidebar)
+        self.sidebar_layout = sidebar_layout
         sidebar_layout.setContentsMargins(16, 22, 16, 18)
         sidebar_layout.setSpacing(10)
         sidebar_layout.addWidget(self._label("Launch Pad Learning", "StaffingV2Brand"))
@@ -1234,7 +1248,8 @@ class StaffingDashboardV2Page:
         sidebar_layout.addWidget(self.analytics_nav_button)
         sidebar_layout.addWidget(self.notifications_nav_button)
         sidebar_layout.addSpacing(16)
-        sidebar_layout.addWidget(self._label("SYSTEM", "StaffingV2SidebarSection"))
+        self.system_section_label = self._label("SYSTEM", "StaffingV2SidebarSection")
+        sidebar_layout.addWidget(self.system_section_label)
         self.validation_nav_button = self._sidebar_button("StaffingV2ValidationNavButton", "Validation", "validation")
         self.validation_nav_button.clicked.connect(self._show_validation_view)
         self.integrations_nav_button = self._sidebar_button("StaffingV2IntegrationsNavButton", "Integrations", "integrations")
@@ -1452,7 +1467,99 @@ class StaffingDashboardV2Page:
         button.setProperty("staffingV2ActiveNav", False)
         if icon_key:
             self._set_button_icon(button, icon_key)
+        button.setToolTip(text)
+        self._navigation_labels[button] = text
         return button
+
+    def register_external_section(self, section_id: str, label: str) -> None:
+        clean_id = str(section_id or "").strip()
+        clean_label = str(label or "").strip()
+        if not clean_id or not clean_label:
+            raise ValueError("External dashboard section ID and label are required.")
+        if clean_id in self.external_sections:
+            raise ValueError(f"External dashboard section already exists: {clean_id}")
+        section = self.QtWidgets.QWidget()
+        section.setObjectName(f"StaffingV2ExternalSectionContainer_{clean_id}")
+        layout = self.QtWidgets.QVBoxLayout(section)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(6)
+        heading = self._label(clean_label, f"StaffingV2ExternalSection_{clean_id}")
+        heading.setProperty("staffingV2FullText", clean_label)
+        layout.addWidget(heading)
+        index = self.sidebar_layout.indexOf(self.system_section_label)
+        self.sidebar_layout.insertWidget(max(0, index), section)
+        self.external_sections[clean_id] = layout
+
+    def register_external_page(
+        self,
+        section_id: str,
+        page_id: str,
+        label: str,
+        widget: Any,
+        *,
+        icon_key: str = "",
+    ) -> Any:
+        if section_id not in self.external_sections:
+            raise ValueError(f"Unknown external dashboard section: {section_id}")
+        clean_id = str(page_id or "").strip()
+        if not clean_id or clean_id in self.external_pages:
+            raise ValueError(f"Invalid or duplicate external dashboard page: {clean_id}")
+        button = self._sidebar_button(f"StaffingV2ExternalNav_{clean_id}", label, icon_key)
+        button.clicked.connect(lambda _checked=False, key=clean_id: self.show_external_page(key))
+        self.external_sections[section_id].addWidget(button)
+        self.page_stack.addWidget(widget)
+        self.external_nav_buttons[clean_id] = button
+        self.external_pages[clean_id] = widget
+        return button
+
+    def show_external_page(self, page_id: str) -> None:
+        if page_id not in self.external_pages:
+            raise ValueError(f"Unknown external dashboard page: {page_id}")
+        active = self.external_nav_buttons[page_id]
+        if self._navigation_locked and not active.isEnabled():
+            return
+        self._set_active_nav(active)
+        self.page_stack.setCurrentWidget(self.external_pages[page_id])
+
+    def set_navigation_mode(self, mode: str) -> None:
+        if mode not in {"full", "rail"}:
+            raise ValueError("Staffing v2 navigation mode must be full or rail.")
+        rail = mode == "rail"
+        self.staffing_sidebar.setFixedWidth(64 if rail else 252)
+        for button, label in self._navigation_labels.items():
+            button.setText("" if rail else label)
+            button.setToolTip(label)
+        for layout in self.external_sections.values():
+            heading = layout.itemAt(0).widget()
+            heading.setVisible(not rail)
+
+    def set_navigation_locked(self, locked: bool) -> None:
+        self._navigation_locked = bool(locked)
+        buttons = [*self._base_nav_buttons(), *self.external_nav_buttons.values()]
+        active = self.page_stack.currentWidget()
+        if locked:
+            self._navigation_enabled_before_lock = {button: button.isEnabled() for button in buttons}
+            for button in buttons:
+                page_id = next((key for key, value in self.external_nav_buttons.items() if value is button), "")
+                button.setEnabled(bool(page_id and self.external_pages.get(page_id) is active))
+            return
+        for button in buttons:
+            button.setEnabled(self._navigation_enabled_before_lock.get(button, button.isEnabled()))
+        self._navigation_enabled_before_lock = {}
+
+    def _base_nav_buttons(self) -> list[Any]:
+        return [
+            self.home_nav_button,
+            self.dashboard_nav_button,
+            self.classrooms_nav_button,
+            self.people_nav_button,
+            self.history_nav_button,
+            self.analytics_nav_button,
+            self.notifications_nav_button,
+            self.validation_nav_button,
+            self.integrations_nav_button,
+            self.settings_nav_button,
+        ]
 
     def _set_button_icon(self, button: Any, icon_key: str) -> None:
         button.setIcon(self._standard_icon(icon_key))
@@ -1511,18 +1618,7 @@ class StaffingDashboardV2Page:
         return self.widget.style().standardIcon(mapping.get(icon_key, pixmaps.SP_FileIcon))
 
     def _set_active_nav(self, active_button: Any) -> None:
-        for button in (
-            self.home_nav_button,
-            self.dashboard_nav_button,
-            self.classrooms_nav_button,
-            self.people_nav_button,
-            self.history_nav_button,
-            self.analytics_nav_button,
-            self.notifications_nav_button,
-            self.validation_nav_button,
-            self.integrations_nav_button,
-            self.settings_nav_button,
-        ):
+        for button in [*self._base_nav_buttons(), *self.external_nav_buttons.values()]:
             is_active = button is active_button
             button.setProperty("staffingV2ActiveNav", is_active)
             button.style().unpolish(button)

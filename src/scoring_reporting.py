@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from importlib import import_module
@@ -2748,6 +2748,7 @@ class OfferTemplateError(ValueError):
 class OfferLetterService:
     ALLOWED_TEMPLATE_SUFFIXES = {".docx", ".docm"}
     PLACEHOLDER_ORDER = [
+        "[OfferDate]",
         "[Title]",
         "[First Name]",
         "[Last Name]",
@@ -2777,6 +2778,7 @@ class OfferLetterService:
     @classmethod
     def build_replacements(cls, data: OfferInput) -> dict[str, str]:
         return {
+            "[OfferDate]": f"{data.created_on.strftime('%B')} {data.created_on.day}, {data.created_on.year}",
             "[Title]": data.title.strip(),
             "[First Name]": data.first_name.strip(),
             "[Last Name]": data.last_name.strip(),
@@ -2800,6 +2802,43 @@ class OfferLetterService:
         doc = Document(str(template_path))
         cls._replace_document_text(doc, replacements)
 
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        doc.save(str(output_path))
+        return output_path
+
+    @classmethod
+    def render_approved_offer(
+        cls,
+        template_path: Path,
+        output_path: Path,
+        data: OfferInput,
+        *,
+        approval_date: date,
+    ) -> Path:
+        from hiring_pipeline import calculate_offer_approval_dates
+
+        cls.validate_template_path(template_path)
+        dates = calculate_offer_approval_dates(approval_date)
+        approved_data = replace(data, created_on=dates.offer_date, start_date=dates.start_date)
+        replacements = cls.build_replacements(approved_data)
+        doc = Document(str(template_path))
+        has_placeholder = any("[OfferDate]" in paragraph.text for paragraph in doc.paragraphs)
+        legacy_date_paragraph = None
+        if not has_placeholder:
+            date_pattern = re.compile(
+                r"^(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},\s+\d{4}$"
+            )
+            candidates = [
+                paragraph
+                for paragraph in doc.paragraphs[:12]
+                if date_pattern.fullmatch(paragraph.text.strip())
+            ]
+            if len(candidates) != 1:
+                raise OfferTemplateError("Offer template must contain [OfferDate] or one unambiguous top offer date.")
+            legacy_date_paragraph = candidates[0]
+        cls._replace_document_text(doc, replacements)
+        if legacy_date_paragraph is not None:
+            legacy_date_paragraph.text = replacements["[OfferDate]"]
         output_path.parent.mkdir(parents=True, exist_ok=True)
         doc.save(str(output_path))
         return output_path

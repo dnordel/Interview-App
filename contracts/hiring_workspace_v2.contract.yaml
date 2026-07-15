@@ -1,0 +1,87 @@
+module:
+  name: hiring_workspace_v2
+  language: python
+  path: src/hiring_workspace_v2.py
+  version: 3.0.0
+  description: Native Staffing v2 Interviews, Candidates, and Offers surfaces for the seven-stage application pipeline, with shared overlays, semantic metrics, contextual lifecycle actions, prior cycles, documents, and a three-step offer editor readable through 150 percent font scaling.
+functions: []
+classes:
+- name: HiringOfferApprovalDialog
+  description: Embedded exact-PDF approval review with multi-page fit-width display and fail-closed approver/readiness gating.
+  locked: false
+  attributes:
+    dialog: {type: QDialog}
+    pdf_document: {type: QPdfDocument}
+    pdf_view: {type: QPdfView}
+    approver_input: {type: QLineEdit}
+    approve_button: {type: QPushButton}
+  methods:
+  - name: approver_name
+    inputs: {}
+    returns: {type: str}
+    exceptions: []
+    side_effects: none
+  - name: exec
+    inputs: {}
+    returns: {type: bool}
+    exceptions: []
+    side_effects: Opens modal approval review.
+  - name: close
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Closes PDF document and dialog.
+- name: HiringInterviewGuidePage
+  description: Internal Hiring v2 route owner for pipeline, focused interview guide, and closeout.
+  locked: false
+  attributes:
+    widget: {type: QWidget}
+    interviews_widget: {type: QWidget}
+    candidates_widget: {type: QWidget}
+    offers_widget: {type: QWidget}
+    stack: {type: QStackedWidget}
+    current_route: {type: str}
+  methods:
+  - name: show_pipeline
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Shows pipeline route.
+  - name: show_interview
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Shows focused interview route.
+  - name: show_closeout
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Shows closeout route.
+- name: HiringWorkspaceV2Page
+  description: PySide workspace with stage counters, filters, compact application list, contextual actions, selected-application detail timeline, documents, prior cycles, attention explanations, and three-step offer editing.
+  locked: false
+  attributes:
+    widget: {type: QWidget}
+    stage_buttons: {type: 'dict[HiringStage, QPushButton]'}
+    application_table: {type: QTableWidget}
+    detail_next_action: {type: QLabel}
+    timeline_list: {type: QListWidget}
+  methods:
+  - name: refresh
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Refreshes pipeline records, counts, filters, list, and detail from canonical hiring storage.
+  - name: perform_action
+    inputs:
+      name: {type: str, required: true}
+      application: {type: HiringApplication, required: true}
+      actor: {type: str, required: false, default: Admin User}
+      values: {type: 'dict[str, Any] | None', required: false, default: null}
+    returns: {type: Any}
+    exceptions: [ValueError]
+    side_effects: Runs create, retry, revision, extension, acceptance, or archive workflow action and refreshes workspace.
+data_structures: []
+dependencies:
+- dashboard_v2_ui
+- hiring_pipeline

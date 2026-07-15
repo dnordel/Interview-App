@@ -1,4 +1,20 @@
 modules:
+  dashboard_v2_ui:
+    path: src/dashboard_v2_ui.py
+    depends_on: []
+  hiring_pipeline:
+    path: src/hiring_pipeline.py
+    depends_on:
+    - data_store
+  hiring_migration:
+    path: src/hiring_migration.py
+    depends_on:
+    - hiring_pipeline
+  hiring_workspace_v2:
+    path: src/hiring_workspace_v2.py
+    depends_on:
+    - dashboard_v2_ui
+    - hiring_pipeline
   interview_runtime:
     path: src/interview_runtime.py
     depends_on:
@@ -66,6 +82,7 @@ modules:
   staffing_dashboard_v2:
     path: src/staffing_dashboard_v2.py
     depends_on:
+    - dashboard_v2_ui
     - notification_models
     - notification_service
     - notification_store
@@ -134,8 +151,11 @@ modules:
     path: src/pyside_interview_app.py
     depends_on:
     - admin_studio
+    - dashboard_v2_ui
     - data_store
     - interview_runtime
+    - hiring_pipeline
+    - hiring_workspace_v2
     - notification_service
     - onboarding_operations
     - platform_services
@@ -236,6 +256,9 @@ modules:
     depends_on: []
   split_pytest_runner:
     path: tools/split_pytest_runner.py
+    depends_on: []
+  full_pytest_runner:
+    path: tools/full_pytest_runner.py
     depends_on: []
   pytest_duration_catalog:
     path: tools/pytest_duration_catalog.py

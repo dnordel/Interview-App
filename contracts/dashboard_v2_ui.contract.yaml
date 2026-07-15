@@ -1,0 +1,121 @@
+module:
+  name: dashboard_v2_ui
+  language: python
+  path: src/dashboard_v2_ui.py
+  version: 1.0.0
+  description: Shared Staffing v2 visual primitives for light theme, semantic colors, page registration, full or rail navigation, locked active-work navigation, overlay panels, cards, chips, and scroll behavior.
+functions:
+- name: apply_dashboard_v2_light_theme
+  locked: false
+  inputs:
+    QtWidgets: {type: Any, required: true}
+    QtGui: {type: Any, required: true}
+    app: {type: 'Any | None', required: false, default: null}
+  returns: {type: None}
+  exceptions: []
+  side_effects: Applies the shared light Fusion palette to the supplied or current QApplication.
+- name: configure_dashboard_v2_scroll_areas
+  locked: false
+  inputs:
+    QtWidgets: {type: Any, required: true}
+    root: {type: Any, required: true}
+  returns: {type: None}
+  exceptions: []
+  side_effects: Configures descendant item views and scroll areas for per-pixel scrolling.
+classes:
+- name: DashboardV2PageRegistration
+  description: Immutable registered page identity and presentation metadata.
+  locked: false
+  attributes:
+    section_id: {type: str}
+    page_id: {type: str}
+    label: {type: str}
+    icon_key: {type: str}
+  methods: []
+- name: DashboardV2Shell
+  description: Reusable Staffing v2 shell with registered sections and pages plus full and locked rail navigation modes.
+  locked: false
+  attributes:
+    widget: {type: QWidget}
+    sidebar: {type: QFrame}
+    page_stack: {type: QStackedWidget}
+    current_page_id: {type: str}
+    navigation_locked: {type: bool}
+  methods:
+  - name: add_section
+    inputs:
+      section_id: {type: str, required: true}
+      label: {type: str, required: true}
+    returns: {type: None}
+    exceptions: [ValueError]
+    side_effects: Registers a sidebar section.
+  - name: add_page
+    inputs:
+      section_id: {type: str, required: true}
+      page_id: {type: str, required: true}
+      label: {type: str, required: true}
+      widget: {type: Any, required: true}
+      icon_key: {type: str, required: false, default: ''}
+    returns: {type: Any}
+    exceptions: [ValueError]
+    side_effects: Registers a page and its navigation button.
+  - name: show_page
+    inputs:
+      page_id: {type: str, required: true}
+    returns: {type: None}
+    exceptions: [ValueError]
+    side_effects: Activates a registered page unless navigation is locked.
+  - name: set_navigation_mode
+    inputs:
+      mode: {type: str, required: true}
+    returns: {type: None}
+    exceptions: [ValueError]
+    side_effects: Switches between full sidebar and compact icon rail.
+  - name: set_navigation_locked
+    inputs:
+      locked: {type: bool, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Disables unrelated page navigation while active work is focused.
+  - name: panel
+    inputs:
+      object_name: {type: str, required: false, default: DashboardV2Panel}
+    returns: {type: 'tuple[Any, Any]'}
+    exceptions: []
+    side_effects: Creates a themed card frame and layout.
+  - name: semantic_chip
+    inputs:
+      text: {type: str, required: true}
+      state: {type: str, required: true}
+    returns: {type: Any}
+    exceptions: [ValueError]
+    side_effects: Creates an accessible text and color semantic chip.
+- name: DashboardV2OverlayPanel
+  description: Shared right-side scrollable overlay with a sticky footer.
+  locked: false
+  attributes:
+    frame: {type: QFrame}
+    scroll_area: {type: QScrollArea}
+    body_layout: {type: QVBoxLayout}
+    footer_layout: {type: QVBoxLayout}
+  methods:
+  - name: show_overlay
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Positions, reveals, raises, and configures the overlay.
+  - name: hide
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Hides the overlay.
+  - name: reposition
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Clamps overlay geometry to its parent viewport.
+data_structures:
+- name: SEMANTIC_COLORS
+  type: 'dict[str, tuple[str, str]]'
+  description: Blue, green, amber, red, and slate dashboard background and text pairs.
+dependencies: []

@@ -38,7 +38,10 @@ FOCUSED_PYSIDE_GUI_WORKFLOW_EXCEPTIONS = {
 
 REQUIRED_PYSIDE_GUI_SCENARIO_SURFACES = {
     "staffing_v2_notifications_manager": "test_pyside_staffing_v2_notifications_manager_dashboard_scenario",
+    "staffing_v2_hiring_live_interview": "test_pyside_staffing_v2_hiring_live_focus_rail_scenario",
 }
+
+PYSIDE_FULL_WINDOW_FACTORIES = {"PySideInterviewWindow", "_pyside_window_on_page"}
 
 
 def test_determine_placement_uses_duration_and_gui_weight() -> None:
@@ -80,10 +83,16 @@ def test_qt_gui_tests_are_cataloged_as_gui_scenarios() -> None:
             if path.name == "test_pytest_duration_catalog.py" and node.name == "test_qt_gui_tests_are_cataloged_as_gui_scenarios":
                 continue
             source = ast.get_source_segment(text, node) or ""
-            if not any(token in source for token in gui_surface_tokens):
+            explicitly_marked_gui = any("pyside_gui" in decorator for decorator in _decorator_texts(node))
+            if not explicitly_marked_gui and not any(token in source for token in gui_surface_tokens):
                 continue
             nodeid = f"{path.as_posix()}::{node.name}"
-            if not bool(entries.get(nodeid, {}).get("gui_heavy", False)):
+            matching_entries = [
+                entry
+                for catalog_nodeid, entry in entries.items()
+                if catalog_nodeid == nodeid or catalog_nodeid.startswith(f"{nodeid}[")
+            ]
+            if not matching_entries or not all(bool(entry.get("gui_heavy", False)) for entry in matching_entries):
                 offenders.append(nodeid)
 
     assert offenders == [], "Qt GUI tests must be cataloged with gui_heavy: true:\n" + "\n".join(offenders)
@@ -137,3 +146,48 @@ def test_required_pyside_gui_surfaces_have_named_scenarios() -> None:
     ]
 
     assert missing == [], "Required PySide GUI surfaces need named scenario tests:\n" + "\n".join(missing)
+
+
+def test_named_pyside_gui_scenarios_create_one_window_and_reuse_pages() -> None:
+    path = Path("tests/test_pyside_interview_redesign.py")
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    offenders: list[str] = []
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.FunctionDef) or "scenario" not in node.name:
+            continue
+        if not any("pyside_gui" in decorator for decorator in _decorator_texts(node)):
+            continue
+        factories = [
+            call
+            for call in ast.walk(node)
+            if isinstance(call, ast.Call)
+            and (
+                isinstance(call.func, ast.Name)
+                and call.func.id in PYSIDE_FULL_WINDOW_FACTORIES
+                or isinstance(call.func, ast.Attribute)
+                and call.func.attr in PYSIDE_FULL_WINDOW_FACTORIES
+            )
+        ]
+        if len(factories) != 1:
+            offenders.append(f"{node.name}: {len(factories)} full-window factories")
+
+    assert offenders == [], (
+        "Named PySide GUI scenarios must create one full window, then reuse its registered pages:\n"
+        + "\n".join(offenders)
+    )
+
+
+def test_measured_gui_timings_drive_fresh_worker_batches() -> None:
+    from tools import full_pytest_runner
+
+    entries = list(pytest_duration_catalog.load_catalog()["entries"])
+    gui_entries = [entry for entry in entries if bool(entry.get("gui_heavy", False))]
+    batches = full_pytest_runner.build_gui_test_batches(entries=entries, gui_workers=24)
+    flattened = [nodeid for batch in batches for nodeid in batch]
+    durations = {str(entry["nodeid"]): float(entry["duration_seconds_n2"]) for entry in gui_entries}
+
+    assert set(flattened) == set(durations)
+    assert len(flattened) == len(set(flattened))
+    assert all(1 <= len(batch) <= 24 for batch in batches)
+    assert [durations[nodeid] for nodeid in flattened] == sorted(durations.values(), reverse=True)

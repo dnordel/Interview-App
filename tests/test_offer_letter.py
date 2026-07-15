@@ -2,6 +2,7 @@ from datetime import date
 from pathlib import Path
 
 import pytest
+from docx import Document
 
 from scoring_reporting import (
     OfferInput,
@@ -68,3 +69,41 @@ def test_next_available_offer_path_preserves_existing_revisions(tmp_path: Path) 
     assert next_available_offer_path(tmp_path, filename).name == (
         "Launch Pad Learning PMD Offer of Employment to Tatiana Zuluaga (3).docx"
     )
+
+
+def test_approved_offer_replaces_hardcoded_date_deadline_and_computed_start(tmp_path: Path) -> None:
+    template_path = tmp_path / "offer-template.docx"
+    template = Document()
+    template.add_paragraph("Launch Pad Learning")
+    template.add_paragraph("July 13, 2026")
+    template.add_paragraph("Dear [Title] [Last Name]:")
+    template.add_paragraph("Start date: [StartDate]")
+    template.add_paragraph("Reply by 5 p.m., [OfferDeadline].")
+    template.save(template_path)
+    output_path = tmp_path / "approved.docx"
+    data = OfferInput(
+        first_name="Tatiana",
+        last_name="Zuluaga",
+        city="Palmdale",
+        position="Teacher",
+        start_date=date(2026, 7, 27),
+        start_time_12h="09:30 AM",
+        end_time_12h="06:30 PM",
+        hourly_pay=24.0,
+        hours=40,
+        created_on=date(2026, 7, 13),
+        title="Ms.",
+    )
+
+    OfferLetterService.render_approved_offer(
+        template_path,
+        output_path,
+        data,
+        approval_date=date(2026, 7, 14),
+    )
+
+    text = "\n".join(paragraph.text for paragraph in Document(output_path).paragraphs)
+    assert "July 14, 2026" in text
+    assert "Start date: 08/03/2026" in text
+    assert "Reply by 5 p.m., 07/17/2026." in text
+    assert "July 13, 2026" not in text

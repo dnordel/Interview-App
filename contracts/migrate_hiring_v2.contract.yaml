@@ -1,0 +1,17 @@
+module:
+  name: migrate_hiring_v2
+  language: python
+  path: tools/migrate_hiring_v2.py
+  version: 1.0.0
+  description: Maintenance-window CLI for guarded canonical Hiring v2 migration and redacted result output.
+functions:
+- name: main
+  inputs: {}
+  returns: {type: int}
+  exceptions: [ValueError]
+  side_effects: Runs HiringMigrationCoordinator against explicit or default canonical history DB and prints non-PII migration evidence.
+classes: []
+data_structures: []
+dependencies:
+- hiring_migration
+- app_content

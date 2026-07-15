@@ -5,6 +5,16 @@ layers:
 - domain_logic
 - infrastructure
 services:
+  hiring_pipeline_service:
+    description: Canonical seven-stage candidate application pipeline, audit timeline, Staffing v2 decision synchronization, immutable numbered offers, approval dates, delivery recovery, negotiation, acceptance, and archive controls.
+    modules:
+    - dashboard_v2_ui
+    - hiring_pipeline
+    - hiring_migration
+    - hiring_workspace_v2
+    - pyside_interview_app
+    - scoring_reporting
+    - notification_service
   interview_runtime_service:
     description: Interview flow orchestration, state transitions, transcription, and finalization that produces one basic merged interview-notes document (interview_notes_document_path) including transcription content without starting DeepSeek.
     modules:
@@ -42,8 +52,9 @@ services:
     - notification_service
     - notification_templates
   staffing_dashboard_service:
-    description: Local SQLite staffing assignment state machine, workbook-style school/classroom/slot display metadata, assignment history, permit updates, metrics, seed import, post-commit checkpoint notification hooks, and parallel PySide Staffing v2 dashboard rewrite surface including notification rule management and test-send UI.
+    description: Local SQLite staffing assignment state machine plus the shared Staffing v2 shell, theme, cards, overlays, navigation, and dashboard surfaces including notification rule management and test-send UI.
     modules:
+    - dashboard_v2_ui
     - staffing_models
     - staffing_store
     - staffing_service
@@ -71,10 +82,13 @@ services:
     - web_app
     - web_app_backend
   pyside_interview_redesign_service:
-    description: PySide6 workflow-first desktop shell for interviews, candidates, school-routed full-time and part-time offers with editable shift defaults from exact Director Staffing v2 hire decisions, staffing, onboarding, guided Admin Studio with a direct Staffing v2 Notifications shortcut, user-closable finalize progress with task/status rows, live history refresh, basic finalize documents, and history-triggered DeepSeek document generation.
+    description: PySide6 Staffing v2-native Interviews, Candidates, Offers, focused live interview, staffing, onboarding, and guided Admin Studio surfaces with shared navigation, semantic status colors, capture state, live history refresh, reporting, and Director Review handoff.
     modules:
     - admin_studio
+    - dashboard_v2_ui
     - pyside_interview_app
+    - hiring_pipeline
+    - hiring_workspace_v2
     - staffing_dashboard_v2
     - staffing_dashboard_host
     - notification_service
@@ -93,6 +107,7 @@ services:
     - storage_utils
     - check_contract_review
     - split_pytest_runner
+    - full_pytest_runner
     - pytest_duration_catalog
     - interview_app_session_context
     - ui_mode_switch
@@ -114,6 +129,8 @@ datastores:
     used_by:
     - data_store
     - pyside_interview_app
+    - hiring_pipeline
+    - hiring_workspace_v2
     - web_app_backend
     - candidate_report
   interview_ml_dataset_db:

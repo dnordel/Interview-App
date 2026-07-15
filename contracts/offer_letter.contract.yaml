@@ -2,7 +2,7 @@ module:
   name: offer_letter
   language: python
   path: src/offer_letter.py
-  version: 2.1.0
+  version: 2.2.0
   description: Deprecated compatibility wrapper for offer letter template validation, placeholder replacement, and output filename helpers implemented by scoring_reporting.
 functions:
 - name: build_offer_filename
@@ -182,6 +182,17 @@ classes:
     exceptions:
     - OfferTemplateError
     side_effects: writes a Word document to disk
+  - name: render_approved_offer
+    description: Render an immutable approval-time offer with approval-day top date, three-calendar-day deadline, and calculated Monday start date; supports an OfferDate placeholder or one unambiguous legacy top date.
+    locked: false
+    inputs:
+      template_path: {type: Path, required: true}
+      output_path: {type: Path, required: true}
+      data: {type: OfferInput, required: true}
+      approval_date: {type: date, required: true}
+    returns: {type: Path}
+    exceptions: [OfferTemplateError, TypeError]
+    side_effects: writes an approval-dated Word document to disk
   - name: _replace_document_text
     description: Replace supported placeholders across document paragraphs and table cells.
     locked: false

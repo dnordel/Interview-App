@@ -41,9 +41,55 @@ from scoring_reporting import CandidateQualification
 def _pyside_window_on_page(model, page_name: str):
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
-    window.sidebar.setCurrentRow(nav_items.index(page_name))
+    target = "Staffing v2" if page_name in {"Interviews", "Candidates", "Offers"} else page_name
+    window.sidebar.setCurrentRow(nav_items.index(target))
+    if page_name == "Interviews":
+        window.staffing_v2_dashboard.show_external_page("interviews")
+        window.hiring_v2_router.show_interview()
+    elif page_name in {"Candidates", "Offers"}:
+        window.staffing_v2_dashboard.show_external_page(page_name.casefold())
     window.QtWidgets.QApplication.processEvents()
     return window
+
+
+@pytest.mark.pyside_gui
+def test_pyside_staffing_v2_hiring_live_focus_rail_scenario(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    seed_path = tmp_path / "staffing_seed.json"
+    seed_path.write_text('{"schools":[]}', encoding="utf-8")
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", tmp_path / "staffing.sqlite3")
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", seed_path)
+    monkeypatch.setattr(pyside_interview_app, "NOTIFICATION_RULES_PATH", tmp_path / "notifications.sqlite3")
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.sqlite3",
+        school_options=["Hawthorne"],
+    )
+
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    dashboard = window.staffing_v2_dashboard
+    nav_items = [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
+
+    assert "Hiring v2" not in nav_items
+    assert set(dashboard.external_pages) == {"interviews", "candidates", "offers"}
+    assert dashboard.page_stack.currentWidget() is dashboard.dashboard_view
+    dashboard.show_external_page("interviews")
+    window._set_hiring_focus_mode(True)
+    app.processEvents()
+    assert dashboard.staffing_sidebar.width() == 64
+    assert dashboard.external_nav_buttons["interviews"].isEnabled()
+    assert not dashboard.dashboard_nav_button.isEnabled()
+    window._set_hiring_focus_mode(False)
+    assert dashboard.staffing_sidebar.width() == 252
+    assert dashboard.dashboard_nav_button.isEnabled()
+    window.window.close()
+    app.processEvents()
 
 
 def test_pyside_session_imports_indeed_transcript_for_rating_review(tmp_path: Path) -> None:
@@ -338,6 +384,21 @@ def test_staffing_v2_scroll_helper_relays_from_nested_item_view_without_range() 
     root.close()
     app.processEvents()
 
+
+def test_staffing_v2_application_wheel_router_does_not_retain_root() -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_core = pytest.importorskip("PySide6.QtCore")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    root = qt_widgets.QWidget()
+
+    configure_v2_scroll_areas(qt_widgets, root, qt_core)
+
+    routers = app._staffing_v2_application_wheel_routers
+    router = routers[id(root)]
+    assert not hasattr(router, "root")
+    assert router._root_ref() is root
+
 def test_redesign_model_prioritizes_guided_interview_workflow(tmp_path: Path) -> None:
     rubric_path = tmp_path / "rubric.json"
     overrides_path = tmp_path / "question_overrides.json"
@@ -409,7 +470,12 @@ def test_redesign_model_prioritizes_guided_interview_workflow(tmp_path: Path) ->
     )
 
     assert model.app_title == "Interview Assistant"
-    assert model.navigation == ["Interviews", "Candidates", "Offers", "Staffing", "Staffing v2", "Onboarding", "Admin"]
+    assert model.navigation == [
+        "Staffing",
+        "Staffing v2",
+        "Onboarding",
+        "Admin",
+    ]
     assert model.home.primary_action == "Start a New Interview"
     assert model.home.admin_visible_on_home is False
     assert model.home.recent_interviews[0].next_action == "Generate Offer"
@@ -586,49 +652,6 @@ def test_pyside_history_rows_expose_deepseek_processing_state(tmp_path: Path) ->
     assert row.deepseek_processing_status == "processing"
     assert row.deepseek_processing_warning == "Queued for local DeepSeek."
 
-def test_pyside_history_filters_read_latest_rows_from_sqlite(tmp_path: Path) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    history_path = tmp_path / "interview_history.sqlite3"
-    store = InterviewHistoryStore(history_path)
-    store.append(
-        {
-            "history_id": "hist-1",
-            "candidate_name": "Latoya Nugent",
-            "school": "Palmdale",
-            "position": "Preschool Teacher",
-            "outcome": "Hire",
-        }
-    )
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=history_path,
-        school_options=["Palmdale"],
-    )
-    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
-    store.append(
-        {
-            "history_id": "hist-2",
-            "candidate_name": "Fresh Candidate",
-            "school": "Palmdale",
-            "position": "Lead Teacher",
-            "outcome": "Hire",
-        }
-    )
-
-    window._set_history_school_filter("Palmdale")
-    app.processEvents()
-
-    visible_candidates = [
-        window.history_table.item(row, 1).text()
-        for row in range(window.history_table.rowCount())
-    ]
-    assert visible_candidates == ["Fresh Candidate", "Latoya Nugent"]
-    window.window.close()
-    app.processEvents()
-
 def test_pyside_history_rows_show_newest_interviews_first(tmp_path: Path) -> None:
     history_path = tmp_path / "interview_history.sqlite3"
     store = InterviewHistoryStore(history_path)
@@ -656,236 +679,6 @@ def test_pyside_history_rows_show_newest_interviews_first(tmp_path: Path) -> Non
 
     assert [row.candidate for row in model.home.history_rows] == ["Today Candidate", "Old Candidate"]
     assert model.home.recent_interviews[0].candidate == "Today Candidate"
-
-def test_pyside_history_grid_shows_date_and_open_notes_action(tmp_path: Path) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    notes_path = tmp_path / "notes.docx"
-    notes_path.write_text("docx placeholder", encoding="utf-8")
-    history_path = tmp_path / "interview_history.sqlite3"
-    InterviewHistoryStore(history_path).append(
-        {
-            "history_id": "hist-1",
-            "candidate_name": "Latoya Nugent",
-            "school": "Palmdale",
-            "position": "Preschool Teacher",
-            "interview_date": "2026-06-23",
-            "offer_status": "not_generated",
-            "interview_notes_path": str(notes_path),
-        }
-    )
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=history_path,
-        school_options=["Palmdale"],
-    )
-    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
-
-    assert window.history_table.columnCount() == 11
-    assert window.history_table.horizontalHeaderItem(0).text() == "Date"
-    assert window.history_table.horizontalHeaderItem(6).text() == "Notes"
-    assert window.history_table.horizontalHeaderItem(7).text() == "Regenerate"
-    assert window.history_table.horizontalHeaderItem(8).text() == "Transcript"
-    assert window.history_table.horizontalHeaderItem(10).text() == "Delete"
-    assert window.history_table.item(0, 0).text() == "2026-06-23"
-    notes_button = window.history_table.cellWidget(0, 6)
-    assert notes_button.text() == "Open Notes"
-    assert notes_button.property("history_row_key") == "hist-1"
-    assert notes_button.isEnabled()
-    regenerate_button = window.history_table.cellWidget(0, 7)
-    assert regenerate_button.text() == "Regenerate"
-    assert regenerate_button.property("history_row_key") == "hist-1"
-    assert regenerate_button.isEnabled()
-    transcript_button = window.history_table.cellWidget(0, 8)
-    assert transcript_button.text() == "Import"
-    assert transcript_button.property("history_row_key") == "hist-1"
-    assert transcript_button.isEnabled()
-    delete_button = window.history_table.cellWidget(0, 10)
-    assert delete_button.text() == "Delete"
-    assert delete_button.property("history_row_key") == "hist-1"
-    assert delete_button.isEnabled()
-    window.window.close()
-    app.processEvents()
-
-def test_pyside_history_grid_shows_processing_until_deepseek_finishes(tmp_path: Path) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    history_path = tmp_path / "interview_history.sqlite3"
-    store = InterviewHistoryStore(history_path)
-    store.append(
-        {
-            "history_id": "hist-1",
-            "candidate_name": "Latoya Nugent",
-            "deepseek_processing_status": "processing",
-            "interview_notes_path": str(tmp_path / "notes.docx"),
-        }
-    )
-    store.append(
-        {
-            "history_id": "hist-2",
-            "candidate_name": "Dalia Gaspar",
-            "deepseek_processing_status": "failed",
-            "deepseek_processing_warning": "DeepSeek processing failed.",
-        }
-    )
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=history_path,
-        school_options=["Palmdale"],
-    )
-    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
-
-    failed_button = window.history_table.cellWidget(0, 6)
-    processing_button = window.history_table.cellWidget(1, 6)
-
-    assert processing_button.text() == "Processing"
-    assert not processing_button.isEnabled()
-    assert processing_button.toolTip() == "DeepSeek is still processing interview notes."
-    assert failed_button.text() == "Failed/Retry"
-    assert failed_button.isEnabled()
-    assert failed_button.toolTip() == "DeepSeek processing failed."
-    window.window.close()
-    app.processEvents()
-
-def test_pyside_history_grid_filters_fuzzy_search_school_outcome_and_colors_rows(tmp_path: Path) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    qt_core = pytest.importorskip("PySide6.QtCore")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    history_path = tmp_path / "interview_history.sqlite3"
-    store = InterviewHistoryStore(history_path)
-    store.append(
-        {
-            "history_id": "hist-1",
-            "candidate_name": "Latoya Nugent",
-            "school": "Palmdale",
-            "position": "Preschool Teacher",
-            "outcome": "Hire",
-        }
-    )
-    store.append(
-        {
-            "history_id": "hist-2",
-            "candidate_name": "Dalia Gaspar",
-            "school": "Hawthorne",
-            "position": "Preschool Teacher",
-            "outcome": "No Hire",
-        }
-    )
-    store.append(
-        {
-            "history_id": "hist-3",
-            "candidate_name": "Mina Patel",
-            "school": "Palmdale",
-            "position": "Behavior Support Specialist",
-            "outcome": "Needs Follow-up",
-        }
-    )
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=history_path,
-        school_options=["Palmdale", "Hawthorne"],
-    )
-    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
-
-    assert window.history_school_filter.itemText(0) == "All schools"
-    assert [window.history_table.item(row, 1).text() for row in range(window.history_table.rowCount())] == [
-        "Mina Patel",
-        "Dalia Gaspar",
-        "Latoya Nugent",
-    ]
-    hire_brush = window.history_table.item(2, 5).data(qt_core.Qt.ItemDataRole.BackgroundRole)
-    no_hire_brush = window.history_table.item(1, 5).data(qt_core.Qt.ItemDataRole.BackgroundRole)
-    assert hire_brush.color().name() != no_hire_brush.color().name()
-
-    window.history_search_input.setText("Latoya Nujent")
-    app.processEvents()
-
-    assert window.history_table.rowCount() == 1
-    assert window.history_table.item(0, 1).text() == "Latoya Nugent"
-
-    window.history_search_input.clear()
-    window.history_school_filter.setCurrentText("Palmdale")
-    window.history_outcome_filter.setCurrentText("Needs Follow-up")
-    app.processEvents()
-
-    assert window.history_table.rowCount() == 1
-    assert window.history_table.item(0, 1).text() == "Mina Patel"
-    window.window.close()
-    app.processEvents()
-
-def test_pyside_history_grid_sorts_by_column(tmp_path: Path) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    qt_core = pytest.importorskip("PySide6.QtCore")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    history_path = tmp_path / "interview_history.sqlite3"
-    store = InterviewHistoryStore(history_path)
-    store.append({"history_id": "hist-1", "candidate_name": "Zara Lee", "school": "Palmdale", "outcome": "Hire"})
-    store.append({"history_id": "hist-2", "candidate_name": "Ana Cruz", "school": "Hawthorne", "outcome": "No Hire"})
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=history_path,
-        school_options=["Palmdale", "Hawthorne"],
-    )
-    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
-
-    assert window.history_table.isSortingEnabled()
-
-    window.history_table.sortItems(1, qt_core.Qt.SortOrder.AscendingOrder)
-    app.processEvents()
-
-    assert [window.history_table.item(row, 1).text() for row in range(window.history_table.rowCount())] == [
-        "Ana Cruz",
-        "Zara Lee",
-    ]
-    window.window.close()
-    app.processEvents()
-
-def test_pyside_history_grid_sizes_text_columns_and_keeps_action_buttons_compact(tmp_path: Path) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    history_path = tmp_path / "interview_history.sqlite3"
-    InterviewHistoryStore(history_path).append(
-        {
-            "history_id": "hist-1",
-            "candidate_name": "Alexandria Montgomery",
-            "school": "West Palmdale Learning Center",
-            "position": "Behavior Support Specialist",
-            "interview_date": "2026-06-24",
-            "percent_of_max": "88.5",
-            "outcome": "Needs Follow-up",
-            "offer_status": "not_generated",
-        }
-    )
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=history_path,
-        school_options=["West Palmdale Learning Center"],
-    )
-    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
-    table = window.history_table
-
-    for column in range(0, 6):
-        assert table.columnWidth(column) >= table.sizeHintForColumn(column)
-
-    assert table.horizontalHeaderItem(6).text() == "Notes"
-    assert table.columnWidth(6) <= 105
-    assert table.columnWidth(7) <= 125
-    assert table.columnWidth(8) <= 115
-    assert table.cellWidget(0, 6).maximumWidth() <= 95
-    assert table.cellWidget(0, 7).maximumWidth() <= 115
-    assert table.cellWidget(0, 8).maximumWidth() <= 105
-    window.window.close()
-    app.processEvents()
 
 def test_pyside_session_autosaves_and_resumes_guided_interview(tmp_path: Path) -> None:
     model = build_interview_redesign_model(
@@ -971,10 +764,17 @@ def test_pyside_live_footer_blocks_unrated_scored_next_and_keeps_skip_enabled(tm
         for button in window.interview_tabs.widget(2).findChildren(qt_widgets.QPushButton)
         if button.property("pyside_live_footer_action")
     }
+    capture_bar = window.interview_tabs.widget(2).findChild(qt_widgets.QFrame, "HiringV2CaptureBar")
+    question_rail = window.interview_tabs.widget(2).findChild(qt_widgets.QListWidget, "HiringV2QuestionRail")
 
     assert footer_buttons["back"].isEnabled()
     assert footer_buttons["skip"].isEnabled()
     assert not footer_buttons["finalize"].isEnabled()
+    assert window.interview_tabs.tabBar().isHidden()
+    assert capture_bar is not None
+    assert capture_bar.property("semanticState") in {"neutral", "warning", "critical"}
+    assert question_rail.item(0).data(window.QtCore.Qt.ItemDataRole.UserRole) == "success"
+    assert question_rail.item(question_rail.currentRow()).data(window.QtCore.Qt.ItemDataRole.UserRole) == "active"
 
     window.score_group.buttons()[0].setChecked(True)
     app.processEvents()
@@ -1496,7 +1296,7 @@ def test_pyside_home_draft_actions_share_start_panel_to_prioritize_history(tmp_p
     assert buttons["Continue"].parent() == buttons["Begin Interview"].parent()
     assert buttons["Delete Saved Draft"].parent() == buttons["Begin Interview"].parent()
     assert "Continue Draft" not in section_titles
-    assert window.history_table.sizePolicy().verticalStretch() >= 1
+    assert window.window.findChild(qt_widgets.QTableWidget, "PySideHistoryGrid") is None
     window.window.close()
     app.processEvents()
 
@@ -1958,9 +1758,7 @@ def test_pyside_offer_review_defaults_are_prefilled_from_completed_session(tmp_p
     assert defaults["next_action"] == "Generate Offer"
 
 
-@pytest.mark.pyside_gui
-@pytest.mark.slow_pyside
-def test_pyside_offer_screen_uses_guided_offer_widgets_and_editable_positions(tmp_path: Path) -> None:
+def test_pyside_back_then_next_resets_answer_timestamps(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
     app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
@@ -1968,35 +1766,27 @@ def test_pyside_offer_screen_uses_guided_offer_widgets_and_editable_positions(tm
         rubric_path=_write_test_rubric(tmp_path),
         overrides_path=_write_test_overrides(tmp_path),
         history_path=tmp_path / "missing-history.json",
-        school_options=["Palmdale", "North Long Beach", "Hawthorne"],
+        school_options=["Palmdale"],
     )
-
-    window = _pyside_window_on_page(model, "Offers")
-
-    assert isinstance(window.offer_fields["title"], qt_widgets.QComboBox)
-    assert [window.offer_fields["title"].itemText(index) for index in range(3)] == ["Select title", "Mr.", "Ms."]
-    assert window.offer_fields["candidate"].isReadOnly()
-    assert window.offer_fields["school"].isEditable()
-    assert window.offer_fields["position"].isEditable()
-    assert [window.offer_fields["position"].itemText(index) for index in range(6)] == [
-        "Director",
-        "Assistant Director",
-        "Lead Teacher",
-        "Teacher",
-        "Teacher/Floater",
-        "Cook",
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
+    session.start(candidate_name="Latoya Nugent", school="Palmdale", track_key="preschool")
+    session.current_index = 2
+    session.flow_time_marks = [
+        {"flow_index": 1, "t": 2.0, "end_t": 5.0},
+        {"flow_index": 2, "t": 5.0},
     ]
-    assert isinstance(window.offer_fields["start_date"], qt_widgets.QDateEdit)
-    assert window.offer_fields["start_date"].calendarPopup()
-    assert isinstance(window.offer_fields["start_time"], qt_widgets.QTimeEdit)
-    assert window.offer_fields["start_time"].displayFormat() == "h:mm AP"
-    window.offer_fields["start_time"].setTime(window.QtCore.QTime(9, 7))
-    window.offer_fields["start_time"].editingFinished.emit()
-    assert window.offer_fields["start_time"].time() == window.QtCore.QTime(9, 0)
-    assert isinstance(window.offer_fields["hourly_pay"], qt_widgets.QDoubleSpinBox)
-    assert isinstance(window.offer_fields["hours_week"], qt_widgets.QSpinBox)
-    assert "template_path" not in window.offer_fields
-    assert "output_dir" not in window.offer_fields
+    window.session = session
+    window.recording_started_monotonic = 100.0
+    monkeypatch.setattr(pyside_interview_app.time, "monotonic", lambda: 112.0)
+
+    window._go_back_live_question()
+    window._save_and_next()
+
+    assert session.flow_time_marks == [
+        {"flow_index": 1, "t": 12.0, "end_t": 12.0},
+        {"flow_index": 2, "t": 12.0},
+    ]
     window.window.close()
     app.processEvents()
 
@@ -2026,12 +1816,7 @@ def test_pyside_review_screen_hides_finalize_and_offer_actions(tmp_path: Path) -
     assert "Finalize Interview" not in review_button_text
     assert "Generate Offer" not in review_button_text
 
-    offer_buttons = [
-        child
-        for child in window.stack.widget(2).findChildren(qt_widgets.QPushButton)
-        if child.text() == "Generate Offer"
-    ]
-    assert offer_buttons
+    assert "Offers" not in [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
     window.window.close()
     app.processEvents()
 
@@ -2204,115 +1989,6 @@ def test_pyside_session_offer_generation_preserves_prior_offer_revision(tmp_path
 
     assert first.name == "Launch Pad Learning PMD Offer of Employment to Latoya Nugent.docx"
     assert second.name == "Launch Pad Learning PMD Offer of Employment to Latoya Nugent (2).docx"
-
-def test_pyside_session_offer_generation_emits_start_date_notification(tmp_path: Path) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=tmp_path / "missing-history.json",
-        school_options=["Palmdale"],
-    )
-    session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
-    session.start(candidate_name="Latoya Nugent", school="Palmdale", track_key="preschool")
-    session.save_answer_and_advance(notes="Mission aligned.", score="")
-    session.save_answer_and_advance(notes="Values aligned.", score="")
-    session.save_answer_and_advance(notes="Warm child-centered example.", score="5")
-    template_path = tmp_path / "template.docx"
-    doc = Document()
-    doc.add_paragraph("[Title] [First Name] [Last Name] | [City] | [Position] | [HourlyPay] | [Hours]")
-    doc.save(template_path)
-    output_dir = tmp_path / "offers"
-    output_dir.mkdir()
-    settings_path = tmp_path / "school_offer_settings.json"
-    SchoolOfferSettingsStore(settings_path).save(
-        {
-            "Palmdale": {
-                "full_time_template": str(template_path),
-                "part_time_template": str(template_path),
-                "offer_output_dir": str(output_dir),
-            }
-        }
-    )
-    notifications = []
-
-    class FakeNotifications:
-        def emit_event(self, event_type, payload, idempotency_key):
-            notifications.append((event_type, payload, idempotency_key))
-            return []
-
-    window = _pyside_window_on_page(model, "Offers")
-    window.session = session
-    window.notification_service = FakeNotifications()
-    window.school_offer_store = SchoolOfferSettingsStore(settings_path)
-    window._open_session_offer()
-    window.offer_fields["title"].setCurrentText("Ms.")
-    window.offer_fields["start_date"].setDate(window.QtCore.QDate(2026, 7, 10))
-    window.offer_fields["hourly_pay"].setValue(22.50)
-    window.offer_fields["hours_week"].setValue(40)
-
-    window._generate_offer_from_fields()
-
-    assert notifications[0][0] == "offer.generated"
-    assert notifications[0][1]["candidate_name"] == "Latoya Nugent"
-    assert notifications[0][1]["start_date"] == "2026-07-10"
-    assert notifications[0][2].endswith(":offer.generated")
-    window.window.close()
-    app.processEvents()
-
-
-@pytest.mark.pyside_gui
-@pytest.mark.slow_pyside
-def test_pyside_offer_screen_uses_part_time_template_and_shows_success_actions(tmp_path: Path) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=tmp_path / "missing-history.json",
-        school_options=["Palmdale"],
-    )
-    session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
-    session.start(candidate_name="Latoya Nugent", school="Palmdale", track_key="preschool")
-    full_template = tmp_path / "full.docx"
-    part_template = tmp_path / "part.docx"
-    for path, marker in ((full_template, "FULL"), (part_template, "PART [Title] [First Name] [Position]")):
-        document = Document()
-        document.add_paragraph(marker)
-        document.save(path)
-    output_dir = tmp_path / "offers"
-    output_dir.mkdir()
-    settings_path = tmp_path / "school_offer_settings.json"
-    SchoolOfferSettingsStore(settings_path).save(
-        {
-            "Palmdale": {
-                "full_time_template": str(full_template),
-                "part_time_template": str(part_template),
-                "offer_output_dir": str(output_dir),
-            }
-        }
-    )
-    window = _pyside_window_on_page(model, "Offers")
-    window.session = session
-    window.school_offer_store = SchoolOfferSettingsStore(settings_path)
-    window._open_session_offer()
-    window.offer_fields["title"].setCurrentText("Ms.")
-    window.offer_fields["start_date"].setDate(window.QtCore.QDate(2026, 7, 27))
-    window.offer_fields["hourly_pay"].setValue(24.0)
-    window.offer_fields["hours_week"].setValue(29)
-    window.offer_fields["position"].setCurrentText("Curriculum Specialist")
-
-    window._generate_offer_from_fields()
-
-    assert "Employment type: Part-time" == window.offer_employment_type_label.text()
-    assert "PART Ms. Latoya Curriculum Specialist" in _docx_text(window.generated_offer_path)
-    assert not window.offer_open_button.isHidden()
-    assert not window.offer_open_folder_button.isHidden()
-    window.window.close()
-    app.processEvents()
 
 def test_pyside_window_runs_due_notification_schedule_on_startup(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -3016,51 +2692,6 @@ def test_pyside_progress_window_immediately_shows_ordered_tasks_in_scroll_area(t
     window.window.close()
     app.processEvents()
 
-def test_pyside_finalize_reload_history_after_queueing_deepseek(tmp_path: Path, monkeypatch) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    history_path = tmp_path / "interview_history.sqlite3"
-    InterviewHistoryStore(history_path).load()
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=history_path,
-        school_options=["Palmdale"],
-    )
-    window = _pyside_window_on_page(model, "Candidates")
-    window.session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
-    window.session.start(candidate_name="Latoya Nugent", school="Palmdale", track_key="preschool")
-    monkeypatch.setattr(window, "_stop_pyside_interview_recording", lambda: None)
-    monkeypatch.setattr(pyside_interview_app, "INTERVIEW_HISTORY_PATH", history_path)
-
-    def _fake_finalize(**_kwargs):
-        InterviewHistoryStore(history_path).append(
-            {
-                "history_id": "hist-1",
-                "candidate_name": "Latoya Nugent",
-                "deepseek_processing_status": "processing",
-            }
-        )
-        return {"out_path": str(tmp_path / "notes.docx"), "deepseek_progress_path": ""}
-
-    monkeypatch.setattr(window.session, "finalize_interview", _fake_finalize)
-
-    window._generate_interview_notes_from_session()
-    for _ in range(50):
-        app.processEvents()
-        if window.history_table.rowCount() == 1:
-            break
-
-    assert window.history_table.rowCount() == 1
-    assert window.history_table.item(0, 1).text() == "Latoya Nugent"
-    assert window.history_table.cellWidget(0, 6).text() == "Processing"
-    assert window.candidate_history_table.rowCount() == 1
-    assert window.candidate_history_table.item(0, 1).text() == "Latoya Nugent"
-    assert window.candidate_history_table.cellWidget(0, 6).text() == "Processing"
-    window.window.close()
-    app.processEvents()
-
 def test_pyside_review_table_updates_transcript_when_finalize_worker_reports_transcripts(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -3203,233 +2834,6 @@ def test_pyside_review_apply_scores_updates_history_and_queues_director_referral
     window.window.close()
     app.processEvents()
 
-def test_pyside_finalize_shows_candidate_history_before_report_export_finishes(tmp_path: Path, monkeypatch) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    history_path = tmp_path / "interview_history.sqlite3"
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=history_path,
-        school_options=["Palmdale"],
-    )
-    window = _pyside_window_on_page(model, "Candidates")
-    window.session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
-    window.session.start(candidate_name="Mina Patel", school="Palmdale", track_key="preschool")
-    monkeypatch.setattr(window, "_stop_pyside_interview_recording", lambda: None)
-    monkeypatch.setattr(pyside_interview_app, "INTERVIEW_HISTORY_PATH", history_path)
-    export_started = threading.Event()
-    release_export = threading.Event()
-
-    def _blocked_export(_gateway, app_adapter, context):
-        export_started.set()
-        release_export.wait(timeout=5)
-        out_path = tmp_path / "notes.docx"
-        app_adapter.state.referral_packet["interview_notes_path"] = str(out_path)
-        context.interview_notes_document_path = str(out_path)
-        context.payload["interview_notes_document_path"] = str(out_path)
-        return str(out_path)
-
-    monkeypatch.setattr(pyside_interview_app.FinalizeGateways, "export_basic_report", _blocked_export)
-    monkeypatch.setattr(
-        pyside_interview_app.FinalizeGateways,
-        "export_integration",
-        lambda _gateway, _app_adapter, _context: tmp_path / "integration.json",
-    )
-    monkeypatch.setattr(
-        pyside_interview_app.FinalizeGateways,
-        "send_referral",
-        lambda _gateway, _app_adapter, _context, _out_path, _integration_path: ({}, None),
-    )
-
-    window._generate_interview_notes_from_session()
-    for _ in range(100):
-        app.processEvents()
-        if window.candidate_history_table.rowCount() == 1 and export_started.is_set():
-            break
-
-    assert export_started.is_set()
-    assert window.history_table.rowCount() == 1
-    assert window.history_table.item(0, 1).text() == "Mina Patel"
-    assert window.candidate_history_table.rowCount() == 1
-    assert window.candidate_history_table.item(0, 1).text() == "Mina Patel"
-
-    release_export.set()
-    for _ in range(100):
-        app.processEvents()
-        if "Interview finalized:" in window.review_status_label.text():
-            break
-    window.window.close()
-    app.processEvents()
-
-
-@pytest.mark.pyside_gui
-@pytest.mark.slow_pyside
-def test_pyside_history_grid_shows_failed_retry_for_failed_deepseek_row(tmp_path: Path) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    notes_path = tmp_path / "notes.docx"
-    notes_path.write_text("docx placeholder", encoding="utf-8")
-    history_path = tmp_path / "interview_history.sqlite3"
-    InterviewHistoryStore(history_path).append(
-        {
-            "history_id": "hist-1",
-            "candidate_name": "Latoya Nugent",
-            "interview_notes_path": str(notes_path),
-            "deepseek_processing_status": "failed",
-            "deepseek_processing_warning": "DeepSeek processing failed.",
-        }
-    )
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=history_path,
-        school_options=["Palmdale"],
-    )
-    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
-
-    button = window.history_table.cellWidget(0, 6)
-
-    assert button.text() == "Open Notes"
-    assert button.isEnabled()
-    assert "DeepSeek processing failed." in button.toolTip()
-    window.window.close()
-    app.processEvents()
-
-
-@pytest.mark.pyside_gui
-@pytest.mark.slow_pyside
-def test_pyside_failed_retry_button_requeues_deepseek_job(tmp_path: Path, monkeypatch) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    history_path = tmp_path / "interview_history.sqlite3"
-    InterviewHistoryStore(history_path).append(
-        {
-            "history_id": "hist-1",
-            "candidate_name": "Latoya Nugent",
-            "deepseek_processing_status": "failed",
-            "deepseek_processing_warning": "DeepSeek processing failed.",
-        }
-    )
-    job_path = tmp_path / "deepseek_jobs" / "deepseek-finalize-hist-1.json"
-    job_path.parent.mkdir()
-    job_path.write_text(json.dumps({"history_id": "hist-1"}), encoding="utf-8")
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=history_path,
-        school_options=["Palmdale"],
-    )
-    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
-    calls: list[Path] = []
-
-    def _fake_regenerate(job_path: Path, *, mode: str) -> Path:
-        calls.append(Path(job_path))
-        calls.append(mode)
-        InterviewHistoryStore(history_path).update_row(
-            "hist-1",
-            {"deepseek_processing_status": "processing", "deepseek_processing_warning": ""},
-        )
-        return Path(job_path).with_suffix(".progress.json")
-
-    monkeypatch.setattr(pyside_interview_app, "regenerate_interview_notes_job", _fake_regenerate)
-    window._choose_pyside_notes_regeneration_mode = lambda _row: "full"
-
-    window.history_table.cellWidget(0, 7).click()
-    app.processEvents()
-
-    assert calls == [job_path, "full"]
-    assert window.history_table.cellWidget(0, 6).text() == "Processing"
-    window.window.close()
-    app.processEvents()
-
-
-@pytest.mark.pyside_gui
-@pytest.mark.slow_pyside
-def test_pyside_retry_uses_persisted_deepseek_job_path(tmp_path: Path, monkeypatch) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    history_path = tmp_path / "interview_history.sqlite3"
-    stored_job_path = tmp_path / "archived_jobs" / "deepseek-finalize-hist-1.json"
-    stored_job_path.parent.mkdir()
-    stored_job_path.write_text(json.dumps({"history_id": "hist-1"}), encoding="utf-8")
-    InterviewHistoryStore(history_path).append(
-        {
-            "history_id": "hist-1",
-            "candidate_name": "Latoya Nugent",
-            "deepseek_processing_status": "failed",
-            "deepseek_job_path": str(stored_job_path),
-            "deepseek_progress_path": str(stored_job_path.with_suffix(".progress.json")),
-        }
-    )
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=history_path,
-        school_options=["Palmdale"],
-    )
-    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
-    calls: list[object] = []
-
-    monkeypatch.setattr(
-        pyside_interview_app,
-        "regenerate_interview_notes_job",
-        lambda path, *, mode: calls.extend([Path(path), mode]) or Path(path).with_suffix(".progress.json"),
-    )
-    window._choose_pyside_notes_regeneration_mode = lambda _row: "full"
-
-    window.history_table.cellWidget(0, 7).click()
-    app.processEvents()
-
-    assert calls == [stored_job_path, "full"]
-    window.window.close()
-    app.processEvents()
-
-def test_pyside_existing_notes_can_be_regenerated(tmp_path: Path, monkeypatch) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    notes_path = tmp_path / "notes.docx"
-    notes_path.write_text("docx", encoding="utf-8")
-    history_path = tmp_path / "interview_history.sqlite3"
-    InterviewHistoryStore(history_path).append(
-        {
-            "history_id": "hist-1",
-            "candidate_name": "Latoya Nugent",
-            "interview_notes_path": str(notes_path),
-            "deepseek_processing_status": "complete",
-        }
-    )
-    job_path = tmp_path / "deepseek_jobs" / "deepseek-finalize-hist-1.json"
-    job_path.parent.mkdir()
-    job_path.write_text(json.dumps({"history_id": "hist-1"}), encoding="utf-8")
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=history_path,
-        school_options=["Palmdale"],
-    )
-    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
-    calls: list[object] = []
-
-    monkeypatch.setattr(
-        pyside_interview_app,
-        "regenerate_interview_notes_job",
-        lambda path, *, mode: calls.extend([Path(path), mode]) or Path(path).with_suffix(".progress.json"),
-    )
-    window._choose_pyside_notes_regeneration_mode = lambda _row: "document_only"
-
-    window.history_table.cellWidget(0, 7).click()
-    app.processEvents()
-
-    assert calls == [job_path, "document_only"]
-    window.window.close()
-    app.processEvents()
-
 def test_pyside_regenerate_prompt_uses_history_candidate_name(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -3490,76 +2894,6 @@ def test_pyside_regenerate_prompt_uses_history_candidate_name(tmp_path: Path, mo
     assert mode == "document_only"
     assert "text:Regenerate interview notes for Latoya Nugent?" in calls
     assert "exec" in calls
-    window.window.close()
-    app.processEvents()
-
-def test_pyside_open_notes_opens_existing_document_without_regenerate_prompt(tmp_path: Path, monkeypatch) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    notes_path = tmp_path / "notes.docx"
-    notes_path.write_text("docx", encoding="utf-8")
-    history_path = tmp_path / "interview_history.sqlite3"
-    InterviewHistoryStore(history_path).append(
-        {
-            "history_id": "hist-1",
-            "candidate_name": "Latoya Nugent",
-            "interview_notes_path": str(notes_path),
-            "deepseek_processing_status": "complete",
-        }
-    )
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=history_path,
-        school_options=["Palmdale"],
-    )
-    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
-    calls: list[str] = []
-    monkeypatch.setattr(window, "_choose_pyside_notes_regeneration_mode", lambda _row: calls.append("prompt") or "full")
-    if sys.platform.startswith("win"):
-        monkeypatch.setattr(pyside_interview_app.os, "startfile", lambda path: calls.append(f"open:{path}"))
-    else:
-        monkeypatch.setattr(pyside_interview_app.subprocess, "run", lambda args, check: calls.append(f"open:{args[-1]}"))
-
-    window.history_table.cellWidget(0, 6).click()
-    app.processEvents()
-
-    assert calls == [f"open:{notes_path}"]
-    window.window.close()
-    app.processEvents()
-
-def test_pyside_regenerate_prompts_before_missing_job_warning(tmp_path: Path, monkeypatch) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    history_path = tmp_path / "interview_history.sqlite3"
-    InterviewHistoryStore(history_path).append(
-        {
-            "history_id": "hist-1",
-            "candidate_name": "Latoya Nugent",
-            "deepseek_processing_status": "complete",
-        }
-    )
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=history_path,
-        school_options=["Palmdale"],
-    )
-    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
-    calls: list[str] = []
-    window._choose_pyside_notes_regeneration_mode = lambda _row: calls.append("mode") or "document_only"
-    monkeypatch.setattr(
-        window.QtWidgets.QMessageBox,
-        "warning",
-        lambda _parent, _title, message: calls.append(f"warning:{message}"),
-    )
-
-    window.history_table.cellWidget(0, 7).click()
-    app.processEvents()
-
-    assert calls == ["mode", "warning:DeepSeek job file was not found."]
     window.window.close()
     app.processEvents()
 
@@ -3659,88 +2993,6 @@ def test_pyside_candidate_board_treats_ai_auto_no_hire_as_advisory_for_status() 
     assert board.rows[0]["score"] == "70.0"
     assert board.rows[0]["status"] == "Borderline"
     assert board.history_rows[0].status == "Borderline"
-
-def test_pyside_candidates_page_uses_history_table_layout_and_actions(tmp_path: Path) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    notes_path = tmp_path / "notes.docx"
-    notes_path.write_text("docx placeholder", encoding="utf-8")
-    history_path = tmp_path / "interview_history.sqlite3"
-    InterviewHistoryStore(history_path).append(
-        {
-            "history_id": "hist-1",
-            "candidate_name": "Latoya Nugent",
-            "school": "Palmdale",
-            "position": "Preschool Teacher",
-            "interview_date": "2026-06-23",
-            "outcome": "Hire",
-            "offer_status": "not_generated",
-            "interview_notes_path": str(notes_path),
-        }
-    )
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=history_path,
-        school_options=["Palmdale"],
-    )
-    window = _pyside_window_on_page(model, "Candidates")
-
-    assert window.candidate_history_table.columnCount() == window.history_table.columnCount() == 11
-    assert [
-        window.candidate_history_table.horizontalHeaderItem(column).text()
-        for column in range(window.candidate_history_table.columnCount())
-    ] == [
-        "Date",
-        "Candidate",
-        "School",
-        "Position",
-        "Score",
-        "Status",
-        "Notes",
-        "Regenerate",
-        "Transcript",
-        "Offer",
-        "Delete",
-    ]
-    assert window.candidate_history_table.item(0, 1).text() == "Latoya Nugent"
-    assert window.candidate_history_table.cellWidget(0, 6).text() == "Open Notes"
-    assert window.candidate_history_table.cellWidget(0, 7).text() == "Regenerate"
-    assert window.candidate_history_table.cellWidget(0, 8).text() == "Import"
-    assert window.candidate_history_table.cellWidget(0, 9).text() == "Generate Offer"
-    assert window.candidate_history_table.cellWidget(0, 10).text() == "Delete"
-    window.window.close()
-    app.processEvents()
-
-def test_pyside_history_delete_requires_confirmation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    history_path = tmp_path / "interview_history.sqlite3"
-    store = InterviewHistoryStore(history_path)
-    store.append({"history_id": "hist-1", "candidate_name": "Latoya Nugent"})
-    store.append({"history_id": "hist-2", "candidate_name": "Dana Teacher"})
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=history_path,
-        school_options=["Palmdale"],
-    )
-    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
-    no = window.QtWidgets.QMessageBox.StandardButton.No
-    yes = window.QtWidgets.QMessageBox.StandardButton.Yes
-
-    monkeypatch.setattr(window.QtWidgets.QMessageBox, "question", lambda *_args, **_kwargs: no)
-    window._delete_history_row(model.home.history_rows[0])
-    assert [row["history_id"] for row in InterviewHistoryStore(history_path).load()] == ["hist-1", "hist-2"]
-
-    monkeypatch.setattr(window.QtWidgets.QMessageBox, "question", lambda *_args, **_kwargs: yes)
-    hist_1_row = next(row for row in window.model.home.history_rows if row.row_key == "hist-1")
-    window._delete_history_row(hist_1_row)
-    assert [row["history_id"] for row in InterviewHistoryStore(history_path).load()] == ["hist-2"]
-    window.window.close()
-    app.processEvents()
 
 def test_pyside_admin_studio_uses_guided_readonly_sections_until_edit(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -7760,13 +7012,13 @@ def test_pyside_window_can_defer_secondary_pages_until_navigation(tmp_path: Path
 
         return build
 
-    monkeypatch.setattr(pyside_interview_app.PySideInterviewWindow, "_interviews_page", page("Interviews"))
-    monkeypatch.setattr(pyside_interview_app.PySideInterviewWindow, "_candidates_page", page("Candidates"))
+    monkeypatch.setattr(pyside_interview_app.PySideInterviewWindow, "_staffing_page", page("Staffing"))
+    monkeypatch.setattr(pyside_interview_app.PySideInterviewWindow, "_staffing_v2_page", page("Staffing v2"))
     monkeypatch.setattr(pyside_interview_app.PySideInterviewWindow, "_admin_page", page("Admin"))
     monkeypatch.setattr(pyside_interview_app.PySideInterviewWindow, "_run_due_notifications_safely", lambda self: None)
     model = pyside_interview_app.InterviewRedesignModel(
         app_title="Test",
-        navigation=["Interviews", "Candidates", "Admin"],
+        navigation=["Staffing", "Staffing v2", "Admin"],
         setup_steps=[],
         school_options=[],
         track_labels={},
@@ -7785,14 +7037,14 @@ def test_pyside_window_can_defer_secondary_pages_until_navigation(tmp_path: Path
 
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
 
-    assert built == ["Interviews"]
+    assert built == ["Staffing v2"]
     assert window.stack.count() == 3
-    assert window.stack.widget(0).objectName() == "InterviewsPage"
+    assert window.stack.widget(1).objectName() == "Staffing v2Page"
 
     window._select_main_nav_row(2)
     window._select_main_nav_row(2)
 
-    assert built == ["Interviews", "Admin"]
+    assert built == ["Staffing v2", "Admin"]
     assert window.stack.currentWidget().objectName() == "AdminPage"
     window.window.close()
     app.processEvents()
@@ -7905,231 +7157,6 @@ def test_pyside_window_fit_does_not_cap_normal_window_maximum_size() -> None:
     assert fake_window.maximum_size_calls == 0
     assert fake_window.resize_calls == 0
     assert fake_window.move_calls == 1
-
-def test_pyside_history_generate_offer_button_prefills_offer_wizard(tmp_path: Path, monkeypatch) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    history_path = tmp_path / "interview_history.sqlite3"
-    InterviewHistoryStore(history_path).append(
-        {
-            "history_id": "hist-1",
-            "candidate_name": "Latoya Nugent",
-            "school": "Palmdale",
-            "position": "Preschool Teacher",
-            "outcome": "Hire",
-            "offer_status": "not_generated",
-        }
-    )
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=history_path,
-        school_options=["Palmdale"],
-    )
-    window = _pyside_window_on_page(model, "Candidates")
-
-    button = next(
-        child
-        for child in window.window.findChildren(qt_widgets.QPushButton)
-        if child.text() == "Generate Offer" and child.property("history_row_key") == "hist-1"
-    )
-    assert button.isEnabled()
-
-    button.click()
-    app.processEvents()
-
-    assert window.stack.currentIndex() == 2
-    assert window.offer_fields["candidate"].text() == "Latoya Nugent"
-    assert window.offer_fields["school"].currentText() == "Palmdale"
-    assert window.offer_fields["position"].currentText() == "Preschool Teacher"
-    window.window.close()
-    app.processEvents()
-
-@pytest.mark.pyside_gui
-@pytest.mark.slow_pyside
-def test_pyside_history_offer_prefills_editable_shift_from_director_staffing_v2(
-    tmp_path: Path,
-    monkeypatch,
-) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    history_path = tmp_path / "interview_history.sqlite3"
-    InterviewHistoryStore(history_path).append(
-        {
-            "history_id": "hist-shift",
-            "candidate_name": "Latoya Nugent",
-            "school": "Palmdale",
-            "position": "Teacher",
-            "interview_date": date.today().isoformat(),
-            "outcome": "Hire",
-            "offer_status": "not_generated",
-        }
-    )
-    staffing_base_path = tmp_path / "staffing_dashboard.sqlite3"
-    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", staffing_base_path)
-    director_store = pyside_interview_app.StaffingStore(
-        pyside_interview_app.staffing_db_path_for_school("Palmdale")
-    )
-    director_store.initialize()
-    director_service = pyside_interview_app.StaffingService(director_store)
-    referral = director_service.upsert_director_candidate_referral(
-        history_id="hist-shift",
-        candidate_name="Latoya Nugent",
-        school="Palmdale",
-        position="Teacher",
-        interviewer_outcome="hire",
-    )
-    director_service.record_director_interview(
-        referral.id,
-        director_name="Director",
-        completed_date="2026-07-13",
-        rating=9,
-        decision="hire",
-        decision_notes="Hire for opening.",
-        proposed_shift_start="7:30 AM",
-        proposed_shift_end="4:15 PM",
-        proposed_classroom="Preschool",
-    )
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=history_path,
-        school_options=["Palmdale"],
-    )
-    window = _pyside_window_on_page(model, "Offers")
-
-    window._open_history_offer(model.home.history_rows[0])
-
-    assert window.offer_fields["start_time"].time() == window.QtCore.QTime(7, 30)
-    assert window.offer_fields["end_time"].time() == window.QtCore.QTime(16, 15)
-    window.offer_fields["start_time"].setTime(window.QtCore.QTime(8, 0))
-    assert window.offer_fields["start_time"].time() == window.QtCore.QTime(8, 0)
-    session = PySideInterviewSession(model=model, draft_path=tmp_path / "draft.json")
-    session.start(candidate_name="Latoya Nugent", school="Palmdale", track_key="preschool")
-    window.session = session
-    window._open_session_offer()
-    assert window.offer_fields["start_time"].time() == window.QtCore.QTime(7, 30)
-    assert window.offer_fields["end_time"].time() == window.QtCore.QTime(16, 15)
-    window.window.close()
-    app.processEvents()
-
-
-def test_pyside_history_offer_generation_updates_history_status(tmp_path: Path) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    history_path = tmp_path / "interview_history.sqlite3"
-    InterviewHistoryStore(history_path).append(
-        {
-            "history_id": "hist-1",
-            "candidate_name": "Latoya Nugent",
-            "school": "Palmdale",
-            "position": "Preschool Teacher",
-            "outcome": "Hire",
-            "offer_status": "not_generated",
-        }
-    )
-    template_path = tmp_path / "template.docx"
-    doc = Document()
-    doc.add_paragraph("[Title] [First Name] [Last Name] | [City] | [Position]")
-    doc.save(template_path)
-    output_dir = tmp_path / "offers"
-    output_dir.mkdir()
-    settings_path = tmp_path / "school_offer_settings.json"
-    SchoolOfferSettingsStore(settings_path).save(
-        {
-            "Palmdale": {
-                "full_time_template": str(template_path),
-                "part_time_template": str(template_path),
-                "offer_output_dir": str(output_dir),
-            }
-        }
-    )
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=history_path,
-        school_options=["Palmdale"],
-    )
-    window = _pyside_window_on_page(model, "Offers")
-    notifications = []
-
-    class FakeNotifications:
-        def emit_event(self, event_type, payload, idempotency_key):
-            notifications.append((event_type, payload, idempotency_key))
-            return []
-
-    window.notification_service = FakeNotifications()
-    window.school_offer_store = SchoolOfferSettingsStore(settings_path)
-    window._open_history_offer(model.home.history_rows[0])
-    window.offer_fields["title"].setCurrentText("Ms.")
-    window.offer_fields["start_date"].setDate(window.QtCore.QDate(2026, 6, 23))
-    window.offer_fields["hourly_pay"].setValue(22.50)
-    window.offer_fields["hours_week"].setValue(40)
-
-    window._generate_offer_from_fields()
-
-    rows = InterviewHistoryStore(history_path).load()
-    assert rows[0]["offer_status"] == "generated"
-    assert notifications[0][0] == "offer.generated"
-    assert notifications[0][1]["candidate_name"] == "Latoya Nugent"
-    expected_name = "Launch Pad Learning PMD Offer of Employment to Latoya Nugent.docx"
-    assert rows[0]["offer_letter_path"].endswith(expected_name)
-    assert "Offer generated:" in window.offer_status_label.text()
-    window.window.close()
-    app.processEvents()
-
-
-@pytest.mark.pyside_gui
-@pytest.mark.slow_pyside
-def test_pyside_history_offer_generation_blocks_missing_template_without_status_change(tmp_path: Path) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    history_path = tmp_path / "interview_history.sqlite3"
-    InterviewHistoryStore(history_path).append(
-        {
-            "history_id": "hist-1",
-            "candidate_name": "Latoya Nugent",
-            "school": "North Long Beach",
-            "position": "Teacher",
-            "outcome": "Hire",
-            "offer_status": "not_generated",
-        }
-    )
-    output_dir = tmp_path / "offers"
-    output_dir.mkdir()
-    settings_path = tmp_path / "school_offer_settings.json"
-    SchoolOfferSettingsStore(settings_path).save(
-        {
-            "North Long Beach": {
-                "full_time_template": str(tmp_path / "not-created-yet.docx"),
-                "part_time_template": str(tmp_path / "not-created-yet-part.docx"),
-                "offer_output_dir": str(output_dir),
-            }
-        }
-    )
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=history_path,
-        school_options=["North Long Beach"],
-    )
-    window = _pyside_window_on_page(model, "Offers")
-    window.school_offer_store = SchoolOfferSettingsStore(settings_path)
-    window._open_history_offer(model.home.history_rows[0])
-    window.offer_fields["title"].setCurrentText("Ms.")
-    window.offer_fields["start_date"].setDate(window.QtCore.QDate(2026, 7, 27))
-    window.offer_fields["hourly_pay"].setValue(24.0)
-
-    window._generate_offer_from_fields()
-
-    assert InterviewHistoryStore(history_path).load()[0]["offer_status"] == "not_generated"
-    assert "Configure offer paths in Admin" in window.offer_status_label.text()
-    window.window.close()
-    app.processEvents()
 
 def test_pyside_rating_notification_emits_for_hire_and_borderline_only(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -8306,7 +7333,7 @@ def test_pyside_staffing_dashboard_imports_seed_and_shows_metrics(tmp_path: Path
     )
 
     window = _pyside_window_on_page(model, "Staffing")
-    labels = [label.text() for label in window.stack.widget(3).findChildren(qt_widgets.QLabel)]
+    labels = [label.text() for label in window.stack.currentWidget().findChildren(qt_widgets.QLabel)]
     table = window.window.findChild(qt_widgets.QTableWidget, "PySideStaffingWorkbookBoard")
 
     assert any("Open positions: 1" in text for text in labels)
@@ -8886,7 +7913,7 @@ def test_pyside_staffing_v2_full_app_selection_resyncs_shared_page_scrollbars(
         original_sync()
 
     dashboard._sync_staffing_v2_scroll_ranges = sync_spy
-    window.sidebar.setCurrentRow(nav_items.index("Interviews"))
+    window.sidebar.setCurrentRow(nav_items.index("Staffing"))
     app.processEvents()
     window.sidebar.setCurrentRow(staffing_index)
     app.processEvents()
@@ -11940,60 +10967,6 @@ def test_pyside_staffing_v2_validation_dashboard_and_filter_drawer_use_existing_
     app.processEvents()
 
 
-@pytest.mark.pyside_gui
-@pytest.mark.slow_pyside
-def test_pyside_history_offer_actions_advance_generated_and_approved_rows(tmp_path: Path) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    history_path = tmp_path / "interview_history.sqlite3"
-    InterviewHistoryStore(history_path).append(
-        {
-            "history_id": "hist-1",
-            "candidate_name": "Latoya Nugent",
-            "candidate_email": "latoya@example.org",
-            "school": "Palmdale",
-            "position": "Preschool Teacher",
-            "outcome": "Hire",
-            "offer_status": "generated",
-            "offer_path": str(tmp_path / "Latoya Nugent Offer.docx"),
-        }
-    )
-    notifications = []
-
-    class FakeNotifications:
-        def emit_event(self, event_type, payload, idempotency_key):
-            notifications.append((event_type, payload, idempotency_key))
-            return []
-
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=history_path,
-        school_options=["Palmdale"],
-    )
-    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
-    window.notification_service = FakeNotifications()
-
-    window._open_history_offer(model.home.history_rows[0])
-    approved_rows = InterviewHistoryStore(history_path).load()
-    approved_model_row = pyside_interview_app._build_pyside_history_rows(history_path)[0]
-    window._open_history_offer(approved_model_row)
-    accepted_rows = InterviewHistoryStore(history_path).load()
-
-    assert approved_rows[0]["offer_status"] == "approved"
-    assert accepted_rows[0]["offer_status"] == "accepted"
-    assert [event[0] for event in notifications] == ["offer.approved", "offer.accepted"]
-    approved_payload = notifications[0][1]
-    assert approved_payload["candidate"] == "Latoya Nugent"
-    assert approved_payload["candidate_email"] == "latoya@example.org"
-    assert approved_payload["school_code"] == "PMD"
-    assert approved_payload["school_location"] == "Palmdale"
-    assert approved_payload["reply_by_date"] == (date.today() + timedelta(days=3)).isoformat()
-    assert approved_payload["offer_path"].endswith("Latoya Nugent Offer.docx")
-    window.window.close()
-    app.processEvents()
-
 def test_pyside_staffing_open_action_refreshes_dashboard(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -12036,7 +11009,7 @@ def test_pyside_staffing_open_action_refreshes_dashboard(tmp_path: Path, monkeyp
     app.processEvents()
 
     table = window.window.findChild(qt_widgets.QTableWidget, "PySideStaffingWorkbookBoard")
-    labels = [label.text() for label in window.stack.widget(3).findChildren(qt_widgets.QLabel)]
+    labels = [label.text() for label in window.stack.currentWidget().findChildren(qt_widgets.QLabel)]
     row = _staffing_row_for_position(table, "Teacher 1")
     assert table.item(row, 3).text() == "need_now"
     assert table.cellWidget(row, 7).text() == "Mark Coming"
@@ -12307,6 +11280,7 @@ def test_interview_finalize_queues_director_referral_without_staffing_db_write(
         position="Teacher",
         interview_date="2026-07-08",
     )
+    staffing_bytes_before = staffing_path.read_bytes()
 
     window._record_staffing_director_referral_from_finalize_result(
         {
@@ -12315,7 +11289,7 @@ def test_interview_finalize_queues_director_referral_without_staffing_db_write(
         }
     )
 
-    assert not staffing_path.exists()
+    assert staffing_path.read_bytes() == staffing_bytes_before
     assert pyside_interview_app.staffing_referral_queue_db_path(queue_path=referral_queue_path).exists()
     queued = pyside_interview_app._pop_staffing_referral_queue_for_school("Palmdale", queue_path=referral_queue_path)
     assert queued[0]["history_id"] == "hist-queued"
@@ -13023,7 +11997,7 @@ def test_pyside_staffing_dashboard_refreshes_partial_seed_and_hides_color_key(
     window = _pyside_window_on_page(model, "Staffing")
     tabs = window.window.findChild(qt_widgets.QTabWidget, "PySideStaffingSchoolTabs")
     selector = window.window.findChild(qt_widgets.QComboBox, "PySideStaffingSchoolSelector")
-    labels = [label.text() for label in window.stack.widget(3).findChildren(qt_widgets.QLabel)]
+    labels = [label.text() for label in window.stack.currentWidget().findChildren(qt_widgets.QLabel)]
     hawthorne_board = tabs.widget(0).findChild(qt_widgets.QTableWidget, "PySideStaffingWorkbookBoard")
 
     assert [tabs.tabText(index) for index in range(tabs.count())] == ["Hawthorne", "Palmdale"]
@@ -13125,7 +12099,7 @@ def test_pyside_staffing_classroom_detail_matches_dashboard_mockup_shell(
     )
 
     window = _pyside_window_on_page(model, "Staffing")
-    page = window.stack.widget(3)
+    page = window.stack.currentWidget()
     school_selector = page.findChild(qt_widgets.QComboBox, "PySideStaffingSchoolSelector")
     classroom_selector = page.findChild(qt_widgets.QComboBox, "PySideStaffingClassroomSelector")
     classroom_list = page.findChild(qt_widgets.QListWidget, "PySideStaffingClassroomList")
@@ -13135,7 +12109,7 @@ def test_pyside_staffing_classroom_detail_matches_dashboard_mockup_shell(
     title = page.findChild(qt_widgets.QLabel, "PySideStaffingClassroomTitle")
     priority = page.findChild(qt_widgets.QLabel, "PySideStaffingPriorityBadge")
 
-    assert window.stack.widget(3).findChild(qt_widgets.QLabel, "Title").text() == "Classroom Detail"
+    assert window.stack.currentWidget().findChild(qt_widgets.QLabel, "Title").text() == "Classroom Detail"
     assert school_selector.currentText() == "Hawthorne"
     assert classroom_selector.currentText() == "Harmony 1"
     assert [classroom_selector.itemText(index) for index in range(classroom_selector.count())] == ["Harmony 1", "Quest", "Unity"]
@@ -13579,8 +12553,8 @@ def test_pyside_staffing_dashboard_visual_render_uses_real_seed_from_any_cwd(
     app.processEvents()
     tabs = window.window.findChild(qt_widgets.QTabWidget, "PySideStaffingSchoolTabs")
     selector = window.window.findChild(qt_widgets.QComboBox, "PySideStaffingSchoolSelector")
-    labels = [label.text() for label in window.stack.widget(3).findChildren(qt_widgets.QLabel)]
-    rendered = window.stack.widget(3).grab()
+    labels = [label.text() for label in window.stack.currentWidget().findChildren(qt_widgets.QLabel)]
+    rendered = window.stack.currentWidget().grab()
     screenshot_path = tmp_path / "staffing_dashboard_visual.png"
     assert rendered.save(str(screenshot_path))
 

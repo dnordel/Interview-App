@@ -2,7 +2,7 @@ module:
   name: scoring_reporting
   language: python
   path: src/scoring_reporting.py
-  version: 0.21.0
+  version: 0.22.0
   description: Flattened public interface for scoring, reporting, trait signals, exports,
     referrals, email safety, offers, and templates, including DeepSeek-only advisory
     signal scoring; only active legacy adapters remain in the compatibility module
@@ -1864,6 +1864,17 @@ classes:
     exceptions:
     - OfferTemplateError
     side_effects: writes a Word document to disk
+  - name: render_approved_offer
+    description: Render an immutable approval-time offer with approval-day top date, three-calendar-day deadline, and calculated Monday start date; supports an OfferDate placeholder or one unambiguous legacy top date.
+    locked: false
+    inputs:
+      template_path: {type: Path, required: true}
+      output_path: {type: Path, required: true}
+      data: {type: OfferInput, required: true}
+      approval_date: {type: date, required: true}
+    returns: {type: Path}
+    exceptions: [OfferTemplateError, TypeError]
+    side_effects: writes an approval-dated Word document to disk
   - name: _replace_document_text
     description: Replace supported placeholders across document paragraphs and table
       cells.

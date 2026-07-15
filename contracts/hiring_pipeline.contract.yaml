@@ -1,0 +1,485 @@
+module:
+  name: hiring_pipeline
+  language: python
+  path: src/hiring_pipeline.py
+  version: 1.4.0
+  description: Candidate-profile, application-pipeline, event-audit, and offer-lifecycle persistence in the canonical interview history SQLite database.
+functions:
+- name: calculate_offer_approval_dates
+  description: Calculate approval-day offer date, three-calendar-day reply deadline, and first Monday on or after the two-week post-deadline target.
+  locked: false
+  inputs:
+    approval_date: {type: date, required: true}
+  returns: {type: OfferApprovalDates}
+  exceptions: [TypeError]
+  side_effects: none
+classes:
+- name: PromotedOfferArtifacts
+  description: Verified immutable destinations and SHA-256 hashes for exact previewed offer artifacts.
+  locked: false
+  attributes:
+    docx_path: {type: Path}
+    pdf_path: {type: Path}
+    docx_sha256: {type: str}
+    pdf_sha256: {type: str}
+  methods: []
+- name: OfferApprovalArtifactStage
+  description: Same-directory staging boundary that promotes previewed DOCX/PDF bytes only after hash validation.
+  locked: false
+  attributes:
+    final_docx_path: {type: Path}
+    final_pdf_path: {type: Path}
+    staging_dir: {type: Path}
+    staged_docx_path: {type: Path}
+    staged_pdf_path: {type: Path}
+  methods:
+  - name: hashes
+    inputs: {}
+    returns: {type: 'tuple[str, str]'}
+    exceptions: [ValueError]
+    side_effects: Reads staged artifact bytes.
+  - name: promote
+    inputs: {}
+    returns: {type: PromotedOfferArtifacts}
+    exceptions: [ValueError, OSError]
+    side_effects: Moves staged artifacts to unused final paths, verifies unchanged hashes, and removes staging directory.
+  - name: cleanup
+    inputs: {}
+    returns: {type: None}
+    exceptions: [OSError]
+    side_effects: Removes only known staged artifacts and their unique empty staging directory.
+- name: HiringStage
+  description: Canonical seven-stage hiring application state enumeration.
+  locked: false
+  attributes: {}
+  methods: []
+- name: CandidateProfile
+  description: Stable operational candidate identity and contact record.
+  locked: false
+  attributes:
+    candidate_id: {type: str}
+    legal_name: {type: str}
+    preferred_name: {type: str}
+    email: {type: str}
+    phone: {type: str}
+    archived_at: {type: str}
+  methods: []
+- name: HiringApplication
+  description: One independent school-position hiring attempt linked to a candidate and interview history row.
+  locked: false
+  attributes:
+    application_id: {type: str}
+    candidate_id: {type: str}
+    history_id: {type: str}
+    school: {type: str}
+    position: {type: str}
+    cycle_number: {type: int}
+    stage: {type: HiringStage}
+    attention_code: {type: str}
+    archived_at: {type: str}
+    created_at: {type: str}
+    updated_at: {type: str}
+  methods: []
+- name: ApplicationEvent
+  description: Immutable application lifecycle audit event.
+  locked: false
+  attributes:
+    event_id: {type: int}
+    application_id: {type: str}
+    event_type: {type: str}
+    actor: {type: str}
+    created_at: {type: str}
+    payload: {type: 'dict[str, Any]'}
+  methods: []
+- name: OfferApprovalDates
+  description: Immutable approval-derived offer, reply-by, and start dates.
+  locked: false
+  attributes:
+    offer_date: {type: date}
+    reply_by_date: {type: date}
+    start_date: {type: date}
+  methods: []
+- name: OfferVersion
+  description: Immutable numbered offer terms and approval/delivery state.
+  locked: false
+  attributes:
+    version_id: {type: str}
+    application_id: {type: str}
+    version_number: {type: int}
+    status: {type: str}
+    terms: {type: 'dict[str, Any]'}
+    docx_path: {type: str}
+    pdf_path: {type: str}
+    approval_date: {type: str}
+    document_reply_by_date: {type: str}
+    operational_reply_by_date: {type: str}
+    start_date: {type: str}
+    approver_name: {type: str}
+    approver_role: {type: str}
+    send_status: {type: str}
+    send_error: {type: str}
+    docx_sha256: {type: str}
+    pdf_sha256: {type: str}
+    rendered_email: {type: str}
+    approved_at: {type: str}
+    sent_at: {type: str}
+    superseded_by_version_id: {type: str}
+  methods: []
+- name: MigrationParityReport
+  description: Deterministic candidate/application migration parity totals and conflict counts.
+  locked: false
+  attributes:
+    source_rows: {type: int}
+    profile_count: {type: int}
+    application_count: {type: int}
+    stage_counts: {type: 'dict[str, int]'}
+    conflict_count: {type: int}
+    skipped_rows: {type: int}
+  methods: []
+- name: HiringOfferNotificationAdapter
+  description: Candidate-only approved-offer PDF notification boundary adapter.
+  locked: false
+  attributes:
+    notification_service: {type: Any}
+  methods:
+  - name: __call__
+    inputs:
+      candidate: {type: CandidateProfile, required: true}
+      version: {type: OfferVersion, required: true}
+      pdf_path: {type: Path, required: true}
+      idempotency_key: {type: str, required: true}
+    returns: {type: 'list[Any]'}
+    exceptions: []
+    side_effects: Emits one idempotent offer.approved event containing candidate email and approved PDF only.
+- name: HiringPipelineStore
+  description: Deep SQLite repository for candidate identities, application cycles, and lifecycle events.
+  locked: false
+  attributes:
+    history_path: {type: Path}
+    db_path: {type: Path}
+  methods:
+  - name: get_candidate
+    inputs: {candidate_id: {type: str, required: true}}
+    returns: {type: CandidateProfile}
+    exceptions: [ValueError]
+    side_effects: Reads canonical hiring storage.
+  - name: search_candidate_profiles
+    inputs: {query: {type: str, required: false, default: ''}}
+    returns: {type: 'list[CandidateProfile]'}
+    exceptions: []
+    side_effects: Searches active profiles by legal or preferred name, email, or phone.
+  - name: update_candidate_profile
+    inputs:
+      candidate_id: {type: str, required: true}
+      legal_name: {type: str, required: true}
+      preferred_name: {type: str, required: true}
+      email: {type: str, required: true}
+      phone: {type: str, required: true}
+    returns: {type: CandidateProfile}
+    exceptions: [ValueError]
+    side_effects: Validates and updates stable candidate identity/contact fields.
+  - name: get_application
+    inputs: {application_id: {type: str, required: true}}
+    returns: {type: HiringApplication}
+    exceptions: [ValueError]
+    side_effects: Reads canonical hiring storage.
+  - name: application_for_history
+    inputs: {history_id: {type: str, required: true}}
+    returns: {type: 'HiringApplication | None'}
+    exceptions: []
+    side_effects: Reads canonical hiring storage.
+  - name: list_applications
+    inputs: {include_archived: {type: bool, required: false, default: false}}
+    returns: {type: 'list[HiringApplication]'}
+    exceptions: []
+    side_effects: Reads canonical hiring storage.
+  - name: profile_count
+    inputs: {}
+    returns: {type: int}
+    exceptions: []
+    side_effects: Reads canonical profile count for migration parity.
+  - name: archive_application
+    inputs: {application_id: {type: str, required: true}}
+    returns: {type: HiringApplication}
+    exceptions: [ValueError]
+    side_effects: Archives an active application without deleting its linked records.
+  - name: delete_candidate_profile
+    inputs: {candidate_id: {type: str, required: true}}
+    returns: {type: None}
+    exceptions: [ValueError]
+    side_effects: Permanently deletes only an unlinked candidate profile and otherwise fails closed.
+  - name: update_application_stage
+    inputs:
+      application_id: {type: str, required: true}
+      stage: {type: HiringStage, required: true}
+      attention_code: {type: str, required: false, default: ''}
+    returns: {type: HiringApplication}
+    exceptions: [ValueError]
+    side_effects: Updates one application stage and attention state.
+  - name: append_event
+    inputs:
+      application_id: {type: str, required: true}
+      event_type: {type: str, required: true}
+      actor: {type: str, required: true}
+      payload: {type: 'dict[str, Any] | None', required: false, default: null}
+    returns: {type: None}
+    exceptions: [ValueError]
+    side_effects: Appends an immutable application audit event.
+  - name: list_events
+    inputs: {application_id: {type: str, required: true}}
+    returns: {type: 'list[ApplicationEvent]'}
+    exceptions: []
+    side_effects: Reads the chronological immutable application audit timeline.
+  - name: create_offer_version
+    inputs:
+      application_id: {type: str, required: true}
+      terms: {type: 'dict[str, Any]', required: true}
+      actor: {type: str, required: true}
+    returns: {type: OfferVersion}
+    exceptions: [ValueError]
+    side_effects: Creates an immutable numbered offer draft and audit event.
+  - name: get_offer_version
+    inputs: {version_id: {type: str, required: true}}
+    returns: {type: OfferVersion}
+    exceptions: [ValueError]
+    side_effects: Reads canonical hiring storage.
+  - name: list_offer_versions
+    inputs: {application_id: {type: str, required: true}}
+    returns: {type: 'list[OfferVersion]'}
+    exceptions: []
+    side_effects: Reads canonical hiring storage.
+  - name: set_offer_status
+    inputs:
+      version_id: {type: str, required: true}
+      status: {type: str, required: true}
+    returns: {type: OfferVersion}
+    exceptions: [ValueError]
+    side_effects: Updates one persisted offer version status.
+  - name: record_offer_approval
+    inputs:
+      version_id: {type: str, required: true}
+      dates: {type: OfferApprovalDates, required: true}
+      docx_path: {type: Path, required: true}
+      pdf_path: {type: Path, required: true}
+      approver_name: {type: str, required: true}
+      approver_role: {type: str, required: true}
+      rendered_email: {type: str, required: false, default: ''}
+    returns: {type: OfferVersion}
+    exceptions: [ValueError]
+    side_effects: Persists validated approval artifacts and dates on one pending offer version.
+  - name: record_offer_delivery
+    inputs:
+      version_id: {type: str, required: true}
+      sent: {type: bool, required: true}
+      error: {type: str, required: false, default: ''}
+    returns: {type: OfferVersion}
+    exceptions: [ValueError]
+    side_effects: Records delivery state and supersedes older sent versions after success.
+  - name: update_operational_reply_by_date
+    inputs:
+      version_id: {type: str, required: true}
+      reply_by_date: {type: date, required: true}
+    returns: {type: OfferVersion}
+    exceptions: [ValueError]
+    side_effects: Extends operational deadline without changing offer document artifacts.
+  - name: record_initial_interview
+    inputs:
+      history_id: {type: str, required: true}
+      legal_name: {type: str, required: true}
+      email: {type: str, required: true}
+      phone: {type: str, required: true}
+      school: {type: str, required: true}
+      position: {type: str, required: true}
+      score: {type: float, required: true}
+      outcome: {type: str, required: true}
+    returns: {type: HiringApplication}
+    exceptions: [ValueError]
+    side_effects: Creates or links a candidate, creates an application cycle and audit event, and links the interview history row.
+  - name: start_application
+    inputs:
+      legal_name: {type: str, required: true}
+      email: {type: str, required: true}
+      phone: {type: str, required: true}
+      school: {type: str, required: true}
+      position: {type: str, required: true}
+      actor: {type: str, required: true}
+    returns: {type: HiringApplication}
+    exceptions: [ValueError]
+    side_effects: Creates a new initial-interview application cycle and application-started audit event.
+  - name: finalize_initial_interview
+    inputs:
+      application_id: {type: str, required: true}
+      history_id: {type: str, required: true}
+      score: {type: float, required: true}
+      outcome: {type: str, required: true}
+      actor: {type: str, required: true}
+    returns: {type: HiringApplication}
+    exceptions: [ValueError]
+    side_effects: Links the finalized history record to the same application cycle and advances by score threshold.
+- name: HiringWorkflowService
+  description: Small public workflow interface over hiring persistence and transition rules.
+  locked: false
+  attributes:
+    store: {type: HiringPipelineStore}
+  methods:
+  - name: record_initial_interview
+    inputs: {values: {type: Any, required: true}}
+    returns: {type: HiringApplication}
+    exceptions: [ValueError]
+    side_effects: Delegates validated initial interview completion to HiringPipelineStore.
+  - name: search_candidate_profiles
+    inputs: {query: {type: str, required: false, default: ''}}
+    returns: {type: 'list[CandidateProfile]'}
+    exceptions: []
+    side_effects: Delegates active candidate profile search.
+  - name: update_candidate_profile
+    inputs:
+      candidate_id: {type: str, required: true}
+      values: {type: Any, required: true}
+    returns: {type: CandidateProfile}
+    exceptions: [ValueError]
+    side_effects: Delegates validated candidate profile update.
+  - name: start_application
+    inputs: {values: {type: Any, required: true}}
+    returns: {type: HiringApplication}
+    exceptions: [ValueError]
+    side_effects: Starts a new application cycle before interview work begins.
+  - name: finalize_initial_interview
+    inputs:
+      application_id: {type: str, required: true}
+      values: {type: Any, required: true}
+    returns: {type: HiringApplication}
+    exceptions: [ValueError]
+    side_effects: Completes and links an existing initial-interview application.
+  - name: backfill_history
+    inputs: {}
+    returns: {type: 'list[HiringApplication]'}
+    exceptions: []
+    side_effects: Idempotently creates candidate profiles and application cycles for valid historical interview rows and links their IDs.
+  - name: reconcile_history
+    inputs: {}
+    returns: {type: MigrationParityReport}
+    exceptions: []
+    side_effects: Backfills history, infers strongest stages, flags conflicts, and returns parity counts.
+  - name: record_director_decision
+    inputs:
+      application_id: {type: str, required: true}
+      decision: {type: str, required: true}
+      actor: {type: str, required: true}
+    returns: {type: HiringApplication}
+    exceptions: [ValueError]
+    side_effects: Advances a director-review application to offer draft or closed and appends an audit event.
+  - name: synchronize_director_outcome
+    inputs:
+      history_id: {type: str, required: true}
+      decision: {type: str, required: true}
+      actor: {type: str, required: false, default: Staffing v2}
+    returns: {type: HiringApplication}
+    exceptions: [ValueError]
+    side_effects: Idempotently applies the authoritative Staffing v2 director outcome by history ID.
+  - name: create_offer_draft
+    inputs:
+      application_id: {type: str, required: true}
+      terms: {type: 'dict[str, Any]', required: true}
+      actor: {type: str, required: true}
+    returns: {type: OfferVersion}
+    exceptions: [ValueError]
+    side_effects: Creates a numbered draft for an offer-ready or negotiated application.
+  - name: submit_offer_for_approval
+    inputs:
+      application_id: {type: str, required: true}
+      version_id: {type: str, required: true}
+      actor: {type: str, required: true}
+    returns: {type: OfferVersion}
+    exceptions: [ValueError]
+    side_effects: Marks one draft pending approval, advances application stage, and appends an audit event.
+  - name: create_compensation_revision
+    inputs:
+      application_id: {type: str, required: true}
+      hourly_pay: {type: str, required: true}
+      weekly_hours: {type: str, required: true}
+      actor: {type: str, required: true}
+      actor_role: {type: str, required: true}
+    returns: {type: OfferVersion}
+    exceptions: [ValueError]
+    side_effects: Creates an Admin-only numbered pending revision with only compensation fields changed.
+  - name: approve_offer
+    inputs:
+      application_id: {type: str, required: true}
+      version_id: {type: str, required: true}
+      approver_name: {type: str, required: true}
+      approver_role: {type: str, required: true}
+      approval_date: {type: date, required: true}
+      docx_path: {type: Path, required: true}
+      pdf_path: {type: Path, required: true}
+      rendered_email: {type: str, required: false, default: ''}
+    returns: {type: OfferVersion}
+    exceptions: [ValueError]
+    side_effects: Persists approval before candidate-only PDF delivery and advances only on send success.
+  - name: approve_compensation_revision
+    inputs:
+      application_id: {type: str, required: true}
+      version_id: {type: str, required: true}
+      admin_name: {type: str, required: true}
+      approval_date: {type: date, required: true}
+      docx_path: {type: Path, required: true}
+      pdf_path: {type: Path, required: true}
+      rendered_email: {type: str, required: false, default: ''}
+    returns: {type: OfferVersion}
+    exceptions: [ValueError]
+    side_effects: Admin-approves, redates, delivers, and supersedes a compensation revision without executive review.
+  - name: retry_offer_send
+    inputs:
+      application_id: {type: str, required: true}
+      version_id: {type: str, required: true}
+      actor: {type: str, required: true}
+    returns: {type: OfferVersion}
+    exceptions: [ValueError]
+    side_effects: Idempotently retries candidate PDF delivery for an approved failed version.
+  - name: extend_offer_deadline
+    inputs:
+      application_id: {type: str, required: true}
+      version_id: {type: str, required: true}
+      reply_by_date: {type: date, required: true}
+      actor: {type: str, required: true}
+    returns: {type: OfferVersion}
+    exceptions: [ValueError]
+    side_effects: Updates operational deadline and audit only; document remains unchanged.
+  - name: accept_offer
+    inputs:
+      application_id: {type: str, required: true}
+      version_id: {type: str, required: true}
+      actor: {type: str, required: true}
+    returns: {type: HiringApplication}
+    exceptions: [ValueError]
+    side_effects: Accepts only the latest sent version and marks the application onboarding-ready without onboarding mutation.
+  - name: archive_application
+    inputs:
+      application_id: {type: str, required: true}
+      actor: {type: str, required: true}
+    returns: {type: HiringApplication}
+    exceptions: [ValueError]
+    side_effects: Archives an application and appends its audit event.
+  - name: refresh_expired_offer_attention
+    inputs:
+      today: {type: 'date | None', required: false, default: null}
+    returns: {type: int}
+    exceptions: []
+    side_effects: Marks overdue sent offers for Attention without advancing their stage.
+data_structures:
+- name: PromotedOfferArtifacts
+  type: dataclass
+- name: CandidateProfile
+  type: dataclass
+- name: HiringApplication
+  type: dataclass
+- name: ApplicationEvent
+  type: dataclass
+- name: OfferApprovalDates
+  type: dataclass
+- name: OfferVersion
+  type: dataclass
+- name: MigrationParityReport
+  type: dataclass
+dependencies:
+- data_store

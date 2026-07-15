@@ -1,0 +1,36 @@
+module:
+  name: hiring_migration
+  language: python
+  path: src/hiring_migration.py
+  version: 1.0.0
+  description: Fail-closed canonical Hiring v2 migration using verified SQLite backup, validated staging reconciliation, atomic replacement, and redacted parity reporting.
+functions: []
+classes:
+- name: HiringMigrationResult
+  description: Immutable committed migration evidence without candidate PII.
+  locked: false
+  attributes:
+    backup_path: {type: Path}
+    report_path: {type: Path}
+    integrity_status: {type: str}
+    idempotent: {type: bool}
+    committed: {type: bool}
+    committed_at: {type: str}
+    parity: {type: MigrationParityReport}
+  methods: []
+- name: HiringMigrationCoordinator
+  description: Guards, backs up, reconciles, validates, and atomically commits one canonical interview history database.
+  locked: false
+  attributes:
+    db_path: {type: Path}
+  methods:
+  - name: run
+    inputs: {}
+    returns: {type: HiringMigrationResult}
+    exceptions: [ValueError]
+    side_effects: Creates verified timestamped backup and redacted report under hiring_migrations, validates migration twice on a staging copy, and atomically replaces canonical DB only after all gates pass.
+data_structures:
+- name: HiringMigrationResult
+  type: dataclass
+dependencies:
+- hiring_pipeline
