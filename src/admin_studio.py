@@ -508,16 +508,12 @@ class AdminStudio:
         traits = active.rubric.get("traits", []) if isinstance(active.rubric, dict) else []
         custom_count = sum(len(items or []) for items in (active.overrides.get("custom_questions", {}) or {}).values())
         sections = [
-            AdminSection("Configuration", "dashboard", "Admin Dashboard", "Manage interview configuration, AI settings, templates, system health, and publishing status.", 0),
-            AdminSection("Configuration", "questions", "Questions & Flow", "Build track-based interview flow with editable question cards.", len(traits) + custom_count),
-            AdminSection("Configuration", "rubrics", "Rubrics", "Tune scored trait cards, weights, and descriptors.", len(traits)),
-            AdminSection("Configuration", "signals", "Signal Hints", "Search trait signal definitions by category.", len(traits)),
-            AdminSection("Configuration", "templates", "Templates & Folders", "Check school output folders and template health.", len(active.school_settings)),
-            AdminSection("AI Settings", "deepseek_model", "DeepSeek Model", "Choose local model speed, quality, and hardware fit.", 1),
-            AdminSection("AI Settings", "prompts", "DeepSeek Prompts", "Edit prompt templates with variables, preview, and validation.", len(active.prompts)),
-            AdminSection("System", "advanced", "Advanced JSON", "Review source JSON health in a guarded read-only layout.", 5),
-            AdminSection("System", "validation", "Validation", "Review blocking issues and jump to affected settings.", len(active.validate())),
-            AdminSection("System", "email_settings", "Email Settings", "Configure shared company sender account for app notifications.", 1),
+            AdminSection("Interview", "interview_flow", "Interview Flow", "Build track-based interview flow with editable questions.", len(traits) + custom_count),
+            AdminSection("Interview", "rubrics", "Rubrics", "Tune scored traits, weights, descriptors, samples, and signal hints.", len(traits)),
+            AdminSection("Operations", "templates", "Templates & Folders", "Manage school output folders and offer templates.", len(active.school_settings)),
+            AdminSection("AI", "ai_model", "AI Model", "Choose local model speed, quality, and hardware fit.", 1),
+            AdminSection("AI", "ai_prompts", "AI Prompts", "Edit prompt templates with version notes and validation.", len(active.prompts)),
+            AdminSection("Services", "email", "Shared Email Account", "Configure the shared sender account used by notifications.", 1),
         ]
         return AdminStudioSummary(
             sections=sections,

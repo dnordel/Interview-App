@@ -1190,6 +1190,10 @@ class StaffingDashboardV2Page:
         self.external_sections: dict[str, Any] = {}
         self.external_nav_buttons: dict[str, Any] = {}
         self.external_pages: dict[str, Any] = {}
+        self.current_page_id = "staffing_dashboard"
+        self._settings_page_factory: Callable[[], Any] | None = None
+        self._settings_before_leave: Callable[[], bool] | None = None
+        self._settings_page_widget: Any | None = None
         self._navigation_locked = False
         self._navigation_labels: dict[Any, str] = {}
         self._navigation_enabled_before_lock: dict[Any, bool] = {}
@@ -1256,6 +1260,7 @@ class StaffingDashboardV2Page:
         self.integrations_nav_button.setEnabled(False)
         self.settings_nav_button = self._sidebar_button("StaffingV2SettingsNavButton", "Settings", "settings")
         self.settings_nav_button.setEnabled(False)
+        self.settings_nav_button.clicked.connect(self._show_settings_view)
         sidebar_layout.addWidget(self.validation_nav_button)
         sidebar_layout.addWidget(self.integrations_nav_button)
         sidebar_layout.addWidget(self.settings_nav_button)
@@ -1512,14 +1517,72 @@ class StaffingDashboardV2Page:
         self.external_pages[clean_id] = widget
         return button
 
+    def register_settings_page(
+        self,
+        factory: Callable[[], Any],
+        *,
+        before_leave: Callable[[], bool] | None = None,
+    ) -> None:
+        if self._settings_page_factory is not None:
+            raise ValueError("Staffing v2 Settings page is already registered.")
+        if not callable(factory):
+            raise TypeError("Staffing v2 Settings factory must be callable.")
+        self._settings_page_factory = factory
+        self._settings_before_leave = before_leave
+        self.settings_nav_button.setVisible(True)
+        self.settings_nav_button.setEnabled(True)
+
+    def hide_settings_navigation(self) -> None:
+        self.settings_nav_button.setEnabled(False)
+        self.settings_nav_button.hide()
+
+    def _show_settings_view(self) -> None:
+        if self._settings_page_factory is None:
+            return
+
+        def settings_widget() -> Any:
+            if self._settings_page_widget is None:
+                widget = self._settings_page_factory()
+                if widget is None:
+                    raise ValueError("Staffing v2 Settings factory must return a widget.")
+                self._settings_page_widget = widget
+                self.page_stack.addWidget(widget)
+            return self._settings_page_widget
+
+        self._activate_page("settings", self.settings_nav_button, settings_widget)
+
+    def _can_leave_current_page(self, target_page_id: str) -> bool:
+        if target_page_id == self.current_page_id:
+            return True
+        if self.current_page_id == "settings" and self._settings_before_leave is not None:
+            return bool(self._settings_before_leave())
+        if self.current_page_id == "notifications":
+            return self._can_leave_notifications_view()
+        return True
+
+    def _activate_page(self, page_id: str, button: Any, widget: Any | Callable[[], Any]) -> bool:
+        if not self._can_leave_current_page(page_id):
+            return False
+        resolved_widget = widget() if callable(widget) else widget
+        if resolved_widget is None:
+            raise ValueError(f"Staffing v2 page provider returned no widget: {page_id}")
+        self._set_active_nav(button)
+        self.page_stack.setCurrentWidget(resolved_widget)
+        self.current_page_id = page_id
+        return True
+
+    def _prepared_lazy_view(self, name: str, refresh: Callable[[], None], attribute: str) -> Any:
+        self._ensure_lazy_view(name)
+        refresh()
+        return getattr(self, attribute)
+
     def show_external_page(self, page_id: str) -> None:
         if page_id not in self.external_pages:
             raise ValueError(f"Unknown external dashboard page: {page_id}")
         active = self.external_nav_buttons[page_id]
         if self._navigation_locked and not active.isEnabled():
             return
-        self._set_active_nav(active)
-        self.page_stack.setCurrentWidget(self.external_pages[page_id])
+        self._activate_page(page_id, active, self.external_pages[page_id])
 
     def set_navigation_mode(self, mode: str) -> None:
         if mode not in {"full", "rail"}:
@@ -1626,26 +1689,21 @@ class StaffingDashboardV2Page:
             button.update()
 
     def _show_dashboard_view(self) -> None:
-        if not self._can_leave_notifications_view():
-            return
-        self._set_active_nav(self.dashboard_nav_button)
-        self.page_stack.setCurrentWidget(self.dashboard_view)
+        self._activate_page("staffing_dashboard", self.dashboard_nav_button, self.dashboard_view)
 
     def _show_classrooms_view(self) -> None:
-        if not self._can_leave_notifications_view():
-            return
-        self._ensure_lazy_view("classrooms")
-        self._set_active_nav(self.classrooms_nav_button)
-        self._refresh_classrooms()
-        self.page_stack.setCurrentWidget(self.classrooms_view)
+        self._activate_page(
+            "classrooms",
+            self.classrooms_nav_button,
+            lambda: self._prepared_lazy_view("classrooms", self._refresh_classrooms, "classrooms_view"),
+        )
 
     def _show_validation_view(self) -> None:
-        if not self._can_leave_notifications_view():
-            return
-        self._ensure_lazy_view("validation")
-        self._set_active_nav(self.validation_nav_button)
-        self._refresh_validation()
-        self.page_stack.setCurrentWidget(self.validation_view)
+        self._activate_page(
+            "validation",
+            self.validation_nav_button,
+            lambda: self._prepared_lazy_view("validation", self._refresh_validation, "validation_view"),
+        )
 
     def _ensure_lazy_view(self, name: str) -> None:
         if name in self._lazy_views_built:
@@ -4476,26 +4534,25 @@ class StaffingDashboardV2Page:
         dialog.show()
 
     def _show_people_view(self) -> None:
-        if not self._can_leave_notifications_view():
-            return
-        self._ensure_lazy_view("people")
-        self._set_active_nav(self.people_nav_button)
-        self._refresh_people()
-        self.page_stack.setCurrentWidget(self.people_view)
+        self._activate_page(
+            "people",
+            self.people_nav_button,
+            lambda: self._prepared_lazy_view("people", self._refresh_people, "people_view"),
+        )
 
     def _show_history_view(self) -> None:
-        if not self._can_leave_notifications_view():
-            return
-        self._ensure_lazy_view("history")
-        self._set_active_nav(self.history_nav_button)
-        self._refresh_history()
-        self.page_stack.setCurrentWidget(self.history_view)
+        self._activate_page(
+            "history",
+            self.history_nav_button,
+            lambda: self._prepared_lazy_view("history", self._refresh_history, "history_view"),
+        )
 
     def _show_notifications_view(self) -> None:
-        self._ensure_lazy_view("notifications")
-        self._set_active_nav(self.notifications_nav_button)
-        self._refresh_notifications()
-        self.page_stack.setCurrentWidget(self.notifications_view)
+        self._activate_page(
+            "notifications",
+            self.notifications_nav_button,
+            lambda: self._prepared_lazy_view("notifications", self._refresh_notifications, "notifications_view"),
+        )
 
     def _people_filter_combo(self, object_name: str, values: list[str]) -> Any:
         combo = self.QtWidgets.QComboBox()

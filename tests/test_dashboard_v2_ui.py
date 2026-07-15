@@ -79,3 +79,62 @@ def test_staffing_v2_shell_hosts_hiring_pages_and_restores_full_navigation(tmp_p
     assert page.staffing_sidebar.width() == 252
     assert page.dashboard_nav_button.isEnabled()
     page.widget.close()
+
+
+@pytest.mark.pyside_gui
+def test_staffing_v2_settings_registration_is_lazy_and_guarded(tmp_path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_core = pytest.importorskip("PySide6.QtCore")
+    qt_gui = pytest.importorskip("PySide6.QtGui")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    from staffing_dashboard_v2 import StaffingDashboardV2Page
+    from staffing_service import StaffingService
+    from staffing_store import StaffingStore
+
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    page = StaffingDashboardV2Page(
+        QtCore=qt_core,
+        QtGui=qt_gui,
+        QtWidgets=qt_widgets,
+        store=store,
+        service_factory=lambda: StaffingService(store),
+        notification_store_path=tmp_path / "notifications.sqlite3",
+    )
+    built: list[str] = []
+    allow_leave = False
+
+    def build_settings():
+        built.append("settings")
+        widget = qt_widgets.QLabel("Settings content")
+        widget.setObjectName("StaffingV2SettingsPage")
+        return widget
+
+    page.register_settings_page(build_settings, before_leave=lambda: allow_leave)
+    assert built == []
+    assert page.settings_nav_button.isEnabled()
+
+    page.settings_nav_button.click()
+    app.processEvents()
+    assert built == ["settings"]
+    assert page.current_page_id == "settings"
+    assert page.page_stack.currentWidget().objectName() == "StaffingV2SettingsPage"
+
+    page.dashboard_nav_button.click()
+    app.processEvents()
+    assert page.current_page_id == "settings"
+
+    page.classrooms_nav_button.click()
+    app.processEvents()
+    assert page.current_page_id == "settings"
+    assert page.widget.findChild(qt_widgets.QWidget, "StaffingV2ClassroomManagementDashboard") is None
+
+    allow_leave = True
+    page.dashboard_nav_button.click()
+    app.processEvents()
+    assert page.current_page_id == "staffing_dashboard"
+
+    page.hide_settings_navigation()
+    assert page.settings_nav_button.isHidden()
+    page.widget.close()

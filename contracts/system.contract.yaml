@@ -162,6 +162,7 @@ modules:
     - scoring_reporting
     - staffing_dashboard_host
     - staffing_dashboard_v2
+    - staffing_settings_v2
     - staffing_referral_queue
     - staffing_service
     - staffing_store
@@ -193,6 +194,13 @@ modules:
     - question_overrides_json
     - deepseek_prompts_json
     - school_offer_settings_json
+  staffing_settings_v2:
+    path: src/staffing_settings_v2.py
+    depends_on:
+    - admin_studio
+    - notification_service
+    - onboarding_operations
+    - PySide6
   ui_mode_switch:
     path: src/ui_mode_switch.py
     depends_on: []
@@ -402,7 +410,7 @@ module_metadata:
   pyside_interview_app:
     constraints:
     - Acts as the single PySide desktop parity surface for desktop GUI responsibilities.
-    - Delegates Admin Studio draft editing, validation, backups, and confirmed JSON persistence to admin_studio.
+    - Hosts admin-only Settings inside the shared Staffing v2 shell and delegates draft validation, backups, and confirmed JSON persistence to admin_studio.
     - Offer generation resolves school-specific full-time or part-time templates and output folders from school_offer_settings_json, requires Mr. or Ms. title selection, preserves existing offers with revision suffixes, and prefills editable shift times from the exact school-scoped completed Director Staffing v2 hire decision.
     - Finalize progress is user-closable and does not cancel background transcription or finalize work.
     - Finalize progress renders sanitized task rows with right-side statuses limited to Processing, Finished, Timed-out, or Queued.

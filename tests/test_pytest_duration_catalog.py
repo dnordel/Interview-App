@@ -43,6 +43,12 @@ REQUIRED_PYSIDE_GUI_SCENARIO_SURFACES = {
 
 PYSIDE_FULL_WINDOW_FACTORIES = {"PySideInterviewWindow", "_pyside_window_on_page"}
 
+LAZY_GUI_TEST_MODULES = {
+    Path("tests/test_dashboard_v2_ui.py"),
+    Path("tests/test_staffing_settings_v2.py"),
+}
+ALLOWED_GUI_TEST_IMPORT_ROOTS = {"__future__", "json", "os", "pathlib", "pytest"}
+
 
 def test_determine_placement_uses_duration_and_gui_weight() -> None:
     assert pytest_duration_catalog.determine_placement(duration_seconds_n2=31.0, gui_heavy=True) == "gui_wave_1"
@@ -51,6 +57,24 @@ def test_determine_placement_uses_duration_and_gui_weight() -> None:
     assert pytest_duration_catalog.determine_placement(duration_seconds_n2=16.0, gui_heavy=False) == "non_gui_tail"
     assert pytest_duration_catalog.determine_placement(duration_seconds_n2=6.0, gui_heavy=False) == "non_gui_middle"
     assert pytest_duration_catalog.determine_placement(duration_seconds_n2=0.5, gui_heavy=False) == "fast"
+
+
+def test_new_gui_tests_lazy_load_qt_and_application_modules() -> None:
+    offenders: list[str] = []
+
+    for path in sorted(LAZY_GUI_TEST_MODULES):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in tree.body:
+            if isinstance(node, ast.Import):
+                roots = {alias.name.split(".", 1)[0] for alias in node.names}
+            elif isinstance(node, ast.ImportFrom):
+                roots = {(node.module or "").split(".", 1)[0]}
+            else:
+                continue
+            disallowed = roots.difference(ALLOWED_GUI_TEST_IMPORT_ROOTS)
+            offenders.extend(f"{path.as_posix()}: {root}" for root in sorted(disallowed))
+
+    assert offenders == [], "GUI tests must lazy-load Qt and application modules:\n" + "\n".join(offenders)
 
 
 def test_duration_catalog_covers_collected_tests() -> None:

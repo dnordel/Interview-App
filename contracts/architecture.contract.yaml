@@ -82,7 +82,7 @@ services:
     - web_app
     - web_app_backend
   pyside_interview_redesign_service:
-    description: PySide6 Staffing v2-native Interviews, Candidates, Offers, focused live interview, staffing, onboarding, and guided Admin Studio surfaces with shared navigation, semantic status colors, capture state, live history refresh, reporting, and Director Review handoff.
+    description: PySide6 Staffing v2-native Interviews, Candidates, Offers, focused live interview, staffing, onboarding, and admin-only Settings content inside the shared Staffing v2 shell, with semantic status colors, capture state, live history refresh, reporting, and Director Review handoff.
     modules:
     - admin_studio
     - dashboard_v2_ui
@@ -90,6 +90,7 @@ services:
     - hiring_pipeline
     - hiring_workspace_v2
     - staffing_dashboard_v2
+    - staffing_settings_v2
     - staffing_dashboard_host
     - notification_service
     - staffing_service

@@ -2,12 +2,12 @@ module:
   name: admin_studio
   language: python
   path: src/admin_studio.py
-  version: 2.0.0
+  version: 2.0.1
   description: Single admin boundary for local configuration review, draft editing,
     dirty tracking, validation, backup creation, and review-then-apply persistence
-    for PySide Admin Studio, including contractor offer templates, shared email
-    settings navigation, and draft-only rubric trait duplication/deletion. Notification
-    management is owned exclusively by Staffing v2.
+    for Staffing v2 Settings, including contractor offer templates and draft-only
+    rubric trait duplication/deletion. Shared email persistence remains independent;
+    notification management is owned exclusively by Staffing v2 Notifications.
 functions:
 - name: _trait_has_linked_question
   description: Return whether a rubric trait appears as a trait question in any
@@ -45,8 +45,7 @@ classes:
       type: Path | None
 - name: AdminSection
   type: dataclass
-  description: One guided Admin Studio section shown in grouped admin-console navigation,
-    including the Admin Dashboard overview section.
+  description: One core configuration section exposed by Staffing v2 Settings.
   locked: false
   attributes:
     group:

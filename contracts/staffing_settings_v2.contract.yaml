@@ -1,0 +1,55 @@
+module:
+  name: staffing_settings_v2
+  language: python
+  path: src/staffing_settings_v2.py
+  version: 1.0.0
+  description: Admin-only Settings content embedded in the shared Staffing v2 shell. Owns responsive configuration editing and independent shared-email controls while delegating draft validation, backup, and persistence to admin_studio.
+functions: []
+classes:
+- name: StaffingSettingsV2Page
+  description: Builds six responsive Staffing v2 Settings sections with one global edit/review/publish workflow for configuration and an independent shared email save workflow.
+  locked: false
+  attributes:
+    widget:
+      type: QWidget
+    is_dirty:
+      type: bool
+  methods:
+  - name: __init__
+    inputs:
+      QtCore: {type: Any, required: true}
+      QtGui: {type: Any, required: true}
+      QtWidgets: {type: Any, required: true}
+      studio: {type: AdminStudio, required: true}
+      email_settings_path: {type: Path, required: true}
+      on_email_settings_saved: {type: "Callable[[], None] | None", required: false, default: null}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Creates an in-memory AdminStudioDraft, loads masked shared-email fields, and builds the six-section Settings widget without writing configuration.
+  - name: set_editing
+    inputs:
+      enabled: {type: bool, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Enables or disables editable controls for the first five sections and synchronizes global configuration actions without treating email-only changes as publishable configuration.
+  - name: discard_changes
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Replaces the in-memory configuration draft from persisted state and restores unsaved email fields from their saved baseline.
+  - name: request_navigation_away
+    inputs: {}
+    returns: {type: bool}
+    exceptions: []
+    side_effects: Returns immediately when clean; otherwise prompts Keep Draft, Discard, or Stay and discards only when selected.
+  - name: request_close
+    inputs: {}
+    returns: {type: bool}
+    exceptions: []
+    side_effects: Returns immediately when clean; otherwise prompts Discard and Close or Stay and discards only when closing.
+dependencies:
+- module: admin_studio
+- module: notification_service
+- module: onboarding_operations
+- module: PySide6
+data_structures: []
