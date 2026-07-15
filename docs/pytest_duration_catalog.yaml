@@ -7735,6 +7735,11 @@ entries:
   duration_source: measured
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_staffing_service_state_machine.py::test_mark_coming_can_change_aide_position_to_teacher
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_staffing_service_state_machine.py::test_mark_filled_uses_coming_start_date_as_filled_date
   duration_seconds_n2: 0.607
   duration_source: measured

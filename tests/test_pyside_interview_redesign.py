@@ -5802,8 +5802,8 @@ def test_pyside_staffing_v2_mark_coming_dialog_saves_through_service(
                                 "licensed_capacity": 24,
                                 "slots": [
                                     {
-                                        "position_name": "Teacher 1",
-                                        "position_type": "Teacher",
+                                        "position_name": "Aide 2",
+                                        "position_type": "Aide",
                                         "status": "need_now",
                                         "current_opened_date": "2026-07-01",
                                     }
@@ -5820,7 +5820,7 @@ def test_pyside_staffing_v2_mark_coming_dialog_saves_through_service(
     store = pyside_interview_app.StaffingStore(db_path)
     store.initialize()
     store.import_seed_file(seed_path)
-    assignment_id = next(row.id for row in store.list_assignments() if row.position_name == "Teacher 1")
+    assignment_id = next(row.id for row in store.list_assignments() if row.position_name == "Aide 2")
     monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", db_path)
     monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", tmp_path / "missing_seed.json")
     model = build_interview_redesign_model(
@@ -5836,7 +5836,7 @@ def test_pyside_staffing_v2_mark_coming_dialog_saves_through_service(
     page = window.stack.currentWidget()
     table = page.findChild(qt_widgets.QTableWidget, "StaffingV2PositionsTable")
 
-    _staffing_button_for_position(table, "Teacher 1").click()
+    _staffing_button_for_position(table, "Aide 2").click()
     app.processEvents()
 
     assert window.window.findChild(qt_widgets.QDialog, "PySideStaffingMarkComingDialog") is None
@@ -5882,11 +5882,13 @@ def test_pyside_staffing_v2_mark_coming_dialog_saves_through_service(
 
     updated = store.get_assignment(assignment_id)
     assert updated.status == "coming"
+    assert updated.position_type == "Teacher"
+    assert updated.position_name == "Teacher 2"
     assert updated.person_name == "Emily Carter"
     assert updated.start_date == "2026-08-01"
     assert updated.permit_status == "permit_in_process"
     refreshed_table = page.findChild(qt_widgets.QTableWidget, "StaffingV2PositionsTable")
-    assert _staffing_button_for_position(refreshed_table, "Teacher 1").text() == "Mark Filled"
+    assert _staffing_button_for_position(refreshed_table, "Teacher 2").text() == "Mark Filled"
     window.window.close()
     app.processEvents()
 

@@ -84,6 +84,32 @@ def test_mark_filled_uses_coming_start_date_as_filled_date(tmp_path: Path) -> No
     assert store.closed_days_to_fill() == [9]
 
 
+def test_mark_coming_can_change_aide_position_to_teacher(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    assignment_id = store.seed_assignment(
+        school="Palmdale",
+        classroom="Harmony",
+        position_name="Aide 2",
+        position_type="Aide",
+        status="need_now",
+    )
+    service = StaffingService(store, clock=_Clock(["2026-07-15T09:00:00Z"]))
+
+    service.mark_coming(
+        assignment_id,
+        person_name="Tatiana Zuluaga",
+        start_date="2026-07-27",
+        position_type="Teacher",
+    )
+
+    assignment = store.get_assignment(assignment_id)
+    assert assignment.status == "coming"
+    assert assignment.position_type == "Teacher"
+    assert assignment.position_name == "Teacher 2"
+    assert assignment.person_name == "Tatiana Zuluaga"
+
+
 def test_mark_replacing_with_future_final_day_keeps_replace_until_final_day(tmp_path: Path) -> None:
     store = StaffingStore(tmp_path / "staffing.sqlite3")
     store.initialize()

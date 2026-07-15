@@ -6812,6 +6812,7 @@ class StaffingDashboardV2Page:
                     assignment_id,
                     person_name=name,
                     start_date=start_date.date().toString("yyyy-MM-dd"),
+                    position_type=role.currentText(),
                 )
                 selected_permit = str(permit_status.currentData() or "unknown")
                 if selected_permit != "unknown" and result.person_id is not None:

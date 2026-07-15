@@ -148,11 +148,28 @@ class StaffingService:
             raise ValueError("Cannot deactivate classroom with active assignments.")
         return self.store.deactivate_classroom(int(classroom_id))
 
-    def mark_coming(self, assignment_id: int, *, person_name: str, start_date: str) -> StaffingTransitionResult:
+    def mark_coming(
+        self,
+        assignment_id: int,
+        *,
+        person_name: str,
+        start_date: str,
+        position_type: str | None = None,
+    ) -> StaffingTransitionResult:
         return self._run_or_queue(
             "mark_coming",
-            {"assignment_id": int(assignment_id), "person_name": person_name, "start_date": start_date},
-            lambda: self._mark_coming_impl(assignment_id, person_name=person_name, start_date=start_date),
+            {
+                "assignment_id": int(assignment_id),
+                "person_name": person_name,
+                "start_date": start_date,
+                "position_type": position_type,
+            },
+            lambda: self._mark_coming_impl(
+                assignment_id,
+                person_name=person_name,
+                start_date=start_date,
+                position_type=position_type,
+            ),
         )
 
     def revert_coming(self, assignment_id: int) -> StaffingTransitionResult:
@@ -674,23 +691,42 @@ class StaffingService:
         self._emit_assignment_event("open_position", updated)
         return _result(updated)
 
-    def _mark_coming_impl(self, assignment_id: int, *, person_name: str, start_date: str) -> StaffingTransitionResult:
+    def _mark_coming_impl(
+        self,
+        assignment_id: int,
+        *,
+        person_name: str,
+        start_date: str,
+        position_type: str | None = None,
+    ) -> StaffingTransitionResult:
         now = self.clock()
         start_date = _valid_date(start_date, "Start date")
+        position_type = None if position_type is None else str(position_type).strip()
+        if position_type == "":
+            raise ValueError("Position type is required.")
         if date.fromisoformat(start_date) < _parse_timestamp(now).date():
             raise ValueError("Start date cannot be in the past.")
         with self.store.write_connection("mark_coming") as conn:
             assignment = self.store.assignment_context(conn, assignment_id)
             if assignment.status != "need_now":
                 raise ValueError("Invalid transition.")
-            person_id = self.store.ensure_person(conn, person_name, assignment.position_type, "unknown", now)
+            selected_type = position_type or assignment.position_type
+            position_name = assignment.position_name
+            if position_type is not None and position_type != assignment.position_type:
+                old_prefix = f"{assignment.position_type} "
+                if position_name == assignment.position_type:
+                    position_name = position_type
+                elif position_name.startswith(old_prefix):
+                    position_name = f"{position_type} {position_name[len(old_prefix):]}"
+            person_id = self.store.ensure_person(conn, person_name, selected_type, "unknown", now)
             conn.execute(
                 """
                 UPDATE assignments
-                SET status = 'coming', person_id = ?, start_date = ?, updated_at = ?
+                SET status = 'coming', person_id = ?, start_date = ?,
+                    position_type = ?, position_name = ?, updated_at = ?
                 WHERE id = ?
                 """,
-                (person_id, start_date, now, assignment_id),
+                (person_id, start_date, selected_type, position_name, now, assignment_id),
             )
             updated = self.store.assignment_context(conn, assignment_id)
         self._emit_assignment_event("mark_coming", updated)
@@ -1199,6 +1235,7 @@ class StaffingService:
                 int(payload["assignment_id"]),
                 person_name=str(payload["person_name"]),
                 start_date=str(payload["start_date"]),
+                position_type=None if payload.get("position_type") is None else str(payload["position_type"]),
             )
         elif operation == "revert_coming":
             self._revert_coming_impl(int(payload["assignment_id"]))
@@ -1273,11 +1310,20 @@ class StaffingService:
             if operation == "open_position":
                 projected[assignment_id] = replace(row, status="need_now", person_name="", start_date="")
             elif operation == "mark_coming":
+                selected_type = str(payload.get("position_type") or row.position_type)
+                position_name = row.position_name
+                old_prefix = f"{row.position_type} "
+                if selected_type != row.position_type and position_name == row.position_type:
+                    position_name = selected_type
+                elif selected_type != row.position_type and position_name.startswith(old_prefix):
+                    position_name = f"{selected_type} {position_name[len(old_prefix):]}"
                 projected[assignment_id] = replace(
                     row,
                     status="coming",
                     person_name=str(payload.get("person_name", "")),
                     start_date=str(payload.get("start_date", "")),
+                    position_type=selected_type,
+                    position_name=position_name,
                 )
             elif operation == "revert_coming":
                 projected[assignment_id] = replace(row, status="need_now", person_name="", start_date="")
