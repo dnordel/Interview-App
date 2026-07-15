@@ -9,7 +9,7 @@ from hiring_pipeline import HiringPipelineStore, HiringWorkflowService
 
 def test_hiring_workspace_uses_unified_pipeline_without_horizontal_page_scroll(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    from PySide6 import QtCore, QtWidgets
+    from PySide6 import QtCore, QtTest, QtWidgets
     from hiring_workspace_v2 import HiringWorkspaceV2Page
 
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
@@ -39,15 +39,92 @@ def test_hiring_workspace_uses_unified_pipeline_without_horizontal_page_scroll(t
     assert len(page.stage_buttons) == 7
     assert page.application_table.columnCount() == 5
     assert page.application_table.horizontalScrollBarPolicy() == QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+    candidate_rect = page.application_table.visualItemRect(page.application_table.item(0, 0))
+    QtTest.QTest.mouseClick(
+        page.application_table.viewport(),
+        QtCore.Qt.MouseButton.LeftButton,
+        pos=candidate_rect.center(),
+    )
+    app.processEvents()
     assert page.detail_next_action.text() == "Schedule director review"
     assert page.timeline_list.count() == 1
 
     page.widget.close()
 
 
-def test_hiring_workspace_exposes_native_interviews_candidates_and_offers_views(tmp_path: Path) -> None:
+def test_hiring_workspace_opens_with_application_detail_closed(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     from PySide6 import QtCore, QtWidgets
+    from hiring_workspace_v2 import HiringWorkspaceV2Page
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    service = HiringWorkflowService(HiringPipelineStore(tmp_path / "detail-closed.sqlite3"))
+    service.start_application(
+        legal_name="Maya Patel",
+        email="maya@example.com",
+        phone="",
+        school="Palmdale",
+        position="Preschool",
+        actor="Admin",
+    )
+    page = HiringWorkspaceV2Page(QtCore=QtCore, QtWidgets=QtWidgets, service=service)
+    page.widget.resize(1100, 700)
+    page.widget.show()
+    app.processEvents()
+
+    assert page.application_table.currentRow() == -1
+    assert not page.detail_overlay.frame.isVisible()
+
+    page.widget.close()
+
+
+def test_hiring_workspace_candidate_detail_opens_at_right_and_can_be_closed(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6 import QtCore, QtTest, QtWidgets
+    from hiring_workspace_v2 import HiringWorkspaceV2Page
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    service = HiringWorkflowService(HiringPipelineStore(tmp_path / "detail-close.sqlite3"))
+    service.start_application(
+        legal_name="Maya Patel",
+        email="maya@example.com",
+        phone="",
+        school="Palmdale",
+        position="Preschool",
+        actor="Admin",
+    )
+    page = HiringWorkspaceV2Page(QtCore=QtCore, QtWidgets=QtWidgets, service=service)
+    page.widget.resize(1100, 700)
+    page.widget.show()
+    app.processEvents()
+
+    candidate_item = page.application_table.item(0, 0)
+    candidate_rect = page.application_table.visualItemRect(candidate_item)
+    QtTest.QTest.mouseClick(
+        page.application_table.viewport(),
+        QtCore.Qt.MouseButton.LeftButton,
+        pos=candidate_rect.center(),
+    )
+    app.processEvents()
+
+    assert page.detail_overlay.frame.isVisible()
+    assert page.detail_overlay.frame.geometry().right() == page.widget.rect().right()
+    close_button = page.widget.findChild(QtWidgets.QPushButton, "HiringV2ApplicationDetailClose")
+    assert close_button is not None
+    assert close_button.isVisible()
+
+    QtTest.QTest.mouseClick(close_button, QtCore.Qt.MouseButton.LeftButton)
+    QtTest.QTest.qWait(1)
+    app.processEvents()
+
+    assert not page.detail_overlay.frame.isVisible()
+
+    page.widget.close()
+
+
+def test_hiring_workspace_exposes_native_interviews_candidates_and_offers_views(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6 import QtCore, QtTest, QtWidgets
     from hiring_workspace_v2 import HiringWorkspaceV2Page
 
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
@@ -57,7 +134,7 @@ def test_hiring_workspace_exposes_native_interviews_candidates_and_offers_views(
         email="maya@example.com",
         phone="555-0100",
         school="Palmdale",
-        position="Preschool",
+        position="assistant_director_enrollment_specialist",
         actor="Admin",
     )
     page = HiringWorkspaceV2Page(QtCore=QtCore, QtWidgets=QtWidgets, service=service)
@@ -70,6 +147,27 @@ def test_hiring_workspace_exposes_native_interviews_candidates_and_offers_views(
     assert page.offers_widget.objectName() == "HiringV2OffersPage"
     assert page.interview_metrics["active"].text() == "1"
     assert page.candidates_table.rowCount() == 1
+    assert [
+        page.candidates_table.horizontalHeaderItem(column).text()
+        for column in range(page.candidates_table.columnCount())
+    ] == ["Candidate", "Contact", "Role", "Latest school", "Current stage", "Last activity"]
+    assert page.candidates_table.item(0, 2).text() == "Assistant Director"
+    role_badge = page.candidates_table.cellWidget(0, 2)
+    assert role_badge.objectName() == "HiringV2RoleBadge"
+    assert role_badge.accessibleName() == "Role: Assistant Director"
+    assert role_badge.property("roleKind") == "director"
+    assert not role_badge.findChild(QtWidgets.QLabel, "HiringV2RoleBadgeIcon").pixmap().isNull()
+    assert page.candidates_table.item(0, 3).text() == "Palmdale"
+    assert page.position_filter.itemText(1) == "Assistant Director"
+    assert page.application_table.item(0, 1).text() == "Palmdale\nAssistant Director"
+    candidate_rect = page.application_table.visualItemRect(page.application_table.item(0, 0))
+    QtTest.QTest.mouseClick(
+        page.application_table.viewport(),
+        QtCore.Qt.MouseButton.LeftButton,
+        pos=candidate_rect.center(),
+    )
+    app.processEvents()
+    assert "Palmdale · Assistant Director" in page.detail_candidate.text()
     assert page.offers_table.rowCount() == 0
     assert page.application_table.item(0, 0).data(QtCore.Qt.ItemDataRole.UserRole) == application.application_id
     assert page.detail_overlay.frame.isVisible()

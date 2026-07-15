@@ -2,9 +2,23 @@ module:
   name: dashboard_v2_ui
   language: python
   path: src/dashboard_v2_ui.py
-  version: 1.0.0
-  description: Shared Staffing v2 visual primitives for light theme, semantic colors, page registration, full or rail navigation, locked active-work navigation, overlay panels, cards, chips, and scroll behavior.
+  version: 1.1.0
+  description: Shared Staffing v2 visual primitives for light theme, semantic colors, readable role presentation, page registration, full or rail navigation, locked active-work navigation, overlay panels, cards, chips, and scroll behavior.
 functions:
+- name: display_role
+  locked: false
+  inputs:
+    role: {type: str, required: true}
+  returns: {type: str}
+  exceptions: []
+  side_effects: none
+- name: role_badge_key
+  locked: false
+  inputs:
+    role: {type: str, required: true}
+  returns: {type: str}
+  exceptions: []
+  side_effects: none
 - name: apply_dashboard_v2_light_theme
   locked: false
   inputs:

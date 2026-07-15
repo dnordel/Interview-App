@@ -13,6 +13,32 @@ SEMANTIC_COLORS = {
 }
 
 
+def display_role(role: str) -> str:
+    normalized = str(role or "").strip()
+    if not normalized:
+        return "-"
+    if normalized.casefold() == "assistant_director_enrollment_specialist":
+        return "Assistant Director"
+    return normalized.replace("_", " ").title()
+
+
+def role_badge_key(role: str) -> str:
+    normalized = str(role or "").strip().replace("_", " ").casefold()
+    if "director" in normalized:
+        return "director"
+    if "support" in normalized or "specialist" in normalized:
+        return "support"
+    if "infant" in normalized or "toddler" in normalized:
+        return "infant_toddler"
+    if "preschool" in normalized:
+        return "preschool"
+    if "teacher" in normalized:
+        return "teacher"
+    if "aide" in normalized or "assistant" in normalized:
+        return "aide"
+    return "other"
+
+
 def apply_dashboard_v2_light_theme(QtWidgets: Any, QtGui: Any, app: Any | None = None) -> None:
     application = app or QtWidgets.QApplication.instance()
     if application is None:

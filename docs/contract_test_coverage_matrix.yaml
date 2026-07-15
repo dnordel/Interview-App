@@ -1,4 +1,4 @@
-last_updated: '2026-07-14'
+last_updated: '2026-07-15'
 sections:
 - name: interview_app
   tests:
@@ -12,7 +12,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-15T02:30:20.117450+00:00'
+generated_at_utc: '2026-07-15T16:31:00.082001+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -1044,6 +1044,24 @@ entries:
     - return_type
 - contract: contracts/dashboard_v2_ui.contract.yaml
   symbol: dashboard_v2_ui.configure_dashboard_v2_scroll_areas
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/dashboard_v2_ui.contract.yaml
+  symbol: dashboard_v2_ui.display_role
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/dashboard_v2_ui.contract.yaml
+  symbol: dashboard_v2_ui.role_badge_key
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -14561,6 +14579,15 @@ entries:
     - return_type
 - contract: contracts/staffing_dashboard_v2.contract.yaml
   symbol: staffing_dashboard_v2.StaffingDashboardV2Page._revert_coming_from_drawer
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_v2.contract.yaml
+  symbol: staffing_dashboard_v2.StaffingDashboardV2Page._role_badge
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py

@@ -2,8 +2,8 @@ module:
   name: hiring_workspace_v2
   language: python
   path: src/hiring_workspace_v2.py
-  version: 3.0.0
-  description: Native Staffing v2 Interviews, Candidates, and Offers surfaces for the seven-stage application pipeline, with shared overlays, semantic metrics, contextual lifecycle actions, prior cycles, documents, and a three-step offer editor readable through 150 percent font scaling.
+  version: 3.1.1
+  description: Native Staffing v2 Interviews, Candidates, and Offers surfaces for the seven-stage application pipeline, with shared overlays, semantic metrics, contextual lifecycle actions, prior cycles, documents, an initially closed and explicitly closable application detail overlay, a readable icon-and-color Role column replacing Active cycles in Candidate History, and a three-step offer editor readable through 150 percent font scaling.
 functions: []
 classes:
 - name: HiringOfferApprovalDialog
@@ -58,7 +58,7 @@ classes:
     exceptions: []
     side_effects: Shows closeout route.
 - name: HiringWorkspaceV2Page
-  description: PySide workspace with stage counters, filters, compact application list, contextual actions, selected-application detail timeline, documents, prior cycles, attention explanations, and three-step offer editing.
+  description: PySide workspace with stage counters, filters, compact application list, Candidate History role badges, contextual actions, click-open and explicitly closable selected-application detail timeline, documents, prior cycles, attention explanations, and three-step offer editing.
   locked: false
   attributes:
     widget: {type: QWidget}

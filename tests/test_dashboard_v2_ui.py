@@ -5,6 +5,20 @@ import os
 import pytest
 
 
+def test_dashboard_v2_role_presentation_is_readable_and_semantic() -> None:
+    from dashboard_v2_ui import display_role, role_badge_key
+
+    assert display_role("assistant_director_enrollment_specialist") == "Assistant Director"
+    assert display_role("behavior_support_specialist") == "Behavior Support Specialist"
+    assert display_role("Preschool") == "Preschool"
+    assert role_badge_key("assistant_director_enrollment_specialist") == "director"
+    assert role_badge_key("Teacher") == "teacher"
+    assert role_badge_key("Aide") == "aide"
+    assert role_badge_key("behavior_support_specialist") == "support"
+    assert role_badge_key("Preschool") == "preschool"
+    assert role_badge_key("Infant/Toddler") == "infant_toddler"
+
+
 @pytest.mark.pyside_gui
 def test_dashboard_v2_shell_registers_pages_and_collapses_to_locked_rail() -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")

@@ -6460,6 +6460,20 @@ def test_pyside_staffing_v2_people_dashboard_renders_employee_management_from_db
         "Aide",
         "Permit in Process",
     } <= table_text
+    role_badges = {
+        table.item(row, 0).text(): table.cellWidget(row, 1)
+        for row in range(table.rowCount())
+    }
+    assert role_badges["Maria Gonzalez"].accessibleName() == "Role: Teacher"
+    assert role_badges["Sofia Ramirez"].accessibleName() == "Role: Aide"
+    assert role_badges["Maria Gonzalez"].property("staffingV2Role") == "teacher"
+    assert role_badges["Sofia Ramirez"].property("staffingV2Role") == "aide"
+    assert role_badges["Maria Gonzalez"].property("staffingV2Role") != role_badges["Sofia Ramirez"].property(
+        "staffingV2Role"
+    )
+    for role_badge in role_badges.values():
+        assert role_badge.objectName() == "StaffingV2RoleBadge"
+        assert not role_badge.findChild(qt_widgets.QLabel, "StaffingV2RoleBadgeIcon").pixmap().isNull()
     for row in range(table.rowCount()):
         view_button = table.cellWidget(row, 6)
         assert isinstance(view_button, qt_widgets.QPushButton)
@@ -7739,10 +7753,10 @@ def test_pyside_staffing_v2_director_candidates_follow_admin_school_selector(
     ]
     assert not table.horizontalHeader().stretchLastSection()
     assert table.horizontalHeader().minimumHeight() >= 54
-    assert table.columnWidth(1) == 112
-    assert table.columnWidth(2) == 82
-    assert table.columnWidth(3) == 118
-    assert table.columnWidth(4) == 250
+    assert table.columnWidth(1) == 90
+    assert table.columnWidth(2) == 64
+    assert table.columnWidth(3) == 100
+    assert table.columnWidth(4) == 140
     assert table.columnWidth(6) >= 156
     record_button = table.cellWidget(0, 6)
     assert record_button is not None
@@ -7778,7 +7792,7 @@ def test_staffing_v2_director_pending_table_uses_compact_readable_columns(tmp_pa
         history_id="hist-compact-columns",
         candidate_name="Adrianna Love",
         school="Hawthorne",
-        position="behavior_support_specialist",
+        position="assistant_director_enrollment_specialist",
         interviewer_rating=9.75,
         interviewer_outcome="hire",
         interview_date="2026-07-02",
@@ -7801,14 +7815,20 @@ def test_staffing_v2_director_pending_table_uses_compact_readable_columns(tmp_pa
         "Hire",
         "9.75",
         "2026-07-02",
-        "behavior_support_specialist",
+        "Assistant Director",
     ]
-    assert [table.columnWidth(column) for column in range(1, 5)] == [112, 82, 118, 250]
+    role_badge = table.cellWidget(0, 4)
+    assert role_badge is not None
+    assert role_badge.objectName() == "StaffingV2RoleBadge"
+    assert role_badge.accessibleName() == "Role: Assistant Director"
+    assert role_badge.findChild(qt_widgets.QLabel, "StaffingV2RoleBadgeText").text() == "Assistant Director"
+    assert [table.columnWidth(column) for column in range(7)] == [210, 90, 64, 100, 140, 105, 160]
+    assert sum(table.columnWidth(column) for column in range(table.columnCount())) <= 880
     assert status.text() == "1 pending / 0 completed"
     assert not status.wordWrap()
     assert status.minimumWidth() >= 170
     assert delete_selected.minimumWidth() >= 170
-    assert table.item(0, 4).toolTip() == "behavior_support_specialist"
+    assert table.item(0, 4).toolTip() == "Assistant Director"
     page.widget.close()
     app.processEvents()
 

@@ -7,7 +7,7 @@ import threading
 from typing import Any
 import weakref
 
-from dashboard_v2_ui import apply_dashboard_v2_light_theme
+from dashboard_v2_ui import apply_dashboard_v2_light_theme, display_role, role_badge_key
 from notification_models import NotificationRecipient, NotificationRule, NotificationTestPayload
 from notification_service import EXECUTIVE_DIRECTOR_EMAIL, HIRING_MANAGER_EMAIL, NotificationService
 from notification_store import NotificationStore
@@ -651,6 +651,49 @@ QFrame#StaffingV2HistoryAssignmentIdChip {
     font-weight: 700;
 }
 QLabel#StaffingV2ChipText {
+    background-color: transparent;
+    font-weight: 700;
+}
+QFrame#StaffingV2RoleBadge {
+    border-radius: 8px;
+}
+QFrame#StaffingV2RoleBadge[staffingV2Role="director"] {
+    background-color: #f3e8ff;
+    color: #7e22ce;
+    border: 1px solid #d8b4fe;
+}
+QFrame#StaffingV2RoleBadge[staffingV2Role="teacher"] {
+    background-color: #dbeafe;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+QFrame#StaffingV2RoleBadge[staffingV2Role="aide"] {
+    background-color: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+}
+QFrame#StaffingV2RoleBadge[staffingV2Role="support"] {
+    background-color: #ffedd5;
+    color: #c2410c;
+    border: 1px solid #fed7aa;
+}
+QFrame#StaffingV2RoleBadge[staffingV2Role="preschool"] {
+    background-color: #dbeafe;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+QFrame#StaffingV2RoleBadge[staffingV2Role="infant_toddler"] {
+    background-color: #ccfbf1;
+    color: #0f766e;
+    border: 1px solid #99f6e4;
+}
+QFrame#StaffingV2RoleBadge[staffingV2Role="other"] {
+    background-color: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+}
+QLabel#StaffingV2RoleBadgeIcon,
+QLabel#StaffingV2RoleBadgeText {
     background-color: transparent;
     font-weight: 700;
 }
@@ -4746,7 +4789,7 @@ class StaffingDashboardV2Page:
             self.people_table.insertRow(row_index)
             values = [
                 person.name,
-                person.role or "-",
+                display_role(person.role),
                 _permit_label(person.permit_status),
                 _format_units(person.units),
                 "Active" if person.active else "Inactive",
@@ -4757,6 +4800,8 @@ class StaffingDashboardV2Page:
                 if column == 0:
                     item.setData(self.QtCore.Qt.ItemDataRole.UserRole, person.id)
                 self.people_table.setItem(row_index, column, item)
+                if column == 1:
+                    self.people_table.setCellWidget(row_index, column, self._role_badge(value))
             view = self.QtWidgets.QPushButton("View")
             view.setObjectName("StaffingV2PeopleRowView")
             view.setProperty("personId", person.id)
@@ -4793,7 +4838,7 @@ class StaffingDashboardV2Page:
         top.addWidget(initials)
         identity = self.QtWidgets.QVBoxLayout()
         identity.addWidget(self._label(person.name, "StaffingV2PeopleName"))
-        identity.addWidget(self._label(person.role or "-", "StaffingV2Muted"))
+        identity.addWidget(self._role_badge(person.role))
         identity.addWidget(self._label("-", "StaffingV2Muted"))
         top.addLayout(identity, 1)
         top.addWidget(self._chip("Active" if person.active else "Inactive", "filled" if person.active else "dont_need_now"))
@@ -4827,7 +4872,7 @@ class StaffingDashboardV2Page:
         self.people_detail_layout.addWidget(tabs)
 
         info, info_layout = self._detail_panel_card("StaffingV2PeopleDetailCard", "Employee Information")
-        info_layout.addLayout(self._detail_row("Role", person.role or "-"))
+        info_layout.addLayout(self._detail_row("Role", display_role(person.role)))
         info_layout.addLayout(self._detail_row("Permit Status", _permit_label(person.permit_status)))
         info_layout.addLayout(self._detail_row("Units", _format_units(person.units)))
         info_layout.addLayout(self._detail_row("Hire Date", "-"))
@@ -5652,7 +5697,7 @@ class StaffingDashboardV2Page:
         header.setStretchLastSection(False)
         header.setDefaultAlignment(self.QtCore.Qt.AlignmentFlag.AlignCenter)
         header.setMinimumHeight(54)
-        for column, width in enumerate([260, 112, 82, 118, 250, 138, 210]):
+        for column, width in enumerate([210, 90, 64, 100, 140, 105, 160]):
             table.setColumnWidth(column, width)
             header.setSectionResizeMode(column, self.QtWidgets.QHeaderView.ResizeMode.Fixed)
 
@@ -5681,7 +5726,7 @@ class StaffingDashboardV2Page:
                 candidate.interviewer_outcome.title(),
                 "" if candidate.interviewer_rating is None else f"{candidate.interviewer_rating:g}",
                 candidate.interview_date or "-",
-                candidate.position or "-",
+                display_role(candidate.position),
                 candidate.referral_date or "-",
             ]
             for column, value in enumerate(values):
@@ -5689,6 +5734,8 @@ class StaffingDashboardV2Page:
                 item.setData(self.QtCore.Qt.ItemDataRole.UserRole, candidate.id)
                 item.setToolTip(value)
                 table.setItem(row_index, column, item)
+                if column == 4:
+                    table.setCellWidget(row_index, column, self._role_badge(value))
                 if column == 0:
                     checkbox = self.QtWidgets.QCheckBox(value)
                     candidate_layout = self.QtWidgets.QHBoxLayout(checkbox)
@@ -6037,7 +6084,7 @@ class StaffingDashboardV2Page:
         position_column.addWidget(self._label(assignment.position_name, "StaffingV2DrawerPositionName"))
         position_column.addWidget(
             self._label(
-                f"Classroom {assignment.classroom}   School {assignment.school}   Program {assignment.classroom_program or '-'}   Position Type {assignment.position_type}",
+                f"Classroom {assignment.classroom}   School {assignment.school}   Program {assignment.classroom_program or '-'}   Position Type {display_role(assignment.position_type)}",
                 "StaffingV2Muted",
             )
         )
@@ -6094,7 +6141,9 @@ class StaffingDashboardV2Page:
         related_layout.addWidget(self._label("Related Person", "StaffingV2SectionTitle"))
         if assignment.person_name:
             related_layout.addWidget(self._label(assignment.person_name, "StaffingV2DrawerPositionName"))
-            related_layout.addWidget(self._label(f"{assignment.position_type} · {_display_permit(assignment.permit_status or 'unknown')}"))
+            related_layout.addWidget(
+                self._label(f"{display_role(assignment.position_type)} · {_display_permit(assignment.permit_status or 'unknown')}")
+            )
         else:
             related_layout.addWidget(self._label("No person is currently assigned to this position."))
             assign = self.QtWidgets.QPushButton("Assign or Create Person")
@@ -7191,7 +7240,7 @@ class StaffingDashboardV2Page:
         employee_name.setEnabled(False)
         role = self.QtWidgets.QLineEdit()
         role.setObjectName("StaffingV2PermitRole")
-        role.setText(assignment.position_type)
+        role.setText(display_role(assignment.position_type))
         role.setEnabled(False)
         current_status = self._chip(_display_permit(assignment.permit_status or "unknown"), "coming")
         new_status = self.QtWidgets.QComboBox()
@@ -7493,7 +7542,7 @@ class StaffingDashboardV2Page:
         for column, (label, value) in enumerate(
             [
                 ("Name", assignment.person_name or "-"),
-                ("Role", assignment.position_type),
+                ("Role", display_role(assignment.position_type)),
                 ("Permit Status", _display_permit(assignment.permit_status or "unknown")),
                 ("Active", "true"),
             ]
@@ -7703,6 +7752,23 @@ class StaffingDashboardV2Page:
         label.setWordWrap(False)
         label.setAlignment(self.QtCore.Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(label)
+        return frame
+
+    def _role_badge(self, role: str) -> Any:
+        label = display_role(role)
+        frame = self.QtWidgets.QFrame()
+        frame.setObjectName("StaffingV2RoleBadge")
+        frame.setProperty("staffingV2Role", role_badge_key(role))
+        frame.setAccessibleName(f"Role: {label}")
+        frame.setToolTip(label)
+        layout = self.QtWidgets.QHBoxLayout(frame)
+        layout.setContentsMargins(6, 2, 6, 2)
+        layout.setSpacing(4)
+        layout.addWidget(self._icon_label("people", "StaffingV2RoleBadgeIcon"))
+        text = self._label(label, "StaffingV2RoleBadgeText")
+        text.setWordWrap(False)
+        layout.addWidget(text)
+        layout.addStretch(1)
         return frame
 
     def _icon_label(self, icon_key: str, object_name: str) -> Any:

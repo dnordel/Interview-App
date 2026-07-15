@@ -5,7 +5,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from dashboard_v2_ui import DashboardV2OverlayPanel, SEMANTIC_COLORS
+from dashboard_v2_ui import DashboardV2OverlayPanel, SEMANTIC_COLORS, display_role, role_badge_key
 from hiring_pipeline import HiringApplication, HiringStage, HiringWorkflowService
 
 
@@ -270,7 +270,7 @@ class HiringWorkspaceV2Page:
         self.application_table.horizontalHeader().setSectionResizeMode(
             self.QtWidgets.QHeaderView.ResizeMode.Stretch
         )
-        self.application_table.itemSelectionChanged.connect(self._render_selected)
+        self.application_table.cellClicked.connect(lambda *_args: self._render_selected())
         root.addWidget(self.application_table, 1)
         self.detail_overlay = DashboardV2OverlayPanel(
             QtCore=self.QtCore,
@@ -280,6 +280,10 @@ class HiringWorkspaceV2Page:
             width=440,
         )
         self.detail_overlay.body_layout.addWidget(self._build_detail())
+        close_detail = self.QtWidgets.QPushButton("Close")
+        close_detail.setObjectName("HiringV2ApplicationDetailClose")
+        close_detail.clicked.connect(self._close_detail)
+        self.detail_overlay.footer_layout.addWidget(close_detail)
         self._apply_style()
 
     def _build_candidates_page(self) -> Any:
@@ -303,7 +307,7 @@ class HiringWorkspaceV2Page:
         root.addWidget(self.candidates_search)
         self.candidates_table = self.QtWidgets.QTableWidget(0, 6)
         self.candidates_table.setHorizontalHeaderLabels(
-            ["Candidate", "Contact", "Active cycles", "Latest school / role", "Current stage", "Last activity"]
+            ["Candidate", "Contact", "Role", "Latest school", "Current stage", "Last activity"]
         )
         self._configure_native_table(self.candidates_table)
         root.addWidget(self.candidates_table, 1)
@@ -379,7 +383,7 @@ class HiringWorkspaceV2Page:
         self.service.refresh_expired_offer_attention()
         self.applications = self.service.store.list_applications()
         schools = sorted({item.school for item in self.applications})
-        positions = sorted({item.position for item in self.applications})
+        positions = sorted({display_role(item.position) for item in self.applications})
         self._reset_combo(self.school_filter, "All schools", schools)
         self._reset_combo(self.position_filter, "All positions", positions)
         counts = Counter(item.stage for item in self.applications)
@@ -405,13 +409,19 @@ class HiringWorkspaceV2Page:
         for application in self.applications:
             candidate = self.service.store.get_candidate(application.candidate_id)
             haystack = " ".join(
-                (candidate.legal_name, candidate.preferred_name, application.school, application.position)
+                (
+                    candidate.legal_name,
+                    candidate.preferred_name,
+                    application.school,
+                    application.position,
+                    display_role(application.position),
+                )
             ).casefold()
             if needle and needle not in haystack:
                 continue
             if school != "All schools" and application.school != school:
                 continue
-            if position != "All positions" and application.position != position:
+            if position != "All positions" and display_role(application.position) != position:
                 continue
             if self.active_stage is not None and application.stage is not self.active_stage:
                 continue
@@ -427,7 +437,7 @@ class HiringWorkspaceV2Page:
             candidate = self.service.store.get_candidate(application.candidate_id)
             values = [
                 candidate.preferred_name or candidate.legal_name,
-                f"{application.school}\n{application.position}",
+                f"{application.school}\n{display_role(application.position)}",
                 STAGE_LABELS[application.stage],
                 application.attention_code.replace("_", " ").title() or "On track",
             ]
@@ -442,10 +452,7 @@ class HiringWorkspaceV2Page:
             )
             self.application_table.setCellWidget(row, 4, menu_button)
             self.application_table.setRowHeight(row, 52)
-        if self.visible_applications:
-            self.application_table.selectRow(0)
-        else:
-            self._clear_detail()
+        self._close_detail()
 
     def _render_selected(self) -> None:
         row = self.application_table.currentRow()
@@ -466,7 +473,7 @@ class HiringWorkspaceV2Page:
         }
         self.detail_attention.setText(attention_messages.get(application.attention_code, ""))
         self.detail_candidate.setText(
-            f"{candidate.legal_name}\n{application.school} · {application.position}\n"
+            f"{candidate.legal_name}\n{application.school} · {display_role(application.position)}\n"
             f"Application cycle {application.cycle_number}"
         )
         self.timeline_list.clear()
@@ -489,7 +496,7 @@ class HiringWorkspaceV2Page:
         ]
         for item in sorted(prior, key=lambda value: (value.created_at, value.cycle_number), reverse=True):
             self.prior_cycles_list.addItem(
-                f"Cycle {item.cycle_number} · {item.school} · {item.position} · {STAGE_LABELS[item.stage]}"
+                f"Cycle {item.cycle_number} · {item.school} · {display_role(item.position)} · {STAGE_LABELS[item.stage]}"
             )
         if not prior:
             self.prior_cycles_list.addItem("No prior cycles")
@@ -503,8 +510,15 @@ class HiringWorkspaceV2Page:
         for application in self.applications:
             candidate = self.service.store.get_candidate(application.candidate_id)
             haystack = " ".join(
-                (candidate.legal_name, candidate.preferred_name, candidate.email, candidate.phone,
-                 application.school, application.position)
+                (
+                    candidate.legal_name,
+                    candidate.preferred_name,
+                    candidate.email,
+                    candidate.phone,
+                    application.school,
+                    application.position,
+                    display_role(application.position),
+                )
             ).casefold()
             if needle and needle not in haystack:
                 continue
@@ -513,17 +527,52 @@ class HiringWorkspaceV2Page:
         for row, applications in enumerate(grouped.values()):
             latest = max(applications, key=lambda item: item.updated_at)
             candidate = self.service.store.get_candidate(latest.candidate_id)
-            active = sum(item.stage not in {HiringStage.CLOSED, HiringStage.ACCEPTED} for item in applications)
+            role_label = display_role(latest.position)
             values = (
                 candidate.preferred_name or candidate.legal_name,
                 candidate.email or candidate.phone or "Missing contact",
-                str(active),
-                f"{latest.school} / {latest.position}",
+                role_label,
+                latest.school,
                 STAGE_LABELS[latest.stage],
                 latest.updated_at[:16].replace("T", " "),
             )
             for column, value in enumerate(values):
-                self.candidates_table.setItem(row, column, self.QtWidgets.QTableWidgetItem(value))
+                item = self.QtWidgets.QTableWidgetItem(value)
+                item.setToolTip(value)
+                self.candidates_table.setItem(row, column, item)
+                if column == 2:
+                    self.candidates_table.setCellWidget(row, column, self._role_badge(latest.position))
+
+    def _role_badge(self, role: str) -> Any:
+        label = display_role(role)
+        role_kind = role_badge_key(role)
+        frame = self.QtWidgets.QFrame()
+        frame.setObjectName("HiringV2RoleBadge")
+        frame.setProperty("roleKind", role_kind)
+        frame.setAccessibleName(f"Role: {label}")
+        frame.setToolTip(label)
+        layout = self.QtWidgets.QHBoxLayout(frame)
+        layout.setContentsMargins(7, 2, 7, 2)
+        layout.setSpacing(5)
+        icon = self.QtWidgets.QLabel()
+        icon.setObjectName("HiringV2RoleBadgeIcon")
+        pixmaps = self.QtWidgets.QStyle.StandardPixmap
+        icon_kind = {
+            "director": pixmaps.SP_DirHomeIcon,
+            "teacher": pixmaps.SP_FileDialogInfoView,
+            "aide": pixmaps.SP_FileDialogDetailedView,
+            "support": pixmaps.SP_MessageBoxInformation,
+            "preschool": pixmaps.SP_FileDialogInfoView,
+            "infant_toddler": pixmaps.SP_DirHomeIcon,
+        }.get(role_kind, pixmaps.SP_FileIcon)
+        icon.setPixmap(frame.style().standardIcon(icon_kind).pixmap(16, 16))
+        icon.setFixedSize(18, 18)
+        text = self.QtWidgets.QLabel(label)
+        text.setObjectName("HiringV2RoleBadgeText")
+        layout.addWidget(icon)
+        layout.addWidget(text)
+        layout.addStretch(1)
+        return frame
 
     def _refresh_offers_table(self) -> None:
         if not hasattr(self, "offers_table"):
@@ -542,7 +591,7 @@ class HiringWorkspaceV2Page:
             hours = terms.get("weekly_hours", terms.get("hours_week", ""))
             values = (
                 candidate.preferred_name or candidate.legal_name,
-                f"{application.school} / {application.position}",
+                f"{application.school} / {display_role(application.position)}",
                 f"v{version.version_number}",
                 f"${pay}/hr · {hours} hrs",
                 version.operational_reply_by_date or version.document_reply_by_date or "Not set",
@@ -749,7 +798,7 @@ class HiringWorkspaceV2Page:
         identity_form.addRow("Candidate", self.QtWidgets.QLabel(candidate.legal_name))
         identity_form.addRow("Email", self.QtWidgets.QLabel(candidate.email or "Missing email"))
         identity_form.addRow("School", self.QtWidgets.QLabel(application.school))
-        identity_form.addRow("Position", self.QtWidgets.QLabel(application.position))
+        identity_form.addRow("Position", self.QtWidgets.QLabel(display_role(application.position)))
         stack.addWidget(identity)
 
         compensation = self.QtWidgets.QWidget()
@@ -821,6 +870,12 @@ class HiringWorkspaceV2Page:
         self.prior_cycles_list.clear()
         self.timeline_list.clear()
 
+    def _close_detail(self) -> None:
+        self.application_table.clearSelection()
+        self.application_table.setCurrentCell(-1, -1)
+        self._clear_detail()
+        self.detail_overlay.hide()
+
     @staticmethod
     def _reset_combo(combo: Any, first: str, values: list[str]) -> None:
         selected = combo.currentText()
@@ -849,6 +904,22 @@ class HiringWorkspaceV2Page:
             #HiringV2Eyebrow { color: #667085; font-size: 11px; font-weight: 700; }
             #HiringV2NextAction { font-size: 20px; font-weight: 700; }
             #HiringV2SectionTitle { font-size: 16px; font-weight: 700; }
+            #HiringV2RoleBadge { border-radius: 8px; }
+            #HiringV2RoleBadge[roleKind="director"] { background: #f3e8ff; color: #7e22ce;
+                border: 1px solid #d8b4fe; }
+            #HiringV2RoleBadge[roleKind="teacher"] { background: #dbeafe; color: #1d4ed8;
+                border: 1px solid #bfdbfe; }
+            #HiringV2RoleBadge[roleKind="aide"] { background: #dcfce7; color: #15803d;
+                border: 1px solid #bbf7d0; }
+            #HiringV2RoleBadge[roleKind="support"] { background: #ffedd5; color: #c2410c;
+                border: 1px solid #fed7aa; }
+            #HiringV2RoleBadge[roleKind="preschool"] { background: #dbeafe; color: #1d4ed8;
+                border: 1px solid #bfdbfe; }
+            #HiringV2RoleBadge[roleKind="infant_toddler"] { background: #ccfbf1; color: #0f766e;
+                border: 1px solid #99f6e4; }
+            #HiringV2RoleBadge[roleKind="other"] { background: #f1f5f9; color: #475569;
+                border: 1px solid #cbd5e1; }
+            #HiringV2RoleBadgeIcon, #HiringV2RoleBadgeText { background: transparent; font-weight: 700; }
             QPushButton { min-height: 30px; border: 1px solid #d0d5dd;
                 border-radius: 7px; background: white; }
             QPushButton:checked { background: #e8f0ff; color: #174ea6; border-color: #7aa2f7; }
