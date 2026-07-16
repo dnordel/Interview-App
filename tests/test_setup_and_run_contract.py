@@ -226,8 +226,8 @@ def test_setup_and_run_detects_amd_intel_without_installing_nvidia_wheels() -> N
     assert '$name -match "AMD|Radeon|Advanced Micro Devices"' in script_text
     assert '$name -match "Intel|Arc|Iris|UHD Graphics"' in script_text
     assert (
-        "AMD GPU detected. Ollama may use supported ROCm/Vulkan acceleration; "
-        "Whisper transcription will use OpenVINO GenAI unless an external Vulkan whisper.cpp backend is configured."
+        "AMD GPU detected. Whisper transcription will use OpenVINO GenAI "
+        "unless an external Vulkan whisper.cpp backend is configured."
     ) in script_text
     assert "Intel GPU detected. OpenVINO GenAI will be used for Whisper transcription" in script_text
 
@@ -325,54 +325,6 @@ def test_setup_and_run_describes_first_run_audio_routing_steps() -> None:
     )
 
 
-def test_setup_and_run_installs_local_deepseek_with_ollama() -> None:
-    script_text = SETUP_SCRIPT.read_text(encoding="utf-8")
-    contract = yaml.safe_load(SETUP_CONTRACT.read_text(encoding="utf-8"))
-    function_names = {item["name"] for item in contract["functions"]}
-    descriptions = " ".join(item["description"] for item in contract["functions"])
-
-    assert "Ensure-Ollama" in function_names
-    assert "Ensure-DeepSeekModel" in function_names
-    assert "Enable-LocalDeepSeekForLaunchedApp" in function_names
-    assert '$LocalDeepSeekModel = "deepseek-r1:8b"' in script_text
-    assert '$AllowedLocalDeepSeekModels = @("deepseek-r1:1.5b", "deepseek-r1:8b", "deepseek-r1:14b")' in script_text
-    assert 'Join-Path (Join-Path $AppDir "user_artifacts") "interview_app_settings.json"' in script_text
-    assert '$AllowedLocalDeepSeekModels -contains $selectedModel' in script_text
-    assert '$LocalDeepSeekModel = $env:DEEPSEEK_SUMMARY_MODEL.Trim()' in script_text
-    assert 'Join-Path $env:LOCALAPPDATA "Programs\\Ollama\\ollama.exe"' in script_text
-    assert 'Join-Path $env:LOCALAPPDATA "Ollama\\ollama.exe"' in script_text
-    assert 'Microsoft\\WinGet\\Packages' in script_text
-    assert '"--id", "Ollama.Ollama"' in script_text
-    assert "foreach ($localModel in @($tags.models))" in script_text
-    assert "[string]$localModel.name -ieq $Model" in script_text
-    assert "[string]$localModel.model -ieq $Model" in script_text
-    assert "foreach ($model in @($tags.models))" not in script_text
-    assert "Invoke-OllamaModelPull -Model $Model" in script_text
-    assert "for ($i = 0; $i -lt 10; $i++)" in script_text
-    assert '$env:DEEPSEEK_API_BASE_URL = "$OllamaBaseUrl/v1"' in script_text
-    assert '$env:DEEPSEEK_API_KEY = "ollama"' in script_text
-    assert "retry local registry checks" in descriptions
-
-
-def test_setup_and_run_streams_deepseek_pull_progress_to_ui_and_log() -> None:
-    script_text = SETUP_SCRIPT.read_text(encoding="utf-8")
-    contract = yaml.safe_load(SETUP_CONTRACT.read_text(encoding="utf-8"))
-    function_names = {item["name"] for item in contract["functions"]}
-    descriptions = " ".join(item["description"] for item in contract["functions"])
-
-    assert "Invoke-OllamaModelPull" in function_names
-    assert '"$OllamaBaseUrl/api/pull"' in script_text
-    assert '"stream" = $true' in script_text
-    assert '"name" = $Model' in script_text
-    assert "ReadLine()" in script_text
-    assert '$percent = [Math]::Floor(($completed / $total) * 100)' in script_text
-    assert 'Set-Progress 65 "Downloading local DeepSeek model ($Model): $percent%"' in script_text
-    assert 'Write-Log "DeepSeek model download progress: $Model $percent% ($completed of $total bytes)"' in script_text
-    assert 'Invoke-OllamaModelPull -Model $Model' in script_text
-    assert 'Run-Proc -File $OllamaExe -Args @("pull", $Model)' not in script_text
-    assert "download percentage" in descriptions
-
-
 def test_setup_and_run_shows_visible_setup_details() -> None:
     script_text = SETUP_SCRIPT.read_text(encoding="utf-8")
     contract = yaml.safe_load(SETUP_CONTRACT.read_text(encoding="utf-8"))
@@ -381,5 +333,4 @@ def test_setup_and_run_shows_visible_setup_details() -> None:
     assert "$details = New-Object System.Windows.Forms.TextBox" in script_text
     assert "$details.ReadOnly = $true" in script_text
     assert '$details.AppendText(("[{0}] {1}`r`n" -f (Get-Date -Format "HH:mm:ss"), $text))' in script_text
-    assert "Checking local DeepSeek through Ollama" in script_text
     assert "append visible setup details" in descriptions

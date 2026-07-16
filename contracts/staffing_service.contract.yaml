@@ -2,8 +2,8 @@ module:
   name: staffing_service
   language: python
   path: src/staffing_service.py
-  version: 0.25.0
-  description: Staffing assignment state machine, service-backed classroom, position, person creation, director interview referral/completion tracking with optional pending-queue fallback, mistaken-position deletion, queued Dropbox edit handling, staffing dashboard metrics with pending-operation projection and workbook display metadata, confirmed person moves, editable assignment details, person permit metadata updates, and post-commit notification emission for successful transactions.
+  version: 0.26.0
+  description: Staffing assignment state machine with optional bidirectional cross-database change staging, service-backed classroom, position, person creation, director interview referral/completion tracking with optional pending-queue fallback, mistaken-position deletion, queued Dropbox edit handling, staffing dashboard metrics with pending-operation projection and workbook display metadata, confirmed person moves, editable assignment details, person permit metadata updates, and post-commit notification emission for successful transactions.
 functions:
 - name: staffing_notification_payload
   locked: false
@@ -15,9 +15,14 @@ functions:
   side_effects: none
 classes:
 - name: StaffingService
-  description: Applies staffing transactions and director interview completion records through StaffingStore and emits checkpoint notifications after successful assignment commits.
+  description: Applies staffing transactions and director interview completion records through StaffingStore, optionally publishes/replays them through StaffingChangeStage, and emits checkpoint notifications after successful assignment commits.
   locked: false
   methods:
+  - name: replay_staged_changes
+    inputs: {}
+    returns: {type: int}
+    exceptions: [OSError, sqlite3.Error, JSONDecodeError]
+    side_effects: Replays ordered peer events into only this service's local staffing DB, acknowledges each successful event independently, and stops fail-closed at a lock or invalid/conflicting event.
   - name: open_position
     inputs:
       assignment_id:
@@ -75,7 +80,7 @@ classes:
     exceptions:
     - ValueError
     - StaffingEditLock
-    side_effects: Creates school/classroom/person rows as needed, inserts one assignment, opens history for open/coming statuses, and may emit staffing.assignment.created notification.
+    side_effects: Creates school/classroom/person rows as needed, inserts one assignment, opens history for open/coming statuses, may emit staffing.assignment.created notification, and publishes the successful operation when cross-database staging is configured.
   - name: add_person
     inputs:
       name:
@@ -394,7 +399,7 @@ classes:
       type: StaffingTransitionResult
     exceptions:
     - ValueError
-    side_effects: Updates assignment classroom/program, position name/type/status/start date/shift/notes fields, assigned or newly named person details, and assigned person's permit status when present; when status is changed to need_now, clears assigned person, start date, and current filled date and ensures an active hiring-history cycle exists; may emit staffing.permit.updated notification; if DB is locked, saves operation to pending queue and returns queued status.
+    side_effects: Updates assignment classroom/program, position name/type/status/start date/shift/notes fields, assigned or newly named person details, and assigned person's permit status when present; when status is changed to need_now, clears assigned person, start date, and current filled date and ensures an active hiring-history cycle exists; may emit staffing.permit.updated notification; if DB is locked, saves operation to pending queue and returns queued status; publishes successful full-field changes when cross-database staging is configured.
   - name: staffing_metrics
     inputs:
       today:
@@ -580,7 +585,7 @@ classes:
     exceptions:
     - ValueError
     - StaffingEditLock
-    side_effects: Records a director interview with date, 1-10 rating, hire/no-hire decision, required notes, and hire-only proposed shift/classroom while leaving assignments and classroom status unchanged.
+    side_effects: Records a director interview with date, 1-10 rating, hire/no-hire decision, required notes, and hire-only proposed shift/classroom while leaving assignments and classroom status unchanged; publishes the completion with stable referral history data when cross-database staging is configured.
   - name: reopen_director_interview
     inputs:
       interview_id: {type: int, required: true}
@@ -633,5 +638,6 @@ data_structures:
   type: dict[str, str]
 dependencies:
 - notification_service
+- staffing_change_stage
 - staffing_models
 - staffing_store

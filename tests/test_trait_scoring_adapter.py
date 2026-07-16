@@ -281,7 +281,6 @@ class TestTraitScoringAdapter(unittest.TestCase):
         canonical_state = normalize_trait_state_item(
             {
                 "selected_signal_ids": ["P1", "P2", "P1"],
-                "model_signal_suggestions": [{"signal_id": "P1", "confidence": 0.5, "rationale": "Matched."}],
             }
         )
         mapping_state = normalize_trait_state_item({"selected_signals": {"P1": True, "P2": False, "P3": True}})
@@ -290,10 +289,6 @@ class TestTraitScoringAdapter(unittest.TestCase):
         )
 
         self.assertEqual(canonical_state["selected_signal_ids"], ["P1", "P2"])
-        self.assertEqual(
-            canonical_state["model_signal_override"],
-            {"accepted_signal_ids": ["P1"], "rejected_signal_ids": [], "manual_only_signal_ids": ["P2"]},
-        )
         self.assertEqual(mapping_state["selected_signal_ids"], ["P1", "P3"])
         self.assertEqual(grouped_state["selected_signal_ids"], ["P1", "P2"])
 
@@ -749,7 +744,6 @@ class ScoringEngine:
                 "skipped": False,
                 "verbatim_notes": "note",
                 "selected_signal_ids": ["P1"],
-                "model_signal_suggestions": [{"signal_id": "P2", "confidence": 0.8, "rationale": "Observed."}],
             }
         }
         session_result = {
@@ -774,77 +768,10 @@ class ScoringEngine:
         self.assertEqual(compatibility["weighted_total"], 12)
         self.assertEqual(compatibility["rows"][0]["raw_score"], 4)
         self.assertEqual(compatibility["rows"][0]["system_checkbox_score"], 12)
-        self.assertEqual(compatibility["rows"][0]["deepseek_calculated_score"], 9)
+        self.assertEqual(compatibility["rows"][0]["selected_signal_ids"], ["P1"])
         self.assertEqual(_max_trait_final_score(TRAIT_DEFINITION), 4.0)
         self.assertEqual(_max_weighted_total([TRAIT_DEFINITION], normalized_state), 4)
         self.assertEqual(_configured_max_weighted_total(rubric, "general", [TRAIT_DEFINITION]), 30)
-
-    def test_compatibility_output_keeps_auto_no_hire_signal_advisory(self):
-        rubric = {
-            "tracks": {"general": {"label": "General", "max_weighted_total": 30}},
-            "traits": [
-                {
-                    "id": "trait_a",
-                    "name": "Trait A",
-                    "priority": "high",
-                    "weight": 3,
-                    "primary_question": "Q1",
-                    "applicable_tracks": ["general"],
-                }
-            ],
-        }
-        trait_definition = {
-            "trait_id": "trait_a",
-            "question": "Describe classroom management.",
-            "core_signals": [
-                {
-                    "ref": "AUTO",
-                    "label": "Automatic no-hire advisory",
-                    "base_weight": "AUTO_NO_HIRE",
-                    "signal_category": "automatic_no_hire",
-                },
-                {"ref": "P1", "weight": 4},
-            ],
-            "extended_signal_groups": [],
-        }
-        normalized_state = {
-            "trait_a": {
-                "raw_score": 4,
-                "skipped": False,
-                "selected_signal_ids": ["P1"],
-                "model_signal_suggestions": [{"signal_id": "AUTO", "evidence_quote": "quoted"}],
-            }
-        }
-        session_result = {
-            "traits": [
-                {
-                    "trait_id": "trait_a",
-                    "final_score": 4,
-                    "auto_no_hire_present": True,
-                    "auto_no_hire_signal_ids": ["AUTO"],
-                }
-            ],
-            "totals": {"final": 4},
-            "decision": "no_hire",
-            "any_critical_selected": True,
-            "triggered_critical": True,
-            "locked_rule": "Contract override: selected automatic no-hire signal triggers immediate no_hire",
-            "override_rationale": "Contract override: selected automatic no-hire signal triggers immediate no_hire",
-        }
-
-        compatibility = _build_compatibility_engine_output(
-            rubric=rubric,
-            track_key="general",
-            normalized_state=normalized_state,
-            trait_definitions=[trait_definition],
-            runtime_bundle=_trait_runtime_bundle(),
-            session_result=session_result,
-        )
-
-        self.assertEqual(compatibility["outcome"], "Hire")
-        self.assertIsNone(compatibility["locked_rule"])
-        self.assertTrue(compatibility["auto_no_hire_present"])
-        self.assertEqual(compatibility["rows"][0]["auto_no_hire_signal_ids"], ["AUTO"])
 
     def test_legacy_signal_selections_do_not_override_human_raw_score(self):
         with patch("scoring_reporting._load_runtime_bundle", return_value=_trait_runtime_bundle()), patch(

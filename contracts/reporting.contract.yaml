@@ -2,7 +2,7 @@ module:
   name: reporting
   language: python
   path: src/reporting.py
-  version: 1.2.4
+  version: 2.0.0
   description: Deprecated compatibility wrapper for scoring, draft persistence, and report document export services implemented by scoring_reporting.
 functions: []
 classes:
@@ -83,7 +83,7 @@ classes:
     exceptions: []
     side_effects: none
   - name: evaluate
-    description: Evaluate scoring rows, aggregate totals, preserve DeepSeek advisory automatic no-hire metadata without letting it override the human final outcome, and compute hiring outcome using skipped-aware determination thresholds plus human disqualifier and critical-score overrides.
+    description: Evaluate human scoring rows, aggregate totals, and compute hiring outcome using skipped-aware determination thresholds plus human disqualifier and critical-score overrides.
     locked: false
     inputs:
       rubric:
@@ -196,7 +196,7 @@ classes:
     exceptions: []
     side_effects: none
   - name: export
-    description: Generate finalized interview report document through scoring_reporting, preserving the director-ready DOCX layout with bulleted executive strengths/concerns, a Candidate Snapshot that includes final non-scored custom-question manual interviewer inputs after the scored block, a compact scorecard before answer summaries, compact question/rating/summary cards that use exact question/prompt text, consolidate Interviewer/AI-Advisor direct-model/AI-trait-based signal-weighted ratings into one row, and omit consolidated evidence rows plus non-scored rubric-alignment rows, full transcript detail in appendices, no hiring-manager evidence-notes section, no duplicated answer-summary evidence in the transcript appendix, and no interviewer-adjustment rows in the AI advisory appendix.
+    description: Generate the standard human-scored interview notes document through scoring_reporting.
     locked: false
     inputs:
       rubric:

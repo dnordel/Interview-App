@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Repository guidance for AI coding agents working in `Preschool-Teacher-Interview-Guide`.
+Repository guidance for coding agents working in `Preschool-Teacher-Interview-Guide`.
 
 ## Purpose
 - Keep changes safe, reviewable, and aligned with the repository's contract-driven workflow.

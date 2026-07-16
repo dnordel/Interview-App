@@ -2,10 +2,9 @@ module:
   name: scoring_reporting
   language: python
   path: src/scoring_reporting.py
-  version: 0.22.0
-  description: Flattened public interface for scoring, reporting, trait signals, exports,
-    referrals, email safety, offers, and templates, including DeepSeek-only advisory
-    signal scoring; only active legacy adapters remain in the compatibility module
+  version: 1.0.0
+  description: Flattened public interface for human scoring, reporting, trait signals,
+    exports, referrals, email safety, offers, and templates; only active legacy adapters remain in the compatibility module
     inventory.
 functions:
 - name: normalize_candidate_title
@@ -658,69 +657,6 @@ functions:
     type: list[dict[str, Any]]
   exceptions: []
   side_effects: none
-- name: _score_trait_signal_ids
-  description: Calculate the net DeepSeek signal score from supplied signal ids using
-    runtime trait signal weights; used only for advisory model scoring.
-  locked: false
-  inputs:
-    trait_definition:
-      type: dict[str, Any]
-      required: true
-    signal_ids:
-      type: list[str]
-      required: true
-    runtime_bundle:
-      type: dict[str, Any]
-      required: true
-  returns:
-    type: int | float | None
-  exceptions: []
-  side_effects: none
-- name: _deepseek_signal_advisory
-  description: Resolve model signal suggestions for one trait into net signal score,
-    suggested raw score, and automatic no-hire metadata.
-  locked: false
-  inputs:
-    trait_id:
-      type: str
-      required: true
-    model_signal_suggestions:
-      type: list[dict[str, Any]]
-      required: true
-  returns:
-    type: dict[str, Any]
-  exceptions: []
-  side_effects: Reads runtime trait signal bundle when available.
-- name: _signal_score_to_raw_score
-  description: Convert net signal score into the configured default 1-5 suggested
-    raw score.
-  locked: false
-  inputs:
-    net_signal_score:
-      type: int | float
-      required: true
-  returns:
-    type: int
-  exceptions: []
-  side_effects: none
-- name: _score_trait_signal_advisory
-  description: Score model signal suggestions against one runtime trait definition,
-    returning advisory net score, suggested raw score, and auto-no-hire metadata.
-  locked: false
-  inputs:
-    trait_definition:
-      type: dict[str, Any]
-      required: true
-    model_signal_suggestions:
-      type: list[dict[str, Any]]
-      required: true
-    runtime_bundle:
-      type: dict[str, Any]
-      required: true
-  returns:
-    type: dict[str, Any]
-  exceptions: []
-  side_effects: none
 - name: build_offer_filename
   description: Build a safe offer letter filename from candidate name and creation
     date.
@@ -1107,48 +1043,6 @@ functions:
     type: None
   exceptions: []
   side_effects: Mutates the provided trait-state mapping.
-- name: normalize_model_signal_suggestions
-  description: Normalize model-suggested trait observation signals with confidence
-    and rationale while filtering to valid runtime signal ids.
-  locked: false
-  inputs:
-    suggestions:
-      type: Any
-      required: true
-    valid_signal_ids:
-      type: list[str]
-      required: true
-  returns:
-    type: list[dict[str, Any]]
-  exceptions: []
-  side_effects: none
-- name: write_canonical_model_signal_suggestions
-  description: Persist canonical model_signal_suggestions separately from legacy
-    selected_signal_ids.
-  locked: false
-  inputs:
-    trait_state:
-      type: dict[str, Any]
-      required: true
-    suggestions:
-      type: list[dict[str, Any]]
-      required: true
-  returns:
-    type: None
-  exceptions: []
-  side_effects: Mutates the provided trait-state mapping.
-- name: trait_signal_override_state
-  description: Compare legacy selected_signal_ids with model_signal_suggestions without
-    changing scoring semantics.
-  locked: false
-  inputs:
-    trait_state:
-      type: dict[str, Any]
-      required: true
-  returns:
-    type: dict[str, list[str]]
-  exceptions: []
-  side_effects: none
 - name: count_selected_trait_checkbox_entries
   description: Count selected legacy trait signal entries across canonical and compatibility
     payloads.
@@ -1266,8 +1160,7 @@ functions:
   side_effects: none
 - name: normalize_trait_state_item
   description: Produce a canonical normalized trait-state object for one trait input,
-    normalizing accepted checkbox-selection variants into selected_signal_ids and
-    preserving separate model_signal_suggestions.
+    normalizing accepted checkbox-selection variants into selected_signal_ids.
   locked: false
   inputs:
     state:
@@ -1361,44 +1254,6 @@ functions:
     type: list[str]
   exceptions: []
   side_effects: Imports remaining scoring/reporting compatibility modules.
-- name: _clean_executive_summary_text
-  description: Strip markdown bold markers, leading list or number markers, and heading
-    punctuation from generated executive-summary text before DOCX rendering.
-  locked: false
-  inputs:
-    value:
-      type: Any
-      required: true
-  returns:
-    type: str
-  exceptions: []
-  side_effects: none
-- name: _split_executive_summary_heading
-  description: Detect known generated executive-summary section headings from plain
-    or markdown-bold lines and return the canonical section key plus cleaned inline
-    body text.
-  locked: false
-  inputs:
-    line:
-      type: str
-      required: true
-  returns:
-    type: tuple[str | None, str]
-  exceptions: []
-  side_effects: none
-- name: _parse_executive_summary_sections
-  description: Parse current DeepSeek markdown-like executive summary strings into
-    canonical sections for structured DOCX rendering, preserving unrecognized content
-    under additional_notes.
-  locked: false
-  inputs:
-    summary:
-      type: str
-      required: true
-  returns:
-    type: dict[str, list[str]]
-  exceptions: []
-  side_effects: none
 classes:
 - name: CandidateQualification
   description: Normalized candidate education and prior experience details.
@@ -1520,10 +1375,7 @@ classes:
   - name: evaluate
     description: Evaluate human-confirmed trait raw scores as final scoring, treating
       unrated applicable traits as skipped so they are excluded from totals and notes,
-      attach DeepSeek advisory signal scoring fields, short model signal analysis
-      summaries, and automatic no-hire metadata
-      without letting advisory metadata override the human final outcome, detect
-      human disqualifier and critical-score no-hire overrides, and compute hiring
+      detect human disqualifier and critical-score no-hire overrides, and compute hiring
       outcome using skipped-aware thresholds.
     locked: false
     inputs:
@@ -1638,7 +1490,7 @@ classes:
     exceptions: []
     side_effects: none
   - name: export_basic_interview_notes
-    description: Generate a lightweight non-DeepSeek interview notes DOCX using
+    description: Generate a lightweight interview notes DOCX using
       the structured behavioral interview notes layout with a title/subtitle,
       candidate snapshot table, education and experience summary table, score
       summary table when scored ratings exist or a compact no-scored-ratings
@@ -1647,8 +1499,7 @@ classes:
       question text, and full-width candidate answer boxes, excluding the intro
       script. The export includes transcript text for pre-scored custom and
       scored questions plus manual notes for custom/non-scored questions after
-      the scored block, without AI-generated summaries or advisory scoring
-      sections.
+      the scored block.
     locked: false
     inputs:
       rubric:
@@ -1667,55 +1518,7 @@ classes:
     - OSError
     side_effects: Writes a Basic Interview Notes DOCX file to disk.
   - name: export
-    description: |-
-      Generate a director-ready finalized interview decision brief DOCX using the
-      interview-notes template layout: narrow margins, readable Arial typography at
-      no less than 12 pt for body content, centered title/subtitle, professional
-      blue/green heading and table styling, shaded score summary callout before
-      the executive summary with interviewer, AI advisory aggregate, and
-      AI-trait-based aggregate scores as weighted fractions and percentages plus threshold and
-      override/disqualifier status, a structured generated executive-summary
-      decision brief that accepts
-      DeepSeek executive_summary_sections JSON, including nested recommendation
-      rating/rationale objects, or legacy markdown-like summary text,
-      strips markdown markers, and renders a color-coded recommendation box, boxed
-      at-a-glance fit/role/score rows, side-by-side strengths and concerns boxes,
-      follow-up questions, final-notes box, and fallback additional notes;
-      candidate snapshot immediately before the executive summary without
-      repeating candidate name, school/location, track, or interview date already
-      shown in the subtitle, showing Infant/toddler class completed only for
-      infant/toddler or BSS tracks and Total units completed only when the
-      candidate has no degree, and appending manual interviewer inputs for
-      non-scored custom questions that occur after the scored block; AI-generated
-      evidence-summary sections; scorecard
-      snapshot immediately after the executive summary with compact score headers and
-      balanced score-column widths; consolidated answer summaries
-      near the top as stacked readable cards ordered by exact question/prompt text,
-      one consolidated ratings row containing Interviewer, AI-Advisor direct-model,
-      and AI-trait-based signal-weighted ratings, answer summary, and concise
-      rubric/risk rows when generated for scored questions while suppressing
-      evidence rows and non-scored rubric-alignment rows; director decision
-      brief; critical safety review whose evidence column
-      includes available human notes plus AI-generated risk_flag_evidence,
-      evidence_quote, and risks_or_gaps for flagged traits; transcript appendix;
-      and AI advisory appendix that collapses missing generated AI scoring to a
-      concise status note instead of repeated N/A rows and omits interviewer
-      adjustment rows. The report keeps full candidate answers in the transcript
-      appendix without duplicating per-question answer-summary evidence, compacts duplicate transcription-attempt
-      blocks, marks missing per-question transcripts inline without creating empty
-      answer boxes, keeps the question in each answer-card title without repeating
-      it in a separate Question text row, explains missing answer-card AI-trait-based
-      signal-weighted ratings as no supported signals, no weighted signals, or not generated
-      instead of plain N/A, allows long transcript boxes to split
-      across pages to reduce blank space, uses manual notes instead of stale
-      transcript text for custom/non-scored questions after the scored block while
-      preserving transcript text for pre-scored custom and scored questions, excludes
-      intro/script flow items from rendered notes sections, omits score/rating rows
-      from non-scored custom answer-summary cards, and preserves
-      final interviewer raw/weighted scores, AI-trait-based net signal score,
-      signal-derived raw score, signal-derived weighted score, AI-Advisor model observations, auto-no-hire metadata,
-      and compatibility selected signal ids when present, and omits the legacy
-      Custom Questions (Non-scored) table from generated notes documents.
+    description: Generate the standard human-scored interview notes DOCX using export_basic_interview_notes.
     locked: false
     inputs:
       rubric:

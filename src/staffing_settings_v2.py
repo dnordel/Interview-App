@@ -4,7 +4,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from admin_studio import AdminStudio, DEEPSEEK_MODEL_CHOICES
+from admin_studio import AdminStudio
 from notification_service import EmailSettings, load_email_account_settings, save_email_account_settings
 from onboarding_operations import verify_email_connection
 
@@ -13,8 +13,6 @@ SECTION_SPECS = (
     ("interview_flow", "Interview Flow"),
     ("rubrics", "Rubrics"),
     ("templates", "Templates & Folders"),
-    ("ai_model", "AI Model"),
-    ("ai_prompts", "AI Prompts"),
     ("email", "Shared Email Account"),
 )
 
@@ -41,7 +39,6 @@ class StaffingSettingsV2Page:
         self._syncing = False
         self._selected_question: tuple[str, str, str] | None = None
         self._selected_trait_id = ""
-        self._selected_prompt_key = ""
         self._email_baseline: dict[str, Any] = {}
         self._editable_widgets: list[Any] = []
         self._section_widgets: dict[str, Any] = {}
@@ -143,10 +140,6 @@ class StaffingSettingsV2Page:
             return self._rubrics_page()
         if key == "templates":
             return self._templates_page()
-        if key == "ai_model":
-            return self._ai_model_page()
-        if key == "ai_prompts":
-            return self._ai_prompts_page()
         if key == "email":
             return self._email_page()
         page = self.QtWidgets.QWidget()
@@ -335,135 +328,6 @@ class StaffingSettingsV2Page:
         self.email_status.setText("Shared email settings saved.")
         if self.on_email_settings_saved is not None:
             self.on_email_settings_saved()
-        self._sync_action_state()
-
-    def _ai_model_page(self) -> Any:
-        QtWidgets = self.QtWidgets
-        page = QtWidgets.QWidget()
-        layout = QtWidgets.QVBoxLayout(page)
-        layout.setContentsMargins(18, 8, 8, 8)
-        title = QtWidgets.QLabel("AI Model")
-        title.setObjectName("StaffingSettingsV2SectionTitle")
-        layout.addWidget(title)
-        layout.addWidget(QtWidgets.QLabel("Local DeepSeek model"))
-        self.model_selector = QtWidgets.QComboBox()
-        self.model_selector.setObjectName("AdminStudioDeepseekModelSelector")
-        self.model_selector.addItems(list(DEEPSEEK_MODEL_CHOICES))
-        selected = str(self.draft.app_settings.get("deepseek_summary_model", "deepseek-r1:8b"))
-        self.model_selector.setCurrentText(selected)
-        self.model_selector.setEnabled(False)
-        self.model_selector.currentTextChanged.connect(self._model_changed)
-        self._editable_widgets.append(self.model_selector)
-        layout.addWidget(self.model_selector)
-        descriptions = QtWidgets.QLabel(
-            "1.5b: fastest, lowest resource use\n"
-            "8b: balanced default\n"
-            "14b: higher quality, slower generation"
-        )
-        descriptions.setObjectName("StaffingSettingsV2Muted")
-        layout.addWidget(descriptions)
-        layout.addStretch(1)
-        return page
-
-    def _model_changed(self, model: str) -> None:
-        if self._syncing or not self.editing:
-            return
-        self.draft.update_deepseek_model(model)
-        self._sync_action_state()
-
-    def _ai_prompts_page(self) -> Any:
-        QtWidgets = self.QtWidgets
-        page = QtWidgets.QWidget()
-        layout = QtWidgets.QVBoxLayout(page)
-        layout.setContentsMargins(18, 8, 8, 8)
-        title = QtWidgets.QLabel("AI Prompts")
-        title.setObjectName("StaffingSettingsV2SectionTitle")
-        layout.addWidget(title)
-        split = QtWidgets.QSplitter(self.QtCore.Qt.Orientation.Horizontal)
-        self.prompt_list = QtWidgets.QListWidget()
-        self.prompt_list.setObjectName("StaffingSettingsV2PromptList")
-        self.prompt_list.setMinimumWidth(240)
-        self.prompt_list.currentRowChanged.connect(self._load_selected_prompt)
-        split.addWidget(self.prompt_list)
-        editor = QtWidgets.QWidget()
-        editor_layout = QtWidgets.QVBoxLayout(editor)
-        self.prompt_key_label = QtWidgets.QLabel("")
-        self.prompt_key_label.setObjectName("StaffingSettingsV2PromptKey")
-        editor_layout.addWidget(self.prompt_key_label)
-        self.prompt_text = QtWidgets.QPlainTextEdit()
-        self.prompt_text.setObjectName("StaffingSettingsV2PromptText")
-        self.prompt_text.setReadOnly(True)
-        self.prompt_text.textChanged.connect(self._prompt_text_changed)
-        self._editable_widgets.append(self.prompt_text)
-        editor_layout.addWidget(self.prompt_text, 1)
-        editor_layout.addWidget(QtWidgets.QLabel("Version note required for changed prompts"))
-        self.prompt_version_note = QtWidgets.QLineEdit()
-        self.prompt_version_note.setObjectName("StaffingSettingsV2PromptVersionNote")
-        self.prompt_version_note.setReadOnly(True)
-        self.prompt_version_note.editingFinished.connect(self._prompt_version_note_changed)
-        self._editable_widgets.append(self.prompt_version_note)
-        editor_layout.addWidget(self.prompt_version_note)
-        self.add_prompt_button = QtWidgets.QPushButton("New Prompt")
-        self.add_prompt_button.setObjectName("StaffingSettingsV2AddPrompt")
-        self.add_prompt_button.setEnabled(False)
-        self.add_prompt_button.clicked.connect(self._add_prompt)
-        self._editable_widgets.append(self.add_prompt_button)
-        editor_layout.addWidget(self.add_prompt_button)
-        split.addWidget(editor)
-        split.setStretchFactor(1, 1)
-        layout.addWidget(split, 1)
-        self._refresh_prompt_list()
-        return page
-
-    def _refresh_prompt_list(self, selected_key: str = "") -> None:
-        current = selected_key or self._selected_prompt_key
-        if not current and "answer_summary_user" in self.draft.prompts:
-            current = "answer_summary_user"
-        self.prompt_list.clear()
-        selected_row = 0
-        for row, key in enumerate(sorted(self.draft.prompts)):
-            item = self.QtWidgets.QListWidgetItem(key.replace("_", " ").title())
-            item.setData(self.QtCore.Qt.ItemDataRole.UserRole, key)
-            self.prompt_list.addItem(item)
-            if key == current:
-                selected_row = row
-        if self.prompt_list.count():
-            self.prompt_list.setCurrentRow(selected_row)
-            self._load_selected_prompt(selected_row)
-
-    def _load_selected_prompt(self, row: int) -> None:
-        item = self.prompt_list.item(row)
-        self._selected_prompt_key = str(item.data(self.QtCore.Qt.ItemDataRole.UserRole) or "") if item else ""
-        self._syncing = True
-        self.prompt_key_label.setText(self._selected_prompt_key)
-        self.prompt_text.setPlainText(str(self.draft.prompts.get(self._selected_prompt_key, "")))
-        self.prompt_version_note.setText(str(self.draft.prompt_version_notes.get(self._selected_prompt_key, "")))
-        self._syncing = False
-
-    def _prompt_text_changed(self) -> None:
-        if self._syncing or not self.editing or not self._selected_prompt_key:
-            return
-        self.draft.update_prompt(self._selected_prompt_key, self.prompt_text.toPlainText())
-        self._sync_action_state()
-
-    def _prompt_version_note_changed(self) -> None:
-        if self._syncing or not self.editing or not self._selected_prompt_key:
-            return
-        self.draft.update_prompt_version_note(self._selected_prompt_key, self.prompt_version_note.text())
-        self._sync_action_state()
-
-    def _add_prompt(self) -> None:
-        if not self.editing:
-            return
-        key, accepted = self.QtWidgets.QInputDialog.getText(self.widget, "New Prompt", "Prompt key")
-        key = str(key or "").strip().lower().replace(" ", "_")
-        if not accepted or not key:
-            return
-        if key in self.draft.prompts:
-            self.status_label.setText("Prompt key already exists.")
-            return
-        self.draft.update_prompt(key, "New prompt")
-        self._refresh_prompt_list(key)
         self._sync_action_state()
 
     def _templates_page(self) -> Any:
@@ -1131,11 +995,6 @@ class StaffingSettingsV2Page:
         self._refresh_question_list()
         self._refresh_trait_list()
         self._refresh_school_selector()
-        self._syncing = True
-        self.model_selector.setCurrentText(str(self.draft.app_settings.get("deepseek_summary_model", "deepseek-r1:8b")))
-        self._syncing = False
-        self._selected_prompt_key = ""
-        self._refresh_prompt_list()
 
     def _confirm_discard_changes(self) -> None:
         if not self.draft.is_dirty:
@@ -1207,8 +1066,6 @@ class StaffingSettingsV2Page:
         self._refresh_question_list()
         self._refresh_trait_list()
         self._refresh_school_selector()
-        self._selected_prompt_key = ""
-        self._refresh_prompt_list()
         self.status_label.setText("Settings changes published.")
 
     def request_navigation_away(self) -> bool:

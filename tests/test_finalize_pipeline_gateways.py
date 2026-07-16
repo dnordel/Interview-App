@@ -320,16 +320,7 @@ def test_finalize_gateway_persists_history_entry() -> None:
 
 def test_finalize_gateway_atomically_creates_structured_candidate_report(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    class _DatasetStore:
-        def __init__(self, _path: Path) -> None:
-            pass
-
-        def upsert_interview(self, *_args, **_kwargs) -> None:
-            pass
-
-    monkeypatch.setattr("interview_runtime.InterviewMLDatasetStore", _DatasetStore)
     history_path = tmp_path / "interview_history.sqlite3"
     app = _build_app(flow_recordings={1: {"base_name": "session1"}})
     app.history_store = InterviewHistoryStore(history_path)

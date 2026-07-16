@@ -273,56 +273,6 @@ class TestScoringEngineEvaluate(unittest.TestCase):
         self.assertEqual(scoring["outcome"], "Hire")
         self.assertIsNone(scoring["locked_rule"])
 
-    def test_deepseek_auto_no_hire_signal_is_advisory_and_does_not_override_human_hire_score(self):
-        rubric = self._rubric()
-        trait_results = {
-            "trait_a": {
-                "raw_score": 5,
-                "model_signal_suggestions": [
-                    {
-                        "signal_id": "AUTO",
-                        "confidence": 1.0,
-                        "evidence_quote": "Unsafe quote.",
-                        "rationale": "Automatic no-hire.",
-                    }
-                ],
-            },
-            "trait_b": {"raw_score": 5},
-            "trait_c": {"raw_score": 5},
-        }
-
-        def fake_advisory(_trait_id, _suggestions):
-            return {
-                "net_signal_score": 0,
-                "suggested_raw_score": 2,
-                "auto_no_hire_signal_ids": ["AUTO"],
-                "auto_no_hire_reasons": ["Automatic no-hire."],
-                "auto_no_hire_quotes": ["Unsafe quote."],
-            }
-
-        original = __import__("scoring_reporting")._deepseek_signal_advisory
-        try:
-            __import__("scoring_reporting")._deepseek_signal_advisory = fake_advisory
-            scoring = ScoringEngine.evaluate(rubric, "general", trait_results)
-        finally:
-            __import__("scoring_reporting")._deepseek_signal_advisory = original
-
-        self.assertEqual(scoring["outcome"], "Hire")
-        self.assertIsNone(scoring["locked_rule"])
-        self.assertTrue(scoring["auto_no_hire_present"])
-        self.assertEqual(scoring["rows"][0]["auto_no_hire_signal_ids"], ["AUTO"])
-
-    def test_explicit_suggested_score_adjustment_requires_reason(self):
-        rubric = self._rubric()
-        trait_results = {
-            "trait_a": {"raw_score": 4, "suggested_raw_score": 5},
-            "trait_b": {"raw_score": 4},
-            "trait_c": {"raw_score": 4},
-        }
-
-        with self.assertRaisesRegex(ReportingValidationError, "adjustment_reason"):
-            ScoringEngine.evaluate(rubric, "general", trait_results)
-
 
 if __name__ == "__main__":
     unittest.main()

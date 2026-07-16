@@ -16,7 +16,7 @@ services:
     - scoring_reporting
     - notification_service
   interview_runtime_service:
-    description: Interview flow orchestration, state transitions, transcription, and finalization that produces one basic merged interview-notes document (interview_notes_document_path) including transcription content without starting DeepSeek.
+    description: Interview flow orchestration, state transitions, transcription, and finalization that produces one basic merged interview-notes document (interview_notes_document_path) including transcription content.
     modules:
     - interview_runtime
     - interview_app___init__
@@ -39,7 +39,6 @@ services:
     - runtime_wrapper
     - interview_app_session_context
     - interview_app_session_manager
-    - deepseek_finalize_worker
   onboarding_operations_service:
     description: Onboarding scheduling, reminders, dashboard actions, notifications, and storage.
     modules:
@@ -52,24 +51,26 @@ services:
     - notification_service
     - notification_templates
   staffing_dashboard_service:
-    description: Local SQLite staffing assignment state machine plus the shared Staffing v2 shell, theme, cards, overlays, navigation, and dashboard surfaces including notification rule management and test-send UI.
+    description: Lock-isolated SQLite staffing assignment state machines synchronized through an append-only per-replica staging journal, plus the shared Staffing v2 shell, theme, cards, overlays, navigation, and dashboard surfaces including notification rule management and test-send UI.
     modules:
     - dashboard_v2_ui
     - staffing_models
     - staffing_store
+    - staffing_change_stage
     - staffing_service
     - staffing_dashboard_v2
     - staffing_dashboard_host
     - candidate_report
     - candidate_report_dialog
   director_staffing_dashboard_service:
-    description: Director-facing generated Windows launch paths, one per staffing seed school, for a minimal PySide Staffing v2 app; each launcher filters to its assigned school and avoids full interview, audio, transcription, DOCX, local AI, FFmpeg, VB-CABLE, OpenVINO, and GPU setup.
+    description: Director-facing generated Windows launch paths, one per staffing seed school, for a minimal PySide Staffing v2 app with basic DOCX interview-note generation; each launcher filters to its assigned school and avoids full interview, audio, transcription, FFmpeg, VB-CABLE, OpenVINO, and GPU setup.
     modules:
     - director_staffing_launcher
     - director_staffing_app
     - staffing_dashboard_host
     - staffing_service
     - staffing_store
+    - staffing_change_stage
     - candidate_report
     - candidate_report_dialog
   web_scored_question_service:
@@ -99,6 +100,7 @@ services:
     - notification_service
     - staffing_service
     - staffing_store
+    - staffing_change_stage
     - candidate_report
     - candidate_report_dialog
   shared_platform_service:
@@ -116,10 +118,6 @@ services:
     - pytest_duration_catalog
     - interview_app_session_context
     - ui_mode_switch
-  deepseek_finalize_worker_service:
-    description: Detached local DeepSeek worker launched from candidate history Generate that replaces basic interview notes with DeepSeek interview notes and updates history status. Workers use a per-deepseek_jobs lock file so local DeepSeek/Ollama work is serialized per interview base directory and write sanitized task/status progress JSON for GUI polling.
-    modules:
-    - deepseek_finalize_worker
   shared_content_security_service:
     description: Cross-cutting shared utilities for logging, templating, exports, diagnostics, and email/input safety.
     modules:
@@ -128,6 +126,14 @@ services:
     - storage_utils
     - notification_store
 datastores:
+  staffing_change_stage_db:
+    type: sqlite
+    description: Append-only cross-database staffing operation journal and per-replica delivery receipts stored beside staffing_dashboard.sqlite3 without sharing admin/director staffing DB locks.
+    used_by:
+    - staffing_change_stage
+    - staffing_service
+    - pyside_interview_app
+    - director_staffing_app
   interview_history_db:
     type: sqlite
     description: Canonical finalized interview history lives in user_artifacts/interview_history.sqlite3; legacy JSON rows are imported when the database is empty.
@@ -138,15 +144,6 @@ datastores:
     - hiring_workspace_v2
     - web_app_backend
     - candidate_report
-  interview_ml_dataset_db:
-    type: sqlite
-    description: Derived normalized ML dataset lives outside Dropbox at G:\My Drive\Work\LaunchPad\Interview ML DB\interview_ml_dataset.sqlite3 by default, storing session/profile rows, exact per-answer prompt snapshots, human and AI scoring fields, DeepSeek prompt/output traces, signal evidence, export metadata, and pending-AI backlog rows. It is rebuilt or enriched from finalize, DeepSeek worker, history, job/session artifacts, and DOCX transcript recovery without making it canonical app history; INTERVIEW_ML_DATASET_DIR can override the directory for tests or alternate machines.
-    used_by:
-    - data_store
-    - interview_runtime
-    - deepseek_finalize_worker
-    - tools/backfill_interview_ml_dataset.py
-    - tools/export_interview_ml_dataset.py
   staffing_referral_queue_db:
     type: sqlite
     description: Canonical interview-to-staffing director referral bridge lives in user_artifacts/staffing_referrals.sqlite3; legacy staffing_referrals.pending.jsonl records are imported once when present.
@@ -155,12 +152,12 @@ datastores:
     - pyside_interview_app
   json_file_store:
     type: file_system_json
-    description: Canonical mutable app JSON lives under user_artifacts except finalized interview history and staffing referral queue events, which are SQLite-backed; interview_history.json files remain read-only migration sources so past interviews from older app versions remain visible. DeepSeek prompt templates live in config/deepseek_prompts.json for source-controlled prompt editing and per-question override maps; runtime role-context injection keeps executive prompts scoped to the selected job title instead of embedding all role-specific guidance in every request.
+    description: Canonical mutable app JSON lives under user_artifacts except finalized interview history and staffing referral queue events, which are SQLite-backed; interview_history.json files remain read-only migration sources so past interviews from older app versions remain visible.
     used_by:
     - data_store
     - onboarding_operations
 external_apis:
-  openai_whisper_runtime:
+  whisper_transcription_runtime:
     Purpose: Speech-to-text transcription for interview responses.
   director_referral_endpoint:
     Purpose: Submit referral payloads generated during interview finalization.
@@ -168,7 +165,6 @@ external_apis:
     Purpose: Generate interview and onboarding document artifacts.
 background_jobs:
 - onboarding_operations
-- deepseek_finalize_worker: serialized per interview base directory by deepseek-finalize.lock
 trust_boundaries:
   user_input: PySide forms, browser prototypes, free-text notes, and runtime settings are untrusted until validated/sanitized.
   filesystem: All read/write paths are constrained by guardrails and explicit user choices, with default generated artifacts grouped under the ignored user_artifacts directory and strict path validation for merged interview-notes artifacts before finalize/referral/integration writes.

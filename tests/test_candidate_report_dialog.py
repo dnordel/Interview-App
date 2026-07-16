@@ -342,7 +342,49 @@ def test_open_word_surfaces_os_error(tmp_path: Path) -> None:
     app.processEvents()
 
 
-def test_open_word_rejects_missing_and_non_docx_paths(tmp_path: Path) -> None:
+def test_open_word_generates_basic_notes_when_none_are_saved(tmp_path: Path) -> None:
+    qt_core = pytest.importorskip("PySide6.QtCore")
+    qt_gui = pytest.importorskip("PySide6.QtGui")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    repository = _repository(tmp_path)
+    opened: list[Path] = []
+    dialog = CandidateInterviewReportDialog(
+        QtCore=qt_core,
+        QtGui=qt_gui,
+        QtWidgets=qt_widgets,
+        repository=repository,
+        history_id="hist-dialog",
+        role="director",
+        actor="director-user",
+        school_scope="Hawthorne",
+        open_document=opened.append,
+    )
+
+    open_word = dialog.findChild(qt_widgets.QPushButton, "CandidateReportOpenWordButton")
+    assert open_word is not None and open_word.isEnabled()
+    open_word.click()
+    app.processEvents()
+
+    assert len(opened) == 1
+    generated_path = opened[0]
+    assert generated_path.is_file()
+    assert generated_path.suffix.casefold() == ".docx"
+    assert generated_path == (tmp_path / "Jordan.docx").resolve()
+    from docx import Document
+
+    generated_text = "\n".join(paragraph.text for paragraph in Document(generated_path).paragraphs)
+    assert "Jordan Lee" in generated_text
+    assert "Tell me about reliability." in generated_text
+    assert "Good example." in generated_text
+    assert repository.load_visible_version("hist-dialog", role="director", school_scope="Hawthorne").snapshot[
+        "report_path"
+    ] == str(generated_path)
+    dialog.close()
+    app.processEvents()
+
+
+def test_open_word_generates_safe_default_for_non_docx_path(tmp_path: Path) -> None:
     qt_core = pytest.importorskip("PySide6.QtCore")
     qt_gui = pytest.importorskip("PySide6.QtGui")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -357,13 +399,19 @@ def test_open_word_rejects_missing_and_non_docx_paths(tmp_path: Path) -> None:
         actor="director-user",
         school_scope="Hawthorne",
     )
+    opened: list[Path] = []
+    dialog.open_document = opened.append
     invalid_path = tmp_path / "Jordan.txt"
     invalid_path.write_text("not a Word report", encoding="utf-8")
+    dialog.working_snapshot["report_path"] = str(invalid_path)
 
-    for path in (tmp_path / "missing.docx", invalid_path):
-        dialog.working_snapshot["report_path"] = str(path)
-        dialog._open_word()
-        assert dialog.status_label.text() == "Saved Word report is missing or invalid."
+    dialog._open_word()
+
+    assert opened == [
+        (tmp_path / "Indeed Interview Notes" / "2026-07-05 - Hawthorne - Jordan Lee - Basic Interview Notes.docx").resolve()
+    ]
+    assert opened[0].is_file()
+    assert invalid_path.read_text(encoding="utf-8") == "not a Word report"
 
     dialog.close()
     app.processEvents()

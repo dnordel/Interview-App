@@ -24,6 +24,7 @@ from staffing_store import StaffingEditLock, StaffingStore
 
 if TYPE_CHECKING:
     from notification_service import NotificationService
+    from staffing_change_stage import StaffingChangeStage
 
 
 STAFFING_NOTIFICATION_EVENTS = {
@@ -45,11 +46,20 @@ class StaffingService:
         *,
         notification_service: NotificationService | None = None,
         clock: Callable[[], str] | None = None,
+        change_stage: StaffingChangeStage | None = None,
+        replica: str = "",
+        school_scope: str = "",
     ) -> None:
         self.store = store
         self.notification_service = notification_service
         self.clock = clock or _utc_now_iso
+        self.change_stage = change_stage
+        self.replica = str(replica or "").strip()
+        self.school_scope = str(school_scope or "").strip()
+        if self.change_stage is not None and not self.replica:
+            raise ValueError("Replica is required when staffing change staging is enabled.")
         self._replaying_pending_operations = False
+        self._replaying_staged_changes = False
 
     def open_position(self, assignment_id: int) -> StaffingTransitionResult:
         return self._run_or_queue(
@@ -73,7 +83,20 @@ class StaffingService:
         start_date: str = "",
         notes: str = "",
     ) -> StaffingTransitionResult:
-        return self._add_position_impl(
+        payload = {
+            "school": school,
+            "classroom": classroom,
+            "classroom_program": classroom_program,
+            "licensed_capacity": licensed_capacity,
+            "position_name": position_name,
+            "position_type": position_type,
+            "initial_status": initial_status,
+            "person_name": person_name,
+            "permit_status": permit_status,
+            "start_date": start_date,
+            "notes": notes,
+        }
+        result = self._add_position_impl(
             school=school,
             classroom=classroom,
             classroom_program=classroom_program,
@@ -86,6 +109,9 @@ class StaffingService:
             start_date=start_date,
             notes=notes,
         )
+        payload["source_assignment_id"] = result.assignment_id
+        self._publish_change("add_position", payload, assignment_id=result.assignment_id)
+        return result
 
     def add_person(
         self,
@@ -287,10 +313,14 @@ class StaffingService:
         documentation_received: bool = False,
         notes: str = "",
     ) -> StaffingTransitionResult:
+        person = next((item for item in self.store.list_people() if item.id == int(person_id)), None)
+        if person is None:
+            raise ValueError("Person not found.")
         return self._run_or_queue(
             "update_permit_status",
             {
                 "person_id": int(person_id),
+                "person_name": person.name,
                 "permit_status": permit_status,
                 "effective_date": effective_date,
                 "units": units,
@@ -544,7 +574,9 @@ class StaffingService:
             classroom = str(proposed_classroom or "").strip()
             if not classroom:
                 raise ValueError("Proposed classroom is required for hire decisions.")
-        return self.store.record_director_interview(
+        with self.store.connect() as conn:
+            referral = self.store.director_candidate_context(conn, int(referral_id))
+        result = self.store.record_director_interview(
             int(referral_id),
             director_name=director_name,
             completed_date=clean_date,
@@ -558,6 +590,30 @@ class StaffingService:
             owner_approval_status="pending_owner_approval",
             now=self.clock(),
         )
+        self._publish_change(
+            "record_director_interview",
+            {
+                "history_id": result.history_id,
+                "school": result.school,
+                "candidate_name": referral.candidate_name,
+                "position": referral.position,
+                "interviewer_rating": referral.interviewer_rating,
+                "interviewer_outcome": referral.interviewer_outcome,
+                "interview_date": referral.interview_date,
+                "candidate_email": referral.candidate_email,
+                "referral_date": referral.referral_date,
+                "director_name": director_name,
+                "completed_date": clean_date,
+                "rating": clean_rating,
+                "decision": clean_decision,
+                "decision_notes": notes,
+                "proposed_shift_start": shift_start,
+                "proposed_shift_end": shift_end,
+                "proposed_classroom": classroom,
+                "follow_up_needed": bool(follow_up_needed),
+            },
+        )
+        return result
 
     def reopen_director_interview(
         self,
@@ -1340,6 +1396,10 @@ class StaffingService:
                     return applied
                 except (TypeError, ValueError, KeyError):
                     continue
+                self._publish_change(
+                    str(record.get("operation", "")),
+                    record.get("payload", {}),
+                )
                 applied += 1
         finally:
             self._replaying_pending_operations = False
@@ -1356,7 +1416,7 @@ class StaffingService:
         if not self._replaying_pending_operations:
             self.flush_pending_operations()
         try:
-            return action()
+            result = action()
         except StaffingEditLock:
             self.store.enqueue_pending_operation(operation, payload)
             queued_assignment_id = assignment_id
@@ -1368,13 +1428,97 @@ class StaffingService:
                 person_id=None,
                 updated_at=self.clock(),
             )
+        self._publish_change(operation, payload, assignment_id=result.assignment_id)
+        return result
+
+    def replay_staged_changes(self) -> int:
+        if self.change_stage is None or self._replaying_staged_changes:
+            return 0
+        events = self.change_stage.pending_for(replica=self.replica, school=self.school_scope)
+        applied = 0
+        self._replaying_staged_changes = True
+        try:
+            for event in events:
+                try:
+                    self._apply_pending_operation({"operation": event.operation, "payload": event.payload})
+                except StaffingEditLock:
+                    break
+                except (TypeError, ValueError, KeyError):
+                    break
+                self.change_stage.acknowledge(event.id, replica=self.replica)
+                applied += 1
+        finally:
+            self._replaying_staged_changes = False
+        return applied
+
+    def _publish_change(
+        self,
+        operation: str,
+        payload: Any,
+        *,
+        assignment_id: int | None = None,
+    ) -> None:
+        if self.change_stage is None or self._replaying_staged_changes:
+            return
+        if not isinstance(payload, dict):
+            raise ValueError("Invalid staffing change payload.")
+        school = self._school_for_change(payload, assignment_id=assignment_id)
+        self.change_stage.publish(
+            source_replica=self.replica,
+            school=school,
+            operation=operation,
+            payload=payload,
+        )
+
+    def _school_for_change(self, payload: dict[str, Any], *, assignment_id: int | None) -> str:
+        explicit_school = str(payload.get("school", "") or "").strip()
+        if explicit_school:
+            return explicit_school
+        candidate_ids = [
+            assignment_id,
+            payload.get("assignment_id"),
+            payload.get("target_assignment_id"),
+            payload.get("source_assignment_id"),
+        ]
+        for candidate in candidate_ids:
+            if candidate is None or int(candidate or 0) <= 0:
+                continue
+            return self.store.get_assignment(int(candidate)).school
+        if self.school_scope:
+            return self.school_scope
+        person_id = int(payload.get("person_id", 0) or 0)
+        if person_id > 0:
+            schools = {row.school for row in self.store.list_assignments() if row.person_id == person_id}
+            if len(schools) == 1:
+                return schools.pop()
+            return "*"
+        raise ValueError("School is required to stage staffing change.")
 
     def _apply_pending_operation(self, record: dict[str, Any]) -> None:
         operation = str(record.get("operation", ""))
         payload = record.get("payload", {})
         if not isinstance(payload, dict):
             raise ValueError("Invalid pending staffing operation.")
-        if operation == "open_position":
+        if operation == "add_position":
+            expected_id = int(payload["source_assignment_id"])
+            with self.store.connect() as conn:
+                next_id = int(conn.execute("SELECT COALESCE(MAX(id), 0) + 1 FROM assignments").fetchone()[0])
+            if next_id != expected_id:
+                raise ValueError("Staffing assignment IDs diverged; staged add requires reconciliation.")
+            self._add_position_impl(
+                school=str(payload["school"]),
+                classroom=str(payload["classroom"]),
+                classroom_program=str(payload.get("classroom_program", "")),
+                licensed_capacity=payload.get("licensed_capacity"),
+                position_name=str(payload["position_name"]),
+                position_type=str(payload["position_type"]),
+                initial_status=str(payload.get("initial_status", "dont_need_now")),
+                person_name=str(payload.get("person_name", "")),
+                permit_status=str(payload.get("permit_status", "unknown")),
+                start_date=str(payload.get("start_date", "")),
+                notes=str(payload.get("notes", "")),
+            )
+        elif operation == "open_position":
             self._open_position_impl(int(payload["assignment_id"]))
         elif operation == "mark_coming":
             self._mark_coming_impl(
@@ -1412,8 +1556,15 @@ class StaffingService:
         elif operation == "delete_position":
             self._delete_position_impl(int(payload["assignment_id"]), confirmed=bool(payload.get("confirmed", False)))
         elif operation == "update_permit_status":
+            target_person_id = int(payload["person_id"])
+            person_name = str(payload.get("person_name", "")).strip().casefold()
+            if person_name:
+                matches = [item for item in self.store.list_people() if item.name.strip().casefold() == person_name]
+                if len(matches) != 1:
+                    raise ValueError("Staged permit person could not be matched uniquely.")
+                target_person_id = matches[0].id
             self._update_permit_status_impl(
-                int(payload["person_id"]),
+                target_person_id,
                 str(payload["permit_status"]),
                 effective_date=str(payload["effective_date"]) if payload.get("effective_date") is not None else None,
                 units=payload.get("units"),
@@ -1431,9 +1582,48 @@ class StaffingService:
             self._update_assignment_details_impl(
                 int(payload["assignment_id"]),
                 classroom=str(payload["classroom"]),
+                classroom_program=(
+                    None if payload.get("classroom_program") is None else str(payload["classroom_program"])
+                ),
+                position_name=None if payload.get("position_name") is None else str(payload["position_name"]),
+                position_type=None if payload.get("position_type") is None else str(payload["position_type"]),
+                status=None if payload.get("status") is None else str(payload["status"]),
+                person_name=None if payload.get("person_name") is None else str(payload["person_name"]),
+                start_date=None if payload.get("start_date") is None else str(payload["start_date"]),
                 shift_start=str(payload.get("shift_start", "")),
                 shift_end=str(payload.get("shift_end", "")),
                 permit_status=str(permit_status) if permit_status is not None else None,
+                notes=None if payload.get("notes") is None else str(payload["notes"]),
+            )
+        elif operation == "record_director_interview":
+            history_id = str(payload["history_id"])
+            referrals = self.store.list_director_candidate_referrals(include_completed=True)
+            referral = next((item for item in referrals if item.history_id == history_id), None)
+            if referral is None and payload.get("candidate_name"):
+                referral = self.upsert_director_candidate_referral(
+                    history_id=history_id,
+                    candidate_name=str(payload["candidate_name"]),
+                    school=str(payload["school"]),
+                    position=str(payload.get("position", "")),
+                    interviewer_rating=payload.get("interviewer_rating"),
+                    interviewer_outcome=str(payload["interviewer_outcome"]),
+                    interview_date=str(payload.get("interview_date", "")),
+                    candidate_email=str(payload.get("candidate_email", "")),
+                    referral_date=str(payload.get("referral_date", "")),
+                )
+            if referral is None:
+                raise ValueError("Director referral required before staged interview completion.")
+            self.record_director_interview(
+                referral.id,
+                director_name=str(payload["director_name"]),
+                completed_date=str(payload["completed_date"]),
+                rating=payload["rating"],
+                decision=str(payload["decision"]),
+                decision_notes=str(payload["decision_notes"]),
+                proposed_shift_start=str(payload.get("proposed_shift_start", "")),
+                proposed_shift_end=str(payload.get("proposed_shift_end", "")),
+                proposed_classroom=str(payload.get("proposed_classroom", "")),
+                follow_up_needed=bool(payload.get("follow_up_needed", False)),
             )
         elif operation == "director_candidate_referral":
             self.upsert_director_candidate_referral(

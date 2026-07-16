@@ -1,0 +1,38 @@
+module:
+  name: staffing_change_stage
+  language: python
+  path: src/staffing_change_stage.py
+  version: 1.0.0
+  description: Append-only SQLite staging journal for bidirectional staffing changes between lock-isolated admin and school director databases, with per-replica acknowledgements.
+classes:
+- name: StaffingChangeEvent
+  description: Immutable staged staffing operation with source replica, school scope, JSON payload, and creation timestamp.
+  locked: false
+- name: StaffingChangeStage
+  description: Publishes staffing operations once and exposes ordered, independently acknowledged delivery to each peer database replica.
+  locked: false
+  methods:
+  - name: publish
+    inputs:
+      source_replica: {type: str, required: true}
+      school: {type: str, required: true}
+      operation: {type: str, required: true}
+      payload: {type: 'dict[str, Any]', required: true}
+    returns: {type: str}
+    exceptions: [ValueError, OSError, sqlite3.Error]
+    side_effects: Initializes staging schema when needed and appends one JSON staffing event without opening either staffing database.
+  - name: pending_for
+    inputs:
+      replica: {type: str, required: true}
+      school: {type: str, required: false, default: ''}
+    returns: {type: 'list[StaffingChangeEvent]'}
+    exceptions: [ValueError, OSError, sqlite3.Error, JSONDecodeError]
+    side_effects: Initializes staging schema when needed and reads ordered events excluding the source replica and events already acknowledged by the target replica.
+  - name: acknowledge
+    inputs:
+      event_id: {type: str, required: true}
+      replica: {type: str, required: true}
+    returns: {type: void}
+    exceptions: [ValueError, OSError, sqlite3.Error]
+    side_effects: Writes one idempotent per-replica delivery receipt after successful local replay.
+dependencies: []

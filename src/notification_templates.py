@@ -76,10 +76,6 @@ NOTIFICATION_TEMPLATE_FIELD_CATALOG = (
     NotificationTemplateField("interview_answer_3", "Interview answer 3", "Interview"),
     NotificationTemplateField("interview_answer_4", "Interview answer 4", "Interview"),
     NotificationTemplateField("interview_answer_5", "Interview answer 5", "Interview"),
-    NotificationTemplateField("deepseek_status", "DeepSeek status", "DeepSeek"),
-    NotificationTemplateField("deepseek_summary", "DeepSeek summary", "DeepSeek"),
-    NotificationTemplateField("deepseek_recommendation", "DeepSeek recommendation", "DeepSeek"),
-    NotificationTemplateField("deepseek_concerns", "DeepSeek concerns", "DeepSeek"),
     NotificationTemplateField("offer_status", "Offer status", "Offer"),
     NotificationTemplateField("offer_path", "Offer path", "Offer"),
     NotificationTemplateField("offer_pdf_path", "Offer PDF path", "Offer"),
@@ -138,7 +134,6 @@ def notification_payload_from_mapping(source: Mapping[str, Any]) -> dict[str, st
     candidate = source.get("candidate") if isinstance(source.get("candidate"), Mapping) else {}
     qualification = candidate.get("qualification") if isinstance(candidate.get("qualification"), Mapping) else {}
     scoring = source.get("scoring") if isinstance(source.get("scoring"), Mapping) else {}
-    summaries = source.get("summaries") if isinstance(source.get("summaries"), Mapping) else {}
 
     put("candidate_name", candidate.get("candidate_name") or candidate.get("name") or source.get("candidate_name"))
     put("candidate", candidate.get("candidate_name") or candidate.get("name") or source.get("candidate"))
@@ -149,7 +144,6 @@ def notification_payload_from_mapping(source: Mapping[str, Any]) -> dict[str, st
     put("history_id", source.get("history_id") or source.get("id"))
     put("outcome", scoring.get("outcome") or source.get("outcome"))
     put("score", scoring.get("percent_of_max") or scoring.get("weighted_total") or source.get("score"))
-    put("deepseek_status", source.get("deepseek_processing_status") or source.get("deepseek_status"))
 
     degree = qualification.get("degree_type") or qualification.get("degree") or source.get("degree_type")
     put("degree", degree)
@@ -167,10 +161,6 @@ def notification_payload_from_mapping(source: Mapping[str, Any]) -> dict[str, st
     experience = qualification.get("years_experience") or source.get("years_experience") or source.get("experience_years")
     put("years_experience", experience)
     put("experience_years", experience)
-
-    put("deepseek_summary", summaries.get("executive_summary") or source.get("deepseek_summary"))
-    put("deepseek_recommendation", summaries.get("recommendation_rationale") or source.get("deepseek_recommendation"))
-    put("deepseek_concerns", summaries.get("concerns") or source.get("deepseek_concerns"))
 
     questions = source.get("questions") if isinstance(source.get("questions"), list) else []
     answer_lines: list[str] = []

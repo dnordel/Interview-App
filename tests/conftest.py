@@ -39,14 +39,11 @@ _MEASURED_SLOW_PYSIDE_TESTS = {
     "test_pyside_initial_window_fits_available_screen_after_display_scaling",
     "test_pyside_staffing_v2_add_person_dialog_creates_person_through_service",
     "test_pyside_staffing_v2_classrooms_dashboard_uses_new_shell_and_db_rows",
-    "test_pyside_failed_retry_button_requeues_deepseek_job",
-    "test_pyside_history_grid_shows_failed_retry_for_failed_deepseek_row",
     "test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mutating_db",
     "test_pyside_history_offer_actions_advance_generated_and_approved_rows",
     "test_staffing_v2_director_interviews_backfill_passed_history_rows",
     "test_pyside_staffing_v2_add_position_dialog_creates_need_now_position_through_service",
     "test_pyside_staffing_v2_add_classroom_dialog_creates_classroom_through_service",
-    "test_pyside_progress_window_discovers_deepseek_progress_from_history",
     "test_pyside_staffing_v2_mark_need_now_dialog_clears_replacement",
     "test_pyside_staffing_v2_classrooms_paginates_and_saves_detail_without_assignment_mutation",
     "test_pyside_show_schedules_recording_interface_preload_once",
@@ -56,7 +53,6 @@ _MEASURED_SLOW_PYSIDE_TESTS = {
     "test_pyside_staffing_v2_update_permit_dialog_saves_people_permit_details",
     "test_pyside_last_question_footer_finalizes_and_shows_complete_home",
     "test_pyside_home_import_indeed_transcript_opens_rating_flow",
-    "test_pyside_progress_window_auto_closes_after_deepseek_complete",
     "test_pyside_progress_window_immediately_shows_ordered_tasks_in_scroll_area",
 }
 

@@ -8,11 +8,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from data_store import InterviewAppSettingsStore, QuestionOverridesStore, SchoolOfferSettingsStore
-from interview_runtime import normalize_deepseek_prompt_templates
+from data_store import QuestionOverridesStore, SchoolOfferSettingsStore
 from platform_services import (
     DEFAULT_RUBRIC_PATH,
-    INTERVIEW_APP_SETTINGS_PATH,
     QUESTIONS_OVERRIDE_PATH,
     SCHOOL_OFFER_SETTINGS_PATH,
     atomic_write_json,
@@ -20,18 +18,11 @@ from platform_services import (
 from question_settings_service import QuestionSettingsService
 
 
-DEFAULT_PROMPTS_PATH = Path(__file__).resolve().parent.parent / "config" / "deepseek_prompts.json"
-DEEPSEEK_MODEL_CHOICES = ("deepseek-r1:1.5b", "deepseek-r1:8b", "deepseek-r1:14b")
-DEFAULT_DEEPSEEK_MODEL = "deepseek-r1:8b"
-
-
 @dataclass(frozen=True)
 class AdminStudioPaths:
     rubric_path: Path = DEFAULT_RUBRIC_PATH
     overrides_path: Path = QUESTIONS_OVERRIDE_PATH
     school_settings_path: Path = SCHOOL_OFFER_SETTINGS_PATH
-    prompts_path: Path = DEFAULT_PROMPTS_PATH
-    app_settings_path: Path = INTERVIEW_APP_SETTINGS_PATH
     backup_dir: Path | None = None
 
 
@@ -72,14 +63,9 @@ class AdminStudioDraft:
     baseline_rubric: dict[str, Any]
     baseline_overrides: dict[str, Any]
     baseline_school_settings: dict[str, dict[str, str]]
-    baseline_prompts: dict[str, Any]
-    baseline_app_settings: dict[str, Any]
     rubric: dict[str, Any]
     overrides: dict[str, Any]
     school_settings: dict[str, dict[str, str]]
-    prompts: dict[str, Any]
-    app_settings: dict[str, Any]
-    prompt_version_notes: dict[str, str] = field(default_factory=dict)
 
     @classmethod
     def from_payloads(
@@ -88,21 +74,14 @@ class AdminStudioDraft:
         rubric: dict[str, Any],
         overrides: dict[str, Any],
         school_settings: dict[str, dict[str, str]],
-        prompts: dict[str, Any],
-        app_settings: dict[str, Any] | None = None,
     ) -> "AdminStudioDraft":
-        app_settings = app_settings or {}
         return cls(
             baseline_rubric=deepcopy(rubric),
             baseline_overrides=deepcopy(overrides),
             baseline_school_settings=deepcopy(school_settings),
-            baseline_prompts=deepcopy(prompts),
-            baseline_app_settings=deepcopy(app_settings),
             rubric=deepcopy(rubric),
             overrides=deepcopy(overrides),
             school_settings=deepcopy(school_settings),
-            prompts=deepcopy(prompts),
-            app_settings=deepcopy(app_settings),
         )
 
     @property
@@ -115,8 +94,6 @@ class AdminStudioDraft:
             "rubric.json": (self.baseline_rubric, self.rubric),
             "question_overrides.json": (self.baseline_overrides, self.overrides),
             "school_offer_settings.json": (self.baseline_school_settings, self.school_settings),
-            "deepseek_prompts.json": (self.baseline_prompts, self.prompts),
-            "interview_app_settings.json": (self.baseline_app_settings, self.app_settings),
         }
         for filename, (before, after) in pairs.items():
             if before != after:
@@ -129,8 +106,6 @@ class AdminStudioDraft:
         lines.extend(_track_change_lines(self.baseline_rubric, self.rubric))
         lines.extend(_trait_change_lines(self.baseline_rubric, self.rubric))
         lines.extend(_school_change_lines(self.baseline_school_settings, self.school_settings))
-        lines.extend(_prompt_change_lines(self.baseline_prompts, self.prompts))
-        lines.extend(_app_settings_change_lines(self.baseline_app_settings, self.app_settings))
         if self.baseline_overrides != self.overrides:
             lines.append("Question flow or custom question settings changed.")
         return AdminChangeSummary(changed_files=list(changed), lines=lines)
@@ -140,8 +115,6 @@ class AdminStudioDraft:
             rubric=self.baseline_rubric,
             overrides=self.baseline_overrides,
             school_settings=self.baseline_school_settings,
-            prompts=self.baseline_prompts,
-            app_settings=self.baseline_app_settings,
         )
 
     def update_trait(self, trait_id: str, updates: dict[str, Any]) -> None:
@@ -378,39 +351,8 @@ class AdminStudioDraft:
         current.update({str(key): str(value) for key, value in updates.items()})
         self.school_settings[school] = current
 
-    def update_prompt(self, key: str, value: str) -> None:
-        key = str(key or "").strip()
-        if not key:
-            raise ValueError("Prompt key is required.")
-        self.prompts[key] = str(value)
-
-    def update_prompt_version_note(self, key: str, note: str) -> None:
-        key = str(key or "").strip()
-        if not key:
-            raise ValueError("Prompt key is required.")
-        clean_note = str(note or "").strip()
-        if clean_note:
-            self.prompt_version_notes[key] = clean_note
-            return
-        self.prompt_version_notes.pop(key, None)
-
-    def update_deepseek_model(self, model: str) -> None:
-        clean_model = str(model or "").strip()
-        self.app_settings["deepseek_summary_model"] = clean_model
-
     def validate(self) -> list[str]:
         errors: list[str] = []
-        try:
-            normalized = normalize_deepseek_prompt_templates(self.prompts)
-            missing_prompts = [key for key, value in normalized.items() if isinstance(value, str) and not value.strip()]
-            if missing_prompts:
-                errors.append(f"Prompt cannot be blank: {missing_prompts[0]}")
-            for key, value in normalized.items():
-                if self.baseline_prompts.get(key) != value and not str(self.prompt_version_notes.get(str(key), "")).strip():
-                    errors.append(f"DeepSeek prompt '{key}' requires version notes before publishing.")
-                    break
-        except Exception as exc:
-            errors.append(f"Prompt validation failed: {exc}")
         for cfg in self.school_settings.values():
             notes_dir = str(cfg.get("interview_notes_dir", "") or "")
             if any(part.strip() == ".." for part in notes_dir.replace("/", "\\").split("\\")):
@@ -438,9 +380,6 @@ class AdminStudioDraft:
             if invalid_template:
                 errors.append("Offer templates must use .docx or .docm files.")
                 break
-        selected_model = str(self.app_settings.get("deepseek_summary_model", "") or DEFAULT_DEEPSEEK_MODEL).strip()
-        if selected_model not in DEEPSEEK_MODEL_CHOICES:
-            errors.append(f"DeepSeek model must be one of: {', '.join(DEEPSEEK_MODEL_CHOICES)}.")
         question_flow = self.overrides.get("track_question_flow", {})
         if not isinstance(question_flow, dict):
             question_flow = {}
@@ -466,15 +405,11 @@ class AdminStudio:
         rubric: dict[str, Any],
         overrides: dict[str, Any],
         school_settings: dict[str, dict[str, str]],
-        prompts: dict[str, Any],
-        app_settings: dict[str, Any],
     ) -> None:
         self.paths = _normalize_paths(paths)
         self.rubric = deepcopy(rubric)
         self.overrides = deepcopy(overrides)
         self.school_settings = deepcopy(school_settings)
-        self.prompts = deepcopy(prompts)
-        self.app_settings = deepcopy(app_settings)
 
     @classmethod
     def load(cls, paths: AdminStudioPaths | None = None) -> "AdminStudio":
@@ -482,15 +417,11 @@ class AdminStudio:
         rubric = _read_json_object(paths.rubric_path)
         overrides_store = QuestionOverridesStore(paths.overrides_path)
         school_store = SchoolOfferSettingsStore(paths.school_settings_path)
-        prompts = normalize_deepseek_prompt_templates(_read_json_object(paths.prompts_path))
-        app_settings = InterviewAppSettingsStore(paths.app_settings_path).load()
         return cls(
             paths=paths,
             rubric=rubric,
             overrides=overrides_store.data,
             school_settings=school_store.load(),
-            prompts=prompts,
-            app_settings=app_settings,
         )
 
     def create_draft(self) -> AdminStudioDraft:
@@ -498,8 +429,6 @@ class AdminStudio:
             rubric=self.rubric,
             overrides=self.overrides,
             school_settings=self.school_settings,
-            prompts=self.prompts,
-            app_settings=self.app_settings,
         )
 
     def summary(self, draft: AdminStudioDraft | None = None) -> AdminStudioSummary:
@@ -511,8 +440,6 @@ class AdminStudio:
             AdminSection("Interview", "interview_flow", "Interview Flow", "Build track-based interview flow with editable questions.", len(traits) + custom_count),
             AdminSection("Interview", "rubrics", "Rubrics", "Tune scored traits, weights, descriptors, samples, and signal hints.", len(traits)),
             AdminSection("Operations", "templates", "Templates & Folders", "Manage school output folders and offer templates.", len(active.school_settings)),
-            AdminSection("AI", "ai_model", "AI Model", "Choose local model speed, quality, and hardware fit.", 1),
-            AdminSection("AI", "ai_prompts", "AI Prompts", "Edit prompt templates with version notes and validation.", len(active.prompts)),
             AdminSection("Services", "email", "Shared Email Account", "Configure the shared sender account used by notifications.", 1),
         ]
         return AdminStudioSummary(
@@ -537,15 +464,9 @@ class AdminStudio:
             atomic_write_json(self.paths.overrides_path, draft.overrides, indent=2, ensure_ascii=False)
         if "school_offer_settings.json" in changed:
             SchoolOfferSettingsStore(self.paths.school_settings_path).save(draft.school_settings)
-        if "deepseek_prompts.json" in changed:
-            atomic_write_json(self.paths.prompts_path, normalize_deepseek_prompt_templates(draft.prompts), indent=2, ensure_ascii=False)
-        if "interview_app_settings.json" in changed:
-            InterviewAppSettingsStore(self.paths.app_settings_path).save(draft.app_settings)
         self.rubric = deepcopy(draft.rubric)
         self.overrides = deepcopy(draft.overrides)
         self.school_settings = deepcopy(draft.school_settings)
-        self.prompts = deepcopy(draft.prompts)
-        self.app_settings = deepcopy(draft.app_settings)
         return AdminApplyResult(applied=True, changed_files=list(changed), backup_paths=backup_paths)
 
     def _backup_changed_files(self, changed: dict[str, tuple[Any, Any]]) -> list[Path]:
@@ -556,8 +477,6 @@ class AdminStudio:
             "rubric.json": self.paths.rubric_path,
             "question_overrides.json": self.paths.overrides_path,
             "school_offer_settings.json": self.paths.school_settings_path,
-            "deepseek_prompts.json": self.paths.prompts_path,
-            "interview_app_settings.json": self.paths.app_settings_path,
         }
         backups: list[Path] = []
         for filename in changed:
@@ -577,8 +496,6 @@ def _normalize_paths(paths: AdminStudioPaths) -> AdminStudioPaths:
         rubric_path=Path(paths.rubric_path),
         overrides_path=Path(paths.overrides_path),
         school_settings_path=Path(paths.school_settings_path),
-        prompts_path=Path(paths.prompts_path),
-        app_settings_path=Path(paths.app_settings_path),
         backup_dir=backup_dir,
     )
 
@@ -636,19 +553,3 @@ def _school_change_lines(before: dict[str, Any], after: dict[str, Any]) -> list[
             if old != new:
                 lines.append(f"{school} {field_name}: {old} -> {new}")
     return lines
-
-
-def _prompt_change_lines(before: dict[str, Any], after: dict[str, Any]) -> list[str]:
-    lines: list[str] = []
-    for key, new in after.items():
-        if before.get(key) != new:
-            lines.append(f"{key} prompt changed.")
-    return lines
-
-
-def _app_settings_change_lines(before: dict[str, Any], after: dict[str, Any]) -> list[str]:
-    old_model = str(before.get("deepseek_summary_model", "") or DEFAULT_DEEPSEEK_MODEL).strip()
-    new_model = str(after.get("deepseek_summary_model", "") or DEFAULT_DEEPSEEK_MODEL).strip()
-    if old_model != new_model:
-        return [f"DeepSeek model: {old_model} -> {new_model}"]
-    return []

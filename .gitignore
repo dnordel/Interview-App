@@ -37,10 +37,6 @@ desktop.ini
 # Application logs, crash reports, and runtime state
 logs/
 *.log
-*deepseek*.log
-deepseek_logs/
-deepseek-log*/
-deepseek_model_outputs/
 interview_history.json
 school_offer_settings.json
 school_email_template_settings.json
@@ -53,11 +49,6 @@ src/ux_metrics.jsonl
 user_artifacts/
 interviews/
 !interviews/.gitkeep
-
-# Generated DeepSeek/model job payloads if output outside interviews/
-deepseek_jobs/
-deepseek_jobs/logs/
-user_artifacts/interviews/deepseek_jobs/logs/
 
 # Trait scoring runtime output and retired generated signal exports
 Trait-Based Scoring/results/*

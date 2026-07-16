@@ -9,9 +9,6 @@ from tools import pytest_duration_catalog
 FOCUSED_PYSIDE_GUI_WORKFLOW_EXCEPTIONS = {
     "test_pyside_offer_screen_uses_guided_offer_widgets_and_editable_positions",
     "test_pyside_offer_screen_uses_part_time_template_and_shows_success_actions",
-    "test_pyside_history_grid_shows_failed_retry_for_failed_deepseek_row",
-    "test_pyside_failed_retry_button_requeues_deepseek_job",
-    "test_pyside_retry_uses_persisted_deepseek_job_path",
     "test_pyside_admin_layout_uses_font_metrics_for_windows_text_scaling",
     "test_pyside_initial_window_fits_available_screen_after_display_scaling",
     "test_pyside_admin_rubrics_editor_matches_mockup_and_saves_draft",

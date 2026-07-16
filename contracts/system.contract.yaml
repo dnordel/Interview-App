@@ -18,16 +18,13 @@ modules:
   interview_runtime:
     path: src/interview_runtime.py
     depends_on:
-    - deepseek_prompts_json
     - platform_services
     - scoring_reporting
-    - transformers
     - interview_audio_recorder
     - interview_app_audio_runtime
     - interview_app_finalize_pipeline
     - interview_app_history_actions
     - interview_app_session_manager
-    - interview_ml_dataset_db
   interview_audio_preflight:
     path: src/interview_audio_preflight.py
     depends_on: []
@@ -45,24 +42,6 @@ modules:
     depends_on:
     - pyside_interview_components
     - PySide6
-  deepseek_finalize_worker:
-    path: src/deepseek_finalize_worker.py
-    depends_on:
-    - data_store
-    - interview_runtime
-    - scoring_reporting
-    - interview_ml_dataset_db
-  backfill_interview_ml_dataset:
-    path: tools/backfill_interview_ml_dataset.py
-    depends_on:
-    - data_store
-    - interview_history_db
-    - interview_ml_dataset_db
-  export_interview_ml_dataset:
-    path: tools/export_interview_ml_dataset.py
-    depends_on:
-    - data_store
-    - interview_ml_dataset_db
   onboarding_operations:
     path: src/onboarding_operations.py
     depends_on:
@@ -94,6 +73,7 @@ modules:
     path: src/staffing_service.py
     depends_on:
     - notification_service
+    - staffing_change_stage
     - staffing_models
     - staffing_store
   staffing_dashboard_v2:
@@ -128,6 +108,7 @@ modules:
   director_staffing_app:
     path: src/director_staffing_app.py
     depends_on:
+    - staffing_change_stage
     - staffing_dashboard_v2
     - staffing_dashboard_host
     - staffing_service
@@ -147,6 +128,9 @@ modules:
     path: src/staffing_store.py
     depends_on:
     - staffing_models
+  staffing_change_stage:
+    path: src/staffing_change_stage.py
+    depends_on: []
   staffing_models:
     path: src/staffing_models.py
     depends_on: []
@@ -185,6 +169,7 @@ modules:
     - staffing_dashboard_v2
     - staffing_settings_v2
     - staffing_referral_queue
+    - staffing_change_stage
     - staffing_service
     - staffing_store
     - ui_mode_switch
@@ -198,6 +183,7 @@ modules:
     path: src/candidate_report_dialog.py
     depends_on:
     - candidate_report
+    - platform_services
     - staffing_service
     - staffing_store
     - PySide6
@@ -213,7 +199,6 @@ modules:
     - question_settings_service
     - config_rubric_json
     - question_overrides_json
-    - deepseek_prompts_json
     - school_offer_settings_json
   staffing_settings_v2:
     path: src/staffing_settings_v2.py
@@ -253,20 +238,12 @@ modules:
   config_staffing_seed_json:
     path: config/staffing_seed.json
     depends_on: []
-  deepseek_prompts_json:
-    path: config/deepseek_prompts.json
-    depends_on:
-    - interview_runtime
   interview_history_json:
     path: user_artifacts/interview_history.json
     depends_on: []
   interview_history_db:
     path: user_artifacts/interview_history.sqlite3
     depends_on: []
-  interview_ml_dataset_db:
-    path: G:\My Drive\Work\LaunchPad\Interview ML DB\interview_ml_dataset.sqlite3
-    depends_on:
-    - interview_history_db
   legacy_interview_history_json:
     path: interview_history.json
     depends_on: []
@@ -297,7 +274,6 @@ modules:
     depends_on:
     - platform_services
     - interview_history_db
-    - interview_ml_dataset_db
     - legacy_interview_history_json
   docx_compat:
     path: src/docx_compat.py
@@ -424,7 +400,7 @@ module_metadata:
     - Requires interview_notes_document_path as the only canonical document artifact field.
   interview_app_finalize_pipeline:
     constraints:
-    - Finalize processing produces one basic merged interview-notes artifact referenced by interview_notes_document_path without starting DeepSeek.
+    - Finalize processing produces one basic merged interview-notes artifact referenced by interview_notes_document_path.
   interview_app_finalize_gateways:
     constraints:
     - Referral/integration dispatches must read interview_notes_document_path from finalize context payloads.
@@ -436,9 +412,8 @@ module_metadata:
     - Finalize progress is user-closable and does not cancel background transcription or finalize work.
     - Finalize progress renders sanitized task rows with right-side statuses limited to Processing, Finished, Timed-out, or Queued.
     - Completed overview uses existing ScoringEngine totals, marks only ratings of 5 as strengths, marks ratings of 3 or below as review items, treats ratings of 4 as neutral, and shows an explicit empty state when either summary has no score-derived items.
-    - Completed overview core finalization never starts or monitors DeepSeek; history Generate remains the only DeepSeek launch path.
     - Completed overview edits update the existing history artifact set idempotently without duplicate history, application, referral, or notification records.
-    - Candidates-owned pipeline/history refreshes after finalize, opens the basic notes document immediately, and exposes history Generate as the only GUI path that launches detached DeepSeek processing; Interviews contains setup/live/review only.
+    - Candidates-owned pipeline/history refreshes after finalize and opens the basic notes document immediately; Interviews contains setup/live/review only.
   scoring_reporting:
     constraints:
     - Referral payload document attachment path must resolve from interview_notes_document_path.

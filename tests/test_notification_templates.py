@@ -64,7 +64,7 @@ def test_notification_validation_blocks_unknown_variable_only_when_enabled() -> 
     assert any(issue.code == "unknown_fields" and not issue.blocking for issue in disabled)
 
 
-def test_notification_catalog_exposes_curated_staffing_interview_and_deepseek_fields() -> None:
+def test_notification_catalog_exposes_curated_staffing_and_interview_fields() -> None:
     keys = {field.key for field in NOTIFICATION_TEMPLATE_FIELD_CATALOG}
 
     assert {
@@ -76,12 +76,9 @@ def test_notification_catalog_exposes_curated_staffing_interview_and_deepseek_fi
         "years_experience",
         "interview_answers_summary",
         "interview_answer_1",
-        "deepseek_summary",
-        "deepseek_recommendation",
-        "deepseek_concerns",
     }.issubset(keys)
     assert not validate_notification_rule(
-        _rule(subject_template="{person_name} gave notice on {notice_date}", body_template="{deepseek_summary}")
+        _rule(subject_template="{person_name} gave notice on {notice_date}", body_template="{interview_answers_summary}")
     )
 
 
@@ -101,11 +98,6 @@ def test_notification_payload_from_mapping_extracts_safe_nested_report_values() 
                 {"prompt": "Why preschool?", "transcript": "Because early learning matters."},
                 {"title": "Guidance", "candidate_transcript": "I redirect with routines."},
             ],
-            "summaries": {
-                "executive_summary": "Strong classroom presence.",
-                "recommendation_rationale": "Recommend hire.",
-                "concerns": ["Needs permit follow-up."],
-            },
             "audit_token": "do-not-expose",
         }
     )
@@ -121,7 +113,4 @@ def test_notification_payload_from_mapping_extracts_safe_nested_report_values() 
         "Why preschool?: Because early learning matters.\n"
         "Guidance: I redirect with routines."
     )
-    assert payload["deepseek_summary"] == "Strong classroom presence."
-    assert payload["deepseek_recommendation"] == "Recommend hire."
-    assert payload["deepseek_concerns"] == "Needs permit follow-up."
     assert "audit_token" not in payload

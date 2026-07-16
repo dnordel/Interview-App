@@ -2,7 +2,7 @@ module:
   name: admin_studio
   language: python
   path: src/admin_studio.py
-  version: 2.0.1
+  version: 3.0.0
   description: Single admin boundary for local configuration review, draft editing,
     dirty tracking, validation, backup creation, and review-then-apply persistence
     for Staffing v2 Settings, including contractor offer templates and draft-only
@@ -37,10 +37,6 @@ classes:
       type: Path
     school_settings_path:
       type: Path
-    prompts_path:
-      type: Path
-    app_settings_path:
-      type: Path
     backup_dir:
       type: Path | None
 - name: AdminSection
@@ -74,8 +70,7 @@ classes:
   locked: false
 - name: AdminStudioDraft
   description: In-memory editable admin configuration draft. No file writes occur
-    from draft mutation methods; prompt version notes are kept in memory to gate
-    publish validation for changed DeepSeek prompt templates.
+    from draft mutation methods.
   locked: false
   methods:
   - name: from_payloads
@@ -89,13 +84,6 @@ classes:
       school_settings:
         type: dict[str, dict[str, str]]
         required: true
-      prompts:
-        type: dict[str, Any]
-        required: true
-      app_settings:
-        type: dict[str, Any]
-        required: false
-        default: None
     returns:
       type: AdminStudioDraft
   - name: changed_payloads
@@ -284,45 +272,9 @@ classes:
       type: None
     exceptions:
     - ValueError
-  - name: update_prompt
-    inputs:
-      key:
-        type: str
-        required: true
-      value:
-        type: str
-        required: true
-    returns:
-      type: None
-    exceptions:
-    - ValueError
-  - name: update_prompt_version_note
-    description: Store or clear the in-memory version note required before a changed
-      DeepSeek prompt template can be published.
-    inputs:
-      key:
-        type: str
-        required: true
-      note:
-        type: str
-        required: true
-    returns:
-      type: None
-    exceptions:
-    - ValueError
-  - name: update_deepseek_model
-    description: Draft an allowed local Ollama DeepSeek model selection for app settings
-      without writing files.
-    inputs:
-      model:
-        type: str
-        required: true
-    returns:
-      type: None
   - name: validate
-    description: Validate prompt payloads, required version notes for changed DeepSeek
-      prompt templates, school folder and offer-template path safety, allowlisted DeepSeek model selection,
-      and rubric trait links to Questions & Flow before any apply writes.
+    description: Validate school folder and offer-template path safety and rubric
+      trait links to Questions & Flow before any apply writes.
     inputs: {}
     returns:
       type: list[str]
@@ -339,8 +291,7 @@ classes:
         default: None
     returns:
       type: AdminStudio
-    side_effects: Reads rubric, question override, school settings, prompt JSON,
-      and app settings.
+    side_effects: Reads rubric, question override, and school settings JSON.
   - name: create_draft
     inputs: {}
     returns:
@@ -368,7 +319,6 @@ classes:
 data_structures: []
 dependencies:
 - data_store
-- interview_runtime
 - platform_services
 - question_settings_service
 - email_security

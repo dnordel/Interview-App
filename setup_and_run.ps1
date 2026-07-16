@@ -22,25 +22,6 @@ $ErrorActionPreference = "Stop"
 
 $AppDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $AppDir
-$LocalDeepSeekModel = "deepseek-r1:8b"
-$AllowedLocalDeepSeekModels = @("deepseek-r1:1.5b", "deepseek-r1:8b", "deepseek-r1:14b")
-if ($env:DEEPSEEK_SUMMARY_MODEL -and $env:DEEPSEEK_SUMMARY_MODEL.Trim()) {
-  $LocalDeepSeekModel = $env:DEEPSEEK_SUMMARY_MODEL.Trim()
-} else {
-  $appSettingsPath = Join-Path (Join-Path $AppDir "user_artifacts") "interview_app_settings.json"
-  if (Test-Path $appSettingsPath) {
-    try {
-      $appSettings = Get-Content -LiteralPath $appSettingsPath -Raw | ConvertFrom-Json
-      $selectedModel = [string]$appSettings.deepseek_summary_model
-      if ($selectedModel -and $AllowedLocalDeepSeekModels -contains $selectedModel) {
-        $LocalDeepSeekModel = $selectedModel
-      }
-    } catch {
-      # Keep repo default when app settings are missing or malformed.
-    }
-  }
-}
-$OllamaBaseUrl = "http://127.0.0.1:11434"
 $DefaultUiMode = "pyside"
 $DefaultInterviewAppFile = "pyside_interview_app.py"
 $PySideInterviewAppFile = "pyside_interview_app.py"
@@ -973,244 +954,6 @@ function Set-GpuVendorEnvironment {
 }
 
 # -------------------------
-# Local DeepSeek via Ollama
-# -------------------------
-function Get-OllamaExe {
-  try {
-    $cmd = Get-Command "ollama.exe" -ErrorAction SilentlyContinue
-    if ($cmd -and (Test-Path $cmd.Source)) {
-      return $cmd.Source
-    }
-  } catch {}
-
-  $candidates = @(
-    (Join-Path $env:LOCALAPPDATA "Programs\Ollama\ollama.exe"),
-    (Join-Path $env:LOCALAPPDATA "Ollama\ollama.exe"),
-    "C:\Program Files\Ollama\ollama.exe"
-  )
-
-  foreach ($path in $candidates) {
-    if (Test-Path $path) {
-      return $path
-    }
-  }
-
-  try {
-    $wingetMatches = Get-ChildItem -Path (Join-Path $env:LOCALAPPDATA "Microsoft\WinGet\Packages") `
-      -Recurse `
-      -Filter "ollama.exe" `
-      -ErrorAction SilentlyContinue |
-      Select-Object -First 1
-    if ($wingetMatches -and (Test-Path $wingetMatches.FullName)) {
-      return $wingetMatches.FullName
-    }
-  } catch {}
-
-  return $null
-}
-
-function Test-OllamaApi {
-  try {
-    Invoke-RestMethod -Uri "$OllamaBaseUrl/api/tags" -Method Get -TimeoutSec 5 | Out-Null
-    return $true
-  } catch {
-    return $false
-  }
-}
-
-function Start-OllamaService {
-  param([Parameter(Mandatory=$true)][string]$OllamaExe)
-
-  if (Test-OllamaApi) {
-    Write-Log "Ollama local API already responding."
-    return
-  }
-
-  Write-Log "Starting Ollama local service."
-  Start-Process `
-    -FilePath $OllamaExe `
-    -ArgumentList "serve" `
-    -WindowStyle Hidden `
-    -ErrorAction SilentlyContinue | Out-Null
-
-  for ($i = 0; $i -lt 20; $i++) {
-    Start-Sleep -Seconds 1
-    if (Test-OllamaApi) {
-      Write-Log "Ollama local API is ready."
-      return
-    }
-  }
-
-  throw "Ollama installed but local API did not start at $OllamaBaseUrl."
-}
-
-function Ensure-Ollama {
-  $ollama = Get-OllamaExe
-  if ($ollama) {
-    Write-Log "Ollama found: $ollama"
-    Start-OllamaService -OllamaExe $ollama
-    return $ollama
-  }
-
-  $winget = Get-Command "winget.exe" -ErrorAction SilentlyContinue
-  if (-not $winget) {
-    throw "Ollama is required for local DeepSeek, but winget.exe was not found."
-  }
-
-  Write-Log "Installing Ollama with winget."
-  $ec = Run-Proc -File $winget.Source -Args @(
-    "install",
-    "--id", "Ollama.Ollama",
-    "--exact",
-    "--accept-package-agreements",
-    "--accept-source-agreements"
-  )
-  if ($ec -ne 0) {
-    throw "Ollama install failed (exit code $ec)."
-  }
-
-  $ollama = Get-OllamaExe
-  if (-not $ollama) {
-    throw "Ollama installed, but ollama.exe could not be found."
-  }
-
-  Start-OllamaService -OllamaExe $ollama
-  return $ollama
-}
-
-function Test-OllamaModelInstalled {
-  param([Parameter(Mandatory=$true)][string]$Model)
-
-  try {
-    $tags = Invoke-RestMethod -Uri "$OllamaBaseUrl/api/tags" -Method Get -TimeoutSec 10
-    foreach ($localModel in @($tags.models)) {
-      if ([string]$localModel.name -ieq $Model -or [string]$localModel.model -ieq $Model) {
-        return $true
-      }
-    }
-    $localModels = @($tags.models | ForEach-Object { [string]$_.name }) -join ", "
-    Write-Log "Ollama model not found yet. Wanted=$Model; LocalModels=$localModels"
-  } catch {
-    Write-Log "Ollama model check failed: $($_.Exception.Message)"
-  }
-
-  return $false
-}
-
-function Invoke-OllamaModelPull {
-  param([Parameter(Mandatory=$true)][string]$Model)
-
-  Write-Log "Pulling local DeepSeek model through Ollama API: $Model"
-  $body = @{
-    "name" = $Model
-    "stream" = $true
-  } | ConvertTo-Json -Compress
-
-  $request = [System.Net.HttpWebRequest]::Create("$OllamaBaseUrl/api/pull")
-  $request.Method = "POST"
-  $request.ContentType = "application/json"
-  $request.Timeout = -1
-  $request.ReadWriteTimeout = -1
-
-  $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($body)
-  $request.ContentLength = $bodyBytes.Length
-  $requestStream = $request.GetRequestStream()
-  try {
-    $requestStream.Write($bodyBytes, 0, $bodyBytes.Length)
-  }
-  finally {
-    $requestStream.Close()
-  }
-
-  $response = $null
-  $reader = $null
-  $lastPercent = -1
-
-  try {
-    $response = $request.GetResponse()
-    $reader = New-Object System.IO.StreamReader($response.GetResponseStream())
-
-    while (-not $reader.EndOfStream) {
-      $line = $reader.ReadLine()
-      if (-not $line) { continue }
-
-      $event = $line | ConvertFrom-Json
-      $status = [string]$event.status
-      if ($status) {
-        Write-Log "Ollama pull status: $status"
-      }
-
-      $completed = 0
-      $total = 0
-      if ($event.PSObject.Properties.Name -contains "completed") {
-        $completed = [double]$event.completed
-      }
-      if ($event.PSObject.Properties.Name -contains "total") {
-        $total = [double]$event.total
-      }
-
-      if ($completed -gt 0 -and $total -gt 0) {
-        $percent = [Math]::Floor(($completed / $total) * 100)
-        if ($percent -ne $lastPercent) {
-          Set-Progress 65 "Downloading local DeepSeek model ($Model): $percent%"
-          Write-Log "DeepSeek model download progress: $Model $percent% ($completed of $total bytes)"
-          $lastPercent = $percent
-        }
-      }
-
-      if ($status -match "success") {
-        Write-Log "Ollama model pull reported success: $Model"
-      }
-    }
-  }
-  catch {
-    throw "Ollama model pull failed for $Model. Error: $($_.Exception.Message)"
-  }
-  finally {
-    if ($reader) { $reader.Close() }
-    if ($response) { $response.Close() }
-  }
-}
-
-function Ensure-DeepSeekModel {
-  param(
-    [Parameter(Mandatory=$true)][string]$OllamaExe,
-    [Parameter(Mandatory=$true)][string]$Model
-  )
-
-  if (Test-OllamaModelInstalled -Model $Model) {
-    Write-Log "Local DeepSeek model already installed: $Model"
-    return
-  }
-
-  Write-Log "Pulling local DeepSeek model: $Model"
-  Invoke-OllamaModelPull -Model $Model
-
-  for ($i = 0; $i -lt 10; $i++) {
-    if (Test-OllamaModelInstalled -Model $Model) {
-      Write-Log "Local DeepSeek model verified: $Model"
-      return
-    }
-    Start-Sleep -Seconds 1
-  }
-
-  throw "Ollama model pull completed, but $Model was not listed locally. Run 'ollama list' to verify local models."
-}
-
-function Enable-LocalDeepSeekForLaunchedApp {
-  $env:DEEPSEEK_SUMMARY_ENABLED = "1"
-  $env:DEEPSEEK_API_BASE_URL = "$OllamaBaseUrl/v1"
-  $env:DEEPSEEK_SUMMARY_MODEL = $LocalDeepSeekModel
-  $env:DEEPSEEK_API_KEY = "ollama"
-  Write-Log "Local DeepSeek env configured for launched app: $LocalDeepSeekModel at $OllamaBaseUrl/v1"
-}
-
-function Ensure-LocalDeepSeek {
-  $ollama = Ensure-Ollama
-  Ensure-DeepSeekModel -OllamaExe $ollama -Model $LocalDeepSeekModel
-  Enable-LocalDeepSeekForLaunchedApp
-}
-
 function Test-VenvUsesSystemSitePackages([string]$VenvDir) {
   if (-not $VenvDir) {
     return $false
@@ -1328,7 +1071,7 @@ function Ensure-VenvAndDeps([string]$PyExe) {
     Write-Log "Skipping GPU dependency install because no NVIDIA GPU was detected."
     Remove-NvidiaGpuPackagesWhenUnsupported -VenvPy $VenvPy
     if ($gpuProfile.Amd) {
-      Write-Log "AMD GPU detected. Ollama may use supported ROCm/Vulkan acceleration; Whisper transcription will use OpenVINO GenAI unless an external Vulkan whisper.cpp backend is configured."
+      Write-Log "AMD GPU detected. Whisper transcription will use OpenVINO GenAI unless an external Vulkan whisper.cpp backend is configured."
     }
     if ($gpuProfile.Intel) {
       Write-Log "Intel GPU detected. OpenVINO GenAI will be used for Whisper transcription when dependencies install successfully."
@@ -1694,8 +1437,6 @@ $form.Add_Shown({
     $cfg = Ensure-SelectedUiModeAvailable -Cfg $cfg -VenvPy $venvPy
     Set-GpuVendorEnvironment -Profile (Get-GpuVendorProfile)
 
-    Set-Progress 65 "Checking local DeepSeek through Ollama ($LocalDeepSeekModel)..."
-    Ensure-LocalDeepSeek
 
     # -------------------------
     # Expose CUDA runtime DLLs for faster-whisper

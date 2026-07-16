@@ -7,12 +7,9 @@ from scoring_reporting import (
     default_signal_ui_definition,
     ensure_trait_signal_ui_definition,
     load_trait_signal_ui_definition,
-    normalize_model_signal_suggestions,
     normalize_trait_signal_selection_state,
     resolve_trait_selection_value,
-    trait_signal_override_state,
     trait_requires_signal_selection,
-    write_canonical_model_signal_suggestions,
     write_canonical_selected_signal_ids,
 )
 
@@ -70,31 +67,6 @@ def test_write_canonical_selected_signal_ids_replaces_legacy_selection_fields():
     assert state["selected_signal_ids"] == ["S_CHILD_CENTERED"]
     assert "selected_signals" not in state
     assert "signal_selections" not in state
-
-
-def test_model_signal_suggestions_are_separate_from_manual_selections() -> None:
-    suggestions = normalize_model_signal_suggestions(
-        [
-            {"signal_id": "S_ONE", "confidence": 1.5, "rationale": "Observed."},
-            {"signal_id": "INVALID", "confidence": 0.9, "rationale": "Ignored."},
-            {"signal_id": "S_TWO", "confidence": "bad", "rationale": "Weak."},
-        ],
-        ["S_ONE", "S_TWO"],
-    )
-    state = {"selected_signal_ids": ["S_TWO"]}
-
-    write_canonical_model_signal_suggestions(state, suggestions)
-
-    assert state["selected_signal_ids"] == ["S_TWO"]
-    assert state["model_signal_suggestions"] == [
-        {"signal_id": "S_ONE", "confidence": 1.0, "rationale": "Observed.", "evidence_quote": ""},
-        {"signal_id": "S_TWO", "confidence": 0.0, "rationale": "Weak.", "evidence_quote": ""},
-    ]
-    assert trait_signal_override_state(state) == {
-        "accepted_signal_ids": ["S_TWO"],
-        "rejected_signal_ids": ["S_ONE"],
-        "manual_only_signal_ids": [],
-    }
 
 
 def test_count_selected_trait_checkbox_entries_counts_nested_legacy_payloads():

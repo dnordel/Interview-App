@@ -73,6 +73,23 @@ def test_generate_director_staffing_launchers_from_seed(tmp_path: Path) -> None:
     assert '-DirectorSchool " & Chr(34) & "Beta/School" & Chr(34)' in output_paths[3].read_text(encoding="utf-8")
 
 
+def test_director_vbs_activates_existing_dashboard_instead_of_launching_again() -> None:
+    body = _load_launcher_generator().director_vbs_launcher_body("Palmdale")
+
+    activation = 'If shell.AppActivate("Director Staffing Dashboard") Then'
+    assert activation in body
+    assert "WScript.Quit 0" in body
+    assert body.index(activation) < body.index("shell.Run command, 0, False")
+
+
+def test_director_vbs_restores_existing_dashboard_before_exiting() -> None:
+    body = _load_launcher_generator().director_vbs_launcher_body("Palmdale")
+
+    assert "WScript.Sleep 100" in body
+    assert 'shell.SendKeys "% x"' in body
+    assert body.index('shell.SendKeys "% x"') < body.index("WScript.Quit 0")
+
+
 def test_director_entrypoint_uses_staffing_only_modules_and_requirements() -> None:
     assert (ROOT / "src" / "director_staffing_app.py").exists()
     assert (ROOT / "setup_director_staffing.ps1").exists()
@@ -82,11 +99,12 @@ def test_director_entrypoint_uses_staffing_only_modules_and_requirements() -> No
 
     director_requirements = (ROOT / "requirements-director.txt").read_text(encoding="utf-8")
     assert "PySide6==6.8.1.1" in director_requirements
-    for package in ("python-docx", "soundfile", "faster-whisper", "transformers", "openvino"):
+    assert "python-docx==1.2.0" in director_requirements
+    for package in ("soundfile", "faster-whisper", "transformers", "openvino"):
         assert package not in director_requirements
 
 
-def test_director_setup_skips_full_app_audio_docx_and_ai_installers() -> None:
+def test_director_setup_installs_docx_without_full_app_audio_installers() -> None:
     script_text = Path("setup_director_staffing.ps1").read_text(encoding="utf-8")
 
     assert "requirements-director.txt" in script_text
@@ -96,7 +114,8 @@ def test_director_setup_skips_full_app_audio_docx_and_ai_installers() -> None:
     assert "-WindowStyle Hidden" not in script_text
     assert "setup_and_run.ps1" not in script_text
     assert "requirements.txt" not in script_text
-    for forbidden in ("Ensure-FFmpeg", "VB-CABLE", "Ollama", "DeepSeek", "requirements-openvino", "requirements-gpu"):
+    assert '@("-c", "import PySide6, docx")' in script_text
+    for forbidden in ("Ensure-FFmpeg", "VB-CABLE", "requirements-openvino", "requirements-gpu"):
         assert forbidden not in script_text
 
 

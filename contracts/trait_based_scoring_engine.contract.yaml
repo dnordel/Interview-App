@@ -2,9 +2,9 @@ module:
   name: trait_based_scoring_engine
   language: python
   path: Trait-Based Scoring/trait_based_scoring_engine.py
-  version: 1.7.0
-  description: Trait scoring engine with contract-relative runtime bundle loading,
-    weighted DeepSeek-only advisory signal scoring, and preflight path validation.
+  version: 2.0.0
+  description: Human evidence-signal scoring engine with contract-relative runtime bundle loading,
+    weighted interviewer selections, and preflight path validation.
 functions: []
 classes:
 - name: ScoringEngine
@@ -375,7 +375,7 @@ classes:
     side_effects: Reads configured path metadata.
   - name: resolve_signal
     description: Resolve a trait signal reference against the shared dictionary and
-      trait overrides, preserving automatic no-hire metadata for advisory scoring.
+      trait overrides, preserving automatic no-hire metadata.
     locked: false
     inputs:
       signal:
@@ -387,7 +387,7 @@ classes:
     - ValueError
     side_effects: none
   - name: convert_signal_score_to_raw_score
-    description: Convert a net DeepSeek signal score into the configured suggested
+    description: Convert a net interviewer-selected signal score into the configured
       1-5 raw trait score.
     locked: false
     inputs:
@@ -399,8 +399,8 @@ classes:
     exceptions: []
     side_effects: none
   - name: score_trait
-    description: Score a single trait by summing observed model signal weights, deriving
-      suggested_raw_score, exposing it as trait_score_1_to_5/final_score, and returning
+    description: Score a single trait by summing interviewer-selected signal weights, deriving
+      raw_score, exposing it as trait_score_1_to_5/final_score, and returning
       automatic no-hire metadata.
     locked: false
     inputs:
@@ -474,7 +474,7 @@ classes:
     exceptions: []
     side_effects: none
   - name: score_session
-    description: Score applicable non-skipped traits as DeepSeek advisory signal evidence,
+    description: Score applicable non-skipped traits from interviewer-selected evidence signals,
       aggregate weighted 1-5 trait scores into a percent decision score, retain raw
       signal totals and skipped trait count for debugging, and return automatic no-hire metadata.
     locked: false
@@ -493,7 +493,7 @@ classes:
     exceptions: []
     side_effects: none
   - name: make_decision
-    description: Resolve threshold-based advisory decision labels after automatic
+    description: Resolve threshold-based decision labels after automatic
       no-hire override handling.
     locked: false
     inputs:

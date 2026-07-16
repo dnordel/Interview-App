@@ -41,12 +41,12 @@ scoring:
   session_score_mode: "weighted_average_of_trait_scores"
   overall_percent_method: "raw_1_to_5_over_5"
 
-  usage: "deepseek_advisory_only"
+  usage: "interviewer_selected_evidence"
 
   formula: |
-    net_signal_score = sum(base_weight of observed DeepSeek model signals)
-    suggested_raw_score = conversion_table(net_signal_score)
-    trait_score_1_to_5 = suggested_raw_score
+    net_signal_score = sum(base_weight of interviewer-selected evidence signals)
+    raw_score = conversion_table(net_signal_score)
+    trait_score_1_to_5 = raw_score
     overall_score_1_to_5 = sum(trait_score_1_to_5 * trait_multiplier) / sum(trait_multiplier)
     weighted_trait_percent = (overall_score_1_to_5 / 5) * 100
 
@@ -129,8 +129,7 @@ runtime:
     debounce_ms: 150
 
   state_management:
-    store_selected_signals: false
-    store_model_signal_suggestions: true
+    store_selected_signals: true
     store_per_trait_scores: true
 
   error_handling:

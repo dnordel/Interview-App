@@ -2,7 +2,7 @@ module:
   name: interview_app_finalize_pipeline
   language: python
   path: src/interview_app/finalize_pipeline.py
-  version: 2.3.0
+  version: 3.0.0
   description: Deprecated compatibility wrapper for finalize orchestration implemented
     by interview_runtime.
 functions:
@@ -31,7 +31,7 @@ classes:
 - name: FinalizePipelineController
   description: Finalize controller that validates finalize input, starts non-blocking
     transcription/report work, returns the GUI to the start screen immediately, and
-    keeps the progress popup alive for exact transcription and DeepSeek step updates.
+    keeps the progress popup alive for exact transcription and report step updates.
   locked: false
   attributes: {}
   methods:
@@ -63,8 +63,8 @@ classes:
     side_effects: updates in-memory state
   - name: _start_finalize_worker_non_blocking
     description: Start or retry finalize work without blocking Tk, return the main
-      GUI to the start screen, and leave the progress window open until success,
-      failure, or detached DeepSeek completion closes it.
+      GUI to the start screen, and leave the progress window open until success
+      or failure closes it.
     locked: false
     inputs:
       attempt:

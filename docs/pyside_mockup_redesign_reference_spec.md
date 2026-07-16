@@ -6,7 +6,7 @@ Use this document before coding any future PySide UI redesign. It defines the ap
 
 Do not start coding a redesigned screen from generic Qt widgets alone. First create or update a screen reference spec from the mockup:
 
-- identify real product elements versus AI-generated mockup artifacts;
+- identify real product elements versus mockup-only artifacts;
 - map shell, navigation, content regions, cards, tables, drawers, dialogs, and forms;
 - extract colors, typography, spacing, control sizes, chip styles, row heights, and icon usage;
 - identify data shown by the mockup and the service/store source for each value;

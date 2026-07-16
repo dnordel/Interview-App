@@ -43,8 +43,6 @@ def _settings_paths(tmp_path: Path):
                 "interview_notes_dir": "notes/Palmdale",
             }
         },
-        "deepseek_prompts.json": {"answer_summary_user": "Summarize {answer}."},
-        "interview_app_settings.json": {"deepseek_summary_model": "deepseek-r1:8b"},
     }
     for name, payload in files.items():
         (tmp_path / name).write_text(json.dumps(payload), encoding="utf-8")
@@ -52,8 +50,6 @@ def _settings_paths(tmp_path: Path):
         rubric_path=tmp_path / "rubric.json",
         overrides_path=tmp_path / "question_overrides.json",
         school_settings_path=tmp_path / "school_offer_settings.json",
-        prompts_path=tmp_path / "deepseek_prompts.json",
-        app_settings_path=tmp_path / "interview_app_settings.json",
         backup_dir=tmp_path / "backups",
     )
 
@@ -86,7 +82,7 @@ def _page(tmp_path: Path):
 
 
 @pytest.mark.pyside_gui
-def test_settings_page_uses_six_sections_and_responsive_navigation(tmp_path: Path) -> None:
+def test_settings_page_uses_four_sections_and_responsive_navigation(tmp_path: Path) -> None:
     app, qt_widgets, page, _paths = _page(tmp_path)
 
     section_list = page.widget.findChild(qt_widgets.QListWidget, "StaffingSettingsV2SectionList")
@@ -95,8 +91,6 @@ def test_settings_page_uses_six_sections_and_responsive_navigation(tmp_path: Pat
         "Interview Flow",
         "Rubrics",
         "Templates & Folders",
-        "AI Model",
-        "AI Prompts",
         "Shared Email Account",
     ]
     assert section_list.isVisible()
@@ -142,8 +136,6 @@ def test_pyside_admin_settings_live_inside_staffing_v2_shell(tmp_path: Path, mon
     monkeypatch.setattr(pyside_interview_app, "DEFAULT_RUBRIC_PATH", paths.rubric_path)
     monkeypatch.setattr(pyside_interview_app, "QUESTIONS_OVERRIDE_PATH", paths.overrides_path)
     monkeypatch.setattr(pyside_interview_app, "SCHOOL_OFFER_SETTINGS_PATH", paths.school_settings_path)
-    monkeypatch.setattr(pyside_interview_app, "DEEPSEEK_PROMPTS_CONFIG_PATH", paths.prompts_path)
-    monkeypatch.setattr(pyside_interview_app, "INTERVIEW_APP_SETTINGS_PATH", paths.app_settings_path)
     monkeypatch.setattr(pyside_interview_app, "EMAIL_ACCOUNT_SETTINGS_PATH", tmp_path / "email.json")
     monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", tmp_path / "staffing.sqlite3")
     monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", tmp_path / "missing-seed.json")
@@ -228,30 +220,6 @@ def test_settings_template_paths_update_draft_and_show_validation(tmp_path: Path
     page.widget.close()
 
 
-@pytest.mark.pyside_gui
-def test_settings_ai_model_and_prompt_version_note_update_one_draft(tmp_path: Path) -> None:
-    app, qt_widgets, page, _paths = _page(tmp_path)
-    page.edit_button.click()
-    page.section_list.setCurrentRow(3)
-    model = page.widget.findChild(qt_widgets.QComboBox, "AdminStudioDeepseekModelSelector")
-    model.setCurrentText("deepseek-r1:14b")
-    page.section_list.setCurrentRow(4)
-    prompt = page.widget.findChild(qt_widgets.QPlainTextEdit, "StaffingSettingsV2PromptText")
-    version_note = page.widget.findChild(qt_widgets.QLineEdit, "StaffingSettingsV2PromptVersionNote")
-    prompt.setPlainText("Summarize the candidate answer: {answer}")
-    version_note.setText("Clarify candidate answer context.")
-    version_note.editingFinished.emit()
-    app.processEvents()
-
-    assert page.draft.app_settings["deepseek_summary_model"] == "deepseek-r1:14b"
-    assert page.draft.prompts["answer_summary_user"] == "Summarize the candidate answer: {answer}"
-    assert page.draft.prompt_version_notes["answer_summary_user"] == "Clarify candidate answer context."
-    assert page.draft.validate() == []
-    assert page.publish_button.isEnabled()
-    page.widget.close()
-
-
-@pytest.mark.pyside_gui
 def test_settings_shared_email_account_tests_and_saves_independently(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_core = pytest.importorskip("PySide6.QtCore")

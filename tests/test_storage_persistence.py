@@ -6,21 +6,15 @@ from pathlib import Path
 import pytest
 
 from data_store import (
-    DEFAULT_ML_DATASET_DIR,
-    ML_DATASET_DB_NAME,
-    ML_DATASET_DIR_ENV,
     InterviewHistoryStore,
-    InterviewMLDatasetStore,
     QuestionOverridesStore,
     SchoolEmailTemplateStore,
     SchoolOfferSettingsStore,
     default_school_offer_settings,
-    ml_dataset_path_for_history_path,
     resolve_interview_notes_output_dir,
     resolve_offer_output_dir,
     resolve_offer_template_path,
 )
-from tools.backfill_interview_ml_dataset import backfill_ml_dataset
 from onboarding_operations import DEFAULT_EXPECTED_INTERVAL_HOURS
 from onboarding_operations import scheduler_expected_interval_hours, scheduler_opt_in
 import onboarding_operations
@@ -90,18 +84,16 @@ def test_interview_history_store_persists_queryable_columns(tmp_path: Path):
             "outcome": "Hire",
             "percent_of_max": 88.5,
             "offer_status": "not_generated",
-            "deepseek_processing_status": "queued",
         }
     )
     store.update_offer_state("hist-1", "offer_sent", "offer.docx")
-    store.update_row("hist-1", {"deepseek_processing_status": "complete"})
 
     with sqlite3.connect(store.db_path) as conn:
         conn.row_factory = sqlite3.Row
         row = conn.execute(
             """
             SELECT row_key, history_id, candidate_name, candidate_email, school, position,
-                   interview_date, outcome, score, offer_status, deepseek_processing_status
+                   interview_date, outcome, score, offer_status
             FROM interview_history
             WHERE row_key = ?
             """,
@@ -119,7 +111,6 @@ def test_interview_history_store_persists_queryable_columns(tmp_path: Path):
         "outcome": "Hire",
         "score": 88.5,
         "offer_status": "offer_sent",
-        "deepseek_processing_status": "complete",
     }
 
 
@@ -237,193 +228,6 @@ def test_interview_history_store_load_filtered_uses_query_columns(tmp_path: Path
     assert [row["history_id"] for row in store.load_filtered(offer_status="not_generated", limit=1)] == ["hist-2"]
     assert [row["history_id"] for row in store.load_filtered(search="lead")] == ["hist-3"]
     assert [row["history_id"] for row in store.load_filtered(search="notes.docx")] == ["hist-3"]
-
-
-def test_ml_dataset_store_writes_session_profile_answer_and_signal_rows(tmp_path: Path):
-    store = InterviewMLDatasetStore(tmp_path / "interview_ml_dataset.sqlite3")
-    payload = {
-        "candidate": {
-            "name": "Latoya Nugent",
-            "email": "latoya@example.com",
-            "school": "Palmdale",
-            "track": "Preschool Teacher",
-            "interview_date": "2026-03-11",
-            "qualification": {
-                "has_degree": True,
-                "degree_type": "BA",
-                "degree_in_ece": True,
-                "ece_units_completed": 24,
-                "infant_toddler_class_completed": False,
-                "total_units_completed": None,
-                "years_experience": 4,
-            },
-        },
-        "flow_transcript": [
-            {
-                "flow_index": 1,
-                "type": "trait",
-                "id": "trait_1",
-                "question": "How do you support transitions?",
-                "candidate_transcript": "I use visual schedules.",
-            }
-        ],
-        "summary_status": "generated",
-        "model_suggestion_status": "generated",
-        "model_scoring_status": "generated",
-    }
-    scoring = {
-        "outcome": "hire",
-        "percent_of_max": 88.5,
-        "rows": [
-            {
-                "trait_id": "trait_1",
-                "trait_name": "Transitions",
-                "weight": 3,
-                "raw_score": 4,
-                "weighted_score": 12,
-                "suggested_raw_score": 5,
-                "deepseek_raw_score": 4,
-                "deepseek_calculated_score": 15,
-                "net_signal_score": 7,
-                "model_trait_score": {"raw_score": 4, "rationale": "Strong evidence."},
-                "model_signal_suggestions": [
-                    {
-                        "signal_id": "P1",
-                        "confidence": 0.9,
-                        "rationale": "Uses visuals.",
-                        "evidence_quote": "visual schedules",
-                    }
-                ],
-            }
-        ],
-    }
-
-    store.upsert_interview(
-        {"history_id": "hist-1", "deepseek_processing_status": "complete"},
-        payload,
-        scoring,
-        source_job_path=tmp_path / "deepseek-finalize-hist-1.json",
-    )
-
-    assert store.count_rows("ml_interview_sessions") == 1
-    assert store.count_rows("ml_candidate_profiles") == 1
-    assert store.count_rows("ml_answer_rows") == 1
-    assert store.count_rows("ml_signal_rows") == 1
-    session = store.fetch_one("SELECT candidate_name, ai_analysis_state FROM ml_interview_sessions WHERE history_id = ?", ("hist-1",))
-    answer = store.fetch_one(
-        "SELECT interviewer_raw_score, ai_advisory_raw_score, ai_trait_raw_score, score_delta_interviewer_advisory FROM ml_answer_rows WHERE history_id = ?",
-        ("hist-1",),
-    )
-    signal = store.fetch_one("SELECT signal_id, evidence_quote FROM ml_signal_rows WHERE history_id = ?", ("hist-1",))
-    assert dict(session) == {"candidate_name": "Latoya Nugent", "ai_analysis_state": "complete"}
-    assert dict(answer) == {
-        "interviewer_raw_score": 4,
-        "ai_advisory_raw_score": 5,
-        "ai_trait_raw_score": 4,
-        "score_delta_interviewer_advisory": -1,
-    }
-    assert dict(signal) == {"signal_id": "P1", "evidence_quote": "visual schedules"}
-
-
-def test_ml_dataset_store_marks_missing_ai_without_running_analysis(tmp_path: Path):
-    store = InterviewMLDatasetStore(tmp_path / "interview_ml_dataset.sqlite3")
-
-    store.upsert_interview(
-        {"history_id": "hist-old", "candidate_name": "Old Candidate", "deepseek_processing_status": "not_started"},
-        {
-            "candidate": {"name": "Old Candidate", "qualification": {"years_experience": 8}},
-            "flow_transcript": [{"flow_index": 1, "type": "trait", "id": "trait_1", "candidate_transcript": "I redirect."}],
-        },
-        {"rows": [{"trait_id": "trait_1", "raw_score": 3, "weighted_score": 9}]},
-    )
-
-    pending = store.fetch_one(
-        "SELECT history_id, reason, recommended_next_action FROM ml_pending_ai_analysis WHERE history_id = ?",
-        ("hist-old",),
-    )
-    answer = store.fetch_one("SELECT ai_advisory_raw_score, ai_trait_raw_score FROM ml_answer_rows WHERE history_id = ?", ("hist-old",))
-    assert dict(pending) == {
-        "history_id": "hist-old",
-        "reason": "DeepSeek analysis missing or not completed.",
-        "recommended_next_action": "Queue DeepSeek analysis in a later batch slice.",
-    }
-    assert dict(answer) == {"ai_advisory_raw_score": None, "ai_trait_raw_score": None}
-
-
-def test_ml_dataset_store_records_deepseek_trace_and_exports(tmp_path: Path):
-    store = InterviewMLDatasetStore(tmp_path / "interview_ml_dataset.sqlite3")
-    store.upsert_interview(
-        {"history_id": "hist-1", "candidate_name": "Candidate"},
-        {"candidate": {"name": "Candidate"}, "flow_transcript": []},
-        {"rows": []},
-    )
-    store.record_deepseek_traces(
-        "hist-1",
-        [
-            {
-                "timestamp": "2026-03-11T10:00:00Z",
-                "prompt_name": "trait_scoring",
-                "stage": "Scoring Q1",
-                "model": "deepseek-r1:8b",
-                "prompt_text": "Score this answer.",
-                "model_response": '{"raw_score":4}',
-                "parse_success": True,
-                "validation_errors": [],
-                "normalized_output": {"raw_score": 4},
-                "trait_id": "trait_1",
-                "question_id": "trait_1",
-            }
-        ],
-        source_path=tmp_path / "deepseek-debug.jsonl",
-    )
-
-    exports = store.export_dataset(tmp_path / "exports")
-
-    assert store.count_rows("ml_deepseek_traces") == 1
-    assert (tmp_path / "exports" / "deepseek_traces.jsonl").exists()
-    assert (tmp_path / "exports" / "pending_ai_analysis.csv").exists()
-    assert exports["deepseek_traces"].name == "deepseek_traces.jsonl"
-
-
-def test_ml_dataset_path_for_history_path_uses_configured_drive_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    assert ml_dataset_path_for_history_path(tmp_path / "interview_history.sqlite3") == DEFAULT_ML_DATASET_DIR / ML_DATASET_DB_NAME
-    monkeypatch.setenv(ML_DATASET_DIR_ENV, str(tmp_path / "ml-target"))
-    assert ml_dataset_path_for_history_path(tmp_path / "interview_history.sqlite3") == tmp_path / "ml-target" / ML_DATASET_DB_NAME
-
-
-def test_ml_backfill_recovers_missing_transcript_text_from_docx(tmp_path: Path):
-    docx = pytest.importorskip("docx")
-    notes_dir = tmp_path / "notes"
-    notes_dir.mkdir()
-    doc_path = notes_dir / "2026-03-11 - Palmdale - Old Candidate - Interview.docx"
-    document = docx.Document()
-    document.add_paragraph("Question 1: How do you redirect behavior?")
-    document.add_paragraph("I use calm reminders and visual supports.")
-    document.save(doc_path)
-    history_path = tmp_path / "interview_history.sqlite3"
-    InterviewHistoryStore(history_path).append(
-        {
-            "history_id": "hist-old",
-            "candidate_name": "Old Candidate",
-            "school": "Palmdale",
-            "interview_date": "2026-03-11",
-            "interview_notes_path": str(doc_path),
-            "deepseek_processing_status": "not_started",
-        }
-    )
-
-    result = backfill_ml_dataset(
-        history_path=history_path,
-        ml_path=tmp_path / "interview_ml_dataset.sqlite3",
-        notes_dirs=[notes_dir],
-        export_dir=tmp_path / "exports",
-    )
-
-    store = InterviewMLDatasetStore(tmp_path / "interview_ml_dataset.sqlite3")
-    answer = store.fetch_one("SELECT question_text, candidate_transcript FROM ml_answer_rows WHERE history_id = ?", ("hist-old",))
-    assert result["docx_transcripts_recovered"] == 1
-    assert "redirect behavior" in answer["question_text"]
-    assert "visual supports" in answer["candidate_transcript"]
 
 
 def test_interview_history_store_loads_legacy_root_history(tmp_path: Path):

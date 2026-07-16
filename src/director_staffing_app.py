@@ -13,6 +13,7 @@ from typing import Any, Sequence
 
 from notification_service import NotificationService, NOTIFICATION_RULES_PATH
 from staffing_referral_queue import StaffingReferralQueueStore
+from staffing_change_stage import StaffingChangeStage
 from staffing_dashboard_host import StaffingDashboardAccess, StaffingDashboardHost
 from staffing_dashboard_v2 import apply_staffing_v2_light_theme
 from staffing_service import StaffingService
@@ -345,6 +346,18 @@ def launch_director_staffing_app(*, director_school: str = "") -> int:
         pass
 
     notification_service = lambda: NotificationService()
+    change_stage = StaffingChangeStage(Path(STAFFING_DB_PATH).with_name("staffing_changes.sqlite3"))
+    replica_slug = re.sub(r"[^a-z0-9]+", "_", director_school.strip().lower()).strip("_") or "all"
+    replica = f"director:{replica_slug}"
+
+    def staffing_service() -> StaffingService:
+        return StaffingService(
+            store,
+            notification_service=notification_service(),
+            change_stage=change_stage,
+            replica=replica,
+            school_scope=director_school,
+        )
 
     host = StaffingDashboardHost(
         QtCore=QtCore,
@@ -352,7 +365,7 @@ def launch_director_staffing_app(*, director_school: str = "") -> int:
         QtWidgets=QtWidgets,
         parent=window,
         store=store,
-        service_factory=lambda: StaffingService(store, notification_service=notification_service()),
+        service_factory=staffing_service,
         access=StaffingDashboardAccess(
             role="director",
             actor=str(os.environ.get("USERNAME") or os.environ.get("USER") or "director"),
@@ -374,12 +387,27 @@ def launch_director_staffing_app(*, director_school: str = "") -> int:
     def sync_referrals_after_first_paint() -> None:
         try:
             imported = sync_director_referrals(store, school=director_school)
+            imported += staffing_service().replay_staged_changes()
         except StaffingEditLock:
             return
         if imported:
             dashboard.refresh()
 
     QtCore.QTimer.singleShot(100, sync_referrals_after_first_paint)
+
+    def sync_staged_changes() -> None:
+        try:
+            imported = staffing_service().replay_staged_changes()
+        except StaffingEditLock:
+            return
+        if imported:
+            dashboard.refresh()
+
+    sync_timer = QtCore.QTimer(window)
+    sync_timer.setInterval(5000)
+    sync_timer.timeout.connect(sync_staged_changes)
+    sync_timer.start()
+    setattr(app, "_director_staffing_sync_timer", sync_timer)
     return app.exec()
 
 

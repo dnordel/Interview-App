@@ -2,11 +2,11 @@ module:
   name: setup_and_run
   language: powershell
   path: setup_and_run.ps1
-  version: 1.10.2
+  version: 2.0.0
   description: Windows launcher bootstrap that checks prerequisites, installs Python
     3.11 when needed, provisions a per-user virtual environment that can reuse system
-    site packages under LOCALAPPDATA instead of the repository folder, installs
-    local DeepSeek through Ollama, persists PySide as the selected UI mode, starts the
+    site packages under LOCALAPPDATA instead of the repository folder, persists
+    PySide as the selected UI mode, starts the
     PySide interview app through the runtime wrapper, and can launch the full
     PySide app in director staffing-only mode filtered to one school while reusing
     the same setup path. The root admin VBS launcher invokes this setup path in
@@ -265,8 +265,7 @@ functions:
 - name: Get-GpuVendorProfile
   description: Detect NVIDIA, AMD, and Intel GPU controller names so setup can install
     NVIDIA-only faster-whisper packages only on NVIDIA systems while preferring
-    OpenVINO GenAI for Whisper transcription and leaving AMD Ollama acceleration
-    to supported ROCm/Vulkan runtimes.
+    OpenVINO GenAI for Whisper transcription on other supported hardware.
   locked: false
   inputs: {}
   returns:
@@ -317,115 +316,6 @@ functions:
     type: void
   exceptions: []
   side_effects: mutates process environment variables and writes launcher log entries
-- name: Get-OllamaExe
-  description: Resolve ollama.exe from PATH or common per-user/all-users install
-    locations.
-  locked: false
-  inputs: {}
-  returns:
-    type: string | null
-  exceptions: []
-  side_effects: reads local executable paths
-- name: Test-OllamaApi
-  description: Check whether the local Ollama HTTP API is responding.
-  locked: false
-  inputs: {}
-  returns:
-    type: bool
-  exceptions: []
-  side_effects: sends a local HTTP request to 127.0.0.1
-- name: Start-OllamaService
-  description: Start the local Ollama service when its HTTP API is not already responding.
-  locked: false
-  inputs:
-    OllamaExe:
-      type: string
-      required: true
-  returns:
-    type: void
-  exceptions:
-  - Exception
-  side_effects: may start an ollama serve process and polls the local HTTP API
-- name: Ensure-Ollama
-  description: Reuse an installed Ollama runtime or install it with winget, then ensure
-    the local API is running.
-  locked: false
-  inputs: {}
-  returns:
-    type: string
-  exceptions:
-  - Exception
-  side_effects: may invoke winget, install Ollama, start the local service, and write
-    launcher log entries
-- name: Test-OllamaModelInstalled
-  description: Check whether a named Ollama model is already available locally,
-    accepting either the API name or model field.
-  locked: false
-  inputs:
-    Model:
-      type: string
-      required: true
-  returns:
-    type: bool
-  exceptions: []
-  side_effects: sends a local HTTP request to the Ollama model registry endpoint and
-    writes diagnostics on failure or missing models
-- name: Invoke-OllamaModelPull
-  description: Pull a named Ollama model through the streaming local API and write
-    status plus download percentage to both the setup progress UI and launcher log.
-  locked: false
-  inputs:
-    Model:
-      type: string
-      required: true
-  returns:
-    type: void
-  exceptions:
-  - Exception
-  side_effects: sends a local HTTP request to the Ollama pull endpoint, may download
-    model layers, updates setup progress, and writes launcher log entries
-- name: Ensure-DeepSeekModel
-  description: Pull the configured DeepSeek model into Ollama when it is not already
-    installed locally, defaulting to the repo-selected local 8b balanced model while
-    honoring a pre-set DEEPSEEK_SUMMARY_MODEL override or an allowlisted Admin Studio
-    app-settings model selection, streaming pull status and download percentage to
-    the setup UI/log, then retry local registry checks to allow Ollama to refresh
-    after pull completion.
-  locked: false
-  inputs:
-    OllamaExe:
-      type: string
-      required: true
-    Model:
-      type: string
-      required: true
-  returns:
-    type: void
-  exceptions:
-  - Exception
-  side_effects: may download the Ollama model and writes launcher log entries
-- name: Enable-LocalDeepSeekForLaunchedApp
-  description: Configure process environment variables so the launched app uses local
-    Ollama DeepSeek instead of the hosted DeepSeek API, preserving any pre-set
-    DEEPSEEK_SUMMARY_MODEL override selected before launch.
-  locked: false
-  inputs: {}
-  returns:
-    type: void
-  exceptions: []
-  side_effects: mutates process environment variables and writes launcher log entries
-- name: Ensure-LocalDeepSeek
-  description: Ensure Ollama is installed and running, ensure the selected local
-    DeepSeek model is present, and configure local-only DeepSeek environment defaults
-    for the launched app.
-  locked: false
-  inputs: {}
-  returns:
-    type: void
-  exceptions:
-  - Exception
-  side_effects: may install Ollama, pull a local model, start the local service, and
-    mutate process environment variables
 - name: Test-VenvUsesSystemSitePackages
   description: Check whether an existing virtual environment is configured to see
     system site packages so already installed dependencies can be reused.

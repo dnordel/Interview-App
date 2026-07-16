@@ -2,7 +2,7 @@ module:
   name: interview_app_finalize_context
   language: python
   path: src/interview_app/finalize_context.py
-  version: 2.0.3
+  version: 3.0.0
   description: Deprecated compatibility wrapper for finalize payload context implemented
     by interview_runtime.
 functions:
@@ -23,10 +23,6 @@ functions:
     transcript_metadata:
       type: FinalizeTranscriptMetadata
       required: true
-    run_deepseek:
-      type: bool
-      required: false
-      default: true
   returns:
     type: FinalizeContext
   exceptions: []

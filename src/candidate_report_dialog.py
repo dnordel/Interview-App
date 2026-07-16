@@ -6,6 +6,7 @@ import os
 from dataclasses import replace
 from pathlib import Path
 from typing import Any, Callable
+from uuid import uuid4
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
@@ -19,6 +20,7 @@ from candidate_report import (
     export_candidate_report_audit_csv,
     validate_candidate_report,
 )
+from platform_services import Document, sanitize_filename
 from staffing_store import StaffingStaleRevisionError
 
 
@@ -40,6 +42,59 @@ QPushButton:disabled { color: #94a3b8; background: #f1f5f9; }
 QLineEdit, QPlainTextEdit, QSpinBox { border: 1px solid #cbd5e1; border-radius: 5px; padding: 6px; background: white; }
 QTableWidget { border: 1px solid #dfe5ee; background: white; gridline-color: #e6ebf2; }
 """
+
+
+def generate_basic_candidate_notes_document(snapshot: dict[str, Any], output_path: Path) -> Path:
+    """Write a basic Word interview-notes document from a structured report snapshot."""
+    path = Path(output_path)
+    if path.suffix.casefold() != ".docx":
+        raise ValueError("Interview notes output must be a .docx file.")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    candidate = snapshot.get("candidate") if isinstance(snapshot.get("candidate"), dict) else {}
+    scoring = snapshot.get("scoring") if isinstance(snapshot.get("scoring"), dict) else {}
+    questions = snapshot.get("questions") if isinstance(snapshot.get("questions"), list) else []
+    summaries = snapshot.get("summaries") if isinstance(snapshot.get("summaries"), dict) else {}
+
+    document = Document()
+    document.add_heading("Interview Notes", level=0)
+    for label, value in (
+        ("Candidate", candidate.get("candidate_name")),
+        ("Interview Date", candidate.get("interview_date")),
+        ("School", candidate.get("school")),
+        ("Role / Track", candidate.get("track")),
+        ("Score", scoring.get("percent_of_max")),
+        ("Outcome", scoring.get("outcome")),
+    ):
+        text = str(value if value is not None else "").strip()
+        if text:
+            document.add_paragraph(f"{label}: {text}")
+
+    document.add_heading("Interview Questions and Notes", level=1)
+    for index, question in enumerate(questions, start=1):
+        if not isinstance(question, dict):
+            continue
+        prompt = str(question.get("prompt") or question.get("title") or f"Question {index}").strip()
+        document.add_heading(f"{index}. {prompt}", level=2)
+        transcript = str(question.get("transcript") or "").strip()
+        notes = str(question.get("interviewer_notes") or "").strip()
+        document.add_paragraph(f"Candidate response: {transcript or 'Not captured'}")
+        document.add_paragraph(f"Interviewer notes: {notes or 'Not captured'}")
+        rating = question.get("rating")
+        if rating not in (None, ""):
+            document.add_paragraph(f"Rating: {rating}")
+
+    document.add_heading("Summary", level=1)
+    summary = str(summaries.get("executive_summary") or "").strip()
+    document.add_paragraph(summary or "No summary captured.")
+
+    temporary_path = path.with_name(f".{path.stem}.{uuid4().hex}.tmp.docx")
+    try:
+        document.save(temporary_path)
+        temporary_path.replace(path)
+    finally:
+        if temporary_path.exists():
+            temporary_path.unlink()
+    return path.resolve()
 
 
 class CandidateInterviewReportDialog(QtWidgets.QDialog):
@@ -1171,8 +1226,7 @@ class CandidateInterviewReportDialog(QtWidgets.QDialog):
         self._update_actions()
 
     def _update_actions(self) -> None:
-        path = Path(str(self.working_snapshot.get("report_path") or ""))
-        self.open_word_button.setEnabled(path.suffix.casefold() == ".docx" and path.is_file())
+        self.open_word_button.setEnabled(True)
         self.reopen_button.setVisible(self.role == "admin" and self.record.state == "finalized")
         self.revert_all_button.setVisible(self.editing_initial)
         self.revert_all_button.setEnabled(self.dirty)
@@ -1253,12 +1307,34 @@ class CandidateInterviewReportDialog(QtWidgets.QDialog):
 
     def _open_word(self) -> None:
         path = Path(str(self.working_snapshot.get("report_path") or ""))
-        if path.suffix.casefold() != ".docx" or not path.is_file():
-            self.status_label.setText("Saved Word report is missing or invalid.")
-            return
+        if path.suffix.casefold() != ".docx":
+            candidate = self.working_snapshot.get("candidate")
+            candidate = candidate if isinstance(candidate, dict) else {}
+            filename = sanitize_filename(
+                " - ".join(
+                    part
+                    for part in (
+                        str(candidate.get("interview_date") or "").strip(),
+                        str(candidate.get("school") or "").strip(),
+                        str(candidate.get("candidate_name") or "Candidate").strip(),
+                        "Basic Interview Notes",
+                    )
+                    if part
+                )
+            )
+            path = self.repository.db_path.parent / "Indeed Interview Notes" / f"{filename}.docx"
         try:
+            if not path.is_file():
+                path = generate_basic_candidate_notes_document(self.working_snapshot, path)
+                self.record = self.repository.sync_report_path(
+                    self.history_id,
+                    path,
+                    app_version=self.app_version,
+                )
+                self.working_snapshot["report_path"] = str(path)
+                self.saved_snapshot["report_path"] = str(path)
             self.open_document(path.resolve())
-        except OSError as exc:
+        except (OSError, ValueError, CandidateReportValidationError) as exc:
             self.status_label.setText(f"Saved Word report could not be opened: {exc}")
 
     @staticmethod

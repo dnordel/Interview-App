@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 5.4.0
+  version: 6.1.0
   description: PySide6 operations shell and headless view-model builder for a mockup-driven
     New Interview setup/live flow, Candidates-owned pipeline/history, candidate reports,
     onboarding, staffing, notifications, and admin-only
@@ -150,7 +150,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: _history_has_no_hire_override
-  description: Return whether a persisted history row contains explicit human disqualifier, critical-score, locked-rule, or override-rationale metadata that should preserve a No Hire status even when numeric score is 65% or higher; DeepSeek automatic no-hire advisory metadata alone does not preserve No Hire.
+  description: Return whether a persisted history row contains explicit human disqualifier, critical-score, locked-rule, or override-rationale metadata that should preserve a No Hire status even when numeric score is 65% or higher.
   locked: false
   inputs:
     row:
@@ -161,7 +161,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: _history_status_from_score
-  description: Derive PySide history display status from score thresholds, preserving incomplete and processing statuses plus explicit human no-hire override metadata; DeepSeek automatic no-hire advisory metadata alone follows the numeric score, 80% and above returns Hire, 65% through below 80% returns Borderline, and below 65% returns No Hire.
+  description: Derive PySide history display status from score thresholds, preserving incomplete and processing statuses plus explicit human no-hire override metadata; 80% and above returns Hire, 65% through below 80% returns Borderline, and below 65% returns No Hire.
   locked: false
   inputs:
     row:
@@ -238,7 +238,7 @@ functions:
   exceptions: []
   side_effects: Reads interview history through InterviewHistoryStore and may import legacy JSON when the store is initialized.
 - name: _pyside_history_rows_from_payloads
-  description: Convert raw persisted history payload dictionaries into newest-first display-ready PySideHistoryRow values using existing score, status, offer, notes, and DeepSeek-processing normalization.
+  description: Convert raw persisted history payload dictionaries into newest-first display-ready PySideHistoryRow values using existing score, status, offer, and notes normalization.
   locked: false
   inputs:
     rows:
@@ -360,7 +360,7 @@ functions:
   side_effects: Launches the PySide6 desktop UI.
 classes:
 - name: PySideInterviewSession
-  description: Autosaved PySide interview session state for guided question flow, draft resume, and canonical interview_sessions transcript snapshots used by history-triggered DeepSeek generation.
+  description: Autosaved PySide interview session state for guided question flow, draft resume, and canonical interview_sessions transcript snapshots.
   locked: false
   attributes:
     model:
@@ -625,13 +625,12 @@ classes:
     - OSError
     side_effects: Writes basic interview-notes DOCX and integration export under
       the selected output directory, and writes the SQLite history row to the
-      configured history path without queueing DeepSeek.
+      configured history path.
   - name: finalize_interview
     description: Finalize the completed PySide session using shared desktop runtime
       contracts for scoring, immediate history persistence after the hiring decision,
       basic DocxExporter notes generation, integration export, transcript metadata,
-      and final history path backfill; DeepSeek processing is not started by finalize
-      and is only launched later from the candidate history Generate action.
+      and final history path backfill.
     locked: false
     inputs:
       base_dir:
@@ -651,11 +650,11 @@ classes:
     exceptions:
     - ReportingValidationError
     - OSError
-    side_effects: Writes finalized interview history immediately after scoring with
-      not-started DeepSeek status, writes basic interview-notes DOCX to the resolved
+    side_effects: Writes finalized interview history immediately after scoring,
+      writes basic interview-notes DOCX to the resolved
       per-school Dropbox candidate folder when configured, backfills the history notes
       paths, writes integration export, and preserves any PySide recording/transcript
-      payload in history/session data for later history-triggered DeepSeek generation.
+      payload in history/session data.
   - name: update_completed_artifacts
     description: Idempotently regenerate completed interview scoring, base DOCX, history payload, and candidate-report snapshot for an existing history ID after overview edits or Back navigation.
     locked: false
@@ -668,7 +667,7 @@ classes:
     - ValueError
     - ReportingValidationError
     - OSError
-    side_effects: Updates one existing history row and its base DOCX and candidate-report snapshot without creating duplicate history, application, referral, notification, or DeepSeek records.
+    side_effects: Updates one existing history row and its base DOCX and candidate-report snapshot without creating duplicate history, application, referral, or notification records.
   - name: _transcript_metadata
     description: Build complete/partial transcript metadata from PySide flow transcript
       and recording state for finalize/history payloads.
@@ -696,7 +695,7 @@ classes:
     - OSError
     side_effects: Writes PySide draft JSON and canonical interview_sessions question snapshots.
   - name: _save_interview_session_snapshots
-    description: Mirror answered or transcribed PySide flow items to canonical InterviewSessionStore JSON so history Generate can synthesize a DeepSeek job after transcript-only finalize.
+    description: Mirror answered or transcribed PySide flow items to canonical InterviewSessionStore JSON for durable transcript snapshots.
     locked: false
     inputs: {}
     returns:
@@ -1339,8 +1338,7 @@ classes:
       refreshes transcript cells as background transcription finishes, and allows
       scored trait ratings to be changed then explicitly applied to history DB
       scoring and director-referral queue state after the interview.
-      It must not display DeepSeek output, AI analysis/scoring text, Finalize
-      Interview, or Generate Offer actions.
+      It must not display Finalize Interview or Generate Offer actions.
     locked: false
     inputs: {}
     returns:
@@ -1435,7 +1433,7 @@ classes:
     exceptions: []
     side_effects: May refresh visible transcript cells and history tables before final report export
       completes; stops the polling timer, clears finalize running state, updates the
-      review status label, and starts optional detached DeepSeek progress polling.
+      review status label.
   - name: _show_pyside_finalize_progress
     description: Show a user-closable non-modal PySide finalize progress dialog with
       immediate ordered sanitized task/status rows in a compact scrollable task pane
@@ -1465,9 +1463,7 @@ classes:
     side_effects: Updates in-memory progress step and task/status state.
   - name: _refresh_pyside_finalize_progress
     description: Drain queued PySide finalize progress updates and render task/status
-      rows in pipeline order when the progress dialog is still open, discovering
-      the latest safe detached DeepSeek progress file from processing history rows
-      when the finalize result has not attached it yet.
+      rows in pipeline order when the progress dialog is still open.
     locked: false
     inputs: {}
     returns:
@@ -1475,53 +1471,9 @@ classes:
     exceptions: []
     side_effects: May read local InterviewHistoryStore rows and updates visible
       progress label text.
-  - name: _attach_latest_deepseek_progress_from_history
-    description: Attach the newest safe local detached DeepSeek progress JSON path
-      from a processing history row so an open finalize progress dialog can show
-      worker progress even before the finalize result callback attaches the path.
-      Rejects non-DeepSeek progress filenames and paths outside expected local
-      deepseek_jobs directories.
-    locked: false
-    inputs: {}
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Reads local InterviewHistoryStore rows and may set the active
-      PySide finalize DeepSeek progress path.
-  - name: _read_pyside_deepseek_progress_step
-    description: Read local detached DeepSeek progress JSON produced by the finalize
-      queue and return sanitized step/status text.
-    locked: false
-    inputs: {}
-    returns:
-      type: tuple[str, str]
-    exceptions: []
-    side_effects: Reads a local progress JSON file path produced by finalize.
-  - name: _read_pyside_deepseek_progress_tasks
-    description: Read local detached DeepSeek progress JSON task rows and normalize
-      them for the PySide finalize task/status display.
-    locked: false
-    inputs: {}
-    returns:
-      type: list[dict[str, str]]
-    exceptions: []
-    side_effects: Reads a local progress JSON file path produced by finalize.
-  - name: _watch_pyside_deepseek_finalize_progress
-    description: Poll detached DeepSeek progress JSON while the PySide progress dialog
-      remains open, refresh visible status, reload history when processing completes
-      or fails, and schedule dialog auto-close after successful completion.
-    locked: false
-    inputs:
-      progress_path:
-        type: str | Path | None
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: May start or stop a QTimer and refresh visible history tables.
   - name: _close_pyside_finalize_progress
     description: Close the PySide finalize progress dialog and stop progress polling
-      without cancelling background transcription, finalize, or DeepSeek work.
+      without cancelling background transcription or finalize work.
     locked: false
     inputs: {}
     returns:
@@ -1530,7 +1482,7 @@ classes:
     side_effects: Closes QDialog and clears progress widget references.
   - name: _schedule_close_pyside_finalize_progress
     description: Schedule the PySide finalize progress dialog to close shortly after
-      successful finalize or DeepSeek completion while leaving failure states visible
+      successful finalize while leaving failure states visible
       for review.
     locked: false
     inputs: {}
@@ -1624,21 +1576,28 @@ classes:
     exceptions: []
     side_effects: Imports central referral queue rows, syncs eligible interview history rows into pending director referrals, and refreshes the Staffing v2 dashboard after first paint.
   - name: _start_staffing_referral_queue_polling
-    description: Start one PySide timer that periodically imports central referral queue records for the current director school.
+    description: Start one PySide timer that polls cross-database staffing changes for admin/director and central referral records for the current director school.
     locked: false
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Creates and starts a QTimer owned by the main window when a director school is assigned and no queue timer is active.
+    side_effects: Creates and starts a five-second QTimer owned by the main window when no staffing sync timer is active.
   - name: _poll_staffing_referral_queue
-    description: Import queued referral records and refresh the Staffing v2 dashboard when new rows were applied.
+    description: Replay peer staffing changes, import assigned-school referral records for directors, and refresh Staffing v2 when rows changed.
     locked: false
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Reads and consumes matching central SQLite referral queue rows, writes matching referrals or dismissal audit/removal rows to the active staffing database, and refreshes StaffingDashboardV2Page.
+    side_effects: Reads the append-only staffing staging journal, applies and acknowledges peer operations in only the local DB, consumes matching referral queue rows for directors, and refreshes StaffingDashboardV2Page.
+  - name: _staffing_service
+    description: Build a StaffingService bound to the local admin or school DB, shared staging journal, and stable replica identity.
+    locked: false
+    inputs: {}
+    returns: {type: StaffingService}
+    exceptions: []
+    side_effects: May initialize notification settings while constructing the service.
   - name: _import_queued_staffing_director_referrals
     description: Move central referral queue records for the current director school into the active StaffingService director-referral store.
     locked: false
@@ -2053,47 +2012,6 @@ classes:
       type: None
     exceptions: []
     side_effects: Shows a PySide confirmation dialog, may delete one draft JSON file, and updates visible home draft controls.
-  - name: _deepseek_retry_job_path_for_row
-    description: Resolve the persisted DeepSeek job JSON path for a failed history
-      row from the row key and configured history/base directories, rejecting unsafe
-      path-bearing row keys.
-    locked: false
-    inputs:
-      row:
-        type: PySideHistoryRow
-        required: true
-    returns:
-      type: Path | None
-    exceptions: []
-    side_effects: Checks local filesystem path existence.
-  - name: _retry_history_deepseek
-    description: Relaunch a persisted DeepSeek finalize job for a history row in full
-      or document-only regeneration mode, refresh history tables to Processing, and
-      attach the existing progress dialog watcher to the progress JSON.
-    locked: false
-    inputs:
-      row:
-        type: PySideHistoryRow
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Reads a local job JSON path, updates history through interview_runtime
-      regeneration behavior, starts a detached worker, shows warnings on failure,
-      and refreshes visible history/progress UI.
-  - name: _choose_pyside_notes_regeneration_mode
-    description: Ask whether notes regeneration should rerun local DeepSeek and rebuild
-      the document or rebuild only the document from saved data using explicit action
-      buttons.
-    locked: false
-    inputs:
-      row:
-        type: PySideHistoryRow
-        required: true
-    returns:
-      type: str | None
-    exceptions: []
-    side_effects: Shows a PySide modal selection dialog.
   - name: _open_history_notes
     description: Open a selected history row's interview notes DOCX in the OS default
       application immediately when the local path exists; when a failed row has no
@@ -2227,8 +2145,7 @@ classes:
     description: Build a PySideInterviewSession for a finalized history row so an
       imported Indeed transcript can be attached to the existing candidate and
       opened for review-score edits while preserving prior answers, review scores,
-      and scoring-row raw scores from history payload data or its saved finalize
-      job when legacy history contains only an aggregate score.
+      and scoring-row raw scores from history payload data.
     locked: false
     inputs:
       row:
@@ -2238,24 +2155,7 @@ classes:
       type: PySideInterviewSession
     exceptions:
     - ValueError
-    side_effects: Writes the new draft through PySideInterviewSession.start and may
-      read a bounded local finalize-job JSON file under DEFAULT_BASE_DIR/deepseek_jobs.
-  - name: _history_finalize_job_payload
-    description: Load a bounded finalize-job JSON payload for one history row from
-      the configured deepseek_jobs directory, rejecting paths outside that directory,
-      non-JSON files, malformed payloads, and files over 25 MB.
-    locked: false
-    inputs:
-      row:
-        type: PySideHistoryRow
-        required: true
-      history_payload:
-        type: dict[str, Any]
-        required: true
-    returns:
-      type: dict[str, Any]
-    exceptions: []
-    side_effects: Reads at most one local finalize-job JSON file.
+    side_effects: Writes the new draft through PySideInterviewSession.start.
   - name: _history_payload_for_row
     description: Load the full persisted history payload for a rendered history row key.
     locked: false
@@ -2285,9 +2185,7 @@ classes:
   - name: _history_import_updates
     description: Build the history-store payload for an imported Indeed transcript,
       including mapped answers, flow transcripts, source metadata, regenerated
-      Basic Interview Notes metadata, saved DeepSeek job metadata, and resetting
-      DeepSeek processing status to not_started while carrying forward preserved
-      review scores.
+      Basic Interview Notes metadata, and preserved review scores.
     locked: false
     inputs:
       row:
@@ -2311,9 +2209,7 @@ classes:
     exceptions: []
     side_effects: none
   - name: _regenerate_history_import_artifacts
-    description: Regenerate Basic Interview Notes and write a not-started DeepSeek
-      finalize job for a history-row Indeed transcript import without launching
-      the DeepSeek worker.
+    description: Regenerate Basic Interview Notes for a history-row Indeed transcript import.
     locked: false
     inputs:
       row:
@@ -2326,13 +2222,23 @@ classes:
       type: dict[str, Any]
     exceptions:
     - Exception
-    side_effects: Writes a Basic Interview Notes DOCX, writes a deepseek-finalize
-      JSON job under DEFAULT_BASE_DIR/deepseek_jobs, and returns history updates.
+    side_effects: Writes a Basic Interview Notes DOCX and returns history updates.
+  - name: _regenerate_history_notes
+    description: Regenerate a selected history row's Basic Interview Notes from its persisted interview data.
+    locked: false
+    inputs:
+      row:
+        type: PySideHistoryRow
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Rebuilds the notes document, updates the existing history row, refreshes history, and may show an operator warning.
   - name: _import_indeed_transcript_for_history_row
     description: Prompt for an Indeed .txt transcript for a selected finalized history
       row, import it into that candidate's PySide session, persist mapped answers
       and transcript metadata to the history row, regenerate the Basic Interview
-      Notes DOCX, save a DeepSeek job for the Generate button, and open the Review
+      Notes DOCX, and open the Review
       tab with editable ratings bound to that same history row.
     locked: false
     inputs:
@@ -2356,7 +2262,7 @@ data_structures:
   type: dataclass
   description: Render-ready finalized interview history row with stable row key,
     interview date, candidate, school, position, score, status, offer status/action,
-    notes path, report path, DeepSeek job/progress paths, candidate email, offer path, and detached DeepSeek processing state/warning for the
+    notes path, report path, candidate email, and offer path for the
     searchable, filterable, sortable, outcome-colored, content-sized PySide history
     grid and offer workflow. Status must follow score display thresholds when a
     numeric score is present unless explicit no-hire override metadata or an
@@ -2408,6 +2314,7 @@ dependencies:
 - module: staffing_dashboard_v2
 - module: staffing_settings_v2
 - module: staffing_referral_queue
+- module: staffing_change_stage
 - module: staffing_service
 - module: staffing_store
 - module: PySide6

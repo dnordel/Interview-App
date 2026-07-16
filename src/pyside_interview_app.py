@@ -24,7 +24,7 @@ from string import Formatter
 from types import SimpleNamespace
 from typing import Any, Callable, Sequence
 
-from admin_studio import DEFAULT_DEEPSEEK_MODEL, DEEPSEEK_MODEL_CHOICES, AdminStudio, AdminStudioPaths
+from admin_studio import AdminStudio, AdminStudioPaths
 from candidate_report import CandidateReportRepository, build_candidate_report_snapshot
 from docx import Document
 from data_store import (
@@ -39,27 +39,21 @@ from data_store import (
     resolve_offer_template_path,
 )
 from interview_runtime import (
-    DEEPSEEK_PROMPTS_CONFIG_PATH,
-    DEFAULT_DEEPSEEK_PROGRESS_TASKS,
     FinalizeGateways,
     IndeedTranscriptImportResult,
     InterviewSessionStore,
     build_finalize_progress_tasks,
     build_finalize_context,
     build_flow_time_windows,
-    enqueue_deepseek_finalize_job,
     format_finalize_progress_tasks,
     map_indeed_transcript_to_questions,
     load_candidate_segments,
     map_segments_to_flow_indices,
     list_windows_dshow_audio_devices,
     parse_indeed_transcript_text,
-    regenerate_interview_notes_job,
-    resolve_deepseek_regeneration_job_path,
     resolve_default_windows_microphone_device,
     resolve_default_windows_system_device,
     resolve_runtime,
-    _local_deepseek_settings_source,
 )
 from interview_audio_preflight import AudioPreflightResult, evaluate_audio_preflight, recent_wav_signal_level
 from pyside_live_interview import (
@@ -121,6 +115,7 @@ from staffing_dashboard_host import StaffingDashboardAccess, StaffingDashboardHo
 from staffing_dashboard_v2 import apply_staffing_v2_light_theme, configure_v2_scroll_areas
 from staffing_settings_v2 import StaffingSettingsV2Page
 from staffing_referral_queue import StaffingReferralQueueStore
+from staffing_change_stage import StaffingChangeStage
 from staffing_service import StaffingService
 from staffing_store import StaffingEditLock, StaffingStore
 
@@ -150,12 +145,6 @@ QUICK_ACTIONS = [
     "Evidence captured",
     "Disqualifier observed",
 ]
-PYSIDE_FINALIZE_PROGRESS_TASKS = (
-    "Stopping recording and transcribing",
-    "Building interview notes",
-    "Queueing DeepSeek processing",
-    *DEFAULT_DEEPSEEK_PROGRESS_TASKS,
-)
 PYSIDE_CORE_FINALIZE_PROGRESS_TASKS = (
     "Stopping recording and transcribing",
     "Building interview notes",
@@ -189,12 +178,8 @@ class PySideHistoryRow:
     offer_action: str
     notes_path: str
     report_path: str
-    deepseek_job_path: str = ""
-    deepseek_progress_path: str = ""
     candidate_email: str = ""
     offer_path: str = ""
-    deepseek_processing_status: str = ""
-    deepseek_processing_warning: str = ""
 
 
 @dataclass(frozen=True)
@@ -668,7 +653,7 @@ class PySideInterviewSession:
         warnings: list[str] = []
         scoring = ScoringEngine.evaluate(adapter._rubric_with_question_overrides(), adapter.state.track, adapter.state.trait_inputs)
         transcript_metadata = self._transcript_metadata()
-        context = build_finalize_context(adapter, scoring, warnings, transcript_metadata, run_deepseek=False)
+        context = build_finalize_context(adapter, scoring, warnings, transcript_metadata)
         active_gateways = gateways or FinalizeGateways()
         history_id = active_gateways.persist_finalize_history(adapter, context, "")
         export_basic_report = getattr(active_gateways, "export_basic_report", None)
@@ -733,8 +718,6 @@ class PySideInterviewSession:
             "transcript_complete": transcript_metadata["transcript_complete"],
             "transcript_completeness_status": transcript_metadata["transcript_completeness_status"],
             "remaining_question_indices": transcript_metadata["remaining_question_indices"],
-            "deepseek_job_path": "",
-            "deepseek_progress_path": "",
             "history_id": history_id,
         }
 
@@ -752,7 +735,7 @@ class PySideInterviewSession:
         scoring = ScoringEngine.evaluate(
             adapter._rubric_with_question_overrides(), adapter.state.track, adapter.state.trait_inputs
         )
-        context = build_finalize_context(adapter, scoring, [], self._transcript_metadata(), run_deepseek=False)
+        context = build_finalize_context(adapter, scoring, [], self._transcript_metadata())
         existing = next(
             (row for row in adapter.history_store.load() if adapter.history_store.build_row_key(row) == key),
             None,
@@ -984,12 +967,6 @@ class _PySideFinalizeAdapter:
             "base_dir": str(base_dir),
             "send_director_referral_on_finalize": False,
             "director_referral_endpoint": "",
-            "deepseek_summary_enabled": True,
-            "deepseek_api_key": "ollama",
-            "deepseek_api_base_url": "http://127.0.0.1:11434/v1",
-            "deepseek_summary_model": DEFAULT_DEEPSEEK_MODEL,
-            "deepseek_summary_timeout_seconds": 600,
-            "deepseek_prompt_templates": {},
         }
         self.settings.update(InterviewAppSettingsStore(INTERVIEW_APP_SETTINGS_PATH).load())
         self.school_offer_store = SchoolOfferSettingsStore(SCHOOL_OFFER_SETTINGS_PATH)
@@ -1187,7 +1164,7 @@ def _history_has_no_hire_override(row: dict[str, Any]) -> bool:
     if any(bool(row.get(key)) for key in override_keys):
         return True
     locked_rule = str(row.get("locked_rule") or row.get("override_rationale") or "").strip().lower()
-    if "automatic no-hire signal" in locked_rule or "deepseek automatic no-hire" in locked_rule:
+    if "automatic no-hire signal" in locked_rule:
         return False
     return any(term in locked_rule for term in ("no hire", "disqualifier", "critical"))
 
@@ -1599,12 +1576,8 @@ def _pyside_history_rows_from_payloads(rows: Sequence[dict[str, Any]], store: In
                 offer_action=_history_offer_action(offer_status),
                 notes_path=_history_text(row, "interview_notes_path", "saved_report_path", "notes_path", default=""),
                 report_path=_history_text(row, "saved_report_path", "report_path", "interview_notes_path", default=""),
-                deepseek_job_path=_history_text(row, "deepseek_job_path", default=""),
-                deepseek_progress_path=_history_text(row, "deepseek_progress_path", default=""),
                 candidate_email=_history_text(row, "candidate_email", "email", "candidateEmail", default=""),
                 offer_path=_history_text(row, "offer_letter_path", "offer_path", default=""),
-                deepseek_processing_status=_history_text(row, "deepseek_processing_status", default="").strip().lower(),
-                deepseek_processing_warning=_history_text(row, "deepseek_processing_warning", default=""),
             )
         )
     return list(reversed(history_rows))
@@ -1975,8 +1948,6 @@ def build_pyside_candidate_board(history_rows: Sequence[dict[str, Any] | PySideH
                     offer_action=offer_action,
                     notes_path=_history_text(row, "interview_notes_path", "saved_report_path", "notes_path", default=""),
                     report_path=_history_text(row, "saved_report_path", "report_path", "interview_notes_path", default=""),
-                    deepseek_processing_status=_history_text(row, "deepseek_processing_status", default="").strip().lower(),
-                    deepseek_processing_warning=_history_text(row, "deepseek_processing_warning", default=""),
                 )
             )
             row_data = {
@@ -2414,6 +2385,7 @@ class PySideInterviewWindow:
         )
         _bootstrap_school_staffing_db_from_base(self.director_staffing_school, staffing_db_path)
         self.staffing_store = StaffingStore(staffing_db_path)
+        self.staffing_change_stage = StaffingChangeStage(Path(STAFFING_DB_PATH).with_name("staffing_changes.sqlite3"))
         self._staffing_referral_queue_timer: Any | None = None
         self._staffing_v2_director_referrals_sync_started = False
         self.staffing_status_label: Any | None = None
@@ -2445,16 +2417,13 @@ class PySideInterviewWindow:
         self._pyside_finalize_running = False
         self._completed_finalize_error = ""
         self._completed_artifacts_dirty = False
-        self._pyside_finalize_tracks_deepseek = False
         self._pyside_finalize_progress_step = ""
         self._pyside_finalize_progress_tasks: list[dict[str, str]] = []
         self.pyside_finalize_progress_dialog: Any | None = None
         self.pyside_finalize_progress_label: Any | None = None
         self.pyside_finalize_progress_bar: Any | None = None
-        self.pyside_finalize_deepseek_progress_path: Path | None = None
         self._pyside_finalize_progress_queue: queue.Queue[str] | None = None
         self._pyside_finalize_progress_refresh_timer: Any | None = None
-        self._pyside_deepseek_progress_timer: Any | None = None
         self._review_score_dirty = False
         self._review_history_id = ""
         self.review_question_table: Any | None = None
@@ -2627,7 +2596,7 @@ class PySideInterviewWindow:
         def regenerate_notes(application: Any) -> None:
             row = history_row(application)
             if row is not None:
-                self._retry_history_deepseek(row)
+                self._regenerate_history_notes(row)
 
         def import_transcript(application: Any) -> None:
             row = history_row(application)
@@ -4362,40 +4331,7 @@ class PySideInterviewWindow:
             session.interview_date = row.interview_date
         payload = self._history_payload_for_row(row)
         self._hydrate_session_from_history_payload(session, payload)
-        has_saved_scores = any(
-            isinstance(answer, dict) and str(answer.get("score") or "").strip()
-            for answer in session.answers.values()
-        )
-        if not has_saved_scores:
-            self._hydrate_session_from_history_payload(session, self._history_finalize_job_payload(row, payload))
         return session
-
-    def _history_finalize_job_payload(
-        self,
-        row: PySideHistoryRow,
-        history_payload: dict[str, Any],
-    ) -> dict[str, Any]:
-        job_dir = (Path(DEFAULT_BASE_DIR) / "deepseek_jobs").resolve()
-        candidates: list[Path] = []
-        configured_path = str(history_payload.get("deepseek_job_path") or "").strip()
-        if configured_path:
-            candidates.append(Path(configured_path))
-        history_id = str(history_payload.get("history_id") or row.row_key or "").strip()
-        if history_id and Path(history_id).name == history_id and history_id not in {".", ".."}:
-            candidates.append(job_dir / f"deepseek-finalize-{history_id}.json")
-        for candidate in candidates:
-            try:
-                resolved = candidate.resolve()
-                if resolved.suffix.lower() != ".json" or not resolved.is_relative_to(job_dir):
-                    continue
-                if not resolved.is_file() or resolved.stat().st_size > 25_000_000:
-                    continue
-                payload = json.loads(resolved.read_text(encoding="utf-8"))
-            except (OSError, ValueError, json.JSONDecodeError):
-                continue
-            if isinstance(payload, dict):
-                return payload
-        return {}
 
     def _history_payload_for_row(self, row: PySideHistoryRow) -> dict[str, Any]:
         key = str(row.row_key or "").strip()
@@ -4491,8 +4427,6 @@ class PySideInterviewWindow:
                 "imported_at": datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
             },
             "review_scores": review_scores,
-            "deepseek_processing_status": "not_started",
-            "deepseek_processing_warning": "",
         }
         if artifact_updates:
             updates.update(artifact_updates)
@@ -4502,7 +4436,7 @@ class PySideInterviewWindow:
         adapter = _PySideFinalizeAdapter(session, base_dir=DEFAULT_BASE_DIR, history_path=self.model.history_path)
         warnings: list[str] = []
         scoring = ScoringEngine.evaluate(adapter._rubric_with_question_overrides(), adapter.state.track, adapter.state.trait_inputs)
-        context = build_finalize_context(adapter, scoring, warnings, session._transcript_metadata(), run_deepseek=False)
+        context = build_finalize_context(adapter, scoring, warnings, session._transcript_metadata())
         existing_notes_text = str(row.notes_path or row.report_path or "").strip()
         existing_notes_path = Path(existing_notes_text) if existing_notes_text else None
         output_dir = existing_notes_path.parent if existing_notes_path is not None else adapter._interview_notes_output_dir()
@@ -4512,22 +4446,6 @@ class PySideInterviewWindow:
             context.payload,
             scoring,
         )
-        history_id = str(row.row_key).strip()
-        job_path = Path(DEFAULT_BASE_DIR) / "deepseek_jobs" / f"deepseek-finalize-{history_id}.json"
-        progress_path = job_path.with_suffix(".progress.json")
-        job_payload = {
-            "history_id": history_id,
-            "history_path": str(self.model.history_path),
-            "base_dir": str(DEFAULT_BASE_DIR),
-            "report_path": str(out_path),
-            "rubric": adapter._rubric_with_question_overrides(),
-            "payload": context.payload,
-            "scoring": scoring,
-            "deepseek_settings": _local_deepseek_settings_source(adapter.settings),
-            "progress_path": str(progress_path),
-        }
-        job_path.parent.mkdir(parents=True, exist_ok=True)
-        atomic_write_json(job_path, job_payload, indent=2, ensure_ascii=False)
         percent = scoring.get("percent_of_max", 0)
         percent_label = str(scoring.get("percent_of_max_label") or f"{percent}%")
         outcome = str(scoring.get("outcome", "") or "Incomplete")
@@ -4546,10 +4464,21 @@ class PySideInterviewWindow:
             "interview_status": outcome,
             "next_action": _next_action_for_outcome(outcome),
             "scoring": scoring,
-            "deepseek_job_path": str(job_path),
-            "deepseek_progress_path": str(progress_path),
             "basic_notes_regenerated_at": datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
         }
+
+    def _regenerate_history_notes(self, row: PySideHistoryRow) -> None:
+        try:
+            session = self._session_from_history_row(row)
+            updates = self._regenerate_history_import_artifacts(row, session)
+            updated = self.history_store.update_row(row.row_key, updates)
+        except Exception as exc:  # noqa: BLE001
+            self.QtWidgets.QMessageBox.warning(self.window, "Regenerate Notes", f"Could not regenerate notes: {exc}")
+            return
+        if not updated:
+            self.QtWidgets.QMessageBox.warning(self.window, "Regenerate Notes", "History entry was not found.")
+            return
+        self._reload_history_model()
 
     def _import_indeed_transcript_for_history_row(self, row: PySideHistoryRow) -> None:
         if not row.row_key:
@@ -6226,17 +6155,11 @@ class PySideInterviewWindow:
 
     def _show_pyside_finalize_progress(self, step: str) -> None:
         normalized = str(step or "").strip() or "Preparing finalize"
-        self._pyside_finalize_tracks_deepseek = "deepseek" in normalized.lower()
-        queued_steps = (
-            PYSIDE_FINALIZE_PROGRESS_TASKS
-            if self._pyside_finalize_tracks_deepseek
-            else PYSIDE_CORE_FINALIZE_PROGRESS_TASKS
-        )
         self._pyside_finalize_progress_step = normalized
         self._pyside_finalize_progress_tasks = build_finalize_progress_tasks(
             normalized,
             existing_tasks=getattr(self, "_pyside_finalize_progress_tasks", []),
-            queued_steps=queued_steps,
+            queued_steps=PYSIDE_CORE_FINALIZE_PROGRESS_TASKS,
         )
         if self.pyside_finalize_progress_dialog is not None:
             self._refresh_pyside_finalize_progress()
@@ -6285,11 +6208,6 @@ class PySideInterviewWindow:
         dialog.show()
 
     def _clear_pyside_finalize_progress_dialog(self) -> None:
-        timer = self._pyside_deepseek_progress_timer
-        if timer is not None:
-            timer.stop()
-            timer.deleteLater()
-            self._pyside_deepseek_progress_timer = None
         refresh_timer = self._pyside_finalize_progress_refresh_timer
         if refresh_timer is not None:
             refresh_timer.stop()
@@ -6307,7 +6225,6 @@ class PySideInterviewWindow:
             dialog.close()
         self._clear_pyside_finalize_progress_dialog()
         self._pyside_finalize_progress_queue = None
-        self.pyside_finalize_deepseek_progress_path = None
 
     def _schedule_close_pyside_finalize_progress(self) -> None:
         if self.pyside_finalize_progress_dialog is None:
@@ -6318,15 +6235,10 @@ class PySideInterviewWindow:
         normalized = str(step or "").strip()
         if not normalized:
             return
-        queued_steps = (
-            PYSIDE_FINALIZE_PROGRESS_TASKS
-            if self._pyside_finalize_tracks_deepseek
-            else PYSIDE_CORE_FINALIZE_PROGRESS_TASKS
-        )
         self._pyside_finalize_progress_tasks = build_finalize_progress_tasks(
             normalized,
             existing_tasks=getattr(self, "_pyside_finalize_progress_tasks", []),
-            queued_steps=queued_steps,
+            queued_steps=PYSIDE_CORE_FINALIZE_PROGRESS_TASKS,
         )
         progress_queue = self._pyside_finalize_progress_queue
         if progress_queue is None:
@@ -6343,24 +6255,13 @@ class PySideInterviewWindow:
             while True:
                 try:
                     self._pyside_finalize_progress_step = progress_queue.get_nowait()
-                    queued_steps = (
-                        PYSIDE_FINALIZE_PROGRESS_TASKS
-                        if self._pyside_finalize_tracks_deepseek
-                        else PYSIDE_CORE_FINALIZE_PROGRESS_TASKS
-                    )
                     self._pyside_finalize_progress_tasks = build_finalize_progress_tasks(
                         self._pyside_finalize_progress_step,
                         existing_tasks=getattr(self, "_pyside_finalize_progress_tasks", []),
-                        queued_steps=queued_steps,
+                        queued_steps=PYSIDE_CORE_FINALIZE_PROGRESS_TASKS,
                     )
                 except queue.Empty:
                     break
-        if self._pyside_finalize_tracks_deepseek:
-            self._attach_latest_deepseek_progress_from_history()
-            deepseek_step, _status = self._read_pyside_deepseek_progress_step()
-            if deepseek_step:
-                self._pyside_finalize_progress_step = deepseek_step
-                self._pyside_finalize_progress_tasks = self._read_pyside_deepseek_progress_tasks()
         label = self.pyside_finalize_progress_label
         if label is not None and self._pyside_finalize_progress_step:
             label.setText(
@@ -6369,98 +6270,6 @@ class PySideInterviewWindow:
                     fallback=self._pyside_finalize_progress_step,
                 )
             )
-
-    def _attach_latest_deepseek_progress_from_history(self) -> None:
-        if self.pyside_finalize_deepseek_progress_path is not None:
-            return
-        history_path = Path(getattr(self.model, "history_path", ""))
-        if not str(history_path):
-            return
-        rows = InterviewHistoryStore(history_path).load()
-        allowed_dirs = {
-            (history_path.parent / "deepseek_jobs").resolve(),
-            (history_path.parent / "interviews" / "deepseek_jobs").resolve(),
-        }
-        if history_path.parent.name == "user_artifacts":
-            allowed_dirs.add((history_path.parent / "interviews" / "deepseek_jobs").resolve())
-        for row in reversed(rows):
-            if not isinstance(row, dict):
-                continue
-            status = str(row.get("deepseek_processing_status") or "").strip().lower()
-            if status != "processing":
-                continue
-            progress_value = str(row.get("deepseek_progress_path") or "").strip()
-            if not progress_value:
-                continue
-            progress_path = Path(progress_value)
-            if not progress_path.name.startswith("deepseek-finalize-") or progress_path.suffix != ".json":
-                continue
-            if not progress_path.name.endswith(".progress.json"):
-                continue
-            try:
-                resolved = progress_path.resolve()
-            except OSError:
-                continue
-            if resolved.parent not in allowed_dirs:
-                continue
-            if resolved.exists():
-                self.pyside_finalize_deepseek_progress_path = resolved
-                return
-
-    def _read_pyside_deepseek_progress_step(self) -> tuple[str, str]:
-        path = self.pyside_finalize_deepseek_progress_path
-        if path is None or not path.exists():
-            return "", ""
-        try:
-            payload = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            return "", ""
-        if not isinstance(payload, dict):
-            return "", ""
-        return str(payload.get("step") or "").strip(), str(payload.get("status") or "").strip().lower()
-
-    def _read_pyside_deepseek_progress_tasks(self) -> list[dict[str, str]]:
-        path = self.pyside_finalize_deepseek_progress_path
-        if path is None or not path.exists():
-            return []
-        try:
-            payload = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            return []
-        if not isinstance(payload, dict):
-            return []
-        if not isinstance(payload.get("tasks"), list):
-            return build_finalize_progress_tasks(payload.get("step"), payload.get("status"))
-        return build_finalize_progress_tasks(
-            payload.get("step"),
-            payload.get("status"),
-            existing_tasks=payload.get("tasks"),
-        )
-
-    def _watch_pyside_deepseek_finalize_progress(self, progress_path: str | Path | None) -> None:
-        if progress_path:
-            self.pyside_finalize_deepseek_progress_path = Path(progress_path)
-        step, status = self._read_pyside_deepseek_progress_step()
-        if step:
-            self._pyside_finalize_progress_step = step
-            self._refresh_pyside_finalize_progress()
-        if status in {"complete", "failed"}:
-            timer = self._pyside_deepseek_progress_timer
-            if timer is not None:
-                timer.stop()
-                timer.deleteLater()
-                self._pyside_deepseek_progress_timer = None
-            self._reload_history_model()
-            if status == "complete":
-                self._schedule_close_pyside_finalize_progress()
-            return
-        if self.pyside_finalize_progress_dialog is None:
-            return
-        if self._pyside_deepseek_progress_timer is None:
-            timer = self.QtCore.QTimer(self.window)
-            timer.timeout.connect(lambda: self._watch_pyside_deepseek_finalize_progress(self.pyside_finalize_deepseek_progress_path))
-            self._pyside_deepseek_progress_timer = timer
-            timer.start(1000)
 
     def _reload_history_model(self) -> None:
         history_rows = _build_pyside_history_rows(self.model.history_path)
@@ -6473,70 +6282,9 @@ class PySideInterviewWindow:
             ),
         )
 
-    def _deepseek_retry_job_path_for_row(self, row: PySideHistoryRow) -> Path | None:
-        return resolve_deepseek_regeneration_job_path(
-            {
-                "history_id": row.row_key,
-                "candidate_name": row.candidate,
-                "interview_date": row.interview_date,
-                "school": row.school,
-                "track": row.position,
-                "interview_notes_path": row.notes_path,
-                "deepseek_job_path": row.deepseek_job_path,
-                "deepseek_progress_path": row.deepseek_progress_path,
-            },
-            history_path=self.model.history_path,
-            base_dir=self.model.history_path.parent / "interviews"
-            if self.model.history_path.parent.name == "user_artifacts"
-            else DEFAULT_BASE_DIR,
-        )
-
-    def _retry_history_deepseek(self, row: PySideHistoryRow) -> None:
-        mode = "full" if row.deepseek_processing_status.strip().lower() == "not_started" else self._choose_pyside_notes_regeneration_mode(row)
-        if mode is None:
-            return
-        job_path = self._deepseek_retry_job_path_for_row(row)
-        if job_path is None or not job_path.exists():
-            self.QtWidgets.QMessageBox.warning(self.window, "DeepSeek Retry", "DeepSeek job file was not found.")
-            return
-        try:
-            progress_path = regenerate_interview_notes_job(job_path, mode=mode)
-        except (OSError, ValueError) as exc:
-            self.QtWidgets.QMessageBox.warning(self.window, "DeepSeek Retry", f"Could not retry DeepSeek processing: {exc}")
-            return
-        self._reload_history_model()
-        label = "Regenerating interview notes document"
-        if mode == "full":
-            label = "Regenerating local DeepSeek output and interview notes document"
-        self._show_pyside_finalize_progress(label)
-        self._watch_pyside_deepseek_finalize_progress(progress_path)
-
-    def _choose_pyside_notes_regeneration_mode(self, row: PySideHistoryRow) -> str | None:
-        dialog = self.QtWidgets.QMessageBox(self.window)
-        dialog.setWindowTitle("Regenerate Notes")
-        dialog.setText(f"Regenerate interview notes for {row.candidate or 'this interview'}?")
-        dialog.setInformativeText(
-            "Choose full DeepSeek rerun when prompts changed.\n"
-            "Choose document-only when layout or document formatting changed."
-        )
-        full_button = dialog.addButton("Full DeepSeek + Document", self.QtWidgets.QMessageBox.AcceptRole)
-        document_button = dialog.addButton("Document Only", self.QtWidgets.QMessageBox.ActionRole)
-        dialog.addButton(self.QtWidgets.QMessageBox.Cancel)
-        dialog.setDefaultButton(full_button)
-        dialog.exec()
-        clicked = dialog.clickedButton()
-        if clicked == full_button:
-            return "full"
-        if clicked == document_button:
-            return "document_only"
-        return None
-
     def _open_history_notes(self, row: PySideHistoryRow) -> None:
         path = Path(row.notes_path)
         if not path.exists():
-            if row.deepseek_processing_status.strip().lower() == "failed":
-                self._retry_history_deepseek(row)
-                return
             self.QtWidgets.QMessageBox.warning(self.window, "Interview Notes", "Interview notes file was not found.")
             return
         try:
@@ -6587,8 +6335,6 @@ class PySideInterviewWindow:
             rubric_path=DEFAULT_RUBRIC_PATH,
             overrides_path=QUESTIONS_OVERRIDE_PATH,
             school_settings_path=SCHOOL_OFFER_SETTINGS_PATH,
-            prompts_path=DEEPSEEK_PROMPTS_CONFIG_PATH,
-            app_settings_path=INTERVIEW_APP_SETTINGS_PATH,
         )
 
     def _onboarding_page(self) -> Any:
@@ -6719,6 +6465,7 @@ class PySideInterviewWindow:
 
     def _staffing_v2_page(self) -> Any:
         self.staffing_store.initialize()
+        self._staffing_service().replay_staged_changes()
         existing_assignments = self.staffing_store.list_assignments()
         if STAFFING_SEED_PATH.exists() and not existing_assignments:
             self.staffing_store.import_seed_file(STAFFING_SEED_PATH)
@@ -6743,7 +6490,7 @@ class PySideInterviewWindow:
             QtWidgets=self.QtWidgets,
             parent=self.window,
             store=self.staffing_store,
-            service_factory=lambda: StaffingService(self.staffing_store, notification_service=self._notification_service()),
+            service_factory=self._staffing_service,
             access=StaffingDashboardAccess(
                 role=role,
                 actor=str(os.environ.get("USERNAME") or os.environ.get("USER") or role),
@@ -6901,16 +6648,6 @@ class PySideInterviewWindow:
                 _append_staffing_referral_queue(payload, operation=operation)
             except OSError:
                 continue
-        history_payload = next(
-            (row for row in self.history_store.load() if self.history_store.build_row_key(row) == record.history_id),
-            {},
-        )
-        job_path = Path(str(history_payload.get("deepseek_job_path") or ""))
-        if job_path.is_file():
-            threading.Thread(
-                target=lambda: regenerate_interview_notes_job(job_path, mode="document_only"),
-                daemon=True,
-            ).start()
         self._reload_history_model()
         if getattr(self, "staffing_v2_dashboard", None) is not None:
             self.staffing_v2_dashboard.refresh()
@@ -6925,8 +6662,6 @@ class PySideInterviewWindow:
             self.staffing_v2_dashboard.refresh()
 
     def _start_staffing_referral_queue_polling(self) -> None:
-        if not self.director_staffing_school:
-            return
         if self._staffing_referral_queue_timer is not None:
             return
         timer = self.QtCore.QTimer(self.window)
@@ -6936,9 +6671,22 @@ class PySideInterviewWindow:
         self._staffing_referral_queue_timer = timer
 
     def _poll_staffing_referral_queue(self) -> None:
-        imported = self._import_queued_staffing_director_referrals()
+        imported = self._staffing_service().replay_staged_changes()
+        if self.director_staffing_school:
+            imported += self._import_queued_staffing_director_referrals()
         if imported and getattr(self, "staffing_v2_dashboard", None) is not None:
             self.staffing_v2_dashboard.refresh()
+
+    def _staffing_service(self) -> StaffingService:
+        role = "director" if self.director_staffing_mode else "admin"
+        replica = f"director:{_staffing_school_slug(self.director_staffing_school)}" if role == "director" else "admin"
+        return StaffingService(
+            self.staffing_store,
+            notification_service=self._notification_service(),
+            change_stage=self.staffing_change_stage,
+            replica=replica,
+            school_scope=self.director_staffing_school if role == "director" else "",
+        )
 
     def _import_queued_staffing_director_referrals(self) -> int:
         if not hasattr(self, "staffing_store"):
@@ -7116,7 +6864,8 @@ class PySideInterviewWindow:
                     seed_assignment_count += len(support_row.get("slots", support_row.get("positions", [])))
             if len(existing_assignments) < seed_assignment_count:
                 self.staffing_store.import_seed_file(STAFFING_SEED_PATH)
-        service = StaffingService(self.staffing_store, notification_service=self._notification_service())
+        service = self._staffing_service()
+        service.replay_staged_changes()
         metrics = service.staffing_metrics(today=date.today(), school=self.director_staffing_school)
         self._staffing_rows_by_school = {}
         for row in metrics.rows:
@@ -7911,7 +7660,7 @@ class PySideInterviewWindow:
 
     def _run_staffing_action(self, action: Any, success_message: str) -> None:
         try:
-            result = action(StaffingService(self.staffing_store, notification_service=self._notification_service()))
+            result = action(self._staffing_service())
         except Exception as exc:
             if self.staffing_status_label is not None:
                 self.staffing_status_label.setText(str(exc) or "Staffing action failed.")

@@ -2,8 +2,8 @@ module:
   name: generate_director_staffing_launchers
   language: python
   path: tools/generate_director_staffing_launchers.py
-  version: 1.2.0
-  description: Generates one director staffing Windows .bat compatibility wrapper and one no-console .vbs launcher per school in config/staffing_seed.json, with each hidden launcher using the minimal director staffing setup path and passing its school as the director filter.
+  version: 1.2.1
+  description: Generates one director staffing Windows .bat compatibility wrapper and one no-console .vbs launcher per school in config/staffing_seed.json; each hidden launcher activates and maximizes an existing Director Staffing Dashboard instead of spawning another instance, otherwise uses the minimal director staffing setup path and passes its school as the director filter.
 functions:
 - name: load_staffing_schools
   description: Read staffing_seed.json and return ordered school names.
@@ -56,7 +56,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: director_vbs_launcher_body
-  description: Build the no-console .vbs launcher body that starts setup_director_staffing.ps1 through hidden PowerShell for one school-specific director staffing dashboard.
+  description: Build the no-console .vbs launcher body that activates and maximizes an existing Director Staffing Dashboard or starts setup_director_staffing.ps1 through hidden PowerShell when none is running.
   locked: false
   inputs:
     school:

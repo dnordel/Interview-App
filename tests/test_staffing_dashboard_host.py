@@ -150,11 +150,6 @@ def test_notification_test_payloads_include_curated_candidate_report_fields(tmp_
             {"prompt": "Why preschool?", "transcript": "Because early learning matters."},
         ],
         "scoring": {"outcome": "Hire", "percent_of_max": 92},
-        "summaries": {
-            "executive_summary": "Strong classroom presence.",
-            "recommendation_rationale": "Recommend hire.",
-            "concerns": ["Needs permit follow-up."],
-        },
         "report_path": "",
     }
     history.append_with_candidate_report(
@@ -180,8 +175,6 @@ def test_notification_test_payloads_include_curated_candidate_report_fields(tmp_
     assert payload["years_experience"] == "5"
     assert payload["score"] == "92"
     assert payload["interview_answer_1"] == "Because early learning matters."
-    assert payload["deepseek_summary"] == "Strong classroom presence."
-    assert payload["deepseek_recommendation"] == "Recommend hire."
 
 
 def test_admin_and_director_hosts_share_v2_widget_and_native_actions(tmp_path: Path) -> None:
@@ -269,6 +262,7 @@ def test_shared_report_opener_enforces_scope_and_opens_word_for_both_roles(tmp_p
         dialog.findChild(qt_widgets.QPushButton, "CandidateReportOpenWordButton").click()
         app.processEvents()
         assert opened[-1] == report_path.resolve()
+        assert report_path.read_bytes() == b"test"
         if role == "director":
             assert dialog.findChild(qt_widgets.QPushButton, "CandidateReportFinalizeButton").isVisible() is False
             host.open_candidate_report("hist-shared", "Palmdale")

@@ -1290,28 +1290,6 @@ def test_pyside_history_rows_expose_school_position_and_offer_action(tmp_path: P
     assert row.interview_date == ""
     assert row.notes_path.endswith("notes.docx")
 
-def test_pyside_history_rows_expose_deepseek_processing_state(tmp_path: Path) -> None:
-    history_path = tmp_path / "interview_history.sqlite3"
-    InterviewHistoryStore(history_path).append(
-        {
-            "history_id": "hist-1",
-            "candidate_name": "Latoya Nugent",
-            "deepseek_processing_status": "processing",
-            "deepseek_processing_warning": "Queued for local DeepSeek.",
-        }
-    )
-
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=history_path,
-        school_options=["Palmdale"],
-    )
-
-    row = model.home.history_rows[0]
-
-    assert row.deepseek_processing_status == "processing"
-    assert row.deepseek_processing_warning == "Queued for local DeepSeek."
 
 def test_pyside_history_rows_show_newest_interviews_first(tmp_path: Path) -> None:
     history_path = tmp_path / "interview_history.sqlite3"
@@ -1643,67 +1621,6 @@ def test_pyside_home_import_reuses_matching_scored_history_row(
     app.processEvents()
 
 
-def test_pyside_home_import_recovers_scores_from_finalize_job(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    monkeypatch.setattr(pyside_interview_app, "DEFAULT_BASE_DIR", tmp_path)
-    history_path = tmp_path / "interview_history.sqlite3"
-    store = InterviewHistoryStore(history_path)
-    store.append(
-        {
-            "history_id": "hist-michelle-job",
-            "candidate_name": "Michelle Oropeza",
-            "school": "Palmdale",
-            "position": "Preschool",
-            "track_key": "preschool",
-            "interview_date": "2026-07-14",
-            "interview_score": 80.0,
-        }
-    )
-    job_path = tmp_path / "deepseek_jobs" / "deepseek-finalize-hist-michelle-job.json"
-    job_path.parent.mkdir(parents=True)
-    job_path.write_text(
-        json.dumps({"scoring": {"rows": [{"trait_id": "trait_1", "raw_score": 4}]}}),
-        encoding="utf-8",
-    )
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=history_path,
-        school_options=["Palmdale"],
-    )
-    transcript_path = tmp_path / "michelle-job.txt"
-    transcript_path.write_text(
-        "Speaker 0: Tell me about a hard child moment.\n"
-        "Speaker 1: I stayed calm and helped the child recover.\n",
-        encoding="utf-8",
-    )
-    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
-    monkeypatch.setattr(
-        window,
-        "_collect_indeed_transcript_import_request",
-        lambda: {
-            "candidate_name": "Michelle Oropeza",
-            "interview_date": "2026-07-14",
-            "school": "Palmdale",
-            "track_key": "preschool",
-            "transcript_path": transcript_path,
-        },
-    )
-    monkeypatch.setattr(window, "_regenerate_history_import_artifacts", lambda _row, _session: {})
-
-    window._import_indeed_transcript_from_home()
-
-    rows = store.load()
-    assert len(rows) == 1
-    assert rows[0]["answers"]["trait_1"]["score"] == "4"
-    assert rows[0]["review_scores"] == {"trait_1": "4"}
-    window.window.close()
-    app.processEvents()
 
 def test_pyside_history_import_indeed_transcript_opens_review_for_existing_candidate(
     tmp_path: Path,
@@ -1817,7 +1734,7 @@ Speaker 1: I gave a long transcript answer that should not replace the saved log
     window.window.close()
     app.processEvents()
 
-def test_pyside_history_import_regenerates_basic_notes_and_deepseek_job(
+def test_pyside_history_import_regenerates_basic_notes(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1840,7 +1757,6 @@ def test_pyside_history_import_regenerates_basic_notes_and_deepseek_job(
             "interview_date": "2026-07-10",
             "interview_notes_path": str(stale_notes),
             "saved_report_path": str(stale_notes),
-            "deepseek_processing_status": "not_started",
         }
     )
     model = build_interview_redesign_model(
@@ -1873,13 +1789,6 @@ Speaker 1: I got low, named the feeling, and helped the child find words.
     assert notes_path == stale_notes
     assert "Structured Behavioral Interview Notes" in _docx_text(notes_path)
     assert "I got low, named the feeling" in _docx_text(notes_path)
-    job_path = Path(row["deepseek_job_path"])
-    assert job_path.exists()
-    job = json.loads(job_path.read_text(encoding="utf-8"))
-    assert job["history_id"] == "hist-grace"
-    assert job["report_path"] == str(notes_path)
-    assert job["payload"]["flow_transcript"][2]["candidate_transcript"].startswith("I got low")
-    assert row["deepseek_processing_status"] == "not_started"
     window.window.close()
     app.processEvents()
 
@@ -2408,7 +2317,6 @@ def test_pyside_finalize_payload_uses_qualification_fields_and_keeps_why_ece_tra
         scoring,
         [],
         session._transcript_metadata(),
-        run_deepseek=False,
     )
 
     assert context.payload["candidate"]["qualification"] == {
@@ -2596,8 +2504,6 @@ def test_pyside_review_screen_shows_interviewer_closeout_without_slow_outputs(tm
     assert "Finalizing interview" in visible_text
     assert "Score Summary" in visible_text
     assert "Captured Transcripts" in visible_text
-    assert "DeepSeek" not in visible_text
-    assert "AI" not in visible_text
     assert "Transcript text should not render." in visible_text
 
     table = review_page.findChild(qt_widgets.QTableWidget, "CompletedInterviewTraitTable")
@@ -2764,7 +2670,7 @@ def test_pyside_session_generates_interview_notes_document(tmp_path: Path) -> No
     assert not (tmp_path / "notes" / "interview_history.sqlite3").exists()
     assert not (tmp_path / "notes" / "interview_history.json").exists()
 
-def test_pyside_finalize_writes_basic_notes_without_deepseek_queue(tmp_path: Path, monkeypatch) -> None:
+def test_pyside_finalize_writes_basic_notes(tmp_path: Path) -> None:
     model = build_interview_redesign_model(
         rubric_path=_write_test_rubric(tmp_path),
         overrides_path=_write_test_overrides(tmp_path),
@@ -2777,11 +2683,6 @@ def test_pyside_finalize_writes_basic_notes_without_deepseek_queue(tmp_path: Pat
     session.save_answer_and_advance(notes="Values aligned.", score="")
     session.save_answer_and_advance(notes="Warm child-centered example.", score="5")
     history_path = tmp_path / "interview_history.sqlite3"
-    def _fail_enqueue(*_args, **_kwargs) -> Path:
-        raise AssertionError("DeepSeek must only run from candidate history Generate")
-
-    monkeypatch.setattr(pyside_interview_app, "enqueue_deepseek_finalize_job", _fail_enqueue)
-
     result = session.finalize_interview(base_dir=tmp_path, history_path=history_path)
 
     report_path = Path(result["out_path"])
@@ -2803,9 +2704,6 @@ def test_pyside_finalize_writes_basic_notes_without_deepseek_queue(tmp_path: Pat
     assert "Consolidated Answer Summaries" not in rendered
     assert rows[0]["candidate_name"] == "Latoya Nugent"
     assert Path(rows[0]["interview_notes_path"]) == report_path
-    assert rows[0]["deepseek_processing_status"] == "not_started"
-    assert result["deepseek_job_path"] == ""
-    assert result["deepseek_progress_path"] == ""
 
 def test_pyside_finalize_writes_interview_notes_to_school_dropbox_folder(tmp_path: Path, monkeypatch) -> None:
     dropbox_root = tmp_path / "Dropbox"
@@ -2833,7 +2731,6 @@ def test_pyside_finalize_writes_interview_notes_to_school_dropbox_folder(tmp_pat
     session.save_answer_and_advance(notes="Values aligned.", score="")
     session.save_answer_and_advance(notes="Warm child-centered example.", score="5")
     monkeypatch.setattr(pyside_interview_app, "SCHOOL_OFFER_SETTINGS_PATH", settings_path)
-    monkeypatch.setattr(pyside_interview_app, "enqueue_deepseek_finalize_job", lambda *_args: Path())
 
     result = session.finalize_interview(base_dir=base_dir, history_path=tmp_path / "interview_history.sqlite3")
 
@@ -2880,7 +2777,6 @@ def test_pyside_finalize_preserves_transcribed_audio_in_basic_notes(tmp_path: Pa
     assert "Candidate described a warm child-centered example." in rendered
     rows = InterviewHistoryStore(tmp_path / "interview_history.sqlite3").load()
     assert rows[0]["flow_recordings"] == list(session.flow_recordings.values())
-    assert rows[0]["deepseek_processing_status"] == "not_started"
 
 def test_pyside_last_question_footer_finalizes_and_shows_complete_home(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -3186,78 +3082,6 @@ def test_pyside_finalize_progress_scheduled_close_uses_one_shot_timer(tmp_path: 
     window.window.close()
     app.processEvents()
 
-def test_pyside_progress_window_polls_deepseek_progress_json(tmp_path: Path) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=tmp_path / "missing-history.json",
-        school_options=["Palmdale"],
-    )
-    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
-    progress_path = tmp_path / "deepseek.progress.json"
-    progress_path.write_text(json.dumps({"step": "Updating interview notes document", "status": "processing"}), encoding="utf-8")
-
-    window._show_pyside_finalize_progress("Queueing DeepSeek processing")
-    window._watch_pyside_deepseek_finalize_progress(progress_path)
-    app.processEvents()
-
-    assert window.pyside_finalize_deepseek_progress_path == progress_path
-    assert "Updating interview notes document" in window.pyside_finalize_progress_label.text()
-    assert "Processing" in window.pyside_finalize_progress_label.text()
-
-    progress_path.write_text(json.dumps({"step": "Summarizing Q3: Trait 1", "status": "processing"}), encoding="utf-8")
-    window._refresh_pyside_finalize_progress()
-    app.processEvents()
-
-    assert "Summarizing Q3: Trait 1" in window.pyside_finalize_progress_label.text()
-
-    progress_path.write_text(json.dumps({"step": "Complete", "status": "complete"}), encoding="utf-8")
-    window._watch_pyside_deepseek_finalize_progress(progress_path)
-    app.processEvents()
-
-    assert "Complete" in window.pyside_finalize_progress_label.text()
-    window._close_pyside_finalize_progress()
-    window.window.close()
-    app.processEvents()
-
-def test_pyside_progress_window_auto_closes_after_deepseek_complete(tmp_path: Path) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=tmp_path / "missing-history.json",
-        school_options=["Palmdale"],
-    )
-    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
-    progress_path = tmp_path / "deepseek.progress.json"
-    scheduled_closes: list[bool] = []
-    window._schedule_close_pyside_finalize_progress = lambda: scheduled_closes.append(True)
-
-    window._show_pyside_finalize_progress("Queueing DeepSeek processing")
-    progress_path.write_text(json.dumps({"step": "Complete", "status": "complete"}), encoding="utf-8")
-    window._watch_pyside_deepseek_finalize_progress(progress_path)
-    app.processEvents()
-
-    assert scheduled_closes == [True]
-    assert "Complete" in window.pyside_finalize_progress_label.text()
-
-    scheduled_closes.clear()
-    window._show_pyside_finalize_progress("Queueing DeepSeek processing")
-    progress_path.write_text(json.dumps({"step": "DeepSeek failed", "status": "failed"}), encoding="utf-8")
-    window._watch_pyside_deepseek_finalize_progress(progress_path)
-    app.processEvents()
-
-    assert scheduled_closes == []
-    assert window.pyside_finalize_progress_dialog is not None
-    window._close_pyside_finalize_progress()
-    window.window.close()
-    app.processEvents()
-
 def test_pyside_progress_window_renders_task_status_list(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -3269,11 +3093,13 @@ def test_pyside_progress_window_renders_task_status_list(tmp_path: Path) -> None
         school_options=["Palmdale"],
     )
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
-    window._show_pyside_finalize_progress("Queueing DeepSeek processing")
+    window._show_pyside_finalize_progress("Stopping recording and transcribing")
+    window._report_pyside_finalize_progress("Building interview notes")
+    window._refresh_pyside_finalize_progress()
     window._pyside_finalize_progress_tasks = [
         {"name": "Stopping recording", "status": "Finished"},
-        {"name": "Queueing DeepSeek processing", "status": "Processing"},
-        {"name": "Waiting for DeepSeek queue", "status": "Queued"},
+        {"name": "Building interview notes", "status": "Processing"},
+        {"name": "Saving interview artifacts", "status": "Queued"},
     ]
 
     window._refresh_pyside_finalize_progress()
@@ -3282,59 +3108,10 @@ def test_pyside_progress_window_renders_task_status_list(tmp_path: Path) -> None
     progress_text = window.pyside_finalize_progress_label.text()
     assert "Stopping recording" in progress_text
     assert "Finished" in progress_text
-    assert "Queueing DeepSeek processing" in progress_text
+    assert "Building interview notes" in progress_text
     assert "Processing" in progress_text
-    assert "Waiting for DeepSeek queue" in progress_text
+    assert "Saving interview artifacts" in progress_text
     assert "Queued" in progress_text
-    window._close_pyside_finalize_progress()
-    window.window.close()
-    app.processEvents()
-
-def test_pyside_progress_window_discovers_deepseek_progress_from_history(tmp_path: Path) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    history_path = tmp_path / "interview_history.sqlite3"
-    jobs_dir = tmp_path / "deepseek_jobs"
-    jobs_dir.mkdir()
-    progress_path = jobs_dir / "deepseek-finalize-hist-1.progress.json"
-    progress_path.write_text(
-        json.dumps(
-            {
-                "step": "Waiting for DeepSeek queue",
-                "status": "processing",
-                "tasks": [
-                    {"name": "Launching local DeepSeek worker", "status": "Finished"},
-                    {"name": "Waiting for DeepSeek queue", "status": "Processing"},
-                ],
-            }
-        ),
-        encoding="utf-8",
-    )
-    InterviewHistoryStore(history_path).append(
-        {
-            "history_id": "hist-1",
-            "candidate_name": "Latoya Nugent",
-            "deepseek_processing_status": "processing",
-            "deepseek_progress_path": str(progress_path),
-        }
-    )
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=history_path,
-        school_options=["Palmdale"],
-    )
-    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
-
-    window._show_pyside_finalize_progress("Queueing DeepSeek processing")
-    window._refresh_pyside_finalize_progress()
-    app.processEvents()
-
-    progress_text = window.pyside_finalize_progress_label.text()
-    assert window.pyside_finalize_deepseek_progress_path == progress_path
-    assert "Waiting for DeepSeek queue" in progress_text
-    assert "Processing" in progress_text
     window._close_pyside_finalize_progress()
     window.window.close()
     app.processEvents()
@@ -3351,7 +3128,9 @@ def test_pyside_progress_window_immediately_shows_ordered_tasks_in_scroll_area(t
     )
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
 
-    window._show_pyside_finalize_progress("Queueing DeepSeek processing")
+    window._show_pyside_finalize_progress("Stopping recording and transcribing")
+    window._report_pyside_finalize_progress("Building interview notes")
+    window._refresh_pyside_finalize_progress()
     app.processEvents()
 
     scroll_areas = window.pyside_finalize_progress_dialog.findChildren(qt_widgets.QScrollArea)
@@ -3359,10 +3138,7 @@ def test_pyside_progress_window_immediately_shows_ordered_tasks_in_scroll_area(t
 
     assert scroll_areas
     assert window.pyside_finalize_progress_dialog.maximumHeight() <= 460
-    assert progress_text.index("Launching local DeepSeek worker") < progress_text.index("Waiting for DeepSeek queue")
-    assert progress_text.index("Analyzing traits") < progress_text.index("Scoring traits")
-    assert "Updating interview notes document" in progress_text
-    assert progress_text.rstrip().endswith("Queued")
+    assert "Building interview notes" in progress_text
     window._close_pyside_finalize_progress()
     window.window.close()
     app.processEvents()
@@ -3499,74 +3275,13 @@ def test_pyside_completed_review_has_no_inline_score_update_or_referral_side_eff
     window.window.close()
     app.processEvents()
 
-def test_pyside_regenerate_prompt_uses_history_candidate_name(tmp_path: Path, monkeypatch) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    history_path = tmp_path / "interview_history.sqlite3"
-    InterviewHistoryStore(history_path).append(
-        {
-            "history_id": "hist-1",
-            "candidate_name": "Latoya Nugent",
-            "deepseek_processing_status": "complete",
-        }
-    )
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=history_path,
-        school_options=["Palmdale"],
-    )
-    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
-    calls: list[str] = []
-
-    class _FakeMessageBox:
-        AcceptRole = object()
-        ActionRole = object()
-        Cancel = object()
-
-        def __init__(self, _parent):
-            self._clicked = None
-
-        def setWindowTitle(self, title: str) -> None:
-            calls.append(f"title:{title}")
-
-        def setText(self, text: str) -> None:
-            calls.append(f"text:{text}")
-
-        def setInformativeText(self, text: str) -> None:
-            calls.append(f"info:{text}")
-
-        def addButton(self, *args):
-            button = object()
-            if args and args[0] == "Document Only":
-                self._clicked = button
-            return button
-
-        def setDefaultButton(self, _button) -> None:
-            calls.append("default")
-
-        def exec(self) -> None:
-            calls.append("exec")
-
-        def clickedButton(self):
-            return self._clicked
-
-    monkeypatch.setattr(window.QtWidgets, "QMessageBox", _FakeMessageBox)
-
-    mode = window._choose_pyside_notes_regeneration_mode(window.model.home.history_rows[0])
-
-    assert mode == "document_only"
-    assert "text:Regenerate interview notes for Latoya Nugent?" in calls
-    assert "exec" in calls
-    window.window.close()
-    app.processEvents()
 
 def test_pyside_review_source_exposes_finalize_button_not_placeholder_notes() -> None:
     source = Path("src/pyside_interview_app.py").read_text(encoding="utf-8")
 
     assert 'self._primary_button("Finalize Interview")' not in source
     assert 'output_dir=DEFAULT_BASE_DIR / "pyside_notes"' not in source
+
 
 def test_pyside_onboarding_board_surfaces_next_required_task() -> None:
     employee = Employee(
@@ -3639,26 +3354,6 @@ def test_pyside_candidate_board_recomputes_stale_history_status_from_score() -> 
     assert board.rows[0]["status"] == "Borderline"
     assert board.history_rows[0].status == "Borderline"
 
-def test_pyside_candidate_board_treats_ai_auto_no_hire_as_advisory_for_status() -> None:
-    rows = [
-        {
-            "candidate_name": "Tatiana",
-            "school": "Palmdale",
-            "track": "Preschool",
-            "determination": "No Hire",
-            "interview_score": 70.0,
-            "auto_no_hire_present": True,
-            "locked_rule": "DeepSeek automatic no-hire signal observed => Immediate NO HIRE",
-            "offer_status": "not_generated",
-        },
-    ]
-
-    board = build_pyside_candidate_board(rows)
-
-    assert board.rows[0]["score"] == "70.0"
-    assert board.rows[0]["status"] == "Borderline"
-    assert board.history_rows[0].status == "Borderline"
-
 def test_pyside_pages_do_not_force_content_wider_than_viewport(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -3668,16 +3363,10 @@ def test_pyside_pages_do_not_force_content_wider_than_viewport(tmp_path: Path, m
     overrides_path = _write_test_overrides(tmp_path)
     settings_path = tmp_path / "school_offer_settings.json"
     settings_path.write_text(json.dumps({}), encoding="utf-8")
-    prompts_path = tmp_path / "deepseek_prompts.json"
-    prompts_path.write_text(json.dumps({"answer_summary_user": "Summarize {payload_json}."}), encoding="utf-8")
-    app_settings_path = tmp_path / "interview_app_settings.json"
-    app_settings_path.write_text(json.dumps({"deepseek_summary_model": "deepseek-r1:8b"}), encoding="utf-8")
     notification_rules_path = tmp_path / "notification_rules.sqlite3"
     monkeypatch.setattr(pyside_interview_app, "DEFAULT_RUBRIC_PATH", rubric_path)
     monkeypatch.setattr(pyside_interview_app, "QUESTIONS_OVERRIDE_PATH", overrides_path)
     monkeypatch.setattr(pyside_interview_app, "SCHOOL_OFFER_SETTINGS_PATH", settings_path)
-    monkeypatch.setattr(pyside_interview_app, "DEEPSEEK_PROMPTS_CONFIG_PATH", prompts_path)
-    monkeypatch.setattr(pyside_interview_app, "INTERVIEW_APP_SETTINGS_PATH", app_settings_path)
     model = build_interview_redesign_model(
         rubric_path=rubric_path,
         overrides_path=overrides_path,
@@ -5288,10 +4977,8 @@ def test_pyside_staffing_v2_notifications_manager_dashboard_scenario(
     assert "{position_name}" in page.findChild(qt_widgets.QLabel, "StaffingV2NotificationVariablesPreview").text()
     notice_button = page.findChild(qt_widgets.QPushButton, "StaffingV2NotificationVariable_notice_date")
     final_day_button = page.findChild(qt_widgets.QPushButton, "StaffingV2NotificationVariable_final_day")
-    deepseek_button = page.findChild(qt_widgets.QPushButton, "StaffingV2NotificationVariable_deepseek_summary")
     assert notice_button is not None
     assert final_day_button is not None
-    assert deepseek_button is not None
     subject_editor = page.findChild(qt_widgets.QLineEdit, "StaffingV2NotificationSubject")
     subject_editor.setFocus()
     subject_editor.setCursorPosition(0)
@@ -5299,10 +4986,6 @@ def test_pyside_staffing_v2_notifications_manager_dashboard_scenario(
     notice_button.click()
     assert "{notice_date}" in subject_editor.text()
     body_editor = page.findChild(qt_widgets.QPlainTextEdit, "StaffingV2NotificationBody")
-    body_editor.setFocus()
-    body_editor.moveCursor(body_editor.textCursor().MoveOperation.End)
-    deepseek_button.click()
-    assert "{deepseek_summary}" in body_editor.toPlainText()
     assert "No issues found" in page.findChild(qt_widgets.QLabel, "StaffingV2NotificationValidation").text()
     audit_panel = page.findChild(qt_widgets.QFrame, "StaffingV2NotificationAuditPanel")
     assert audit_panel.isHidden()
