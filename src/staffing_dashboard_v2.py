@@ -7557,10 +7557,28 @@ class StaffingDashboardV2Page:
         confirmation, confirmation_layout = self._dialog_section()
         confirmation_layout.addWidget(self._label("3. Start Confirmation", "StaffingV2SectionTitle"))
         form = self.QtWidgets.QGridLayout()
-        filled_date = self.QtWidgets.QLineEdit()
+        class FilledDateEdit(self.QtWidgets.QDateEdit):
+            def _open_calendar(date_self: Any) -> None:
+                calendar = date_self.calendarWidget()
+                calendar.setSelectedDate(date_self.date())
+                popup = calendar.parentWidget()
+                target = popup or calendar
+                target.move(date_self.mapToGlobal(self.QtCore.QPoint(0, date_self.height())))
+                target.show()
+                target.raise_()
+
+            def mousePressEvent(date_self: Any, event: Any) -> None:  # noqa: N802 - Qt override.
+                super(FilledDateEdit, date_self).mousePressEvent(event)
+                if event.button() != self.QtCore.Qt.MouseButton.LeftButton or not date_self.calendarPopup():
+                    return
+                self.QtCore.QTimer.singleShot(0, date_self._open_calendar)
+
+        filled_date = FilledDateEdit()
         filled_date.setObjectName("StaffingV2FilledDate")
-        filled_date.setText(assignment.start_date or "")
-        filled_date.setEnabled(False)
+        filled_date.setCalendarPopup(True)
+        filled_date.setDisplayFormat("yyyy-MM-dd")
+        parsed_start_date = self.QtCore.QDate.fromString(assignment.start_date or "", "yyyy-MM-dd")
+        filled_date.setDate(parsed_start_date if parsed_start_date.isValid() else self.QtCore.QDate.currentDate())
         current_date = self.QtWidgets.QDateEdit()
         current_date.setObjectName("StaffingV2FilledCurrentDate")
         current_date.setDisplayFormat("yyyy-MM-dd")
@@ -7663,7 +7681,10 @@ class StaffingDashboardV2Page:
                 error.show()
                 return
             try:
-                self.service_factory().mark_filled(assignment_id)
+                self.service_factory().mark_filled(
+                    assignment_id,
+                    actual_start_date=filled_date.date().toString("yyyy-MM-dd"),
+                )
             except Exception as exc:  # noqa: BLE001 - show service validation error in dialog.
                 error.setText(_safe_staffing_error(exc))
                 error.show()

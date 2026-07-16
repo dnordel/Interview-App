@@ -5419,7 +5419,7 @@ entries:
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_mark_filled_dialog_uses_coming_start_date
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_mark_filled_dialog_accepts_actual_start_date
   duration_seconds_n2: 1.834
   duration_source: measured
   gui_heavy: true
@@ -8000,7 +8000,7 @@ entries:
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_staffing_service_state_machine.py::test_mark_filled_uses_coming_start_date_as_filled_date
+- nodeid: tests/test_staffing_service_state_machine.py::test_mark_filled_uses_actual_start_date_when_it_differs_from_scheduled_date
   duration_seconds_n2: 0.607
   duration_source: measured
   gui_heavy: false

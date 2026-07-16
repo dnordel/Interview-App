@@ -54,7 +54,7 @@ def test_basic_staffing_flow_opens_coming_and_fills_position(tmp_path: Path) -> 
     assert store.closed_days_to_fill() == [1]
 
 
-def test_mark_filled_uses_coming_start_date_as_filled_date(tmp_path: Path) -> None:
+def test_mark_filled_uses_actual_start_date_when_it_differs_from_scheduled_date(tmp_path: Path) -> None:
     store = StaffingStore(tmp_path / "staffing.sqlite3")
     store.initialize()
     assignment_id = store.seed_assignment(
@@ -76,12 +76,13 @@ def test_mark_filled_uses_coming_start_date_as_filled_date(tmp_path: Path) -> No
     service.open_position(assignment_id)
     service.mark_coming(assignment_id, person_name="Emily Carter", start_date="2026-07-10")
 
-    service.mark_filled(assignment_id)
+    service.mark_filled(assignment_id, actual_start_date="2026-07-12")
 
     assignment = store.get_assignment(assignment_id)
     assert assignment.status == "filled"
-    assert assignment.current_filled_date == "2026-07-10"
-    assert store.closed_days_to_fill() == [9]
+    assert assignment.start_date == "2026-07-12"
+    assert assignment.current_filled_date == "2026-07-12"
+    assert store.closed_days_to_fill() == [11]
 
 
 def test_mark_coming_can_change_aide_position_to_teacher(tmp_path: Path) -> None:

@@ -6606,11 +6606,13 @@ def test_pyside_staffing_v2_mark_coming_dialog_saves_through_service(
     window.window.close()
     app.processEvents()
 
-def test_pyside_staffing_v2_mark_filled_dialog_uses_coming_start_date(
+def test_pyside_staffing_v2_mark_filled_dialog_accepts_actual_start_date(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    qt_core = pytest.importorskip("PySide6.QtCore")
+    qt_test = pytest.importorskip("PySide6.QtTest")
     app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
     db_path = tmp_path / "staffing.sqlite3"
     store = pyside_interview_app.StaffingStore(db_path)
@@ -6661,11 +6663,16 @@ def test_pyside_staffing_v2_mark_filled_dialog_uses_coming_start_date(
     assert close_button is not None
     assert close_button.text() == ""
     assert not close_button.icon().isNull()
-    filled_date = dialog.findChild(qt_widgets.QLineEdit, "StaffingV2FilledDate")
+    filled_date = dialog.findChild(qt_widgets.QDateEdit, "StaffingV2FilledDate")
     assert filled_date is not None
-    assert filled_date.text() == "2026-07-08"
-    assert not filled_date.isEnabled()
-    assert dialog.findChild(qt_widgets.QDateEdit, "StaffingV2FilledDate") is None
+    assert filled_date.date() == qt_core.QDate(2026, 7, 8)
+    assert filled_date.isEnabled()
+    assert filled_date.calendarPopup()
+    qt_test.QTest.mouseClick(filled_date, qt_core.Qt.MouseButton.LeftButton)
+    app.processEvents()
+    assert filled_date.calendarWidget().isVisible()
+    filled_date.calendarWidget().parentWidget().hide()
+    filled_date.setDate(qt_core.QDate(2026, 7, 10))
 
     dialog.findChild(qt_widgets.QTextEdit, "StaffingV2FilledNotes").setPlainText("Started and verified.")
     assert dialog.findChild(qt_widgets.QCheckBox, "StaffingV2FilledStarted").isChecked()
@@ -6675,8 +6682,9 @@ def test_pyside_staffing_v2_mark_filled_dialog_uses_coming_start_date(
     updated = store.get_assignment(assignment_id)
     assert updated.status == "filled"
     assert updated.person_name == "Emily Carter"
-    assert updated.current_filled_date == "2026-07-08"
-    assert store.closed_days_to_fill() == [7]
+    assert updated.start_date == "2026-07-10"
+    assert updated.current_filled_date == "2026-07-10"
+    assert store.closed_days_to_fill() == [9]
     refreshed_table = page.findChild(qt_widgets.QTableWidget, "StaffingV2PositionsTable")
     assert _staffing_button_for_position(refreshed_table, "Teacher 1").text() == "Manage Filled"
     window.window.close()

@@ -2,7 +2,7 @@ module:
   name: staffing_service
   language: python
   path: src/staffing_service.py
-  version: 0.23.0
+  version: 0.24.0
   description: Staffing assignment state machine, service-backed classroom, position, person creation, director interview referral/completion tracking with optional pending-queue fallback, mistaken-position deletion, queued Dropbox edit handling, staffing dashboard metrics with pending-operation projection and workbook display metadata, confirmed person moves, editable assignment details, person permit metadata updates, and post-commit notification emission for successful transactions.
 functions:
 - name: staffing_notification_payload
@@ -203,11 +203,15 @@ classes:
       assignment_id:
         type: int
         required: true
+      actual_start_date:
+        type: str | null
+        required: false
+        default: null
     returns:
       type: StaffingTransitionResult
     exceptions:
     - ValueError
-    side_effects: Closes assignment history using the Coming assignment start_date as current_filled_date and filled_date, then may emit staffing.assignment.filled notification; if DB is locked, saves operation to pending queue and returns queued status.
+    side_effects: Validates an optional actual start date, falling back to the Coming assignment start_date; atomically stores that date as assignment start_date/current_filled_date and closes assignment history with the same filled_date, then may emit staffing.assignment.filled notification. If DB is locked, saves the complete operation to pending queue and returns queued status.
   - name: mark_replacing
     inputs:
       assignment_id:

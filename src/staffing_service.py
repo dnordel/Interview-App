@@ -179,11 +179,11 @@ class StaffingService:
             lambda: self._revert_coming_impl(assignment_id),
         )
 
-    def mark_filled(self, assignment_id: int) -> StaffingTransitionResult:
+    def mark_filled(self, assignment_id: int, *, actual_start_date: str | None = None) -> StaffingTransitionResult:
         return self._run_or_queue(
             "mark_filled",
-            {"assignment_id": int(assignment_id)},
-            lambda: self._mark_filled_impl(assignment_id),
+            {"assignment_id": int(assignment_id), "actual_start_date": actual_start_date},
+            lambda: self._mark_filled_impl(assignment_id, actual_start_date=actual_start_date),
         )
 
     def mark_replacing(self, assignment_id: int, *, notice_given: str, final_working_day: str) -> StaffingTransitionResult:
@@ -749,13 +749,13 @@ class StaffingService:
             updated = self.store.assignment_context(conn, assignment_id)
         return _result(updated)
 
-    def _mark_filled_impl(self, assignment_id: int) -> StaffingTransitionResult:
+    def _mark_filled_impl(self, assignment_id: int, *, actual_start_date: str | None = None) -> StaffingTransitionResult:
         now = self.clock()
         with self.store.write_connection("mark_filled") as conn:
             assignment = self.store.assignment_context(conn, assignment_id)
             if assignment.status != "coming" or assignment.person_id is None:
                 raise ValueError("Invalid transition.")
-            close_date = _valid_date(assignment.start_date, "Start date")
+            close_date = _valid_date(actual_start_date or assignment.start_date, "Actual start date")
             self._require_active_history_count(conn, assignment_id, 1)
             history = conn.execute(
                 """
@@ -765,8 +765,8 @@ class StaffingService:
                 (assignment_id,),
             ).fetchone()
             conn.execute(
-                "UPDATE assignments SET status = 'filled', current_filled_date = ?, updated_at = ? WHERE id = ?",
-                (close_date, now, assignment_id),
+                "UPDATE assignments SET status = 'filled', start_date = ?, current_filled_date = ?, updated_at = ? WHERE id = ?",
+                (close_date, close_date, now, assignment_id),
             )
             conn.execute(
                 """
@@ -1240,7 +1240,12 @@ class StaffingService:
         elif operation == "revert_coming":
             self._revert_coming_impl(int(payload["assignment_id"]))
         elif operation == "mark_filled":
-            self._mark_filled_impl(int(payload["assignment_id"]))
+            self._mark_filled_impl(
+                int(payload["assignment_id"]),
+                actual_start_date=(
+                    None if payload.get("actual_start_date") is None else str(payload["actual_start_date"])
+                ),
+            )
         elif operation == "mark_replacing":
             self._mark_replacing_impl(
                 int(payload["assignment_id"]),
@@ -1328,7 +1333,11 @@ class StaffingService:
             elif operation == "revert_coming":
                 projected[assignment_id] = replace(row, status="need_now", person_name="", start_date="")
             elif operation == "mark_filled":
-                projected[assignment_id] = replace(row, status="filled")
+                projected[assignment_id] = replace(
+                    row,
+                    status="filled",
+                    start_date=str(payload.get("actual_start_date") or row.start_date),
+                )
             elif operation == "mark_replacing":
                 projected[assignment_id] = replace(row, status="replace")
             elif operation == "clear_replacement":
