@@ -242,7 +242,7 @@ class CompletedInterviewPage:
         outcome = QtWidgets.QLabel(f"Calculated: {model.outcome}")
         outcome.setObjectName("CompletedInterviewOutcome")
         left_layout.addWidget(outcome)
-        counts = QtWidgets.QLabel(f"{model.scored_count} scored questions  •  {model.skipped_count} skipped")
+        counts = QtWidgets.QLabel(f"{model.scored_count} scored questions  |  {model.skipped_count} skipped")
         counts.setObjectName("CompletedInterviewScoreCounts")
         left_layout.addWidget(counts)
         trait_table = QtWidgets.QTableWidget(len(model.trait_rows), 4)
@@ -254,12 +254,19 @@ class CompletedInterviewPage:
             values = (
                 trait.title,
                 "Skipped" if trait.skipped else f"{trait.rating} / 5" if trait.rating is not None else "Missing",
-                f"{trait.weight:g}×",
-                "—" if trait.skipped or trait.rating is None else f"{trait.weighted_score:g} / {trait.weighted_max:g}",
+                f"{trait.weight:g}x",
+                "-" if trait.skipped or trait.rating is None else f"{trait.weighted_score:g} / {trait.weighted_max:g}",
             )
             for column, value in enumerate(values):
                 trait_table.setItem(table_row, column, QtWidgets.QTableWidgetItem(value))
-        trait_table.resizeColumnsToContents()
+        header_view = trait_table.horizontalHeader()
+        header_view.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
+        for column in range(1, 4):
+            header_view.setSectionResizeMode(column, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+            header_text = trait_table.horizontalHeaderItem(column).text()
+            trait_table.setColumnWidth(column, max(trait_table.columnWidth(column), trait_table.fontMetrics().horizontalAdvance(header_text) + 22))
+        table_height = header_view.sizeHint().height() + trait_table.verticalHeader().defaultSectionSize() * len(model.trait_rows) + 4
+        trait_table.setFixedHeight(table_height)
         left_layout.addWidget(trait_table)
         summaries = QtWidgets.QHBoxLayout()
         for heading, values, object_name in (
@@ -272,7 +279,7 @@ class CompletedInterviewPage:
             card_layout.addWidget(QtWidgets.QLabel(heading))
             empty = not values
             for value in values or ("None identified based on scores.",):
-                label = QtWidgets.QLabel(value if empty else f"•  {value}")
+                label = QtWidgets.QLabel(value if empty else f"-  {value}")
                 if empty:
                     label.setObjectName("CompletedInterviewEmptySummary")
                 label.setWordWrap(True)
@@ -300,12 +307,27 @@ class CompletedInterviewPage:
         captured = QtWidgets.QLabel(f"{captured_count} responses captured")
         captured.setObjectName("CompletedTranscriptCapturedCount")
         right_layout.addWidget(captured)
+        transcript_scroll = QtWidgets.QScrollArea()
+        transcript_scroll.setObjectName("CompletedTranscriptListScroll")
+        transcript_scroll.setWidgetResizable(True)
+        transcript_scroll.setHorizontalScrollBarPolicy(self.QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        transcript_scroll.setVerticalScrollBarPolicy(self.QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        transcript_scroll.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
+        transcript_content = QtWidgets.QWidget()
+        transcript_content.setObjectName("CompletedTranscriptListContent")
+        transcript_layout = QtWidgets.QVBoxLayout(transcript_content)
+        transcript_layout.setContentsMargins(0, 0, 0, 0)
+        transcript_layout.setSpacing(8)
         self._transcript_cards = []
         for display_index, row in enumerate(model.question_rows, start=1):
             card = self._build_transcript_card(display_index, row)
             self._transcript_cards.append(card)
-            right_layout.addWidget(card)
-        right_layout.addStretch(1)
+            transcript_layout.addWidget(card)
+        transcript_layout.addStretch(1)
+        transcript_scroll.setWidget(transcript_content)
+        transcript_scroll.setMinimumHeight(320)
+        transcript_scroll.setMaximumHeight(500)
+        right_layout.addWidget(transcript_scroll, 1)
         self._search = search
         self._filter = filter_box
         search.textChanged.connect(self._apply_transcript_filter)
@@ -315,6 +337,8 @@ class CompletedInterviewPage:
             object_name="CompletedInterviewAdaptiveContent",
             left=left,
             right=right,
+            left_stretch=5,
+            right_stretch=7,
         )
         layout.addWidget(self._adaptive.widget, 1)
 
@@ -340,7 +364,8 @@ class CompletedInterviewPage:
             retry.setObjectName("CompletedInterviewRetry")
             retry.clicked.connect(self.callbacks.retry)
             actions.addWidget(retry)
-        finish = QtWidgets.QPushButton("Save & Finish")
+        finish = QtWidgets.QPushButton("Save && Finish")
+        finish.setAccessibleName("Save & Finish")
         finish.setObjectName("CompletedInterviewFinish")
         finish.setEnabled(enabled and model.can_finish)
         finish.clicked.connect(self.callbacks.finish)
@@ -390,23 +415,43 @@ class CompletedInterviewPage:
         heading.addWidget(QtWidgets.QLabel(status))
         toggle = QtWidgets.QToolButton()
         toggle.setObjectName("CompletedTranscriptToggle")
-        toggle.setText("⌄")
+        toggle.setText("v")
         toggle.setCheckable(True)
         heading.addWidget(toggle)
         layout.addLayout(heading)
         excerpt_text = row.transcript or "No candidate transcript captured."
-        excerpt = QtWidgets.QLabel(excerpt_text[:180] + ("…" if len(excerpt_text) > 180 else ""))
+        excerpt = QtWidgets.QLabel(excerpt_text[:180] + ("..." if len(excerpt_text) > 180 else ""))
         excerpt.setObjectName("CompletedTranscriptExcerpt")
         excerpt.setWordWrap(True)
+        excerpt.setMaximumHeight(excerpt.fontMetrics().lineSpacing() * 2 + 8)
         layout.addWidget(excerpt)
         full = QtWidgets.QLabel(row.transcript or "No candidate transcript captured.")
         full.setObjectName("CompletedTranscriptFullText")
         full.setWordWrap(True)
         full.hide()
         layout.addWidget(full)
-        toggle.toggled.connect(full.setVisible)
+        expanded: list[Any] = [full]
+        notes = QtWidgets.QLabel(row.notes or "No interviewer notes.")
+        notes.setObjectName("CompletedTranscriptExpandedNotes")
+        notes.setWordWrap(True)
+        notes.hide()
+        layout.addWidget(notes)
+        expanded.append(notes)
+        flags = QtWidgets.QLabel(", ".join(row.flags) if row.flags else "No flags.")
+        flags.setObjectName("CompletedTranscriptExpandedFlags")
+        flags.setWordWrap(True)
+        flags.hide()
+        layout.addWidget(flags)
+        expanded.append(flags)
+        rating = QtWidgets.QLabel(f"Rating {row.rating} / 5" if row.rating is not None else "Non-scored response")
+        rating.setObjectName("CompletedTranscriptExpandedRating")
+        rating.hide()
+        layout.addWidget(rating)
+        expanded.append(rating)
+        for widget in expanded:
+            toggle.toggled.connect(widget.setVisible)
         toggle.toggled.connect(excerpt.setHidden)
-        toggle.toggled.connect(lambda checked, button=toggle: button.setText("⌃" if checked else "⌄"))
+        toggle.toggled.connect(lambda checked, button=toggle: button.setText("^" if checked else "v"))
         detail = QtWidgets.QPushButton("View Full Transcript")
         detail.setObjectName("CompletedTranscriptDetail")
         detail.setEnabled(self._completion_state is CompletionState.COMPLETE)

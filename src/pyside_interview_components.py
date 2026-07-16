@@ -21,7 +21,7 @@ def build_candidate_identity(
     name = QtWidgets.QLabel(candidate_name or "Unknown candidate")
     name.setObjectName(f"{object_prefix}CandidateName")
     metadata = [value for value in (school, position, interview_type) if str(value or "").strip()]
-    meta = QtWidgets.QLabel("  •  ".join(metadata))
+    meta = QtWidgets.QLabel("  |  ".join(metadata))
     meta.setObjectName(f"{object_prefix}CandidateMeta")
     layout.addWidget(caption)
     layout.addWidget(name)
@@ -45,6 +45,10 @@ class AdaptiveTwoColumn:
         self.right_stretch = right_stretch
         self.widget = QtWidgets.QWidget()
         self.widget.setObjectName(object_name)
+        self.widget.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Preferred,
+        )
         self.layout = QtWidgets.QBoxLayout(QtWidgets.QBoxLayout.Direction.LeftToRight, self.widget)
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.setSpacing(12)

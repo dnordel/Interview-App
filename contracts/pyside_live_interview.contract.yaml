@@ -2,7 +2,7 @@ module:
   name: pyside_live_interview
   language: python
   path: src/pyside_live_interview.py
-  version: 1.0.1
+  version: 1.1.0
   description: Reusable PySide live-interview presentation components for dynamic stage progress, candidate capture status, provisional transcripts, notes, scored ratings, and responsive layouts.
 functions:
 - name: derive_live_stages
@@ -83,6 +83,14 @@ classes:
     returns: {type: None}
     exceptions: []
     side_effects: Reparents layout items inside the live page.
+  - name: set_available_width
+    description: Clamp the rendered live page to the current logical scroll-viewport width so first paint and later resizes retain stable desktop columns without horizontal clipping.
+    locked: false
+    inputs:
+      width: {type: int, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Updates the root Qt widget minimum, maximum, and current width.
 data_structures:
 - name: LiveQuestionSpec
   type: dataclass

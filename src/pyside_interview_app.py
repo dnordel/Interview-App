@@ -3025,20 +3025,20 @@ class PySideInterviewWindow:
         self._set_setup_probe_status(
             getattr(self, "home_microphone_status", None),
             ready=bool(resolved_microphone),
-            ready_text="✓ Microphone connected",
-            failed_text="✕ Microphone not detected",
+            ready_text="Microphone connected",
+            failed_text="Microphone not detected",
         )
         self._set_setup_probe_status(
             getattr(self, "home_system_audio_status", None),
             ready=bool(resolved_system),
-            ready_text="✓ System audio connected",
-            failed_text="✕ System audio not detected",
+            ready_text="System audio connected",
+            failed_text="System audio not detected",
         )
         self._set_setup_probe_status(
             getattr(self, "home_transcript_status", None),
             ready=bool(transcription_ready),
-            ready_text="✓ Live transcription ready",
-            failed_text="✕ Live transcription unavailable",
+            ready_text="Live transcription ready",
+            failed_text="Live transcription unavailable",
         )
         button = getattr(self, "home_test_audio_button", None)
         if button is not None and getattr(self, "_manual_audio_preflight_queue", None) is None:
@@ -3127,8 +3127,8 @@ class PySideInterviewWindow:
                 self._apply_pyside_intro_audio_preflight_result(result)
             return
         self.recording_warning = (
-            f"Audio transcription check failed: {message.get('error')}. "
-            "Check audio settings. Record the interview in Zoom as a backup so transcripts can be generated outside this app."
+            "Audio transcription check failed. Check audio settings. "
+            "Record the interview in Zoom as a backup so transcripts can be generated outside this app."
         )
         LOGGER.error("pyside_intro_audio_check_failed")
         if getattr(self, "live_page", None) is not None:
@@ -3166,6 +3166,22 @@ class PySideInterviewWindow:
             setattr(self, name, None)
         self._live_transcript_queue = None
 
+    def _stop_manual_audio_preflight(self) -> None:
+        cancel_event = getattr(self, "_manual_audio_preflight_cancel_event", None)
+        if cancel_event is not None:
+            cancel_event.set()
+        self._manual_audio_preflight_cancel_event = None
+        timer = getattr(self, "_manual_audio_preflight_timer", None)
+        if timer is not None:
+            timer.stop()
+            timer.deleteLater()
+        self._manual_audio_preflight_timer = None
+        self._manual_audio_preflight_queue = None
+        session = getattr(self, "_manual_audio_preflight_session", None)
+        self._manual_audio_preflight_session = None
+        if session is not None:
+            threading.Thread(target=session.stop, daemon=True).start()
+
     def _run_live_transcript_async(self) -> None:
         recorder = self.recording_session
         interview_session = self.session
@@ -3202,10 +3218,12 @@ class PySideInterviewWindow:
             return
         if not message.get("ok"):
             self.recording_warning = (
-                f"Live transcription temporarily unavailable: {message.get('error')}. "
+                "Live transcription temporarily unavailable. "
                 "Recording continues and final transcription will retry from the saved audio."
             )
             LOGGER.error("pyside_live_transcription_failed")
+            if getattr(self, "live_page", None) is not None:
+                self.live_page.update_warning(self._recording_warning_text())
             return
         candidate_segments: list[dict[str, Any]] = []
         for segment in message.get("segments", []) or []:
@@ -3374,6 +3392,7 @@ class PySideInterviewWindow:
                 available = max(0, int(live_scroll.viewport().width()) - 12)
                 live_scroll.widget().setMaximumWidth(available)
                 live_scroll.widget().resize(available, live_scroll.widget().height())
+                live_page.set_available_width(max(0, available - 48))
         completed_page = getattr(self, "completed_interview_page", None)
         if completed_page is not None and hasattr(self, "interview_tabs"):
             staffing_sidebar = getattr(getattr(self, "staffing_v2_dashboard", None), "staffing_sidebar", None)
@@ -3646,7 +3665,7 @@ class PySideInterviewWindow:
         status_widgets: list[Any] = []
         for row, (label_text, object_name) in enumerate(statuses):
             status_grid.addWidget(self._label(label_text, "HiringV2SetupStatusName"), row, 0)
-            status = self._label("Checking…", object_name)
+            status = self._label("Checking...", object_name)
             status.setProperty("readinessState", "checking")
             status_grid.addWidget(status, row, 1)
             status_widgets.append(status)
@@ -3658,7 +3677,7 @@ class PySideInterviewWindow:
         source_row.addWidget(self._label("Audio source", "HiringV2SetupFieldLabel"), 0, 0)
         audio_source = self.QtWidgets.QComboBox()
         audio_source.setObjectName("HiringV2SetupAudioSource")
-        audio_source.addItem("Detecting system audio…", "")
+        audio_source.addItem("Detecting system audio...", "")
         audio_source.setMinimumHeight(40)
         source_row.addWidget(audio_source, 0, 1)
         test_audio = self.QtWidgets.QPushButton("Test Audio")
@@ -3669,7 +3688,7 @@ class PySideInterviewWindow:
         source_row.setColumnStretch(1, 1)
         audio_layout.addLayout(source_row)
         note = self._label(
-            "ⓘ  Recording and autosave begin when the interview starts.",
+            "Note: Recording and autosave begin when the interview starts.",
             "HiringV2SetupAudioNote",
         )
         audio_layout.addWidget(note)
@@ -3681,6 +3700,7 @@ class PySideInterviewWindow:
         actions = self.QtWidgets.QHBoxLayout()
         actions.setSpacing(16)
         cancel = self.QtWidgets.QPushButton("Cancel")
+        cancel.setObjectName("LiveTranscriptEditorCancel")
         cancel.setObjectName("HiringV2SetupCancel")
         cancel.setMinimumHeight(50)
         cancel.clicked.connect(self._cancel_new_interview_setup)
@@ -3764,9 +3784,11 @@ class PySideInterviewWindow:
             self._apply_setup_audio_preflight_result(result)
             return
         button.setEnabled(False)
-        button.setText("Testing 15 seconds…")
+        button.setText("Testing 5 seconds...")
         results: queue.Queue[AudioPreflightResult] = queue.Queue()
         self._manual_audio_preflight_queue = results
+        cancel_event = threading.Event()
+        self._manual_audio_preflight_cancel_event = cancel_event
 
         def worker() -> None:
             results.put(self._run_manual_audio_preflight(source))
@@ -3779,6 +3801,7 @@ class PySideInterviewWindow:
 
     def _run_manual_audio_preflight(self, system_device: str) -> AudioPreflightResult:
         session: Any | None = None
+        cancel_event = getattr(self, "_manual_audio_preflight_cancel_event", None)
         try:
             from interview_audio_recorder import start_recording
 
@@ -3799,7 +3822,15 @@ class PySideInterviewWindow:
                     whisper_backend=runtime_config.backend,
                 )
                 self._manual_audio_preflight_session = session
-                time.sleep(15)
+                time.sleep(5)
+                if cancel_event is not None and cancel_event.is_set():
+                    session.stop()
+                    return AudioPreflightResult(
+                        False,
+                        False,
+                        False,
+                        "Audio test canceled.",
+                    )
                 session.stop()
                 segments = session.transcribe_new_segments(language="en")
                 return evaluate_audio_preflight(
@@ -3814,7 +3845,7 @@ class PySideInterviewWindow:
                     session.stop()
                 except Exception:
                     pass
-            LOGGER.exception("manual_audio_preflight_failed")
+            LOGGER.error("manual_audio_preflight_failed")
             return AudioPreflightResult(
                 False,
                 False,
@@ -3839,6 +3870,7 @@ class PySideInterviewWindow:
         if getattr(self, "_manual_audio_preflight_queue", None) is results:
             self._manual_audio_preflight_queue = None
             self._manual_audio_preflight_timer = None
+            self._manual_audio_preflight_cancel_event = None
         button = getattr(self, "home_test_audio_button", None)
         if button is not None:
             button.setText("Test Audio")
@@ -3850,20 +3882,20 @@ class PySideInterviewWindow:
             (
                 getattr(self, "home_microphone_status", None),
                 result.microphone_ready,
-                "✓ Microphone connected",
-                "✕ Microphone audio not detected",
+                "Microphone connected",
+                "Microphone audio not detected",
             ),
             (
                 getattr(self, "home_system_audio_status", None),
                 result.system_audio_ready,
-                "✓ System audio connected",
-                "✕ System audio not detected",
+                "System audio connected",
+                "System audio not detected",
             ),
             (
                 getattr(self, "home_transcript_status", None),
                 result.transcription_ready,
-                "✓ Live transcription ready",
-                "✕ Candidate transcription not detected",
+                "Live transcription ready",
+                "Candidate transcription not detected",
             ),
         )
         for widget, ready, ready_text, failed_text in rows:
@@ -3926,10 +3958,21 @@ class PySideInterviewWindow:
         return None
 
     def _live_question_tab(self) -> Any:
+        class LiveInterviewScrollArea(self.QtWidgets.QScrollArea):
+            def resizeEvent(inner_self, event: Any) -> None:
+                super().resizeEvent(event)
+                child = inner_self.widget()
+                if child is None:
+                    return
+                width = max(0, inner_self.viewport().width())
+                child.setMinimumWidth(width)
+                child.setMaximumWidth(width)
+                child.resize(width, child.height())
+
         page = self.QtWidgets.QWidget()
         outer_layout = self.QtWidgets.QVBoxLayout(page)
         outer_layout.setContentsMargins(0, 0, 0, 0)
-        scroll = self.QtWidgets.QScrollArea()
+        scroll = LiveInterviewScrollArea()
         scroll.setObjectName("LiveInterviewScroll")
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(self.QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -4016,6 +4059,25 @@ class PySideInterviewWindow:
                 )
             return
         validation = getattr(self, "home_setup_validation", None)
+        if sys.platform.startswith("win"):
+            selected_source = self._selected_setup_audio_source()
+            try:
+                available_sources = {
+                    str(value or "").strip().casefold()
+                    for value in list_windows_dshow_audio_devices()
+                    if str(value or "").strip()
+                }
+            except Exception:
+                available_sources = set()
+            if selected_source and available_sources and selected_source.casefold() not in available_sources:
+                if validation is not None:
+                    validation.setText(
+                        "The selected system audio source is no longer available. "
+                        "Choose an available source or reconnect the device."
+                    )
+                    validation.show()
+                return
+        self._stop_manual_audio_preflight()
         if validation is not None:
             validation.clear()
             validation.hide()
@@ -4724,7 +4786,7 @@ class PySideInterviewWindow:
         except Exception as exc:
             self.recording_warning = f"Recording/transcription failed: {exc}"
             self.session.apply_canonical_transcripts({})
-            LOGGER.exception("pyside_recording_stop_failed")
+            LOGGER.error("pyside_recording_stop_failed")
         finally:
             self.recording_session = None
             self.recording_base_name = ""
@@ -4867,7 +4929,7 @@ class PySideInterviewWindow:
         if self.session is not None:
             self.session.save_draft()
         self._stop_live_capture_monitor()
-        recording = self.recording_session
+        recording = getattr(self, "recording_session", None)
         self.recording_session = None
         self.recording_started_monotonic = None
         if recording is not None:
@@ -5455,10 +5517,10 @@ class PySideInterviewWindow:
             state = (
                 CompletionState.PROCESSING
                 if self._pyside_finalize_running
-                else CompletionState.COMPLETE
-                if self._review_history_id
                 else CompletionState.FAILED
                 if self._completed_finalize_error
+                else CompletionState.COMPLETE
+                if self._review_history_id
                 else CompletionState.PROCESSING
             )
             workflow_items = self.session._workflow_items()
@@ -5691,11 +5753,16 @@ class PySideInterviewWindow:
             update_anchor(rating.value())
         quick_actions = set(str(value) for value in answer.get("quick_actions", []) or [])
         flags: list[tuple[Any, str]] = []
-        for object_name, visible, canonical in (
-            ("CompletedQuestionNeedsFollowUp", "Needs follow-up", "Needs follow-up"),
-            ("CompletedQuestionNoExample", "No example after follow-ups", "Candidate gave no example"),
-            ("CompletedQuestionDisqualifier", "Absolute disqualifier", "Disqualifier observed"),
-        ):
+        flag_options = (
+            (
+                ("CompletedQuestionNeedsFollowUp", "Needs follow-up", "Needs follow-up"),
+                ("CompletedQuestionNoExample", "No example after follow-ups", "Candidate gave no example"),
+                ("CompletedQuestionDisqualifier", "Absolute disqualifier", "Disqualifier observed"),
+            )
+            if item.kind == "trait"
+            else (("CompletedQuestionMarkImportant", "Mark as important", "Mark as important"),)
+        )
+        for object_name, visible, canonical in flag_options:
             checkbox = self.QtWidgets.QCheckBox(visible)
             checkbox.setObjectName(object_name)
             checkbox.setChecked(canonical in quick_actions)
@@ -5704,6 +5771,7 @@ class PySideInterviewWindow:
         buttons = self.QtWidgets.QDialogButtonBox()
         cancel = buttons.addButton("Cancel", self.QtWidgets.QDialogButtonBox.ButtonRole.RejectRole)
         save = buttons.addButton("Save", self.QtWidgets.QDialogButtonBox.ButtonRole.AcceptRole)
+        cancel.setObjectName("CompletedQuestionCancel")
         save.setObjectName("CompletedQuestionSave")
         cancel.clicked.connect(dialog.reject)
         save.clicked.connect(dialog.accept)
@@ -5869,6 +5937,12 @@ class PySideInterviewWindow:
         try:
             draft_path.unlink(missing_ok=True)
         except OSError:
+            self.QtWidgets.QMessageBox.warning(
+                self.window,
+                "Save & Finish",
+                "The completed interview was saved, but its local draft could not be removed. "
+                "Try Save & Finish again.",
+            )
             return
         self._stop_live_capture_monitor()
         self.recording_session = None
@@ -6100,7 +6174,10 @@ class PySideInterviewWindow:
         timer.deleteLater()
         self._pyside_finalize_running = False
         if not message.get("ok"):
-            self._completed_finalize_error = f"Interview could not be finalized: {message.get('error')}"
+            self._completed_finalize_error = (
+                "Interview could not be finalized. The saved draft and provisional transcript were preserved. "
+                "Retry finalization."
+            )
             self._set_review_status(self._completed_finalize_error)
             self._report_pyside_finalize_progress("Interview notes not generated")
             self._refresh_pyside_finalize_progress()
@@ -6718,11 +6795,24 @@ class PySideInterviewWindow:
         allowed = True if page is None else bool(page.request_close())
         if not allowed:
             return False
-        manual_session = getattr(self, "_manual_audio_preflight_session", None)
-        if manual_session is not None:
-            threading.Thread(target=manual_session.stop, daemon=True).start()
         self._save_live_snapshot_without_navigation()
+        self._stop_manual_audio_preflight()
         self._stop_live_capture_monitor()
+        for name in ("_pyside_intro_audio_check_timer", "_recording_preload_timer"):
+            timer = getattr(self, name, None)
+            if timer is not None:
+                timer.stop()
+                timer.deleteLater()
+            setattr(self, name, None)
+        self._pyside_intro_audio_check_queue = None
+        self._recording_preload_queue = None
+        recording = getattr(self, "recording_session", None)
+        self.recording_session = None
+        self.recording_started_monotonic = None
+        self.recording_base_name = ""
+        stop_recording = getattr(recording, "stop", None)
+        if callable(stop_recording):
+            threading.Thread(target=stop_recording, daemon=True).start()
         return True
 
     def _invalidate_notification_service(self) -> None:

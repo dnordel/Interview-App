@@ -82,7 +82,7 @@ services:
     - web_app
     - web_app_backend
   pyside_interview_redesign_service:
-    description: PySide6 Staffing v2-native mockup-driven New Interview setup/live flow, Candidates-owned pipeline/history, Offers, staffing, onboarding, and admin-only Settings content inside the shared Staffing v2 shell, with device/audio preflight, semantic status colors, capture state, live history refresh, reporting, and Director Review handoff.
+    description: PySide6 Staffing v2-native mockup-driven New Interview setup/live flow, Candidates-owned pipeline/history, Offers, staffing, onboarding, and admin-only Settings content inside the shared Staffing v2 shell, with a cancellable 5-second manual audio test, serialized 15-second post-Begin validation, semantic status colors, capture state, live history refresh, reporting, and Director Review handoff.
     modules:
     - admin_studio
     - dashboard_v2_ui

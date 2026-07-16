@@ -26,7 +26,7 @@ class LiveStage:
         first_step = self.first_index + 1
         last_step = self.last_index + 1
         prefix = "Step" if first_step == last_step else "Steps"
-        value = str(first_step) if first_step == last_step else f"{first_step}–{last_step}"
+        value = str(first_step) if first_step == last_step else f"{first_step}-{last_step}"
         return f"{prefix} {value} of {self.total_steps}"
 
 
@@ -171,12 +171,18 @@ class LiveInterviewPage:
         self._adaptive_content: Any | None = None
         self._adaptive_layout: Any | None = None
         self._adaptive: AdaptiveTwoColumn | None = None
+        self._main_panel: Any | None = None
+        self._side_panel: Any | None = None
 
     def render(self, model: LiveInterviewViewModel) -> tuple[Any, Any]:
         self._kind = model.kind
         QtWidgets = self.QtWidgets
         root = QtWidgets.QWidget()
         root.setObjectName("LiveInterviewPage")
+        root.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+        )
         layout = QtWidgets.QVBoxLayout(root)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(12)
@@ -192,7 +198,7 @@ class LiveInterviewPage:
         title_layout.addWidget(title)
         title_layout.addWidget(subtitle)
         title_row.addWidget(title_box, 1)
-        exit_button = QtWidgets.QPushButton("↪  Exit Interview")
+        exit_button = QtWidgets.QPushButton("Exit Interview")
         exit_button.setObjectName("LiveInterviewExit")
         exit_button.setProperty("pyside_live_footer_action", "exit")
         exit_button.clicked.connect(self.callbacks.exit)
@@ -219,7 +225,7 @@ class LiveInterviewPage:
         progress_layout = QtWidgets.QVBoxLayout(progress_box)
         progress_layout.setContentsMargins(0, 0, 0, 0)
         progress_heading = QtWidgets.QHBoxLayout()
-        progress_heading.addWidget(QtWidgets.QLabel(f"{model.stage_label}   •   Step {model.current_index + 1} of {model.total_steps}"))
+        progress_heading.addWidget(QtWidgets.QLabel(f"{model.stage_label}   |   Step {model.current_index + 1} of {model.total_steps}"))
         progress_heading.addStretch(1)
         percent = round(((model.current_index + 1) / max(1, model.total_steps)) * 100)
         progress_heading.addWidget(QtWidgets.QLabel(f"{percent}%"))
@@ -231,9 +237,9 @@ class LiveInterviewPage:
         progress.setTextVisible(False)
         progress_layout.addWidget(progress)
         capture = QtWidgets.QHBoxLayout()
-        capture.addWidget(QtWidgets.QLabel("◉  Recording" if model.recording_active else "○  Recording unavailable"))
-        capture.addWidget(QtWidgets.QLabel("│││  Transcript active" if model.transcript_active else "Transcript pending"))
-        capture.addWidget(QtWidgets.QLabel("☁  Saved on navigation"))
+        capture.addWidget(QtWidgets.QLabel("Recording" if model.recording_active else "Recording unavailable"))
+        capture.addWidget(QtWidgets.QLabel("Transcript active" if model.transcript_active else "Transcript pending"))
+        capture.addWidget(QtWidgets.QLabel("Saved on navigation"))
         capture.addStretch(1)
         capture.addWidget(QtWidgets.QLabel("Audio source"))
         capture.addWidget(QtWidgets.QLabel(model.audio_source or "Default capture device"))
@@ -272,13 +278,17 @@ class LiveInterviewPage:
             object_name="LiveInterviewAdaptiveContent",
             left=main,
             right=side,
-            left_stretch=2,
-            right_stretch=1,
+            left_stretch=5 if model.kind == "trait" else 2,
+            right_stretch=7 if model.kind == "trait" else 1,
         )
         adaptive = adaptive_container.widget
+        main.setMinimumWidth(360)
+        side.setMinimumWidth(460 if model.kind == "trait" else 280)
         body.addWidget(adaptive, 1)
         layout.addWidget(body_widget, 1)
         self._adaptive = adaptive_container
+        self._main_panel = main
+        self._side_panel = side
         self._adaptive_content = adaptive
         self._adaptive_layout = adaptive_container.layout
 
@@ -286,6 +296,7 @@ class LiveInterviewPage:
         footer.setObjectName("LiveInterviewFooter")
         footer_layout = QtWidgets.QHBoxLayout(footer)
         back = QtWidgets.QPushButton("Back")
+        back.setObjectName("LiveInterviewBack")
         back.setProperty("pyside_live_footer_action", "back")
         back.setEnabled(model.current_index > 0)
         back.clicked.connect(self.callbacks.back)
@@ -298,7 +309,7 @@ class LiveInterviewPage:
             footer_layout.addWidget(skip, 1)
         next_text = "Finalize" if model.is_last else {
             "intro": "Next: Candidate Qualifications",
-            "trait": "Save Rating & Next",
+            "trait": "Save Rating && Next",
         }.get(model.kind, "Next Question")
         next_button = QtWidgets.QPushButton(next_text)
         next_button.setObjectName("LiveInterviewPrimaryAction")
@@ -356,14 +367,28 @@ class LiveInterviewPage:
         bounded = max(0.0, min(1.0, float(level)))
         active = max(1, round(bounded * 24)) if detected else 0
         if self._audio_waveform is not None:
-            self._audio_waveform.setText("▂▅█" * max(1, active // 3) if detected else "─" * 24)
+            self._audio_waveform.setText("|||" * max(1, active // 3) if detected else "-" * 24)
         if self._audio_status is not None:
             self._audio_status.setText("Candidate audio detected" if detected else "Waiting for candidate audio")
 
     def set_narrow(self, narrow: bool) -> None:
         if self._adaptive is None:
             return
+        if self._main_panel is not None:
+            self._main_panel.setMinimumWidth(0 if narrow else 360)
+        if self._side_panel is not None:
+            self._side_panel.setMinimumWidth(0 if narrow else 460 if self._kind == "trait" else 280)
         self._adaptive.set_narrow(narrow)
+        self.root.updateGeometry()
+
+    def set_available_width(self, width: int) -> None:
+        if self.root is None:
+            return
+        bounded = max(0, int(width))
+        self.root.setMinimumWidth(bounded)
+        self.root.setMaximumWidth(bounded)
+        self.root.resize(bounded, self.root.height())
+        self.root.updateGeometry()
 
     def _build_stage_rail(self, stages: Sequence[LiveStage]) -> Any:
         rail = self.QtWidgets.QFrame()
@@ -430,7 +455,7 @@ class LiveInterviewPage:
         transcript.setObjectName("LiveInterviewSideCard")
         transcript_layout = self.QtWidgets.QVBoxLayout(transcript)
         transcript_layout.addWidget(self.QtWidgets.QLabel("Transcript Status"))
-        transcript_layout.addWidget(self.QtWidgets.QLabel("●  Listening for candidate audio"))
+        transcript_layout.addWidget(self.QtWidgets.QLabel("Listening for candidate audio"))
         transcript_layout.addWidget(self.QtWidgets.QLabel("Audio is being recorded and transcribed in real time."))
         transcript_layout.addStretch(1)
         layout.addWidget(transcript, 1)
@@ -477,13 +502,13 @@ class LiveInterviewPage:
         transcript_header = self.QtWidgets.QHBoxLayout()
         transcript_header.addWidget(self.QtWidgets.QLabel("Live Transcript"))
         transcript_header.addStretch(1)
-        edit = self.QtWidgets.QPushButton("✎  Edit transcript")
+        edit = self.QtWidgets.QPushButton("Edit transcript")
         edit.setObjectName("LiveTranscriptEdit")
         if self.callbacks.edit_transcript is not None:
             edit.clicked.connect(self.callbacks.edit_transcript)
         transcript_header.addWidget(edit)
         transcript_layout.addLayout(transcript_header)
-        transcript_layout.addWidget(self.QtWidgets.QLabel("●  Listening"))
+        transcript_layout.addWidget(self.QtWidgets.QLabel("Listening"))
         transcript_text = self.QtWidgets.QLabel(model.transcript)
         transcript_text.setObjectName("LiveTranscriptText")
         transcript_text.setWordWrap(True)
@@ -522,7 +547,7 @@ class LiveInterviewPage:
         description.setWordWrap(True)
         layout.addWidget(description)
         layout.addStretch(1)
-        waveform = self.QtWidgets.QLabel("─" * 24)
+        waveform = self.QtWidgets.QLabel("-" * 24)
         waveform.setObjectName("LiveCandidateAudioWaveform")
         status = self.QtWidgets.QLabel("Waiting for candidate audio")
         status.setObjectName("LiveCandidateAudioStatus")
@@ -546,7 +571,7 @@ class LiveInterviewPage:
         priority = self.QtWidgets.QLabel(model.priority or "Scored")
         priority.setObjectName("LiveQuestionPriority")
         weight_text = int(model.weight) if float(model.weight).is_integer() else model.weight
-        weight = self.QtWidgets.QLabel(f"Weight {weight_text}×")
+        weight = self.QtWidgets.QLabel(f"Weight {weight_text}x")
         weight.setObjectName("LiveQuestionWeight")
         badges.addWidget(priority)
         badges.addStretch(1)
@@ -570,13 +595,13 @@ class LiveInterviewPage:
         header = self.QtWidgets.QHBoxLayout()
         header.addWidget(self.QtWidgets.QLabel("Live Transcript"))
         header.addStretch(1)
-        edit = self.QtWidgets.QPushButton("✎  Edit transcript")
+        edit = self.QtWidgets.QPushButton("Edit transcript")
         edit.setObjectName("LiveTranscriptEdit")
         if self.callbacks.edit_transcript is not None:
             edit.clicked.connect(self.callbacks.edit_transcript)
         header.addWidget(edit)
         transcript_layout.addLayout(header)
-        transcript_layout.addWidget(self.QtWidgets.QLabel("●  Listening"))
+        transcript_layout.addWidget(self.QtWidgets.QLabel("Listening"))
         transcript_text = self.QtWidgets.QLabel(model.transcript)
         transcript_text.setObjectName("LiveTranscriptText")
         transcript_text.setWordWrap(True)
@@ -608,14 +633,18 @@ class LiveInterviewPage:
             row = self.QtWidgets.QFrame()
             row.setObjectName("LiveRatingRow")
             row_layout = self.QtWidgets.QHBoxLayout(row)
-            radio = self.QtWidgets.QRadioButton(f"{option.score}  •  {option.description.split('.', 1)[0]}")
+            radio = self.QtWidgets.QRadioButton(str(option.score))
             radio.setObjectName("LiveRatingOption")
             radio.setProperty("score", option.score)
             radio.toggled.connect(
                 lambda checked, button=radio: self._update_weighted_points(button) if checked else None
             )
             group.addButton(radio)
-            row_layout.addWidget(radio, 1)
+            row_layout.addWidget(radio)
+            description = self.QtWidgets.QLabel(option.description.split(".", 1)[0])
+            description.setObjectName("LiveRatingDescription")
+            description.setWordWrap(True)
+            row_layout.addWidget(description, 1)
             anchor = self.QtWidgets.QPushButton("View Anchor")
             anchor.setObjectName("LiveRatingAnchor")
             if self.callbacks.view_anchor is not None:

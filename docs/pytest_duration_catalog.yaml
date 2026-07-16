@@ -1046,9 +1046,14 @@ entries:
   duration_source: measured
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_gui_visual_test_contract.py::test_mockup_workflow_controls_have_public_interaction_scenarios
+  duration_seconds_n2: 1.894
+  duration_source: measured
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_gui_visual_test_contract.py::test_qt_screenshot_tests_require_seeded_visual_test_db
-  duration_seconds_n2: 0.001
-  duration_source: collection_default
+  duration_seconds_n2: 0.419
+  duration_source: measured
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_hiring_migration.py::test_guarded_migration_backs_up_valid_db_and_writes_redacted_parity_report
@@ -4715,40 +4720,75 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_completed_interview.py::test_completed_overview_all_fours_has_no_score_based_strengths_or_review_items
-  duration_seconds_n2: 0.001
-  duration_source: collection_default
+  duration_seconds_n2: 0.228
+  duration_source: measured
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_completed_interview.py::test_completed_overview_derives_dynamic_scores_and_review_items
-  duration_seconds_n2: 0.001
-  duration_source: collection_default
+  duration_seconds_n2: 0.167
+  duration_source: measured
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_completed_interview.py::test_completed_transcript_export_excludes_intro_and_marks_skipped
-  duration_seconds_n2: 0.001
-  duration_source: collection_default
+  duration_seconds_n2: 0.171
+  duration_source: measured
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_completed_interview.py::test_pyside_completed_actions_and_finish_scenario
-  duration_seconds_n2: 8.522
+  duration_seconds_n2: 100.912
   duration_source: measured
   gui_heavy: true
-  placement: gui_wave_3
+  placement: gui_wave_1
 - nodeid: tests/test_pyside_completed_interview.py::test_pyside_completed_detail_edit_scenario
-  duration_seconds_n2: 2.978
+  duration_seconds_n2: 93.765
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_1
+- nodeid: tests/test_pyside_completed_interview.py::test_pyside_completed_export_actions_write_docx_pdf_and_utf8_txt
+  duration_seconds_n2: 105.506
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_1
+- nodeid: tests/test_pyside_completed_interview.py::test_pyside_completed_export_cancel_and_pdf_failure_are_safe
+  duration_seconds_n2: 118.036
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_1
+- nodeid: tests/test_pyside_completed_interview.py::test_pyside_completed_finalize_failure_sanitizes_private_exception_text
+  duration_seconds_n2: 0.878
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
+- nodeid: tests/test_pyside_completed_interview.py::test_pyside_completed_finish_surfaces_draft_cleanup_failure
+  duration_seconds_n2: 127.196
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_1
+- nodeid: tests/test_pyside_completed_interview.py::test_pyside_completed_non_scored_detail_preserves_mark_important
+  duration_seconds_n2: 101.166
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_1
+- nodeid: tests/test_pyside_completed_interview.py::test_pyside_completed_overview_failure_wins_after_partial_history_persistence
+  duration_seconds_n2: 48.907
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_1
 - nodeid: tests/test_pyside_completed_interview.py::test_pyside_completed_overview_processing_to_complete_scenario
-  duration_seconds_n2: 1.548
+  duration_seconds_n2: 9.197
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_completed_interview.py::test_pyside_completed_transcript_browser_scenario
-  duration_seconds_n2: 9.418
+  duration_seconds_n2: 74.916
   duration_source: measured
   gui_heavy: true
-  placement: gui_wave_3
+  placement: gui_wave_1
+- nodeid: tests/test_pyside_completed_interview.py::test_pyside_completed_typography_stress_visual_scenario
+  duration_seconds_n2: 54.725
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_1
 - nodeid: tests/test_pyside_interview_redesign.py::test_director_staffing_launch_queues_history_backfill_when_edit_lock_exists
   duration_seconds_n2: 1.282
   duration_source: measured
@@ -4804,6 +4844,16 @@ entries:
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_begin_cancels_running_manual_audio_test_before_capture
+  duration_seconds_n2: 0.714
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_begin_rejects_audio_source_that_is_no_longer_available
+  duration_seconds_n2: 7.87
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_begin_uses_selected_setup_system_audio_source
   duration_seconds_n2: 34.513
   duration_source: measured
@@ -4829,6 +4879,11 @@ entries:
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_2
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_candidates_resume_button_routes_saved_draft_into_live_interview
+  duration_seconds_n2: 10.923
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_completed_review_exposes_transcript_detail_for_rating_change
   duration_seconds_n2: 0.599
   duration_source: measured
@@ -4865,7 +4920,7 @@ entries:
   gui_heavy: true
   placement: gui_wave_1
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_exit_live_interview_saves_draft_and_returns_fresh_setup
-  duration_seconds_n2: 14.348
+  duration_seconds_n2: 9.211
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -4930,7 +4985,7 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_home_delete_saved_draft_requires_confirmation
-  duration_seconds_n2: 1.775
+  duration_seconds_n2: 12.611
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -4940,7 +4995,7 @@ entries:
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_home_import_indeed_transcript_opens_rating_flow
-  duration_seconds_n2: 1.922
+  duration_seconds_n2: 0.767
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -4999,8 +5054,18 @@ entries:
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_manual_audio_preflight_locks_only_duplicate_test_action
+  duration_seconds_n2: 21.893
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_2
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_manual_audio_preflight_runs_five_seconds_and_removes_artifacts
+  duration_seconds_n2: 29.53
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_2
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_manual_audio_preflight_updates_setup_without_starting_interview
-  duration_seconds_n2: 13.694
+  duration_seconds_n2: 18.152
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -5020,27 +5085,27 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_new_interview_cancel_discards_changes_and_returns_dashboard
-  duration_seconds_n2: 7.355
+  duration_seconds_n2: 14.414
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_new_interview_setup_begins_first_interview_without_contact_fields
-  duration_seconds_n2: 0.645
+  duration_seconds_n2: 1.069
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_new_interview_setup_matches_mockup_controls
-  duration_seconds_n2: 5.947
+  duration_seconds_n2: 7.249
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_new_interview_setup_responsive_visual_scenario
-  duration_seconds_n2: 0.976
+  duration_seconds_n2: 40.4
   duration_source: measured
   gui_heavy: true
-  placement: gui_wave_3
+  placement: gui_wave_1
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_new_interview_setup_scenario
-  duration_seconds_n2: 0.672
+  duration_seconds_n2: 0.719
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -5466,10 +5531,15 @@ entries:
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_window_close_stops_active_manual_audio_preflight
-  duration_seconds_n2: 20.892
+  duration_seconds_n2: 0.551
   duration_source: measured
   gui_heavy: true
-  placement: gui_wave_2
+  placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_window_close_stops_all_interview_capture_work
+  duration_seconds_n2: 0.573
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_window_fit_does_not_cap_normal_window_maximum_size
   duration_seconds_n2: 0.0
   duration_source: measured
@@ -5571,43 +5641,63 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_live_interview.py::test_live_stage_model_derives_dynamic_ranges_from_active_flow
-  duration_seconds_n2: 0.001
-  duration_source: collection_default
+  duration_seconds_n2: 0.0
+  duration_source: measured
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_pyside_live_interview.py::test_pyside_live_asr_failure_warning_never_exposes_exception_speech
+  duration_seconds_n2: 17.367
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_pyside_live_interview.py::test_pyside_live_availability_page_uses_non_scored_controls_and_public_next
+  duration_seconds_n2: 23.893
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_2
+- nodeid: tests/test_pyside_live_interview.py::test_pyside_live_back_button_saves_current_controls_without_advancing
+  duration_seconds_n2: 9.907
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
 - nodeid: tests/test_pyside_live_interview.py::test_pyside_live_introduction_screen_scenario
-  duration_seconds_n2: 0.71
+  duration_seconds_n2: 0.678
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_live_interview.py::test_pyside_live_non_scored_transcript_and_audio_scenario
-  duration_seconds_n2: 6.668
+  duration_seconds_n2: 10.09
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_live_interview.py::test_pyside_live_scored_rating_and_anchor_scenario
-  duration_seconds_n2: 0.951
+  duration_seconds_n2: 30.224
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_1
+- nodeid: tests/test_pyside_live_interview.py::test_pyside_live_screens_responsive_render_scenario
+  duration_seconds_n2: 1.775
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
-- nodeid: tests/test_pyside_live_interview.py::test_pyside_live_screens_responsive_render_scenario
-  duration_seconds_n2: 6.296
+- nodeid: tests/test_pyside_live_interview.py::test_pyside_live_typography_stress_visual_scenario
+  duration_seconds_n2: 1.132
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_live_interview.py::test_scored_flow_exposes_priority_weight_and_score_specific_sample_anchors
-  duration_seconds_n2: 0.001
-  duration_source: collection_default
+  duration_seconds_n2: 0.104
+  duration_source: measured
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_live_interview.py::test_session_canonical_transcript_preserves_manual_override_and_live_failure_fallback
-  duration_seconds_n2: 0.001
-  duration_source: collection_default
+  duration_seconds_n2: 0.127
+  duration_source: measured
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_live_interview.py::test_session_live_transcript_keeps_manual_edit_and_appends_new_segments
-  duration_seconds_n2: 0.001
-  duration_source: collection_default
+  duration_seconds_n2: 0.12
+  duration_source: measured
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pytest_collection_order.py::test_pytest_config_forces_single_xdist_schedule_chunk

@@ -2,8 +2,8 @@ module:
   name: pyside_completed_interview
   language: python
   path: src/pyside_completed_interview.py
-  version: 1.0.0
-  description: Reusable completed-interview overview, deterministic score summary, transcript browser, and UTF-8 transcript export.
+  version: 1.0.1
+  description: Reusable completed-interview overview, deterministic score summary, bounded transcript browser with two-line excerpts and expanded details, and UTF-8 transcript export.
 functions:
 - name: build_completed_interview_view_model
   description: Derive dynamic score totals, transcript rows, finish gating, strengths from ratings of 5, and review items from ratings of 3 or below, skips, missing ratings, and canonical flags.
@@ -31,7 +31,7 @@ functions:
   side_effects: none
 classes:
 - name: CompletedInterviewPage
-  description: Toolkit-injected processing, failure, and completed overview renderer with score summary, transcript filtering, responsive layout, and injected actions.
+  description: Toolkit-injected processing, failure, and completed overview renderer with score summary, non-clipping trait headers, bounded transcript filtering and expansion, responsive layout, and injected actions.
   locked: false
   attributes: {}
   methods:

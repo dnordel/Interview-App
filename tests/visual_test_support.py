@@ -8,7 +8,7 @@ from typing import Any
 
 
 _SQL_IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
-TYPOGRAPHY_STRESS_TEXT = "Gghjypq bdfhklt ÅÉQJ"
+TYPOGRAPHY_STRESS_TEXT = "y g j h p q b d f k l t Q J Å É"
 
 
 @dataclass(frozen=True)
@@ -93,3 +93,89 @@ def assert_vertical_text_fits(widget: Any, text: str = "") -> None:
     metrics = widget.fontMetrics()
     assert all(letter in visible_text for letter in "ygjhpq")
     assert widget.contentsRect().height() >= metrics.boundingRect(visible_text).height()
+
+
+def assert_widget_text_glyphs_supported(root: Any) -> None:
+    """Fail when visible mockup text would render as a missing-glyph square."""
+
+    from PySide6 import QtGui, QtWidgets
+
+    widgets = [root, *root.findChildren(QtWidgets.QWidget)]
+    failures: list[str] = []
+    for widget in widgets:
+        if widget.isHidden():
+            continue
+        values: list[str] = []
+        if isinstance(widget, (QtWidgets.QLabel, QtWidgets.QAbstractButton, QtWidgets.QLineEdit)):
+            values.append(widget.text())
+        elif isinstance(widget, QtWidgets.QComboBox):
+            values.extend(widget.itemText(index) for index in range(widget.count()))
+        for value in values:
+            text = str(value or "")
+            if not text:
+                continue
+            raw_font = QtGui.QRawFont.fromFont(widget.font())
+            missing = [character for character, glyph in zip(text, raw_font.glyphIndexesForString(text)) if glyph <= 1]
+            if missing:
+                failures.append(f"{widget.objectName() or type(widget).__name__}: {''.join(missing)!r}")
+    assert not failures, "Unsupported visible glyphs:\n" + "\n".join(failures)
+
+
+def assert_no_large_unpainted_region(image: Any, *, maximum_dark_ratio: float = 0.02) -> None:
+    """Reject screenshots containing large black/transparent layout holes."""
+
+    converted = image.toImage()
+    samples = 0
+    dark = 0
+    for y in range(0, converted.height(), 8):
+        for x in range(0, converted.width(), 8):
+            color = converted.pixelColor(x, y)
+            samples += 1
+            if color.alpha() < 240 or max(color.red(), color.green(), color.blue()) < 12:
+                dark += 1
+    assert samples > 0
+    assert dark / samples <= maximum_dark_ratio, f"unexpected dark/unpainted screenshot ratio: {dark / samples:.3f}"
+
+
+def assert_table_headers_fit(table: Any, *, padding: int = 12) -> None:
+    """Reject table columns whose visible header text cannot fit."""
+
+    for column in range(table.columnCount()):
+        item = table.horizontalHeaderItem(column)
+        if item is None:
+            continue
+        required = table.horizontalHeader().fontMetrics().horizontalAdvance(item.text()) + padding
+        assert table.columnWidth(column) >= required, (
+            f"table header clipped at column {column}: {item.text()!r} "
+            f"needs {required}px, has {table.columnWidth(column)}px"
+        )
+
+
+def assert_single_line_text_fits(widget: Any, *, padding: int = 4) -> None:
+    """Reject a visible one-line control whose text is horizontally clipped."""
+
+    required = widget.fontMetrics().horizontalAdvance(widget.text()) + padding
+    assert widget.contentsRect().width() >= required, (
+        f"control text clipped: {widget.objectName() or type(widget).__name__} "
+        f"needs {required}px, has {widget.contentsRect().width()}px"
+    )
+
+
+def assert_wrapped_text_fits(widget: Any) -> None:
+    """Reject a word-wrapped label whose allocated height cuts off rendered text."""
+
+    from PySide6 import QtCore
+
+    rect = widget.contentsRect()
+    required = widget.fontMetrics().boundingRect(
+        0,
+        0,
+        max(1, rect.width()),
+        10000,
+        int(QtCore.Qt.TextFlag.TextWordWrap),
+        widget.text(),
+    ).height()
+    assert rect.height() >= required, (
+        f"wrapped text clipped: {widget.objectName() or type(widget).__name__} "
+        f"needs {required}px, has {rect.height()}px"
+    )

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+import queue
 
 import pytest
 
@@ -12,7 +13,15 @@ from pyside_completed_interview import (
     build_completed_interview_view_model,
     build_completed_transcript_export,
 )
-from visual_test_support import VisualTestDatabaseRegistry, configure_visual_test_app
+from visual_test_support import (
+    TYPOGRAPHY_STRESS_TEXT,
+    VisualTestDatabaseRegistry,
+    assert_no_large_unpainted_region,
+    assert_table_headers_fit,
+    assert_vertical_text_fits,
+    assert_widget_text_glyphs_supported,
+    configure_visual_test_app,
+)
 
 
 def _completed_session(
@@ -157,6 +166,8 @@ def test_completed_transcript_export_excludes_intro_and_marks_skipped(tmp_path: 
     model, session = _completed_session(tmp_path)
     workflow = session._workflow_items()
     skipped = next(item for item in workflow if item.kind == "custom")
+    trait = next(item for item in workflow if item.kind == "trait")
+    session.answers[trait.question_id]["quick_actions"] = ["Needs follow-up"]
     session.answers[skipped.question_id]["skipped"] = True
     view = build_completed_interview_view_model(
         candidate_name=session.candidate_name,
@@ -232,6 +243,7 @@ def test_pyside_completed_overview_processing_to_complete_scenario(
     window.interview_tabs.setCurrentIndex(3)
     window._show_hiring_closeout()
     app.processEvents()
+    original_font = app.font()
     render_cases = (
         (1672, 941, 1.0),
         (1366, 768, 1.0),
@@ -239,17 +251,124 @@ def test_pyside_completed_overview_processing_to_complete_scenario(
         (1366, 768, 1.5),
     )
     for width, height, scale in render_cases:
+        scaled_font = type(original_font)(original_font)
+        scaled_font.setPointSizeF(max(8.0, 10.0 * scale))
+        app.setFont(scaled_font)
         window.window.resize(width, height)
         narrow = ((width - 300) / scale) < 1180
-        window.completed_interview_page.set_narrow(narrow)
         app.processEvents()
-        adaptive = page.findChild(qt_widgets.QWidget, "CompletedInterviewAdaptiveContent")
+        window._apply_responsive_layout()
+        app.processEvents()
+        root = window.completed_interview_page.root
+        adaptive = root.findChild(qt_widgets.QWidget, "CompletedInterviewAdaptiveContent")
         assert adaptive.property("layoutMode") == ("narrow" if narrow else "desktop")
         scroll = page.findChild(qt_widgets.QScrollArea, "CompletedInterviewScroll")
         assert scroll.horizontalScrollBar().maximum() == 0
         assert scroll.widget().width() >= scroll.viewport().width() - 20
         assert window.hiring_v2_router.interview_widget.horizontalScrollBar().maximum() == 0
-        assert window.window.grab().save(str(tmp_path / f"completed-{width}-{height}-{scale}.png"))
+        assert_widget_text_glyphs_supported(root)
+        assert_table_headers_fit(root.findChild(qt_widgets.QTableWidget, "CompletedInterviewTraitTable"))
+        rendered = window.window.grab()
+        assert_no_large_unpainted_region(rendered)
+        assert rendered.save(str(tmp_path / f"completed-{width}-{height}-{scale}.png"))
+        if (width, height, scale) == (1672, 941, 1.0):
+            finish = root.findChild(qt_widgets.QPushButton, "CompletedInterviewFinish")
+            finish_bottom = finish.mapTo(window.window, finish.rect().bottomLeft()).y()
+            assert finish_bottom <= window.window.height()
+    app.setFont(original_font)
+    window.window.close()
+    app.processEvents()
+
+
+@pytest.mark.pyside_gui
+@pytest.mark.visual_inspection
+def test_pyside_completed_typography_stress_visual_scenario(
+    tmp_path: Path,
+    visual_test_databases: VisualTestDatabaseRegistry,
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    configure_visual_test_app(app)
+    history_path = visual_test_databases.database("completed_interview_typography.sqlite3")
+    visual_test_databases.expect_seeded(history_path, table="interview_history")
+    model, session = _completed_session(tmp_path, history_path=history_path)
+    session.candidate_name = TYPOGRAPHY_STRESS_TEXT
+    for index, item in enumerate(session._workflow_items()):
+        if item.kind == "intro":
+            continue
+        session.flow_candidate_transcripts[index] = f"{TYPOGRAPHY_STRESS_TEXT} candidate response."
+        session.answers[item.question_id]["notes"] = f"{TYPOGRAPHY_STRESS_TEXT} interviewer notes."
+    pyside_interview_app.InterviewHistoryStore(history_path).update_row(
+        "completed-overview-fixture",
+        {
+            "candidate_name": TYPOGRAPHY_STRESS_TEXT,
+            "answers": session.answers,
+            "flow_candidate_transcripts": {str(index): text for index, text in session.flow_candidate_transcripts.items()},
+        },
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    window.session = session
+    window._review_history_id = "completed-overview-fixture"
+    window._render_review_page()
+    window.interview_tabs.setCurrentIndex(3)
+    window._show_hiring_closeout()
+    window.window.resize(1672, 941)
+    window.window.show()
+    app.processEvents()
+    window._apply_responsive_layout()
+    app.processEvents()
+    root = window.completed_interview_page.root
+    candidate = root.findChild(qt_widgets.QLabel, "CompletedInterviewCandidateName")
+    assert_vertical_text_fits(candidate, TYPOGRAPHY_STRESS_TEXT)
+    assert_widget_text_glyphs_supported(root)
+    assert_table_headers_fit(root.findChild(qt_widgets.QTableWidget, "CompletedInterviewTraitTable"))
+    rendered = window.window.grab()
+    assert_no_large_unpainted_region(rendered)
+    assert rendered.save(str(tmp_path / "completed-typography.png"))
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_completed_overview_failure_wins_after_partial_history_persistence(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model, session = _completed_session(tmp_path)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    window.session = session
+    window._review_history_id = "completed-overview-fixture"
+    window._pyside_finalize_running = False
+    window._completed_finalize_error = "Candidate report snapshot could not be saved."
+
+    window._render_review_page()
+    app.processEvents()
+
+    page = window.interview_tabs.widget(3)
+    assert page.findChild(qt_widgets.QLabel, "CompletedInterviewStatus").text() == "Finalization failed"
+    assert page.findChild(qt_widgets.QPushButton, "CompletedInterviewRetry") is not None
+    assert not page.findChild(qt_widgets.QPushButton, "CompletedInterviewFinish").isEnabled()
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_completed_finalize_failure_sanitizes_private_exception_text(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model, session = _completed_session(tmp_path)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    window.session = session
+    results: queue.Queue[dict[str, object]] = queue.Queue()
+    private_text = "candidate said private captured speech"
+    results.put({"ok": False, "error": RuntimeError(private_text)})
+    timer = type("Timer", (), {"stop": lambda _self: None, "deleteLater": lambda _self: None})()
+
+    window._poll_pyside_finalize_worker(results, timer)
+    app.processEvents()
+
+    assert private_text not in window._completed_finalize_error
+    assert "saved draft" in window._completed_finalize_error
     window.window.close()
     app.processEvents()
 
@@ -263,6 +382,8 @@ def test_pyside_completed_transcript_browser_scenario(tmp_path: Path) -> None:
     model, session = _completed_session(tmp_path)
     workflow = session._workflow_items()
     skipped = next(item for item in workflow if item.kind == "custom")
+    trait = next(item for item in workflow if item.kind == "trait")
+    session.answers[trait.question_id]["quick_actions"] = ["Needs follow-up"]
     session.answers[skipped.question_id]["skipped"] = True
     session.answers[skipped.question_id]["score"] = ""
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
@@ -280,12 +401,17 @@ def test_pyside_completed_transcript_browser_scenario(tmp_path: Path) -> None:
     assert "Question Skipped" in " ".join(label.text() for label in skipped_card.findChildren(qt_widgets.QLabel))
     assert skipped_card.findChild(qt_widgets.QToolButton, "CompletedTranscriptToggle") is None
 
-    first = next(card for card in cards if not card.property("skipped"))
+    first = next(card for card in cards if card.property("questionId") == trait.question_id)
+    excerpt = first.findChild(qt_widgets.QLabel, "CompletedTranscriptExcerpt")
+    assert excerpt.maximumHeight() <= excerpt.fontMetrics().lineSpacing() * 2 + 8
     full = first.findChild(qt_widgets.QLabel, "CompletedTranscriptFullText")
     assert full.isHidden()
     first.findChild(qt_widgets.QToolButton, "CompletedTranscriptToggle").click()
     app.processEvents()
     assert not full.isHidden()
+    assert first.findChild(qt_widgets.QLabel, "CompletedTranscriptExpandedNotes").text() == "Saved evidence"
+    assert "Needs follow-up" in first.findChild(qt_widgets.QLabel, "CompletedTranscriptExpandedFlags").text()
+    assert "4 / 5" in first.findChild(qt_widgets.QLabel, "CompletedTranscriptExpandedRating").text()
 
     filter_box = page.findChild(qt_widgets.QComboBox, "CompletedTranscriptFilter")
     filter_box.setCurrentText("Scored")
@@ -326,7 +452,7 @@ def test_pyside_completed_detail_edit_scenario(tmp_path: Path) -> None:
     )
 
     def edit_dialog() -> None:
-        dialog = next(widget for widget in app.topLevelWidgets() if widget.objectName() == "CompletedQuestionDetailDialog")
+        dialog = next(widget for widget in app.topLevelWidgets() if widget.objectName() == "CompletedQuestionDetailDialog" and widget.isVisible())
         dialog.findChild(qt_widgets.QTextEdit, "CompletedQuestionTranscriptEdit").setPlainText("Corrected final transcript.")
         dialog.findChild(qt_widgets.QTextEdit, "CompletedQuestionNotesEdit").setPlainText("Corrected evidence.")
         dialog.findChild(qt_widgets.QSpinBox, "CompletedQuestionRatingEdit").setValue(5)
@@ -351,6 +477,54 @@ def test_pyside_completed_detail_edit_scenario(tmp_path: Path) -> None:
     assert len(rows) == 1
     assert rows[0]["review_scores"][trait.question_id] == "5"
     assert "5 / 5" in page.findChild(qt_widgets.QTableWidget, "CompletedInterviewTraitTable").item(0, 1).text()
+    window.window.close()
+    app.processEvents()
+
+
+@pytest.mark.pyside_gui
+def test_pyside_completed_non_scored_detail_preserves_mark_important(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    qt_core = pytest.importorskip("PySide6.QtCore")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model, session = _completed_session(tmp_path)
+    question = next(item for item in session._workflow_items() if item.kind == "custom")
+    session.answers[question.question_id]["quick_actions"] = ["Mark as important"]
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    window.session = session
+    window._review_history_id = "completed-overview-fixture"
+    window._render_review_page()
+    window.interview_tabs.setCurrentIndex(3)
+
+    card = next(
+        card
+        for card in window.interview_tabs.widget(3).findChildren(qt_widgets.QFrame, "CompletedTranscriptCard")
+        if card.property("questionId") == question.question_id
+    )
+
+    def cancel_once() -> None:
+        dialog = next(widget for widget in app.topLevelWidgets() if widget.objectName() == "CompletedQuestionDetailDialog" and widget.isVisible())
+        dialog.findChild(qt_widgets.QTextEdit, "CompletedQuestionTranscriptEdit").setPlainText("Discarded response.")
+        dialog.findChild(qt_widgets.QPushButton, "CompletedQuestionCancel").click()
+
+    qt_core.QTimer.singleShot(0, cancel_once)
+    card.findChild(qt_widgets.QPushButton, "CompletedTranscriptDetail").click()
+    app.processEvents()
+    assert session.live_transcript(session._workflow_items().index(question)) != "Discarded response."
+
+    def inspect_and_save() -> None:
+        dialog = next(widget for widget in app.topLevelWidgets() if widget.objectName() == "CompletedQuestionDetailDialog" and widget.isVisible())
+        assert dialog.findChild(qt_widgets.QSpinBox, "CompletedQuestionRatingEdit") is None
+        assert dialog.findChild(qt_widgets.QCheckBox, "CompletedQuestionNeedsFollowUp") is None
+        important = dialog.findChild(qt_widgets.QCheckBox, "CompletedQuestionMarkImportant")
+        assert important.isChecked()
+        dialog.findChild(qt_widgets.QTextEdit, "CompletedQuestionTranscriptEdit").setPlainText("Updated non-scored response.")
+        dialog.findChild(qt_widgets.QPushButton, "CompletedQuestionSave").click()
+
+    qt_core.QTimer.singleShot(0, inspect_and_save)
+    card.findChild(qt_widgets.QPushButton, "CompletedTranscriptDetail").click()
+    app.processEvents()
+    assert session.answers[question.question_id]["quick_actions"] == ["Mark as important"]
     window.window.close()
     app.processEvents()
 
@@ -403,5 +577,109 @@ def test_pyside_completed_actions_and_finish_scenario(tmp_path: Path) -> None:
     assert window.interview_tabs.currentIndex() == 0
     assert not session.draft_path.exists()
     assert window.home_candidate_input.text() == ""
+    window.window.close()
+    app.processEvents()
+
+
+@pytest.mark.pyside_gui
+def test_pyside_completed_export_actions_write_docx_pdf_and_utf8_txt(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model, session = _completed_session(tmp_path)
+    source_docx = tmp_path / "canonical-report.docx"
+    source_docx.write_bytes(b"docx fixture")
+    generated_pdf = tmp_path / "canonical-report.pdf"
+    generated_pdf.write_bytes(b"pdf fixture")
+    pyside_interview_app.InterviewHistoryStore(model.history_path).update_row(
+        "completed-overview-fixture", {"saved_report_path": str(source_docx)}
+    )
+    non_intro = next(index for index, item in enumerate(session._workflow_items()) if item.kind != "intro")
+    session.flow_candidate_transcripts[non_intro] = "Typography Å É y g j h p q candidate response."
+    destinations = {
+        "Export Word Interview Report": str(tmp_path / "exported.docx"),
+        "Export PDF Interview Report": str(tmp_path / "exported.pdf"),
+        "Export Candidate Transcript": str(tmp_path / "exported.txt"),
+    }
+    monkeypatch.setattr(
+        qt_widgets.QFileDialog,
+        "getSaveFileName",
+        lambda _parent, title, *_args: (destinations[title], ""),
+    )
+    monkeypatch.setattr(pyside_interview_app, "_ensure_offer_pdf_path", lambda _path: str(generated_pdf))
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    window.session = session
+    window._review_history_id = "completed-overview-fixture"
+    window._render_review_page()
+    page = window.interview_tabs.widget(3)
+    page.findChild(qt_widgets.QPushButton, "CompletedInterviewExport").click()
+    app.processEvents()
+    menu = window.completed_export_menu
+    for action in menu.actions():
+        action.trigger()
+        app.processEvents()
+    assert (tmp_path / "exported.docx").read_bytes() == b"docx fixture"
+    assert (tmp_path / "exported.pdf").read_bytes() == b"pdf fixture"
+    transcript = (tmp_path / "exported.txt").read_text(encoding="utf-8")
+    assert "Å É y g j h p q" in transcript
+    window.window.close()
+    app.processEvents()
+
+
+@pytest.mark.pyside_gui
+def test_pyside_completed_export_cancel_and_pdf_failure_are_safe(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model, session = _completed_session(tmp_path)
+    source = tmp_path / "report.docx"
+    source.write_bytes(b"report")
+    pyside_interview_app.InterviewHistoryStore(model.history_path).update_row(
+        "completed-overview-fixture", {"saved_report_path": str(source)}
+    )
+    warnings: list[str] = []
+    monkeypatch.setattr(qt_widgets.QFileDialog, "getSaveFileName", lambda *_args: ("", ""))
+    monkeypatch.setattr(qt_widgets.QMessageBox, "warning", lambda _parent, _title, text: warnings.append(text))
+    monkeypatch.setattr(pyside_interview_app, "_ensure_offer_pdf_path", lambda _path: None)
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    window.session = session
+    window._review_history_id = "completed-overview-fixture"
+    window._render_review_page()
+    export = window.interview_tabs.widget(3).findChild(qt_widgets.QPushButton, "CompletedInterviewExport")
+    export.click()
+    app.processEvents()
+    actions = {action.text(): action for action in window.completed_export_menu.actions()}
+    actions["Word report (.docx)"].trigger()
+    actions["PDF report (.pdf)"].trigger()
+    app.processEvents()
+    assert warnings == ["PDF conversion failed. Confirm Microsoft Word is installed."]
+    window.window.close()
+    app.processEvents()
+
+
+@pytest.mark.pyside_gui
+def test_pyside_completed_finish_surfaces_draft_cleanup_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model, session = _completed_session(tmp_path)
+    warnings: list[str] = []
+    original_unlink = Path.unlink
+
+    def fail_draft_unlink(path: Path, *args: object, **kwargs: object) -> None:
+        if path == session.draft_path:
+            raise OSError("private filesystem detail")
+        original_unlink(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "unlink", fail_draft_unlink)
+    monkeypatch.setattr(qt_widgets.QMessageBox, "warning", lambda _parent, _title, text: warnings.append(text))
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    window.session = session
+    window._review_history_id = "completed-overview-fixture"
+    window._render_review_page()
+    window.interview_tabs.widget(3).findChild(qt_widgets.QPushButton, "CompletedInterviewFinish").click()
+    app.processEvents()
+    assert window.session is session
+    assert warnings == ["The completed interview was saved, but its local draft could not be removed. Try Save & Finish again."]
     window.window.close()
     app.processEvents()

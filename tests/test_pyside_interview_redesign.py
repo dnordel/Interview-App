@@ -39,7 +39,9 @@ from scoring_reporting import CandidateQualification
 from visual_test_support import (
     TYPOGRAPHY_STRESS_TEXT,
     VisualTestDatabaseRegistry,
+    assert_no_large_unpainted_region,
     assert_vertical_text_fits,
+    assert_widget_text_glyphs_supported,
     configure_visual_test_app,
 )
 
@@ -146,6 +148,12 @@ def test_pyside_new_interview_setup_begins_first_interview_without_contact_field
     window = _pyside_window_on_page(model, "Interviews")
     capture_started: list[bool] = []
     monkeypatch.setattr(window, "_start_pyside_interview_recording", lambda: capture_started.append(True))
+
+    window.home_begin_button.click()
+    app.processEvents()
+    assert window.session is None
+    assert HiringPipelineStore(history_path).list_applications() == []
+
     window.home_candidate_input.setText("Sofia Ramirez")
 
     window.home_begin_button.click()
@@ -178,9 +186,17 @@ def test_pyside_new_interview_cancel_discards_changes_and_returns_dashboard(
         school_options=["Hawthorne"],
     )
     window = _pyside_window_on_page(model, "Interviews")
+    no = window.QtWidgets.QMessageBox.StandardButton.No
     yes = window.QtWidgets.QMessageBox.StandardButton.Yes
-    monkeypatch.setattr(window.QtWidgets.QMessageBox, "question", lambda *_args, **_kwargs: yes)
+    answers = iter((no, yes))
+    monkeypatch.setattr(window.QtWidgets.QMessageBox, "question", lambda *_args, **_kwargs: next(answers))
     window.home_candidate_input.setText("Discard Me")
+
+    window.interview_tabs.widget(0).findChild(qt_widgets.QPushButton, "HiringV2SetupCancel").click()
+    app.processEvents()
+
+    assert window.home_candidate_input.text() == "Discard Me"
+    assert window.staffing_v2_dashboard.current_page_id == "interviews"
 
     window.interview_tabs.widget(0).findChild(qt_widgets.QPushButton, "HiringV2SetupCancel").click()
     app.processEvents()
@@ -206,9 +222,11 @@ def test_pyside_exit_live_interview_saves_draft_and_returns_fresh_setup(tmp_path
     session = PySideInterviewSession(model=model, draft_path=draft_path, application_id="application")
     session.start(candidate_name="Sofia Ramirez", school="Hawthorne", track_key=next(iter(model.flows)))
     window.session = session
+    window.session_index = session.current_index
+    window._render_live_question_page()
     window.interview_tabs.setCurrentIndex(2)
 
-    window._exit_live_interview()
+    window.interview_tabs.widget(2).findChild(qt_widgets.QPushButton, "LiveInterviewExit").click()
     app.processEvents()
 
     assert draft_path.exists()
@@ -257,10 +275,123 @@ def test_pyside_manual_audio_preflight_updates_setup_without_starting_interview(
             break
 
     assert tested_sources == ["CABLE Output"]
-    assert window.home_microphone_status.text() == "✓ Microphone connected"
-    assert window.home_system_audio_status.text() == "✓ System audio connected"
-    assert window.home_transcript_status.text() == "✓ Live transcription ready"
+    assert window.home_microphone_status.text() == "Microphone connected"
+    assert window.home_system_audio_status.text() == "System audio connected"
+    assert window.home_transcript_status.text() == "Live transcription ready"
     assert window.session is None
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_manual_audio_preflight_locks_only_duplicate_test_action(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    from PySide6 import QtTest
+    from interview_audio_preflight import AudioPreflightResult
+
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.sqlite3",
+        school_options=["Hawthorne"],
+    )
+    window = _pyside_window_on_page(model, "Interviews")
+    release = threading.Event()
+    calls: list[str] = []
+
+    def delayed_result(source: str) -> AudioPreflightResult:
+        calls.append(source)
+        release.wait(1.0)
+        return AudioPreflightResult(True, True, True, "")
+
+    monkeypatch.setattr(window, "_run_manual_audio_preflight", delayed_result)
+    window.home_audio_source_combo.clear()
+    window.home_audio_source_combo.addItem("CABLE Output", "CABLE Output")
+
+    window.home_test_audio_button.click()
+    app.processEvents()
+
+    assert not window.home_test_audio_button.isEnabled()
+    assert window.home_begin_button.isEnabled()
+    assert window.interview_tabs.widget(0).findChild(
+        qt_widgets.QPushButton, "HiringV2SetupCancel"
+    ).isEnabled()
+    window.home_test_audio_button.click()
+    assert calls == ["CABLE Output"]
+
+    release.set()
+    for _attempt in range(100):
+        app.processEvents()
+        QtTest.QTest.qWait(10)
+        if window.home_test_audio_button.isEnabled():
+            break
+    assert window.home_test_audio_button.isEnabled()
+    assert window.home_begin_button.isEnabled()
+    assert calls == ["CABLE Output"]
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_manual_audio_preflight_runs_five_seconds_and_removes_artifacts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.sqlite3",
+        school_options=["Hawthorne"],
+    )
+    window = _pyside_window_on_page(model, "Interviews")
+    delays: list[float] = []
+    artifact_dirs: list[Path] = []
+    import interview_audio_recorder
+
+    def write_signal(path: Path) -> None:
+        with wave.open(str(path), "wb") as wav_file:
+            wav_file.setnchannels(1)
+            wav_file.setsampwidth(2)
+            wav_file.setframerate(16000)
+            wav_file.writeframes((100).to_bytes(2, "little", signed=True) * 16000)
+
+    def fake_start_recording(**kwargs: Any) -> Any:
+        output_dir = Path(kwargs["output_dir"])
+        artifact_dirs.append(output_dir)
+        mic = output_dir / "microphone.wav"
+        system = output_dir / "system.wav"
+        write_signal(mic)
+        write_signal(system)
+        return SimpleNamespace(
+            mic_wav=mic,
+            sys_wav=system,
+            sys_label="CANDIDATE",
+            stop=lambda: None,
+            transcribe_new_segments=lambda **_kwargs: [
+                SimpleNamespace(speaker="CANDIDATE", text="private candidate speech")
+            ],
+        )
+
+    monkeypatch.setattr(interview_audio_recorder, "start_recording", fake_start_recording)
+    monkeypatch.setattr(pyside_interview_app.time, "sleep", delays.append)
+    monkeypatch.setattr(
+        pyside_interview_app,
+        "resolve_runtime",
+        lambda _settings: SimpleNamespace(model="tiny", device="cpu", compute_type="int8", backend="test"),
+    )
+
+    result = window._run_manual_audio_preflight("CABLE Output")
+
+    assert result.ready
+    assert delays == [5]
+    assert len(artifact_dirs) == 1
+    assert not artifact_dirs[0].exists()
     window.window.close()
     app.processEvents()
 
@@ -286,6 +417,41 @@ def test_pyside_window_close_stops_active_manual_audio_preflight(tmp_path: Path)
     app.processEvents()
 
 
+def test_pyside_window_close_stops_all_interview_capture_work(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.sqlite3",
+        school_options=["Hawthorne"],
+    )
+    window = _pyside_window_on_page(model, "Interviews")
+    recording_stopped = threading.Event()
+    preflight_stopped = threading.Event()
+    window.recording_session = SimpleNamespace(stop=recording_stopped.set)
+    window._manual_audio_preflight_session = SimpleNamespace(stop=preflight_stopped.set)
+    window._manual_audio_preflight_queue = queue.Queue()
+    window._live_transcript_queue = queue.Queue()
+    window._manual_audio_preflight_timer = window.QtCore.QTimer(window.window)
+    window._manual_audio_preflight_timer.start(1000)
+    window._live_transcript_timer = window.QtCore.QTimer(window.window)
+    window._live_transcript_timer.start(1000)
+
+    window.window.close()
+    app.processEvents()
+
+    assert recording_stopped.wait(0.5)
+    assert preflight_stopped.wait(0.5)
+    assert window.recording_session is None
+    assert window._manual_audio_preflight_session is None
+    assert window._manual_audio_preflight_queue is None
+    assert window._live_transcript_queue is None
+    assert window._manual_audio_preflight_timer is None
+    assert window._live_transcript_timer is None
+
+
 def test_pyside_setup_audio_probe_populates_detected_source_and_readiness(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -307,10 +473,88 @@ def test_pyside_setup_audio_probe_populates_detected_source_and_readiness(tmp_pa
 
     assert window.home_audio_source_combo.currentText() == "CABLE Output (VB-Audio Virtual Cable)"
     assert window.home_audio_source_combo.count() == 2
-    assert window.home_microphone_status.text() == "✓ Microphone connected"
-    assert window.home_system_audio_status.text() == "✓ System audio connected"
-    assert window.home_transcript_status.text() == "✓ Live transcription ready"
+    assert window.home_microphone_status.text() == "Microphone connected"
+    assert window.home_system_audio_status.text() == "System audio connected"
+    assert window.home_transcript_status.text() == "Live transcription ready"
     assert window.session is None
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_begin_rejects_audio_source_that_is_no_longer_available(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    from hiring_pipeline import HiringPipelineStore
+
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    history_path = tmp_path / "interview_history.sqlite3"
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Hawthorne"],
+    )
+    window = _pyside_window_on_page(model, "Interviews")
+    monkeypatch.setattr(pyside_interview_app.sys, "platform", "win32")
+    monkeypatch.setattr(
+        pyside_interview_app,
+        "list_windows_dshow_audio_devices",
+        lambda: ["Different Available Device"],
+    )
+    window.home_audio_source_combo.clear()
+    window.home_audio_source_combo.addItem("Disconnected CABLE Output", "Disconnected CABLE Output")
+    window.home_candidate_input.setText("Sofia Ramirez")
+
+    window.home_begin_button.click()
+    app.processEvents()
+
+    assert window.session is None
+    assert HiringPipelineStore(history_path).list_applications() == []
+    assert "no longer available" in window.home_setup_validation.text().lower()
+    assert window.interview_tabs.currentIndex() == 0
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_begin_cancels_running_manual_audio_test_before_capture(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.sqlite3",
+        school_options=["Hawthorne"],
+    )
+    window = _pyside_window_on_page(model, "Interviews")
+    monkeypatch.setattr(pyside_interview_app.sys, "platform", "linux")
+    capture_started: list[bool] = []
+    monkeypatch.setattr(window, "_start_pyside_interview_recording", lambda: capture_started.append(True))
+    preflight_stopped = threading.Event()
+    cancel_event = threading.Event()
+    window._manual_audio_preflight_session = SimpleNamespace(stop=preflight_stopped.set)
+    window._manual_audio_preflight_cancel_event = cancel_event
+    window._manual_audio_preflight_queue = queue.Queue()
+    window._manual_audio_preflight_timer = window.QtCore.QTimer(window.window)
+    window._manual_audio_preflight_timer.start(1000)
+    window.home_candidate_input.setText("Sofia Ramirez")
+
+    window.home_begin_button.click()
+    app.processEvents()
+
+    assert preflight_stopped.wait(0.5)
+    assert cancel_event.is_set()
+    assert window._manual_audio_preflight_session is None
+    assert window._manual_audio_preflight_queue is None
+    assert window._manual_audio_preflight_timer is None
+    assert capture_started == [True]
+    assert window.session is not None
     window.window.close()
     app.processEvents()
 
@@ -333,7 +577,7 @@ def test_pyside_new_interview_setup_responsive_visual_scenario(
     InterviewHistoryStore(history_path).append(
         {
             "history_id": "setup-visual-fixture",
-            "candidate_name": "Ghjypq Avery",
+            "candidate_name": "Sofia Ramirez",
             "school": "Hawthorne",
             "position": "Infant/Toddler Teacher",
             "interview_date": "2026-07-15",
@@ -349,6 +593,13 @@ def test_pyside_new_interview_setup_responsive_visual_scenario(
     )
     window = _pyside_window_on_page(model, "Interviews")
     setup = window.interview_tabs.widget(0)
+    window.window.resize(1680, 945)
+    window.window.show()
+    app.processEvents()
+    realistic = window.window.grab()
+    assert_no_large_unpainted_region(realistic)
+    assert_widget_text_glyphs_supported(setup)
+    assert realistic.save(str(tmp_path / "new-interview-realistic.png"))
     window.home_candidate_input.setText(TYPOGRAPHY_STRESS_TEXT)
     window.home_microphone_status.setText(TYPOGRAPHY_STRESS_TEXT)
     window.home_begin_button.setText(f"Begin {TYPOGRAPHY_STRESS_TEXT}")
@@ -366,6 +617,8 @@ def test_pyside_new_interview_setup_responsive_visual_scenario(
             window.window.show()
             app.processEvents()
             rendered = window.window.grab()
+            assert_no_large_unpainted_region(rendered)
+            assert_widget_text_glyphs_supported(setup)
             assert rendered.save(str(tmp_path / f"new-interview-{width}x{height}-{scale}.png"))
             assert setup.horizontalScrollBar().maximum() == 0
             card_width = setup.findChild(qt_widgets.QFrame, "HiringV2CandidateSetupCard").width()
@@ -404,6 +657,59 @@ def test_pyside_candidates_owns_roster_pipeline_history_and_legacy_interview_act
     interviews = window.staffing_v2_dashboard.external_pages["interviews"]
     assert interviews.findChild(qt_widgets.QTableWidget, "HiringV2ApplicationList") is None
     assert interviews.findChild(qt_widgets.QPushButton, "ImportIndeedTranscriptButton") is None
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_candidates_resume_button_routes_saved_draft_into_live_interview(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    qt_core = pytest.importorskip("PySide6.QtCore")
+    qt_test = pytest.importorskip("PySide6.QtTest")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    history_path = tmp_path / "interview_history.sqlite3"
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Hawthorne"],
+    )
+    draft_path = history_path.parent / "pyside_drafts" / "sofia.json"
+    session = PySideInterviewSession(model=model, draft_path=draft_path)
+    session.start(candidate_name="Sofia Ramirez", school="Hawthorne", track_key=next(iter(model.flows)))
+    window = _pyside_window_on_page(model, "Candidates")
+    monkeypatch.setattr(window, "_start_pyside_interview_recording", lambda: None)
+    tabs = window.hiring_v2_candidates_tabs
+    window.window.show()
+    app.processEvents()
+
+    qt_test.QTest.mouseClick(
+        tabs.tabBar(),
+        qt_core.Qt.MouseButton.LeftButton,
+        pos=tabs.tabBar().tabRect(0).center(),
+    )
+    app.processEvents()
+    assert tabs.currentIndex() == 0
+
+    qt_test.QTest.mouseClick(
+        tabs.tabBar(),
+        qt_core.Qt.MouseButton.LeftButton,
+        pos=tabs.tabBar().tabRect(1).center(),
+    )
+    app.processEvents()
+    assert tabs.currentIndex() == 1
+    assert window.candidate_continue_draft_button.isEnabled()
+
+    window.candidate_continue_draft_button.click()
+    app.processEvents()
+
+    assert window.session is not None
+    assert window.session.candidate_name == "Sofia Ramirez"
+    assert window.staffing_v2_dashboard.current_page_id == "interviews"
+    assert window.interview_tabs.currentIndex() == 2
     window.window.close()
     app.processEvents()
 
@@ -1172,7 +1478,10 @@ Speaker 0: I noticed the child was upset and helped them name the feeling.
     )
     window._start_pyside_interview_recording = lambda: (_ for _ in ()).throw(AssertionError("recording should not start"))
 
-    window._import_indeed_transcript_from_home()
+    window.staffing_v2_dashboard.external_pages["candidates"].findChild(
+        qt_widgets.QPushButton, "ImportIndeedTranscriptButton"
+    ).click()
+    app.processEvents()
 
     assert window.session is not None
     assert window.session.active_question().question_id == "trait_1"
@@ -1621,11 +1930,13 @@ def test_pyside_home_delete_saved_draft_requires_confirmation(tmp_path: Path, mo
     yes = window.QtWidgets.QMessageBox.StandardButton.Yes
 
     monkeypatch.setattr(window.QtWidgets.QMessageBox, "question", lambda *_args, **_kwargs: no)
-    window._delete_latest_draft()
+    window.candidate_delete_draft_button.click()
+    app.processEvents()
     assert draft_path.exists()
 
     monkeypatch.setattr(window.QtWidgets.QMessageBox, "question", lambda *_args, **_kwargs: yes)
-    window._delete_latest_draft()
+    window.candidate_delete_draft_button.click()
+    app.processEvents()
     assert not draft_path.exists()
     assert not window.home_continue_button.isEnabled()
     assert not window.home_delete_draft_button.isEnabled()
@@ -1852,6 +2163,7 @@ def test_pyside_begin_uses_selected_setup_system_audio_source(tmp_path: Path, mo
     )
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     monkeypatch.setattr(pyside_interview_app.sys, "platform", "win32")
+    monkeypatch.setattr(pyside_interview_app, "list_windows_dshow_audio_devices", lambda: ["Selected Cable"])
     monkeypatch.setattr(pyside_interview_app, "resolve_default_windows_system_device", lambda: "Default Cable")
     monkeypatch.setattr(
         pyside_interview_app,

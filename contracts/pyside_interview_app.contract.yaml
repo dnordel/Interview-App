@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 5.3.0
+  version: 5.4.0
   description: PySide6 operations shell and headless view-model builder for a mockup-driven
     New Interview setup/live flow, Candidates-owned pipeline/history, candidate reports,
     onboarding, staffing, notifications, and admin-only
@@ -822,20 +822,27 @@ classes:
     exceptions: []
     side_effects: Updates setup widgets and clears validation/dirty state.
   - name: _start_manual_audio_preflight
-    description: Start optional non-blocking 15-second setup audio test once for selected system source.
+    description: Start one optional non-blocking 5-second setup audio test for the selected system source while leaving Begin Interview enabled.
     locked: false
     inputs: {}
     returns: {type: None}
     exceptions: []
-    side_effects: Disables duplicate Test Audio clicks and starts daemon worker plus Qt result poller.
+    side_effects: Disables duplicate Test Audio clicks only and starts a daemon worker plus Qt result poller.
   - name: _run_manual_audio_preflight
-    description: Capture temporary mic/system WAVs for 15 seconds, transcribe candidate/system speech, evaluate readiness, and delete temporary artifacts.
+    description: Capture temporary mic/system WAVs for 5 seconds, transcribe candidate/system speech, evaluate readiness, and delete temporary artifacts without logging captured speech.
     locked: false
     inputs:
       system_device: {type: str, required: true}
     returns: {type: AudioPreflightResult}
     exceptions: []
     side_effects: Starts/stops temporary FFmpeg capture, invokes local transcription, and removes temporary directory.
+  - name: _stop_manual_audio_preflight
+    description: Cancel manual setup preflight polling and stop its temporary recorder before Begin, Exit, or window close without blocking the GUI.
+    locked: false
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Stops and deletes the Qt poll timer, signals cancellation, clears temporary queue/session references, and asynchronously stops any active temporary recorder.
   - name: _poll_manual_audio_preflight
     description: Poll manual audio-test worker and apply its speech-free readiness result.
     locked: false
@@ -1596,7 +1603,7 @@ classes:
     inputs: {}
     returns: {type: bool}
     exceptions: []
-    side_effects: Delegates application-close guarding to loaded Settings; after confirmed close, asynchronously stops any active temporary manual audio preflight capture.
+    side_effects: Delegates application-close guarding to loaded Settings; after confirmed close, stops manual-preflight and live ASR/audio timers, clears preload and transcript queues, and asynchronously stops any active temporary or interview recording session.
   - name: _invalidate_notification_service
     inputs: {}
     returns: {type: None}
