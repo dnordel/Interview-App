@@ -6628,7 +6628,9 @@ def test_pyside_staffing_v2_mark_filled_dialog_accepts_actual_start_date(
         clock=lambda: "2026-07-01T09:00:00Z",
     )
     service.open_position(assignment_id)
-    service.mark_coming(assignment_id, person_name="Emily Carter", start_date="2026-07-08")
+    scheduled_start = date.today() + timedelta(days=1)
+    actual_start = date.today()
+    service.mark_coming(assignment_id, person_name="Emily Carter", start_date=scheduled_start.isoformat())
     monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", db_path)
     monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", tmp_path / "missing_seed.json")
     model = build_interview_redesign_model(
@@ -6665,14 +6667,14 @@ def test_pyside_staffing_v2_mark_filled_dialog_accepts_actual_start_date(
     assert not close_button.icon().isNull()
     filled_date = dialog.findChild(qt_widgets.QDateEdit, "StaffingV2FilledDate")
     assert filled_date is not None
-    assert filled_date.date() == qt_core.QDate(2026, 7, 8)
+    assert filled_date.date() == qt_core.QDate.fromString(scheduled_start.isoformat(), "yyyy-MM-dd")
     assert filled_date.isEnabled()
     assert filled_date.calendarPopup()
     qt_test.QTest.mouseClick(filled_date, qt_core.Qt.MouseButton.LeftButton)
     app.processEvents()
     assert filled_date.calendarWidget().isVisible()
     filled_date.calendarWidget().parentWidget().hide()
-    filled_date.setDate(qt_core.QDate(2026, 7, 10))
+    filled_date.setDate(qt_core.QDate.fromString(actual_start.isoformat(), "yyyy-MM-dd"))
 
     dialog.findChild(qt_widgets.QTextEdit, "StaffingV2FilledNotes").setPlainText("Started and verified.")
     assert dialog.findChild(qt_widgets.QCheckBox, "StaffingV2FilledStarted").isChecked()
@@ -6682,9 +6684,9 @@ def test_pyside_staffing_v2_mark_filled_dialog_accepts_actual_start_date(
     updated = store.get_assignment(assignment_id)
     assert updated.status == "filled"
     assert updated.person_name == "Emily Carter"
-    assert updated.start_date == "2026-07-10"
-    assert updated.current_filled_date == "2026-07-10"
-    assert store.closed_days_to_fill() == [9]
+    assert updated.start_date == actual_start.isoformat()
+    assert updated.current_filled_date == actual_start.isoformat()
+    assert store.closed_days_to_fill() == [(actual_start - date(2026, 7, 1)).days]
     refreshed_table = page.findChild(qt_widgets.QTableWidget, "StaffingV2PositionsTable")
     assert _staffing_button_for_position(refreshed_table, "Teacher 1").text() == "Manage Filled"
     window.window.close()
@@ -8555,6 +8557,159 @@ def test_staffing_v2_director_pending_table_uses_compact_readable_columns(tmp_pa
     app.processEvents()
 
 
+def test_staffing_v2_initial_refresh_automatically_fills_due_coming_position(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_core = pytest.importorskip("PySide6.QtCore")
+    qt_gui = pytest.importorskip("PySide6.QtGui")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    store = pyside_interview_app.StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    assignment_id = store.seed_assignment(
+        school="Palmdale",
+        classroom="Harmony",
+        position_name="Teacher 1",
+        position_type="Teacher",
+    )
+    service = pyside_interview_app.StaffingService(store, clock=lambda: "2026-07-15T08:00:00Z")
+    service.open_position(assignment_id)
+    service.mark_coming(
+        assignment_id,
+        person_name="Koryn",
+        start_date=date.today().isoformat(),
+    )
+
+    page = StaffingDashboardV2Page(
+        QtCore=qt_core,
+        QtGui=qt_gui,
+        QtWidgets=qt_widgets,
+        store=store,
+        service_factory=lambda: service,
+        school_filter="Palmdale",
+        notification_store_path=tmp_path / "notification_rules.sqlite3",
+    )
+
+    assignment = store.get_assignment(assignment_id)
+    assert assignment.status == "filled"
+    assert assignment.current_filled_date == date.today().isoformat()
+    table = page.widget.findChild(qt_widgets.QTableWidget, "StaffingV2PositionsTable")
+    assert _staffing_button_for_position(table, "Teacher 1").text() == "Manage Filled"
+    page.widget.close()
+    app.processEvents()
+
+
+def test_staffing_v2_date_rollover_automatically_fills_due_coming_position(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_core = pytest.importorskip("PySide6.QtCore")
+    qt_gui = pytest.importorskip("PySide6.QtGui")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    today = date.today()
+    tomorrow = today + timedelta(days=1)
+    store = pyside_interview_app.StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    assignment_id = store.seed_assignment(
+        school="Palmdale",
+        classroom="Harmony",
+        position_name="Teacher 1",
+        position_type="Teacher",
+    )
+    service = pyside_interview_app.StaffingService(store, clock=lambda: "2026-07-15T08:00:00Z")
+    service.open_position(assignment_id)
+    service.mark_coming(
+        assignment_id,
+        person_name="Koryn",
+        start_date=tomorrow.isoformat(),
+    )
+    page = StaffingDashboardV2Page(
+        QtCore=qt_core,
+        QtGui=qt_gui,
+        QtWidgets=qt_widgets,
+        store=store,
+        service_factory=lambda: service,
+        school_filter="Palmdale",
+        notification_store_path=tmp_path / "notification_rules.sqlite3",
+    )
+    assert store.get_assignment(assignment_id).status == "coming"
+
+    class TomorrowDate(date):
+        @classmethod
+        def today(cls) -> date:
+            return tomorrow
+
+    monkeypatch.setattr(sys.modules["staffing_dashboard_v2"], "date", TomorrowDate)
+    timer = page.widget.findChild(qt_core.QTimer, "StaffingV2AutomaticFillTimer")
+    assert timer is not None
+    assert timer.isActive()
+    timer.timeout.emit()
+    app.processEvents()
+
+    assert store.get_assignment(assignment_id).status == "filled"
+    page.widget.close()
+    app.processEvents()
+
+
+def test_staffing_v2_edit_position_reverts_auto_filled_employee_when_delayed(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_core = pytest.importorskip("PySide6.QtCore")
+    qt_gui = pytest.importorskip("PySide6.QtGui")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    original_start = date.today()
+    delayed_start = original_start + timedelta(days=3)
+    store = pyside_interview_app.StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    assignment_id = store.seed_assignment(
+        school="Palmdale",
+        classroom="Harmony",
+        position_name="Teacher 1",
+        position_type="Teacher",
+    )
+    service = pyside_interview_app.StaffingService(store, clock=lambda: "2026-07-15T08:00:00Z")
+    service.open_position(assignment_id)
+    service.mark_coming(
+        assignment_id,
+        person_name="Koryn",
+        start_date=original_start.isoformat(),
+    )
+    page = StaffingDashboardV2Page(
+        QtCore=qt_core,
+        QtGui=qt_gui,
+        QtWidgets=qt_widgets,
+        store=store,
+        service_factory=lambda: service,
+        school_filter="Palmdale",
+        notification_store_path=tmp_path / "notification_rules.sqlite3",
+    )
+    assert store.get_assignment(assignment_id).status == "filled"
+    table = page.widget.findChild(qt_widgets.QTableWidget, "StaffingV2PositionsTable")
+    action_button = _staffing_button_for_position(table, "Teacher 1")
+    next(action for action in action_button.menu().actions() if action.text() == "View Details").trigger()
+    app.processEvents()
+    page.widget.findChild(qt_widgets.QPushButton, "StaffingV2DrawerEditPosition").click()
+    app.processEvents()
+
+    dialog = page.widget.findChild(qt_widgets.QDialog, "StaffingV2EditPositionDialog")
+    assert dialog is not None
+    start_date = dialog.findChild(qt_widgets.QDateEdit, "StaffingV2EditPositionStartDate")
+    assert start_date is not None
+    assert start_date.isEnabled()
+    assert start_date.calendarPopup()
+    assert start_date.date() == qt_core.QDate.fromString(original_start.isoformat(), "yyyy-MM-dd")
+    start_date.setDate(qt_core.QDate.fromString(delayed_start.isoformat(), "yyyy-MM-dd"))
+    dialog.findChild(qt_widgets.QPushButton, "StaffingV2EditPositionSubmit").click()
+    app.processEvents()
+
+    assignment = store.get_assignment(assignment_id)
+    assert assignment.status == "coming"
+    assert assignment.start_date == delayed_start.isoformat()
+    assert store.active_history_count(assignment_id) == 1
+    page.widget.close()
+    app.processEvents()
+
+
 def test_staffing_v2_page_defers_hidden_subdashboard_work(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_core = pytest.importorskip("PySide6.QtCore")
@@ -8685,11 +8840,11 @@ def test_pyside_staffing_action_button_exposes_secondary_actions(tmp_path: Path,
     window = _pyside_window_on_page(model, "Staffing")
     table = window.window.findChild(qt_widgets.QTableWidget, "PySideStaffingWorkbookBoard")
 
-    coming_menu_labels = [action.text() for action in _staffing_button_for_position(table, "Teacher 1").menu().actions()]
+    filled_menu_labels = [action.text() for action in _staffing_button_for_position(table, "Teacher 1").menu().actions()]
     replace_menu_labels = [action.text() for action in _staffing_button_for_position(table, "Teacher 2").menu().actions()]
 
-    assert "Revert Coming" in coming_menu_labels
-    assert "Mark Not Needed" in coming_menu_labels
+    assert "Update Permit" in filled_menu_labels
+    assert "Mark Not Needed" in filled_menu_labels
     assert "Clear Replacement" in replace_menu_labels
     assert "Mark Not Needed" in replace_menu_labels
     window.window.close()
@@ -9016,7 +9171,7 @@ def test_pyside_staffing_classroom_detail_matches_dashboard_mockup_shell(
     assert classroom_selector.currentText() == "Harmony 1"
     assert [classroom_selector.itemText(index) for index in range(classroom_selector.count())] == ["Harmony 1", "Quest", "Unity"]
     assert [classroom_list.item(index).text() for index in range(classroom_list.count())] == [
-        "Harmony 1\nNeed: 1 - Replace: 1 - Filled: 1 - Don't Need: 0",
+        "Harmony 1\nNeed: 1 - Replace: 1 - Filled: 2 - Don't Need: 0",
         "Quest\nNeed: 0 - Replace: 0 - Filled: 1 - Don't Need: 0",
         "Unity\nNeed: 0 - Replace: 1 - Filled: 0 - Don't Need: 0",
     ]

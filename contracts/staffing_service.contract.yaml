@@ -2,7 +2,7 @@ module:
   name: staffing_service
   language: python
   path: src/staffing_service.py
-  version: 0.24.0
+  version: 0.25.0
   description: Staffing assignment state machine, service-backed classroom, position, person creation, director interview referral/completion tracking with optional pending-queue fallback, mistaken-position deletion, queued Dropbox edit handling, staffing dashboard metrics with pending-operation projection and workbook display metadata, confirmed person moves, editable assignment details, person permit metadata updates, and post-commit notification emission for successful transactions.
 functions:
 - name: staffing_notification_payload
@@ -207,11 +207,41 @@ classes:
         type: str | null
         required: false
         default: null
+      repair_missing_history:
+        type: bool
+        required: false
+        default: false
     returns:
       type: StaffingTransitionResult
     exceptions:
     - ValueError
-    side_effects: Validates an optional actual start date, falling back to the Coming assignment start_date; atomically stores that date as assignment start_date/current_filled_date and closes assignment history with the same filled_date, then may emit staffing.assignment.filled notification. If DB is locked, saves the complete operation to pending queue and returns queued status.
+    side_effects: Validates an optional actual start date, falling back to the Coming assignment start_date; when explicitly requested by automatic conversion, repairs a missing active history cycle from a static import using the start date as its zero-day opened date; atomically stores the date as assignment start_date/current_filled_date and closes assignment history with the same filled_date, then may emit staffing.assignment.filled notification. If DB is locked, saves the complete operation to pending queue and returns queued status.
+  - name: auto_fill_due_coming
+    inputs:
+      today:
+        type: date
+        required: true
+    returns:
+      type: list[StaffingTransitionResult]
+    exceptions:
+    - ValueError
+    side_effects: Finds Coming assignments with valid start dates on or before today and marks each Filled through mark_filled, preserving future or malformed-date Coming rows; DB-locked transitions queue through the existing pending-operation path.
+  - name: update_start_date
+    inputs:
+      assignment_id:
+        type: int
+        required: true
+      start_date:
+        type: str
+        required: true
+      today:
+        type: date
+        required: true
+    returns:
+      type: StaffingTransitionResult
+    exceptions:
+    - ValueError
+    side_effects: Validates and updates a Coming or Filled assignment start date; moving an already-Filled employee to a future date atomically restores Coming status and reopens the latest filled history cycle, while correcting a Filled date on or before today updates assignment and closed-history dates/days consistently. DB-locked updates queue with date context.
   - name: mark_replacing
     inputs:
       assignment_id:
@@ -364,7 +394,7 @@ classes:
       type: StaffingTransitionResult
     exceptions:
     - ValueError
-    side_effects: Updates assignment classroom/program, position name/type/status/start date/shift/notes fields, assigned or newly named person details, and assigned person's permit status when present; when status is changed to need_now, clears assigned person, start date, and current filled date instead of retaining or creating a person; may emit staffing.permit.updated notification; if DB is locked, saves operation to pending queue and returns queued status.
+    side_effects: Updates assignment classroom/program, position name/type/status/start date/shift/notes fields, assigned or newly named person details, and assigned person's permit status when present; when status is changed to need_now, clears assigned person, start date, and current filled date and ensures an active hiring-history cycle exists; may emit staffing.permit.updated notification; if DB is locked, saves operation to pending queue and returns queued status.
   - name: staffing_metrics
     inputs:
       today:

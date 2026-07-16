@@ -1245,6 +1245,12 @@ class StaffingDashboardV2Page:
         self.widget.setStyleSheet(APP_QSS)
         self._dashboard_scroll_widgets: list[Any] = []
         self._build()
+        self._automatic_fill_date = date.today()
+        self.automatic_fill_timer = self.QtCore.QTimer(self.widget)
+        self.automatic_fill_timer.setObjectName("StaffingV2AutomaticFillTimer")
+        self.automatic_fill_timer.setInterval(60_000)
+        self.automatic_fill_timer.timeout.connect(self._refresh_for_date_rollover)
+        self.automatic_fill_timer.start()
         self.refresh()
 
     def _build(self) -> None:
@@ -4612,7 +4618,10 @@ class StaffingDashboardV2Page:
 
     def refresh(self, *, include_lazy: bool = False) -> None:
         self.store.initialize()
-        metrics = self.service_factory().staffing_metrics(today=date.today(), school=self.school_filter)
+        today = date.today()
+        service = self.service_factory()
+        service.auto_fill_due_coming(today=today)
+        metrics = service.staffing_metrics(today=today, school=self.school_filter)
         self.rows = list(metrics.rows)
         self._sync_selectors()
         self._refresh_filters()
@@ -4623,6 +4632,13 @@ class StaffingDashboardV2Page:
 
     def refresh_all(self) -> None:
         self.refresh(include_lazy=True)
+
+    def _refresh_for_date_rollover(self) -> None:
+        current_date = date.today()
+        if current_date == self._automatic_fill_date:
+            return
+        self._automatic_fill_date = current_date
+        self.refresh_all()
 
     def _schedule_dashboard_scroll_sync(self) -> None:
         if not self._dashboard_scroll_widgets:
@@ -6386,6 +6402,34 @@ class StaffingDashboardV2Page:
             status.addItem(label, value)
         status_index = status.findData(assignment.status)
         status.setCurrentIndex(max(0, status_index))
+        class StartDateEdit(self.QtWidgets.QDateEdit):
+            def _open_calendar(date_self: Any) -> None:
+                calendar = date_self.calendarWidget()
+                calendar.setSelectedDate(date_self.date())
+                popup = calendar.parentWidget()
+                target = popup or calendar
+                target.move(date_self.mapToGlobal(self.QtCore.QPoint(0, date_self.height())))
+                target.show()
+                target.raise_()
+
+            def mousePressEvent(date_self: Any, event: Any) -> None:  # noqa: N802 - Qt override.
+                super(StartDateEdit, date_self).mousePressEvent(event)
+                if event.button() != self.QtCore.Qt.MouseButton.LeftButton or not date_self.calendarPopup():
+                    return
+                self.QtCore.QTimer.singleShot(0, date_self._open_calendar)
+
+        start_date = StartDateEdit()
+        start_date.setObjectName("StaffingV2EditPositionStartDate")
+        start_date.setCalendarPopup(True)
+        start_date.setDisplayFormat("yyyy-MM-dd")
+        parsed_start_date = self.QtCore.QDate.fromString(assignment.start_date or "", "yyyy-MM-dd")
+        start_date.setDate(parsed_start_date if parsed_start_date.isValid() else self.QtCore.QDate.currentDate())
+
+        def sync_start_date_enabled() -> None:
+            start_date.setEnabled(str(status.currentData() or "") in {"coming", "filled"})
+
+        status.currentIndexChanged.connect(sync_start_date_enabled)
+        sync_start_date_enabled()
         notes = self.QtWidgets.QTextEdit()
         notes.setObjectName("StaffingV2EditPositionNotes")
         notes.setPlainText(assignment.notes)
@@ -6395,6 +6439,7 @@ class StaffingDashboardV2Page:
         form.addRow("Position Label / Name *", position_name)
         form.addRow("Position Type *", position_type)
         form.addRow("Status", status)
+        form.addRow("Start Date", start_date)
         form.addRow("Notes", notes)
         layout.addLayout(form)
 
@@ -6418,15 +6463,38 @@ class StaffingDashboardV2Page:
         def save() -> None:
             error.hide()
             try:
-                result = self.service_factory().update_assignment_details(
+                service = self.service_factory()
+                selected_status = str(status.currentData() or assignment.status)
+                selected_start_date = start_date.date().toString("yyyy-MM-dd")
+                target_status = selected_status
+                if assignment.status in {"coming", "filled"} and selected_status in {"coming", "filled"}:
+                    if assignment.status == "coming" and selected_status == "filled":
+                        transition = service.mark_filled(
+                            assignment.id,
+                            actual_start_date=selected_start_date,
+                        )
+                    else:
+                        transition = service.update_start_date(
+                            assignment.id,
+                            start_date=selected_start_date,
+                            today=date.today(),
+                        )
+                    if (
+                        selected_status == assignment.status == "filled"
+                        and date.fromisoformat(selected_start_date) > date.today()
+                    ):
+                        target_status = "coming"
+                    elif selected_status == assignment.status and transition.status in {"coming", "filled"}:
+                        target_status = transition.status
+                result = service.update_assignment_details(
                     assignment.id,
                     classroom=classroom.currentText(),
                     classroom_program=program.currentText(),
                     position_name=position_name.text(),
                     position_type=position_type.currentText(),
-                    status=str(status.currentData() or assignment.status),
+                    status=target_status,
                     person_name=assignment.person_name,
-                    start_date=assignment.start_date,
+                    start_date=selected_start_date if target_status in {"coming", "filled"} else None,
                     shift_start=assignment.shift_start,
                     shift_end=assignment.shift_end,
                     permit_status=assignment.permit_status or "unknown",
@@ -7911,6 +7979,7 @@ def _drawer_actions(status: str) -> list[tuple[str, str, str]]:
     if status == "filled":
         return [
             ("StaffingV2DrawerManageFilled", "Manage Filled Position", "manage_filled"),
+            ("StaffingV2DrawerEditPosition", "Edit Start Date / No-show", "view_details"),
             ("StaffingV2DrawerUpdatePermit", "Update Permit", "update_permit"),
             ("StaffingV2DrawerReplaceEmployee", "Replace Employee", "replace_employee"),
             ("StaffingV2DrawerViewHistory", "View Full History", "view_history"),

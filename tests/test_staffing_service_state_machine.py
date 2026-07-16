@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from datetime import date
 import pytest
@@ -83,6 +84,168 @@ def test_mark_filled_uses_actual_start_date_when_it_differs_from_scheduled_date(
     assert assignment.start_date == "2026-07-12"
     assert assignment.current_filled_date == "2026-07-12"
     assert store.closed_days_to_fill() == [11]
+
+
+def test_auto_fill_due_coming_fills_due_dates_and_leaves_future_dates_coming(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    due_id = store.seed_assignment(
+        school="Palmdale",
+        classroom="Harmony",
+        position_name="Teacher 1",
+        position_type="Teacher",
+    )
+    future_id = store.seed_assignment(
+        school="Palmdale",
+        classroom="Harmony",
+        position_name="Aide 1",
+        position_type="Aide",
+    )
+    service = StaffingService(
+        store,
+        clock=_Clock(
+            [
+                "2026-07-15T08:00:00Z",
+                "2026-07-15T08:01:00Z",
+                "2026-07-15T08:02:00Z",
+                "2026-07-15T08:03:00Z",
+                "2026-07-16T08:00:00Z",
+            ]
+        ),
+    )
+    service.open_position(due_id)
+    service.mark_coming(due_id, person_name="Koryn", start_date="2026-07-16")
+    service.open_position(future_id)
+    service.mark_coming(future_id, person_name="Future Employee", start_date="2026-07-17")
+
+    filled = service.auto_fill_due_coming(today=date(2026, 7, 16))
+
+    assert [result.assignment_id for result in filled] == [due_id]
+    assert store.get_assignment(due_id).status == "filled"
+    assert store.get_assignment(due_id).current_filled_date == "2026-07-16"
+    assert store.active_history_count(due_id) == 0
+    assert store.get_assignment(future_id).status == "coming"
+    assert store.active_history_count(future_id) == 1
+
+
+def test_auto_fill_due_coming_repairs_missing_history_from_static_import(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    seed_path = tmp_path / "staffing_seed.json"
+    seed_path.write_text(
+        json.dumps(
+            {
+                "schools": [
+                    {
+                        "name": "Palmdale",
+                        "classrooms": [
+                            {
+                                "name": "Harmony",
+                                "positions": [
+                                    {
+                                        "position_name": "Teacher 1",
+                                        "position_type": "Teacher",
+                                        "status": "coming",
+                                        "start_date": "2026-07-16",
+                                        "person": {"name": "Koryn"},
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    store.import_seed_file(seed_path)
+    assignment_id = store.list_assignments()[0].id
+    assert store.active_history_count(assignment_id) == 0
+    service = StaffingService(store, clock=lambda: "2026-07-16T08:00:00Z")
+
+    filled = service.auto_fill_due_coming(today=date(2026, 7, 16))
+
+    assert [result.assignment_id for result in filled] == [assignment_id]
+    assert store.get_assignment(assignment_id).status == "filled"
+    assert store.active_history_count(assignment_id) == 0
+    assert store.closed_days_to_fill() == [0]
+
+
+def test_update_start_date_reverts_auto_filled_employee_to_coming_when_delayed(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    assignment_id = store.seed_assignment(
+        school="Palmdale",
+        classroom="Harmony",
+        position_name="Teacher 1",
+        position_type="Teacher",
+    )
+    service = StaffingService(
+        store,
+        clock=_Clock(
+            [
+                "2026-07-15T08:00:00Z",
+                "2026-07-15T08:01:00Z",
+                "2026-07-16T08:00:00Z",
+                "2026-07-16T09:00:00Z",
+            ]
+        ),
+    )
+    service.open_position(assignment_id)
+    service.mark_coming(assignment_id, person_name="Koryn", start_date="2026-07-16")
+    service.auto_fill_due_coming(today=date(2026, 7, 16))
+
+    result = service.update_start_date(
+        assignment_id,
+        start_date="2026-07-20",
+        today=date(2026, 7, 16),
+    )
+
+    assignment = store.get_assignment(assignment_id)
+    assert result.status == "coming"
+    assert assignment.status == "coming"
+    assert assignment.start_date == "2026-07-20"
+    assert assignment.current_filled_date == ""
+    assert store.active_history_count(assignment_id) == 1
+    assert store.closed_days_to_fill() == []
+
+
+def test_no_show_change_from_filled_to_need_now_opens_new_hiring_cycle(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    assignment_id = store.seed_assignment(
+        school="Palmdale",
+        classroom="Harmony",
+        position_name="Teacher 1",
+        position_type="Teacher",
+    )
+    service = StaffingService(
+        store,
+        clock=_Clock(
+            [
+                "2026-07-15T08:00:00Z",
+                "2026-07-15T08:01:00Z",
+                "2026-07-16T08:00:00Z",
+                "2026-07-16T09:00:00Z",
+            ]
+        ),
+    )
+    service.open_position(assignment_id)
+    service.mark_coming(assignment_id, person_name="Koryn", start_date="2026-07-16")
+    service.auto_fill_due_coming(today=date(2026, 7, 16))
+
+    result = service.update_assignment_details(
+        assignment_id,
+        classroom="Harmony",
+        status="need_now",
+    )
+
+    assignment = store.get_assignment(assignment_id)
+    assert result.status == "need_now"
+    assert assignment.person_id is None
+    assert assignment.start_date == ""
+    assert assignment.current_filled_date == ""
+    assert store.active_history_count(assignment_id) == 1
 
 
 def test_mark_coming_can_change_aide_position_to_teacher(tmp_path: Path) -> None:
