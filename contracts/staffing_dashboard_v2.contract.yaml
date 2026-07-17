@@ -2,7 +2,7 @@ module:
   name: staffing_dashboard_v2
   language: python
   path: src/staffing_dashboard_v2.py
-  version: 0.32.1
+  version: 0.32.3
   description: Parallel PySide Staffing v2 dashboard page module for position, employee, classroom, validation, notification, and assignment-history workflows; position and employee management uses service-backed add/edit/deactivate/assign/status dialogs, managed permit document attachments, read-only drawers without misleading save controls, stable object names, accessible icon actions, filtered tables, overlay panels, and light-theme scroll behavior while keeping the legacy Staffing page available.
 functions:
 - name: apply_staffing_v2_light_theme
@@ -746,7 +746,13 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Opens a scrollable two-column director interview completion dialog that displays proposed shift/classroom and missing candidate contact fields only while decision is Hire; email is required, phone is optional, part-time shifts require benefits-warning confirmation, and saving refreshes dashboard tables without mutating assignments or classroom status.
+    side_effects: Opens a scrollable two-column director interview completion dialog with a fixed validation banner above the footer and prefilled same-school active Director assignment name when available; displays proposed shift/classroom and missing candidate contact fields only while decision is Hire; email is required, phone is optional, part-time shifts require benefits-warning confirmation, and saving refreshes dashboard tables without mutating assignments or classroom status.
+  - name: _default_director_name
+    inputs:
+      school: {type: str, required: true}
+    returns: {type: str}
+    exceptions: []
+    side_effects: Reads current active people assignments and returns the first same-school person assigned to a Director role, position, or classroom for director-interview form defaults.
   - name: _open_candidate_report
     inputs:
       history_id: {type: str, required: true}

@@ -182,12 +182,26 @@ def test_default_staffing_seed_imports_visible_excel_names(tmp_path: Path) -> No
     names = {row.person_name for row in rows if row.person_name}
 
     assert result["schools"] == 3
-    assert result["assignments"] == 87
+    assert result["assignments"] == 89
     assert {"Hawthorne", "Palmdale", "North Long Beach"} == {row.school for row in rows}
-    assert {"Angie", "Amy", "Madisan", "Telma", "Naomi*", "Ruby", "Miriam*", "Ebony"} <= names
+    assert {"Angie", "Amy", "Madisan", "Edith", "Netsi", "Claudia", "Naomi*", "Ruby", "Miriam*", "Ebony"} <= names
     assert any(row.school == "North Long Beach" and row.classroom == "Destiny - 4YO" for row in rows)
     assert any(row.school == "Hawthorne" and row.classroom == "Custodian" and row.person_name == "Antonio" for row in rows)
     assert any(row.school == "Palmdale" and row.classroom == "Swim Instructor" and row.person_name == "Ebony" for row in rows)
+    assert any(
+        row.school == "Hawthorne"
+        and row.classroom == "Director"
+        and row.position_type == "Director"
+        and row.person_name == "Netsi"
+        for row in rows
+    )
+    assert any(
+        row.school == "North Long Beach"
+        and row.classroom == "Director"
+        and row.position_type == "Director"
+        and row.person_name == "Claudia"
+        for row in rows
+    )
     assert any(row.status == "need_now" and row.notes for row in rows)
 
 

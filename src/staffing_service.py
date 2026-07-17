@@ -2039,6 +2039,7 @@ class StaffingService:
                     interviewer_outcome=str(payload["interviewer_outcome"]),
                     interview_date=str(payload.get("interview_date", "")),
                     candidate_email=str(payload.get("candidate_email", "")),
+                    candidate_phone=str(payload.get("candidate_phone", "")),
                     referral_date=str(payload.get("referral_date", "")),
                 )
             if referral is None:
@@ -2054,6 +2055,8 @@ class StaffingService:
                 proposed_shift_end=str(payload.get("proposed_shift_end", "")),
                 proposed_classroom=str(payload.get("proposed_classroom", "")),
                 follow_up_needed=bool(payload.get("follow_up_needed", False)),
+                candidate_email=str(payload.get("candidate_email", "")),
+                candidate_phone=str(payload.get("candidate_phone", "")),
             )
         elif operation == "director_candidate_referral":
             self.upsert_director_candidate_referral(
@@ -2065,6 +2068,7 @@ class StaffingService:
                 interviewer_outcome=str(payload["interviewer_outcome"]),
                 interview_date=str(payload.get("interview_date", "")),
                 candidate_email=str(payload.get("candidate_email", "")),
+                candidate_phone=str(payload.get("candidate_phone", "")),
                 referral_date=str(payload.get("referral_date", "")),
             )
         else:

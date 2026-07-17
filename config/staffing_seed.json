@@ -394,6 +394,22 @@
               }
             }
           ]
+        },
+        {
+          "name": "Director",
+          "display_order": 95,
+          "slots": [
+            {
+              "slot_group": "support",
+              "position_name": "Director",
+              "position_type": "Director",
+              "status": "filled",
+              "person": {
+                "name": "Netsi",
+                "permit_status": "unknown"
+              }
+            }
+          ]
         }
       ]
     },
@@ -780,6 +796,22 @@
               }
             }
           ]
+        },
+        {
+          "name": "Director",
+          "display_order": 94,
+          "slots": [
+            {
+              "slot_group": "support",
+              "position_name": "Director",
+              "position_type": "Director",
+              "status": "filled",
+              "person": {
+                "name": "Claudia",
+                "permit_status": "unknown"
+              }
+            }
+          ]
         }
       ]
     },
@@ -1130,10 +1162,10 @@
             {
               "slot_group": "support",
               "position_name": "Director",
-              "position_type": "Support",
+              "position_type": "Director",
               "status": "filled",
               "person": {
-                "name": "Telma",
+                "name": "Edith",
                 "permit_status": "unknown"
               }
             }

@@ -598,3 +598,49 @@ def test_completed_director_interview_replays_by_history_id(tmp_path: Path) -> N
     assert [(row.history_id, row.decision, row.proposed_classroom) for row in completed] == [
         ("hist-123", "hire", "Harmony")
     ]
+
+
+def test_completed_director_interview_replay_preserves_typed_contact_for_hire(tmp_path: Path) -> None:
+    admin_path = tmp_path / "staffing_dashboard.sqlite3"
+    director_path = tmp_path / "staffing_dashboard_palmdale.sqlite3"
+    admin_store = StaffingStore(admin_path)
+    admin_store.initialize()
+    admin_referral = StaffingService(admin_store).upsert_director_candidate_referral(
+        history_id="hist-contact-replay",
+        candidate_name="Candidate Contact",
+        school="Palmdale",
+        interviewer_rating=8.5,
+        interviewer_outcome="hire",
+    )
+    shutil.copy2(admin_path, director_path)
+    stage = StaffingChangeStage(tmp_path / "staffing_change_events")
+    director_store = StaffingStore(director_path)
+    director = StaffingService(
+        director_store,
+        change_stage=stage,
+        replica="director:palmdale",
+        school_scope="Palmdale",
+    )
+    admin = StaffingService(admin_store, change_stage=stage, replica="admin")
+
+    director.record_director_interview(
+        admin_referral.id,
+        director_name="Director One",
+        completed_date="2026-07-16",
+        rating=9,
+        decision="hire",
+        decision_notes="Strong fit",
+        proposed_shift_start="08:00",
+        proposed_shift_end="16:30",
+        proposed_classroom="Harmony",
+        candidate_email="candidate@example.org",
+        candidate_phone="555-123-4567",
+    )
+
+    assert admin.replay_staged_changes() == 1
+    completed = admin.list_completed_director_interviews(school="Palmdale")
+    referrals = admin_store.list_director_candidate_referrals(school="Palmdale", include_completed=True)
+    assert [(row.history_id, row.decision) for row in completed] == [("hist-contact-replay", "hire")]
+    assert [(row.candidate_email, row.candidate_phone) for row in referrals] == [
+        ("candidate@example.org", "(555) 123-4567")
+    ]

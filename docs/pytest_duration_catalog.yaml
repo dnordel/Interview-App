@@ -6980,6 +6980,16 @@ entries:
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
+- nodeid: tests/test_staffing_candidate_report_ui.py::test_director_interview_validation_error_stays_visible_outside_scroll_body
+  duration_seconds_n2: 0.5
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_staffing_candidate_report_ui.py::test_director_interview_prefills_director_from_current_school_director_assignment
+  duration_seconds_n2: 0.5
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
 - nodeid: tests/test_staffing_change_stage.py::test_independent_machine_events_survive_dropbox_merge
   duration_seconds_n2: 0.028
   duration_source: measured
@@ -7057,6 +7067,11 @@ entries:
   placement: fast
 - nodeid: tests/test_staffing_change_stage.py::test_completed_director_interview_replays_by_history_id
   duration_seconds_n2: 0.398
+  duration_source: measured
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_staffing_change_stage.py::test_completed_director_interview_replay_preserves_typed_contact_for_hire
+  duration_seconds_n2: 0.4
   duration_source: measured
   gui_heavy: false
   placement: fast

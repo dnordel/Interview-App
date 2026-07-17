@@ -146,3 +146,102 @@ def test_director_interview_dialog_uses_scrollable_two_column_layout(tmp_path: P
     assert scroll_area.isAncestorOf(save) is False
     dialog.close()
     page.widget.close()
+
+
+def test_director_interview_validation_error_stays_visible_outside_scroll_body(tmp_path: Path):
+    qt_core = pytest.importorskip("PySide6.QtCore")
+    qt_gui = pytest.importorskip("PySide6.QtGui")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    service = StaffingService(store)
+    candidate = service.upsert_director_candidate_referral(
+        history_id="hist-missing-email",
+        candidate_name="Arlyn Molina",
+        school="Palmdale",
+        position="infant_toddler",
+        interviewer_rating=8.0,
+        interviewer_outcome="hire",
+        interview_date="2026-07-17",
+    )
+    page = StaffingDashboardV2Page(
+        QtCore=qt_core,
+        QtGui=qt_gui,
+        QtWidgets=qt_widgets,
+        store=store,
+        service_factory=lambda: StaffingService(store),
+    )
+
+    page._open_director_interview_dialog(candidate.id)
+    app.processEvents()
+    dialog = page.widget.findChild(qt_widgets.QDialog, "StaffingV2DirectorInterviewDialog")
+    assert dialog is not None
+    dialog.findChild(qt_widgets.QLineEdit, "StaffingV2DirectorInterviewDirectorName").setText("Director")
+    dialog.findChild(qt_widgets.QComboBox, "StaffingV2DirectorInterviewClassroom").setCurrentText("Chef")
+    dialog.findChild(qt_widgets.QTextEdit, "StaffingV2DirectorInterviewNotes").setPlainText("Hire.")
+    dialog.findChild(qt_widgets.QPushButton, "StaffingV2DirectorInterviewSave").click()
+    app.processEvents()
+
+    error = dialog.findChild(qt_widgets.QLabel, "StaffingV2DirectorInterviewError")
+    scroll_area = dialog.findChild(qt_widgets.QScrollArea, "StaffingV2DirectorInterviewScrollArea")
+    pending_table = page.widget.findChild(qt_widgets.QTableWidget, "StaffingV2DirectorInterviewPendingTable")
+    history_table = page.widget.findChild(qt_widgets.QTableWidget, "StaffingV2DirectorInterviewHistoryTable")
+    assert error is not None
+    assert scroll_area is not None
+    assert pending_table is not None
+    assert history_table is not None
+    assert error.isVisible() is True
+    assert "Candidate email is required" in error.text()
+    assert scroll_area.isAncestorOf(error) is False
+    assert dialog.isVisible() is True
+    assert pending_table.rowCount() == 1
+    assert history_table.rowCount() == 0
+    dialog.close()
+    page.widget.close()
+
+
+def test_director_interview_prefills_director_from_current_school_director_assignment(tmp_path: Path):
+    qt_core = pytest.importorskip("PySide6.QtCore")
+    qt_gui = pytest.importorskip("PySide6.QtGui")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    store.seed_assignment(
+        school="Palmdale",
+        classroom="Director",
+        position_name="Director",
+        position_type="Director",
+        status="filled",
+        person_name="Edith",
+    )
+    service = StaffingService(store)
+    candidate = service.upsert_director_candidate_referral(
+        history_id="hist-director-default",
+        candidate_name="Marina Gonzalez",
+        school="Palmdale",
+        position="infant_toddler",
+        interviewer_rating=8.0,
+        interviewer_outcome="hire",
+        interview_date="2026-07-17",
+        candidate_email="marina@example.org",
+    )
+    page = StaffingDashboardV2Page(
+        QtCore=qt_core,
+        QtGui=qt_gui,
+        QtWidgets=qt_widgets,
+        store=store,
+        service_factory=lambda: StaffingService(store),
+    )
+
+    page._open_director_interview_dialog(candidate.id)
+    app.processEvents()
+
+    dialog = page.widget.findChild(qt_widgets.QDialog, "StaffingV2DirectorInterviewDialog")
+    assert dialog is not None
+    director_name = dialog.findChild(qt_widgets.QLineEdit, "StaffingV2DirectorInterviewDirectorName")
+    assert director_name is not None
+    assert director_name.text() == "Edith"
+    dialog.close()
+    page.widget.close()

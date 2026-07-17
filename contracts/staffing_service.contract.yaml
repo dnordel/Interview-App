@@ -2,7 +2,7 @@ module:
   name: staffing_service
   language: python
   path: src/staffing_service.py
-  version: 0.31.0
+  version: 0.31.1
   description: Staffing assignment state machine with optional bidirectional cross-database immutable change staging and causal conflict resolution, service-backed classroom, position, person creation/edit/deactivation, managed permit attachment storage, director interview referral/completion tracking with optional pending-queue fallback, mistaken-position deletion, queued Dropbox edit handling, staffing dashboard metrics with pending-operation projection and workbook display metadata, confirmed person moves, editable assignment details, person permit metadata updates, and post-commit notification emission for successful transactions.
 functions:
 - name: staffing_change_conflict_message
@@ -29,7 +29,7 @@ classes:
     inputs: {}
     returns: {type: int}
     exceptions: [OSError, sqlite3.Error, JSONDecodeError]
-    side_effects: Replays ordered peer events into only this service's local staffing DB; compares each event's causal base snapshot to current local state; asks the configured resolver before a conflicting apply; acknowledges accepted, applied, or explicitly rejected events independently; and stops fail-closed at a lock, invalid event, or unresolved conflict.
+    side_effects: Replays ordered peer events into only this service's local staffing DB, preserving director-interview contact fields required for hire completion; compares each event's causal base snapshot to current local state; asks the configured resolver before a conflicting apply; acknowledges accepted, applied, or explicitly rejected events independently; and stops fail-closed at a lock, invalid event, or unresolved conflict.
   - name: open_position
     inputs:
       assignment_id:
@@ -619,7 +619,7 @@ classes:
     exceptions:
     - ValueError
     - StaffingEditLock
-    side_effects: Records a director interview with date, 1-10 rating, hire/no-hire decision, required notes, hire-only proposed shift/classroom, required valid email, and optional normalized phone while leaving assignments and classroom status unchanged; publishes completion with stable referral history data when cross-database staging is configured.
+    side_effects: Records a director interview with date, 1-10 rating, hire/no-hire decision, required notes, hire-only proposed shift/classroom, required valid email, and optional normalized phone while leaving assignments and classroom status unchanged; publishes completion with stable referral history data and typed contact fields when cross-database staging is configured.
   - name: reopen_director_interview
     inputs:
       interview_id: {type: int, required: true}

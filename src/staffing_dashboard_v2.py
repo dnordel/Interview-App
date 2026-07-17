@@ -6098,7 +6098,7 @@ class StaffingDashboardV2Page:
         form_grid.setVerticalSpacing(10)
         form_grid.setColumnStretch(0, 1)
         form_grid.setColumnStretch(1, 1)
-        director_name = self.QtWidgets.QLineEdit()
+        director_name = self.QtWidgets.QLineEdit(self._default_director_name(candidate.school))
         director_name.setObjectName("StaffingV2DirectorInterviewDirectorName")
         completed_date = self.QtWidgets.QLineEdit(date.today().isoformat())
         completed_date.setObjectName("StaffingV2DirectorInterviewDate")
@@ -6192,10 +6192,10 @@ class StaffingDashboardV2Page:
         error = self._label("", "StaffingV2NeedNowChip")
         error.setObjectName("StaffingV2DirectorInterviewError")
         error.hide()
-        scroll_layout.addWidget(error)
         scroll_layout.addStretch(1)
         scroll_area.setWidget(scroll_content)
         layout.addWidget(scroll_area, 1)
+        layout.addWidget(error)
 
         footer = self.QtWidgets.QHBoxLayout()
         footer.addStretch(1)
@@ -6252,6 +6252,22 @@ class StaffingDashboardV2Page:
 
         save.clicked.connect(save_interview)
         dialog.show()
+
+    def _default_director_name(self, school: str) -> str:
+        clean_school = str(school or "").strip().casefold()
+        if not clean_school:
+            return ""
+        for person in self.store.list_people():
+            if not person.active or person.assignment_school.strip().casefold() != clean_school:
+                continue
+            director_tokens = (
+                person.role,
+                person.assignment_position,
+                person.assignment_classroom,
+            )
+            if any("director" in str(token or "").casefold() for token in director_tokens):
+                return person.name
+        return ""
 
     def _sync_classroom_list_selection(self) -> None:
         current_row = self.classroom_list.currentRow()
