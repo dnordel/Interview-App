@@ -52,7 +52,13 @@ def generate_basic_candidate_notes_document(snapshot: dict[str, Any], output_pat
     path.parent.mkdir(parents=True, exist_ok=True)
     candidate = snapshot.get("candidate") if isinstance(snapshot.get("candidate"), dict) else {}
     scoring = snapshot.get("scoring") if isinstance(snapshot.get("scoring"), dict) else {}
-    questions = snapshot.get("questions") if isinstance(snapshot.get("questions"), list) else []
+    questions = [
+        question
+        for question in snapshot.get("questions", [])
+        if isinstance(question, dict)
+        and str(question.get("type") or "").strip().lower() != "intro"
+        and str(question.get("question_id") or "").strip().lower() != "intro_script"
+    ] if isinstance(snapshot.get("questions"), list) else []
     summaries = snapshot.get("summaries") if isinstance(snapshot.get("summaries"), dict) else {}
 
     document = Document()

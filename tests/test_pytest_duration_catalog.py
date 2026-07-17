@@ -7,6 +7,7 @@ from tools import pytest_duration_catalog
 
 
 FOCUSED_PYSIDE_GUI_WORKFLOW_EXCEPTIONS = {
+    "test_staffing_conflict_prompt_identifies_user_and_remote_changes",
     "test_pyside_offer_screen_uses_guided_offer_widgets_and_editable_positions",
     "test_pyside_offer_screen_uses_part_time_template_and_shows_success_actions",
     "test_pyside_admin_layout_uses_font_metrics_for_windows_text_scaling",
@@ -117,6 +118,27 @@ def test_qt_gui_tests_are_cataloged_as_gui_scenarios() -> None:
                 offenders.append(nodeid)
 
     assert offenders == [], "Qt GUI tests must be cataloged with gui_heavy: true:\n" + "\n".join(offenders)
+
+
+def test_benchmark_commands_use_eight_workers_and_fresh_gui_batches() -> None:
+    commands = pytest_duration_catalog.build_benchmark_commands(
+        entries=[
+            {"nodeid": "gui-long", "duration_seconds_n2": 4.0, "gui_heavy": True},
+            {"nodeid": "gui-short", "duration_seconds_n2": 1.0, "gui_heavy": True},
+            {"nodeid": "fast", "duration_seconds_n2": 0.1, "gui_heavy": False},
+        ],
+        workers=8,
+        python_executable="python.exe",
+    )
+
+    assert commands[0] == [
+        "python.exe", "-m", "pytest", "-n", "8", "--dist=load", "--maxschedchunk=1",
+        "-m", "not slow_pyside",
+    ]
+    assert commands[1][:7] == [
+        "python.exe", "-m", "pytest", "-n", "8", "--dist=load", "--maxschedchunk=1",
+    ]
+    assert commands[1][7:] == ["gui-long", "gui-short"]
 
 
 def test_gui_scenario_catalog_entries_have_measured_scheduler_durations() -> None:

@@ -52,6 +52,7 @@ class StaffingPerson:
     permit_effective_date: str = ""
     units: float | None = None
     permit_documentation_received: bool = False
+    permit_document_path: str = ""
     permit_notes: str = ""
     notice_given: str = ""
     final_working_day: str = ""
@@ -140,6 +141,7 @@ class StaffingDirectorCandidate:
     interviewer_outcome: str
     interview_date: str
     candidate_email: str = ""
+    candidate_phone: str = ""
     referral_date: str = ""
     director_interview_completed_at: str = ""
     updated_at: str = ""

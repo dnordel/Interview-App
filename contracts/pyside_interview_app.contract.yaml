@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 6.1.0
+  version: 6.5.0
   description: PySide6 operations shell and headless view-model builder for a mockup-driven
     New Interview setup/live flow, Candidates-owned pipeline/history, candidate reports,
     onboarding, staffing, notifications, and admin-only
@@ -147,6 +147,25 @@ functions:
       required: true
   returns:
     type: float | None
+  exceptions: []
+  side_effects: none
+- name: should_prompt_candidate_contact_handoff
+  description: Return true only when a finalized initial-interview score is strictly greater than 65 percent.
+  locked: false
+  inputs:
+    score:
+      type: Any
+      required: true
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: none
+- name: _format_offer_number
+  description: Format Decimal-compatible offer numbers without unnecessary trailing zeros.
+  locked: false
+  inputs:
+    value: {type: Any, required: true}
+  returns: {type: str}
   exceptions: []
   side_effects: none
 - name: _history_has_no_hire_override
@@ -369,6 +388,8 @@ classes:
       type: Path
     candidate_name:
       type: str
+    honorific:
+      type: str
     interview_date:
       type: str
     school:
@@ -441,6 +462,10 @@ classes:
       track_key:
         type: str
         required: true
+      honorific:
+        type: str
+        required: false
+        default: Ms.
     returns:
       type: None
     exceptions:
@@ -921,13 +946,34 @@ classes:
     exceptions: []
     side_effects: none
   - name: show
-    description: Expand the redesigned PySide6 main window to current usable screen geometry before showing it maximized, then schedule startup notification draining and recording-interface preload after first paint for full interview launches while skipping those interview/audio warmups for director staffing-only launches.
+    description: Expand the redesigned PySide6 main window to current usable screen geometry before showing it maximized, start source-version polling, then schedule startup notification draining and recording-interface preload after first paint for full interview launches while skipping those interview/audio warmups for director staffing-only launches.
     locked: false
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Updates QMainWindow geometry to the current taskbar-safe work area before displaying the QMainWindow maximized; for non-director launches schedules startup notification draining plus recording-interface preload, and for director staffing-only launches returns immediately after showing the GUI.
+    side_effects: Updates QMainWindow geometry to the current taskbar-safe work area, displays it maximized, starts five-second source-version polling, then schedules non-director notification draining and recording-interface preload while director staffing-only launches skip those interview warmups.
+  - name: _start_source_update_monitoring
+    description: Capture the current source-version stamp and start one five-second poll timer.
+    locked: false
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Creates SourceUpdateDetector and a QTimer owned by the main window once.
+  - name: _poll_source_updates
+    description: Show the persistent reload banner when the source-version stamp differs from app startup.
+    locked: false
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Reads config/source_version.txt and may show SourceUpdateBanner.
+  - name: _restart_after_source_update
+    description: Respect close guards, start a detached replacement app with the same command line, then close the current window.
+    locked: false
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: May save/stop current app state, launch a replacement process, close the current window, or display Restart Failed while leaving it open.
   - name: _schedule_startup_notifications
     description: Schedule the best-effort due-notification drain once through the Qt event loop after the main window has been shown so notification I/O does not block first paint.
     locked: false
@@ -1416,10 +1462,12 @@ classes:
     side_effects: Updates visible review table transcript cells without rebuilding the whole review page.
   - name: _poll_pyside_finalize_worker
     description: Poll background PySide finalize events/results, drain progress updates,
-      refresh history/candidate tables as soon as history is persisted, refresh
-      review transcript cells as soon as transcription mapping is available, and update
-      review status text when recording/transcription and notes generation complete
-      or fail.
+      refresh history and hiring candidate tables as soon as history is persisted,
+      mirror newly eligible director referrals into the current Staffing v2 view while
+      preserving the cross-process referral queue, refresh review transcript cells as
+      soon as transcription mapping is available, and update review status text when
+      recording/transcription and notes generation complete or fail. Successful initial
+      interviews strictly above 65 percent prompt for optional candidate contact before referral sync.
     locked: false
     inputs:
       results:
@@ -1431,14 +1479,13 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: May refresh visible transcript cells and history tables before final report export
-      completes; stops the polling timer, clears finalize running state, updates the
-      review status label.
+    side_effects: May refresh visible transcript, history, hiring candidate, and Staffing
+      v2 director-candidate tables before final report export completes; may synchronize
+      eligible history rows into the admin staffing store without consuming the director
+      referral queue; stops the polling timer, clears finalize running state, and updates
+      the review status label.
   - name: _show_pyside_finalize_progress
-    description: Show a user-closable non-modal PySide finalize progress dialog with
-      immediate ordered sanitized task/status rows in a compact scrollable task pane
-      and without exposing candidate transcript or notes
-      text.
+    description: Track sanitized background finalize progress in memory for inline status reporting without opening a separate progress window.
     locked: false
     inputs:
       step:
@@ -1447,8 +1494,26 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Creates or updates a QDialog, scroll area, indeterminate progress
-      bar, and task/status label content.
+    side_effects: Updates in-memory task/status state and clears obsolete progress-dialog state.
+  - name: _prompt_candidate_contact_handoff
+    description: For initial-interview scores strictly above 65 percent, show optional candidate email and phone fields below the supplied referral script; cancel leaves finalized artifacts untouched.
+    locked: false
+    inputs:
+      result: {type: 'dict[str, Any]', required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: May show a modal contact dialog and persist valid candidate contact data.
+  - name: _persist_candidate_contact
+    description: Persist validated post-interview candidate email and normalized phone to canonical hiring profile and interview history.
+    locked: false
+    inputs:
+      email: {type: str, required: true}
+      phone: {type: str, required: true}
+      result: {type: 'dict[str, Any]', required: true}
+    returns: {type: None}
+    exceptions:
+    - ValueError
+    side_effects: Updates candidate profile and matching InterviewHistoryStore row.
   - name: _report_pyside_finalize_progress
     description: Queue or store one sanitized operator-facing finalize progress step
       for the PySide progress dialog task list.
@@ -1590,14 +1655,22 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Reads the append-only staffing staging journal, applies and acknowledges peer operations in only the local DB, consumes matching referral queue rows for directors, and refreshes StaffingDashboardV2Page.
+    side_effects: Reads immutable per-user staffing event outboxes and receipts, prompts for same-entity conflicts, applies and acknowledges peer operations in only the local DB, consumes matching referral queue rows for directors, and refreshes StaffingDashboardV2Page.
   - name: _staffing_service
-    description: Build a StaffingService bound to the local admin or school DB, shared staging journal, and stable replica identity.
+    description: Build a StaffingService bound to the local admin or school DB, immutable staging directory, stable logical database identity, per-user publisher identity, and GUI conflict resolver.
     locked: false
     inputs: {}
     returns: {type: StaffingService}
     exceptions: []
     side_effects: May initialize notification settings while constructing the service.
+  - name: _resolve_staffing_change_conflict
+    description: Show another user's conflicting staffing payload and ask whether to accept it or keep the local version.
+    locked: false
+    inputs:
+      conflict: {type: StaffingChangeConflict, required: true}
+    returns: {type: bool}
+    exceptions: []
+    side_effects: Displays a modal Yes/No staffing conflict dialog defaulting to No.
   - name: _import_queued_staffing_director_referrals
     description: Move central referral queue records for the current director school into the active StaffingService director-referral store.
     locked: false
@@ -1993,9 +2066,14 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: May read shared email settings, open notification SQLite database,
-      send due notification emails, write sanitized audit rows, and update pending
-      schedule statuses; suppresses notification failures so app startup is not blocked.
+    side_effects: Ensures/activates ready system rules, scans exact-day/noon/permit staffing triggers using persistent rollout metadata, drains queued schedules, and suppresses failures so startup is not blocked.
+  - name: _staffing_candidate_contact
+    inputs:
+      candidate_name: {type: str, required: true}
+      school: {type: str, required: true}
+    returns: {type: 'dict[str, str]'}
+    exceptions: []
+    side_effects: Reads canonical hiring profiles/applications to resolve permit-escalation candidate email and honorific by exact name and school.
   - name: _refresh_home_draft_panel
     description: Refresh the compact PySide home draft label and adjacent Continue/Delete Saved Draft button enabled states from the latest existing draft.
     locked: false
@@ -2145,7 +2223,9 @@ classes:
     description: Build a PySideInterviewSession for a finalized history row so an
       imported Indeed transcript can be attached to the existing candidate and
       opened for review-score edits while preserving prior answers, review scores,
-      and scoring-row raw scores from history payload data.
+      and scoring-row raw scores from history payload data, with the structured
+      candidate-report snapshot used as a fallback for finalized rows whose compact
+      history payload does not contain interview content.
     locked: false
     inputs:
       row:
@@ -2168,8 +2248,9 @@ classes:
     exceptions: []
     side_effects: none
   - name: _hydrate_session_from_history_payload
-    description: Copy saved answers, review score edits, and scoring raw-score values
-      from a history payload into a PySide session before transcript import.
+    description: Copy saved answers, structured candidate-report questions and transcripts,
+      qualification, review score edits, and scoring raw-score values from a persisted
+      payload into a PySide session before transcript import or notes regeneration.
     locked: false
     inputs:
       session:
@@ -2181,7 +2262,8 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Mutates the in-memory PySideInterviewSession answers.
+    side_effects: Mutates the in-memory PySideInterviewSession answers, qualification,
+      and candidate transcripts.
   - name: _history_import_updates
     description: Build the history-store payload for an imported Indeed transcript,
       including mapped answers, flow transcripts, source metadata, regenerated
@@ -2209,7 +2291,9 @@ classes:
     exceptions: []
     side_effects: none
   - name: _regenerate_history_import_artifacts
-    description: Regenerate Basic Interview Notes for a history-row Indeed transcript import.
+    description: Regenerate Basic Interview Notes from recovered history or structured
+      candidate-report content and fail closed before writing when no saved answers,
+      scores, skips, flags, or transcripts are available.
     locked: false
     inputs:
       row:
@@ -2221,6 +2305,7 @@ classes:
     returns:
       type: dict[str, Any]
     exceptions:
+    - ValueError
     - Exception
     side_effects: Writes a Basic Interview Notes DOCX and returns history updates.
   - name: _regenerate_history_notes
@@ -2251,6 +2336,32 @@ classes:
     side_effects: Opens a local file picker, reads a .txt transcript, writes draft
       and interview-session snapshots, updates InterviewHistoryStore, refreshes
       history tables, and re-renders live/review/offer panes.
+  - name: _sync_hiring_v2_director_decisions
+    description: Reconcile finalized Staffing director decisions into hiring; each Hire derives contact, shift, template, classroom, and pay terms and idempotently submits one immutable offer version for executive approval, while dependency failures remain retryable as offer_draft_pending.
+    locked: false
+    inputs:
+      service: {type: HiringWorkflowService, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Reads staffing/history/settings stores; may update canonical candidate contact, hiring stage/attention, and create one pending-approval offer version.
+  - name: _director_offer_terms
+    description: Build normalized offer terms from candidate, application, finalized director shift/classroom, requested pay, and configured school template/output paths.
+    locked: false
+    inputs:
+      application: {type: Any, required: true}
+      candidate: {type: Any, required: true}
+      interview: {type: Any, required: true}
+    returns: {type: 'dict[str, Any]'}
+    exceptions: [ValueError]
+    side_effects: Reads school offer settings and interview history.
+  - name: _requested_pay_answer
+    description: Return raw initial-interview Pay answer from canonical answers or custom_answers history payload.
+    locked: false
+    inputs:
+      history_id: {type: str, required: true}
+    returns: {type: str}
+    exceptions: []
+    side_effects: Reads InterviewHistoryStore.
 data_structures:
 - name: InterviewRedesignModel
   type: dataclass
@@ -2262,7 +2373,7 @@ data_structures:
   type: dataclass
   description: Render-ready finalized interview history row with stable row key,
     interview date, candidate, school, position, score, status, offer status/action,
-    notes path, report path, candidate email, and offer path for the
+    notes path, report path, candidate email, candidate phone, and offer path for the
     searchable, filterable, sortable, outcome-colored, content-sized PySide history
     grid and offer workflow. Status must follow score display thresholds when a
     numeric score is present unless explicit no-hire override metadata or an
@@ -2317,4 +2428,5 @@ dependencies:
 - module: staffing_change_stage
 - module: staffing_service
 - module: staffing_store
+- module: source_update_monitor
 - module: PySide6

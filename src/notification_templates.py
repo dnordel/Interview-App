@@ -23,6 +23,7 @@ NOTIFICATION_TEMPLATE_FIELD_CATALOG = (
     NotificationTemplateField("candidate_name", "Candidate name", "Candidate"),
     NotificationTemplateField("candidate", "Candidate", "Candidate"),
     NotificationTemplateField("candidate_email", "Candidate email", "Candidate"),
+    NotificationTemplateField("honorific", "Honorific", "Candidate"),
     NotificationTemplateField("person_name", "Person name", "Person"),
     NotificationTemplateField("school", "School", "School"),
     NotificationTemplateField("school_code", "School code", "School"),
@@ -37,6 +38,7 @@ NOTIFICATION_TEMPLATE_FIELD_CATALOG = (
     NotificationTemplateField("position", "Position", "Staffing"),
     NotificationTemplateField("position_name", "Position name", "Staffing"),
     NotificationTemplateField("position_type", "Position type", "Staffing"),
+    NotificationTemplateField("position_title", "Position title", "Staffing"),
     NotificationTemplateField("classroom", "Classroom", "Staffing"),
     NotificationTemplateField("classroom_capacity", "Classroom capacity", "Staffing"),
     NotificationTemplateField("ratio_group", "Ratio group", "Staffing"),
@@ -62,14 +64,19 @@ NOTIFICATION_TEMPLATE_FIELD_CATALOG = (
     NotificationTemplateField("has_degree", "Has degree", "Candidate"),
     NotificationTemplateField("degree_type", "Degree type", "Candidate"),
     NotificationTemplateField("degree_in_ece", "Degree in ECE", "Candidate"),
+    NotificationTemplateField("degree_display", "Degree display", "Candidate"),
+    NotificationTemplateField("degree_in_ece_display", "Degree in ECE display", "Candidate"),
     NotificationTemplateField("total_units_completed", "Total units", "Candidate"),
     NotificationTemplateField("infant_toddler_class_completed", "Infant/toddler class", "Candidate"),
     NotificationTemplateField("years_experience", "Years experience", "Candidate"),
     NotificationTemplateField("experience_years", "Experience years", "Candidate"),
+    NotificationTemplateField("experience", "Experience", "Candidate"),
     NotificationTemplateField("interview_date", "Interview date", "Interview"),
     NotificationTemplateField("history_id", "History ID", "Interview"),
     NotificationTemplateField("outcome", "Outcome", "Interview"),
     NotificationTemplateField("score", "Score", "Interview"),
+    NotificationTemplateField("interview_score", "Interview score", "Interview"),
+    NotificationTemplateField("director_interview_score", "Director interview score", "Interview"),
     NotificationTemplateField("interview_answers_summary", "Interview answers summary", "Interview"),
     NotificationTemplateField("interview_answer_1", "Interview answer 1", "Interview"),
     NotificationTemplateField("interview_answer_2", "Interview answer 2", "Interview"),
@@ -79,6 +86,9 @@ NOTIFICATION_TEMPLATE_FIELD_CATALOG = (
     NotificationTemplateField("offer_status", "Offer status", "Offer"),
     NotificationTemplateField("offer_path", "Offer path", "Offer"),
     NotificationTemplateField("offer_pdf_path", "Offer PDF path", "Offer"),
+    NotificationTemplateField("requested_pay", "Requested pay", "Offer"),
+    NotificationTemplateField("offer_amount", "Offer amount", "Offer"),
+    NotificationTemplateField("proposed_classroom", "Proposed classroom", "Offer"),
     NotificationTemplateField("onboarding_guide_path", "Onboarding guide path", "Offer"),
     NotificationTemplateField("reply_by_date", "Reply by date", "Offer"),
     NotificationTemplateField("generated_date", "Generated date", "System"),
@@ -204,7 +214,8 @@ def validate_notification_rule(rule: NotificationRule) -> tuple[NotificationRule
         if recipient.recipient_type == "email" and not is_valid_email_address(str(recipient.email or "")):
             add("invalid_recipient", "Invalid recipient email.")
         if recipient.recipient_type == "role" and recipient.role_key not in {
-            "candidate", "director", "executive_director", "hiring_manager"
+            "candidate", "director", "executive_director", "hiring_manager",
+            "hr_manager", "payroll", "office_manager"
         }:
             add("invalid_recipient_role", "One or more recipient roles are invalid.")
 

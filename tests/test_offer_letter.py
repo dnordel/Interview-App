@@ -9,7 +9,9 @@ from scoring_reporting import (
     OfferLetterService,
     OfferTemplateError,
     build_school_offer_filename,
+    derive_offer_schedule,
     next_available_offer_path,
+    parse_requested_hourly_pay,
 )
 
 
@@ -47,6 +49,41 @@ def test_offer_replacements_include_candidate_title() -> None:
     replacements = OfferLetterService.build_replacements(data)
 
     assert replacements["[Title]"] == "Ms."
+
+
+def test_offer_replacements_preserve_fractional_weekly_hours_and_pto() -> None:
+    data = OfferInput(
+        first_name="Tatiana",
+        last_name="Zuluaga",
+        city="Palmdale",
+        position="Teacher",
+        start_date=date(2026, 7, 27),
+        start_time_12h="08:15 AM",
+        end_time_12h="05:00 PM",
+        hourly_pay=24.0,
+        hours=38.75,
+        created_on=date(2026, 7, 13),
+        title="Ms.",
+    )
+
+    replacements = OfferLetterService.build_replacements(data)
+
+    assert replacements["[Hours]"] == "38.75"
+    assert replacements["[PTO]"] == "77.5"
+    assert replacements["[PTO2]"] == "155"
+
+
+def test_derive_offer_schedule_subtracts_lunch_for_long_shift() -> None:
+    schedule = derive_offer_schedule("8:00 AM", "5:00 PM")
+
+    assert schedule.gross_daily_hours == 9
+    assert schedule.net_daily_hours == 8
+    assert schedule.weekly_hours == 40
+    assert schedule.employment_type == "full_time"
+
+
+def test_parse_requested_hourly_pay_accepts_one_clear_amount() -> None:
+    assert parse_requested_hourly_pay("I am looking for $24/hour, negotiable") == 24
 
 
 @pytest.mark.parametrize(

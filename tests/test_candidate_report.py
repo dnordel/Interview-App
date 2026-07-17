@@ -74,6 +74,34 @@ def test_build_candidate_report_snapshot_preserves_original_transcript():
     assert snapshot["candidate"]["qualification"]["ece_units_completed"] == 12
 
 
+def test_build_candidate_report_snapshot_excludes_live_intro() -> None:
+    snapshot = build_candidate_report_snapshot(
+        {
+            "candidate": {"name": "A", "school": "Palmdale"},
+            "flow_transcript": [
+                {
+                    "flow_index": 0,
+                    "id": "intro_script",
+                    "type": "intro",
+                    "prompt": "Live interviewer script",
+                    "candidate_transcript": "Intro exchange",
+                },
+                {
+                    "flow_index": 1,
+                    "id": "q1",
+                    "type": "trait",
+                    "prompt": "Question?",
+                    "candidate_transcript": "Answer",
+                },
+            ],
+        },
+        {"outcome": "Hire", "rows": [{"trait_id": "q1", "raw_score": 4}]},
+        {"history_id": "hist-1"},
+    )
+
+    assert [question["question_id"] for question in snapshot["questions"]] == ["q1"]
+
+
 def test_sync_imported_transcripts_updates_director_snapshot_and_preserves_scores(tmp_path: Path):
     repo = _repo(tmp_path)
 

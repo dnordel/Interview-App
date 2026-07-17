@@ -2,7 +2,7 @@ module:
   name: scoring_reporting
   language: python
   path: src/scoring_reporting.py
-  version: 1.0.0
+  version: 1.1.0
   description: Flattened public interface for human scoring, reporting, trait signals,
     exports, referrals, email safety, offers, and templates; only active legacy adapters remain in the compatibility module
     inventory.
@@ -599,7 +599,8 @@ functions:
 - name: build_integration_payload
   description: Build normalized integration payload from interview payload and scoring,
     preserving generated executive summary, interview highlights, answer summaries,
-    and summary status metadata when present.
+    and summary status metadata when present while excluding live-only introduction
+    answers and transcript slices.
   locked: false
   inputs:
     payload:
@@ -647,7 +648,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: _flow_slices
-  description: Build filtered flow transcript slices with candidate transcript text.
+  description: Build filtered non-introduction flow transcript slices with candidate transcript text.
   locked: false
   inputs:
     flow_transcript:
@@ -716,6 +717,23 @@ functions:
     type: datetime
   exceptions:
   - ValueError
+  side_effects: none
+- name: derive_offer_schedule
+  description: Derive gross, lunch-adjusted daily, five-day weekly hours, and full/part-time classification from same-day 12-hour shift values.
+  locked: false
+  inputs:
+    start_time_12h: {type: str, required: true}
+    end_time_12h: {type: str, required: true}
+  returns: {type: OfferSchedule}
+  exceptions: [ValueError]
+  side_effects: none
+- name: parse_requested_hourly_pay
+  description: Parse one unambiguous hourly dollar amount while returning null for ranges, multiple values, missing values, or unsafe amounts.
+  locked: false
+  inputs:
+    value: {type: str, required: true}
+  returns: {type: 'Decimal | None'}
+  exceptions: []
   side_effects: none
 - name: build_signal_dictionary_index
   description: Index signal-dictionary entries by runtime signal id for category-aware
@@ -1479,7 +1497,7 @@ classes:
     side_effects: none
   - name: _extract_full_candidate_transcript
     description: Collect full candidate transcript preferring per-flow Whisper transcript
-      text.
+      text while excluding live-only introduction content.
     locked: false
     inputs:
       payload:
@@ -1569,7 +1587,7 @@ classes:
     hourly_pay:
       type: float
     hours:
-      type: int
+      type: Decimal | float | int
     created_on:
       type: date
     title:
@@ -1580,7 +1598,7 @@ classes:
     locked: false
     inputs: {}
     returns:
-      type: int
+      type: Decimal
     exceptions: []
     side_effects: none
   - name: pto2
@@ -1588,7 +1606,7 @@ classes:
     locked: false
     inputs: {}
     returns:
-      type: int
+      type: Decimal
     exceptions: []
     side_effects: none
   - name: offer_deadline
@@ -1599,6 +1617,15 @@ classes:
       type: date
     exceptions: []
     side_effects: none
+- name: OfferSchedule
+  description: Immutable derived offer schedule values used for template selection, weekly hours, and benefits classification.
+  locked: false
+  attributes:
+    gross_daily_hours: {type: Decimal}
+    net_daily_hours: {type: Decimal}
+    weekly_hours: {type: Decimal}
+    employment_type: {type: str}
+  methods: []
 - name: OfferTemplateError
   description: Raised when an invalid offer template path or format is supplied.
   locked: false

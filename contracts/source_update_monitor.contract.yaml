@@ -1,0 +1,51 @@
+module:
+  name: source_update_monitor
+  language: python
+  path: src/source_update_monitor.py
+  version: 1.0.0
+  description: Lightweight desktop source-version stamp polling, shared update-banner construction, and safe detached app relaunch support.
+functions:
+- name: source_digest
+  description: Compute a deterministic SHA-256 digest over relative paths and contents of Python files under one source root.
+  locked: false
+  inputs:
+    source_root: {type: Path, required: true}
+  returns: {type: str}
+  exceptions: [ValueError, OSError]
+  side_effects: Reads Python source files recursively while excluding __pycache__.
+- name: build_source_update_banner
+  description: Build a hidden shared banner explaining that app source changed and exposing a Restart App button.
+  locked: false
+  inputs:
+    QtWidgets: {type: Any, required: true}
+    restart_callback: {type: 'Callable[[], None]', required: true}
+  returns: {type: 'tuple[Any, Any]'}
+  exceptions: []
+  side_effects: Creates a styled hidden QFrame, QLabel, and connected QPushButton.
+- name: relaunch_application
+  description: Start a detached replacement process with the current executable/arguments and close the current app only after startup succeeds.
+  locked: false
+  inputs:
+    QtCore: {type: Any, required: true}
+    close_current: {type: 'Callable[[], None]', required: true}
+    executable: {type: 'str | None', required: false, default: null}
+    argv: {type: 'list[str] | None', required: false, default: null}
+    frozen: {type: 'bool | None', required: false, default: null}
+    cwd: {type: 'Path | None', required: false, default: null}
+  returns: {type: bool}
+  exceptions: [ValueError]
+  side_effects: Uses QProcess.startDetached and invokes close_current only when the replacement starts successfully.
+classes:
+- name: SourceUpdateDetector
+  description: Latching detector that compares the source-version stamp with app startup and optionally waits until delayed local source files match the stamp digest.
+  locked: false
+  methods:
+  - name: poll
+    inputs: {}
+    returns: {type: 'tuple[Path, ...]'}
+    exceptions: []
+    side_effects: Reads config/source_version.txt; after change, optionally hashes src until Dropbox delivery matches source_sha256; then permanently latches the stamp path.
+data_structures: []
+dependencies:
+- module: config_source_version_txt
+- module: PySide6

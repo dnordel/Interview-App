@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -80,7 +82,7 @@ def normalize_catalog(
         )
     return {
         "version": 1,
-        "measurement_command": "python -m pytest -n 2 with PYTEST_DURATION_CATALOG_OUT=docs/pytest_duration_catalog.yaml",
+        "measurement_command": "python -m pytest -n 8 with PYTEST_DURATION_CATALOG_OUT=docs/pytest_duration_catalog.yaml",
         "entries": entries,
     }
 
@@ -97,14 +99,85 @@ def refresh_catalog_from_collection(path: Path = CATALOG_PATH) -> None:
     )
 
 
+def build_benchmark_commands(
+    *,
+    entries: list[dict[str, Any]],
+    workers: int = 8,
+    python_executable: str = sys.executable,
+) -> list[list[str]]:
+    if workers < 1:
+        raise ValueError("Benchmark worker count must be positive.")
+    common = ["--dist=load", "--maxschedchunk=1"]
+    commands = [
+        [
+            python_executable,
+            "-m",
+            "pytest",
+            "-n",
+            str(workers),
+            *common,
+            "-m",
+            "not slow_pyside",
+        ]
+    ]
+    gui_nodeids = [
+        str(entry["nodeid"])
+        for entry in sorted(
+            (entry for entry in entries if bool(entry.get("gui_heavy", False))),
+            key=lambda entry: float(entry.get("duration_seconds_n2", 0.0)),
+            reverse=True,
+        )
+    ]
+    for index in range(0, len(gui_nodeids), workers):
+        batch = gui_nodeids[index : index + workers]
+        commands.append(
+            [
+                python_executable,
+                "-m",
+                "pytest",
+                "-n",
+                str(workers),
+                *common,
+                *batch,
+            ]
+        )
+    return commands
+
+
+def benchmark_catalog(
+    path: Path = CATALOG_PATH,
+    *,
+    workers: int = 8,
+    python_executable: str = sys.executable,
+    call: Callable[..., int] = subprocess.call,
+) -> int:
+    refresh_catalog_from_collection(path)
+    commands = build_benchmark_commands(
+        entries=list(load_catalog(path).get("entries", [])),
+        workers=workers,
+        python_executable=python_executable,
+    )
+    env = {**os.environ, "PYTEST_DURATION_CATALOG_OUT": str(Path(path).resolve())}
+    for index, command in enumerate(commands, start=1):
+        print(f"[duration benchmark] phase {index}/{len(commands)} with {workers} workers", flush=True)
+        exit_code = call(command, cwd=ROOT, env=env)
+        if exit_code:
+            return int(exit_code)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Maintain pytest duration catalog coverage.")
     parser.add_argument("--refresh-from-collection", action="store_true")
+    parser.add_argument("--benchmark", action="store_true")
+    parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--catalog", type=Path, default=CATALOG_PATH)
     args = parser.parse_args(argv)
     if args.refresh_from_collection:
         refresh_catalog_from_collection(args.catalog)
         return 0
+    if args.benchmark:
+        return benchmark_catalog(args.catalog, workers=args.workers)
     parser.error("No action requested.")
     return 2
 

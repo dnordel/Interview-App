@@ -2,11 +2,24 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
 
 from staffing_store import StaffingEditLock, StaffingStore
+
+
+def test_concurrent_initialize_tolerates_verified_column_migration_races(tmp_path: Path) -> None:
+    path = tmp_path / "staffing.sqlite3"
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        futures = [executor.submit(StaffingStore(path).initialize) for _ in range(8)]
+        for future in futures:
+            future.result()
+
+    with StaffingStore(path).connect() as conn:
+        columns = {row["name"] for row in conn.execute("PRAGMA table_info(people)").fetchall()}
+    assert "permit_document_path" in columns
 
 
 def test_import_seed_file_is_idempotent_and_lists_assignments(tmp_path: Path) -> None:

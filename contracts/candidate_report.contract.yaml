@@ -2,7 +2,7 @@ module:
   name: candidate_report
   language: python
   path: src/candidate_report.py
-  version: 1.2.0
+  version: 1.2.1
   description: Versioned structured candidate-interview report domain, validation, score recalculation, school-scoped legacy DOCX resolution, optimistic concurrency, immutable snapshots, and append-only audit storage.
 functions:
 - name: utc_now
@@ -16,7 +16,7 @@ functions:
   returns: {type: Path}
   exceptions: [CandidateReportError, OSError]
 - name: build_candidate_report_snapshot
-  description: Build canonical structured report data from finalized interview payload, canonical scoring output, and history metadata while preserving original transcript text.
+  description: Build canonical structured report data from finalized interview payload, canonical scoring output, and history metadata while preserving original transcript text and excluding the live-only introduction.
   inputs:
     payload: {type: 'dict[str, Any]', required: true}
     scoring: {type: 'dict[str, Any]', required: true}

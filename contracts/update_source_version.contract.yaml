@@ -1,0 +1,38 @@
+module:
+  name: update_source_version
+  language: python
+  path: tools/update_source_version.py
+  version: 1.0.0
+  description: Single-developer release helper that atomically updates the human-readable source timestamp and source-tree digest consumed by running desktop apps.
+functions:
+- name: source_digest
+  description: Compute a deterministic SHA-256 digest over relative paths and contents of Python files under src.
+  locked: false
+  inputs:
+    source_root: {type: Path, required: true}
+  returns: {type: str}
+  exceptions: [ValueError, OSError]
+  side_effects: Reads Python source files recursively while excluding __pycache__.
+- name: write_source_version
+  description: Atomically write updated_at and source_sha256 when the source digest changed, preserving the existing timestamp when source is unchanged.
+  locked: false
+  inputs:
+    source_root: {type: Path, required: false, default: DEFAULT_SOURCE_ROOT}
+    version_path: {type: Path, required: false, default: DEFAULT_VERSION_PATH}
+    updated_at: {type: str, required: false, default: ''}
+  returns: {type: 'dict[str, str]'}
+  exceptions: [ValueError, OSError]
+  side_effects: Reads source files and the existing stamp; when digest changed, atomically replaces config/source_version.txt through a same-directory temporary file; otherwise performs no write.
+- name: main
+  description: CLI entry point for updating the source-version stamp after developer source changes.
+  locked: false
+  inputs:
+    argv: {type: 'list[str] | None', required: false, default: null}
+  returns: {type: int}
+  exceptions: [SystemExit, ValueError, OSError]
+  side_effects: Parses optional paths, writes the source-version stamp, and prints its updated UTC time.
+classes: []
+data_structures: []
+dependencies:
+- module: config_source_version_txt
+- module: source_update_monitor

@@ -82,6 +82,12 @@ def run_full_suite(
     gui_workers: int = 24,
     call: Callable[[list[str]], int] = subprocess.call,
 ) -> int:
+    source_version_command = [python_executable, "tools/update_source_version.py"]
+    print("[source version preflight] updating deployment stamp", flush=True)
+    source_version_exit_code = call(source_version_command)
+    if source_version_exit_code:
+        print("[source version preflight] FAILED; tests not started", flush=True)
+        return source_version_exit_code
     quick_metadata_command, non_gui_command, gui_commands = build_full_suite_commands(
         python_executable=python_executable,
         metadata_workers=metadata_workers,

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from datetime import date
+from types import SimpleNamespace
 import pytest
 
 from staffing_models import StaffingDirectorInterviewDifference
@@ -332,6 +333,41 @@ def test_mark_replacing_with_final_day_today_reopens_need_now_and_clears_person(
     assert store.active_history_count(assignment_id) == 1
 
 
+def test_assigned_employee_need_now_emits_notice_and_position_needed_with_preserved_person(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    assignment_id = store.seed_assignment(
+        school="Hawthorne",
+        classroom="Harmony 1",
+        position_name="Teacher 1",
+        position_type="Teacher",
+        status="filled",
+        person_name="Jane Doe",
+    )
+    events: list[tuple[str, dict[str, str], str]] = []
+    notifications = SimpleNamespace(
+        emit_event=lambda event, payload, key: events.append((event, payload, key)) or []
+    )
+    service = StaffingService(
+        store,
+        notification_service=notifications,
+        clock=_Clock(["2026-07-05T13:00:00Z"]),
+    )
+
+    service.mark_replacing(
+        assignment_id,
+        notice_given="2026-07-05",
+        final_working_day="2026-07-05",
+    )
+
+    assert [event[0] for event in events] == [
+        "employment.notice.given",
+        "staffing.assignment.need_now",
+    ]
+    assert events[0][1]["candidate_name"] == "Jane Doe"
+    assert events[0][1]["final_working_day"] == "2026-07-05"
+
+
 def test_update_assignment_details_need_now_clears_previously_assigned_person(tmp_path: Path) -> None:
     store = StaffingStore(tmp_path / "staffing.sqlite3")
     store.initialize()
@@ -343,7 +379,15 @@ def test_update_assignment_details_need_now_clears_previously_assigned_person(tm
         status="filled",
         person_name="Jane Doe",
     )
-    service = StaffingService(store, clock=_Clock(["2026-07-05T09:00:00Z"]))
+    events: list[tuple[str, dict[str, str], str]] = []
+    notifications = SimpleNamespace(
+        emit_event=lambda event, payload, key: events.append((event, payload, key)) or []
+    )
+    service = StaffingService(
+        store,
+        notification_service=notifications,
+        clock=_Clock(["2026-07-05T09:00:00Z"]),
+    )
 
     result = service.update_assignment_details(
         assignment_id,
@@ -360,6 +404,11 @@ def test_update_assignment_details_need_now_clears_previously_assigned_person(tm
     assert assignment.person_id is None
     assert assignment.person_name == ""
     assert assignment.start_date == ""
+    assert [event[0] for event in events] == [
+        "employment.notice.given",
+        "staffing.assignment.need_now",
+    ]
+    assert events[0][1]["candidate_name"] == "Jane Doe"
 
 
 def test_move_person_to_open_assignment_requires_confirmation_and_reopens_source(tmp_path: Path) -> None:
@@ -718,6 +767,49 @@ def test_director_interview_validation_requires_notes_and_hire_shift_details(tmp
             proposed_classroom="Harmony 1",
         )
     assert service.list_pending_director_interviews(school="Hawthorne") == [referral]
+
+
+def test_director_hire_requires_email_but_phone_is_optional(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    service = StaffingService(store, clock=_Clock(["2026-07-06T09:00:00Z", "2026-07-06T09:05:00Z"]))
+    referral = service.upsert_director_candidate_referral(
+        history_id="hist-contact",
+        candidate_name="Jordan Lee",
+        school="Hawthorne",
+        interviewer_outcome="hire",
+    )
+
+    with pytest.raises(ValueError, match="Candidate email is required"):
+        service.record_director_interview(
+            referral.id,
+            director_name="Avery Director",
+            completed_date="2026-07-06",
+            rating=9,
+            decision="hire",
+            decision_notes="Hire.",
+            proposed_shift_start="8:00 AM",
+            proposed_shift_end="5:00 PM",
+            proposed_classroom="Harmony 1",
+        )
+
+    result = service.record_director_interview(
+        referral.id,
+        director_name="Avery Director",
+        completed_date="2026-07-06",
+        rating=9,
+        decision="hire",
+        decision_notes="Hire.",
+        proposed_shift_start="8:00 AM",
+        proposed_shift_end="5:00 PM",
+        proposed_classroom="Harmony 1",
+        candidate_email="jordan@example.org",
+    )
+
+    saved = service.store.list_director_candidate_referrals(include_completed=True)[0]
+    assert result.decision == "hire"
+    assert saved.candidate_email == "jordan@example.org"
+    assert saved.candidate_phone == ""
 
 
 def test_locked_staffing_action_queues_and_replays_when_db_unlocks(tmp_path: Path) -> None:

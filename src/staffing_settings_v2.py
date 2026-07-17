@@ -5,7 +5,15 @@ from pathlib import Path
 from typing import Any
 
 from admin_studio import AdminStudio
-from notification_service import EmailSettings, load_email_account_settings, save_email_account_settings
+from notification_service import (
+    HIRING_MANAGER_EMAIL,
+    EmailSettings,
+    NotificationDirectory,
+    load_email_account_settings,
+    load_notification_directory,
+    save_email_account_settings,
+    save_notification_directory,
+)
 from onboarding_operations import verify_email_connection
 
 
@@ -14,6 +22,8 @@ SECTION_SPECS = (
     ("rubrics", "Rubrics"),
     ("templates", "Templates & Folders"),
     ("email", "Shared Email Account"),
+    ("recipient_directory", "Notification Recipients"),
+    ("hiring_manager_email", "Hiring Manager Email Account"),
 )
 
 
@@ -26,6 +36,8 @@ class StaffingSettingsV2Page:
         QtWidgets: Any,
         studio: AdminStudio,
         email_settings_path: Path,
+        hiring_manager_email_settings_path: Path | None = None,
+        notification_directory_path: Path | None = None,
         on_email_settings_saved: Callable[[], None] | None = None,
     ) -> None:
         self.QtCore = QtCore
@@ -34,6 +46,14 @@ class StaffingSettingsV2Page:
         self.studio = studio
         self.draft = studio.create_draft()
         self.email_settings_path = Path(email_settings_path)
+        self.hiring_manager_email_settings_path = Path(
+            hiring_manager_email_settings_path
+            or self.email_settings_path.with_name("hiring_manager_email_account_settings.json")
+        )
+        self.notification_directory_path = Path(
+            notification_directory_path
+            or self.email_settings_path.with_name("notification_directory.json")
+        )
         self.on_email_settings_saved = on_email_settings_saved
         self.editing = False
         self._syncing = False
@@ -142,6 +162,10 @@ class StaffingSettingsV2Page:
             return self._templates_page()
         if key == "email":
             return self._email_page()
+        if key == "recipient_directory":
+            return self._recipient_directory_page()
+        if key == "hiring_manager_email":
+            return self._hiring_manager_email_page()
         page = self.QtWidgets.QWidget()
         page.setMinimumSize(0, 0)
         layout = self.QtWidgets.QVBoxLayout(page)
@@ -258,6 +282,135 @@ class StaffingSettingsV2Page:
         self.email_encryption.setCurrentText(settings.smtp_encryption or "STARTTLS")
         self.email_remember_password.setChecked(settings.remember_password)
         self._syncing = False
+
+    def _hiring_manager_email_page(self) -> Any:
+        page = self.QtWidgets.QWidget()
+        layout = self.QtWidgets.QVBoxLayout(page)
+        layout.setContentsMargins(18, 8, 8, 8)
+        title = self.QtWidgets.QLabel("Hiring Manager Email Account")
+        title.setObjectName("StaffingSettingsV2SectionTitle")
+        layout.addWidget(title)
+        layout.addWidget(self.QtWidgets.QLabel("Used for candidate-facing offer and permit messages."))
+        settings = load_email_account_settings(self.hiring_manager_email_settings_path)
+        form = self.QtWidgets.QFormLayout()
+        self.hiring_email_address = self.QtWidgets.QLineEdit(settings.sender_email or HIRING_MANAGER_EMAIL)
+        self.hiring_email_address.setObjectName("StaffingSettingsV2HiringManagerEmailAddress")
+        self.hiring_smtp_host = self.QtWidgets.QLineEdit(settings.smtp_host)
+        self.hiring_smtp_host.setObjectName("StaffingSettingsV2HiringManagerSmtpHost")
+        self.hiring_smtp_port = self.QtWidgets.QSpinBox()
+        self.hiring_smtp_port.setRange(1, 65535)
+        self.hiring_smtp_port.setValue(settings.smtp_port or 587)
+        self.hiring_smtp_username = self.QtWidgets.QLineEdit(settings.smtp_username or settings.username)
+        self.hiring_smtp_username.setObjectName("StaffingSettingsV2HiringManagerSmtpUsername")
+        self.hiring_smtp_password = self.QtWidgets.QLineEdit(settings.smtp_password or settings.password)
+        self.hiring_smtp_password.setObjectName("StaffingSettingsV2HiringManagerSmtpPassword")
+        self.hiring_smtp_password.setEchoMode(self.QtWidgets.QLineEdit.EchoMode.Password)
+        self.hiring_remember_password = self.QtWidgets.QCheckBox("Remember password for this Windows user")
+        self.hiring_remember_password.setChecked(settings.remember_password)
+        form.addRow("Email address", self.hiring_email_address)
+        form.addRow("SMTP server", self.hiring_smtp_host)
+        form.addRow("SMTP port", self.hiring_smtp_port)
+        form.addRow("Username", self.hiring_smtp_username)
+        form.addRow("Password", self.hiring_smtp_password)
+        form.addRow("", self.hiring_remember_password)
+        layout.addLayout(form)
+        save = self.QtWidgets.QPushButton("Save Hiring Manager Email Settings")
+        save.setObjectName("StaffingSettingsV2SaveHiringManagerEmail")
+
+        def save_settings() -> None:
+            username = self.hiring_smtp_username.text().strip()
+            save_email_account_settings(
+                EmailSettings(
+                    sender_email=self.hiring_email_address.text().strip(),
+                    smtp_host=self.hiring_smtp_host.text().strip(),
+                    smtp_port=self.hiring_smtp_port.value(),
+                    username=username,
+                    smtp_username=username,
+                    password=self.hiring_smtp_password.text(),
+                    smtp_password=self.hiring_smtp_password.text(),
+                    remember_password=self.hiring_remember_password.isChecked(),
+                ),
+                self.hiring_manager_email_settings_path,
+            )
+            if self.on_email_settings_saved is not None:
+                self.on_email_settings_saved()
+
+        save.clicked.connect(save_settings)
+        layout.addWidget(save)
+        layout.addStretch(1)
+        return page
+
+    def _recipient_directory_page(self) -> Any:
+        page = self.QtWidgets.QWidget()
+        layout = self.QtWidgets.QVBoxLayout(page)
+        layout.setContentsMargins(18, 8, 8, 8)
+        title = self.QtWidgets.QLabel("Notification Recipients")
+        title.setObjectName("StaffingSettingsV2SectionTitle")
+        layout.addWidget(title)
+        directory = load_notification_directory(self.notification_directory_path)
+        form = self.QtWidgets.QFormLayout()
+        fields: dict[str, Any] = {}
+        specs = (
+            ("hr_manager", "HR Manager", "StaffingSettingsV2RecipientHrManager", directory.hr_manager),
+            ("payroll", "Payroll", "StaffingSettingsV2RecipientPayroll", directory.payroll),
+            ("hiring_manager", "Hiring Manager", "StaffingSettingsV2RecipientHiringManager", directory.hiring_manager),
+            ("executive_director", "Executive Director", "StaffingSettingsV2RecipientExecutiveDirector", directory.executive_director),
+            ("director_haw", "HAW Director", "StaffingSettingsV2RecipientDirectorHaw", directory.directors.get("hawthorne", "")),
+            ("director_pmd", "PMD Director", "StaffingSettingsV2RecipientDirectorPmd", directory.directors.get("palmdale", "")),
+            ("director_nlb", "NLB Director", "StaffingSettingsV2RecipientDirectorNlb", directory.directors.get("north long beach", "")),
+            ("director_name_haw", "HAW Director Name", "StaffingSettingsV2RecipientDirectorNameHaw", directory.director_names.get("hawthorne", "")),
+            ("director_name_pmd", "PMD Director Name", "StaffingSettingsV2RecipientDirectorNamePmd", directory.director_names.get("palmdale", "")),
+            ("director_name_nlb", "NLB Director Name", "StaffingSettingsV2RecipientDirectorNameNlb", directory.director_names.get("north long beach", "")),
+            ("office_haw", "HAW Office Manager", "StaffingSettingsV2RecipientOfficeHaw", directory.office_managers.get("hawthorne", "")),
+            ("office_pmd", "PMD Office Manager", "StaffingSettingsV2RecipientOfficePmd", directory.office_managers.get("palmdale", "")),
+            ("office_nlb", "NLB Office Manager", "StaffingSettingsV2RecipientOfficeNlb", directory.office_managers.get("north long beach", "")),
+            ("onboarding_guide", "Onboarding guide PDF", "StaffingSettingsV2OnboardingGuidePath", directory.onboarding_guide_path),
+        )
+        for key, label, object_name, value in specs:
+            field = self.QtWidgets.QLineEdit(value)
+            field.setObjectName(object_name)
+            fields[key] = field
+            form.addRow(label, field)
+        layout.addLayout(form)
+        save = self.QtWidgets.QPushButton("Save Notification Recipients")
+        save.setObjectName("StaffingSettingsV2SaveNotificationRecipients")
+
+        def save_directory() -> None:
+            save_notification_directory(
+                NotificationDirectory(
+                    hiring_manager=fields["hiring_manager"].text().strip(),
+                    executive_director=fields["executive_director"].text().strip(),
+                    hr_manager=fields["hr_manager"].text().strip(),
+                    payroll=fields["payroll"].text().strip(),
+                    directors={
+                        "hawthorne": fields["director_haw"].text().strip(),
+                        "palmdale": fields["director_pmd"].text().strip(),
+                        "north long beach": fields["director_nlb"].text().strip(),
+                        "long beach": fields["director_nlb"].text().strip(),
+                    },
+                    director_names={
+                        "hawthorne": fields["director_name_haw"].text().strip(),
+                        "palmdale": fields["director_name_pmd"].text().strip(),
+                        "north long beach": fields["director_name_nlb"].text().strip(),
+                        "long beach": fields["director_name_nlb"].text().strip(),
+                    },
+                    office_managers={
+                        "hawthorne": fields["office_haw"].text().strip(),
+                        "palmdale": fields["office_pmd"].text().strip(),
+                        "north long beach": fields["office_nlb"].text().strip(),
+                        "long beach": fields["office_nlb"].text().strip(),
+                    },
+                    onboarding_guide_path=fields["onboarding_guide"].text().strip(),
+                ),
+                self.notification_directory_path,
+            )
+            if self.on_email_settings_saved is not None:
+                self.on_email_settings_saved()
+
+        save.clicked.connect(save_directory)
+        layout.addWidget(save)
+        layout.addStretch(1)
+        return page
 
     def _email_settings_from_fields(self) -> EmailSettings:
         encryption = self.email_encryption.currentText().strip()

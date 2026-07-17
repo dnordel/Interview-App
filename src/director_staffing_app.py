@@ -16,8 +16,9 @@ from staffing_referral_queue import StaffingReferralQueueStore
 from staffing_change_stage import StaffingChangeStage
 from staffing_dashboard_host import StaffingDashboardAccess, StaffingDashboardHost
 from staffing_dashboard_v2 import apply_staffing_v2_light_theme
-from staffing_service import StaffingService
+from staffing_service import StaffingChangeConflict, StaffingService, staffing_change_conflict_message
 from staffing_store import StaffingEditLock, StaffingStore
+from source_update_monitor import SourceUpdateDetector, build_source_update_banner, relaunch_application
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,6 +27,8 @@ STAFFING_DB_PATH = USER_ARTIFACTS_DIR / "interviews" / "staffing_dashboard.sqlit
 STAFFING_SEED_PATH = ROOT / "config" / "staffing_seed.json"
 INTERVIEW_HISTORY_DB_PATH = USER_ARTIFACTS_DIR / "interview_history.sqlite3"
 INTERVIEW_HISTORY_JSON_PATH = USER_ARTIFACTS_DIR / "interview_history.json"
+SOURCE_VERSION_PATH = ROOT / "config" / "source_version.txt"
+SOURCE_UPDATE_ROOT = ROOT / "src"
 STAFFING_REFERRAL_QUEUE_DB_PATH = USER_ARTIFACTS_DIR / "staffing_referrals.sqlite3"
 STAFFING_REFERRAL_QUEUE_LEGACY_PATH = USER_ARTIFACTS_DIR / "staffing_referrals.pending.jsonl"
 
@@ -346,9 +349,21 @@ def launch_director_staffing_app(*, director_school: str = "") -> int:
         pass
 
     notification_service = lambda: NotificationService()
-    change_stage = StaffingChangeStage(Path(STAFFING_DB_PATH).with_name("staffing_changes.sqlite3"))
+    change_stage = StaffingChangeStage(Path(STAFFING_DB_PATH).with_name("staffing_change_events"))
     replica_slug = re.sub(r"[^a-z0-9]+", "_", director_school.strip().lower()).strip("_") or "all"
     replica = f"director:{replica_slug}"
+    actor = str(os.environ.get("USERNAME") or os.environ.get("USER") or "director")
+    actor_slug = re.sub(r"[^a-z0-9]+", "_", actor.strip().lower()).strip("_") or "director"
+
+    def resolve_staffing_change_conflict(conflict: StaffingChangeConflict) -> bool:
+        answer = QtWidgets.QMessageBox.question(
+            window,
+            "Staffing Change Conflict",
+            staffing_change_conflict_message(conflict),
+            QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+            QtWidgets.QMessageBox.StandardButton.No,
+        )
+        return answer == QtWidgets.QMessageBox.StandardButton.Yes
 
     def staffing_service() -> StaffingService:
         return StaffingService(
@@ -356,7 +371,9 @@ def launch_director_staffing_app(*, director_school: str = "") -> int:
             notification_service=notification_service(),
             change_stage=change_stage,
             replica=replica,
+            publisher=f"{replica}:{actor_slug}",
             school_scope=director_school,
+            conflict_resolver=resolve_staffing_change_conflict,
         )
 
     host = StaffingDashboardHost(
@@ -368,7 +385,7 @@ def launch_director_staffing_app(*, director_school: str = "") -> int:
         service_factory=staffing_service,
         access=StaffingDashboardAccess(
             role="director",
-            actor=str(os.environ.get("USERNAME") or os.environ.get("USER") or "director"),
+            actor=actor,
             school_scope=director_school,
             removal_source="director_staffing_dashboard",
         ),
@@ -378,10 +395,33 @@ def launch_director_staffing_app(*, director_school: str = "") -> int:
         director_referral_dismissal_callback=_queue_dashboard_director_referral_dismissals,
     )
     dashboard = host.page
-    window.setCentralWidget(dashboard.widget)
+    source_update_detector = SourceUpdateDetector(SOURCE_VERSION_PATH, source_root=SOURCE_UPDATE_ROOT)
+
+    def restart_after_source_update() -> None:
+        started = relaunch_application(QtCore, window.close, cwd=ROOT)
+        if not started:
+            QtWidgets.QMessageBox.warning(
+                window,
+                "Restart Failed",
+                "Could not start the updated app. Please close and reopen it manually.",
+            )
+
+    source_update_banner, source_update_restart_button = build_source_update_banner(
+        QtWidgets,
+        restart_after_source_update,
+    )
+    central = QtWidgets.QWidget()
+    central_layout = QtWidgets.QVBoxLayout(central)
+    central_layout.setContentsMargins(0, 0, 0, 0)
+    central_layout.setSpacing(0)
+    central_layout.addWidget(source_update_banner)
+    central_layout.addWidget(dashboard.widget, 1)
+    window.setCentralWidget(central)
     setattr(app, "_director_staffing_window", window)
     setattr(app, "_director_staffing_dashboard", dashboard)
     setattr(app, "_director_staffing_host", host)
+    setattr(app, "_director_source_update_banner", source_update_banner)
+    setattr(app, "_director_source_update_restart_button", source_update_restart_button)
     _show_director_staffing_window_maximized(window, QtWidgets)
 
     def sync_referrals_after_first_paint() -> None:
@@ -408,6 +448,16 @@ def launch_director_staffing_app(*, director_school: str = "") -> int:
     sync_timer.timeout.connect(sync_staged_changes)
     sync_timer.start()
     setattr(app, "_director_staffing_sync_timer", sync_timer)
+
+    def poll_source_version() -> None:
+        if source_update_detector.poll():
+            source_update_banner.show()
+
+    source_update_timer = QtCore.QTimer(window)
+    source_update_timer.setInterval(5000)
+    source_update_timer.timeout.connect(poll_source_version)
+    source_update_timer.start()
+    setattr(app, "_director_source_update_timer", source_update_timer)
     return app.exec()
 
 

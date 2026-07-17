@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 import inspect
+import base64
+import ctypes
 import re
 from collections.abc import Callable
 from dataclasses import dataclass, replace
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta
 from email.message import EmailMessage
 from pathlib import Path
 import smtplib
 import ssl
+import sys
 from typing import Any
 
 from email_security import is_valid_email_address, sanitize_email_subject
@@ -24,7 +27,16 @@ from platform_services import USER_ARTIFACTS_DIR, atomic_write_json, safe_read_j
 
 NOTIFICATION_RULES_PATH = USER_ARTIFACTS_DIR / "notification_rules.sqlite3"
 EMAIL_ACCOUNT_SETTINGS_PATH = USER_ARTIFACTS_DIR / "email_account_settings.json"
+HIRING_MANAGER_EMAIL_SETTINGS_PATH = USER_ARTIFACTS_DIR / "hiring_manager_email_account_settings.json"
+NOTIFICATION_DIRECTORY_PATH = USER_ARTIFACTS_DIR / "notification_directory.json"
 SUPPORTED_NOTIFICATION_EVENTS = (
+    "interview.rating.qualified",
+    "director.interview.hire",
+    "employment.start.today",
+    "employment.notice.given",
+    "employment.last_day",
+    "permit.eligible.50d",
+    "permit.escalation.90d",
     "staffing.assignment.created",
     "staffing.assignment.need_now",
     "staffing.assignment.coming",
@@ -49,6 +61,129 @@ DIRECTOR_EMAILS_BY_SCHOOL = {
     "north long beach": "director@launchpadpreschoolNLB.com",
     "palmdale": "director@launchpadpreschoolPMD.com",
 }
+_SESSION_EMAIL_PASSWORDS: dict[str, tuple[str, str]] = {}
+
+
+class _DataBlob(ctypes.Structure):
+    _fields_ = [("cbData", ctypes.c_uint32), ("pbData", ctypes.POINTER(ctypes.c_ubyte))]
+
+
+def protect_secret(value: str) -> str:
+    clean = str(value or "")
+    if not clean:
+        return ""
+    if not sys.platform.startswith("win"):
+        raise OSError("Windows DPAPI is required to remember SMTP passwords.")
+    raw = clean.encode("utf-8")
+    buffer = ctypes.create_string_buffer(raw)
+    input_blob = _DataBlob(len(raw), ctypes.cast(buffer, ctypes.POINTER(ctypes.c_ubyte)))
+    output_blob = _DataBlob()
+    if not ctypes.windll.crypt32.CryptProtectData(
+        ctypes.byref(input_blob), "LPL SMTP", None, None, None, 1, ctypes.byref(output_blob)
+    ):
+        raise ctypes.WinError()
+    try:
+        encrypted = ctypes.string_at(output_blob.pbData, output_blob.cbData)
+    finally:
+        ctypes.windll.kernel32.LocalFree(output_blob.pbData)
+    return "dpapi:" + base64.b64encode(encrypted).decode("ascii")
+
+
+def unprotect_secret(value: str) -> str:
+    text = str(value or "")
+    if not text.startswith("dpapi:"):
+        return text
+    if not sys.platform.startswith("win"):
+        return ""
+    try:
+        raw = base64.b64decode(text[6:], validate=True)
+    except (ValueError, TypeError):
+        return ""
+    buffer = ctypes.create_string_buffer(raw)
+    input_blob = _DataBlob(len(raw), ctypes.cast(buffer, ctypes.POINTER(ctypes.c_ubyte)))
+    output_blob = _DataBlob()
+    if not ctypes.windll.crypt32.CryptUnprotectData(
+        ctypes.byref(input_blob), None, None, None, None, 1, ctypes.byref(output_blob)
+    ):
+        return ""
+    try:
+        return ctypes.string_at(output_blob.pbData, output_blob.cbData).decode("utf-8")
+    finally:
+        ctypes.windll.kernel32.LocalFree(output_blob.pbData)
+
+
+@dataclass(frozen=True)
+class NotificationDirectory:
+    hiring_manager: str
+    executive_director: str
+    hr_manager: str
+    payroll: str
+    directors: dict[str, str]
+    director_names: dict[str, str]
+    office_managers: dict[str, str]
+    onboarding_guide_path: str
+
+    @classmethod
+    def defaults(cls) -> "NotificationDirectory":
+        return cls(
+            hiring_manager=HIRING_MANAGER_EMAIL,
+            executive_director=EXECUTIVE_DIRECTOR_EMAIL,
+            hr_manager=HIRING_MANAGER_EMAIL,
+            payroll="payroll@launchpadpreschool.com",
+            directors=dict(DIRECTOR_EMAILS_BY_SCHOOL),
+            director_names={
+                "hawthorne": "Netsi",
+                "palmdale": "Edith",
+                "north long beach": "Claudia",
+                "long beach": "Claudia",
+            },
+            office_managers={
+                "hawthorne": "admin-haw@launchpadpreschool.com",
+                "palmdale": "admin-pmd@launchpadpreschool.com",
+                "north long beach": "admin-nlb@launchpadpreschool.com",
+                "long beach": "admin-nlb@launchpadpreschool.com",
+            },
+            onboarding_guide_path=(
+                r"C:\Users\Dnord\Dropbox (Old)\Dropbox\All School Admin\LPL New Employee Onboarding Guide v1.3.pdf"
+            ),
+        )
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any] | None) -> "NotificationDirectory":
+        defaults = cls.defaults()
+        source = payload if isinstance(payload, dict) else {}
+        directors = dict(defaults.directors)
+        directors.update({str(k).casefold(): str(v).strip() for k, v in dict(source.get("directors") or {}).items()})
+        director_names = dict(defaults.director_names)
+        director_names.update(
+            {str(k).casefold(): str(v).strip() for k, v in dict(source.get("director_names") or {}).items()}
+        )
+        offices = dict(defaults.office_managers)
+        offices.update({str(k).casefold(): str(v).strip() for k, v in dict(source.get("office_managers") or {}).items()})
+        return cls(
+            hiring_manager=str(source.get("hiring_manager") or defaults.hiring_manager).strip(),
+            executive_director=str(source.get("executive_director") or defaults.executive_director).strip(),
+            hr_manager=str(source.get("hr_manager") or defaults.hr_manager).strip(),
+            payroll=str(source.get("payroll") or defaults.payroll).strip(),
+            directors=directors,
+            director_names=director_names,
+            office_managers=offices,
+            onboarding_guide_path=str(
+                source.get("onboarding_guide_path") or defaults.onboarding_guide_path
+            ).strip(),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "hiring_manager": self.hiring_manager,
+            "executive_director": self.executive_director,
+            "hr_manager": self.hr_manager,
+            "payroll": self.payroll,
+            "directors": dict(self.directors),
+            "director_names": dict(self.director_names),
+            "office_managers": dict(self.office_managers),
+            "onboarding_guide_path": self.onboarding_guide_path,
+        }
 @dataclass
 class EmailSettings:
     account_label: str = ""
@@ -200,11 +335,40 @@ class NotificationService:
         email_settings: EmailSettings | None = None,
         send_email: Callable[..., Any] | None = None,
         current_date: Callable[[], date] | None = None,
+        directory: NotificationDirectory | None = None,
+        hiring_manager_email_settings: EmailSettings | None = None,
     ) -> None:
         self.store = store or NotificationStore(NOTIFICATION_RULES_PATH)
         self.email_settings = email_settings or EmailSettings()
         self.send_email = send_email
         self.current_date = current_date or date.today
+        self.directory = directory or NotificationDirectory.defaults()
+        self.hiring_manager_email_settings = hiring_manager_email_settings or self.email_settings
+
+    def activate_ready_system_rules(self) -> int:
+        changed = 0
+        for rule in self.store.list_rules():
+            if not rule.system_rule or rule.active or rule.user_disabled or rule.id is None:
+                continue
+            settings = (
+                self.hiring_manager_email_settings
+                if rule.sender_account == "hiring_manager"
+                else self.email_settings
+            )
+            if not settings.smtp_host or not is_valid_email_address(settings.sender_email):
+                continue
+            if rule.required_attachment_key == "onboarding_guide_path":
+                if not Path(self.directory.onboarding_guide_path).is_file():
+                    continue
+            payload = {"school": "Hawthorne", "candidate_email": "candidate@example.org"}
+            recipients, _, error = resolve_notification_recipients(
+                rule, payload, directory=self.directory
+            )
+            if error or not recipients or any(not is_valid_email_address(email) for email in recipients):
+                continue
+            self.store.activate_system_rule(rule.id)
+            changed += 1
+        return changed
 
     def emit_event(
         self,
@@ -308,6 +472,13 @@ class NotificationService:
         *,
         bypass_trigger: bool = False,
     ) -> NotificationSendResult:
+        payload = dict(payload)
+        if (
+            str(event_type).removesuffix(".test") == "offer.accepted"
+            and rule.required_attachment_key == "onboarding_guide_path"
+            and not str(payload.get("onboarding_guide_path", "") or "").strip()
+        ):
+            payload["onboarding_guide_path"] = self.directory.onboarding_guide_path
         rule_id = int(rule.id) if rule.id is not None else None
         if rule_id is not None and self.store.has_send_attempt(rule_id, idempotency_key):
             return NotificationSendResult(event_type=event_type, rule_id=rule_id, status="duplicate")
@@ -326,8 +497,17 @@ class NotificationService:
                     )
             return NotificationSendResult(event_type=event_type, rule_id=rule_id, status=trigger_status)
 
-        recipients, _summary, recipient_error = resolve_notification_recipients(rule, payload)
-        blocked_error = recipient_error or self._blocked_reason(rule, recipients, payload)
+        recipients, _summary, recipient_error = resolve_notification_recipients(
+            rule, payload, directory=self.directory
+        )
+        sender_settings = (
+            self.hiring_manager_email_settings
+            if rule.sender_account == "hiring_manager"
+            else self.email_settings
+        )
+        blocked_error = recipient_error or self._blocked_reason(
+            rule, recipients, payload, settings=sender_settings
+        )
         if blocked_error:
             self.store.record_send_attempt(
                 event_type=event_type,
@@ -342,7 +522,11 @@ class NotificationService:
         rendered = render_notification_templates(rule, payload)
         subject = rendered.subject
         body = rendered.plain_body
-        attachment_paths, attachment_error = _notification_attachment_paths(event_type, payload)
+        required_attachment = str(rule.required_attachment_key or "").strip()
+        if required_attachment and not str(payload.get(required_attachment, "") or "").strip():
+            attachment_paths, attachment_error = [], "Required notification attachment is missing."
+        else:
+            attachment_paths, attachment_error = _notification_attachment_paths(event_type, payload)
         if attachment_error:
             self.store.record_send_attempt(
                 event_type=event_type,
@@ -360,6 +544,7 @@ class NotificationService:
                 body,
                 rendered.html_body,
                 attachment_paths,
+                settings=sender_settings,
             )
         except Exception as exc:
             error = _sanitize_error(str(exc))
@@ -389,12 +574,14 @@ class NotificationService:
         plain_body: str,
         html_body: str,
         attachment_paths: list[str],
+        settings: EmailSettings | None = None,
     ) -> None:
+        active_settings = settings or self.email_settings
         if self.send_email is None:
             parameters = inspect.signature(_send_email_message).parameters
             if "html_body" in parameters:
                 _send_email_message(
-                    self.email_settings,
+                    active_settings,
                     recipients,
                     subject,
                     plain_body,
@@ -402,14 +589,14 @@ class NotificationService:
                     html_body=html_body,
                 )
             elif attachment_paths:
-                _send_email_message(self.email_settings, recipients, subject, plain_body, attachment_paths)
+                _send_email_message(active_settings, recipients, subject, plain_body, attachment_paths)
             else:
-                _send_email_message(self.email_settings, recipients, subject, plain_body)
+                _send_email_message(active_settings, recipients, subject, plain_body)
             return
         if attachment_paths:
-            self.send_email(self.email_settings, recipients, subject, plain_body, attachment_paths)
+            self.send_email(active_settings, recipients, subject, plain_body, attachment_paths)
             return
-        self.send_email(self.email_settings, recipients, subject, plain_body)
+        self.send_email(active_settings, recipients, subject, plain_body)
 
     def run_due_notifications(self) -> list[NotificationSendResult]:
         results: list[NotificationSendResult] = []
@@ -457,10 +644,18 @@ class NotificationService:
             return None
         return basis_date + timedelta(days=int(rule.offset_days))
 
-    def _blocked_reason(self, rule: NotificationRule, recipients: list[str], payload: dict[str, str]) -> str:
+    def _blocked_reason(
+        self,
+        rule: NotificationRule,
+        recipients: list[str],
+        payload: dict[str, str],
+        *,
+        settings: EmailSettings | None = None,
+    ) -> str:
         if not recipients:
             return "No active recipients configured."
-        if not self.email_settings.smtp_host or not self.email_settings.sender_email:
+        active_settings = settings or self.email_settings
+        if not active_settings.smtp_host or not active_settings.sender_email:
             return "SMTP settings are incomplete."
         invalid = [email for email in recipients if not is_valid_email_address(email)]
         if invalid:
@@ -471,13 +666,125 @@ class NotificationService:
         return ""
 
 
-def resolve_notification_recipients(rule: NotificationRule, payload: dict[str, str]) -> tuple[list[str], str, str]:
+class StaffingNotificationScheduler:
+    """Clock-aware local staffing date trigger scanner."""
+
+    def __init__(
+        self,
+        *,
+        staffing_store: Any,
+        notification_service: Any,
+        now: Callable[[], datetime] | None = None,
+        rollout_date: date | None = None,
+        candidate_contact_resolver: Callable[[str, str], dict[str, str]] | None = None,
+    ) -> None:
+        self.staffing_store = staffing_store
+        self.notification_service = notification_service
+        self.now = now or datetime.now
+        self.rollout_date = rollout_date or self.now().date()
+        self.candidate_contact_resolver = candidate_contact_resolver
+
+    def run(self) -> list[NotificationSendResult]:
+        from staffing_service import staffing_notification_payload
+
+        current = self.now()
+        today = current.date()
+        people = {person.id: person for person in self.staffing_store.list_people()}
+        results: list[NotificationSendResult] = []
+        for assignment in self.staffing_store.list_assignments():
+            if not self._record_in_rollout(assignment.updated_at):
+                continue
+            person = people.get(assignment.person_id)
+            payload = staffing_notification_payload(assignment, person)
+            contact = (
+                self.candidate_contact_resolver(assignment.person_name, assignment.school)
+                if self.candidate_contact_resolver is not None
+                else {}
+            )
+            directory = getattr(
+                self.notification_service, "directory", NotificationDirectory.defaults()
+            )
+            payload.update(
+                {
+                    "candidate_email": str(
+                        contact.get("email") or getattr(person, "email", "") or ""
+                    ),
+                    "honorific": str(
+                        contact.get("honorific") or getattr(person, "honorific", "") or "Ms."
+                    ),
+                    "director_name": directory.director_names.get(
+                        str(assignment.school).strip().casefold(), "Director"
+                    ),
+                }
+            )
+            if assignment.start_date == today.isoformat():
+                results.extend(
+                    self.notification_service.emit_event(
+                        "employment.start.today",
+                        payload,
+                        f"staffing:{assignment.id}:start:{today.isoformat()}",
+                    )
+                )
+            final_day = str(getattr(person, "final_working_day", "") or assignment.final_working_day)
+            if final_day == today.isoformat() and current.time() >= time(12, 0):
+                results.extend(
+                    self.notification_service.emit_event(
+                        "employment.last_day",
+                        payload,
+                        f"staffing:{assignment.id}:last-day:{today.isoformat()}",
+                    )
+                )
+            permit_event = self._permit_event(assignment, person, today)
+            if permit_event:
+                results.extend(
+                    self.notification_service.emit_event(
+                        permit_event,
+                        payload,
+                        f"staffing:{assignment.id}:{permit_event}",
+                    )
+                )
+        return results
+
+    def _record_in_rollout(self, updated_at: str) -> bool:
+        try:
+            updated = datetime.fromisoformat(str(updated_at).replace("Z", "+00:00")).date()
+        except ValueError:
+            return False
+        return updated >= self.rollout_date
+
+    @staticmethod
+    def _permit_event(assignment: Any, person: Any, today: date) -> str:
+        if person is None or not assignment.start_date:
+            return ""
+        role = str(getattr(person, "role", "") or assignment.position_type).casefold().replace("_", " ")
+        eligible_role = "teacher" in role or "aide" in role or "assistant director" in role
+        permit_status = str(getattr(person, "permit_status", "") or assignment.permit_status)
+        if not eligible_role or permit_status not in {"unknown", "no_permit_or_application"}:
+            return ""
+        try:
+            days = (today - date.fromisoformat(assignment.start_date)).days
+        except ValueError:
+            return ""
+        if days >= 90:
+            return "permit.escalation.90d"
+        if days >= 50:
+            return "permit.eligible.50d"
+        return ""
+
+
+def resolve_notification_recipients(
+    rule: NotificationRule,
+    payload: dict[str, str],
+    *,
+    directory: NotificationDirectory | None = None,
+) -> tuple[list[str], str, str]:
+    active_directory = directory or NotificationDirectory.defaults()
     recipients: list[str] = []
     summary_parts: list[str] = []
     for recipient in rule.recipients:
         if not recipient.active:
             continue
-        resolved, summary, error = _resolve_notification_recipient(recipient, payload)
+        resolved, summary, error = _resolve_notification_recipient(recipient, payload, active_directory)
         if error:
             return [], "", error
         if resolved and resolved not in recipients:
@@ -490,6 +797,7 @@ def resolve_notification_recipients(rule: NotificationRule, payload: dict[str, s
 def _resolve_notification_recipient(
     recipient: NotificationRecipient,
     payload: dict[str, str],
+    directory: NotificationDirectory,
 ) -> tuple[str, str, str]:
     recipient_type = str(recipient.recipient_type or "email").strip() or "email"
     if recipient_type == "email":
@@ -501,9 +809,13 @@ def _resolve_notification_recipient(
 
     role_key = str(recipient.role_key or "").strip()
     if role_key == "hiring_manager":
-        return HIRING_MANAGER_EMAIL, "hiring manager", ""
+        return directory.hiring_manager, "hiring manager", ""
     if role_key == "executive_director":
-        return EXECUTIVE_DIRECTOR_EMAIL, "executive director", ""
+        return directory.executive_director, "executive director", ""
+    if role_key == "hr_manager":
+        return directory.hr_manager, "HR manager", ""
+    if role_key == "payroll":
+        return directory.payroll, "payroll", ""
     if role_key == "candidate":
         candidate_email = str(payload.get("candidate_email", "") or payload.get("email", "")).strip()
         if not is_valid_email_address(candidate_email):
@@ -511,10 +823,16 @@ def _resolve_notification_recipient(
         return candidate_email, "candidate", ""
     if role_key == "director":
         school_key = str(payload.get("school", "")).strip().casefold()
-        director_email = DIRECTOR_EMAILS_BY_SCHOOL.get(school_key)
+        director_email = directory.directors.get(school_key)
         if not director_email:
             return "", "", "Director recipient requires a supported school."
         return director_email, "school director", ""
+    if role_key == "office_manager":
+        school_key = str(payload.get("school", "")).strip().casefold()
+        office_email = directory.office_managers.get(school_key)
+        if not office_email:
+            return "", "", "Office Manager recipient requires a supported school."
+        return office_email, "office manager", ""
     return "", "", "Unknown notification recipient role."
 
 
@@ -562,21 +880,70 @@ def notification_service_from_onboarding(
 def load_email_account_settings(path: Path = EMAIL_ACCOUNT_SETTINGS_PATH) -> EmailSettings:
     payload = safe_read_json(Path(path), default={}, expected_type=dict)
     source = payload.get("email", payload) if isinstance(payload, dict) else {}
-    return EmailSettings.from_dict(source if isinstance(source, dict) else {})
+    settings = EmailSettings.from_dict(source if isinstance(source, dict) else {})
+    key = str(Path(path).expanduser().resolve())
+    if settings.remember_password:
+        return replace(
+            settings,
+            password=unprotect_secret(settings.password),
+            smtp_password=unprotect_secret(settings.smtp_password),
+        )
+    session_password, session_smtp_password = _SESSION_EMAIL_PASSWORDS.get(key, ("", ""))
+    return replace(settings, password=session_password, smtp_password=session_smtp_password)
 
 
 def save_email_account_settings(settings: EmailSettings, path: Path = EMAIL_ACCOUNT_SETTINGS_PATH) -> None:
-    atomic_write_json(Path(path), {"email": settings.to_dict()}, indent=2, ensure_ascii=False)
+    target = Path(path)
+    key = str(target.expanduser().resolve())
+    payload = settings.to_dict()
+    if settings.remember_password:
+        payload["password"] = protect_secret(settings.password)
+        payload["smtp_password"] = protect_secret(settings.smtp_password)
+        _SESSION_EMAIL_PASSWORDS.pop(key, None)
+    else:
+        _SESSION_EMAIL_PASSWORDS[key] = (settings.password, settings.smtp_password)
+        payload["password"] = ""
+        payload["smtp_password"] = ""
+    atomic_write_json(target, {"email": payload}, indent=2, ensure_ascii=False)
+
+
+def load_notification_directory(path: Path = NOTIFICATION_DIRECTORY_PATH) -> NotificationDirectory:
+    payload = safe_read_json(Path(path), default={}, expected_type=dict)
+    return NotificationDirectory.from_dict(payload if isinstance(payload, dict) else {})
+
+
+def save_notification_directory(
+    directory: NotificationDirectory,
+    path: Path = NOTIFICATION_DIRECTORY_PATH,
+) -> None:
+    for email in (
+        directory.hiring_manager,
+        directory.executive_director,
+        directory.hr_manager,
+        directory.payroll,
+        *directory.directors.values(),
+        *directory.office_managers.values(),
+    ):
+        if not is_valid_email_address(email):
+            raise ValueError("Notification directory contains an invalid email address.")
+    atomic_write_json(Path(path), directory.to_dict(), indent=2, ensure_ascii=False)
 
 
 def notification_service_from_email_account_settings(
     *,
     settings_path: Path = EMAIL_ACCOUNT_SETTINGS_PATH,
     store_path: Path = NOTIFICATION_RULES_PATH,
+    hiring_manager_settings_path: Path = HIRING_MANAGER_EMAIL_SETTINGS_PATH,
+    directory_path: Path = NOTIFICATION_DIRECTORY_PATH,
 ) -> NotificationService:
+    hiring_settings = load_email_account_settings(hiring_manager_settings_path)
+    if not hiring_settings.sender_email:
+        hiring_settings = replace(hiring_settings, sender_email=HIRING_MANAGER_EMAIL)
     return NotificationService(
         store=NotificationStore(store_path),
         email_settings=load_email_account_settings(settings_path),
+        hiring_manager_email_settings=hiring_settings,
+        directory=load_notification_directory(directory_path),
     )
 
 

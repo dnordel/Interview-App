@@ -3,6 +3,19 @@ from __future__ import annotations
 from tools import full_pytest_runner
 
 
+def test_full_suite_updates_source_version_before_metadata_preflight() -> None:
+    launched: list[list[str]] = []
+
+    def fake_call(command: list[str]) -> int:
+        launched.append(command)
+        return 6
+
+    exit_code = full_pytest_runner.run_full_suite(python_executable="python.exe", call=fake_call)
+
+    assert exit_code == 6
+    assert launched == [["python.exe", "tools/update_source_version.py"]]
+
+
 def test_gui_timing_batches_sort_longest_first_and_limit_worker_reuse() -> None:
     entries = [
         {"nodeid": "gui-short", "duration_seconds_n2": 1.0, "gui_heavy": True},
@@ -57,7 +70,7 @@ def test_full_suite_runs_gui_timing_preflight_before_combined_full_suite() -> No
 
 def test_full_suite_returns_combined_full_suite_failure_after_preflight_passes() -> None:
     launched: list[list[str]] = []
-    exit_codes = iter([0, 3])
+    exit_codes = iter([0, 0, 3])
 
     def fake_call(command: list[str]) -> int:
         launched.append(command)
@@ -71,17 +84,18 @@ def test_full_suite_returns_combined_full_suite_failure_after_preflight_passes()
     )
 
     assert exit_code == 3
-    assert len(launched) == 2
-    assert launched[1][launched[1].index("-n") + 1] == "24"
-    assert launched[1][-3:-1] == ["-m", "not slow_pyside"]
+    assert len(launched) == 3
+    assert launched[2][launched[2].index("-n") + 1] == "24"
+    assert launched[2][-3:-1] == ["-m", "not slow_pyside"]
 
 
 def test_full_suite_stops_after_gui_timing_preflight_failures() -> None:
     launched: list[list[str]] = []
+    exit_codes = iter([0, 7])
 
     def fake_call(command: list[str]) -> int:
         launched.append(command)
-        return 7
+        return next(exit_codes)
 
     exit_code = full_pytest_runner.run_full_suite(
         python_executable="python.exe",
@@ -91,13 +105,13 @@ def test_full_suite_stops_after_gui_timing_preflight_failures() -> None:
     )
 
     assert exit_code == 7
-    assert len(launched) == 1
-    assert "tests/test_pytest_duration_catalog.py" in launched[0]
+    assert len(launched) == 2
+    assert "tests/test_pytest_duration_catalog.py" in launched[1]
 
 
 def test_full_suite_starts_combined_full_phase_after_preflight_passes() -> None:
     launched: list[list[str]] = []
-    exit_codes = iter([0, 0, 5])
+    exit_codes = iter([0, 0, 0, 5])
 
     def fake_call(command: list[str]) -> int:
         launched.append(command)
@@ -106,7 +120,7 @@ def test_full_suite_starts_combined_full_phase_after_preflight_passes() -> None:
     exit_code = full_pytest_runner.run_full_suite(call=fake_call)
 
     assert exit_code == 5
-    assert len(launched) == 3
-    assert launched[1][launched[1].index("-n") + 1] == "24"
+    assert len(launched) == 4
     assert launched[2][launched[2].index("-n") + 1] == "24"
-    assert any("test_" in argument for argument in launched[2][8:])
+    assert launched[3][launched[3].index("-n") + 1] == "24"
+    assert any("test_" in argument for argument in launched[3][8:])

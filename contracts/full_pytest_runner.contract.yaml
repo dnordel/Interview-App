@@ -2,14 +2,14 @@ module:
   name: full_pytest_runner
   language: python
   path: tools/full_pytest_runner.py
-  version: 1.1.0
-  description: Metadata-first full-suite runner that validates every duration/scenario metatest, runs non-GUI tests at 24 workers, then runs measured longest-first GUI batches with fresh workers to prevent Qt state buildup.
+  version: 1.3.0
+  description: Source-version-and-metadata preflight full-suite runner that updates the deployment stamp, validates every duration/scenario metatest, then runs both non-GUI and duration-sorted fresh GUI batches with 24 workers.
 functions:
 - name: build_gui_test_batches
   locked: false
   inputs:
     entries: {type: 'list[dict[str, Any]]', required: true}
-    gui_workers: {type: int, required: false}
+    gui_workers: {type: int, required: false, default: 24}
   returns: {type: 'list[list[str]]'}
   exceptions: [ValueError]
   side_effects: none
@@ -19,7 +19,7 @@ functions:
     python_executable: {type: str, required: false}
     metadata_workers: {type: int, required: false}
     full_workers: {type: int, required: false}
-    gui_workers: {type: int, required: false}
+    gui_workers: {type: int, required: false, default: 24}
     catalog_entries: {type: 'list[dict[str, Any]] | None', required: false}
   returns: {type: 'tuple[list[str], list[str], list[list[str]]]'}
   exceptions: []
@@ -30,16 +30,17 @@ functions:
     python_executable: {type: str, required: false}
     metadata_workers: {type: int, required: false}
     full_workers: {type: int, required: false}
-    gui_workers: {type: int, required: false}
+    gui_workers: {type: int, required: false, default: 24}
     call: {type: 'Callable[[list[str]], int]', required: false}
   returns: {type: int}
   exceptions: []
-  side_effects: Runs metadata and non-GUI phases, then duration-sorted GUI batches with fresh xdist workers; stops before later work after failure.
+  side_effects: Runs tools/update_source_version.py first, then metadata and non-GUI phases followed by duration-sorted GUI batches with fresh xdist workers; stops before later work after failure.
 classes: []
 data_structures:
 - name: GUI_TIMING_PREFLIGHT_PATH
   type: str
   description: Whole metadata preflight file; using the file path automatically includes newly added metatests.
 dependencies:
+- module: update_source_version
 - module: pytest
 - module: pytest-xdist

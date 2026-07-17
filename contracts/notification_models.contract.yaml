@@ -2,7 +2,7 @@ module:
   name: notification_models
   language: python
   path: src/notification_models.py
-  version: 1.3.0
+  version: 1.4.0
   description: Dataclasses for generic checkpoint notification events, rules, recipients, send results, and test payload choices.
 functions: []
 classes:
@@ -57,6 +57,14 @@ classes:
       type: str
     offset_days:
       type: int
+    sender_account:
+      type: str
+    required_attachment_key:
+      type: str
+    system_rule:
+      type: bool
+    user_disabled:
+      type: bool
     id:
       type: int | None
     created_at:

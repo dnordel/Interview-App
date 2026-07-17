@@ -2,11 +2,11 @@ module:
   name: candidate_report_dialog
   language: python
   path: src/candidate_report_dialog.py
-  version: 1.2.0
+  version: 1.2.1
   description: Staffing v2 window-modal Candidate Interview Report matching supplied mockups with fixed navigation/header/footer, admin-only initial-report lifecycle, director-section correction, score-only outcome, audit, safe basic Word-note generation/opening, accessibility, and stale/unsaved handling.
 functions:
 - name: generate_basic_candidate_notes_document
-  description: Atomically generate a basic local Word interview-notes document from a structured candidate-report snapshot.
+  description: Atomically generate a basic local Word interview-notes document from a structured candidate-report snapshot while excluding live-only introduction entries, including legacy snapshots.
   locked: false
   inputs:
     snapshot: {type: 'dict[str, Any]', required: true}

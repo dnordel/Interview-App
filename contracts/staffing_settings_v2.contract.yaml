@@ -2,8 +2,8 @@ module:
   name: staffing_settings_v2
   language: python
   path: src/staffing_settings_v2.py
-  version: 1.0.0
-  description: Admin-only Settings content embedded in the shared Staffing v2 shell. Owns responsive configuration editing and independent shared-email controls while delegating draft validation, backup, and persistence to admin_studio.
+  version: 1.1.0
+  description: Admin-only Staffing v2 settings for interview configuration, shared and Hiring Manager SMTP accounts, editable notification recipients, school director names, and onboarding-guide path.
 functions: []
 classes:
 - name: StaffingSettingsV2Page
@@ -22,6 +22,8 @@ classes:
       QtWidgets: {type: Any, required: true}
       studio: {type: AdminStudio, required: true}
       email_settings_path: {type: Path, required: true}
+      hiring_manager_email_settings_path: {type: 'Path | None', required: false, default: null}
+      notification_directory_path: {type: 'Path | None', required: false, default: null}
       on_email_settings_saved: {type: "Callable[[], None] | None", required: false, default: null}
     returns: {type: None}
     exceptions: []

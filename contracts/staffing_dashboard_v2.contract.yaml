@@ -2,8 +2,8 @@ module:
   name: staffing_dashboard_v2
   language: python
   path: src/staffing_dashboard_v2.py
-  version: 0.31.0
-  description: Parallel PySide Staffing v2 dashboard page module for the mockup-driven rewrite; renders a standalone mockup-style staffing shell/sidebar with forced light Fusion Qt palette/style, active nav state, Qt icons plus custom primary-blue add and person-add icons, styled light scrollbars/tables/inputs, and disabled placeholder nav entries for unimplemented mockup destinations, main Staffing Dashboard with stable dashboard objectName, labeled filters/icon-owned Add Position and a shared selected-school summary/action row containing semantic compact icon-bearing summary chips plus Export/View History actions, validation worklist chip drilldown, mockup colon labels, icon-bearing overview cards, icon-bearing classroom priority chip, custom always-scrollable auto-height classroom list rows filled by dominant status-key color with selection borders, status dots, chevrons, padded three-line position count text, and taller selected-card minimums, icon-only classroom list filter dialog for status/permit/open-days filters, classroom list footer count, vertically scrollable classroom detail area with refresh-synced scroll range, page-wide per-pixel Qt scroll behavior for Staffing v2 lists/tables/text edits/scroll areas, position table with explicit row-number column, normalized date/program display, fixed readable status/permit/action columns sized to show action and permit labels, fully status-key-filled icon-bearing status and permit chips plus menu-style row actions including mistaken-position deletion for unassigned positions, icon-bearing dashed Add Position drop zone, director-interview pending/completed section for new hire/borderline referrals with first-interview score visibility, one-line pending/completed count header, visible pending-candidate checkbox controls plus no-modifier multi-row selection for multi-delete, school-selector-synced pending/completed director interview lists, shortened wrapped pending-table headers, wider fixed pending-table column spacing with full-value cell tooltips, fully visible Record Interview action buttons, and hire-only proposed shift/classroom capture that hides those fields when director decision is No-Hire, status key, service-backed Add Position dialog with first-class Director position type and icon-only close, filtered Export read-only preview dialog, shared overlay side-panel template with top-aligned viewport-width-clamped scrollable body and fixed footer plus shared compact detail-card builder, Classroom Management sub-dashboard with icon-owned Add Classroom header action, service-backed Add Classroom dialog, Export read-only filtered-classrooms preview dialog, pagination footer, readable fixed-width table columns with status/active chips, icon-bearing compact detail/metric/health cards, row View detail selection, always-visible-scrollbar classroom detail overlay with pinned Save Changes/Deactivate controls, and an overlay side filter drawer with draft-only controls and active-count badges, Staffing Validation sub-dashboard with metric cards, active-state issue severity tabs, lifecycle/permit/date worklist issues, pagination footer, icon-bearing export/filter/search/table-row/detail-footer actions, row View drawer navigation, Run Full Validation refresh action, Export Validation Report read-only filtered-issues preview dialog, View Validation Rules read-only dialog, and icon-bearing overlay filter/right-panel controls, read-only position detail overlay drawer with icon-only close, normalized date/program display, icon-bearing action buttons including Delete Position for unassigned positions, icon-bearing related-person placeholder action, and icon-bearing footer actions, v2 Mark Coming / Mark Filled dialogs with Director role preservation, icon-only close, and icon-bearing footer actions, v2 Manage Filled chooser with icon-only close, v2 Update Permit dialog with icon-only close, v2 Mark Need Now dialog with icon-only close, v2 Delete Position confirmation dialog, People / Employee Management sub-dashboard with icon-owned Add Person action text, Director role filtering/addition, active-state detail tabs, pagination footer, icon-bearing header/filter/search/table-row/detail/footer actions, row View detail selection, service-backed Add Person dialog, and icon-bearing overlay detail/filter controls with compact reusable cards, full Staffing v2 Notifications dashboard with editable free-form events, filters, sorting, list/grid toggle, recipient chips, template variables, preview, test send, validation, sanitized audit errors, scheduled counts, save/cancel/delete backed by NotificationStore and NotificationService, and Assignment History sub-dashboard with icon-bearing header/date-range/table-row/detail-footer actions, View Validation navigation, View Assignment drawer navigation, Open Employee navigation, header Export read-only filtered-records preview dialog, Export Record read-only preview dialog, pagination footer, overlay detail panel with compact reusable cards, a neutral assignment-ID detail chip, icon-bearing lifecycle event rows, and validation checklist rows while the legacy Staffing page remains available.
+  version: 0.32.0
+  description: Parallel PySide Staffing v2 dashboard page module for position, employee, classroom, validation, notification, and assignment-history workflows; position and employee management uses service-backed add/edit/deactivate/assign/status dialogs, managed permit document attachments, read-only drawers without misleading save controls, stable object names, accessible icon actions, filtered tables, overlay panels, and light-theme scroll behavior while keeping the legacy Staffing page available.
 functions:
 - name: apply_staffing_v2_light_theme
   description: Force a supplied or current QApplication onto Staffing v2's stable light Fusion Qt style and palette so native dark/high-contrast system color schemes cannot invert dashboard panels, tables, or inputs.
@@ -746,7 +746,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Opens a director interview completion dialog that only displays proposed shift/classroom fields while the director decision is Hire; saving calls StaffingService.record_director_interview with empty proposed shift/classroom values for No-Hire decisions and refreshes dashboard tables without mutating assignments or classroom status.
+    side_effects: Opens a director interview completion dialog that displays proposed shift/classroom and missing candidate contact fields only while decision is Hire; email is required, phone is optional, part-time shifts require benefits-warning confirmation, and saving refreshes dashboard tables without mutating assignments or classroom status.
   - name: _open_candidate_report
     inputs:
       history_id: {type: str, required: true}
@@ -1529,6 +1529,18 @@ classes:
       type: None
     exceptions: []
     side_effects: Opens a service-backed Staffing v2 Add Person dialog and refreshes the People table after a successful StaffingService.add_person call.
+  - name: _open_edit_person_dialog
+    inputs:
+      person_id: {type: int, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Opens a populated service-backed Edit Person dialog, shows sanitized validation failures inline, and refreshes People after StaffingService.update_person succeeds.
+  - name: _open_deactivate_person_dialog
+    inputs:
+      person_id: {type: int, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Opens a confirmation dialog, fails closed for assigned employees through StaffingService.deactivate_person, and refreshes People after successful soft deactivation.
   - name: _build_people_filter_drawer
     inputs: {}
     returns:
@@ -1570,7 +1582,24 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Applies People search, active, role, permit, and units filters, then refreshes metrics, the read-only people table, result count, and selected overlay detail panel without mutating staffing data.
+    side_effects: Applies People search, active, role, permit, and units filters, resets pagination, then refreshes metrics, the paged read-only people table, result count, navigation state, and selected overlay detail panel without mutating staffing data.
+  - name: _people_page_size
+    inputs: {}
+    returns: {type: int}
+    exceptions: []
+    side_effects: none
+  - name: _reset_people_page
+    inputs:
+      _index: {type: int, required: false, default: 0}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Resets employee pagination to page one and refreshes the People table.
+  - name: _change_people_page
+    inputs:
+      direction: {type: int, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Moves employee pagination within valid bounds and refreshes the People table, result range, and Previous/Next enabled states.
   - name: _refresh_people_metrics
     inputs: {}
     returns:
@@ -1582,7 +1611,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Rebuilds the read-only People table from filtered person records with shared readable icon-and-color role badges, wires row View buttons to refresh the overlay detail panel, and selects the first visible person without mutating staffing data.
+    side_effects: Rebuilds the current People page from filtered person records with shared readable icon-and-color role badges, wires row View buttons to refresh the overlay detail panel, updates result/page controls, and selects the first visible person without mutating staffing data.
   - name: _role_badge
     inputs:
       role:
@@ -1600,7 +1629,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Renders or hides the People / Employee Management overlay detail panel for a visible table row or no-selection state without mutating staffing data.
+    side_effects: Renders or hides the People / Employee Management overlay detail panel for a visible row on the current page or no-selection state without mutating staffing data.
   - name: _render_person_detail
     inputs:
       person:
@@ -1609,7 +1638,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Rebuilds and shows the People / Employee Management overlay detail panel for the selected person, including active tabs, compact reusable employee information/current assignment/status cards, and pinned footer actions without mutating staffing data.
+    side_effects: Rebuilds and shows the People / Employee Management overlay detail panel for the selected person, including tabs that switch visible overview/assignment/history/notes/document cards, compact reusable cards, and functional pinned Edit Person/Deactivate Employee actions without mutating staffing data during render.
   - name: _refresh_history_table
     inputs: {}
     returns:
@@ -1666,7 +1695,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Reads one staffing assignment, rebuilds and shows the visible Staffing v2 read-only Position Detail overlay drawer with icon-only close, icon-bearing action buttons including v2-native Mark Need Now, Delete Position, Edit Position, Replace Employee, and View Full History navigation, icon-bearing related-person placeholder action, and pinned icon-bearing Cancel/Save Draft/Save Changes footer actions without mutating staffing data during render.
+    side_effects: Reads one staffing assignment, rebuilds and shows the visible Staffing v2 read-only Position Detail overlay drawer with icon-only close, icon-bearing action buttons including v2-native Mark Need Now, Delete Position, Edit Position, Replace Employee, and View Full History navigation, functional Assign or Create Person navigation, and only a pinned Cancel footer action because the drawer has no editable draft state.
   - name: _wire_menu_action
     inputs:
       action:
@@ -1753,7 +1782,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Opens the Staffing v2 Mark Coming dialog with Director role preservation, icon-only close, and icon-bearing candidate-selection and footer actions for one Need Now assignment; on confirmation, passes the selected role to StaffingService.mark_coming so status, position type, matching position-name prefix, and person update atomically, optionally calls StaffingService.update_permit_status, refreshes the v2 dashboard, and reopens the position drawer.
+    side_effects: Opens the Staffing v2 Mark Coming dialog with Director role preservation, icon-only close, a functional existing-person selector popup with Select/Cancel actions, new-person form reset, and footer actions for one Need Now assignment; on confirmation, passes the selected role to StaffingService.mark_coming so status, position type, matching position-name prefix, and person update atomically, optionally calls StaffingService.update_permit_status, refreshes the v2 dashboard, and reopens the position drawer.
   - name: _open_mark_filled_dialog
     inputs:
       assignment_id:
@@ -1771,7 +1800,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Opens the Staffing v2 Manage Filled Position chooser with icon-only close for one Filled assignment, displays permit-update and replace-employee workflow options, and routes Continue to the selected Staffing v2 dialog without mutating staffing data in the chooser.
+    side_effects: Opens the Staffing v2 Manage Filled Position chooser with icon-only close for one Filled assignment, displays permit-update and replace-employee workflow options, routes each card's named Continue action directly to its workflow, and retains footer Continue for radio selection without mutating staffing data in the chooser.
   - name: _open_replace_employee_dialog
     inputs:
       assignment_id:
@@ -1789,7 +1818,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Opens the Staffing v2 Update Permit dialog with icon-only close for one assigned position; on confirmation, calls StaffingService.update_permit_status with permit status, effective date, units, documentation flag, and notes, then refreshes the dashboard and drawer.
+    side_effects: Opens the Staffing v2 Update Permit dialog with icon-only close and a validated permit-document file picker for one assigned position; on confirmation, calls StaffingService.update_permit_status with permit status, effective date, units, documentation flag, selected attachment, and notes, then refreshes the dashboard and drawer.
   - name: _open_mark_need_now_dialog
     inputs:
       assignment_id:

@@ -2,11 +2,32 @@ module:
   name: pytest_duration_catalog
   language: python
   path: tools/pytest_duration_catalog.py
-  version: 1.0.0
-  description: Maintains collected pytest node ids, n=2 durations, measured/default duration source, GUI-heavy classification, and scheduler placement metadata.
+  version: 1.1.0
+  description: Maintains collected pytest node ids, durations measured with eight workers, measured/default duration source, GUI-heavy classification, and scheduler placement metadata; duration_seconds_n2 remains the legacy storage key.
 functions:
+- name: build_benchmark_commands
+  description: Build an n-worker non-GUI phase and duration-sorted fresh GUI batches so Qt state cannot accumulate during catalog measurement.
+  locked: false
+  inputs:
+    entries: {type: 'list[dict[str, Any]]', required: true}
+    workers: {type: int, required: false, default: 8}
+    python_executable: {type: str, required: false}
+  returns: {type: 'list[list[str]]'}
+  exceptions: [ValueError]
+  side_effects: none
+- name: benchmark_catalog
+  description: Refresh collection coverage, then measure every test with the configured worker count using a clean non-GUI phase and fresh GUI batches.
+  locked: false
+  inputs:
+    path: {type: Path, required: false}
+    workers: {type: int, required: false, default: 8}
+    python_executable: {type: str, required: false}
+    call: {type: 'Callable[..., int]', required: false}
+  returns: {type: int}
+  exceptions: [ValueError]
+  side_effects: Launches pytest phases and updates measured duration catalog through PYTEST_DURATION_CATALOG_OUT.
 - name: determine_placement
-  description: Classify a test into a scheduler placement bucket from measured n=2 duration and GUI-heavy status.
+  description: Classify a test into a scheduler placement bucket from measured duration and GUI-heavy status.
   locked: false
   inputs:
     duration_seconds_n2:

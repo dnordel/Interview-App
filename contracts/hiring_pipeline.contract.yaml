@@ -2,9 +2,17 @@ module:
   name: hiring_pipeline
   language: python
   path: src/hiring_pipeline.py
-  version: 1.4.0
+  version: 1.6.0
   description: Candidate-profile, application-pipeline, event-audit, and offer-lifecycle persistence in the canonical interview history SQLite database.
 functions:
+- name: normalize_candidate_phone
+  description: Validate and normalize one U.S. candidate phone number to canonical display form.
+  locked: false
+  inputs:
+    value: {type: str, required: true}
+  returns: {type: str}
+  exceptions: [ValueError]
+  side_effects: none
 - name: calculate_offer_approval_dates
   description: Calculate approval-day offer date, three-calendar-day reply deadline, and first Monday on or after the two-week post-deadline target.
   locked: false
@@ -62,6 +70,7 @@ classes:
     preferred_name: {type: str}
     email: {type: str}
     phone: {type: str}
+    honorific: {type: str}
     archived_at: {type: str}
   methods: []
 - name: HiringApplication
@@ -151,6 +160,14 @@ classes:
     returns: {type: 'list[Any]'}
     exceptions: []
     side_effects: Emits one idempotent offer.approved event containing candidate email and approved PDF only.
+  - name: offer_accepted
+    inputs:
+      candidate: {type: CandidateProfile, required: true}
+      version: {type: OfferVersion, required: true}
+      idempotency_key: {type: str, required: true}
+    returns: {type: 'list[Any]'}
+    exceptions: []
+    side_effects: Emits an idempotent offer.accepted event with candidate contact, school director name, and configured onboarding guide.
 - name: HiringPipelineStore
   description: Deep SQLite repository for candidate identities, application cycles, and lifecycle events.
   locked: false
@@ -235,9 +252,17 @@ classes:
       application_id: {type: str, required: true}
       terms: {type: 'dict[str, Any]', required: true}
       actor: {type: str, required: true}
+      source_key: {type: str, required: false, default: ''}
     returns: {type: OfferVersion}
     exceptions: [ValueError]
     side_effects: Creates an immutable numbered offer draft and audit event.
+  - name: find_offer_version_by_source
+    inputs:
+      application_id: {type: str, required: true}
+      source_key: {type: str, required: true}
+    returns: {type: 'OfferVersion | None'}
+    exceptions: []
+    side_effects: Reads one idempotently sourced offer version.
   - name: get_offer_version
     inputs: {version_id: {type: str, required: true}}
     returns: {type: OfferVersion}
@@ -292,6 +317,7 @@ classes:
       position: {type: str, required: true}
       score: {type: float, required: true}
       outcome: {type: str, required: true}
+      honorific: {type: str, required: false, default: 'Ms.'}
     returns: {type: HiringApplication}
     exceptions: [ValueError]
     side_effects: Creates or links a candidate, creates an application cycle and audit event, and links the interview history row.
@@ -303,6 +329,7 @@ classes:
       school: {type: str, required: true}
       position: {type: str, required: true}
       actor: {type: str, required: true}
+      honorific: {type: str, required: false, default: 'Ms.'}
     returns: {type: HiringApplication}
     exceptions: [ValueError]
     side_effects: Creates a new initial-interview application cycle and application-started audit event.
@@ -382,9 +409,19 @@ classes:
       application_id: {type: str, required: true}
       terms: {type: 'dict[str, Any]', required: true}
       actor: {type: str, required: true}
+      source_key: {type: str, required: false, default: ''}
     returns: {type: OfferVersion}
     exceptions: [ValueError]
     side_effects: Creates a numbered draft for an offer-ready or negotiated application.
+  - name: ensure_director_offer_submitted
+    inputs:
+      application_id: {type: str, required: true}
+      source_key: {type: str, required: true}
+      terms: {type: 'dict[str, Any]', required: true}
+      actor: {type: str, required: true}
+    returns: {type: OfferVersion}
+    exceptions: [ValueError, sqlite3.IntegrityError]
+    side_effects: Idempotently creates one director-sourced offer version, submits it for approval, and returns an existing version on retry.
   - name: submit_offer_for_approval
     inputs:
       application_id: {type: str, required: true}
@@ -452,7 +489,19 @@ classes:
       actor: {type: str, required: true}
     returns: {type: HiringApplication}
     exceptions: [ValueError]
-    side_effects: Accepts only the latest sent version and marks the application onboarding-ready without onboarding mutation.
+    side_effects: Accepts only the latest sent version, preserves accepted state before notification, and marks blocked acceptance email retryable.
+  - name: retry_accepted_notification
+    inputs:
+      application_id: {type: str, required: true}
+      version_id: {type: str, required: true}
+    returns: {type: bool}
+    exceptions: [ValueError]
+    side_effects: Retries the accepted-offer onboarding notification and clears Attention only after sent or permanent duplicate success.
+  - name: retry_pending_accepted_notifications
+    inputs: {}
+    returns: {type: int}
+    exceptions: []
+    side_effects: Retries all active accepted applications marked accepted_notification_pending.
   - name: archive_application
     inputs:
       application_id: {type: str, required: true}

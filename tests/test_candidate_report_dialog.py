@@ -7,12 +7,43 @@ from pathlib import Path
 import pytest
 
 from candidate_report import CandidateReportRepository
-from candidate_report_dialog import CandidateInterviewReportDialog
+from candidate_report_dialog import CandidateInterviewReportDialog, generate_basic_candidate_notes_document
 from staffing_service import StaffingService
 from staffing_store import StaffingStore
 
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+
+
+def test_basic_candidate_notes_exclude_live_intro_from_legacy_snapshot(tmp_path: Path) -> None:
+    from docx import Document
+
+    path = generate_basic_candidate_notes_document(
+        {
+            "candidate": {"candidate_name": "Jordan Lee"},
+            "questions": [
+                {
+                    "question_id": "intro_script",
+                    "type": "intro",
+                    "prompt": "Live interviewer script",
+                    "transcript": "Intro exchange",
+                },
+                {
+                    "question_id": "q1",
+                    "type": "trait",
+                    "prompt": "Tell me about reliability.",
+                    "transcript": "Candidate answer",
+                },
+            ],
+        },
+        tmp_path / "notes.docx",
+    )
+
+    rendered = "\n".join(paragraph.text for paragraph in Document(path).paragraphs)
+    assert "Live interviewer script" not in rendered
+    assert "Intro exchange" not in rendered
+    assert "Tell me about reliability." in rendered
+    assert "Candidate answer" in rendered
 
 
 def _repository(tmp_path: Path) -> CandidateReportRepository:

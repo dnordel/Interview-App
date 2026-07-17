@@ -98,7 +98,9 @@ def test_successful_staffing_transitions_emit_matching_events(store: StaffingSto
         "staffing.assignment.need_now",
         "staffing.assignment.coming",
         "staffing.assignment.filled",
+        "employment.notice.given",
         "staffing.assignment.replace",
+        "employment.notice.given",
         "staffing.assignment.not_needed",
     ]
     assert notifications.events[-1][1]["assignment_status"] == "dont_need_now"

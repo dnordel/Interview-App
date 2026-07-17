@@ -11,6 +11,7 @@ from hiring_pipeline import (
     HiringStage,
     HiringWorkflowService,
     calculate_offer_approval_dates,
+    normalize_candidate_phone,
 )
 
 
@@ -114,6 +115,10 @@ def test_offer_approval_dates_use_three_calendar_days_and_first_monday() -> None
     assert dates.start_date == date(2026, 8, 3)
 
 
+def test_normalize_candidate_phone_accepts_common_us_format() -> None:
+    assert normalize_candidate_phone("310.555.0199") == "(310) 555-0199"
+
+
 def test_offer_drafts_are_versioned_and_selected_version_is_submitted(tmp_path: Path) -> None:
     history_path = tmp_path / "interview_history.sqlite3"
     history = InterviewHistoryStore(history_path)
@@ -164,6 +169,30 @@ def test_offer_drafts_are_versioned_and_selected_version_is_submitted(tmp_path: 
         "draft",
         "pending_approval",
     ]
+
+
+def test_director_offer_submission_is_idempotent_by_source_key(tmp_path: Path) -> None:
+    service = HiringWorkflowService(HiringPipelineStore(tmp_path / "history.sqlite3"))
+    application = service.start_application(
+        legal_name="Maya Patel", email="maya@example.com", phone="(310) 555-0199",
+        school="Palmdale", position="Teacher", actor="Admin", honorific="Ms.",
+    )
+    service.finalize_initial_interview(
+        application.application_id, history_id="hist-director-offer", score=80, outcome="Hire", actor="Admin",
+    )
+    service.record_director_decision(application.application_id, decision="Hire", actor="Director")
+    terms = {"hourly_pay": "24.00", "weekly_hours": "40"}
+
+    first = service.ensure_director_offer_submitted(
+        application.application_id, source_key="director-interview:17:v1", terms=terms, actor="Director",
+    )
+    second = service.ensure_director_offer_submitted(
+        application.application_id, source_key="director-interview:17:v1", terms=terms, actor="Director",
+    )
+
+    assert first.version_id == second.version_id
+    assert first.status == "pending_approval"
+    assert len(service.store.list_offer_versions(application.application_id)) == 1
 
 
 def test_approved_offer_advances_only_after_pdf_delivery(tmp_path: Path) -> None:
@@ -424,6 +453,38 @@ def test_archive_hides_application_and_linked_profile_deletion_fails_closed(tmp_
         service.store.delete_candidate_profile(application.candidate_id)
 
 
+def test_offer_acceptance_is_preserved_when_notification_blocks_and_retries(tmp_path: Path) -> None:
+    store = HiringPipelineStore(tmp_path / "history.sqlite3")
+    attempts = iter(["blocked", "sent"])
+    service = HiringWorkflowService(
+        store,
+        notify_offer_accepted=lambda candidate, version, key: [
+            SimpleNamespace(status=next(attempts), error="attachment unavailable")
+        ],
+    )
+    application = service.start_application(
+        legal_name="Ari Lane", honorific="Ms.", email="ari@example.org", phone="",
+        school="Palmdale", position="Teacher", actor="Interviewer",
+    )
+    store.update_application_stage(application.application_id, HiringStage.OFFER_DRAFT)
+    offer = service.create_offer_draft(
+        application.application_id,
+        terms={"school": "Palmdale", "position": "Teacher"},
+        actor="HR",
+    )
+    store.set_offer_status(offer.version_id, "sent")
+    store.update_application_stage(application.application_id, HiringStage.OFFER_SENT)
+
+    accepted = service.accept_offer(application.application_id, offer.version_id, actor="Admin")
+
+    assert accepted.stage is HiringStage.ACCEPTED
+    assert store.get_application(application.application_id).attention_code == "accepted_notification_pending"
+    retried = service.retry_accepted_notification(application.application_id, offer.version_id)
+    assert retried is True
+    assert store.get_application(application.application_id).attention_code == ""
+    assert service.retry_pending_accepted_notifications() == 0
+
+
 def test_start_then_finalize_keeps_one_application_cycle(tmp_path: Path) -> None:
     history_path = tmp_path / "interview_history.sqlite3"
     service = HiringWorkflowService(HiringPipelineStore(history_path))
@@ -449,6 +510,22 @@ def test_start_then_finalize_keeps_one_application_cycle(tmp_path: Path) -> None
     assert completed.history_id == "hist-tara"
     assert completed.stage is HiringStage.DIRECTOR_REVIEW
     assert len(service.store.list_applications()) == 1
+
+
+def test_start_application_persists_candidate_honorific(tmp_path: Path) -> None:
+    service = HiringWorkflowService(HiringPipelineStore(tmp_path / "history.sqlite3"))
+
+    application = service.start_application(
+        legal_name="Tara Moss",
+        honorific="Mr.",
+        email="",
+        phone="",
+        school="Palmdale",
+        position="Preschool",
+        actor="Admin",
+    )
+
+    assert service.store.get_candidate(application.candidate_id).honorific == "Mr."
 
 
 def test_candidate_profiles_can_be_searched_and_contact_fields_updated(tmp_path: Path) -> None:

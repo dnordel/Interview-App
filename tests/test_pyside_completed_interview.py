@@ -111,7 +111,8 @@ def test_completed_overview_derives_dynamic_scores_and_review_items(tmp_path: Pa
         completion_state=CompletionState.COMPLETE,
     )
 
-    assert view.total_steps == len(workflow)
+    assert view.total_steps == len([item for item in workflow if item.kind != "intro"])
+    assert all(row.kind != "intro" for row in view.question_rows)
     assert view.weighted_total == scoring["weighted_total"]
     assert view.max_weighted_total == scoring["max_weighted_total"]
     assert view.percent_of_max == scoring["percent_of_max"]
@@ -467,7 +468,7 @@ def test_pyside_completed_detail_edit_scenario(tmp_path: Path) -> None:
     assert session.answers[trait.question_id]["notes"] == "Corrected evidence."
     assert session.answers[trait.question_id]["score"] == "5"
     assert "Needs follow-up" in session.answers[trait.question_id]["quick_actions"]
-    for _attempt in range(100):
+    for _attempt in range(400):
         if not window._pyside_finalize_running:
             break
         qt_test.QTest.qWait(25)

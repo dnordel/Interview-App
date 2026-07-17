@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import asdict, replace
+from dataclasses import asdict, dataclass, replace
 from datetime import date, datetime, timezone
 import json
+import re
+import shutil
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Sequence
+from uuid import uuid4
 
 from staffing_models import (
     DIRECTOR_INTERVIEW_DECISIONS,
@@ -24,7 +28,7 @@ from staffing_store import StaffingEditLock, StaffingStore
 
 if TYPE_CHECKING:
     from notification_service import NotificationService
-    from staffing_change_stage import StaffingChangeStage
+    from staffing_change_stage import StaffingChangeEvent, StaffingChangeStage
 
 
 STAFFING_NOTIFICATION_EVENTS = {
@@ -39,6 +43,39 @@ STAFFING_NOTIFICATION_EVENTS = {
 }
 
 
+@dataclass(frozen=True)
+class StaffingChangeConflict:
+    event_id: str
+    source_replica: str
+    school: str
+    operation: str
+    base_snapshot: dict[str, Any]
+    local_snapshot: dict[str, Any]
+    remote_payload: dict[str, Any]
+
+
+def staffing_change_conflict_message(conflict: StaffingChangeConflict) -> str:
+    actor = conflict.source_replica.rsplit(":", 1)[-1] or "another user"
+    labels = {
+        "assignment_id": "Position ID",
+        "source_assignment_id": "Source position ID",
+        "target_assignment_id": "Target position ID",
+        "person_name": "Person",
+    }
+    changes = [
+        f"{labels.get(key, key.replace('_', ' ').title())}: {value if value not in (None, '') else '(blank)'}"
+        for key, value in conflict.remote_payload.items()
+        if not key.startswith("_")
+    ]
+    detail = "\n".join(f"• {line}" for line in changes) or "• No field details provided"
+    return (
+        "Another user's staffing change conflicts with your own.\n\n"
+        f"User: {actor}\nSchool: {conflict.school}\nChange: {conflict.operation.replace('_', ' ').title()}\n\n"
+        f"Other user's changes:\n{detail}\n\nWould you like to accept these changes?\n"
+        "Choose No to keep your version."
+    )
+
+
 class StaffingService:
     def __init__(
         self,
@@ -48,14 +85,18 @@ class StaffingService:
         clock: Callable[[], str] | None = None,
         change_stage: StaffingChangeStage | None = None,
         replica: str = "",
+        publisher: str = "",
         school_scope: str = "",
+        conflict_resolver: Callable[[StaffingChangeConflict], bool] | None = None,
     ) -> None:
         self.store = store
         self.notification_service = notification_service
         self.clock = clock or _utc_now_iso
         self.change_stage = change_stage
         self.replica = str(replica or "").strip()
+        self.publisher = str(publisher or "").strip() or self.replica
         self.school_scope = str(school_scope or "").strip()
+        self.conflict_resolver = conflict_resolver
         if self.change_stage is not None and not self.replica:
             raise ValueError("Replica is required when staffing change staging is enabled.")
         self._replaying_pending_operations = False
@@ -121,12 +162,106 @@ class StaffingService:
         permit_status: str = "unknown",
         units: float | int | None = None,
     ) -> StaffingPerson:
-        return self._add_person_impl(
+        person = self._add_person_impl(
             name=name,
             role=role,
             permit_status=permit_status,
             units=units,
         )
+        self._publish_change(
+            "add_person",
+            {
+                "school": "*",
+                "name": person.name,
+                "role": person.role,
+                "permit_status": person.permit_status,
+                "units": person.units,
+                "_base_snapshot": {},
+            },
+        )
+        return person
+
+    def update_person(
+        self,
+        person_id: int,
+        *,
+        name: str,
+        role: str,
+        permit_status: str = "unknown",
+        units: float | int | None = None,
+    ) -> StaffingPerson:
+        clean_name = str(name or "").strip()
+        clean_role = str(role or "").strip()
+        clean_permit = str(permit_status or "unknown").strip() or "unknown"
+        if not clean_name:
+            raise ValueError("Person name is required.")
+        if not clean_role:
+            raise ValueError("Role is required.")
+        if clean_permit not in PERMIT_STATUSES:
+            raise ValueError("Unknown permit status.")
+        units_value = None if units is None else float(units)
+        current = next((item for item in self.store.list_people() if item.id == int(person_id)), None)
+        if current is None:
+            raise ValueError("Person not found.")
+        payload = {
+            "school": "*",
+            "person_id": int(person_id),
+            "_person_lookup_name": current.name,
+            "name": clean_name,
+            "role": clean_role,
+            "permit_status": clean_permit,
+            "units": units_value,
+        }
+        payload["_base_snapshot"] = self._change_snapshot(payload, assignment_id=None)
+        now = self.clock()
+        with self.store.write_connection("update_person") as conn:
+            person = self.store.person_context(conn, int(person_id))
+            duplicate = conn.execute(
+                "SELECT id FROM people WHERE normalized_name = ? AND active = 1 AND id <> ?",
+                (clean_name.casefold(), person.id),
+            ).fetchone()
+            if duplicate is not None:
+                raise ValueError("An active person with this name already exists.")
+            conn.execute(
+                """
+                UPDATE people
+                SET name = ?, normalized_name = ?, role = ?, permit_status = ?, units = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (clean_name, clean_name.casefold(), clean_role, clean_permit, units_value, now, person.id),
+            )
+            result = self.store.person_context(conn, person.id)
+        self._publish_change("update_person", payload)
+        return result
+
+    def deactivate_person(self, person_id: int) -> StaffingPerson:
+        current = next((item for item in self.store.list_people() if item.id == int(person_id)), None)
+        if current is None:
+            raise ValueError("Person not found.")
+        payload = {
+            "school": "*",
+            "person_id": int(person_id),
+            "_person_lookup_name": current.name,
+        }
+        payload["_base_snapshot"] = self._change_snapshot(payload, assignment_id=None)
+        now = self.clock()
+        with self.store.write_connection("deactivate_person") as conn:
+            person = self.store.person_context(conn, int(person_id))
+            if not person.active:
+                raise ValueError("Person is already inactive.")
+            assignment = conn.execute(
+                "SELECT id FROM assignments WHERE person_id = ? AND active = 1 LIMIT 1",
+                (person.id,),
+            ).fetchone()
+            if assignment is not None:
+                raise ValueError("Cannot deactivate employee while assigned to an active position.")
+            conn.execute(
+                "UPDATE people SET active = 0, updated_at = ? WHERE id = ?",
+                (now, person.id),
+            )
+            result = replace(person, active=False, updated_at=now)
+        self._publish_change("deactivate_person", payload)
+        return result
 
     def add_classroom(
         self,
@@ -145,7 +280,19 @@ class StaffingService:
             licensed_capacity=licensed_capacity,
         )
         with self.store.connect() as conn:
-            return self.store.classroom_context(conn, classroom_id)
+            classroom = self.store.classroom_context(conn, classroom_id)
+        self._publish_change(
+            "add_classroom",
+            {
+                "school": classroom.school,
+                "name": classroom.name,
+                "program": classroom.program,
+                "ratio_group": classroom.ratio_group,
+                "licensed_capacity": classroom.licensed_capacity,
+                "_base_snapshot": {},
+            },
+        )
+        return classroom
 
     def update_classroom(
         self,
@@ -158,7 +305,25 @@ class StaffingService:
         licensed_capacity: int | None = None,
         display_order: int = 0,
     ) -> StaffingClassroom:
-        return self.store.update_classroom(
+        current = next(
+            (item for item in self.store.list_classrooms() if item.id == int(classroom_id)),
+            None,
+        )
+        if current is None:
+            raise ValueError("Classroom not found.")
+        payload = {
+            "classroom_id": int(classroom_id),
+            "school": school,
+            "name": name,
+            "program": program,
+            "ratio_group": ratio_group,
+            "licensed_capacity": licensed_capacity,
+            "display_order": int(display_order),
+            "_classroom_lookup_school": current.school,
+            "_classroom_lookup_name": current.name,
+        }
+        payload["_base_snapshot"] = self._change_snapshot(payload, assignment_id=None)
+        result = self.store.update_classroom(
             classroom_id=int(classroom_id),
             school=school,
             name=name,
@@ -167,12 +332,26 @@ class StaffingService:
             licensed_capacity=licensed_capacity,
             display_order=int(display_order),
         )
+        self._publish_change("update_classroom", payload)
+        return result
 
     def deactivate_classroom(self, classroom_id: int) -> StaffingClassroom:
+        current = next((item for item in self.store.list_classrooms() if item.id == int(classroom_id)), None)
+        if current is None:
+            raise ValueError("Classroom not found.")
+        payload = {
+            "classroom_id": int(classroom_id),
+            "school": current.school,
+            "_classroom_lookup_school": current.school,
+            "_classroom_lookup_name": current.name,
+        }
+        payload["_base_snapshot"] = self._change_snapshot(payload, assignment_id=None)
         assignment_count = self.store.classroom_active_assignment_count(int(classroom_id))
         if assignment_count > 0:
             raise ValueError("Cannot deactivate classroom with active assignments.")
-        return self.store.deactivate_classroom(int(classroom_id))
+        result = self.store.deactivate_classroom(int(classroom_id))
+        self._publish_change("deactivate_classroom", payload)
+        return result
 
     def mark_coming(
         self,
@@ -311,11 +490,15 @@ class StaffingService:
         effective_date: str | None = None,
         units: float | int | None = None,
         documentation_received: bool = False,
+        attachment_path: str | Path | None = None,
         notes: str = "",
     ) -> StaffingTransitionResult:
         person = next((item for item in self.store.list_people() if item.id == int(person_id)), None)
         if person is None:
             raise ValueError("Person not found.")
+        managed_attachment_path: str | None = None
+        if attachment_path is not None and str(attachment_path).strip():
+            managed_attachment_path = self._store_permit_attachment(person.id, Path(attachment_path))
         return self._run_or_queue(
             "update_permit_status",
             {
@@ -325,6 +508,7 @@ class StaffingService:
                 "effective_date": effective_date,
                 "units": units,
                 "documentation_received": bool(documentation_received),
+                "permit_document_path": managed_attachment_path,
                 "notes": notes,
             },
             lambda: self._update_permit_status_impl(
@@ -333,10 +517,30 @@ class StaffingService:
                 effective_date=effective_date,
                 units=units,
                 documentation_received=documentation_received,
+                permit_document_path=managed_attachment_path,
                 notes=notes,
             ),
             assignment_id=0,
         )
+
+    def _store_permit_attachment(self, person_id: int, source: Path) -> str:
+        allowed_suffixes = {".pdf", ".png", ".jpg", ".jpeg", ".doc", ".docx"}
+        try:
+            resolved = source.expanduser().resolve(strict=True)
+        except OSError as exc:
+            raise ValueError("Permit attachment file does not exist.") from exc
+        if not resolved.is_file():
+            raise ValueError("Permit attachment must be a file.")
+        suffix = resolved.suffix.casefold()
+        if suffix not in allowed_suffixes:
+            raise ValueError("Permit attachment must be PDF, image, or Word document.")
+        if resolved.stat().st_size > 25 * 1024 * 1024:
+            raise ValueError("Permit attachment must be 25 MB or smaller.")
+        target_dir = (Path(self.store.path).resolve().parent / "staffing_attachments").resolve()
+        target_dir.mkdir(parents=True, exist_ok=True)
+        target = target_dir / f"person-{int(person_id)}-permit-{uuid4().hex}{suffix}"
+        shutil.copy2(resolved, target)
+        return str(target)
 
     def move_person(self, source_assignment_id: int, target_assignment_id: int, *, confirmed: bool = False) -> StaffingTransitionResult:
         return self._run_or_queue(
@@ -409,6 +613,7 @@ class StaffingService:
         interviewer_outcome: str,
         interview_date: str = "",
         candidate_email: str = "",
+        candidate_phone: str = "",
         referral_date: str = "",
         queue_on_lock: bool = False,
     ) -> StaffingDirectorCandidate:
@@ -430,6 +635,7 @@ class StaffingService:
             "interviewer_outcome": outcome,
             "interview_date": clean_interview_date,
             "candidate_email": str(candidate_email or ""),
+            "candidate_phone": str(candidate_phone or ""),
             "referral_date": clean_referral_date,
         }
         if queue_on_lock and not self._replaying_pending_operations:
@@ -453,6 +659,7 @@ class StaffingService:
                 interviewer_outcome=outcome,
                 interview_date=clean_interview_date,
                 candidate_email=payload["candidate_email"],
+                candidate_phone=payload["candidate_phone"],
                 referral_date=clean_referral_date,
                 updated_at=now,
             )
@@ -471,6 +678,7 @@ class StaffingService:
         interviewer_rating: float | int | str | None = None,
         interview_date: str = "",
         candidate_email: str = "",
+        candidate_phone: str = "",
         referral_date: str = "",
     ) -> StaffingDirectorCandidate | None:
         outcome = str(calculated_outcome or "").strip().lower().replace(" ", "_").replace("-", "_")
@@ -484,6 +692,7 @@ class StaffingService:
                 interviewer_outcome=outcome,
                 interview_date=interview_date,
                 candidate_email=candidate_email,
+                candidate_phone=candidate_phone,
                 referral_date=referral_date,
             )
         if outcome == "no_hire":
@@ -556,6 +765,8 @@ class StaffingService:
         proposed_shift_end: str = "",
         proposed_classroom: str = "",
         follow_up_needed: bool = False,
+        candidate_email: str = "",
+        candidate_phone: str = "",
     ) -> StaffingDirectorInterview:
         clean_date = _valid_date(completed_date, "Director interview date")
         clean_rating = _required_rating(rating, "Director rating")
@@ -576,6 +787,20 @@ class StaffingService:
                 raise ValueError("Proposed classroom is required for hire decisions.")
         with self.store.connect() as conn:
             referral = self.store.director_candidate_context(conn, int(referral_id))
+        email = str(candidate_email or referral.candidate_email or "").strip()
+        phone = str(candidate_phone or referral.candidate_phone or "").strip()
+        if clean_decision == "hire":
+            if not email:
+                raise ValueError("Candidate email is required for hire decisions.")
+            if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email):
+                raise ValueError("Candidate email is invalid.")
+            if phone:
+                digits = re.sub(r"\D", "", phone)
+                if len(digits) == 11 and digits.startswith("1"):
+                    digits = digits[1:]
+                if len(digits) != 10:
+                    raise ValueError("Candidate phone must contain 10 U.S. digits.")
+                phone = f"({digits[:3]}) {digits[3:6]}-{digits[6:]}"
         result = self.store.record_director_interview(
             int(referral_id),
             director_name=director_name,
@@ -586,6 +811,8 @@ class StaffingService:
             proposed_shift_start=shift_start,
             proposed_shift_end=shift_end,
             proposed_classroom=classroom,
+            candidate_email=email,
+            candidate_phone=phone,
             follow_up_needed=follow_up_needed,
             owner_approval_status="pending_owner_approval",
             now=self.clock(),
@@ -600,7 +827,8 @@ class StaffingService:
                 "interviewer_rating": referral.interviewer_rating,
                 "interviewer_outcome": referral.interviewer_outcome,
                 "interview_date": referral.interview_date,
-                "candidate_email": referral.candidate_email,
+                "candidate_email": email,
+                "candidate_phone": phone,
                 "referral_date": referral.referral_date,
                 "director_name": director_name,
                 "completed_date": clean_date,
@@ -799,6 +1027,8 @@ class StaffingService:
             )
             self._create_history(conn, assignment_id, now)
             updated = self.store.assignment_context(conn, assignment_id)
+        if assignment.person_id is not None:
+            self._emit_notice_event(assignment)
         self._emit_assignment_event("open_position", updated)
         return _result(updated)
 
@@ -1012,6 +1242,14 @@ class StaffingService:
             )
             self._create_history(conn, assignment_id, now)
             updated = self.store.assignment_context(conn, assignment_id)
+        self._emit_notice_event(
+            replace(
+                assignment,
+                notice_given=notice_given,
+                final_working_day=final_working_day,
+                updated_at=now,
+            )
+        )
         self._emit_assignment_event("open_position" if updated.status == "need_now" else "mark_replacing", updated)
         return _result(updated)
 
@@ -1057,6 +1295,8 @@ class StaffingService:
                 (now, assignment_id),
             )
             updated = self.store.assignment_context(conn, assignment_id)
+        if assignment.person_id is not None:
+            self._emit_notice_event(assignment)
         self._emit_assignment_event("mark_not_needed", updated)
         return _result(updated)
 
@@ -1079,6 +1319,7 @@ class StaffingService:
         effective_date: str | None = None,
         units: float | int | None = None,
         documentation_received: bool = False,
+        permit_document_path: str | None = None,
         notes: str = "",
     ) -> StaffingTransitionResult:
         now = self.clock()
@@ -1092,7 +1333,9 @@ class StaffingService:
                 """
                 UPDATE people
                 SET permit_status = ?, permit_effective_date = ?, units = ?,
-                    permit_documentation_received = ?, permit_notes = ?, updated_at = ?
+                    permit_documentation_received = ?,
+                    permit_document_path = COALESCE(?, permit_document_path),
+                    permit_notes = ?, updated_at = ?
                 WHERE id = ?
                 """,
                 (
@@ -1100,6 +1343,7 @@ class StaffingService:
                     effective_date_text,
                     units_value,
                     1 if documentation_received else 0,
+                    permit_document_path,
                     str(notes or "").strip(),
                     now,
                     person.id,
@@ -1270,6 +1514,19 @@ class StaffingService:
                     (new_person_id, now, assignment_id),
                 )
             updated = self.store.assignment_context(conn, assignment_id)
+        if (
+            status in {"need_now", "dont_need_now", "replace"}
+            and status != assignment.status
+            and assignment.person_id is not None
+        ):
+            self._emit_notice_event(assignment)
+        status_action = {
+            "need_now": "open_position",
+            "dont_need_now": "mark_not_needed",
+            "replace": "mark_replacing",
+        }.get(status or "")
+        if status_action and status != assignment.status:
+            self._emit_assignment_event(status_action, updated)
         if permit_status is not None and updated.person_id is not None:
             self._emit_person_event(updated.person_id, updated)
         return _result(updated)
@@ -1413,12 +1670,15 @@ class StaffingService:
         *,
         assignment_id: int | None = None,
     ) -> StaffingTransitionResult:
+        staged_payload = dict(payload)
+        if "_base_snapshot" not in staged_payload:
+            staged_payload["_base_snapshot"] = self._change_snapshot(staged_payload, assignment_id=assignment_id)
         if not self._replaying_pending_operations:
             self.flush_pending_operations()
         try:
             result = action()
         except StaffingEditLock:
-            self.store.enqueue_pending_operation(operation, payload)
+            self.store.enqueue_pending_operation(operation, staged_payload)
             queued_assignment_id = assignment_id
             if queued_assignment_id is None:
                 queued_assignment_id = int(payload.get("assignment_id", 0) or 0)
@@ -1428,7 +1688,7 @@ class StaffingService:
                 person_id=None,
                 updated_at=self.clock(),
             )
-        self._publish_change(operation, payload, assignment_id=result.assignment_id)
+        self._publish_change(operation, staged_payload, assignment_id=result.assignment_id)
         return result
 
     def replay_staged_changes(self) -> int:
@@ -1439,6 +1699,14 @@ class StaffingService:
         self._replaying_staged_changes = True
         try:
             for event in events:
+                conflict = self._conflict_for_event(event)
+                if conflict is not None:
+                    if self.conflict_resolver is None:
+                        break
+                    if not bool(self.conflict_resolver(conflict)):
+                        self.change_stage.acknowledge(event.id, replica=self.replica)
+                        applied += 1
+                        continue
                 try:
                     self._apply_pending_operation({"operation": event.operation, "payload": event.payload})
                 except StaffingEditLock:
@@ -1464,7 +1732,8 @@ class StaffingService:
             raise ValueError("Invalid staffing change payload.")
         school = self._school_for_change(payload, assignment_id=assignment_id)
         self.change_stage.publish(
-            source_replica=self.replica,
+            source_replica=self.publisher,
+            source_database=self.replica,
             school=school,
             operation=operation,
             payload=payload,
@@ -1494,11 +1763,167 @@ class StaffingService:
             return "*"
         raise ValueError("School is required to stage staffing change.")
 
+    def _conflict_for_event(self, event: StaffingChangeEvent) -> StaffingChangeConflict | None:
+        base = event.payload.get("_base_snapshot")
+        if not isinstance(base, dict) or not base:
+            return None
+        local = self._change_snapshot(event.payload, assignment_id=None)
+        if local == base:
+            return None
+        remote_payload = {key: value for key, value in event.payload.items() if not key.startswith("_")}
+        return StaffingChangeConflict(
+            event_id=event.id,
+            source_replica=event.source_replica,
+            school=event.school,
+            operation=event.operation,
+            base_snapshot=base,
+            local_snapshot=local,
+            remote_payload=remote_payload,
+        )
+
+    def _change_snapshot(self, payload: dict[str, Any], *, assignment_id: int | None) -> dict[str, Any]:
+        assignment_ids: list[int] = []
+        for value in (
+            assignment_id,
+            payload.get("assignment_id"),
+            payload.get("source_assignment_id"),
+            payload.get("target_assignment_id"),
+        ):
+            clean_id = int(value or 0)
+            if clean_id > 0 and clean_id not in assignment_ids:
+                assignment_ids.append(clean_id)
+        snapshot: dict[str, Any] = {}
+        classroom_id = int(payload.get("classroom_id", 0) or 0)
+        classroom_school = str(payload.get("_classroom_lookup_school", "") or "").strip()
+        classroom_name = str(payload.get("_classroom_lookup_name", "") or "").strip()
+        if classroom_id > 0 or (classroom_school and classroom_name):
+            classroom = next(
+                (
+                    item
+                    for item in self.store.list_classrooms()
+                    if (classroom_id > 0 and item.id == classroom_id)
+                    or (
+                        classroom_school
+                        and classroom_name
+                        and item.school.casefold() == classroom_school.casefold()
+                        and item.name.casefold() == classroom_name.casefold()
+                    )
+                ),
+                None,
+            )
+            snapshot[f"classroom:{classroom_school.casefold()}:{classroom_name.casefold()}"] = (
+                asdict(classroom) if classroom is not None else None
+            )
+        for item_id in assignment_ids:
+            try:
+                assignment = asdict(self.store.get_assignment(item_id))
+                assignment.pop("updated_at", None)
+                snapshot[f"assignment:{item_id}"] = assignment
+            except ValueError:
+                snapshot[f"assignment:{item_id}"] = None
+        person_name = str(
+            payload.get("_person_lookup_name", "") or payload.get("person_name", "") or ""
+        ).strip().casefold()
+        person_id = int(payload.get("person_id", 0) or 0)
+        if person_name or person_id > 0:
+            matches = [
+                item
+                for item in self.store.list_people()
+                if (person_name and item.name.strip().casefold() == person_name) or (not person_name and item.id == person_id)
+            ]
+            person = asdict(matches[0]) if len(matches) == 1 else None
+            if person is not None:
+                person.pop("updated_at", None)
+            snapshot[f"person:{person_name or person_id}"] = person
+        return snapshot
+
     def _apply_pending_operation(self, record: dict[str, Any]) -> None:
         operation = str(record.get("operation", ""))
         payload = record.get("payload", {})
         if not isinstance(payload, dict):
             raise ValueError("Invalid pending staffing operation.")
+        if operation == "add_person":
+            self._add_person_impl(
+                name=str(payload["name"]),
+                role=str(payload["role"]),
+                permit_status=str(payload.get("permit_status", "unknown")),
+                units=payload.get("units"),
+            )
+            return
+        if operation == "update_person":
+            lookup_name = str(payload.get("_person_lookup_name") or payload["name"])
+            person = next(
+                (item for item in self.store.list_people() if item.name.strip().casefold() == lookup_name.casefold()),
+                None,
+            )
+            if person is None:
+                raise ValueError("Person not found.")
+            self.update_person(
+                person.id,
+                name=str(payload["name"]),
+                role=str(payload["role"]),
+                permit_status=str(payload.get("permit_status", "unknown")),
+                units=payload.get("units"),
+            )
+            return
+        if operation == "deactivate_person":
+            lookup_name = str(payload.get("_person_lookup_name") or "")
+            person = next(
+                (item for item in self.store.list_people() if item.name.strip().casefold() == lookup_name.casefold()),
+                None,
+            )
+            if person is None:
+                raise ValueError("Person not found.")
+            self.deactivate_person(person.id)
+            return
+        if operation == "update_classroom":
+            lookup_school = str(payload.get("_classroom_lookup_school") or payload["school"])
+            lookup_name = str(payload.get("_classroom_lookup_name") or payload["name"])
+            classroom = next(
+                (
+                    item
+                    for item in self.store.list_classrooms()
+                    if item.name.strip().casefold() == lookup_name.strip().casefold()
+                ),
+                None,
+            )
+            if classroom is None:
+                raise ValueError("Classroom not found.")
+            self.store.update_classroom(
+                classroom_id=classroom.id,
+                school=str(payload["school"]),
+                name=str(payload["name"]),
+                program=str(payload.get("program", "")),
+                ratio_group=str(payload.get("ratio_group", "")),
+                licensed_capacity=payload.get("licensed_capacity"),
+                display_order=int(payload.get("display_order", 0)),
+            )
+            return
+        if operation == "add_classroom":
+            self.add_classroom(
+                school=str(payload["school"]),
+                name=str(payload["name"]),
+                program=str(payload.get("program", "")),
+                ratio_group=str(payload.get("ratio_group", "")),
+                licensed_capacity=payload.get("licensed_capacity"),
+            )
+            return
+        if operation == "deactivate_classroom":
+            lookup_school = str(payload.get("_classroom_lookup_school") or payload["school"])
+            lookup_name = str(payload.get("_classroom_lookup_name") or "")
+            classroom = next(
+                (
+                    item
+                    for item in self.store.list_classrooms()
+                    if item.school.casefold() == lookup_school.casefold()
+                    and item.name.casefold() == lookup_name.casefold()
+                ),
+                None,
+            )
+            if classroom is None:
+                raise ValueError("Classroom not found.")
+            self.deactivate_classroom(classroom.id)
+            return
         if operation == "add_position":
             expected_id = int(payload["source_assignment_id"])
             with self.store.connect() as conn:
@@ -1569,6 +1994,11 @@ class StaffingService:
                 effective_date=str(payload["effective_date"]) if payload.get("effective_date") is not None else None,
                 units=payload.get("units"),
                 documentation_received=bool(payload.get("documentation_received", False)),
+                permit_document_path=(
+                    None
+                    if payload.get("permit_document_path") is None
+                    else str(payload["permit_document_path"])
+                ),
                 notes=str(payload.get("notes", "")),
             )
         elif operation == "move_person":
@@ -1746,6 +2176,13 @@ class StaffingService:
         key = f"staffing:{assignment.id}:{event_type}:{assignment.updated_at}"
         self._emit(event_type, staffing_notification_payload(assignment, self._notification_person(assignment)), key)
 
+    def _emit_notice_event(self, assignment: StaffingAssignment) -> None:
+        if assignment.person_id is None or not assignment.person_name:
+            return
+        payload = staffing_notification_payload(assignment, self._notification_person(assignment))
+        key = f"staffing:{assignment.id}:notice:{assignment.person_id}:{payload.get('notice_given', '')}"
+        self._emit("employment.notice.given", payload, key)
+
     def _emit_person_event(self, person_id: int, assignment: StaffingAssignment) -> None:
         event_type = STAFFING_NOTIFICATION_EVENTS["update_permit_status"]
         key = f"staffing:person:{person_id}:{event_type}:{assignment.updated_at}"
@@ -1780,9 +2217,11 @@ def staffing_notification_payload(
         "position_name": assignment.position_name,
         "position": assignment.position_name,
         "position_type": assignment.position_type,
+        "position_title": assignment.position_name,
         "slot_group": assignment.slot_group,
         "assignment_status": assignment.status,
         "person_name": assignment.person_name,
+        "candidate_name": assignment.person_name,
         "start_date": assignment.start_date,
         "shift_start": assignment.shift_start,
         "shift_end": assignment.shift_end,
@@ -1802,6 +2241,7 @@ def staffing_notification_payload(
         payload.update(
             {
                 "person_name": person.name or payload["person_name"],
+                "candidate_name": person.name or payload["candidate_name"],
                 "permit_status": person.permit_status or payload["permit_status"],
                 "permit_effective_date": person.permit_effective_date,
                 "permit_documentation_received": "Yes" if person.permit_documentation_received else "No",

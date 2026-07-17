@@ -93,6 +93,7 @@ class CandidateProfile:
     preferred_name: str
     email: str
     phone: str
+    honorific: str = "Ms."
     archived_at: str = ""
 
 
@@ -194,6 +195,29 @@ class HiringOfferNotificationAdapter:
             )
         )
 
+    def offer_accepted(
+        self,
+        candidate: CandidateProfile,
+        version: OfferVersion,
+        idempotency_key: str,
+    ) -> list[Any]:
+        directory = self.notification_service.directory
+        school = str(version.terms.get("school", ""))
+        payload = {
+            "candidate": candidate.legal_name,
+            "candidate_name": candidate.legal_name,
+            "candidate_email": candidate.email,
+            "honorific": candidate.honorific,
+            "school": school,
+            "position": str(version.terms.get("position", "Teacher")),
+            "director_name": directory.director_names.get(school.casefold(), "Director"),
+            "onboarding_guide_path": directory.onboarding_guide_path,
+            "offer_version_id": version.version_id,
+        }
+        return list(
+            self.notification_service.emit_event("offer.accepted", payload, idempotency_key)
+        )
+
 
 def calculate_offer_approval_dates(approval_date: date) -> OfferApprovalDates:
     if not isinstance(approval_date, date):
@@ -206,6 +230,22 @@ def calculate_offer_approval_dates(approval_date: date) -> OfferApprovalDates:
         reply_by_date=reply_by,
         start_date=start_target + timedelta(days=days_until_monday),
     )
+
+
+def normalize_candidate_phone(value: str) -> str:
+    digits = re.sub(r"\D", "", str(value or ""))
+    if len(digits) == 11 and digits.startswith("1"):
+        digits = digits[1:]
+    if len(digits) != 10:
+        raise ValueError("Candidate phone must contain 10 U.S. digits.")
+    return f"({digits[:3]}) {digits[3:6]}-{digits[6:]}"
+
+
+def _validated_honorific(value: str) -> str:
+    clean = str(value or "").strip()
+    if clean not in {"Mr.", "Ms."}:
+        raise ValueError("Candidate honorific must be Mr. or Ms.")
+    return clean
 
 
 def _normalized_text(value: str) -> str:
@@ -453,11 +493,13 @@ class HiringPipelineStore:
         *,
         terms: dict[str, Any],
         actor: str,
+        source_key: str = "",
     ) -> OfferVersion:
         if not isinstance(terms, dict) or not terms:
             raise ValueError("Offer terms are required.")
         self.get_application(application_id)
         now = _now_utc()
+        clean_source_key = _normalized_text(source_key)
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("BEGIN IMMEDIATE")
             version_number = int(
@@ -470,14 +512,15 @@ class HiringPipelineStore:
             conn.execute(
                 """
                 INSERT INTO hiring_offer_versions (
-                    version_id, application_id, version_number, status, terms_json, created_at, created_by
-                ) VALUES (?, ?, ?, 'draft', ?, ?, ?)
+                    version_id, application_id, version_number, status, terms_json, source_key, created_at, created_by
+                ) VALUES (?, ?, ?, 'draft', ?, ?, ?, ?)
                 """,
                 (
                     version_id,
                     str(application_id).strip(),
                     version_number,
                     json.dumps(terms, ensure_ascii=False, sort_keys=True),
+                    clean_source_key,
                     now,
                     _normalized_text(actor),
                 ),
@@ -490,6 +533,18 @@ class HiringPipelineStore:
             payload={"version_id": version_id, "version_number": version_number},
         )
         return self.get_offer_version(version_id)
+
+    def find_offer_version_by_source(self, application_id: str, source_key: str) -> OfferVersion | None:
+        clean_source_key = _normalized_text(source_key)
+        if not clean_source_key:
+            return None
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            row = conn.execute(
+                "SELECT * FROM hiring_offer_versions WHERE application_id = ? AND source_key = ?",
+                (str(application_id).strip(), clean_source_key),
+            ).fetchone()
+        return None if row is None else self._offer_version_from_row(row)
 
     def get_offer_version(self, version_id: str) -> OfferVersion:
         with sqlite3.connect(self.db_path) as conn:
@@ -636,6 +691,7 @@ class HiringPipelineStore:
         position: str,
         score: float,
         outcome: str,
+        honorific: str = "Ms.",
     ) -> HiringApplication:
         clean_history_id = _normalized_text(history_id)
         clean_name = _normalized_text(legal_name)
@@ -660,6 +716,7 @@ class HiringPipelineStore:
                 school=clean_school,
                 email=_normalized_text(email),
                 phone=_normalized_text(phone),
+                honorific=_validated_honorific(honorific),
                 now=now,
             )
             cycle_number = int(
@@ -724,6 +781,7 @@ class HiringPipelineStore:
         school: str,
         position: str,
         actor: str,
+        honorific: str = "Ms.",
     ) -> HiringApplication:
         clean_name = _normalized_text(legal_name)
         clean_school = _normalized_text(school)
@@ -739,6 +797,7 @@ class HiringPipelineStore:
                 school=clean_school,
                 email=_normalized_text(email),
                 phone=_normalized_text(phone),
+                honorific=_validated_honorific(honorific),
                 now=now,
             )
             cycle_number = int(
@@ -837,6 +896,7 @@ class HiringPipelineStore:
         school: str,
         email: str,
         phone: str,
+        honorific: str,
         now: str,
     ) -> str:
         row = conn.execute(
@@ -852,15 +912,16 @@ class HiringPipelineStore:
         conn.execute(
             """
             INSERT INTO candidate_profiles (
-                candidate_id, legal_name, preferred_name, email, phone,
+                candidate_id, legal_name, preferred_name, email, phone, honorific,
                 normalized_name, normalized_school, created_at, updated_at
-            ) VALUES (?, ?, '', ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, '', ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 candidate_id,
                 legal_name,
                 email,
                 phone,
+                honorific,
                 _match_text(legal_name),
                 _match_text(school),
                 now,
@@ -880,6 +941,7 @@ class HiringPipelineStore:
                     preferred_name TEXT NOT NULL DEFAULT '',
                     email TEXT NOT NULL DEFAULT '',
                     phone TEXT NOT NULL DEFAULT '',
+                    honorific TEXT NOT NULL DEFAULT 'Ms.',
                     normalized_name TEXT NOT NULL,
                     normalized_school TEXT NOT NULL,
                     created_at TEXT NOT NULL,
@@ -920,6 +982,7 @@ class HiringPipelineStore:
                     version_number INTEGER NOT NULL,
                     status TEXT NOT NULL,
                     terms_json TEXT NOT NULL,
+                    source_key TEXT NOT NULL DEFAULT '',
                     docx_path TEXT NOT NULL DEFAULT '',
                     pdf_path TEXT NOT NULL DEFAULT '',
                     approval_date TEXT NOT NULL DEFAULT '',
@@ -945,6 +1008,20 @@ class HiringPipelineStore:
                     ON hiring_offer_versions(application_id, version_number);
                 """
             )
+            offer_columns = {
+                str(row[1]) for row in conn.execute("PRAGMA table_info(hiring_offer_versions)").fetchall()
+            }
+            if "source_key" not in offer_columns:
+                conn.execute("ALTER TABLE hiring_offer_versions ADD COLUMN source_key TEXT NOT NULL DEFAULT ''")
+            conn.execute(
+                "CREATE UNIQUE INDEX IF NOT EXISTS idx_hiring_offer_source "
+                "ON hiring_offer_versions(application_id, source_key) WHERE source_key <> ''"
+            )
+            candidate_columns = {
+                str(row[1]) for row in conn.execute("PRAGMA table_info(candidate_profiles)").fetchall()
+            }
+            if "honorific" not in candidate_columns:
+                conn.execute("ALTER TABLE candidate_profiles ADD COLUMN honorific TEXT NOT NULL DEFAULT 'Ms.'")
             for column, definition in (
                 ("docx_sha256", "TEXT NOT NULL DEFAULT ''"),
                 ("pdf_sha256", "TEXT NOT NULL DEFAULT ''"),
@@ -968,6 +1045,7 @@ class HiringPipelineStore:
             preferred_name=str(row["preferred_name"]),
             email=str(row["email"]),
             phone=str(row["phone"]),
+            honorific=str(row["honorific"] or "Ms."),
             archived_at=str(row["archived_at"]),
         )
 
@@ -1024,9 +1102,11 @@ class HiringWorkflowService:
         store: HiringPipelineStore,
         *,
         send_offer: Callable[[CandidateProfile, OfferVersion, Path, str], list[Any]] | None = None,
+        notify_offer_accepted: Callable[[CandidateProfile, OfferVersion, str], list[Any]] | None = None,
     ) -> None:
         self.store = store
         self._send_offer = send_offer
+        self._notify_offer_accepted = notify_offer_accepted
 
     def record_initial_interview(self, **values: Any) -> HiringApplication:
         return self.store.record_initial_interview(**values)
@@ -1062,6 +1142,7 @@ class HiringWorkflowService:
                         legal_name=str(row.get("candidate_name") or row.get("candidate") or row.get("name") or ""),
                         email=str(row.get("candidate_email") or row.get("email") or ""),
                         phone=str(row.get("candidate_phone") or row.get("phone") or ""),
+                        honorific=str(row.get("honorific") or row.get("candidate_honorific") or "Ms."),
                         school=str(row.get("school") or ""),
                         position=str(row.get("position") or row.get("role") or row.get("track") or ""),
                         score=score,
@@ -1175,11 +1256,42 @@ class HiringWorkflowService:
         *,
         terms: dict[str, Any],
         actor: str,
+        source_key: str = "",
     ) -> OfferVersion:
         application = self.store.get_application(application_id)
         if application.stage not in {HiringStage.OFFER_DRAFT, HiringStage.OFFER_SENT}:
             raise ValueError("Application is not ready for an offer draft.")
-        return self.store.create_offer_version(application_id, terms=terms, actor=actor)
+        return self.store.create_offer_version(
+            application_id, terms=terms, actor=actor, source_key=source_key
+        )
+
+    def ensure_director_offer_submitted(
+        self,
+        application_id: str,
+        *,
+        source_key: str,
+        terms: dict[str, Any],
+        actor: str,
+    ) -> OfferVersion:
+        clean_source_key = _normalized_text(source_key)
+        if not clean_source_key:
+            raise ValueError("Director offer source key is required.")
+        existing = self.store.find_offer_version_by_source(application_id, clean_source_key)
+        if existing is not None:
+            return existing
+        try:
+            draft = self.create_offer_draft(
+                application_id,
+                terms=terms,
+                actor=actor,
+                source_key=clean_source_key,
+            )
+        except sqlite3.IntegrityError:
+            existing = self.store.find_offer_version_by_source(application_id, clean_source_key)
+            if existing is not None:
+                return existing
+            raise
+        return self.submit_offer_for_approval(application_id, draft.version_id, actor=actor)
 
     def submit_offer_for_approval(
         self,
@@ -1293,7 +1405,54 @@ class HiringWorkflowService:
                 "onboarding_ready": True,
             },
         )
-        return accepted
+        if self._notify_offer_accepted is not None:
+            self.retry_accepted_notification(application_id, version_id)
+        return self.store.get_application(accepted.application_id)
+
+    def retry_accepted_notification(self, application_id: str, version_id: str) -> bool:
+        application = self.store.get_application(application_id)
+        version = self.store.get_offer_version(version_id)
+        if application.stage is not HiringStage.ACCEPTED or version.status != "accepted":
+            raise ValueError("Only an accepted offer notification may be retried.")
+        if self._notify_offer_accepted is None:
+            return False
+        candidate = self.store.get_candidate(application.candidate_id)
+        results = list(
+            self._notify_offer_accepted(
+                candidate, version, f"offer:{version.version_id}:accepted"
+            )
+        )
+        successful = bool(results) and all(
+            str(getattr(result, "status", "")) in {"sent", "duplicate"}
+            for result in results
+        )
+        self.store.update_application_stage(
+            application_id,
+            HiringStage.ACCEPTED,
+            attention_code="" if successful else "accepted_notification_pending",
+        )
+        return successful
+
+    def retry_pending_accepted_notifications(self) -> int:
+        completed = 0
+        for application in self.store.list_applications(include_archived=False):
+            if (
+                application.stage is not HiringStage.ACCEPTED
+                or application.attention_code != "accepted_notification_pending"
+            ):
+                continue
+            accepted_versions = [
+                version
+                for version in self.store.list_offer_versions(application.application_id)
+                if version.status == "accepted"
+            ]
+            if not accepted_versions:
+                continue
+            latest = max(accepted_versions, key=lambda version: version.version_number)
+            completed += int(
+                self.retry_accepted_notification(application.application_id, latest.version_id)
+            )
+        return completed
 
     def archive_application(self, application_id: str, *, actor: str) -> HiringApplication:
         archived = self.store.archive_application(application_id)

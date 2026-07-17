@@ -2,8 +2,8 @@ module:
   name: director_staffing_app
   language: python
   path: src/director_staffing_app.py
-  version: 1.4.1
-  description: Minimal PySide entrypoint for the director Staffing v2 dashboard that avoids full interview, audio, and transcription setup while supporting basic DOCX interview-note generation, preserving school-specific DB lock isolation, bidirectionally replaying staged staffing changes, applying the forced light Staffing v2 theme, and delaying pending director-referral queue/history backfill until after first paint.
+  version: 1.6.0
+  description: Minimal PySide entrypoint for the director Staffing v2 dashboard that avoids full interview, audio, and transcription setup while supporting basic DOCX interview-note generation, preserving school-specific DB lock isolation, bidirectionally replaying immutable per-user staged staffing changes with conflict prompts, polling the source-version stamp with restart banner, applying the forced light Staffing v2 theme, and delaying pending director-referral queue/history backfill until after first paint.
 functions:
 - name: parse_args
   description: Parse director staffing launch arguments.
@@ -305,7 +305,7 @@ functions:
   exceptions:
   - PySide6UnavailableError
   - OSError
-  side_effects: creates a QApplication/main window, applies Staffing v2's forced light Qt theme, initializes school-specific staffing storage/seed data, builds the shared role-aware StaffingDashboardHost and its StaffingDashboardV2Page, publishes successful changes to the shared staging journal, replays peer changes every five seconds into only the local DB, shows it maximized, schedules director referral queue/history sync after first paint, refreshes when sync imports rows, and starts the Qt event loop
+  side_effects: creates a QApplication/main window, applies Staffing v2's forced light Qt theme, initializes school-specific staffing storage/seed data, builds the shared Staffing v2 page beneath a source-update banner, polls config/source_version.txt every five seconds, can relaunch with the same command line, publishes successful changes to a per-user immutable outbox, replays peer changes every five seconds into only the local DB, prompts before same-entity applies, shows maximized, schedules referral sync, and starts the Qt event loop
 - name: _queue_dashboard_director_referral_dismissals
   description: Apply and queue director referral dismissal events emitted by the standalone Staffing v2 dashboard delete-selected action.
   locked: false
@@ -346,6 +346,7 @@ dependencies:
 - module: staffing_dashboard_v2
 - module: staffing_service
 - module: staffing_store
+- module: source_update_monitor
 - module: notification_service
 - module: staffing_referral_queue
 - module: PySide6

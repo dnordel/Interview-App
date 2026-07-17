@@ -2,9 +2,21 @@ module:
   name: notification_service
   language: python
   path: src/notification_service.py
-  version: 1.8.0
-  description: Generic checkpoint notification emitter that renders safe dynamic payload templates including staffing, offer, start, notice-given, last-working-day, school-code, reply-by-date, candidate-email, and attachment fields, resolves explicit-email and role recipients including Candidate, school Director, Hiring Manager, and Executive Director, supports event-triggered and queued date-offset rules, supports selected-rule test sends from Staffing v2 without enabling disabled rules, auto-sends via local notification SMTP settings or onboarding-compatible SMTP settings, attaches approved-offer PDFs, and records sanitized audit outcomes without importing DOCX/reporting modules.
+  version: 2.0.0
+  description: Notification delivery, editable school role directory and director names, separate Hiring Manager SMTP account with DPAPI secrets, required attachments, and clock-aware staffing date/permit scheduling.
 functions:
+- name: protect_secret
+  locked: false
+  inputs: {value: {type: str, required: true}}
+  returns: {type: str}
+  exceptions: [OSError]
+  side_effects: Encrypts a non-empty secret with Windows DPAPI scoped to the current user.
+- name: unprotect_secret
+  locked: false
+  inputs: {value: {type: str, required: true}}
+  returns: {type: str}
+  exceptions: []
+  side_effects: Decrypts a DPAPI secret for the current Windows user and fails closed to an empty value.
 - name: _send_email_message
   locked: false
   inputs:
@@ -120,7 +132,21 @@ functions:
       default: EMAIL_ACCOUNT_SETTINGS_PATH
   returns:
     type: None
-  side_effects: Writes shared email account JSON settings without logging credentials.
+  side_effects: Writes SMTP settings with DPAPI-encrypted remembered password, or retains an unremembered password only in process memory.
+- name: load_notification_directory
+  locked: false
+  inputs:
+    path: {type: Path, required: false, default: NOTIFICATION_DIRECTORY_PATH}
+  returns: {type: NotificationDirectory}
+  side_effects: Reads editable notification recipients, director names, and onboarding-guide path.
+- name: save_notification_directory
+  locked: false
+  inputs:
+    directory: {type: NotificationDirectory, required: true}
+    path: {type: Path, required: false, default: NOTIFICATION_DIRECTORY_PATH}
+  returns: {type: None}
+  exceptions: [ValueError]
+  side_effects: Validates recipient emails and writes the notification directory JSON.
 - name: notification_service_from_email_account_settings
   locked: false
   inputs:
@@ -136,6 +162,34 @@ functions:
     type: NotificationService
   side_effects: Reads shared email settings and opens notification SQLite database.
 classes:
+- name: NotificationDirectory
+  description: Editable recipient addresses, per-school director names, office managers, and onboarding attachment setting.
+  locked: false
+  methods:
+  - name: defaults
+    inputs: {}
+    returns: {type: NotificationDirectory}
+    exceptions: []
+    side_effects: none
+  - name: from_dict
+    inputs: {payload: {type: 'dict[str, Any] | None', required: true}}
+    returns: {type: NotificationDirectory}
+    exceptions: []
+    side_effects: none
+  - name: to_dict
+    inputs: {}
+    returns: {type: 'dict[str, Any]'}
+    exceptions: []
+    side_effects: none
+- name: StaffingNotificationScheduler
+  description: Local-clock scanner for exact start/last dates and overdue 50/90-day permit events with rollout filtering.
+  locked: false
+  methods:
+  - name: run
+    inputs: {}
+    returns: {type: 'list[NotificationSendResult]'}
+    exceptions: []
+    side_effects: Rechecks current staffing and permit state and emits idempotent due events.
 - name: EmailSettings
   description: Lightweight SMTP settings value used by notification_service without importing onboarding or DOCX/reporting modules.
   locked: false
@@ -160,6 +214,11 @@ classes:
   description: Emits exact-match notification events for active rules with idempotent send audit and runs due date-offset schedules.
   locked: false
   methods:
+  - name: activate_ready_system_rules
+    inputs: {}
+    returns: {type: int}
+    exceptions: []
+    side_effects: Activates system defaults only when sender, recipients, and configured required attachments validate, preserving user disablement.
   - name: emit_event
     inputs:
       event_type:
@@ -232,3 +291,4 @@ dependencies:
 - onboarding_operations
 - platform_services
 - email_security
+- staffing_service

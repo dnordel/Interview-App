@@ -693,6 +693,8 @@ class DocxExporter:
         for item in flow_transcript:
             if not isinstance(item, dict):
                 continue
+            if str(item.get("type") or "").strip().lower() == "intro":
+                continue
             tx = str(item.get("candidate_transcript") or "").strip()
             if tx:
                 transcript_segments.append(tx)
@@ -940,6 +942,8 @@ class DocxExporter:
             seen_scored_question = False
             for item in payload.get("flow_transcript", []) or []:
                 if not isinstance(item, dict):
+                    continue
+                if str(item.get("type") or "").strip().lower() == "intro":
                     continue
                 prompt = str(item.get("question") or item.get("prompt") or item.get("title") or "").lower()
                 answer = answer_for_flow_item(item, seen_scored_question=seen_scored_question)
@@ -1347,7 +1351,13 @@ def build_integration_payload(
 ) -> dict[str, Any]:
     candidate = payload.get("candidate", {}) or {}
     rows = scoring.get("rows", []) or []
-    custom_answers = payload.get("custom_answers", []) or []
+    custom_answers = [
+        item
+        for item in payload.get("custom_answers", []) or []
+        if isinstance(item, dict)
+        and str(item.get("type") or "").strip().lower() != "intro"
+        and str(item.get("id") or "").strip().lower() != "intro_script"
+    ]
     flow_transcript = payload.get("flow_transcript", []) or []
 
     trait_notes = [_trait_note(row) for row in rows]
@@ -1452,6 +1462,8 @@ def _trait_note(row: dict[str, Any]) -> dict[str, Any]:
 def _flow_slices(flow_transcript: list[dict[str, Any]]) -> list[dict[str, Any]]:
     slices: list[dict[str, Any]] = []
     for item in flow_transcript:
+        if str(item.get("type") or "").strip().lower() == "intro":
+            continue
         candidate_tx = str(item.get("candidate_transcript", "")).strip()
         if not candidate_tx:
             continue
@@ -1479,6 +1491,51 @@ POSITION_OPTIONS = [
 
 
 @dataclass(frozen=True)
+class OfferSchedule:
+    gross_daily_hours: Decimal
+    net_daily_hours: Decimal
+    weekly_hours: Decimal
+    employment_type: str
+
+
+def derive_offer_schedule(start_time_12h: str, end_time_12h: str) -> OfferSchedule:
+    start = parse_clock_12h(start_time_12h)
+    end = parse_clock_12h(end_time_12h)
+    elapsed_minutes = Decimal(int((end - start).total_seconds() // 60))
+    if elapsed_minutes <= 0:
+        raise ValueError("Shift end must be later than shift start on the same day.")
+    gross = elapsed_minutes / Decimal(60)
+    net = gross if gross <= Decimal(6) else gross - Decimal(1)
+    return OfferSchedule(
+        gross_daily_hours=gross,
+        net_daily_hours=net,
+        weekly_hours=net * Decimal(5),
+        employment_type="part_time" if gross < Decimal(6) else "full_time",
+    )
+
+
+def parse_requested_hourly_pay(value: str) -> Decimal | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    dollar_values = re.findall(r"\$\s*(\d{1,3}(?:\.\d{1,2})?)", text)
+    candidates = dollar_values
+    if not candidates:
+        candidates = re.findall(
+            r"(?<!\d)(\d{1,3}(?:\.\d{1,2})?)\s*(?:/\s*(?:hour|hr)|per\s+(?:hour|hr)|hourly)\b",
+            text,
+            flags=re.IGNORECASE,
+        )
+    if not candidates and re.fullmatch(r"\s*\d{1,3}(?:\.\d{1,2})?\s*", text):
+        candidates = [text.strip()]
+    values = {Decimal(item).quantize(Decimal("0.01")) for item in candidates}
+    if len(values) != 1:
+        return None
+    result = values.pop()
+    return result if Decimal("0") < result <= Decimal("500") else None
+
+
+@dataclass(frozen=True)
 class OfferInput:
     first_name: str
     last_name: str
@@ -1488,17 +1545,17 @@ class OfferInput:
     start_time_12h: str
     end_time_12h: str
     hourly_pay: float
-    hours: int
+    hours: Decimal | float | int
     created_on: date
     title: str = ""
 
     @property
-    def pto(self) -> int:
-        return int(2 * self.hours)
+    def pto(self) -> Decimal:
+        return Decimal(str(self.hours)) * Decimal(2)
 
     @property
-    def pto2(self) -> int:
-        return int(4 * self.hours)
+    def pto2(self) -> Decimal:
+        return Decimal(str(self.hours)) * Decimal(4)
 
     @property
     def offer_deadline(self) -> date:
@@ -1541,6 +1598,9 @@ class OfferLetterService:
 
     @classmethod
     def build_replacements(cls, data: OfferInput) -> dict[str, str]:
+        def display_number(value: Decimal | float | int) -> str:
+            return format(Decimal(str(value)).normalize(), "f")
+
         return {
             "[OfferDate]": f"{data.created_on.strftime('%B')} {data.created_on.day}, {data.created_on.year}",
             "[Title]": data.title.strip(),
@@ -1552,9 +1612,9 @@ class OfferLetterService:
             "[StartTime]": data.start_time_12h.strip(),
             "[EndTime]": data.end_time_12h.strip(),
             "[HourlyPay]": f"{data.hourly_pay:.2f}",
-            "[Hours]": str(data.hours),
-            "[PTO]": str(data.pto),
-            "[PTO2]": str(data.pto2),
+            "[Hours]": display_number(data.hours),
+            "[PTO]": display_number(data.pto),
+            "[PTO2]": display_number(data.pto2),
             "[OfferDeadline]": data.offer_deadline.strftime("%m/%d/%Y"),
         }
 

@@ -130,7 +130,7 @@ def build_completed_interview_view_model(
         candidate_name=candidate_name,
         school=school,
         position=position,
-        total_steps=len(workflow),
+        total_steps=len(question_rows),
         completion_state=completion_state,
         warning=warning,
         can_finish=completion_state is CompletionState.COMPLETE and not missing_rating,

@@ -2,37 +2,38 @@ module:
   name: staffing_change_stage
   language: python
   path: src/staffing_change_stage.py
-  version: 1.0.0
-  description: Append-only SQLite staging journal for bidirectional staffing changes between lock-isolated admin and school director databases, with per-replica acknowledgements.
+  version: 2.1.0
+  description: Dropbox-safe immutable JSON event outboxes, causal predecessor chains, and delivery receipts for bidirectional staffing changes between lock-isolated admin and school director databases.
 classes:
 - name: StaffingChangeEvent
-  description: Immutable staged staffing operation with source replica, school scope, JSON payload, and creation timestamp.
+  description: Immutable staged staffing operation with per-user publisher identity, logical source database, school scope, JSON payload, creation timestamp, and optional predecessor event ID.
   locked: false
 - name: StaffingChangeStage
-  description: Publishes staffing operations once and exposes ordered, independently acknowledged delivery to each peer database replica.
+  description: Publishes staffing operations into separate per-user outbox directories and exposes ordered, independently acknowledged delivery to each peer database replica, including Dropbox conflicted-copy filenames.
   locked: false
   methods:
   - name: publish
     inputs:
       source_replica: {type: str, required: true}
+      source_database: {type: str, required: false, default: ''}
       school: {type: str, required: true}
       operation: {type: str, required: true}
       payload: {type: 'dict[str, Any]', required: true}
     returns: {type: str}
-    exceptions: [ValueError, OSError, sqlite3.Error]
-    side_effects: Initializes staging schema when needed and appends one JSON staffing event without opening either staffing database.
+    exceptions: [ValueError, OSError]
+    side_effects: Reads the publisher's prior immutable events to link the newest predecessor, then atomically writes one immutable UUID-named JSON event into the publisher's sanitized outbox directory without opening either staffing database.
   - name: pending_for
     inputs:
       replica: {type: str, required: true}
       school: {type: str, required: false, default: ''}
     returns: {type: 'list[StaffingChangeEvent]'}
-    exceptions: [ValueError, OSError, sqlite3.Error, JSONDecodeError]
-    side_effects: Initializes staging schema when needed and reads ordered events excluding the source replica and events already acknowledged by the target replica.
+    exceptions: [ValueError, OSError]
+    side_effects: Recursively reads and validates event and receipt artifacts, deduplicates identical Dropbox conflict copies by event ID, fails closed on differing copies or causal cycles, holds descendants whose predecessor has not arrived, and returns causally ordered events excluding the logical source database and events already acknowledged by the target replica.
   - name: acknowledge
     inputs:
       event_id: {type: str, required: true}
       replica: {type: str, required: true}
     returns: {type: void}
-    exceptions: [ValueError, OSError, sqlite3.Error]
-    side_effects: Writes one idempotent per-replica delivery receipt after successful local replay.
+    exceptions: [ValueError, OSError]
+    side_effects: Atomically writes one immutable UUID-named per-replica delivery receipt after successful local replay or an explicit keep-local conflict decision.
 dependencies: []

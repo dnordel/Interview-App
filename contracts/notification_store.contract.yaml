@@ -2,8 +2,8 @@ module:
   name: notification_store
   language: python
   path: src/notification_store.py
-  version: 1.6.0
-  description: SQLite-backed notification rule, explicit-email/role recipient including candidate and leadership roles, pending date-offset schedule, and sanitized send-audit persistence.
+  version: 1.7.0
+  description: SQLite-backed system/editable notification rules, role recipients, persistent rollout metadata, pending schedules, and sanitized successful-send dedupe audit.
 functions:
 - name: utc_now_iso
   description: Return current UTC timestamp as ISO text without microseconds.
@@ -176,6 +176,18 @@ classes:
     returns:
       type: None
     side_effects: Updates one notification_schedule row status and updated timestamp.
+  - name: get_or_create_rollout_date
+    inputs:
+      today: {type: date, required: true}
+    returns: {type: date}
+    exceptions: [TypeError, ValueError]
+    side_effects: Creates the permanent system notification rollout date once, then reads it on later launches to prevent retroactive sends.
+  - name: activate_system_rule
+    inputs:
+      rule_id: {type: int, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Activates a validated system rule without clearing intentional user-disable metadata.
 data_structures:
 - name: STAFFING_NOTIFICATION_ROLE_RECIPIENTS
   type: list[NotificationRecipient]

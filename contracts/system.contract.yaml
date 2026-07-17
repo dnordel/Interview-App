@@ -53,6 +53,7 @@ modules:
     - notification_models
     - notification_store
     - notification_templates
+    - staffing_service
     - onboarding_operations
     - platform_services
   notification_store:
@@ -114,6 +115,7 @@ modules:
     - staffing_service
     - staffing_store
     - notification_service
+    - source_update_monitor
     - PySide6
   setup_director_staffing:
     path: setup_director_staffing.ps1
@@ -131,6 +133,16 @@ modules:
   staffing_change_stage:
     path: src/staffing_change_stage.py
     depends_on: []
+  source_update_monitor:
+    path: src/source_update_monitor.py
+    depends_on:
+    - config_source_version_txt
+    - PySide6
+  update_source_version:
+    path: tools/update_source_version.py
+    depends_on:
+    - config_source_version_txt
+    - source_update_monitor
   staffing_models:
     path: src/staffing_models.py
     depends_on: []
@@ -172,6 +184,7 @@ modules:
     - staffing_change_stage
     - staffing_service
     - staffing_store
+    - source_update_monitor
     - ui_mode_switch
     - PySide6
   candidate_report:
@@ -238,6 +251,9 @@ modules:
   config_staffing_seed_json:
     path: config/staffing_seed.json
     depends_on: []
+  config_source_version_txt:
+    path: config/source_version.txt
+    depends_on: []
   interview_history_json:
     path: user_artifacts/interview_history.json
     depends_on: []
@@ -265,7 +281,8 @@ modules:
     depends_on: []
   full_pytest_runner:
     path: tools/full_pytest_runner.py
-    depends_on: []
+    depends_on:
+    - update_source_version
   pytest_duration_catalog:
     path: tools/pytest_duration_catalog.py
     depends_on: []

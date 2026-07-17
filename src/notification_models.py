@@ -32,6 +32,10 @@ class NotificationRule:
     trigger_timing: str = "event"
     date_field: str = ""
     offset_days: int = 0
+    sender_account: str = "default"
+    required_attachment_key: str = ""
+    system_rule: bool = False
+    user_disabled: bool = False
     id: int | None = None
     created_at: str = ""
     updated_at: str = ""

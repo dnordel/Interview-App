@@ -2,9 +2,16 @@ module:
   name: staffing_service
   language: python
   path: src/staffing_service.py
-  version: 0.26.0
-  description: Staffing assignment state machine with optional bidirectional cross-database change staging, service-backed classroom, position, person creation, director interview referral/completion tracking with optional pending-queue fallback, mistaken-position deletion, queued Dropbox edit handling, staffing dashboard metrics with pending-operation projection and workbook display metadata, confirmed person moves, editable assignment details, person permit metadata updates, and post-commit notification emission for successful transactions.
+  version: 0.31.0
+  description: Staffing assignment state machine with optional bidirectional cross-database immutable change staging and causal conflict resolution, service-backed classroom, position, person creation/edit/deactivation, managed permit attachment storage, director interview referral/completion tracking with optional pending-queue fallback, mistaken-position deletion, queued Dropbox edit handling, staffing dashboard metrics with pending-operation projection and workbook display metadata, confirmed person moves, editable assignment details, person permit metadata updates, and post-commit notification emission for successful transactions.
 functions:
+- name: staffing_change_conflict_message
+  locked: false
+  inputs:
+    conflict: {type: StaffingChangeConflict, required: true}
+  returns: {type: str}
+  exceptions: []
+  side_effects: none
 - name: staffing_notification_payload
   locked: false
   inputs:
@@ -22,7 +29,7 @@ classes:
     inputs: {}
     returns: {type: int}
     exceptions: [OSError, sqlite3.Error, JSONDecodeError]
-    side_effects: Replays ordered peer events into only this service's local staffing DB, acknowledges each successful event independently, and stops fail-closed at a lock or invalid/conflicting event.
+    side_effects: Replays ordered peer events into only this service's local staffing DB; compares each event's causal base snapshot to current local state; asks the configured resolver before a conflicting apply; acknowledges accepted, applied, or explicitly rejected events independently; and stops fail-closed at a lock, invalid event, or unresolved conflict.
   - name: open_position
     inputs:
       assignment_id:
@@ -102,7 +109,23 @@ classes:
     exceptions:
     - ValueError
     - StaffingEditLock
-    side_effects: Creates or updates one active person row through StaffingStore.ensure_person under the staffing write lock without mutating assignments.
+    side_effects: Creates or updates one active person row through StaffingStore.ensure_person under the staffing write lock without mutating assignments, then publishes the stable-name operation to every peer DB when cross-database staging is configured.
+  - name: update_person
+    inputs:
+      person_id: {type: int, required: true}
+      name: {type: str, required: true}
+      role: {type: str, required: true}
+      permit_status: {type: str, required: false, default: unknown}
+      units: {type: 'float | int | None', required: false, default: null}
+    returns: {type: StaffingPerson}
+    exceptions: [ValueError, StaffingEditLock]
+    side_effects: Validates and updates one person name, normalized name, role, permit status, and units without changing assignments; rejects duplicate active names; publishes the stable old-name operation and causal base snapshot when cross-database staging is configured.
+  - name: deactivate_person
+    inputs:
+      person_id: {type: int, required: true}
+    returns: {type: StaffingPerson}
+    exceptions: [ValueError, StaffingEditLock]
+    side_effects: Soft-deactivates one unassigned active person while failing closed when an active assignment references that person, then publishes the stable-name operation and causal base snapshot when cross-database staging is configured.
   - name: add_classroom
     inputs:
       school:
@@ -128,7 +151,7 @@ classes:
     exceptions:
     - ValueError
     - StaffingEditLock
-    side_effects: Creates or updates one active school/classroom row through StaffingStore without mutating assignments or assignment_history.
+    side_effects: Creates or updates one active school/classroom row through StaffingStore without mutating assignments or assignment_history, then publishes the stable school/name operation when cross-database staging is configured.
   - name: update_classroom
     inputs:
       classroom_id:
@@ -161,7 +184,7 @@ classes:
     exceptions:
     - ValueError
     - StaffingEditLock
-    side_effects: Updates one classroom record through StaffingStore without mutating assignments or assignment_history.
+    side_effects: Updates one classroom record through StaffingStore without mutating assignments or assignment_history, then publishes the stable old school/name operation and causal base snapshot when cross-database staging is configured.
   - name: deactivate_classroom
     inputs:
       classroom_id:
@@ -172,7 +195,7 @@ classes:
     exceptions:
     - ValueError
     - StaffingEditLock
-    side_effects: Fails closed when active assignments exist; otherwise soft-deactivates one classroom through StaffingStore without deleting assignments or assignment_history.
+    side_effects: Fails closed when active assignments exist; otherwise soft-deactivates one classroom through StaffingStore without deleting assignments or assignment_history, then publishes the stable school/name operation and causal base snapshot when cross-database staging is configured.
   - name: mark_coming
     inputs:
       assignment_id:
@@ -321,6 +344,10 @@ classes:
         type: bool
         required: false
         default: false
+      attachment_path:
+        type: str | Path | None
+        required: false
+        default: null
       notes:
         type: str
         required: false
@@ -329,7 +356,7 @@ classes:
       type: StaffingTransitionResult
     exceptions:
     - ValueError
-    side_effects: Updates person permit status, effective date, units, documentation flag, and permit notes, then may emit staffing.permit.updated notification; if DB is locked, saves operation to pending queue and returns queued status.
+    side_effects: Validates and copies an optional PDF/image/Word attachment up to 25 MB into managed staffing_attachments storage, persists its managed path while retaining an existing path when no replacement is selected, updates person permit status/effective date/units/documentation/notes, then may emit staffing.permit.updated notification; if DB is locked, saves the managed-path operation to pending queue and returns queued status.
   - name: move_person
     inputs:
       source_assignment_id:
@@ -399,7 +426,7 @@ classes:
       type: StaffingTransitionResult
     exceptions:
     - ValueError
-    side_effects: Updates assignment classroom/program, position name/type/status/start date/shift/notes fields, assigned or newly named person details, and assigned person's permit status when present; when status is changed to need_now, clears assigned person, start date, and current filled date and ensures an active hiring-history cycle exists; may emit staffing.permit.updated notification; if DB is locked, saves operation to pending queue and returns queued status; publishes successful full-field changes when cross-database staging is configured.
+    side_effects: Updates assignment and person fields; transitions of an assigned employee to need_now, dont_need_now, or replace emit notice using pre-transition employee data, and need_now also emits the position-needed event; clears assignment data when needed; may emit permit updates and queue locked writes.
   - name: staffing_metrics
     inputs:
       today:
@@ -443,6 +470,10 @@ classes:
         type: str
         required: false
         default: ''
+      candidate_phone:
+        type: str
+        required: false
+        default: ''
       referral_date:
         type: str
         required: false
@@ -478,6 +509,7 @@ classes:
       interviewer_rating: {type: 'float | int | str | None', required: false, default: null}
       interview_date: {type: str, required: false, default: ''}
       candidate_email: {type: str, required: false, default: ''}
+      candidate_phone: {type: str, required: false, default: ''}
       referral_date: {type: str, required: false, default: ''}
     returns: {type: 'StaffingDirectorCandidate | None'}
   - name: list_completed_director_interviews
@@ -580,12 +612,14 @@ classes:
         type: bool
         required: false
         default: false
+      candidate_email: {type: str, required: false, default: ''}
+      candidate_phone: {type: str, required: false, default: ''}
     returns:
       type: StaffingDirectorInterview
     exceptions:
     - ValueError
     - StaffingEditLock
-    side_effects: Records a director interview with date, 1-10 rating, hire/no-hire decision, required notes, and hire-only proposed shift/classroom while leaving assignments and classroom status unchanged; publishes the completion with stable referral history data when cross-database staging is configured.
+    side_effects: Records a director interview with date, 1-10 rating, hire/no-hire decision, required notes, hire-only proposed shift/classroom, required valid email, and optional normalized phone while leaving assignments and classroom status unchanged; publishes completion with stable referral history data when cross-database staging is configured.
   - name: reopen_director_interview
     inputs:
       interview_id: {type: int, required: true}
@@ -634,6 +668,9 @@ classes:
     exceptions: []
     side_effects: Replays queued staffing operations when the DB edit lock is available; leaves remaining records queued if the DB is still locked.
 data_structures:
+- name: StaffingChangeConflict
+  type: dataclass
+  description: Causal same-entity conflict containing event/source metadata plus base, current-local, and remote change payloads for a user decision.
 - name: STAFFING_NOTIFICATION_EVENTS
   type: dict[str, str]
 dependencies:

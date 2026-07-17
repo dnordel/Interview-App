@@ -156,6 +156,8 @@ def build_candidate_report_snapshot(
     for index, item in enumerate(flow):
         if not isinstance(item, dict):
             continue
+        if str(item.get("type") or "").strip().lower() == "intro":
+            continue
         question_id = str(item.get("id") or item.get("question_id") or index).strip()
         score_row = scores_by_id.get(question_id, {})
         transcript = str(item.get("candidate_transcript") or "")

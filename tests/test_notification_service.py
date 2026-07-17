@@ -1,19 +1,56 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from datetime import date, datetime
 from pathlib import Path
+import json
+import sys
+from types import SimpleNamespace
 
 import pytest
 
 from notification_models import NotificationRecipient, NotificationRule
 import notification_service
-from notification_service import NotificationService, resolve_notification_recipients
+from notification_service import (
+    NotificationDirectory,
+    NotificationService,
+    StaffingNotificationScheduler,
+    resolve_notification_recipients,
+)
 from notification_store import NotificationStore
+from staffing_store import StaffingStore
 from onboarding_operations import EmailSettings
 
 
 def _settings() -> EmailSettings:
     return EmailSettings(sender_email="sender@example.org", smtp_host="smtp.example.org")
+
+
+@pytest.mark.skipif(not sys.platform.startswith("win"), reason="Windows DPAPI only")
+def test_email_settings_dpapi_round_trip_and_session_only_mode(tmp_path: Path) -> None:
+    path = tmp_path / "hiring-manager-email.json"
+    remembered = notification_service.EmailSettings(
+        sender_email="davidn@launchpadpreschool.com",
+        smtp_host="smtp.example.org",
+        username="davidn@launchpadpreschool.com",
+        password="top-secret",
+        smtp_password="top-secret",
+        remember_password=True,
+    )
+
+    notification_service.save_email_account_settings(remembered, path)
+
+    raw = path.read_text(encoding="utf-8")
+    loaded = notification_service.load_email_account_settings(path)
+    assert "top-secret" not in raw
+    assert "dpapi:" in raw
+    assert loaded.password == "top-secret"
+
+    session_only = replace(remembered, remember_password=False)
+    notification_service.save_email_account_settings(session_only, path)
+    payload = json.loads(path.read_text(encoding="utf-8"))["email"]
+    assert payload["password"] == ""
+    assert payload["smtp_password"] == ""
 
 
 def test_notification_sender_accepts_onboarding_email_settings_shape(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -242,13 +279,15 @@ def test_notification_store_seeds_offer_generated_default_rule(tmp_path: Path) -
         ("role", "director"),
     ]
     assert "{reply_by_date}" in events["offer.approved"].body_template
-    assert "Offer of Employment - Launch Pad Learning {school_code}" == events["offer.approved"].subject_template
+    assert "Offer - Launch Pad Learning {school}" == events["offer.approved"].subject_template
     assert [(recipient.recipient_type, recipient.role_key) for recipient in events["offer.approved"].recipients] == [
-        ("role", "candidate")
+        ("role", "candidate"),
+        ("role", "executive_director"),
     ]
     assert [(recipient.recipient_type, recipient.role_key) for recipient in events["offer.accepted"].recipients] == [
         ("role", "candidate"),
         ("role", "director"),
+        ("role", "office_manager"),
         ("role", "executive_director"),
     ]
 
@@ -268,6 +307,65 @@ def test_notification_store_seeds_offer_generated_default_rule(tmp_path: Path) -
     assert after.id == customized.id
     assert after.label == "Custom existing"
     assert after.active is True
+
+
+def test_notification_store_seeds_ten_staffing_workflow_system_rules(tmp_path: Path) -> None:
+    store = NotificationStore(tmp_path / "notifications.sqlite3")
+
+    store.ensure_default_rules()
+
+    rules = {rule.event_type: rule for rule in store.list_rules()}
+    expected = {
+        "interview.rating.qualified",
+        "director.interview.hire",
+        "offer.approved",
+        "offer.accepted",
+        "employment.start.today",
+        "permit.eligible.50d",
+        "permit.escalation.90d",
+        "employment.notice.given",
+        "employment.last_day",
+        "staffing.assignment.need_now",
+    }
+    assert expected <= set(rules)
+    assert all(rules[event].system_rule for event in expected)
+    assert [item.role_key for item in rules["director.interview.hire"].recipients] == [
+        "hr_manager",
+        "executive_director",
+    ]
+    assert [item.role_key for item in rules["employment.notice.given"].recipients] == [
+        "director",
+        "office_manager",
+        "executive_director",
+        "payroll",
+        "hr_manager",
+    ]
+    assert rules["offer.approved"].sender_account == "hiring_manager"
+    assert rules["offer.approved"].required_attachment_key == "offer_pdf_path"
+    assert rules["offer.accepted"].required_attachment_key == "onboarding_guide_path"
+
+
+def test_system_rules_activate_when_dependencies_are_ready_and_preserve_user_disable(tmp_path: Path) -> None:
+    guide = tmp_path / "guide.pdf"
+    guide.write_bytes(b"%PDF-1.4\n")
+    store = NotificationStore(tmp_path / "notifications.sqlite3")
+    store.ensure_default_rules()
+    directory = replace(NotificationDirectory.defaults(), onboarding_guide_path=str(guide))
+    service = NotificationService(
+        store=store,
+        email_settings=_settings(),
+        hiring_manager_email_settings=_settings(),
+        directory=directory,
+    )
+
+    assert service.activate_ready_system_rules() == 10
+    need_now = store.list_rules("staffing.assignment.need_now")[0]
+    assert need_now.active is True
+
+    store.set_rule_active(need_now.id or 0, False)
+    service.activate_ready_system_rules()
+    assert store.get_rule(need_now.id or 0).active is False
+    assert store.get_rule(need_now.id or 0).user_disabled is True
 
 
 def test_notification_store_backfills_recipients_only_for_untouched_defaults(tmp_path: Path) -> None:
@@ -302,7 +400,7 @@ def test_notification_store_backfills_recipients_only_for_untouched_defaults(tmp
 
     [backfilled] = store.list_rules("staffing.assignment.need_now")
     [custom_after] = store.list_rules("offer.accepted")
-    assert [recipient.role_key for recipient in backfilled.recipients] == ["hiring_manager", "director"]
+    assert [recipient.role_key for recipient in backfilled.recipients] == ["hr_manager"]
     assert custom_after.id == customized.id
     assert custom_after.recipients == []
 
@@ -385,6 +483,33 @@ def test_notification_service_sends_matching_rule_once_per_idempotency_key(tmp_p
     assert sent == [(["director@example.org"], "Accepted: Jane Doe", "Jane Doe accepted Teacher.")]
 
 
+def test_notification_service_retries_failed_send_but_permanently_dedupes_success(tmp_path: Path) -> None:
+    store = NotificationStore(tmp_path / "notifications.sqlite3")
+    store.save_rule(
+        NotificationRule(
+            event_type="employment.start.today",
+            label="Start",
+            subject_template="Start",
+            body_template="Body",
+            recipients=[NotificationRecipient(email="hr@example.org")],
+        )
+    )
+    attempts = 0
+
+    def send(*_args: object) -> None:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise OSError("temporary outage")
+
+    service = NotificationService(store=store, email_settings=_settings(), send_email=send)
+
+    assert service.emit_event("employment.start.today", {}, "employee:1:start")[0].status == "failed"
+    assert service.emit_event("employment.start.today", {}, "employee:1:start")[0].status == "sent"
+    assert service.emit_event("employment.start.today", {}, "employee:1:start")[0].status == "duplicate"
+    assert attempts == 2
+
+
 def test_notification_service_resolves_role_recipients_by_payload_school(tmp_path: Path) -> None:
     rule = NotificationRule(
         event_type="staffing.assignment.need_now",
@@ -403,6 +528,40 @@ def test_notification_service_resolves_role_recipients_by_payload_school(tmp_pat
     assert error == ""
     assert resolved == ["recruiting@launchpadpreschool.com", "director@launchpadpreschoolHAW.com"]
     assert summary == "hiring manager + school director"
+
+
+def test_notification_directory_resolves_editable_hr_payroll_and_school_office_manager() -> None:
+    directory = NotificationDirectory.defaults()
+    assert directory.hiring_manager == "recruiting@launchpadpreschool.com"
+    assert directory.hr_manager == "recruiting@launchpadpreschool.com"
+    assert directory.director_names == {
+        "hawthorne": "Netsi",
+        "palmdale": "Edith",
+        "north long beach": "Claudia",
+        "long beach": "Claudia",
+    }
+    rule = NotificationRule(
+        event_type="employment.notice.given",
+        label="Notice",
+        subject_template="Notice",
+        body_template="Body",
+        recipients=[
+            NotificationRecipient(recipient_type="role", role_key="hr_manager"),
+            NotificationRecipient(recipient_type="role", role_key="payroll"),
+            NotificationRecipient(recipient_type="role", role_key="office_manager"),
+        ],
+    )
+
+    resolved, _, error = resolve_notification_recipients(
+        rule, {"school": "North Long Beach"}, directory=directory
+    )
+
+    assert error == ""
+    assert resolved == [
+        "recruiting@launchpadpreschool.com",
+        "payroll@launchpadpreschool.com",
+        "admin-nlb@launchpadpreschool.com",
+    ]
 
 
 def test_notification_service_resolves_candidate_and_executive_director_roles(tmp_path: Path) -> None:
@@ -676,6 +835,83 @@ def test_notification_service_can_schedule_from_offer_generated_date(tmp_path: P
 
     assert due[0].status == "sent"
     assert sent == [(["director@example.org"], "Offer generated: Jane Doe", "Offer was generated on 2026-07-05.")]
+
+
+def test_staffing_scheduler_uses_exact_day_noon_and_permit_role_status_rules(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    today_id = store.create_assignment(
+        school="Hawthorne", classroom="Harmony", position_name="Teacher 1", position_type="Teacher",
+        status="filled", person_name="Today Teacher", start_date="2026-07-16", now="2026-07-16T08:00:00Z",
+    )
+    eligible_id = store.create_assignment(
+        school="Palmdale", classroom="Destiny", position_name="Aide 1", position_type="Aide",
+        status="filled", person_name="Permit Aide", start_date="2026-05-01", now="2026-07-16T08:00:00Z",
+    )
+    escalation_id = store.create_assignment(
+        school="North Long Beach", classroom="Office", position_name="Assistant Director", position_type="Assistant Director",
+        status="filled", person_name="Assistant Director", start_date="2026-04-01", now="2026-07-16T08:00:00Z",
+    )
+    with store.connect() as conn:
+        conn.execute("UPDATE people SET final_working_day = '2026-07-16' WHERE id = (SELECT person_id FROM assignments WHERE id = ?)", (today_id,))
+        conn.commit()
+    events: list[tuple[str, dict[str, str]]] = []
+    emitter = SimpleNamespace(emit_event=lambda event, payload, key: events.append((event, payload)) or [])
+
+    StaffingNotificationScheduler(
+        staffing_store=store,
+        notification_service=emitter,
+        now=lambda: datetime(2026, 7, 16, 11, 59),
+        rollout_date=datetime(2026, 1, 1).date(),
+        candidate_contact_resolver=lambda name, school: {
+            "email": "assistant@example.org", "honorific": "Ms."
+        },
+    ).run()
+    event_names = [event for event, _payload in events]
+    assert "employment.start.today" in event_names
+    assert "employment.last_day" not in event_names
+    assert "permit.eligible.50d" in event_names
+    assert "permit.escalation.90d" in event_names
+    escalation_payload = next(payload for event, payload in events if event == "permit.escalation.90d")
+    assert escalation_payload["candidate_email"] == "assistant@example.org"
+
+    events.clear()
+    StaffingNotificationScheduler(
+        staffing_store=store,
+        notification_service=emitter,
+        now=lambda: datetime(2026, 7, 16, 12, 0),
+        rollout_date=datetime(2026, 1, 1).date(),
+    ).run()
+    assert "employment.last_day" in [event for event, _payload in events]
+    assert eligible_id and escalation_id
+
+
+def test_notification_rollout_date_is_created_once_and_persisted(tmp_path: Path) -> None:
+    store = NotificationStore(tmp_path / "notifications.sqlite3")
+
+    assert store.get_or_create_rollout_date(date(2026, 7, 16)) == date(2026, 7, 16)
+    assert store.get_or_create_rollout_date(date(2026, 8, 1)) == date(2026, 7, 16)
+
+
+def test_system_defaults_are_added_without_overwriting_existing_custom_rule(tmp_path: Path) -> None:
+    store = NotificationStore(tmp_path / "notifications.sqlite3")
+    store.save_rule(
+        NotificationRule(
+            event_type="offer.accepted",
+            label="My custom accepted rule",
+            subject_template="Accepted",
+            body_template="Custom body",
+            recipients=[NotificationRecipient(email="custom@example.org")],
+            active=False,
+        )
+    )
+
+    store.ensure_default_rules()
+
+    rules = store.list_rules("offer.accepted")
+    assert len(rules) == 2
+    assert any(rule.label == "My custom accepted rule" and not rule.system_rule for rule in rules)
+    assert any(rule.system_rule and rule.required_attachment_key == "onboarding_guide_path" for rule in rules)
 
 
 def test_notification_service_blocks_unknown_placeholders(tmp_path: Path) -> None:

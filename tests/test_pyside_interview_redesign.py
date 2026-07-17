@@ -25,6 +25,8 @@ from staffing_dashboard_v2 import (
     configure_v2_scroll_areas,
 )
 from staffing_models import StaffingMetricRow
+from staffing_service import StaffingChangeConflict
+from source_update_monitor import source_digest
 
 from onboarding_operations import Employee, EmployeeTask
 from pyside_interview_app import (
@@ -58,6 +60,90 @@ def _pyside_window_on_page(model, page_name: str):
         window.staffing_v2_dashboard.show_external_page(page_name.casefold())
     window.QtWidgets.QApplication.processEvents()
     return window
+
+
+@pytest.mark.pyside_gui
+def test_source_update_reload_banner_dashboard_scenario(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    source_root = tmp_path / "src"
+    source_root.mkdir()
+    source_file = source_root / "feature.py"
+    source_file.write_text("VERSION = 1\n", encoding="utf-8")
+    version_file = tmp_path / "source_version.txt"
+    version_file.write_text(
+        f"updated_at=2026-07-16T12:00:00Z\nsource_sha256={source_digest(source_root)}\n",
+        encoding="utf-8",
+    )
+    seed_path = tmp_path / "staffing_seed.json"
+    seed_path.write_text('{"schools":[]}', encoding="utf-8")
+    monkeypatch.setattr(pyside_interview_app, "SOURCE_VERSION_PATH", version_file, raising=False)
+    monkeypatch.setattr(pyside_interview_app, "SOURCE_UPDATE_ROOT", source_root, raising=False)
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", tmp_path / "staffing.sqlite3")
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", seed_path)
+    monkeypatch.setattr(pyside_interview_app, "NOTIFICATION_RULES_PATH", tmp_path / "notifications.sqlite3")
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.sqlite3",
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+
+    window.window.show()
+    app.processEvents()
+    window._start_source_update_monitoring()
+    assert window.source_update_banner.isHidden()
+    source_file.write_text("VERSION = 2\n", encoding="utf-8")
+    version_file.write_text(
+        f"updated_at=2026-07-16T12:05:00Z\nsource_sha256={source_digest(source_root)}\n",
+        encoding="utf-8",
+    )
+    window._poll_source_updates()
+    app.processEvents()
+
+    assert window.source_update_banner.isVisible()
+    assert window.source_update_restart_button.text() == "Restart App"
+    window.window.close()
+    app.processEvents()
+
+
+@pytest.mark.pyside_gui
+def test_staffing_conflict_prompt_identifies_user_and_remote_changes(monkeypatch: pytest.MonkeyPatch) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    captured: dict[str, Any] = {}
+
+    def question(*args: Any) -> Any:
+        captured["title"] = args[1]
+        captured["message"] = args[2]
+        return qt_widgets.QMessageBox.StandardButton.Yes
+
+    monkeypatch.setattr(qt_widgets.QMessageBox, "question", question)
+    owner = SimpleNamespace(QtWidgets=qt_widgets, window=None)
+    conflict = StaffingChangeConflict(
+        event_id="event-1",
+        source_replica="director:palmdale:pmd",
+        school="Palmdale",
+        operation="update_assignment_details",
+        base_snapshot={},
+        local_snapshot={},
+        remote_payload={"assignment_id": 12, "classroom": "Tranquility", "notes": "Director note"},
+    )
+
+    accepted = pyside_interview_app.PySideInterviewWindow._resolve_staffing_change_conflict(owner, conflict)
+
+    assert accepted is True
+    assert captured["title"] == "Staffing Change Conflict"
+    assert "pmd" in captured["message"]
+    assert "Classroom: Tranquility" in captured["message"]
+    assert "Notes: Director note" in captured["message"]
+    assert "accept these changes" in captured["message"].lower()
 
 
 @pytest.mark.pyside_gui
@@ -1792,6 +1878,120 @@ Speaker 1: I got low, named the feeling, and helped the child find words.
     window.window.close()
     app.processEvents()
 
+
+@pytest.mark.pyside_gui
+def test_candidate_screen_regenerate_notes_restores_structured_report_content_scenario(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    monkeypatch.setattr(pyside_interview_app, "DEFAULT_BASE_DIR", tmp_path)
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", tmp_path / "staffing.sqlite3")
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", tmp_path / "missing-staffing-seed.json")
+    history_path = tmp_path / "interview_history.sqlite3"
+    notes_path = tmp_path / "notes" / "candidate-notes.docx"
+    store = InterviewHistoryStore(history_path)
+    store.append_with_candidate_report(
+        {
+            "history_id": "hist-regenerate",
+            "candidate_name": "Jordan Lee",
+            "school": "Palmdale",
+            "position": "Preschool",
+            "track": "preschool",
+            "interview_date": "2026-07-14",
+            "interview_notes_path": str(notes_path),
+            "saved_report_path": str(notes_path),
+        },
+        {
+            "schema_version": 1,
+            "history_id": "hist-regenerate",
+            "candidate": {
+                "candidate_name": "Jordan Lee",
+                "school": "Palmdale",
+                "track": "preschool",
+                "interview_date": "2026-07-14",
+                "qualification": {
+                    "has_degree": True,
+                    "degree_type": "AA",
+                    "degree_in_ece": True,
+                    "ece_units_completed": 24,
+                    "years_experience": 4,
+                },
+            },
+            "questions": [
+                {
+                    "flow_index": 1,
+                    "question_id": "Why-LPL",
+                    "type": "custom",
+                    "title": "Why Launch Pad Learning?",
+                    "prompt": "Why Launch Pad Learning?",
+                    "transcript": "I value the school mission.",
+                    "interviewer_notes": "Mission aligned.",
+                },
+                {
+                    "flow_index": 2,
+                    "question_id": "trait_1",
+                    "type": "trait",
+                    "title": "Empathy",
+                    "prompt": "Tell me about a hard child moment.",
+                    "transcript": "I named the feeling and stayed close.",
+                    "interviewer_notes": "Strong specific example.",
+                    "rating": 4,
+                    "weight": 1,
+                    "weighted_score": 4,
+                    "priority": "Critical",
+                    "skipped": False,
+                    "absolute_disqualifier": False,
+                    "no_example_after_followups": False,
+                },
+            ],
+            "scoring": {
+                "weighted_total": 4,
+                "max_weighted_total": 5,
+                "percent_of_max": 80.0,
+                "outcome": "Hire",
+                "rows": [
+                    {
+                        "trait_id": "trait_1",
+                        "raw_score": 4,
+                        "weight": 1,
+                        "weighted_score": 4,
+                    }
+                ],
+            },
+            "summaries": {},
+            "report_path": str(notes_path),
+        },
+        actor="admin-user",
+    )
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    warnings: list[str] = []
+    monkeypatch.setattr(
+        window.QtWidgets.QMessageBox,
+        "warning",
+        lambda _parent, _title, message: warnings.append(str(message)),
+    )
+
+    window._regenerate_history_notes(window.model.home.history_rows[0])
+
+    assert warnings == []
+    regenerated_path = Path(store.load()[0]["report_path"])
+    rendered = _docx_text(regenerated_path)
+    assert "AA" in rendered
+    assert "I value the school mission." in rendered
+    assert "I named the feeling and stayed close." in rendered
+    assert "4 / 5" in rendered
+    window.window.close()
+    app.processEvents()
+
 def test_pyside_show_schedules_recording_interface_preload_once(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
@@ -1988,6 +2188,22 @@ def test_pyside_session_enforces_intro_custom_scored_final_custom_workflow(tmp_p
         ("custom", "Start", "Question 8 of 8"),
     ]
     assert "Palmdale is open weekdays" in session.answers["intro_script"]["prompt"]
+
+
+def test_pyside_session_persists_candidate_honorific_in_draft(tmp_path: Path) -> None:
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_workflow_test_overrides(tmp_path),
+        history_path=tmp_path / "missing-history.json",
+        school_options=["Palmdale"],
+    )
+    draft_path = tmp_path / "draft.json"
+    session = PySideInterviewSession(model=model, draft_path=draft_path)
+
+    session.start(candidate_name="Jordan Lee", honorific="Mr.", school="Palmdale", track_key="preschool")
+
+    resumed = PySideInterviewSession.load(model=model, draft_path=draft_path)
+    assert resumed.honorific == "Mr."
 
 def test_pyside_recording_starts_on_begin_for_intro_audio_check(tmp_path: Path, monkeypatch) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -2624,7 +2840,20 @@ def test_pyside_window_runs_due_notification_schedule_on_startup(tmp_path: Path,
     )
     runs = []
 
+    class FakeNotificationStore:
+        def ensure_default_rules(self):
+            return None
+
+        def get_or_create_rollout_date(self, today):
+            return today
+
     class FakeNotifications:
+        store = FakeNotificationStore()
+        email_settings = SimpleNamespace(smtp_host="smtp.example.org", sender_email="sender@example.org")
+
+        def activate_ready_system_rules(self):
+            return 0
+
         def run_due_notifications(self):
             runs.append("ran")
             return []
@@ -2634,6 +2863,7 @@ def test_pyside_window_runs_due_notification_schedule_on_startup(tmp_path: Path,
         "notification_service_from_email_account_settings",
         lambda **_kwargs: FakeNotifications(),
     )
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", tmp_path / "staffing.sqlite3")
 
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     window._schedule_startup_notifications()
@@ -2738,7 +2968,9 @@ def test_pyside_finalize_writes_interview_notes_to_school_dropbox_folder(tmp_pat
     assert report_path.parent == dropbox_root / "LPL PMD Office Shared" / "Staff" / "Candidates"
     assert report_path.exists()
 
-def test_pyside_finalize_preserves_transcribed_audio_in_basic_notes(tmp_path: Path, monkeypatch) -> None:
+def test_pyside_finalize_excludes_intro_from_basic_notes_and_preserves_candidate_answers(
+    tmp_path: Path, monkeypatch
+) -> None:
     model = build_interview_redesign_model(
         rubric_path=_write_test_rubric(tmp_path),
         overrides_path=_write_test_overrides(tmp_path),
@@ -2772,7 +3004,7 @@ def test_pyside_finalize_preserves_transcribed_audio_in_basic_notes(tmp_path: Pa
 
     assert result["transcript_complete"] is True
     rendered = _docx_text(Path(result["out_path"]))
-    assert "Candidate heard the intro." in rendered
+    assert "Candidate heard the intro." not in rendered
     assert "Candidate gave custom answer." in rendered
     assert "Candidate described a warm child-centered example." in rendered
     rows = InterviewHistoryStore(tmp_path / "interview_history.sqlite3").load()
@@ -3021,7 +3253,136 @@ def test_pyside_finalize_returns_while_recording_transcription_finishes(tmp_path
     window.window.close()
     app.processEvents()
 
-def test_pyside_finalize_progress_window_is_user_closable_and_non_canceling(tmp_path: Path, monkeypatch) -> None:
+
+@pytest.mark.pyside_gui
+def test_finalize_success_immediately_refreshes_candidate_history_scenario(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    history_path = tmp_path / "interview_history.sqlite3"
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", tmp_path / "staffing.sqlite3")
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", tmp_path / "missing-staffing-seed.json")
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    assert window.hiring_v2_page.candidates_table.rowCount() == 0
+    InterviewHistoryStore(history_path).append(
+        {
+            "history_id": "hist-alexandra",
+            "candidate_name": "Newly Finalized Candidate",
+            "school": "Palmdale",
+            "position": "Teacher",
+            "interview_date": "2026-07-16",
+            "score": "88%",
+            "status": "Hire",
+        }
+    )
+    pyside_interview_app.HiringWorkflowService(pyside_interview_app.HiringPipelineStore(history_path)).record_initial_interview(
+        history_id="hist-alexandra",
+        legal_name="Newly Finalized Candidate",
+        email="",
+        phone="",
+        school="Palmdale",
+        position="Teacher",
+        score=88.0,
+        outcome="Hire",
+    )
+    messages: queue.Queue[dict[str, Any]] = queue.Queue()
+    messages.put(
+        {
+            "ok": True,
+            "artifact_update": True,
+            "result": {"history_id": "hist-alexandra", "out_path": "done.docx", "scoring": {"outcome": "Hire"}},
+        }
+    )
+    fake_timer = SimpleNamespace(stop=lambda: None, deleteLater=lambda: None)
+
+    window._poll_pyside_finalize_worker(messages, fake_timer)
+    app.processEvents()
+
+    candidates = [
+        window.hiring_v2_page.candidates_table.item(row, 0).text()
+        for row in range(window.hiring_v2_page.candidates_table.rowCount())
+    ]
+    assert candidates == ["Newly Finalized Candidate"]
+    window.window.close()
+    app.processEvents()
+
+
+@pytest.mark.pyside_gui
+def test_finalize_success_immediately_refreshes_director_interview_candidates_scenario(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    history_path = tmp_path / "interview_history.sqlite3"
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", tmp_path / "staffing.sqlite3")
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", tmp_path / "missing-staffing-seed.json")
+    monkeypatch.setattr(
+        pyside_interview_app,
+        "STAFFING_REFERRAL_QUEUE_PATH",
+        tmp_path / "staffing_referrals.pending.jsonl",
+    )
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=history_path,
+        school_options=["Palmdale"],
+    )
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    table = window.staffing_v2_dashboard.director_interview_pending_table
+    assert table.rowCount() == 0
+    InterviewHistoryStore(history_path).append(
+        {
+            "history_id": "hist-alexandra",
+            "candidate_name": "Newly Finalized Candidate",
+            "school": "Palmdale",
+            "position": "Teacher",
+            "interview_date": "2026-07-16",
+            "score": "88%",
+            "status": "Hire",
+        }
+    )
+    window.session = SimpleNamespace(
+        candidate_name="Newly Finalized Candidate",
+        school="Palmdale",
+        position="Teacher",
+        interview_date="2026-07-16",
+    )
+    messages: queue.Queue[dict[str, Any]] = queue.Queue()
+    messages.put(
+        {
+            "ok": True,
+            "artifact_update": False,
+            "result": {
+                "history_id": "hist-alexandra",
+                "out_path": "done.docx",
+                "scoring": {"outcome": "Hire", "percent_of_max": 88.0},
+            },
+        }
+    )
+    fake_timer = SimpleNamespace(stop=lambda: None, deleteLater=lambda: None)
+    monkeypatch.setattr(window, "_prompt_candidate_contact_handoff", lambda _result: None)
+    monkeypatch.setattr(window, "_emit_pyside_rating_notification", lambda _result: None)
+    monkeypatch.setattr(window, "_render_review_page", lambda: None)
+
+    window._poll_pyside_finalize_worker(messages, fake_timer)
+    app.processEvents()
+
+    candidates = [table.item(row, 0).text() for row in range(table.rowCount())]
+    assert candidates == ["Newly Finalized Candidate"]
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_finalize_uses_inline_status_without_progress_window(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
     app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
@@ -3033,115 +3394,97 @@ def test_pyside_finalize_progress_window_is_user_closable_and_non_canceling(tmp_
     )
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     window._show_pyside_finalize_progress("Stopping recording")
-
-    progress_dialog = window.pyside_finalize_progress_dialog
-    progress_label = window.pyside_finalize_progress_label
-
-    assert progress_dialog is not None
-    assert "Stopping recording" in progress_label.text()
-    assert "Processing" in progress_label.text()
-    assert progress_dialog.windowTitle() == "Finalizing Interview"
-
-    progress_dialog.close()
-    app.processEvents()
-
     assert window.pyside_finalize_progress_dialog is None
-    assert window._pyside_finalize_running is False
+    assert window.pyside_finalize_progress_label is None
     window._report_pyside_finalize_progress("Building interview notes")
     assert window._pyside_finalize_progress_step == "Building interview notes"
     window.window.close()
     app.processEvents()
 
-def test_pyside_finalize_progress_scheduled_close_uses_one_shot_timer(tmp_path: Path, monkeypatch) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=tmp_path / "missing-history.json",
-        school_options=["Palmdale"],
+
+def test_candidate_contact_handoff_popup_threshold_excludes_exact_sixty_five() -> None:
+    assert pyside_interview_app.should_prompt_candidate_contact_handoff(65.01) is True
+    assert pyside_interview_app.should_prompt_candidate_contact_handoff("88%") is True
+    assert pyside_interview_app.should_prompt_candidate_contact_handoff(65) is False
+
+
+def test_director_hire_sync_creates_one_pending_offer_with_derived_terms(tmp_path: Path, monkeypatch) -> None:
+    history_path = tmp_path / "interview_history.sqlite3"
+    history = InterviewHistoryStore(history_path)
+    history.append(
+        {
+            "history_id": "hist-auto-offer",
+            "candidate_name": "Jordan Lee",
+            "candidate_email": "jordan@example.org",
+            "school": "Palmdale",
+            "position": "Teacher",
+            "score": 88,
+            "outcome": "Hire",
+            "answers": {"Pay": {"notes": "$24.50 per hour"}},
+        }
     )
-    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
-    window._show_pyside_finalize_progress("Interview finalized")
-    single_shots: list[int] = []
-
-    class ImmediateTimer:
-        @staticmethod
-        def singleShot(delay_ms, callback):
-            single_shots.append(delay_ms)
-            callback()
-
-    monkeypatch.setattr(window.QtCore, "QTimer", ImmediateTimer)
-
-    window._schedule_close_pyside_finalize_progress()
-    app.processEvents()
-
-    assert single_shots == [2500]
-    assert window.pyside_finalize_progress_dialog is None
-    window.window.close()
-    app.processEvents()
-
-def test_pyside_progress_window_renders_task_status_list(tmp_path: Path) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=tmp_path / "missing-history.json",
-        school_options=["Palmdale"],
+    hiring = pyside_interview_app.HiringWorkflowService(
+        pyside_interview_app.HiringPipelineStore(history_path)
     )
-    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
-    window._show_pyside_finalize_progress("Stopping recording and transcribing")
-    window._report_pyside_finalize_progress("Building interview notes")
-    window._refresh_pyside_finalize_progress()
-    window._pyside_finalize_progress_tasks = [
-        {"name": "Stopping recording", "status": "Finished"},
-        {"name": "Building interview notes", "status": "Processing"},
-        {"name": "Saving interview artifacts", "status": "Queued"},
-    ]
-
-    window._refresh_pyside_finalize_progress()
-    app.processEvents()
-
-    progress_text = window.pyside_finalize_progress_label.text()
-    assert "Stopping recording" in progress_text
-    assert "Finished" in progress_text
-    assert "Building interview notes" in progress_text
-    assert "Processing" in progress_text
-    assert "Saving interview artifacts" in progress_text
-    assert "Queued" in progress_text
-    window._close_pyside_finalize_progress()
-    window.window.close()
-    app.processEvents()
-
-def test_pyside_progress_window_immediately_shows_ordered_tasks_in_scroll_area(tmp_path: Path) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    model = build_interview_redesign_model(
-        rubric_path=_write_test_rubric(tmp_path),
-        overrides_path=_write_test_overrides(tmp_path),
-        history_path=tmp_path / "missing-history.json",
-        school_options=["Palmdale"],
+    application = hiring.record_initial_interview(
+        history_id="hist-auto-offer",
+        legal_name="Jordan Lee",
+        honorific="Mr.",
+        email="jordan@example.org",
+        phone="",
+        school="Palmdale",
+        position="Teacher",
+        score=88,
+        outcome="Hire",
     )
-    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    staffing_path = tmp_path / "staffing.sqlite3"
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", staffing_path)
+    staffing_store = pyside_interview_app.StaffingStore(staffing_path)
+    staffing_store.initialize()
+    staffing = pyside_interview_app.StaffingService(staffing_store)
+    referral = staffing.upsert_director_candidate_referral(
+        history_id="hist-auto-offer",
+        candidate_name="Jordan Lee",
+        candidate_email="jordan@example.org",
+        school="Palmdale",
+        interviewer_outcome="hire",
+    )
+    staffing.record_director_interview(
+        referral.id,
+        director_name="Avery Director",
+        completed_date="2026-07-16",
+        rating=9,
+        decision="hire",
+        decision_notes="Hire.",
+        proposed_shift_start="8:00 AM",
+        proposed_shift_end="5:00 PM",
+        proposed_classroom="Chef",
+    )
+    offer_settings = SchoolOfferSettingsStore(tmp_path / "offer-settings.json")
+    offer_settings.save(
+        {
+            "Palmdale": {
+                "full_time_template": str(tmp_path / "full-time.docx"),
+                "part_time_template": str(tmp_path / "part-time.docx"),
+                "offer_output_dir": str(tmp_path / "offers"),
+            }
+        }
+    )
+    window = object.__new__(pyside_interview_app.PySideInterviewWindow)
+    window.model = SimpleNamespace(history_path=history_path)
+    window.school_offer_store = offer_settings
 
-    window._show_pyside_finalize_progress("Stopping recording and transcribing")
-    window._report_pyside_finalize_progress("Building interview notes")
-    window._refresh_pyside_finalize_progress()
-    app.processEvents()
+    window._sync_hiring_v2_director_decisions(hiring)
+    window._sync_hiring_v2_director_decisions(hiring)
 
-    scroll_areas = window.pyside_finalize_progress_dialog.findChildren(qt_widgets.QScrollArea)
-    progress_text = window.pyside_finalize_progress_label.text()
-
-    assert scroll_areas
-    assert window.pyside_finalize_progress_dialog.maximumHeight() <= 460
-    assert "Building interview notes" in progress_text
-    window._close_pyside_finalize_progress()
-    window.window.close()
-    app.processEvents()
+    offers = hiring.store.list_offer_versions(application.application_id)
+    assert len(offers) == 1
+    assert offers[0].status == "pending_approval"
+    assert offers[0].terms["weekly_hours"] == "40"
+    assert offers[0].terms["employment_type"] == "full_time"
+    assert offers[0].terms["proposed_classroom"] == "Chef"
+    assert offers[0].terms["hourly_pay"] == "24.5"
+    assert offers[0].terms["honorific"] == "Mr."
 
 def test_pyside_review_table_updates_transcript_when_finalize_worker_reports_transcripts(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -3538,16 +3881,30 @@ def test_pyside_window_schedules_startup_notifications_once_after_show() -> None
     window = pyside_interview_app.PySideInterviewWindow.__new__(pyside_interview_app.PySideInterviewWindow)
     calls: list[str] = []
 
+    class FakeSignal:
+        def connect(self, _callback) -> None:
+            return None
+
     class FakeTimer:
+        def __init__(self, _parent=None) -> None:
+            self.timeout = FakeSignal()
+
         @staticmethod
         def singleShot(delay_ms: int, callback) -> None:
             calls.append(f"timer:{delay_ms}")
             callback()
 
+        def setInterval(self, _interval_ms: int) -> None:
+            return None
+
+        def start(self) -> None:
+            return None
+
     class FakeQtCore:
         QTimer = FakeTimer
 
     window.QtCore = FakeQtCore
+    window.window = object()
     window._startup_notifications_scheduled = False
     window._run_due_notifications_safely = lambda: calls.append("notifications")
 
@@ -3754,13 +4111,13 @@ def test_pyside_rating_notification_emits_for_hire_and_borderline_only(tmp_path:
     window._emit_pyside_rating_notification({"scoring": {"outcome": "Borderline", "percent_of_max": 70}, "history_id": "hist-2"})
     window._emit_pyside_rating_notification({"scoring": {"outcome": "No Hire", "percent_of_max": 50}, "history_id": "hist-3"})
 
-    assert [event[0] for event in notifications] == ["interview.rating.hire", "interview.rating.borderline"]
+    assert [event[0] for event in notifications] == ["interview.rating.qualified", "interview.rating.qualified"]
     assert notifications[0][1]["candidate_name"] == "Jane Doe"
     assert notifications[0][1]["score"] == "85%"
     assert notifications[0][1]["degree_type"] == "BA"
     assert notifications[0][1]["ece_units_completed"] == "18"
     assert notifications[0][1]["years_experience"] == "4"
-    assert notifications[1][2] == "hist-2:interview.rating.borderline"
+    assert notifications[1][2] == "hist-2:interview.rating.qualified"
     window.window.close()
     app.processEvents()
 
@@ -6085,7 +6442,7 @@ def test_pyside_staffing_v2_position_detail_drawer_opens_from_position_row(
     assign_person = drawer.findChild(qt_widgets.QPushButton, "StaffingV2DrawerAssignPerson")
     assert assign_person is not None
     assert assign_person.text() == "Assign or Create Person"
-    assert not assign_person.isEnabled()
+    assert assign_person.isEnabled()
     assert not assign_person.icon().isNull()
     assert _icon_has_primary_blue(assign_person.icon())
     assert drawer.findChild(qt_widgets.QPushButton, "StaffingV2DrawerMarkComing").text() == "Mark Coming"
@@ -6106,11 +6463,9 @@ def test_pyside_staffing_v2_position_detail_drawer_opens_from_position_row(
         if button.objectName().startswith("StaffingV2Drawer")
     }
     assert footer_buttons["StaffingV2DrawerCancel"] == "Cancel"
-    assert footer_buttons["StaffingV2DrawerSaveDraft"] == "Save Draft"
-    assert footer_buttons["StaffingV2DrawerSaveChanges"] == "Save Changes"
     assert not drawer.findChild(qt_widgets.QPushButton, "StaffingV2DrawerCancel").icon().isNull()
-    assert not drawer.findChild(qt_widgets.QPushButton, "StaffingV2DrawerSaveDraft").icon().isNull()
-    assert not drawer.findChild(qt_widgets.QPushButton, "StaffingV2DrawerSaveChanges").icon().isNull()
+    assert drawer.findChild(qt_widgets.QPushButton, "StaffingV2DrawerSaveDraft") is None
+    assert drawer.findChild(qt_widgets.QPushButton, "StaffingV2DrawerSaveChanges") is None
     history_button.click()
     app.processEvents()
     assert page.findChild(qt_widgets.QWidget, "StaffingV2AssignmentHistoryDashboard") is not None
@@ -6260,7 +6615,10 @@ def test_pyside_staffing_v2_mark_coming_dialog_saves_through_service(
     people_search.setText("Emily")
     dialog.findChild(qt_widgets.QPushButton, "StaffingV2ComingSelectPerson").click()
     app.processEvents()
-    assert people_search.selectedText() == "Emily"
+    selector = window.window.findChild(qt_widgets.QDialog, "StaffingV2SelectPersonDialog")
+    assert selector is not None and not selector.isHidden()
+    selector.findChild(qt_widgets.QPushButton, "StaffingV2SelectPersonCancel").click()
+    app.processEvents()
     full_name = dialog.findChild(qt_widgets.QLineEdit, "StaffingV2ComingFullName")
     full_name.setText("Temporary Name")
     dialog.findChild(qt_widgets.QPushButton, "StaffingV2ComingCreatePerson").click()
@@ -7435,7 +7793,7 @@ def test_pyside_staffing_v2_validation_dashboard_and_filter_drawer_use_existing_
     assert drawer_scroll.widget().findChild(qt_widgets.QPushButton, "StaffingV2DrawerSaveChanges") is None
     drawer_footer = drawer.findChild(qt_widgets.QWidget, "StaffingV2PositionDrawerFooter")
     assert drawer_footer is not None
-    assert drawer_footer.findChild(qt_widgets.QPushButton, "StaffingV2DrawerSaveChanges") is not None
+    assert drawer_footer.findChild(qt_widgets.QPushButton, "StaffingV2DrawerSaveChanges") is None
     assert drawer.findChild(qt_widgets.QLabel, "StaffingV2DrawerPositionName").text() == "Teacher 1"
     drawer_text = _widget_text(drawer)
     assert "Harmony 1" in drawer_text
@@ -9583,7 +9941,6 @@ def test_staffing_v2_director_interviews_sync_pending_history_and_record_complet
         interviewer_rating=8.5,
         interviewer_outcome="hire",
         interview_date="2026-07-07",
-        candidate_email="jordan@example.org",
     )
     model = pyside_interview_app.build_director_staffing_model(
         build_interview_redesign_model(
@@ -9620,19 +9977,28 @@ def test_staffing_v2_director_interviews_sync_pending_history_and_record_complet
     shift_start = dialog.findChild(qt_widgets.QLineEdit, "StaffingV2DirectorInterviewShiftStartText")
     shift_end = dialog.findChild(qt_widgets.QLineEdit, "StaffingV2DirectorInterviewShiftEndText")
     classroom = dialog.findChild(qt_widgets.QComboBox, "StaffingV2DirectorInterviewClassroom")
+    candidate_email = dialog.findChild(qt_widgets.QLineEdit, "StaffingV2DirectorInterviewCandidateEmail")
+    candidate_phone = dialog.findChild(qt_widgets.QLineEdit, "StaffingV2DirectorInterviewCandidatePhone")
+    assert candidate_email is not None
+    assert candidate_phone is not None
     decision.setCurrentText("No-Hire")
     app.processEvents()
     assert not shift_start.isVisible()
     assert not shift_end.isVisible()
     assert not classroom.isVisible()
+    assert not candidate_email.isVisible()
+    assert not candidate_phone.isVisible()
     decision.setCurrentText("Hire")
     app.processEvents()
     assert shift_start.isVisible()
     assert shift_end.isVisible()
     assert classroom.isVisible()
+    assert candidate_email.isVisible()
+    assert candidate_phone.isVisible()
     shift_start.setText("8:00 AM")
     shift_end.setText("5:00 PM")
     classroom.setCurrentText("Harmony 1")
+    candidate_email.setText("jordan@example.org")
     dialog.findChild(qt_widgets.QTextEdit, "StaffingV2DirectorInterviewNotes").setPlainText("Strong classroom presence.")
     dialog.findChild(qt_widgets.QPushButton, "StaffingV2DirectorInterviewSave").click()
     app.processEvents()

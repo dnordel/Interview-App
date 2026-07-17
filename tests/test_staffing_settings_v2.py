@@ -82,7 +82,7 @@ def _page(tmp_path: Path):
 
 
 @pytest.mark.pyside_gui
-def test_settings_page_uses_four_sections_and_responsive_navigation(tmp_path: Path) -> None:
+def test_settings_page_uses_notification_sections_and_responsive_navigation(tmp_path: Path) -> None:
     app, qt_widgets, page, _paths = _page(tmp_path)
 
     section_list = page.widget.findChild(qt_widgets.QListWidget, "StaffingSettingsV2SectionList")
@@ -92,7 +92,12 @@ def test_settings_page_uses_four_sections_and_responsive_navigation(tmp_path: Pa
         "Rubrics",
         "Templates & Folders",
         "Shared Email Account",
+        "Notification Recipients",
+        "Hiring Manager Email Account",
     ]
+    assert page.widget.findChild(qt_widgets.QLineEdit, "StaffingSettingsV2RecipientDirectorNameHaw").text() == "Netsi"
+    assert page.widget.findChild(qt_widgets.QLineEdit, "StaffingSettingsV2RecipientDirectorNamePmd").text() == "Edith"
+    assert page.widget.findChild(qt_widgets.QLineEdit, "StaffingSettingsV2RecipientDirectorNameNlb").text() == "Claudia"
     assert section_list.isVisible()
     assert not section_selector.isVisible()
 
@@ -266,6 +271,20 @@ def test_settings_shared_email_account_tests_and_saves_independently(tmp_path: P
     assert json.loads(email_path.read_text(encoding="utf-8"))["email"]["smtp_host"] == "smtp.example.com"
     assert page.is_dirty is False
     page.widget.close()
+
+
+def test_settings_exposes_hiring_manager_smtp_and_recipient_directory(tmp_path: Path) -> None:
+    app, qt_widgets, page, _paths = _page(tmp_path)
+
+    hiring_sender = page.widget.findChild(qt_widgets.QLineEdit, "StaffingSettingsV2HiringManagerEmailAddress")
+    hr = page.widget.findChild(qt_widgets.QLineEdit, "StaffingSettingsV2RecipientHrManager")
+    payroll = page.widget.findChild(qt_widgets.QLineEdit, "StaffingSettingsV2RecipientPayroll")
+
+    assert hiring_sender.text() == "recruiting@launchpadpreschool.com"
+    assert hr.text() == "recruiting@launchpadpreschool.com"
+    assert payroll.text() == "payroll@launchpadpreschool.com"
+    page.widget.close()
+    app.processEvents()
 
 
 @pytest.mark.pyside_gui

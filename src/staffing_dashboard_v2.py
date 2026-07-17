@@ -4407,21 +4407,28 @@ class StaffingDashboardV2Page:
         previous_page = self.QtWidgets.QPushButton("‹")
         previous_page.setObjectName("StaffingV2PeoplePreviousPage")
         previous_page.setEnabled(False)
+        previous_page.clicked.connect(lambda _checked=False: self._change_people_page(-1))
+        self.people_previous_page = previous_page
         people_footer.addWidget(previous_page)
-        current_page = self.QtWidgets.QPushButton("1")
+        current_page = self.QtWidgets.QLabel("1")
         current_page.setObjectName("StaffingV2PeopleCurrentPage")
-        current_page.setEnabled(False)
+        current_page.setAlignment(self.QtCore.Qt.AlignmentFlag.AlignCenter)
+        current_page.setMinimumWidth(32)
+        self.people_current_page = current_page
         people_footer.addWidget(current_page)
         next_page = self.QtWidgets.QPushButton("›")
         next_page.setObjectName("StaffingV2PeopleNextPage")
         next_page.setEnabled(False)
+        next_page.clicked.connect(lambda _checked=False: self._change_people_page(1))
+        self.people_next_page = next_page
         people_footer.addWidget(next_page)
         self.people_rows_per_page = self.QtWidgets.QComboBox()
         self.people_rows_per_page.setObjectName("StaffingV2PeopleRowsPerPage")
         self.people_rows_per_page.addItems(["10 / page", "25 / page", "50 / page"])
-        self.people_rows_per_page.setEnabled(False)
+        self.people_rows_per_page.currentIndexChanged.connect(self._reset_people_page)
         people_footer.addWidget(self.people_rows_per_page)
         people_root.addLayout(people_footer)
+        self.people_page_index = 0
         self.people_units_filter_value = "All Units"
         self.people_filter_drawer_panel = _StaffingV2OverlayPanel(
             QtCore=self.QtCore,
@@ -4768,13 +4775,21 @@ class StaffingDashboardV2Page:
                 continue
             self.visible_people.append(person)
         self._refresh_people_metrics()
+        self.people_page_index = 0
         self._refresh_people_table()
-        if hasattr(self, "people_result_count"):
-            visible_count = len(self.visible_people)
-            if visible_count:
-                self.people_result_count.setText(f"Showing 1 to {visible_count} of {visible_count} people")
-            else:
-                self.people_result_count.setText("Showing 0 to 0 of 0 people")
+
+    def _people_page_size(self) -> int:
+        return int(self.people_rows_per_page.currentText().split()[0])
+
+    def _reset_people_page(self, _index: int = 0) -> None:
+        self.people_page_index = 0
+        self._refresh_people_table()
+
+    def _change_people_page(self, direction: int) -> None:
+        page_size = self._people_page_size()
+        page_count = max(1, (len(self.visible_people) + page_size - 1) // page_size)
+        self.people_page_index = min(max(0, self.people_page_index + int(direction)), page_count - 1)
+        self._refresh_people_table()
 
     def _refresh_people_metrics(self) -> None:
         while self.people_metrics_layout.count():
@@ -4800,7 +4815,12 @@ class StaffingDashboardV2Page:
 
     def _refresh_people_table(self) -> None:
         self.people_table.setRowCount(0)
-        for person in self.visible_people:
+        page_size = self._people_page_size()
+        page_count = max(1, (len(self.visible_people) + page_size - 1) // page_size)
+        self.people_page_index = min(self.people_page_index, page_count - 1)
+        start = self.people_page_index * page_size
+        self.paged_people = self.visible_people[start : start + page_size]
+        for person in self.paged_people:
             row_index = self.people_table.rowCount()
             self.people_table.insertRow(row_index)
             values = [
@@ -4829,12 +4849,20 @@ class StaffingDashboardV2Page:
             self._select_person(0)
         else:
             self._render_person_detail(None)
+        end = start + len(self.paged_people)
+        if self.visible_people:
+            self.people_result_count.setText(f"Showing {start + 1} to {end} of {len(self.visible_people)} people")
+        else:
+            self.people_result_count.setText("Showing 0 to 0 of 0 people")
+        self.people_current_page.setText(str(self.people_page_index + 1))
+        self.people_previous_page.setEnabled(self.people_page_index > 0)
+        self.people_next_page.setEnabled(self.people_page_index + 1 < page_count)
 
     def _select_person(self, row_index: int) -> None:
-        if row_index < 0 or row_index >= len(self.visible_people):
+        if row_index < 0 or row_index >= len(self.paged_people):
             self._render_person_detail(None)
             return
-        self._render_person_detail(self.visible_people[row_index])
+        self._render_person_detail(self.paged_people[row_index])
 
     def _render_person_detail(self, person: StaffingPerson | None) -> None:
         self.people_detail_overlay.clear()
@@ -4872,11 +4900,18 @@ class StaffingDashboardV2Page:
             ("StaffingV2PeopleNotesTab", "Notes", False),
             ("StaffingV2PeopleDocumentsTab", "Documents", False),
         ]
+        tab_cards: dict[str, list[Any]] = {}
         def select_people_tab(selected_object_name: str) -> None:
             for tab_button in tabs.findChildren(self.QtWidgets.QPushButton):
                 tab_button.setProperty("staffingV2ActivePeopleTab", tab_button.objectName() == selected_object_name)
                 tab_button.style().unpolish(tab_button)
                 tab_button.style().polish(tab_button)
+            visible_cards = tab_cards.get(selected_object_name)
+            if visible_cards is None:
+                return
+            all_cards = {card for card_group in tab_cards.values() for card in card_group}
+            for card in all_cards:
+                card.setVisible(card in visible_cards)
 
         for object_name, text, is_active in tab_specs:
             tab = self.QtWidgets.QPushButton(text)
@@ -4913,20 +4948,169 @@ class StaffingDashboardV2Page:
         additional_layout.addLayout(self._detail_row("Notes", person.permit_notes or "-"))
         self.people_detail_layout.addWidget(additional)
 
+        tab_cards.update(
+            {
+                "StaffingV2PeopleOverviewTab": [info, current, employment, additional],
+                "StaffingV2PeopleAssignmentsTab": [current],
+                "StaffingV2PeopleHistoryTab": [employment],
+                "StaffingV2PeopleNotesTab": [additional],
+                "StaffingV2PeopleDocumentsTab": [additional],
+            }
+        )
+        select_people_tab("StaffingV2PeopleOverviewTab")
+
         footer = self.QtWidgets.QHBoxLayout()
         deactivate = self.QtWidgets.QPushButton("Deactivate Employee")
         deactivate.setObjectName("StaffingV2PeopleDeactivateButton")
         self._set_button_icon(deactivate, "status_need")
-        deactivate.setEnabled(False)
+        deactivate.setEnabled(person.active)
+        deactivate.clicked.connect(lambda _checked=False, item=person.id: self._open_deactivate_person_dialog(item))
         edit = self.QtWidgets.QPushButton("Edit Person")
         edit.setObjectName("StaffingV2PeopleEditButton")
         self._set_button_icon(edit, "settings")
-        edit.setEnabled(False)
+        edit.clicked.connect(lambda _checked=False, item=person.id: self._open_edit_person_dialog(item))
         footer.addWidget(deactivate)
         footer.addStretch(1)
         footer.addWidget(edit)
         self.people_detail_footer_layout.addLayout(footer)
         self.people_detail_overlay.show_overlay()
+
+    def _open_edit_person_dialog(self, person_id: int) -> None:
+        person = next((item for item in self.store.list_people() if item.id == int(person_id)), None)
+        if person is None:
+            return
+        dialog = self.QtWidgets.QDialog(self.widget)
+        dialog.setObjectName("StaffingV2EditPersonDialog")
+        dialog.setWindowTitle("Edit Person")
+        dialog.setModal(True)
+        dialog.resize(520, 420)
+        layout = self.QtWidgets.QVBoxLayout(dialog)
+        layout.setContentsMargins(22, 18, 22, 18)
+        layout.setSpacing(12)
+
+        header = self.QtWidgets.QHBoxLayout()
+        title_column = self.QtWidgets.QVBoxLayout()
+        title_column.addWidget(self._label("Edit Person", "StaffingV2DrawerTitle"))
+        title_column.addWidget(self._label("Update employee record details.", "StaffingV2Muted"))
+        header.addLayout(title_column, 1)
+        close = self.QtWidgets.QPushButton("")
+        close.setObjectName("StaffingV2EditPersonClose")
+        self._set_button_icon(close, "close")
+        close.clicked.connect(dialog.close)
+        header.addWidget(close)
+        layout.addLayout(header)
+
+        form, form_layout = self._dialog_section("StaffingV2DialogSection")
+        name = self.QtWidgets.QLineEdit(person.name)
+        name.setObjectName("StaffingV2EditPersonName")
+        form_layout.addLayout(self._labeled_control("Full Name", name))
+        role = self.QtWidgets.QComboBox()
+        role.setObjectName("StaffingV2EditPersonRole")
+        role.addItems(["Director", "Teacher", "Aide"])
+        if role.findText(person.role) < 0:
+            role.addItem(person.role)
+        role.setCurrentText(person.role)
+        form_layout.addLayout(self._labeled_control("Role", role))
+        permit = self.QtWidgets.QComboBox()
+        permit.setObjectName("StaffingV2EditPersonPermit")
+        permit.addItems(["Unknown", "Permit in Process", "Teacher Permit", "No Units Needed", "No Permit"])
+        permit.setCurrentText(_permit_label(person.permit_status))
+        form_layout.addLayout(self._labeled_control("Permit Status", permit))
+        units = self.QtWidgets.QLineEdit(_format_units(person.units).replace("-", ""))
+        units.setObjectName("StaffingV2EditPersonUnits")
+        units.setPlaceholderText("Optional units")
+        form_layout.addLayout(self._labeled_control("Units", units))
+        error = self._label("", "StaffingV2NeedNowChip")
+        error.setObjectName("StaffingV2EditPersonError")
+        error.hide()
+        form_layout.addWidget(error)
+        layout.addWidget(form)
+
+        footer = self.QtWidgets.QHBoxLayout()
+        footer.addStretch(1)
+        cancel = self.QtWidgets.QPushButton("Cancel")
+        cancel.setObjectName("StaffingV2EditPersonCancel")
+        cancel.clicked.connect(dialog.reject)
+        save = self.QtWidgets.QPushButton("Save Changes")
+        save.setObjectName("StaffingV2EditPersonSave")
+        self._set_button_icon(save, "status_filled")
+
+        def save_person() -> None:
+            error.hide()
+            try:
+                units_value = None if not units.text().strip() else float(units.text().strip())
+                self.service_factory().update_person(
+                    person.id,
+                    name=name.text(),
+                    role=role.currentText(),
+                    permit_status=_permit_status_from_label(permit.currentText()),
+                    units=units_value,
+                )
+            except (TypeError, ValueError) as exc:
+                error.setText(_safe_staffing_error(exc))
+                error.show()
+                return
+            self._refresh_people()
+            dialog.accept()
+
+        save.clicked.connect(save_person)
+        footer.addWidget(cancel)
+        footer.addWidget(save)
+        layout.addLayout(footer)
+        dialog.show()
+
+    def _open_deactivate_person_dialog(self, person_id: int) -> None:
+        person = next((item for item in self.store.list_people() if item.id == int(person_id)), None)
+        if person is None or not person.active:
+            return
+        dialog = self.QtWidgets.QDialog(self.widget)
+        dialog.setObjectName("StaffingV2DeactivatePersonDialog")
+        dialog.setWindowTitle("Deactivate Employee")
+        dialog.setModal(True)
+        dialog.resize(500, 250)
+        layout = self.QtWidgets.QVBoxLayout(dialog)
+        layout.setContentsMargins(22, 18, 22, 18)
+        layout.setSpacing(12)
+
+        header = self.QtWidgets.QHBoxLayout()
+        header.addWidget(self._label("Deactivate Employee", "StaffingV2DrawerTitle"), 1)
+        close = self.QtWidgets.QPushButton("")
+        close.setObjectName("StaffingV2DeactivatePersonClose")
+        self._set_button_icon(close, "close")
+        close.clicked.connect(dialog.close)
+        header.addWidget(close)
+        layout.addLayout(header)
+        layout.addWidget(self._label(f"Deactivate {person.name}? This keeps staffing history but removes them from active employee choices."))
+        error = self._label("", "StaffingV2NeedNowChip")
+        error.setObjectName("StaffingV2DeactivatePersonError")
+        error.hide()
+        layout.addWidget(error)
+        layout.addStretch(1)
+
+        footer = self.QtWidgets.QHBoxLayout()
+        footer.addStretch(1)
+        cancel = self.QtWidgets.QPushButton("Cancel")
+        cancel.setObjectName("StaffingV2DeactivatePersonCancel")
+        cancel.clicked.connect(dialog.reject)
+        confirm = self.QtWidgets.QPushButton("Deactivate Employee")
+        confirm.setObjectName("StaffingV2DeactivatePersonConfirm")
+        self._set_button_icon(confirm, "status_need")
+
+        def deactivate_person() -> None:
+            try:
+                self.service_factory().deactivate_person(person.id)
+            except ValueError as exc:
+                error.setText(_safe_staffing_error(exc))
+                error.show()
+                return
+            self._refresh_people()
+            dialog.accept()
+
+        confirm.clicked.connect(deactivate_person)
+        footer.addWidget(cancel)
+        footer.addWidget(confirm)
+        layout.addLayout(footer)
+        dialog.show()
 
     def _detail_row(self, label: str, value: str) -> Any:
         row = self.QtWidgets.QHBoxLayout()
@@ -5919,6 +6103,10 @@ class StaffingDashboardV2Page:
         classroom.setEditable(True)
         classroom_names = sorted({row.classroom for row in self.rows if row.school == candidate.school and row.classroom})
         classroom.addItems(classroom_names or [""])
+        candidate_email = self.QtWidgets.QLineEdit(candidate.candidate_email)
+        candidate_email.setObjectName("StaffingV2DirectorInterviewCandidateEmail")
+        candidate_phone = self.QtWidgets.QLineEdit(candidate.candidate_phone)
+        candidate_phone.setObjectName("StaffingV2DirectorInterviewCandidatePhone")
         notes = self.QtWidgets.QTextEdit()
         notes.setObjectName("StaffingV2DirectorInterviewNotes")
         notes.setPlaceholderText("Required decision notes")
@@ -5940,6 +6128,18 @@ class StaffingDashboardV2Page:
             row.setLayout(self._labeled_control(label, control))
             form_layout.addWidget(row)
             hire_only_fields.append(row)
+        if not candidate.candidate_email:
+            email_row = self.QtWidgets.QWidget()
+            email_row.setObjectName("StaffingV2DirectorInterviewCandidateEmailRow")
+            email_row.setLayout(self._labeled_control("Candidate Email", candidate_email))
+            form_layout.addWidget(email_row)
+            hire_only_fields.append(email_row)
+        if not candidate.candidate_phone:
+            phone_row = self.QtWidgets.QWidget()
+            phone_row.setObjectName("StaffingV2DirectorInterviewCandidatePhoneRow")
+            phone_row.setLayout(self._labeled_control("Candidate Phone (optional)", candidate_phone))
+            form_layout.addWidget(phone_row)
+            hire_only_fields.append(phone_row)
         form_layout.addWidget(follow_up)
         form_layout.addLayout(self._labeled_control("Decision Notes", notes))
         layout.addWidget(form)
@@ -5978,6 +6178,22 @@ class StaffingDashboardV2Page:
         def save_interview() -> None:
             error.hide()
             try:
+                if decision.currentText() == "Hire":
+                    from scoring_reporting import derive_offer_schedule
+
+                    schedule = derive_offer_schedule(shift_start.text(), shift_end.text())
+                    if schedule.employment_type == "part_time":
+                        confirmed = self.QtWidgets.QMessageBox.question(
+                            dialog,
+                            "Confirm Part-Time Offer",
+                            "This shift is less than 6 hours per day. The employee will be considered part-time "
+                            "and will not be eligible for benefits. Continue?",
+                            self.QtWidgets.QMessageBox.StandardButton.Yes
+                            | self.QtWidgets.QMessageBox.StandardButton.No,
+                            self.QtWidgets.QMessageBox.StandardButton.No,
+                        )
+                        if confirmed != self.QtWidgets.QMessageBox.StandardButton.Yes:
+                            return
                 self.service_factory().record_director_interview(
                     referral_id,
                     director_name=director_name.text(),
@@ -5988,6 +6204,8 @@ class StaffingDashboardV2Page:
                     proposed_shift_start=shift_start.text() if decision.currentText() == "Hire" else "",
                     proposed_shift_end=shift_end.text() if decision.currentText() == "Hire" else "",
                     proposed_classroom=classroom.currentText() if decision.currentText() == "Hire" else "",
+                    candidate_email=candidate_email.text() if decision.currentText() == "Hire" else "",
+                    candidate_phone=candidate_phone.text() if decision.currentText() == "Hire" else "",
                     follow_up_needed=follow_up.isChecked(),
                 )
             except Exception as exc:  # noqa: BLE001 - service validation is user-facing here.
@@ -6165,7 +6383,9 @@ class StaffingDashboardV2Page:
             assign = self.QtWidgets.QPushButton("Assign or Create Person")
             assign.setObjectName("StaffingV2DrawerAssignPerson")
             self._set_button_icon(assign, "person_add")
-            assign.setEnabled(False)
+            assign.clicked.connect(
+                lambda _checked=False, item=assignment.id: self._open_mark_coming_dialog(item)
+            )
             related_layout.addWidget(assign)
         lower.addWidget(related, 0, 1, 2, 1)
         self.drawer_layout.addLayout(lower)
@@ -6177,18 +6397,8 @@ class StaffingDashboardV2Page:
         cancel.setObjectName("StaffingV2DrawerCancel")
         self._set_button_icon(cancel, "close")
         cancel.clicked.connect(self.drawer.hide)
-        draft = self.QtWidgets.QPushButton("Save Draft")
-        draft.setObjectName("StaffingV2DrawerSaveDraft")
-        self._set_button_icon(draft, "export")
-        draft.setEnabled(False)
-        save = self.QtWidgets.QPushButton("Save Changes")
-        save.setObjectName("StaffingV2DrawerSaveChanges")
-        self._set_button_icon(save, "status_filled")
-        save.setEnabled(False)
         actions.addWidget(cancel)
         actions.addStretch(1)
-        actions.addWidget(draft)
-        actions.addWidget(save)
         self.drawer_footer_layout.addLayout(actions)
         self.drawer_panel.show_overlay()
 
@@ -6830,7 +7040,67 @@ class StaffingDashboardV2Page:
         people_search = self.QtWidgets.QLineEdit()
         people_search.setObjectName("StaffingV2ComingPeopleSearch")
         people_search.setPlaceholderText("Search People records...")
-        select_existing.clicked.connect(lambda _checked=False: (people_search.setFocus(), people_search.selectAll()))
+
+        def open_person_selector() -> None:
+            people = [person for person in self.store.list_people() if person.active]
+            selector = self.QtWidgets.QDialog(dialog)
+            selector.setObjectName("StaffingV2SelectPersonDialog")
+            selector.setWindowTitle("Select Existing Person")
+            selector.setModal(True)
+            selector.resize(620, 420)
+            selector_layout = self.QtWidgets.QVBoxLayout(selector)
+            selector_layout.addWidget(self._label("Select Existing Person", "StaffingV2DrawerTitle"))
+            selector_layout.addWidget(self._label("Choose an active employee for this position.", "StaffingV2Muted"))
+            table = self.QtWidgets.QTableWidget(len(people), 4)
+            table.setObjectName("StaffingV2SelectPersonTable")
+            table.setHorizontalHeaderLabels(["Name", "Role", "Permit", "Units"])
+            table.setSelectionBehavior(self.QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
+            table.setSelectionMode(self.QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
+            table.setEditTriggers(self.QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+            table.horizontalHeader().setSectionResizeMode(self.QtWidgets.QHeaderView.ResizeMode.Stretch)
+            for row_index, person in enumerate(people):
+                values = [person.name, display_role(person.role), _permit_label(person.permit_status), _format_units(person.units)]
+                for column, value in enumerate(values):
+                    item = self.QtWidgets.QTableWidgetItem(value)
+                    if column == 0:
+                        item.setData(self.QtCore.Qt.ItemDataRole.UserRole, person.id)
+                    table.setItem(row_index, column, item)
+            if people:
+                table.selectRow(0)
+            selector_layout.addWidget(table, 1)
+            footer = self.QtWidgets.QHBoxLayout()
+            footer.addStretch(1)
+            cancel_select = self.QtWidgets.QPushButton("Cancel")
+            cancel_select.setObjectName("StaffingV2SelectPersonCancel")
+            cancel_select.clicked.connect(selector.reject)
+            confirm_select = self.QtWidgets.QPushButton("Select Person")
+            confirm_select.setObjectName("StaffingV2SelectPersonConfirm")
+            confirm_select.setEnabled(bool(people))
+
+            def apply_selected_person() -> None:
+                row_index = table.currentRow()
+                if row_index < 0 or row_index >= len(people):
+                    return
+                selected_person = people[row_index]
+                full_name.setText(selected_person.name)
+                if role.findText(selected_person.role) < 0:
+                    role.addItem(selected_person.role)
+                role.setCurrentText(selected_person.role)
+                permit_index = permit_status.findData(selected_person.permit_status)
+                if permit_index >= 0:
+                    permit_status.setCurrentIndex(permit_index)
+                units.setValue(int(selected_person.units or 0))
+                people_search.setText(selected_person.name)
+                selector.accept()
+
+            confirm_select.clicked.connect(apply_selected_person)
+            table.cellDoubleClicked.connect(lambda _row, _column: apply_selected_person())
+            footer.addWidget(cancel_select)
+            footer.addWidget(confirm_select)
+            selector_layout.addLayout(footer)
+            selector.show()
+
+        select_existing.clicked.connect(open_person_selector)
         create_new.clicked.connect(lambda _checked=False: (full_name.clear(), full_name.setFocus()))
         fields = [
             ("Full Name *", full_name, 0, 0),
@@ -6905,15 +7175,10 @@ class StaffingDashboardV2Page:
         cancel.setObjectName("StaffingV2ComingCancel")
         self._set_button_icon(cancel, "close")
         cancel.clicked.connect(dialog.close)
-        draft = self.QtWidgets.QPushButton("Save Draft")
-        draft.setObjectName("StaffingV2ComingSaveDraft")
-        self._set_button_icon(draft, "export")
-        draft.setEnabled(False)
         submit = self.QtWidgets.QPushButton("Mark Coming")
         submit.setObjectName("StaffingV2ComingSubmit")
         self._set_button_icon(submit, "status_pending")
         footer.addWidget(cancel)
-        footer.addWidget(draft)
         footer.addWidget(submit)
         root.addLayout(footer)
 
@@ -7074,8 +7339,12 @@ class StaffingDashboardV2Page:
                 return
             self._open_replace_employee_dialog(assignment_id)
 
-        permit_action.clicked.connect(lambda _checked=False: permit_option.setChecked(True))
-        replace_action.clicked.connect(lambda _checked=False: replace_option.setChecked(True))
+        permit_action.clicked.connect(
+            lambda _checked=False: (permit_option.setChecked(True), run_selected())
+        )
+        replace_action.clicked.connect(
+            lambda _checked=False: (replace_option.setChecked(True), run_selected())
+        )
         continue_button.clicked.connect(run_selected)
         dialog.show()
 
@@ -7332,8 +7601,27 @@ class StaffingDashboardV2Page:
         documentation = self.QtWidgets.QCheckBox("Documentation received")
         documentation.setObjectName("StaffingV2PermitDocumentationReceived")
         documentation.setChecked(True)
+        selected_attachment: list[str] = [""]
+        attachment_name = self._label("No file selected", "StaffingV2Muted")
+        attachment_name.setObjectName("StaffingV2PermitAttachmentName")
         attach = self.QtWidgets.QPushButton("Attach File")
-        attach.setEnabled(False)
+        attach.setObjectName("StaffingV2PermitAttachFile")
+        self._set_button_icon(attach, "export")
+
+        def choose_attachment() -> None:
+            selected, _filter = self.QtWidgets.QFileDialog.getOpenFileName(
+                dialog,
+                "Select Permit Document",
+                "",
+                "Permit documents (*.pdf *.png *.jpg *.jpeg *.doc *.docx)",
+            )
+            if not selected:
+                return
+            selected_attachment[0] = selected
+            attachment_name.setText(Path(selected).name)
+            documentation.setChecked(True)
+
+        attach.clicked.connect(choose_attachment)
         fields = [
             ("Employee Name", employee_name, 0, 0),
             ("Role", role, 1, 0),
@@ -7353,6 +7641,7 @@ class StaffingDashboardV2Page:
         form.addLayout(notes_wrap, 6, 0)
         form.addWidget(documentation, 7, 0)
         form.addWidget(attach, 8, 0)
+        form.addWidget(attachment_name, 8, 1)
         form_layout.addLayout(form)
         body.addWidget(form_section, 2)
 
@@ -7394,13 +7683,9 @@ class StaffingDashboardV2Page:
         cancel = self.QtWidgets.QPushButton("Cancel")
         cancel.setObjectName("StaffingV2PermitCancel")
         cancel.clicked.connect(dialog.close)
-        draft = self.QtWidgets.QPushButton("Save Draft")
-        draft.setObjectName("StaffingV2PermitDraft")
-        draft.setEnabled(False)
         submit = self.QtWidgets.QPushButton("Save Permit Update")
         submit.setObjectName("StaffingV2PermitSubmit")
         footer.addWidget(cancel)
-        footer.addWidget(draft)
         footer.addWidget(submit)
         root.addLayout(footer)
 
@@ -7412,6 +7697,7 @@ class StaffingDashboardV2Page:
                     effective_date=effective_date.date().toString("yyyy-MM-dd"),
                     units=units.value(),
                     documentation_received=documentation.isChecked(),
+                    attachment_path=selected_attachment[0] or None,
                     notes=notes.toPlainText(),
                 )
             except Exception as exc:  # noqa: BLE001 - show service validation error in dialog.
@@ -7733,13 +8019,9 @@ class StaffingDashboardV2Page:
         cancel = self.QtWidgets.QPushButton("Cancel")
         cancel.setObjectName("StaffingV2FilledCancel")
         cancel.clicked.connect(dialog.close)
-        draft = self.QtWidgets.QPushButton("Save Draft")
-        draft.setObjectName("StaffingV2FilledSaveDraft")
-        draft.setEnabled(False)
         submit = self.QtWidgets.QPushButton("Mark Filled")
         submit.setObjectName("StaffingV2FilledSubmit")
         footer.addWidget(cancel)
-        footer.addWidget(draft)
         footer.addWidget(submit)
         root.addLayout(footer)
 

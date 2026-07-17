@@ -89,6 +89,7 @@ class StaffingStore:
                     permit_status TEXT NOT NULL DEFAULT 'unknown',
                     permit_effective_date TEXT NOT NULL DEFAULT '',
                     permit_documentation_received INTEGER NOT NULL DEFAULT 0,
+                    permit_document_path TEXT NOT NULL DEFAULT '',
                     permit_notes TEXT NOT NULL DEFAULT '',
                     units REAL,
                     notice_given TEXT,
@@ -148,6 +149,7 @@ class StaffingStore:
                     interviewer_outcome TEXT NOT NULL,
                     interview_date TEXT NOT NULL DEFAULT '',
                     candidate_email TEXT NOT NULL DEFAULT '',
+                    candidate_phone TEXT NOT NULL DEFAULT '',
                     referral_date TEXT NOT NULL DEFAULT '',
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL
@@ -220,6 +222,7 @@ class StaffingStore:
             self._ensure_column(conn, "people", "units", "REAL")
             self._ensure_column(conn, "people", "permit_effective_date", "TEXT NOT NULL DEFAULT ''")
             self._ensure_column(conn, "people", "permit_documentation_received", "INTEGER NOT NULL DEFAULT 0")
+            self._ensure_column(conn, "people", "permit_document_path", "TEXT NOT NULL DEFAULT ''")
             self._ensure_column(conn, "people", "permit_notes", "TEXT NOT NULL DEFAULT ''")
             self._ensure_column(conn, "classrooms", "ratio_group", "TEXT NOT NULL DEFAULT ''")
             self._ensure_column(conn, "assignments", "slot_group", "TEXT NOT NULL DEFAULT ''")
@@ -227,6 +230,7 @@ class StaffingStore:
             self._ensure_column(conn, "assignments", "shift_start", "TEXT NOT NULL DEFAULT ''")
             self._ensure_column(conn, "assignments", "shift_end", "TEXT NOT NULL DEFAULT ''")
             self._ensure_column(conn, "director_candidate_referrals", "candidate_email", "TEXT NOT NULL DEFAULT ''")
+            self._ensure_column(conn, "director_candidate_referrals", "candidate_phone", "TEXT NOT NULL DEFAULT ''")
             self._ensure_column(conn, "director_candidate_referrals", "referral_date", "TEXT NOT NULL DEFAULT ''")
             self._ensure_column(
                 conn,
@@ -244,7 +248,12 @@ class StaffingStore:
     def _ensure_column(self, conn: sqlite3.Connection, table: str, column: str, definition: str) -> None:
         existing = {str(row["name"]) for row in conn.execute(f"PRAGMA table_info({table})").fetchall()}
         if column not in existing:
-            conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+            try:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+            except sqlite3.OperationalError as exc:
+                refreshed = {str(row["name"]) for row in conn.execute(f"PRAGMA table_info({table})").fetchall()}
+                if "duplicate column name" not in str(exc).casefold() or column not in refreshed:
+                    raise
 
     @property
     def edit_lock_path(self) -> Path:
@@ -620,6 +629,7 @@ class StaffingStore:
         interviewer_outcome: str,
         interview_date: str = "",
         candidate_email: str = "",
+        candidate_phone: str = "",
         referral_date: str = "",
         now: str,
     ) -> StaffingDirectorCandidate:
@@ -631,9 +641,9 @@ class StaffingStore:
                 """
                 INSERT INTO director_candidate_referrals (
                     history_id, candidate_name, school, position, interviewer_rating,
-                    interviewer_outcome, interview_date, candidate_email, referral_date,
+                    interviewer_outcome, interview_date, candidate_email, candidate_phone, referral_date,
                     created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(history_id) DO UPDATE SET
                     candidate_name = excluded.candidate_name,
                     school = excluded.school,
@@ -642,6 +652,7 @@ class StaffingStore:
                     interviewer_outcome = excluded.interviewer_outcome,
                     interview_date = excluded.interview_date,
                     candidate_email = excluded.candidate_email,
+                    candidate_phone = excluded.candidate_phone,
                     referral_date = excluded.referral_date,
                     updated_at = excluded.updated_at
                 """,
@@ -654,6 +665,7 @@ class StaffingStore:
                     interviewer_outcome,
                     str(interview_date or "").strip(),
                     str(candidate_email or "").strip(),
+                    str(candidate_phone or "").strip(),
                     str(referral_date or "").strip(),
                     now,
                     now,
@@ -956,11 +968,18 @@ class StaffingStore:
         proposed_shift_start: str = "",
         proposed_shift_end: str = "",
         proposed_classroom: str = "",
+        candidate_email: str = "",
+        candidate_phone: str = "",
         follow_up_needed: bool = False,
         owner_approval_status: str = "pending_owner_approval",
         now: str,
     ) -> StaffingDirectorInterview:
         with self.write_connection("director_interview") as conn:
+            if decision == "hire":
+                conn.execute(
+                    "UPDATE director_candidate_referrals SET candidate_email = ?, candidate_phone = ?, updated_at = ? WHERE id = ?",
+                    (candidate_email, candidate_phone, now, int(referral_id)),
+                )
             candidate = self.director_candidate_context(conn, int(referral_id))
             existing = conn.execute(
                 "SELECT id, version_number FROM director_interviews WHERE referral_id = ?",
@@ -1359,6 +1378,7 @@ class StaffingStore:
             interviewer_outcome=str(row["interviewer_outcome"] or ""),
             interview_date=str(row["interview_date"] or ""),
             candidate_email=str(row["candidate_email"] or ""),
+            candidate_phone=str(row["candidate_phone"] or ""),
             referral_date=str(row["referral_date"] or ""),
             director_interview_completed_at=str(row["director_interview_completed_at"] or ""),
             updated_at=str(row["updated_at"] or ""),
@@ -1475,6 +1495,7 @@ class StaffingStore:
             permit_effective_date=str(row["permit_effective_date"] or ""),
             units=float(row["units"]) if row["units"] is not None else None,
             permit_documentation_received=bool(row["permit_documentation_received"]),
+            permit_document_path=str(row["permit_document_path"] or ""),
             permit_notes=str(row["permit_notes"] or ""),
             notice_given=str(row["notice_given"] or ""),
             final_working_day=str(row["final_working_day"] or ""),
@@ -1537,6 +1558,7 @@ class StaffingStore:
             permit_effective_date=str(row["permit_effective_date"] or ""),
             units=float(row["units"]) if row["units"] is not None else None,
             permit_documentation_received=bool(row["permit_documentation_received"]),
+            permit_document_path=str(row["permit_document_path"] or ""),
             permit_notes=str(row["permit_notes"] or ""),
             notice_given=str(row["notice_given"] or ""),
             final_working_day=str(row["final_working_day"] or ""),

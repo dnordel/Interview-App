@@ -38,8 +38,17 @@ class TestIntegrationExport(unittest.TestCase):
             "answer_summaries": [{"flow_index": 1, "summary": "Gave a concrete example."}],
             "summary_status": "generated",
             "summary_warnings": [],
-            "custom_answers": [{"id": "c1", "answer": "Example"}],
+            "custom_answers": [
+                {"id": "intro_script", "type": "intro", "answer": "Live intro notes"},
+                {"id": "c1", "type": "custom", "answer": "Example"},
+            ],
             "flow_transcript": [
+                {
+                    "type": "intro",
+                    "id": "intro_script",
+                    "question": "Live interviewer script",
+                    "candidate_transcript": "Intro exchange",
+                },
                 {
                     "type": "trait",
                     "id": "t1",
@@ -77,7 +86,9 @@ class TestIntegrationExport(unittest.TestCase):
         self.assertEqual(out["decision"], "hire")
         self.assertEqual(out["candidate"]["qualification"]["years_experience"], 7)
         self.assertEqual(len(out["interview_notes"]["traits"]), 1)
+        self.assertEqual(out["interview_notes"]["custom_answers"], [{"id": "c1", "type": "custom", "answer": "Example"}])
         self.assertEqual(len(out["flow_transcript_slices"]), 1)
+        self.assertEqual(out["flow_transcript_slices"][0]["id"], "t1")
         self.assertEqual(out["referral_packet"]["resume_path"], "resume.pdf")
         self.assertEqual(len(out["communication_log"]), 1)
         self.assertEqual(out["executive_summary"], "Strong classroom routines.")

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from dataclasses import replace
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -66,6 +67,137 @@ OFFER_ACCEPTED_NOTIFICATION_ROLE_RECIPIENTS = [
 ]
 
 
+def _roles(*keys: str) -> list[NotificationRecipient]:
+    labels = {
+        "candidate": "Candidate",
+        "director": "School Director",
+        "executive_director": "Executive Director",
+        "hiring_manager": "Hiring Manager",
+        "hr_manager": "HR Manager",
+        "payroll": "Payroll",
+        "office_manager": "Office Manager",
+    }
+    return [
+        NotificationRecipient(
+            name=labels[key], role_label=labels[key], recipient_type="role", role_key=key
+        )
+        for key in keys
+    ]
+
+
+def _system_workflow_default_rules() -> list[NotificationRule]:
+    signature = (
+        "Best Regards,\nDavid Nordel\nDirector, Recruiting & Community Relations\n"
+        "Launch Pad Learning\n(310) 347-8694\ndavidn@launchpadpreschool.com"
+    )
+    return [
+        NotificationRule(
+            event_type="interview.rating.qualified",
+            label="System: initial interview qualified",
+            subject_template="New Candidate for You - {position} - {candidate_name}",
+            body_template=(
+                "Hi {director_name},\n\nThere is a new candidate for you to review; below you will find a snapshot of them:\n\n"
+                "Name: {candidate_name}\nInterview Score: {interview_score}\nDegree: {degree_display}"
+                "{degree_in_ece_display}\nYears of Experience: {experience}\n\n"
+                "You may view transcripts from their interview on your staffing dashboard.\n\n"
+                "{candidate_name} will be emailing you their resume and transcripts. Please verify their transcripts/units "
+                "prior to scheduling your interview with them.\n\nThank you,\nLPL HR System"
+            ),
+            recipients=_roles("director"), active=False, system_rule=True,
+        ),
+        NotificationRule(
+            event_type="director.interview.hire",
+            label="System: director Hire submitted",
+            subject_template="Please Approve the Offer for {candidate_name}",
+            body_template=(
+                "Hi,\n\n{director_name} approved hiring {candidate_name}; below you will find a snapshot of them:\n\n"
+                "Name: {candidate_name}\nInterview Score: {interview_score}\nDirector Rating: {director_interview_score}\n"
+                "Degree: {degree_display}{degree_in_ece_display}\nYears of Experience: {experience}\n"
+                "Requested Pay: {requested_pay}\nOffer Amount: {offer_amount}\nClassroom: {proposed_classroom}\n"
+                "Hours: {shift_start} to {shift_end}\n\nYou may view this candidate on your staffing dashboard.\n\n"
+                "Thank you,\nLPL HR System"
+            ),
+            recipients=_roles("hr_manager", "executive_director"), active=False, system_rule=True,
+        ),
+        NotificationRule(
+            event_type="offer.approved",
+            label="System: approved offer to candidate",
+            subject_template="Offer - Launch Pad Learning {school}",
+            body_template=(
+                "Hello {honorific} {candidate_name},\n\nI hope you are doing well. We are thrilled to offer you a teacher position "
+                "at Launch Pad Learning in {school}.\n\nThe official offer letter detailing your compensation, benefits, and other "
+                "employment terms is attached to this email.\n\nPlease reply with your signed offer letter by 5:00 PM on "
+                "{reply_by_date}, to confirm your acceptance.\n\nIf you have questions or need clarification, please email or call "
+                "Ms. Deidre at deidre@launchpadpreschool.com or (310) 977-6133.\n\nWe look forward to having you join our "
+                "team and working together to provide our students with a nurturing and enriching environment.\n\n" + signature
+            ),
+            recipients=_roles("candidate", "executive_director"), active=False, system_rule=True,
+            sender_account="hiring_manager", required_attachment_key="offer_pdf_path",
+        ),
+        NotificationRule(
+            event_type="offer.accepted",
+            label="System: offer accepted onboarding",
+            subject_template="New Candidate for You - {position} - {candidate_name}",
+            body_template=(
+                "Hello {honorific} {candidate_name},\n\nThank you for accepting the offer for a teacher position at Launch Pad Learning. "
+                "Please coordinate with Ms. {director_name} on your official start date (all paperwork must be completed before your "
+                "first day). I've attached our onboarding guide for new employees.\n\nYou will need to have completed a physical "
+                "examination and a TB test within the past year. If you have not had an appointment within the past year, please call "
+                "your doctor to schedule one as soon as possible.\n\nYou will be separately emailed the employment documents to complete.\n\n"
+                "Welcome to the team! We are excited to work with you.\n\n" + signature
+            ),
+            recipients=_roles("candidate", "director", "office_manager", "executive_director"),
+            active=False, system_rule=True, sender_account="hiring_manager",
+            required_attachment_key="onboarding_guide_path",
+        ),
+        NotificationRule(
+            event_type="employment.start.today", label="System: employee starts today",
+            subject_template="{candidate_name} Is Starting Today",
+            body_template=("{candidate_name} starts today. This is a reminder to set up their payroll, benefits, and email.\n\n"
+                           "If they completed the new employee bio survey, please add the bio to the website.\n\nThank you,\nLPL HR System"),
+            recipients=_roles("hr_manager"), active=False, system_rule=True,
+        ),
+        NotificationRule(
+            event_type="permit.eligible.50d", label="System: permit eligibility",
+            subject_template="{candidate_name} Is Now Eligible to Apply for Their Permit",
+            body_template=("Hello {director_name},\n\n{candidate_name} is now eligible to apply for their permit - please print and sign "
+                           "the verification of experience letter and provide it to {candidate_name}.\nIf they have already applied for or "
+                           "obtained their permit, please update their profile on the staffing dashboard.\n\nThank you,\nLPL HR System"),
+            recipients=_roles("director"), active=False, system_rule=True,
+        ),
+        NotificationRule(
+            event_type="permit.escalation.90d", label="System: permit escalation",
+            subject_template="{candidate_name}'s Permit Status",
+            body_template=("Hello {honorific} {director_name},\n\n{candidate_name} is eligible to apply for their permit; however, our staffing "
+                           "system does not show that they have applied or been approved for their permit. Please either follow up with "
+                           "{candidate_name} or update their profile on the staffing dashboard.\n\nThank you,\nLPL HR System"),
+            recipients=_roles("director", "candidate", "executive_director"), active=False, system_rule=True,
+            sender_account="hiring_manager",
+        ),
+        NotificationRule(
+            event_type="employment.notice.given", label="System: employee gave notice",
+            subject_template="{candidate_name} Gave Notice Today",
+            body_template=("Hi,\n\n{candidate_name} gave notice today. Their last day is {final_working_day}. You will receive another "
+                           "reminder on their last day to process and provide their final paycheck.\n\nThank you,\nLPL HR System"),
+            recipients=_roles("director", "office_manager", "executive_director", "payroll", "hr_manager"),
+            active=False, system_rule=True,
+        ),
+        NotificationRule(
+            event_type="employment.last_day", label="System: employee last day",
+            subject_template="LAST DAY: {candidate_name} - Please Issue Paycheck",
+            body_template=("Hi,\n\n{candidate_name}'s last day is today. After they clock back in after lunch, please close out their "
+                           "timecard and issue their final paycheck.\n\nThank you,\nLPL HR System"),
+            recipients=_roles("director", "payroll", "hr_manager"), active=False, system_rule=True,
+        ),
+        NotificationRule(
+            event_type="staffing.assignment.need_now", label="System: position needed now",
+            subject_template="{school} Needs to Hire!",
+            body_template=("Hi,\n\n{school} needs a {position_title} for {classroom}. Please open a job listing.\n\nThank you,\nLPL HR System"),
+            recipients=_roles("hr_manager"), active=False, system_rule=True,
+        ),
+    ]
+
+
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
@@ -82,7 +214,8 @@ class NotificationStore:
                 rows = conn.execute(
                     """
                     SELECT id, event_type, label, active, subject_template, body_template,
-                           trigger_timing, date_field, offset_days, created_at, updated_at
+                           trigger_timing, date_field, offset_days, sender_account,
+                           required_attachment_key, system_rule, user_disabled, created_at, updated_at
                     FROM notification_rules
                     ORDER BY event_type, label, id
                     """
@@ -91,7 +224,8 @@ class NotificationStore:
                 rows = conn.execute(
                     """
                     SELECT id, event_type, label, active, subject_template, body_template,
-                           trigger_timing, date_field, offset_days, created_at, updated_at
+                           trigger_timing, date_field, offset_days, sender_account,
+                           required_attachment_key, system_rule, user_disabled, created_at, updated_at
                     FROM notification_rules
                     WHERE event_type = ?
                     ORDER BY label, id
@@ -101,6 +235,7 @@ class NotificationStore:
             return [self._rule_from_row(conn, row) for row in rows]
 
     def ensure_default_rules(self) -> None:
+        system_defaults = _system_workflow_default_rules()
         defaults = [
             NotificationRule(
                 event_type="staffing.assignment.created",
@@ -221,10 +356,21 @@ class NotificationStore:
                 offset_days=1,
             ),
         ]
-        existing = {rule.event_type for rule in self.list_rules()}
+        existing_rules = self.list_rules()
+        for rule in system_defaults:
+            if any(
+                existing.event_type == rule.event_type and existing.system_rule
+                for existing in existing_rules
+            ):
+                self._backfill_default_recipients(rule)
+                continue
+            saved = self.save_rule(rule)
+            existing_rules.append(saved)
+        existing = {rule.event_type for rule in existing_rules}
         for rule in defaults:
             if rule.event_type not in existing:
                 self.save_rule(rule)
+                existing.add(rule.event_type)
                 continue
             self._backfill_default_recipients(rule)
 
@@ -253,10 +399,29 @@ class NotificationStore:
                 trigger_timing=existing_rule.trigger_timing,
                 date_field=existing_rule.date_field,
                 offset_days=existing_rule.offset_days,
+                sender_account=default_rule.sender_account,
+                required_attachment_key=default_rule.required_attachment_key,
+                system_rule=default_rule.system_rule,
+                user_disabled=existing_rule.user_disabled,
             )
         )
 
     def save_rule(self, rule: NotificationRule) -> NotificationRule:
+        if rule.id is not None:
+            existing_rule = self.get_rule(rule.id)
+            rule = replace(
+                rule,
+                sender_account=(
+                    existing_rule.sender_account
+                    if rule.sender_account == "default" and existing_rule.sender_account != "default"
+                    else rule.sender_account
+                ),
+                required_attachment_key=(
+                    rule.required_attachment_key or existing_rule.required_attachment_key
+                ),
+                system_rule=rule.system_rule or existing_rule.system_rule,
+                user_disabled=rule.user_disabled or existing_rule.user_disabled,
+            )
         blocking_issues = [issue for issue in validate_notification_rule(rule) if issue.blocking]
         if blocking_issues:
             raise ValueError(blocking_issues[0].message)
@@ -279,7 +444,10 @@ class NotificationStore:
             email = str(recipient.email or "").strip()
             if recipient_type not in {"email", "role"}:
                 raise ValueError("Notification recipient type must be email or role.")
-            if recipient_type == "role" and role_key not in {"candidate", "director", "executive_director", "hiring_manager"}:
+            if recipient_type == "role" and role_key not in {
+                "candidate", "director", "executive_director", "hiring_manager",
+                "hr_manager", "payroll", "office_manager",
+            }:
                 raise ValueError("Unknown notification recipient role.")
             if recipient_type == "email" and not is_valid_email_address(email):
                 raise ValueError("Invalid recipient email.")
@@ -292,8 +460,9 @@ class NotificationStore:
                         """
                         INSERT INTO notification_rules
                             (event_type, label, active, subject_template, body_template,
-                             trigger_timing, date_field, offset_days, created_at, updated_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                             trigger_timing, date_field, offset_days, sender_account,
+                             required_attachment_key, system_rule, user_disabled, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         (
                             event_type,
@@ -304,6 +473,10 @@ class NotificationStore:
                             trigger_timing,
                             date_field,
                             offset_days,
+                            str(rule.sender_account or "default"),
+                            str(rule.required_attachment_key or ""),
+                            1 if rule.system_rule else 0,
+                            1 if rule.user_disabled else 0,
                             now,
                             now,
                         ),
@@ -315,7 +488,8 @@ class NotificationStore:
                         """
                         UPDATE notification_rules
                         SET event_type = ?, label = ?, active = ?, subject_template = ?, body_template = ?,
-                            trigger_timing = ?, date_field = ?, offset_days = ?, updated_at = ?
+                            trigger_timing = ?, date_field = ?, offset_days = ?, sender_account = ?,
+                            required_attachment_key = ?, system_rule = ?, user_disabled = ?, updated_at = ?
                         WHERE id = ?
                         """,
                         (
@@ -327,6 +501,10 @@ class NotificationStore:
                             trigger_timing,
                             date_field,
                             offset_days,
+                            str(rule.sender_account or "default"),
+                            str(rule.required_attachment_key or ""),
+                            1 if rule.system_rule else 0,
+                            1 if rule.user_disabled else 0,
                             now,
                             rule_id,
                         ),
@@ -360,7 +538,8 @@ class NotificationStore:
             row = conn.execute(
                 """
                 SELECT id, event_type, label, active, subject_template, body_template,
-                       trigger_timing, date_field, offset_days, created_at, updated_at
+                       trigger_timing, date_field, offset_days, sender_account,
+                       required_attachment_key, system_rule, user_disabled, created_at, updated_at
                 FROM notification_rules
                 WHERE id = ?
                 """,
@@ -380,8 +559,17 @@ class NotificationStore:
         with self._connect() as conn:
             with conn:
                 conn.execute(
-                    "UPDATE notification_rules SET active = ?, updated_at = ? WHERE id = ?",
-                    (1 if active else 0, utc_now_iso(), int(rule_id)),
+                    "UPDATE notification_rules SET active = ?, user_disabled = ?, updated_at = ? WHERE id = ?",
+                    (1 if active else 0, 0 if active else 1, utc_now_iso(), int(rule_id)),
+                )
+
+    def activate_system_rule(self, rule_id: int) -> None:
+        with self._connect() as conn:
+            with conn:
+                conn.execute(
+                    "UPDATE notification_rules SET active = 1, updated_at = ? "
+                    "WHERE id = ? AND system_rule = 1 AND user_disabled = 0",
+                    (utc_now_iso(), int(rule_id)),
                 )
 
     def has_send_attempt(self, rule_id: int, idempotency_key: str) -> bool:
@@ -389,7 +577,7 @@ class NotificationStore:
             row = conn.execute(
                 """
                 SELECT 1 FROM notification_audit
-                WHERE rule_id = ? AND idempotency_key = ?
+                WHERE rule_id = ? AND idempotency_key = ? AND status = 'sent'
                 LIMIT 1
                 """,
                 (int(rule_id), str(idempotency_key)),
@@ -575,6 +763,24 @@ class NotificationStore:
                     (str(status).strip(), utc_now_iso(), int(schedule_id)),
                 )
 
+    def get_or_create_rollout_date(self, today: date) -> date:
+        if not isinstance(today, date):
+            raise TypeError("Rollout date must be a date.")
+        with self._connect() as conn:
+            with conn:
+                row = conn.execute(
+                    "SELECT value FROM notification_metadata WHERE key = 'system_rollout_date'"
+                ).fetchone()
+                if row is None:
+                    value = today.isoformat()
+                    conn.execute(
+                        "INSERT INTO notification_metadata(key, value) VALUES ('system_rollout_date', ?)",
+                        (value,),
+                    )
+                else:
+                    value = str(row["value"])
+        return date.fromisoformat(value)
+
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.path)
         conn.row_factory = sqlite3.Row
@@ -595,6 +801,10 @@ class NotificationStore:
                         trigger_timing TEXT NOT NULL DEFAULT 'event',
                         date_field TEXT NOT NULL DEFAULT '',
                         offset_days INTEGER NOT NULL DEFAULT 0,
+                        sender_account TEXT NOT NULL DEFAULT 'default',
+                        required_attachment_key TEXT NOT NULL DEFAULT '',
+                        system_rule INTEGER NOT NULL DEFAULT 0,
+                        user_disabled INTEGER NOT NULL DEFAULT 0,
                         created_at TEXT NOT NULL,
                         updated_at TEXT NOT NULL
                     )
@@ -603,6 +813,10 @@ class NotificationStore:
                 _ensure_column(conn, "notification_rules", "trigger_timing", "TEXT NOT NULL DEFAULT 'event'")
                 _ensure_column(conn, "notification_rules", "date_field", "TEXT NOT NULL DEFAULT ''")
                 _ensure_column(conn, "notification_rules", "offset_days", "INTEGER NOT NULL DEFAULT 0")
+                _ensure_column(conn, "notification_rules", "sender_account", "TEXT NOT NULL DEFAULT 'default'")
+                _ensure_column(conn, "notification_rules", "required_attachment_key", "TEXT NOT NULL DEFAULT ''")
+                _ensure_column(conn, "notification_rules", "system_rule", "INTEGER NOT NULL DEFAULT 0")
+                _ensure_column(conn, "notification_rules", "user_disabled", "INTEGER NOT NULL DEFAULT 0")
                 conn.execute(
                     """
                     CREATE TABLE IF NOT EXISTS notification_recipients (
@@ -650,6 +864,14 @@ class NotificationStore:
                     )
                     """
                 )
+                conn.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS notification_metadata (
+                        key TEXT PRIMARY KEY,
+                        value TEXT NOT NULL
+                    )
+                    """
+                )
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_notification_rules_event_type ON notification_rules(event_type)")
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_notification_recipients_rule_id ON notification_recipients(rule_id)")
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_notification_schedule_due ON notification_schedule(status, due_date)")
@@ -659,11 +881,12 @@ class NotificationStore:
                     ON notification_schedule(rule_id, idempotency_key)
                     """
                 )
+                conn.execute("DROP INDEX IF EXISTS idx_notification_audit_dedupe")
                 conn.execute(
                     """
                     CREATE UNIQUE INDEX IF NOT EXISTS idx_notification_audit_dedupe
                     ON notification_audit(rule_id, idempotency_key)
-                    WHERE rule_id IS NOT NULL
+                    WHERE rule_id IS NOT NULL AND status = 'sent'
                     """
                 )
 
@@ -698,6 +921,10 @@ class NotificationStore:
             trigger_timing=str(row["trigger_timing"]),
             date_field=str(row["date_field"]),
             offset_days=int(row["offset_days"]),
+            sender_account=str(row["sender_account"] or "default"),
+            required_attachment_key=str(row["required_attachment_key"] or ""),
+            system_rule=bool(row["system_rule"]),
+            user_disabled=bool(row["user_disabled"]),
             recipients=recipients,
             created_at=str(row["created_at"]),
             updated_at=str(row["updated_at"]),

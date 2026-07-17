@@ -77,12 +77,14 @@ from hiring_pipeline import (
     HiringPipelineStore,
     HiringWorkflowService,
     OfferApprovalArtifactStage,
+    normalize_candidate_phone,
 )
 from hiring_workspace_v2 import HiringInterviewGuidePage, HiringOfferApprovalDialog, HiringWorkspaceV2Page
 from dashboard_v2_ui import SEMANTIC_COLORS
 from notification_service import (
     EMAIL_ACCOUNT_SETTINGS_PATH,
     NOTIFICATION_RULES_PATH,
+    StaffingNotificationScheduler,
     notification_service_from_onboarding,
     notification_service_from_email_account_settings,
 )
@@ -108,6 +110,8 @@ from scoring_reporting import (
     build_offer_filename,
     build_school_offer_filename,
     next_available_offer_path,
+    derive_offer_schedule,
+    parse_requested_hourly_pay,
 )
 from scoring_reporting import build_integration_payload, serialize_integration_payload
 from scoring_reporting import CANONICAL_DEGREE_TYPES, CandidateQualification, validate_candidate_qualification
@@ -116,8 +120,9 @@ from staffing_dashboard_v2 import apply_staffing_v2_light_theme, configure_v2_sc
 from staffing_settings_v2 import StaffingSettingsV2Page
 from staffing_referral_queue import StaffingReferralQueueStore
 from staffing_change_stage import StaffingChangeStage
-from staffing_service import StaffingService
+from staffing_service import StaffingChangeConflict, StaffingService, staffing_change_conflict_message
 from staffing_store import StaffingEditLock, StaffingStore
+from source_update_monitor import SourceUpdateDetector, build_source_update_banner, relaunch_application
 
 
 APP_TITLE = "Interview Assistant"
@@ -128,6 +133,8 @@ SETUP_STEPS = ["Candidate", "Interview Plan", "Ready"]
 STAFFING_DB_PATH = DEFAULT_BASE_DIR / "staffing_dashboard.sqlite3"
 STAFFING_REFERRAL_QUEUE_PATH = DEFAULT_BASE_DIR / "staffing_referrals.pending.jsonl"
 STAFFING_REFERRAL_QUEUE_DB_PATH = DEFAULT_BASE_DIR / "staffing_referrals.sqlite3"
+SOURCE_VERSION_PATH = Path(__file__).resolve().parents[1] / "config" / "source_version.txt"
+SOURCE_UPDATE_ROOT = Path(__file__).resolve().parent
 STAFFING_SEED_PATH = CONFIG_DIR / "staffing_seed.json"
 STAFFING_PERMIT_VALUES = [
     "unknown",
@@ -179,6 +186,7 @@ class PySideHistoryRow:
     notes_path: str
     report_path: str
     candidate_email: str = ""
+    candidate_phone: str = ""
     offer_path: str = ""
 
 
@@ -273,6 +281,7 @@ class PySideInterviewSession:
     model: InterviewRedesignModel
     draft_path: Path
     candidate_name: str = ""
+    honorific: str = "Ms."
     interview_date: str = ""
     school: str = ""
     track_key: str = ""
@@ -286,10 +295,14 @@ class PySideInterviewSession:
     flow_recordings: dict[int, dict[str, Any]] = field(default_factory=dict)
     application_id: str = ""
 
-    def start(self, *, candidate_name: str, school: str, track_key: str) -> None:
+    def start(self, *, candidate_name: str, school: str, track_key: str, honorific: str = "Ms.") -> None:
         if track_key not in self.model.flows:
             raise ValueError(f"Unknown track: {track_key}")
+        clean_honorific = str(honorific or "").strip()
+        if clean_honorific not in {"Mr.", "Ms."}:
+            raise ValueError("Honorific must be Mr. or Ms.")
         self.candidate_name = candidate_name.strip()
+        self.honorific = clean_honorific
         self.interview_date = date.today().isoformat()
         self.school = school.strip()
         self.track_key = track_key
@@ -823,6 +836,7 @@ class PySideInterviewSession:
             "schema": "pyside_interview_draft.v1",
             "application_id": self.application_id,
             "candidate_name": self.candidate_name,
+            "honorific": self.honorific,
             "interview_date": self.interview_date,
             "school": self.school,
             "track_key": self.track_key,
@@ -930,6 +944,7 @@ class PySideInterviewSession:
             draft_path=Path(draft_path),
             application_id=str(payload.get("application_id", "")).strip(),
             candidate_name=str(payload.get("candidate_name", "")).strip(),
+            honorific=str(payload.get("honorific", "Ms.") or "Ms.").strip(),
             interview_date=str(payload.get("interview_date", "") or date.today().isoformat()).strip(),
             school=str(payload.get("school", "")).strip(),
             track_key=track_key,
@@ -1211,6 +1226,17 @@ def _director_referral_rating(score: str) -> float | None:
     return None
 
 
+def should_prompt_candidate_contact_handoff(score: Any) -> bool:
+    """Return whether finalized initial-interview score requires contact prompt."""
+    value = _coerce_history_percent(score)
+    return value is not None and value > 65
+
+
+def _format_offer_number(value: Any) -> str:
+    text = format(value, "f")
+    return text.rstrip("0").rstrip(".") if "." in text else text
+
+
 def _staffing_school_slug(school: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "_", str(school or "").strip().lower()).strip("_")
     return slug
@@ -1332,6 +1358,10 @@ def _qualification_notification_payload(qualification: Any) -> dict[str, str]:
     payload = qualification.to_dict() if hasattr(qualification, "to_dict") else {}
     if not isinstance(payload, dict):
         payload = {}
+    has_degree = bool(payload.get("has_degree"))
+    degree_type = _notification_text(payload.get("degree_type"))
+    degree_in_ece = _notification_text(payload.get("degree_in_ece"))
+    experience = _notification_text(payload.get("years_experience"))
     return {
         "has_degree": _notification_text(payload.get("has_degree")),
         "degree_type": _notification_text(payload.get("degree_type")),
@@ -1340,6 +1370,9 @@ def _qualification_notification_payload(qualification: Any) -> dict[str, str]:
         "total_units_completed": _notification_text(payload.get("total_units_completed")),
         "infant_toddler_class_completed": _notification_text(payload.get("infant_toddler_class_completed")),
         "years_experience": _notification_text(payload.get("years_experience")),
+        "degree_display": degree_type if has_degree and degree_type else "No",
+        "degree_in_ece_display": f"\nDegree in ECE: {degree_in_ece}" if has_degree else "",
+        "experience": experience,
     }
 
 
@@ -1577,6 +1610,7 @@ def _pyside_history_rows_from_payloads(rows: Sequence[dict[str, Any]], store: In
                 notes_path=_history_text(row, "interview_notes_path", "saved_report_path", "notes_path", default=""),
                 report_path=_history_text(row, "saved_report_path", "report_path", "interview_notes_path", default=""),
                 candidate_email=_history_text(row, "candidate_email", "email", "candidateEmail", default=""),
+                candidate_phone=_history_text(row, "candidate_phone", "phone", "candidatePhone", default=""),
                 offer_path=_history_text(row, "offer_letter_path", "offer_path", default=""),
             )
         )
@@ -2385,7 +2419,9 @@ class PySideInterviewWindow:
         )
         _bootstrap_school_staffing_db_from_base(self.director_staffing_school, staffing_db_path)
         self.staffing_store = StaffingStore(staffing_db_path)
-        self.staffing_change_stage = StaffingChangeStage(Path(STAFFING_DB_PATH).with_name("staffing_changes.sqlite3"))
+        self.staffing_change_stage = StaffingChangeStage(Path(STAFFING_DB_PATH).with_name("staffing_change_events"))
+        self.source_update_detector: SourceUpdateDetector | None = None
+        self.source_update_timer: Any | None = None
         self._staffing_referral_queue_timer: Any | None = None
         self._staffing_v2_director_referrals_sync_started = False
         self.staffing_status_label: Any | None = None
@@ -2502,6 +2538,11 @@ class PySideInterviewWindow:
         content = QtWidgets.QWidget()
         content_layout = QtWidgets.QVBoxLayout(content)
         content_layout.setContentsMargins(0, 0, 0, 0)
+        self.source_update_banner, self.source_update_restart_button = build_source_update_banner(
+            QtWidgets,
+            self._restart_after_source_update,
+        )
+        content_layout.addWidget(self.source_update_banner)
         content_layout.addWidget(self.stack, 1)
         layout.addWidget(content, 1)
         self.window.setCentralWidget(root)
@@ -2538,11 +2579,14 @@ class PySideInterviewWindow:
         self._apply_responsive_layout()
 
     def _register_hiring_v2_pages(self, dashboard: Any) -> None:
+        notification_adapter = HiringOfferNotificationAdapter(self._notification_service())
         service = HiringWorkflowService(
             HiringPipelineStore(self.model.history_path),
-            send_offer=HiringOfferNotificationAdapter(self._notification_service()),
+            send_offer=notification_adapter,
+            notify_offer_accepted=notification_adapter.offer_accepted,
         )
         service.backfill_history()
+        service.retry_pending_accepted_notifications()
         self._sync_hiring_v2_director_decisions(service)
         guide_widget = self._hiring_interview_guide_widget()
 
@@ -2820,24 +2864,134 @@ class PySideInterviewWindow:
     def _sync_hiring_v2_director_decisions(self, service: HiringWorkflowService) -> None:
         shared_path = Path(STAFFING_DB_PATH)
         for application in service.store.list_applications():
-            if application.stage.value != "director_review":
+            if application.stage.value not in {"director_review", "offer_draft"}:
                 continue
             school_path = staffing_db_path_for_school(application.school, base_path=shared_path)
             for path in dict.fromkeys((school_path, shared_path)):
                 if not path.exists():
                     continue
-                interview = StaffingService(StaffingStore(path)).find_any_completed_director_interview(
+                staffing_store = StaffingStore(path)
+                staffing_service = StaffingService(staffing_store)
+                interview = staffing_service.find_any_completed_director_interview(
                     history_id=application.history_id,
                     school=application.school,
                 )
                 if interview is None:
                     continue
-                service.synchronize_director_outcome(
-                    application.history_id,
-                    decision=interview.decision,
-                    actor=interview.director_name or "Staffing v2",
-                )
+                actor = interview.director_name or "Staffing v2"
+                if application.stage.value == "director_review":
+                    application = service.synchronize_director_outcome(
+                        application.history_id,
+                        decision=interview.decision,
+                        actor=actor,
+                    )
+                if interview.decision == "hire":
+                    try:
+                        referral = staffing_store.list_director_candidate_referrals(
+                            school=application.school,
+                            include_completed=True,
+                        )
+                        contact = next((item for item in referral if item.id == interview.referral_id), None)
+                        candidate = service.store.get_candidate(application.candidate_id)
+                        if contact is not None and (contact.candidate_email or contact.candidate_phone):
+                            candidate = service.update_candidate_profile(
+                                candidate.candidate_id,
+                                legal_name=candidate.legal_name,
+                                preferred_name=candidate.preferred_name,
+                                email=contact.candidate_email or candidate.email,
+                                phone=contact.candidate_phone or candidate.phone,
+                            )
+                        terms = self._director_offer_terms(application, candidate, interview)
+                        offer = service.ensure_director_offer_submitted(
+                            application.application_id,
+                            source_key=f"director-interview:{interview.id}:v{interview.version_number}",
+                            terms=terms,
+                            actor=actor,
+                        )
+                        notification_factory = getattr(self, "_notification_service", None)
+                        if callable(notification_factory):
+                            payload = {
+                                "candidate_name": candidate.legal_name,
+                                "candidate_email": candidate.email,
+                                "school": application.school,
+                                "position": application.position,
+                                "director_name": actor,
+                                "interview_score": "",
+                                "director_interview_score": f"{interview.rating:g}",
+                                "degree_display": "No",
+                                "degree_in_ece_display": "",
+                                "experience": "",
+                                "requested_pay": terms["requested_pay_raw"],
+                                "offer_amount": terms["hourly_pay"],
+                                "proposed_classroom": terms["proposed_classroom"],
+                                "shift_start": terms["start_time"],
+                                "shift_end": terms["end_time"],
+                            }
+                            try:
+                                notification_factory().emit_event(
+                                    "director.interview.hire",
+                                    payload,
+                                    f"offer-version:{offer.version_id}:submitted",
+                                )
+                            except Exception:
+                                pass
+                    except (OSError, TypeError, ValueError):
+                        service.store.update_application_stage(
+                            application.application_id,
+                            application.stage,
+                            attention_code="offer_draft_pending",
+                        )
                 break
+
+    def _director_offer_terms(self, application: Any, candidate: Any, interview: Any) -> dict[str, Any]:
+        schedule = derive_offer_schedule(interview.proposed_shift_start, interview.proposed_shift_end)
+        settings = self.school_offer_store.load()
+        template_path = resolve_offer_template_path(
+            DEFAULT_BASE_DIR,
+            application.school,
+            int(schedule.weekly_hours),
+            settings,
+        )
+        output_dir = resolve_offer_output_dir(DEFAULT_BASE_DIR, application.school, settings)
+        requested_pay = self._requested_pay_answer(application.history_id)
+        hourly_pay = parse_requested_hourly_pay(requested_pay)
+        return {
+            "honorific": candidate.honorific,
+            "candidate_name": candidate.legal_name,
+            "candidate_email": candidate.email,
+            "position": application.position,
+            "school": application.school,
+            "start_time": interview.proposed_shift_start,
+            "end_time": interview.proposed_shift_end,
+            "gross_daily_hours": _format_offer_number(schedule.gross_daily_hours),
+            "net_daily_hours": _format_offer_number(schedule.net_daily_hours),
+            "weekly_hours": _format_offer_number(schedule.weekly_hours),
+            "employment_type": schedule.employment_type,
+            "proposed_classroom": interview.proposed_classroom,
+            "requested_pay_raw": requested_pay,
+            "hourly_pay": "" if hourly_pay is None else _format_offer_number(hourly_pay),
+            "compensation_review_required": hourly_pay is None,
+            "pto": _format_offer_number(schedule.weekly_hours * 2),
+            "pto2": _format_offer_number(schedule.weekly_hours * 4),
+            "template_path": str(template_path),
+            "output_dir": str(output_dir),
+        }
+
+    def _requested_pay_answer(self, history_id: str) -> str:
+        store = InterviewHistoryStore(self.model.history_path)
+        row = next((item for item in store.load() if store.build_row_key(item) == history_id), {})
+        answers = row.get("answers", {}) if isinstance(row, dict) else {}
+        if isinstance(answers, dict):
+            pay = answers.get("Pay", {})
+            if isinstance(pay, dict):
+                value = str(pay.get("notes") or pay.get("answer") or "").strip()
+                if value:
+                    return value
+        custom_answers = row.get("custom_answers", []) if isinstance(row, dict) else []
+        for answer in custom_answers if isinstance(custom_answers, list) else []:
+            if isinstance(answer, dict) and str(answer.get("id") or "").casefold() == "pay":
+                return str(answer.get("answer") or answer.get("notes") or "").strip()
+        return ""
 
     def _select_main_nav_row(self, index: int) -> None:
         if index < 0:
@@ -2876,16 +3030,58 @@ class PySideInterviewWindow:
     def show(self) -> None:
         self._fit_window_to_available_screen(fill_available=True)
         self.window.showMaximized()
+        self._start_source_update_monitoring()
         if getattr(self, "director_staffing_mode", False):
             return
         self._schedule_startup_notifications()
         self._schedule_recording_interface_preload()
+
+    def _start_source_update_monitoring(self) -> None:
+        if not hasattr(self, "QtCore") or getattr(self, "source_update_timer", None) is not None:
+            return
+        self.source_update_detector = SourceUpdateDetector(
+            SOURCE_VERSION_PATH,
+            source_root=SOURCE_UPDATE_ROOT,
+        )
+        timer = self.QtCore.QTimer(self.window)
+        timer.setInterval(5000)
+        timer.timeout.connect(self._poll_source_updates)
+        timer.start()
+        self.source_update_timer = timer
+
+    def _poll_source_updates(self) -> None:
+        detector = self.source_update_detector
+        if detector is not None and detector.poll():
+            self.source_update_banner.show()
+
+    def _restart_after_source_update(self) -> None:
+        if not self._request_window_close():
+            return
+        self.window._close_callback = None
+        started = relaunch_application(
+            self.QtCore,
+            self.window.close,
+            cwd=SOURCE_VERSION_PATH.parent.parent,
+        )
+        if started:
+            return
+        self.window._close_callback = self._request_window_close
+        self.QtWidgets.QMessageBox.warning(
+            self.window,
+            "Restart Failed",
+            "Could not start the updated app. Please close and reopen it manually.",
+        )
 
     def _schedule_startup_notifications(self) -> None:
         if self._startup_notifications_scheduled:
             return
         self._startup_notifications_scheduled = True
         self.QtCore.QTimer.singleShot(0, self._run_due_notifications_safely)
+        timer = self.QtCore.QTimer(self.window)
+        timer.setInterval(5 * 60 * 1000)
+        timer.timeout.connect(self._run_due_notifications_safely)
+        timer.start()
+        self._notification_scheduler_timer = timer
 
     def _schedule_recording_interface_preload(self) -> None:
         if getattr(self, "_recording_interface_preload_started", False):
@@ -3589,6 +3785,10 @@ class PySideInterviewWindow:
         candidate = self.QtWidgets.QLineEdit()
         candidate.setObjectName("HiringV2SetupCandidateName")
         candidate.setPlaceholderText("Enter candidate name")
+        honorific = self.QtWidgets.QComboBox()
+        honorific.setObjectName("HiringV2SetupHonorific")
+        honorific.addItems(("Mr.", "Ms."))
+        honorific.setCurrentText("Ms.")
         school = self.QtWidgets.QComboBox()
         school.setObjectName("HiringV2SetupSchool")
         school.addItems(self.model.school_options)
@@ -3601,6 +3801,7 @@ class PySideInterviewWindow:
         for row, (label_text, field) in enumerate(
             (
                 ("Candidate Name", candidate),
+                ("Honorific", honorific),
                 ("School", school),
                 ("Position / Track", role),
                 ("Interview Type", interview_type),
@@ -3689,6 +3890,7 @@ class PySideInterviewWindow:
         layout.addStretch(1)
 
         self.home_candidate_input = candidate
+        self.home_honorific_combo = honorific
         self.home_school_combo = school
         self.home_role_combo = role
         self.home_interview_type_combo = interview_type
@@ -3701,6 +3903,7 @@ class PySideInterviewWindow:
         self.home_begin_button = begin
         self._setup_form_dirty = False
         candidate.textChanged.connect(self._mark_new_interview_setup_dirty)
+        honorific.currentIndexChanged.connect(self._mark_new_interview_setup_dirty)
         school.currentIndexChanged.connect(self._mark_new_interview_setup_dirty)
         role.currentIndexChanged.connect(self._mark_new_interview_setup_dirty)
         return page
@@ -3731,6 +3934,9 @@ class PySideInterviewWindow:
             combo = getattr(self, combo_name, None)
             if combo is not None and combo.count():
                 combo.setCurrentIndex(0)
+        honorific = getattr(self, "home_honorific_combo", None)
+        if honorific is not None:
+            honorific.setCurrentText("Ms.")
         validation = getattr(self, "home_setup_validation", None)
         if validation is not None:
             validation.clear()
@@ -4011,14 +4217,15 @@ class PySideInterviewWindow:
         self.session_index = 0
         self.session_answers = {}
         candidate_name = self.home_candidate_input.text().strip() if hasattr(self, "home_candidate_input") else ""
+        honorific = self.home_honorific_combo.currentText().strip() if hasattr(self, "home_honorific_combo") else ""
         school = self.home_school_combo.currentText().strip() if hasattr(self, "home_school_combo") else ""
         preferred_name = ""
         email = ""
         phone = ""
-        if not candidate_name or not school or not label:
+        if not candidate_name or honorific not in {"Mr.", "Ms."} or not school or not label:
             validation = getattr(self, "home_setup_validation", None)
             if validation is not None:
-                validation.setText("Candidate name, school, and position / track are required.")
+                validation.setText("Candidate name, honorific, school, and position / track are required.")
                 validation.show()
             else:
                 self.QtWidgets.QMessageBox.warning(
@@ -4053,6 +4260,7 @@ class PySideInterviewWindow:
         hiring_service = HiringWorkflowService(HiringPipelineStore(self.model.history_path))
         application = hiring_service.start_application(
             legal_name=candidate_name,
+            honorific=honorific,
             email=email,
             phone=phone,
             school=school,
@@ -4072,7 +4280,12 @@ class PySideInterviewWindow:
             draft_path=draft_path,
             application_id=application.application_id,
         )
-        self.session.start(candidate_name=candidate_name, school=school, track_key=self.session_track_key)
+        self.session.start(
+            candidate_name=candidate_name,
+            honorific=honorific,
+            school=school,
+            track_key=self.session_track_key,
+        )
         self._start_pyside_interview_recording()
         self._render_live_question_page()
         self._render_review_page()
@@ -4331,6 +4544,11 @@ class PySideInterviewWindow:
             session.interview_date = row.interview_date
         payload = self._history_payload_for_row(row)
         self._hydrate_session_from_history_payload(session, payload)
+        history_id = str(row.row_key or "").strip()
+        report_repository = CandidateReportRepository(self.model.history_path)
+        if history_id and report_repository.exists(history_id):
+            report = report_repository.load_visible_version(history_id, role="admin")
+            self._hydrate_session_from_history_payload(session, report.snapshot)
         return session
 
     def _history_payload_for_row(self, row: PySideHistoryRow) -> dict[str, Any]:
@@ -4360,6 +4578,42 @@ class PySideInterviewWindow:
             for question_id, answer in stored_answers.items():
                 if isinstance(answer, dict):
                     session.answers[str(question_id)] = dict(answer)
+        questions = payload.get("questions", [])
+        if isinstance(questions, list):
+            for index, question in enumerate(questions):
+                if not isinstance(question, dict):
+                    continue
+                question_id = str(question.get("question_id") or question.get("id") or "").strip()
+                if not question_id:
+                    continue
+                answer = dict(session.answers.get(question_id, {}) or {})
+                fallback_fields = {
+                    "kind": question.get("type"),
+                    "title": question.get("title"),
+                    "prompt": question.get("prompt"),
+                    "notes": question.get("interviewer_notes"),
+                    "score": question.get("rating"),
+                    "skip_reason": question.get("skip_reason"),
+                }
+                for field_name, value in fallback_fields.items():
+                    if answer.get(field_name) in (None, "") and value not in (None, ""):
+                        answer[field_name] = value
+                if "skipped" not in answer and "skipped" in question:
+                    answer["skipped"] = bool(question.get("skipped"))
+                quick_actions = [str(value) for value in answer.get("quick_actions", []) or []]
+                if question.get("absolute_disqualifier") and "Disqualifier observed" not in quick_actions:
+                    quick_actions.append("Disqualifier observed")
+                if question.get("no_example_after_followups") and "Candidate gave no example" not in quick_actions:
+                    quick_actions.append("Candidate gave no example")
+                answer["quick_actions"] = quick_actions
+                session.answers[question_id] = answer
+                try:
+                    flow_index = int(question.get("flow_index", index))
+                except (TypeError, ValueError):
+                    flow_index = index
+                transcript = str(question.get("transcript") or "").strip()
+                if flow_index >= 0 and transcript and not session.flow_candidate_transcripts.get(flow_index):
+                    session.flow_candidate_transcripts[flow_index] = transcript
         review_scores = payload.get("review_scores", {})
         if isinstance(review_scores, dict):
             for question_id, score in review_scores.items():
@@ -4433,6 +4687,16 @@ class PySideInterviewWindow:
         return updates
 
     def _regenerate_history_import_artifacts(self, row: PySideHistoryRow, session: PySideInterviewSession) -> dict[str, Any]:
+        has_saved_content = any(
+            str(answer.get("notes") or "").strip()
+            or str(answer.get("score") or "").strip()
+            or bool(answer.get("skipped"))
+            or bool(answer.get("quick_actions"))
+            for answer in session.answers.values()
+            if isinstance(answer, dict)
+        ) or any(str(value or "").strip() for value in session.flow_candidate_transcripts.values())
+        if not has_saved_content:
+            raise ValueError("No saved interview answers, scores, or transcripts are available to regenerate notes.")
         adapter = _PySideFinalizeAdapter(session, base_dir=DEFAULT_BASE_DIR, history_path=self.model.history_path)
         warnings: list[str] = []
         scoring = ScoringEngine.evaluate(adapter._rubric_with_question_overrides(), adapter.state.track, adapter.state.trait_inputs)
@@ -5935,6 +6199,7 @@ class PySideInterviewWindow:
         if self.session is None:
             return
         outcome = _director_referral_outcome(str(scoring.get("outcome", "") or ""))
+        candidate_email, candidate_phone = self._current_session_candidate_contact()
         payload = {
             "history_id": history_id,
             "candidate_name": self.session.candidate_name,
@@ -5942,7 +6207,8 @@ class PySideInterviewWindow:
             "position": self._session_position_label(),
             "interviewer_rating": _director_referral_rating(str(scoring.get("percent_of_max_label") or scoring.get("percent_of_max") or "")),
             "interview_date": self.session.interview_date,
-            "candidate_email": "",
+            "candidate_email": candidate_email,
+            "candidate_phone": candidate_phone,
             "referral_date": self.session.interview_date,
         }
         if outcome:
@@ -6122,13 +6388,89 @@ class PySideInterviewWindow:
         self._completed_finalize_error = ""
         self._completed_artifacts_dirty = False
         if not message.get("artifact_update"):
+            self._prompt_candidate_contact_handoff(result)
             self._emit_pyside_rating_notification(result)
             self._record_staffing_director_referral_from_finalize_result(result)
         self._reload_history_model()
+        if not message.get("artifact_update"):
+            self._sync_staffing_director_referrals_from_history()
+            dashboard = getattr(self, "staffing_v2_dashboard", None)
+            if dashboard is not None:
+                dashboard.refresh()
         self._report_pyside_finalize_progress("Interview finalized")
         self._refresh_pyside_finalize_progress()
         self._schedule_close_pyside_finalize_progress()
         self._render_review_page()
+
+    def _prompt_candidate_contact_handoff(self, result: dict[str, Any]) -> None:
+        if self.session is None or not isinstance(result, dict):
+            return
+        scoring = result.get("scoring", {})
+        score = scoring.get("percent_of_max") if isinstance(scoring, dict) else None
+        if not should_prompt_candidate_contact_handoff(score):
+            return
+
+        dialog = self.QtWidgets.QDialog(self.window)
+        dialog.setWindowTitle("Candidate Contact Information")
+        dialog.setModal(True)
+        dialog.resize(680, 440)
+        layout = self.QtWidgets.QVBoxLayout(dialog)
+        script = self._label(
+            "I would like to have you come in for an in-person interview with our director. "
+            "I am going to send you a message on Indeed with her email address. If you could "
+            "please email a copy of your resume and transcript, official or un-official, to that "
+            "email address along with 3-4 dates and times that work for your in-person interview, "
+            "that would be great. If you have any questions in-between now and then, please send "
+            "me a message on Indeed."
+        )
+        script.setWordWrap(True)
+        layout.addWidget(script)
+        form = self.QtWidgets.QFormLayout()
+        email_input = self.QtWidgets.QLineEdit()
+        email_input.setObjectName("CandidateContactEmail")
+        phone_input = self.QtWidgets.QLineEdit()
+        phone_input.setObjectName("CandidateContactPhone")
+        form.addRow("Email (optional)", email_input)
+        form.addRow("Phone (optional)", phone_input)
+        layout.addLayout(form)
+        buttons = self.QtWidgets.QDialogButtonBox(
+            self.QtWidgets.QDialogButtonBox.StandardButton.Save
+            | self.QtWidgets.QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        layout.addWidget(buttons)
+
+        while dialog.exec() == self.QtWidgets.QDialog.DialogCode.Accepted:
+            email = email_input.text().strip()
+            raw_phone = phone_input.text().strip()
+            try:
+                if email and not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email):
+                    raise ValueError("Enter a valid candidate email address.")
+                phone = normalize_candidate_phone(raw_phone) if raw_phone else ""
+                self._persist_candidate_contact(email=email, phone=phone, result=result)
+                return
+            except ValueError as exc:
+                self.QtWidgets.QMessageBox.warning(dialog, "Candidate Contact Information", str(exc))
+
+    def _persist_candidate_contact(self, *, email: str, phone: str, result: dict[str, Any]) -> None:
+        application_id = str(getattr(self.session, "application_id", "") or "")
+        service = HiringWorkflowService(HiringPipelineStore(self.model.history_path))
+        application = service.store.get_application(application_id)
+        candidate = service.store.get_candidate(application.candidate_id)
+        service.update_candidate_profile(
+            candidate.candidate_id,
+            legal_name=candidate.legal_name,
+            preferred_name=candidate.preferred_name,
+            email=email,
+            phone=phone,
+        )
+        history_id = str(result.get("history_id") or application.history_id or "").strip()
+        if history_id:
+            InterviewHistoryStore(self.model.history_path).update_row(
+                history_id,
+                {"candidate_email": email, "candidate_phone": phone, "email": email, "phone": phone},
+            )
 
     def _set_review_status(self, text: str) -> None:
         label = getattr(self, "review_status_label", None)
@@ -6161,51 +6503,7 @@ class PySideInterviewWindow:
             existing_tasks=getattr(self, "_pyside_finalize_progress_tasks", []),
             queued_steps=PYSIDE_CORE_FINALIZE_PROGRESS_TASKS,
         )
-        if self.pyside_finalize_progress_dialog is not None:
-            self._refresh_pyside_finalize_progress()
-            return
-        dialog = self.QtWidgets.QDialog(self.window)
-        dialog.setWindowTitle("Finalizing Interview")
-        dialog.setModal(False)
-        dialog.resize(620, 380)
-        dialog.setMinimumSize(520, 320)
-        dialog.setMaximumHeight(460)
-        layout = self.QtWidgets.QVBoxLayout(dialog)
-        layout.setContentsMargins(18, 16, 18, 16)
-        layout.setSpacing(10)
-        layout.addWidget(self._label("Finalizing Interview", "PySideFinalizeProgressTitle"))
-        layout.addWidget(self._label("Tasks run in order. Processing continues if this window is closed.", "PySideFinalizeProgressHelp"))
-        scroll = self.QtWidgets.QScrollArea()
-        scroll.setObjectName("PySideFinalizeProgressScroll")
-        scroll.setWidgetResizable(True)
-        scroll.setHorizontalScrollBarPolicy(self.QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll.setVerticalScrollBarPolicy(self.QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        scroll.setFrameShape(self.QtWidgets.QFrame.Shape.NoFrame)
-        content = self.QtWidgets.QWidget()
-        content_layout = self.QtWidgets.QVBoxLayout(content)
-        content_layout.setContentsMargins(12, 10, 12, 10)
-        label = self._label(
-            format_finalize_progress_tasks(self._pyside_finalize_progress_tasks, fallback=normalized)
-        )
-        label.setObjectName("PySideFinalizeProgressLabel")
-        label.setWordWrap(False)
-        content_layout.addWidget(label)
-        content_layout.addStretch(1)
-        scroll.setWidget(content)
-        layout.addWidget(scroll, 1)
-        bar = self.QtWidgets.QProgressBar()
-        bar.setRange(0, 0)
-        layout.addWidget(bar)
-        dialog.finished.connect(lambda _result=0: self._clear_pyside_finalize_progress_dialog())
-        self.pyside_finalize_progress_dialog = dialog
-        self.pyside_finalize_progress_label = label
-        self.pyside_finalize_progress_bar = bar
-        self._pyside_finalize_progress_queue = queue.Queue()
-        refresh_timer = self.QtCore.QTimer(dialog)
-        refresh_timer.timeout.connect(self._refresh_pyside_finalize_progress)
-        self._pyside_finalize_progress_refresh_timer = refresh_timer
-        refresh_timer.start(500)
-        dialog.show()
+        self._clear_pyside_finalize_progress_dialog()
 
     def _clear_pyside_finalize_progress_dialog(self) -> None:
         refresh_timer = self._pyside_finalize_progress_refresh_timer
@@ -6227,9 +6525,7 @@ class PySideInterviewWindow:
         self._pyside_finalize_progress_queue = None
 
     def _schedule_close_pyside_finalize_progress(self) -> None:
-        if self.pyside_finalize_progress_dialog is None:
-            return
-        self.QtCore.QTimer.singleShot(2500, self._close_pyside_finalize_progress)
+        return
 
     def _report_pyside_finalize_progress(self, step: str) -> None:
         normalized = str(step or "").strip()
@@ -6281,6 +6577,9 @@ class PySideInterviewWindow:
                 recent_interviews=_recent_interviews_from_history_rows(history_rows),
             ),
         )
+        hiring_page = getattr(self, "hiring_v2_page", None)
+        if hiring_page is not None:
+            hiring_page.refresh()
 
     def _open_history_notes(self, row: PySideHistoryRow) -> None:
         path = Path(row.notes_path)
@@ -6302,12 +6601,10 @@ class PySideInterviewWindow:
         if not isinstance(scoring, dict):
             return
         outcome = str(scoring.get("outcome", "") or "").strip()
-        event_type = {
-            "hire": "interview.rating.hire",
-            "borderline": "interview.rating.borderline",
-        }.get(outcome.lower())
-        if not event_type:
+        score_value = scoring.get("percent_of_max", scoring.get("percent_of_max_label"))
+        if not should_prompt_candidate_contact_handoff(score_value) and _coerce_history_percent(score_value) != 65:
             return
+        event_type = "interview.rating.qualified"
         payload = {
             "candidate_name": self.session.candidate_name,
             "school": self.session.school,
@@ -6316,6 +6613,7 @@ class PySideInterviewWindow:
             "interview_date": self.session.interview_date,
             "outcome": outcome,
             "score": str(scoring.get("percent_of_max_label") or scoring.get("percent_of_max") or ""),
+            "interview_score": str(scoring.get("percent_of_max_label") or scoring.get("percent_of_max") or ""),
             "history_id": str(result.get("history_id", "") or ""),
             "start_date": "",
             "notice_given": "",
@@ -6680,13 +6978,27 @@ class PySideInterviewWindow:
     def _staffing_service(self) -> StaffingService:
         role = "director" if self.director_staffing_mode else "admin"
         replica = f"director:{_staffing_school_slug(self.director_staffing_school)}" if role == "director" else "admin"
+        actor = str(os.environ.get("USERNAME") or os.environ.get("USER") or role)
+        publisher = f"{replica}:{_staffing_school_slug(actor) or role}"
         return StaffingService(
             self.staffing_store,
             notification_service=self._notification_service(),
             change_stage=self.staffing_change_stage,
             replica=replica,
+            publisher=publisher,
             school_scope=self.director_staffing_school if role == "director" else "",
+            conflict_resolver=self._resolve_staffing_change_conflict,
         )
+
+    def _resolve_staffing_change_conflict(self, conflict: StaffingChangeConflict) -> bool:
+        answer = self.QtWidgets.QMessageBox.question(
+            self.window,
+            "Staffing Change Conflict",
+            staffing_change_conflict_message(conflict),
+            self.QtWidgets.QMessageBox.StandardButton.Yes | self.QtWidgets.QMessageBox.StandardButton.No,
+            self.QtWidgets.QMessageBox.StandardButton.No,
+        )
+        return answer == self.QtWidgets.QMessageBox.StandardButton.Yes
 
     def _import_queued_staffing_director_referrals(self) -> int:
         if not hasattr(self, "staffing_store"):
@@ -6728,6 +7040,7 @@ class PySideInterviewWindow:
                         calculated_outcome=str(payload["interviewer_outcome"]),
                         interview_date=str(payload.get("interview_date", "")),
                         candidate_email=str(payload.get("candidate_email", "")),
+                        candidate_phone=str(payload.get("candidate_phone", "")),
                     )
                 else:
                     service.upsert_director_candidate_referral(
@@ -6739,6 +7052,7 @@ class PySideInterviewWindow:
                         interviewer_outcome=str(payload["interviewer_outcome"]),
                         interview_date=str(payload.get("interview_date", "")),
                         candidate_email=str(payload.get("candidate_email", "")),
+                        candidate_phone=str(payload.get("candidate_phone", "")),
                         referral_date=str(payload.get("referral_date", "")),
                         queue_on_lock=True,
                     )
@@ -6806,6 +7120,7 @@ class PySideInterviewWindow:
                     interviewer_outcome=outcome,
                     interview_date=row.interview_date,
                     candidate_email=row.candidate_email,
+                    candidate_phone=row.candidate_phone,
                     queue_on_lock=True,
                 )
             except (OSError, ValueError, StaffingEditLock):
@@ -6821,6 +7136,7 @@ class PySideInterviewWindow:
         if not outcome:
             return
         rating_source = scoring.get("interviewer_rating", scoring.get("rating", scoring.get("percent_of_max", "")))
+        candidate_email, candidate_phone = self._current_session_candidate_contact()
         try:
             _append_staffing_referral_queue(
                 {
@@ -6831,12 +7147,25 @@ class PySideInterviewWindow:
                     "interviewer_rating": _director_referral_rating(str(rating_source)),
                     "interviewer_outcome": outcome,
                     "interview_date": self.session.interview_date,
-                    "candidate_email": "",
+                    "candidate_email": candidate_email,
+                    "candidate_phone": candidate_phone,
                     "referral_date": self.session.interview_date,
                 }
             )
         except OSError:
             return
+
+    def _current_session_candidate_contact(self) -> tuple[str, str]:
+        application_id = str(getattr(self.session, "application_id", "") or "")
+        if not application_id:
+            return "", ""
+        try:
+            store = HiringPipelineStore(self.model.history_path)
+            application = store.get_application(application_id)
+            candidate = store.get_candidate(application.candidate_id)
+        except ValueError:
+            return "", ""
+        return candidate.email, candidate.phone
 
     def _staffing_detail_drawer(self) -> Any:
         drawer = self.QtWidgets.QFrame()
@@ -7687,6 +8016,19 @@ class PySideInterviewWindow:
     def _run_due_notifications_safely(self) -> None:
         try:
             service = self._notification_service()
+            service.store.ensure_default_rules()
+            activator = getattr(service, "activate_ready_system_rules", None)
+            if callable(activator):
+                activator()
+            staffing_store = StaffingStore(STAFFING_DB_PATH)
+            staffing_store.initialize()
+            rollout_date = service.store.get_or_create_rollout_date(date.today())
+            StaffingNotificationScheduler(
+                staffing_store=staffing_store,
+                notification_service=service,
+                rollout_date=rollout_date,
+                candidate_contact_resolver=self._staffing_candidate_contact,
+            ).run()
             settings = getattr(service, "email_settings", None)
             if settings is not None and (not getattr(settings, "smtp_host", "") or not getattr(settings, "sender_email", "")):
                 return
@@ -7695,6 +8037,24 @@ class PySideInterviewWindow:
                 runner()
         except Exception:
             return
+
+    def _staffing_candidate_contact(self, candidate_name: str, school: str) -> dict[str, str]:
+        hiring_store = HiringPipelineStore(self.model.history_path)
+        normalized_name = str(candidate_name or "").strip().casefold()
+        normalized_school = str(school or "").strip().casefold()
+        applications = hiring_store.list_applications(include_archived=True)
+        for candidate in hiring_store.search_candidate_profiles(candidate_name):
+            if candidate.legal_name.strip().casefold() != normalized_name:
+                continue
+            schools = {
+                application.school.strip().casefold()
+                for application in applications
+                if application.candidate_id == candidate.candidate_id
+            }
+            if normalized_school not in schools:
+                continue
+            return {"email": candidate.email, "honorific": candidate.honorific}
+        return {}
 
     def _placeholder_page(self, title: str, body: str) -> Any:
         page, layout = self._page()
