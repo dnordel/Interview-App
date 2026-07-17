@@ -222,6 +222,55 @@ def test_hiring_workspace_create_offer_action_submits_selected_version(tmp_path:
     app.processEvents()
 
 
+def test_hiring_workspace_generate_offer_button_creates_external_offer(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6 import QtCore, QtWidgets
+    from hiring_pipeline import HiringApplication, HiringStage
+    from hiring_workspace_v2 import HiringWorkspaceV2Page
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    service = HiringWorkflowService(HiringPipelineStore(tmp_path / "external-offer.sqlite3"))
+    page = HiringWorkspaceV2Page(QtCore=QtCore, QtWidgets=QtWidgets, service=service)
+    page.offers_widget.show()
+    app.processEvents()
+
+    button = page.offers_widget.findChild(QtWidgets.QPushButton, "HiringV2PrimaryAction")
+    submitted = page.perform_action(
+        "create_external_offer",
+        HiringApplication(
+            application_id="",
+            candidate_id="",
+            history_id="",
+            school="Palmdale",
+            position="Preschool",
+            cycle_number=0,
+            stage=HiringStage.OFFER_DRAFT,
+        ),
+        values={
+            "candidate_name": "External Candidate",
+            "candidate_email": "external@example.com",
+            "candidate_phone": "555-0100",
+            "honorific": "Ms.",
+            "school": "Palmdale",
+            "position": "Preschool",
+            "hourly_pay": "24.00",
+            "weekly_hours": "40",
+            "template_path": "offer.docx",
+            "output_dir": "offers",
+        },
+    )
+
+    assert button is not None
+    assert button.text() == "+ Generate offer"
+    assert submitted.status == "pending_approval"
+    assert page.offers_table.rowCount() == 1
+    assert page.offers_table.item(0, 0).text() == "External Candidate"
+    assert page.offers_table.item(0, 5).text() == "Pending Approval"
+    assert "Approval 1" in page.offers_status.text()
+    page.offers_widget.close()
+    app.processEvents()
+
+
 @pytest.mark.pyside_gui
 @pytest.mark.visual_inspection
 def test_hiring_workspace_visual_sizes_have_no_page_horizontal_scroll(

@@ -195,6 +195,45 @@ def test_director_offer_submission_is_idempotent_by_source_key(tmp_path: Path) -
     assert len(service.store.list_offer_versions(application.application_id)) == 1
 
 
+def test_external_offer_creates_offer_ready_application_and_submits(tmp_path: Path) -> None:
+    service = HiringWorkflowService(HiringPipelineStore(tmp_path / "history.sqlite3"))
+
+    submitted = service.create_external_offer(
+        legal_name="External Candidate",
+        email="external@example.com",
+        phone="555-0100",
+        honorific="Ms.",
+        school="Palmdale",
+        position="Preschool",
+        terms={
+            "candidate_name": "External Candidate",
+            "candidate_email": "external@example.com",
+            "school": "Palmdale",
+            "position": "Preschool",
+            "hourly_pay": "24.00",
+            "weekly_hours": "40",
+            "template_path": "offer.docx",
+            "output_dir": "offers",
+        },
+        actor="Admin",
+    )
+
+    application = service.store.get_application(submitted.application_id)
+    candidate = service.store.get_candidate(application.candidate_id)
+    events = [event.event_type for event in service.store.list_events(application.application_id)]
+
+    assert candidate.legal_name == "External Candidate"
+    assert application.history_id.startswith("external_offer:")
+    assert application.stage is HiringStage.EXECUTIVE_APPROVAL
+    assert submitted.status == "pending_approval"
+    assert submitted.version_number == 1
+    assert events == [
+        "external_offer_application_created",
+        "offer_draft_created",
+        "offer_submitted_for_approval",
+    ]
+
+
 def test_approved_offer_advances_only_after_pdf_delivery(tmp_path: Path) -> None:
     history_path = tmp_path / "interview_history.sqlite3"
     history = InterviewHistoryStore(history_path)

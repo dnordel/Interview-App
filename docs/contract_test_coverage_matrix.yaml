@@ -12,7 +12,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-17T16:00:44.672129+00:00'
+generated_at_utc: '2026-07-17T19:32:42.814908+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -2069,6 +2069,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/hiring_pipeline.contract.yaml
+  symbol: hiring_pipeline.HiringPipelineStore.start_external_offer_application
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/hiring_pipeline.contract.yaml
   symbol: hiring_pipeline.HiringPipelineStore.update_application_stage
   kind: method
   tests:
@@ -2142,6 +2151,15 @@ entries:
     - return_type
 - contract: contracts/hiring_pipeline.contract.yaml
   symbol: hiring_pipeline.HiringWorkflowService.create_compensation_revision
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/hiring_pipeline.contract.yaml
+  symbol: hiring_pipeline.HiringWorkflowService.create_external_offer
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -2259,6 +2277,15 @@ entries:
     - return_type
 - contract: contracts/hiring_pipeline.contract.yaml
   symbol: hiring_pipeline.HiringWorkflowService.start_application
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/hiring_pipeline.contract.yaml
+  symbol: hiring_pipeline.HiringWorkflowService.start_external_offer_application
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -2385,6 +2412,24 @@ entries:
     - return_type
 - contract: contracts/hiring_workspace_v2.contract.yaml
   symbol: hiring_workspace_v2.HiringOfferApprovalDialog.exec
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/hiring_workspace_v2.contract.yaml
+  symbol: hiring_workspace_v2.HiringWorkspaceV2Page._external_offer_editor_values
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/hiring_workspace_v2.contract.yaml
+  symbol: hiring_workspace_v2.HiringWorkspaceV2Page._open_external_offer_dialog
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py

@@ -776,6 +776,11 @@ entries:
   duration_source: measured
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_hiring_pipeline.py::test_external_offer_creates_offer_ready_application_and_submits
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_hiring_pipeline.py::test_approved_offer_advances_only_after_pdf_delivery
   duration_seconds_n2: 0.584
   duration_source: measured
@@ -853,6 +858,11 @@ entries:
   placement: gui_wave_3
 - nodeid: tests/test_hiring_workspace_v2.py::test_hiring_workspace_create_offer_action_submits_selected_version
   duration_seconds_n2: 0.552
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_hiring_workspace_v2.py::test_hiring_workspace_generate_offer_button_creates_external_offer
+  duration_seconds_n2: 0.69
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -4209,6 +4219,11 @@ entries:
   duration_source: measured
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_pyside_button_actions.py::test_new_pyside_buttons_are_connected_to_actions
+  duration_seconds_n2: 0.841
+  duration_source: measured
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_pyside_completed_interview.py::test_completed_overview_derives_dynamic_scores_and_review_items
   duration_seconds_n2: 0.345
   duration_source: measured
@@ -4704,6 +4719,11 @@ entries:
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_director_hire_sync_migrates_existing_staffing_db_before_contact_read
+  duration_seconds_n2: 0.807
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_review_table_updates_transcript_when_finalize_worker_reports_transcripts
   duration_seconds_n2: 1.129
   duration_source: measured
@@ -5067,6 +5087,16 @@ entries:
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_classroom_detail_matches_dashboard_mockup_shell
   duration_seconds_n2: 1.29
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_filters_button_focuses_filter_controls
+  duration_seconds_n2: 0.789
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_add_position_button_creates_position_and_opens_drawer
+  duration_seconds_n2: 0.807
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -6945,6 +6975,11 @@ entries:
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
+- nodeid: tests/test_staffing_candidate_report_ui.py::test_director_interview_dialog_uses_scrollable_two_column_layout
+  duration_seconds_n2: 0.5
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
 - nodeid: tests/test_staffing_change_stage.py::test_independent_machine_events_survive_dropbox_merge
   duration_seconds_n2: 0.028
   duration_source: measured
@@ -8550,23 +8585,3 @@ entries:
   duration_source: measured
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_pyside_button_actions.py::test_new_pyside_buttons_are_connected_to_actions
-  duration_seconds_n2: 0.841
-  duration_source: measured
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_pyside_interview_redesign.py::test_director_hire_sync_migrates_existing_staffing_db_before_contact_read
-  duration_seconds_n2: 0.807
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_filters_button_focuses_filter_controls
-  duration_seconds_n2: 0.789
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_add_position_button_creates_position_and_opens_drawer
-  duration_seconds_n2: 0.807
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3

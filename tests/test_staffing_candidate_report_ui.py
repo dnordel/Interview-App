@@ -96,3 +96,53 @@ def test_completed_candidate_name_opens_structured_report(tmp_path: Path):
 
     assert opened == [("hist-completed", "Hawthorne")]
     page.widget.close()
+
+
+def test_director_interview_dialog_uses_scrollable_two_column_layout(tmp_path: Path):
+    qt_core = pytest.importorskip("PySide6.QtCore")
+    qt_gui = pytest.importorskip("PySide6.QtGui")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    service = StaffingService(store)
+    candidate = service.upsert_director_candidate_referral(
+        history_id="hist-layout",
+        candidate_name="Xandria Taylor",
+        school="Palmdale",
+        position="infant_toddler",
+        interviewer_rating=8.0,
+        interviewer_outcome="hire",
+        interview_date="2026-07-17",
+    )
+    page = StaffingDashboardV2Page(
+        QtCore=qt_core,
+        QtGui=qt_gui,
+        QtWidgets=qt_widgets,
+        store=store,
+        service_factory=lambda: StaffingService(store),
+    )
+
+    page._open_director_interview_dialog(candidate.id)
+    app.processEvents()
+
+    dialog = page.widget.findChild(qt_widgets.QDialog, "StaffingV2DirectorInterviewDialog")
+    assert dialog is not None
+    scroll_area = dialog.findChild(qt_widgets.QScrollArea, "StaffingV2DirectorInterviewScrollArea")
+    assert scroll_area is not None
+    assert scroll_area.widgetResizable() is True
+
+    grid = dialog.findChild(qt_widgets.QGridLayout, "StaffingV2DirectorInterviewFormGrid")
+    assert grid is not None
+    director_name = dialog.findChild(qt_widgets.QLineEdit, "StaffingV2DirectorInterviewDirectorName")
+    shift_start = dialog.findChild(qt_widgets.QLineEdit, "StaffingV2DirectorInterviewShiftStartText")
+    assert director_name is not None
+    assert shift_start is not None
+    assert grid.getItemPosition(grid.indexOf(director_name.parentWidget()))[:2] == (0, 0)
+    assert grid.getItemPosition(grid.indexOf(shift_start.parentWidget()))[:2] == (0, 1)
+
+    save = dialog.findChild(qt_widgets.QPushButton, "StaffingV2DirectorInterviewSave")
+    assert save is not None
+    assert scroll_area.isAncestorOf(save) is False
+    dialog.close()
+    page.widget.close()

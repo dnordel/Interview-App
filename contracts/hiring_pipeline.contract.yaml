@@ -2,7 +2,7 @@ module:
   name: hiring_pipeline
   language: python
   path: src/hiring_pipeline.py
-  version: 1.6.1
+  version: 1.7.0
   description: Candidate-profile, application-pipeline, event-audit, and offer-lifecycle persistence in the canonical interview history SQLite database.
 functions:
 - name: normalize_candidate_phone
@@ -333,6 +333,18 @@ classes:
     returns: {type: HiringApplication}
     exceptions: [ValueError]
     side_effects: Creates a new initial-interview application cycle and application-started audit event.
+  - name: start_external_offer_application
+    inputs:
+      legal_name: {type: str, required: true}
+      email: {type: str, required: true}
+      phone: {type: str, required: true}
+      school: {type: str, required: true}
+      position: {type: str, required: true}
+      actor: {type: str, required: true}
+      honorific: {type: str, required: false, default: 'Ms.'}
+    returns: {type: HiringApplication}
+    exceptions: [ValueError]
+    side_effects: Creates a candidate-linked application cycle at offer draft stage for externally interviewed candidates and appends an audit event.
   - name: finalize_initial_interview
     inputs:
       application_id: {type: str, required: true}
@@ -371,6 +383,11 @@ classes:
     returns: {type: HiringApplication}
     exceptions: [ValueError]
     side_effects: Starts a new application cycle before interview work begins.
+  - name: start_external_offer_application
+    inputs: {values: {type: Any, required: true}}
+    returns: {type: HiringApplication}
+    exceptions: [ValueError]
+    side_effects: Starts an externally interviewed candidate at offer draft stage.
   - name: finalize_initial_interview
     inputs:
       application_id: {type: str, required: true}
@@ -413,6 +430,19 @@ classes:
     returns: {type: OfferVersion}
     exceptions: [ValueError]
     side_effects: Creates a numbered draft for an offer-ready or negotiated application.
+  - name: create_external_offer
+    inputs:
+      legal_name: {type: str, required: true}
+      email: {type: str, required: true}
+      phone: {type: str, required: true}
+      school: {type: str, required: true}
+      position: {type: str, required: true}
+      terms: {type: 'dict[str, Any]', required: true}
+      actor: {type: str, required: true}
+      honorific: {type: str, required: false, default: 'Ms.'}
+    returns: {type: OfferVersion}
+    exceptions: [ValueError]
+    side_effects: Creates an external offer application, creates offer version 1, submits it for approval, and refreshes application stage.
   - name: ensure_director_offer_submitted
     inputs:
       application_id: {type: str, required: true}

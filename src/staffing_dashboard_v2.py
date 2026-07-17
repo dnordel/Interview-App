@@ -6063,7 +6063,7 @@ class StaffingDashboardV2Page:
         dialog.setWindowTitle("Record Director Interview")
         dialog.setModal(False)
         dialog.setStyleSheet(APP_QSS)
-        dialog.resize(620, 640)
+        dialog.resize(860, 640)
         layout = self.QtWidgets.QVBoxLayout(dialog)
         layout.setContentsMargins(22, 18, 22, 18)
         layout.setSpacing(12)
@@ -6080,7 +6080,24 @@ class StaffingDashboardV2Page:
         header.addWidget(close)
         layout.addLayout(header)
 
+        scroll_area = self.QtWidgets.QScrollArea()
+        scroll_area.setObjectName("StaffingV2DirectorInterviewScrollArea")
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setFrameShape(self.QtWidgets.QFrame.Shape.NoFrame)
+        scroll_area.setHorizontalScrollBarPolicy(self.QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll_content = self.QtWidgets.QWidget()
+        scroll_layout = self.QtWidgets.QVBoxLayout(scroll_content)
+        scroll_layout.setContentsMargins(0, 0, 0, 0)
+        scroll_layout.setSpacing(12)
+
         form, form_layout = self._dialog_section("StaffingV2DialogSection")
+        form_grid = self.QtWidgets.QGridLayout()
+        form_grid.setObjectName("StaffingV2DirectorInterviewFormGrid")
+        form_grid.setContentsMargins(0, 0, 0, 0)
+        form_grid.setHorizontalSpacing(16)
+        form_grid.setVerticalSpacing(10)
+        form_grid.setColumnStretch(0, 1)
+        form_grid.setColumnStretch(1, 1)
         director_name = self.QtWidgets.QLineEdit()
         director_name.setObjectName("StaffingV2DirectorInterviewDirectorName")
         completed_date = self.QtWidgets.QLineEdit(date.today().isoformat())
@@ -6110,39 +6127,54 @@ class StaffingDashboardV2Page:
         notes = self.QtWidgets.QTextEdit()
         notes.setObjectName("StaffingV2DirectorInterviewNotes")
         notes.setPlaceholderText("Required decision notes")
-        notes.setMaximumHeight(100)
+        notes.setMinimumHeight(110)
         follow_up = self.QtWidgets.QCheckBox("Follow-up needed")
         follow_up.setObjectName("StaffingV2DirectorInterviewFollowUp")
-        form_layout.addLayout(self._labeled_control("Director", director_name))
-        form_layout.addLayout(self._labeled_control("Interview Date", completed_date))
-        form_layout.addLayout(self._labeled_control("Rating", rating))
-        form_layout.addLayout(self._labeled_control("Decision", decision))
-        hire_only_fields: list[Any] = []
-        for object_name, label, control in (
-            ("StaffingV2DirectorInterviewShiftStartRow", "Proposed Shift Start", shift_start),
-            ("StaffingV2DirectorInterviewShiftEndRow", "Proposed Shift End", shift_end),
-            ("StaffingV2DirectorInterviewClassroomRow", "Proposed Classroom", classroom),
-        ):
+
+        def field_row(label: str, control: Any, object_name: str = "") -> Any:
             row = self.QtWidgets.QWidget()
-            row.setObjectName(object_name)
+            if object_name:
+                row.setObjectName(object_name)
             row.setLayout(self._labeled_control(label, control))
-            form_layout.addWidget(row)
+            return row
+
+        form_grid.addWidget(field_row("Director", director_name), 0, 0)
+        form_grid.addWidget(field_row("Interview Date", completed_date), 1, 0)
+        form_grid.addWidget(field_row("Rating", rating), 2, 0)
+        form_grid.addWidget(field_row("Decision", decision), 3, 0)
+        form_grid.addWidget(follow_up, 4, 0)
+        hire_only_fields: list[Any] = []
+        for row_index, (object_name, label, control) in enumerate(
+            (
+                ("StaffingV2DirectorInterviewShiftStartRow", "Proposed Shift Start", shift_start),
+                ("StaffingV2DirectorInterviewShiftEndRow", "Proposed Shift End", shift_end),
+                ("StaffingV2DirectorInterviewClassroomRow", "Proposed Classroom", classroom),
+            )
+        ):
+            row = field_row(label, control, object_name)
+            form_grid.addWidget(row, row_index, 1)
             hire_only_fields.append(row)
+        contact_row = 3
         if not candidate.candidate_email:
-            email_row = self.QtWidgets.QWidget()
-            email_row.setObjectName("StaffingV2DirectorInterviewCandidateEmailRow")
-            email_row.setLayout(self._labeled_control("Candidate Email", candidate_email))
-            form_layout.addWidget(email_row)
+            email_row = field_row(
+                "Candidate Email",
+                candidate_email,
+                "StaffingV2DirectorInterviewCandidateEmailRow",
+            )
+            form_grid.addWidget(email_row, contact_row, 1)
             hire_only_fields.append(email_row)
+            contact_row += 1
         if not candidate.candidate_phone:
-            phone_row = self.QtWidgets.QWidget()
-            phone_row.setObjectName("StaffingV2DirectorInterviewCandidatePhoneRow")
-            phone_row.setLayout(self._labeled_control("Candidate Phone (optional)", candidate_phone))
-            form_layout.addWidget(phone_row)
+            phone_row = field_row(
+                "Candidate Phone (optional)",
+                candidate_phone,
+                "StaffingV2DirectorInterviewCandidatePhoneRow",
+            )
+            form_grid.addWidget(phone_row, contact_row, 1)
             hire_only_fields.append(phone_row)
-        form_layout.addWidget(follow_up)
-        form_layout.addLayout(self._labeled_control("Decision Notes", notes))
-        layout.addWidget(form)
+        form_grid.addWidget(field_row("Decision Notes", notes), max(5, contact_row), 0, 1, 2)
+        form_layout.addLayout(form_grid)
+        scroll_layout.addWidget(form)
 
         def sync_hire_only_fields() -> None:
             is_hire = decision.currentText() == "Hire"
@@ -6155,13 +6187,15 @@ class StaffingDashboardV2Page:
         info, info_layout = self._dialog_section("StaffingV2DialogInfo")
         info_layout.addWidget(self._label("Hire decisions store proposed classroom and shift only."))
         info_layout.addWidget(self._label("Position status and classroom assignment stay unchanged until offer approval/acceptance."))
-        layout.addWidget(info)
+        scroll_layout.addWidget(info)
 
         error = self._label("", "StaffingV2NeedNowChip")
         error.setObjectName("StaffingV2DirectorInterviewError")
         error.hide()
-        layout.addWidget(error)
-        layout.addStretch(1)
+        scroll_layout.addWidget(error)
+        scroll_layout.addStretch(1)
+        scroll_area.setWidget(scroll_content)
+        layout.addWidget(scroll_area, 1)
 
         footer = self.QtWidgets.QHBoxLayout()
         footer.addStretch(1)
@@ -6174,6 +6208,7 @@ class StaffingDashboardV2Page:
         footer.addWidget(cancel)
         footer.addWidget(save)
         layout.addLayout(footer)
+        configure_v2_scroll_areas(self.QtWidgets, dialog, self.QtCore)
 
         def save_interview() -> None:
             error.hide()

@@ -837,6 +837,75 @@ class HiringPipelineStore:
         self.append_event(application_id, "application_started", actor=actor, payload={})
         return self.get_application(application_id)
 
+    def start_external_offer_application(
+        self,
+        *,
+        legal_name: str,
+        email: str,
+        phone: str,
+        school: str,
+        position: str,
+        actor: str,
+        honorific: str = "Ms.",
+    ) -> HiringApplication:
+        clean_name = _normalized_text(legal_name)
+        clean_school = _normalized_text(school)
+        clean_position = _normalized_text(position)
+        clean_actor = _normalized_text(actor)
+        if not all((clean_name, clean_school, clean_position, clean_actor)):
+            raise ValueError("Candidate name, school, position, and actor are required.")
+        now = _now_utc()
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            candidate_id = self._candidate_id_for_identity(
+                conn,
+                legal_name=clean_name,
+                school=clean_school,
+                email=_normalized_text(email),
+                phone=_normalized_text(phone),
+                honorific=_validated_honorific(honorific),
+                now=now,
+            )
+            cycle_number = int(
+                conn.execute(
+                    """
+                    SELECT COUNT(*) + 1 FROM hiring_applications
+                    WHERE candidate_id = ? AND normalized_school = ? AND normalized_position = ?
+                    """,
+                    (candidate_id, _match_text(clean_school), _match_text(clean_position)),
+                ).fetchone()[0]
+            )
+            application_id = str(uuid.uuid4())
+            conn.execute(
+                """
+                INSERT INTO hiring_applications (
+                    application_id, candidate_id, history_id, school, normalized_school,
+                    position, normalized_position, cycle_number, stage, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    application_id,
+                    candidate_id,
+                    f"external_offer:{application_id}",
+                    clean_school,
+                    _match_text(clean_school),
+                    clean_position,
+                    _match_text(clean_position),
+                    cycle_number,
+                    HiringStage.OFFER_DRAFT.value,
+                    now,
+                    now,
+                ),
+            )
+            conn.commit()
+        self.append_event(
+            application_id,
+            "external_offer_application_created",
+            actor=clean_actor,
+            payload={},
+        )
+        return self.get_application(application_id)
+
     def finalize_initial_interview(
         self,
         application_id: str,
@@ -1122,6 +1191,9 @@ class HiringWorkflowService:
     def start_application(self, **values: Any) -> HiringApplication:
         return self.store.start_application(**values)
 
+    def start_external_offer_application(self, **values: Any) -> HiringApplication:
+        return self.store.start_external_offer_application(**values)
+
     def finalize_initial_interview(
         self,
         application_id: str,
@@ -1265,6 +1337,38 @@ class HiringWorkflowService:
             raise ValueError("Application is not ready for an offer draft.")
         return self.store.create_offer_version(
             application_id, terms=terms, actor=actor, source_key=source_key
+        )
+
+    def create_external_offer(
+        self,
+        *,
+        legal_name: str,
+        email: str,
+        phone: str,
+        school: str,
+        position: str,
+        terms: dict[str, Any],
+        actor: str,
+        honorific: str = "Ms.",
+    ) -> OfferVersion:
+        application = self.start_external_offer_application(
+            legal_name=legal_name,
+            email=email,
+            phone=phone,
+            school=school,
+            position=position,
+            actor=actor,
+            honorific=honorific,
+        )
+        draft = self.create_offer_draft(
+            application.application_id,
+            terms=terms,
+            actor=actor,
+        )
+        return self.submit_offer_for_approval(
+            application.application_id,
+            draft.version_id,
+            actor=actor,
         )
 
     def ensure_director_offer_submitted(

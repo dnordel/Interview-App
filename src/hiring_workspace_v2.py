@@ -336,9 +336,16 @@ class HiringWorkspaceV2Page:
         page.setObjectName("HiringV2OffersPage")
         root = self.QtWidgets.QVBoxLayout(page)
         root.setContentsMargins(0, 0, 0, 0)
+        header = self.QtWidgets.QHBoxLayout()
         title = self.QtWidgets.QLabel("Offers")
         title.setObjectName("HiringV2Title")
-        root.addWidget(title)
+        header.addWidget(title)
+        header.addStretch(1)
+        manual_offer = self.QtWidgets.QPushButton("+ Generate offer")
+        manual_offer.setObjectName("HiringV2PrimaryAction")
+        manual_offer.clicked.connect(self._open_external_offer_dialog)
+        header.addWidget(manual_offer)
+        root.addLayout(header)
         self.offers_status = self.QtWidgets.QLabel("Draft 0  ·  Approval 0  ·  Sent 0  ·  Accepted 0  ·  Attention 0")
         self.offers_status.setObjectName("HiringV2ActionStatus")
         root.addWidget(self.offers_status)
@@ -745,6 +752,17 @@ class HiringWorkspaceV2Page:
                 actor=actor,
                 actor_role="Admin",
             )
+        elif name == "create_external_offer":
+            result = self.service.create_external_offer(
+                legal_name=str(payload["candidate_name"]),
+                email=str(payload.get("candidate_email", "")),
+                phone=str(payload.get("candidate_phone", "")),
+                honorific=str(payload.get("honorific", "Ms.")),
+                school=str(payload["school"]),
+                position=str(payload["position"]),
+                terms=dict(payload),
+                actor=actor,
+            )
         else:
             raise ValueError(f"Unsupported hiring action: {name}")
         self.refresh()
@@ -787,6 +805,137 @@ class HiringWorkspaceV2Page:
         except (KeyError, TypeError, ValueError) as exc:
             self._set_action_state("error", f"Action failed: {exc}")
             self.QtWidgets.QMessageBox.warning(self.widget, "Hiring action failed", str(exc))
+
+    def _open_external_offer_dialog(self) -> None:
+        self._set_action_state("working", "Preparing external offer…")
+        values = self._external_offer_editor_values()
+        if values is None:
+            self._set_action_state("ready", "Hiring action cancelled.")
+            return
+        try:
+            self.perform_action(
+                "create_external_offer",
+                HiringApplication(
+                    application_id="",
+                    candidate_id="",
+                    history_id="",
+                    school=str(values["school"]),
+                    position=str(values["position"]),
+                    cycle_number=0,
+                    stage=HiringStage.OFFER_DRAFT,
+                ),
+                values=values,
+            )
+            self._set_action_state("success", "External offer submitted for approval.")
+        except (KeyError, TypeError, ValueError) as exc:
+            self._set_action_state("error", f"Action failed: {exc}")
+            self.QtWidgets.QMessageBox.warning(self.widget, "Generate offer failed", str(exc))
+
+    def _external_offer_editor_values(self) -> dict[str, Any] | None:
+        dialog = self.QtWidgets.QDialog(self.offers_widget)
+        dialog.setWindowTitle("Generate offer")
+        dialog.resize(720, 520)
+        root = self.QtWidgets.QVBoxLayout(dialog)
+        stack = self.QtWidgets.QStackedWidget()
+        root.addWidget(stack, 1)
+
+        identity = self.QtWidgets.QWidget()
+        identity_form = self.QtWidgets.QFormLayout(identity)
+        candidate_name = self.QtWidgets.QLineEdit()
+        candidate_email = self.QtWidgets.QLineEdit()
+        candidate_phone = self.QtWidgets.QLineEdit()
+        honorific = self.QtWidgets.QComboBox()
+        honorific.addItems(["Ms.", "Mr."])
+        school = self.QtWidgets.QLineEdit()
+        position = self.QtWidgets.QLineEdit()
+        identity_form.addRow("Candidate name", candidate_name)
+        identity_form.addRow("Email", candidate_email)
+        identity_form.addRow("Phone", candidate_phone)
+        identity_form.addRow("Honorific", honorific)
+        identity_form.addRow("School", school)
+        identity_form.addRow("Role", position)
+        stack.addWidget(identity)
+
+        compensation = self.QtWidgets.QWidget()
+        compensation_form = self.QtWidgets.QFormLayout(compensation)
+        start_time = self.QtWidgets.QLineEdit("08:00 AM")
+        end_time = self.QtWidgets.QLineEdit("05:00 PM")
+        hourly_pay = self.QtWidgets.QDoubleSpinBox()
+        hourly_pay.setRange(0.01, 500.0)
+        hourly_pay.setValue(20.0)
+        weekly_hours = self.QtWidgets.QSpinBox()
+        weekly_hours.setRange(1, 168)
+        weekly_hours.setValue(40)
+        compensation_form.addRow("Start time", start_time)
+        compensation_form.addRow("End time", end_time)
+        compensation_form.addRow("Hourly pay", hourly_pay)
+        compensation_form.addRow("Weekly hours", weekly_hours)
+        stack.addWidget(compensation)
+
+        destination = self.QtWidgets.QWidget()
+        destination_form = self.QtWidgets.QFormLayout(destination)
+        template_path = self.QtWidgets.QLineEdit()
+        output_dir = self.QtWidgets.QLineEdit()
+        destination_form.addRow("Template", template_path)
+        destination_form.addRow("Destination", output_dir)
+        destination_form.addRow(
+            "Review",
+            self.QtWidgets.QLabel("Creates a candidate record and submits offer v1 for approval."),
+        )
+        stack.addWidget(destination)
+
+        error = self.QtWidgets.QLabel("")
+        error.setObjectName("HiringV2ActionStatus")
+        error.setProperty("state", "error")
+        error.setWordWrap(True)
+        root.addWidget(error)
+
+        controls = self.QtWidgets.QHBoxLayout()
+        back = self.QtWidgets.QPushButton("Back")
+        next_button = self.QtWidgets.QPushButton("Next")
+        submit = self.QtWidgets.QPushButton("Submit for approval")
+        cancel = self.QtWidgets.QPushButton("Cancel")
+        controls.addWidget(back)
+        controls.addStretch(1)
+        controls.addWidget(cancel)
+        controls.addWidget(next_button)
+        controls.addWidget(submit)
+        root.addLayout(controls)
+        back.clicked.connect(lambda: stack.setCurrentIndex(max(0, stack.currentIndex() - 1)))
+        next_button.clicked.connect(lambda: stack.setCurrentIndex(min(2, stack.currentIndex() + 1)))
+        cancel.clicked.connect(dialog.reject)
+
+        def accept_if_valid() -> None:
+            required = {
+                "Candidate name": candidate_name.text(),
+                "School": school.text(),
+                "Role": position.text(),
+                "Template": template_path.text(),
+                "Destination": output_dir.text(),
+            }
+            missing = [label for label, value in required.items() if not value.strip()]
+            if missing:
+                error.setText("Required: " + ", ".join(missing))
+                return
+            dialog.accept()
+
+        submit.clicked.connect(accept_if_valid)
+        if dialog.exec() != self.QtWidgets.QDialog.DialogCode.Accepted:
+            return None
+        return {
+            "candidate_name": candidate_name.text().strip(),
+            "candidate_email": candidate_email.text().strip(),
+            "candidate_phone": candidate_phone.text().strip(),
+            "honorific": honorific.currentText(),
+            "school": school.text().strip(),
+            "position": position.text().strip(),
+            "start_time": start_time.text().strip(),
+            "end_time": end_time.text().strip(),
+            "hourly_pay": f"{hourly_pay.value():.2f}",
+            "weekly_hours": str(weekly_hours.value()),
+            "template_path": template_path.text().strip(),
+            "output_dir": output_dir.text().strip(),
+        }
 
     def _set_action_state(self, state: str, message: str) -> None:
         self.action_status.setProperty("state", state)
