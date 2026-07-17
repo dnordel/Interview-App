@@ -1,6 +1,7 @@
 import json
 import os
 import queue
+import sqlite3
 import sys
 import threading
 import time
@@ -3506,6 +3507,87 @@ def test_director_hire_sync_creates_one_pending_offer_with_derived_terms(tmp_pat
     assert hire_payload["degree_display"] == "BA"
     assert hire_payload["degree_in_ece_display"] == "\nDegree in ECE: Yes"
     assert hire_payload["experience"] == "6"
+
+
+def test_director_hire_sync_migrates_existing_staffing_db_before_contact_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    history_path = tmp_path / "interview_history.sqlite3"
+    history = InterviewHistoryStore(history_path)
+    history.append(
+        {
+            "history_id": "hist-legacy-staffing",
+            "candidate_name": "Legacy Candidate",
+            "candidate_email": "legacy@example.org",
+            "school": "Palmdale",
+            "position": "Teacher",
+            "score": 86,
+            "outcome": "Hire",
+            "answers": {"Pay": {"notes": "$23.00 per hour"}},
+        }
+    )
+    hiring = pyside_interview_app.HiringWorkflowService(
+        pyside_interview_app.HiringPipelineStore(history_path)
+    )
+    application = hiring.record_initial_interview(
+        history_id="hist-legacy-staffing",
+        legal_name="Legacy Candidate",
+        honorific="Ms.",
+        email="legacy@example.org",
+        phone="",
+        school="Palmdale",
+        position="Teacher",
+        score=86,
+        outcome="Hire",
+    )
+    staffing_path = tmp_path / "staffing.sqlite3"
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", staffing_path)
+    staffing_store = pyside_interview_app.StaffingStore(staffing_path)
+    staffing_store.initialize()
+    staffing = pyside_interview_app.StaffingService(staffing_store)
+    referral = staffing.upsert_director_candidate_referral(
+        history_id="hist-legacy-staffing",
+        candidate_name="Legacy Candidate",
+        candidate_email="legacy@example.org",
+        school="Palmdale",
+        interviewer_outcome="hire",
+    )
+    staffing.record_director_interview(
+        referral.id,
+        director_name="Avery Director",
+        completed_date="2026-07-16",
+        rating=9,
+        decision="hire",
+        decision_notes="Hire.",
+        proposed_shift_start="8:00 AM",
+        proposed_shift_end="5:00 PM",
+        proposed_classroom="Chef",
+    )
+    with sqlite3.connect(staffing_path) as conn:
+        conn.execute("ALTER TABLE director_candidate_referrals DROP COLUMN candidate_phone")
+    offer_settings = SchoolOfferSettingsStore(tmp_path / "offer-settings.json")
+    offer_settings.save(
+        {
+            "Palmdale": {
+                "full_time_template": str(tmp_path / "full-time.docx"),
+                "part_time_template": str(tmp_path / "part-time.docx"),
+                "offer_output_dir": str(tmp_path / "offers"),
+            }
+        }
+    )
+    window = object.__new__(pyside_interview_app.PySideInterviewWindow)
+    window.model = SimpleNamespace(history_path=history_path)
+    window.school_offer_store = offer_settings
+    window.notification_service = SimpleNamespace(emit_event=lambda *_args, **_kwargs: [])
+
+    window._sync_hiring_v2_director_decisions(hiring)
+
+    offers = hiring.store.list_offer_versions(application.application_id)
+    assert len(offers) == 1
+    with sqlite3.connect(staffing_path) as conn:
+        columns = {row[1] for row in conn.execute("PRAGMA table_info(director_candidate_referrals)").fetchall()}
+    assert "candidate_phone" in columns
+
 
 def test_pyside_review_table_updates_transcript_when_finalize_worker_reports_transcripts(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -9267,6 +9349,115 @@ def test_pyside_staffing_classroom_detail_matches_dashboard_mockup_shell(
     assert _staffing_button_for_position(table, "Aide 1").text() == "Mark Coming"
     window.window.close()
     app.processEvents()
+
+def test_pyside_staffing_filters_button_focuses_filter_controls(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    seed_path = tmp_path / "staffing_seed.json"
+    seed_path.write_text(
+        json.dumps(
+            {
+                "schools": [
+                    {
+                        "name": "Hawthorne",
+                        "classrooms": [
+                            {
+                                "name": "Harmony 1",
+                                "positions": [
+                                    {"position_name": "Teacher 1", "position_type": "Teacher", "status": "need_now"}
+                                ],
+                            }
+                        ],
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", tmp_path / "staffing.sqlite3")
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", seed_path)
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.sqlite3",
+        school_options=["Hawthorne"],
+    )
+
+    window = _pyside_window_on_page(model, "Staffing")
+    filters = window.window.findChild(qt_widgets.QPushButton, "PySideStaffingFiltersButton")
+    school_selector = window.window.findChild(qt_widgets.QComboBox, "PySideStaffingSchoolSelector")
+
+    filters.click()
+    app.processEvents()
+
+    assert school_selector.currentText() == "Hawthorne"
+    assert window.staffing_status_label.text() == "Use the school and classroom controls to filter staffing rows."
+    window.window.close()
+    app.processEvents()
+
+
+def test_pyside_staffing_add_position_button_creates_position_and_opens_drawer(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    seed_path = tmp_path / "staffing_seed.json"
+    seed_path.write_text(
+        json.dumps(
+            {
+                "schools": [
+                    {
+                        "name": "Hawthorne",
+                        "classrooms": [
+                            {
+                                "name": "Harmony 1",
+                                "positions": [
+                                    {"position_name": "Teacher 1", "position_type": "Teacher", "status": "filled"}
+                                ],
+                            }
+                        ],
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", tmp_path / "staffing.sqlite3")
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", seed_path)
+    monkeypatch.setattr(qt_widgets.QInputDialog, "getText", lambda *_args, **_kwargs: ("Float Teacher", True))
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.sqlite3",
+        school_options=["Hawthorne"],
+    )
+
+    window = _pyside_window_on_page(model, "Staffing")
+    add_position = window.window.findChild(qt_widgets.QPushButton, "PySideStaffingAddPositionButton")
+
+    add_position.click()
+    app.processEvents()
+
+    table = window.window.findChild(qt_widgets.QTableWidget, "PySideStaffingPositionsTable")
+    table_text = {
+        table.item(row, column).text()
+        for row in range(table.rowCount())
+        for column in range(table.columnCount())
+        if table.item(row, column) is not None
+    }
+    assert "Float Teacher" in table_text
+    assert "Need Now" in table_text
+    drawer_text = _widget_text(window.staffing_detail_drawer)
+    assert "Position Details" in drawer_text
+    assert "Float Teacher" in drawer_text
+    assert window.staffing_status_label.text() == "Position added."
+    window.window.close()
+    app.processEvents()
+
 
 def test_pyside_staffing_row_click_opens_mockup_detail_drawer(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch

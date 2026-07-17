@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 6.5.1
+  version: 6.6.1
   description: PySide6 operations shell and headless view-model builder for a mockup-driven
     New Interview setup/live flow, Candidates-owned pipeline/history, candidate reports,
     onboarding, staffing, notifications, and admin-only
@@ -1716,6 +1716,22 @@ classes:
       type: None
     exceptions: []
     side_effects: Appends one sanitized director candidate referral event to the central staffing referral queue SQLite database without opening or mutating staffing databases.
+  - name: _focus_staffing_filter_controls
+    description: Route the legacy Staffing Filters button to existing visible school/classroom filter controls instead of leaving the button inert.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Moves focus to the staffing school selector when present and updates the staffing status label with filter guidance.
+  - name: _open_staffing_add_position_dialog
+    description: Route the legacy Staffing Add Position button through a position-name prompt and service-backed need-now position creation for the selected school/classroom.
+    locked: false
+    inputs: {}
+    returns:
+      type: None
+    exceptions: []
+    side_effects: May open a PySide input dialog, create a staffing position through StaffingService.add_position, refresh the staffing dashboard, open the created assignment drawer, and update the staffing status label.
   - name: _refresh_staffing_dashboard
     description: Initialize local staffing storage, import seed data when the staffing DB is empty or clearly missing seed assignments, compute metrics, and refresh the hidden compatibility metric label, school/classroom selectors, classroom list, metric cards, positions table, and hidden legacy school-tabbed workbook boards.
     locked: false
@@ -2343,7 +2359,7 @@ classes:
       service: {type: HiringWorkflowService, required: true}
     returns: {type: None}
     exceptions: []
-    side_effects: Reads staffing/history/settings stores; may update canonical candidate contact, hiring stage/attention, and create one pending-approval offer version.
+    side_effects: Reads staffing/history/settings stores; initializes/migrates existing staffing databases before director-decision reads; may update canonical candidate contact, hiring stage/attention, and create one pending-approval offer version.
   - name: _director_offer_terms
     description: Build normalized offer terms from candidate, application, finalized director shift/classroom, requested pay, and configured school template/output paths.
     locked: false

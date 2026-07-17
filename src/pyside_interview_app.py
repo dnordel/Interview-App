@@ -2868,6 +2868,7 @@ class PySideInterviewWindow:
                 if not path.exists():
                     continue
                 staffing_store = StaffingStore(path)
+                staffing_store.initialize()
                 staffing_service = StaffingService(staffing_store)
                 interview = staffing_service.find_any_completed_director_interview(
                     history_id=application.history_id,
@@ -6690,6 +6691,7 @@ class PySideInterviewWindow:
         header.addWidget(updated)
         filters = self.QtWidgets.QPushButton("Filters")
         filters.setObjectName("PySideStaffingFiltersButton")
+        filters.clicked.connect(self._focus_staffing_filter_controls)
         header.addWidget(filters)
         layout.addLayout(header)
         self.staffing_status_label = self._label("")
@@ -6756,6 +6758,7 @@ class PySideInterviewWindow:
         detail_layout.addWidget(self.staffing_positions_table, 1)
         add_position = self.QtWidgets.QPushButton("+  Add Position")
         add_position.setObjectName("PySideStaffingAddPositionButton")
+        add_position.clicked.connect(self._open_staffing_add_position_dialog)
         detail_layout.addWidget(add_position)
         main.addWidget(detail_frame)
         self.staffing_detail_drawer = self._staffing_detail_drawer()
@@ -6770,6 +6773,45 @@ class PySideInterviewWindow:
         layout.addWidget(tabs)
         self._refresh_staffing_dashboard()
         return page
+
+    def _focus_staffing_filter_controls(self) -> None:
+        selector = getattr(self, "staffing_school_selector", None)
+        if selector is not None:
+            selector.setFocus()
+        if self.staffing_status_label is not None:
+            self.staffing_status_label.setText("Use the school and classroom controls to filter staffing rows.")
+
+    def _open_staffing_add_position_dialog(self) -> None:
+        school = self._selected_staffing_school()
+        classroom = self._selected_staffing_classroom()
+        if not school or not classroom:
+            if self.staffing_status_label is not None:
+                self.staffing_status_label.setText("Select a school and classroom before adding a position.")
+            return
+        position_name, accepted = self.QtWidgets.QInputDialog.getText(
+            self.window,
+            "Add Position",
+            "Position name",
+        )
+        position_name = str(position_name or "").strip()
+        if not accepted or not position_name:
+            return
+        try:
+            result = self._staffing_service().add_position(
+                school=school,
+                classroom=classroom,
+                position_name=position_name,
+                position_type="Teacher",
+                initial_status="need_now",
+            )
+        except (OSError, ValueError, StaffingEditLock) as exc:
+            if self.staffing_status_label is not None:
+                self.staffing_status_label.setText(str(exc) or "Position could not be added.")
+            return
+        self._refresh_staffing_dashboard()
+        self._open_staffing_assignment_details(result.assignment_id)
+        if self.staffing_status_label is not None:
+            self.staffing_status_label.setText("Position added.")
 
     def _staffing_v2_page(self) -> Any:
         self.staffing_store.initialize()
