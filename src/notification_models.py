@@ -22,12 +22,21 @@ class NotificationRecipient:
 
 
 @dataclass(frozen=True)
+class NotificationCondition:
+    field: str
+    operator: str = "equals"
+    value: str = ""
+    id: int | None = None
+
+
+@dataclass(frozen=True)
 class NotificationRule:
     event_type: str
     label: str
     subject_template: str
     body_template: str
     recipients: list[NotificationRecipient] = field(default_factory=list)
+    conditions: list[NotificationCondition] = field(default_factory=list)
     active: bool = True
     trigger_timing: str = "event"
     date_field: str = ""

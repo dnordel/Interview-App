@@ -2,8 +2,8 @@ module:
   name: staffing_dashboard_v2
   language: python
   path: src/staffing_dashboard_v2.py
-  version: 0.32.3
-  description: Parallel PySide Staffing v2 dashboard page module for position, employee, classroom, validation, notification, and assignment-history workflows; position and employee management uses service-backed add/edit/deactivate/assign/status dialogs, managed permit document attachments, read-only drawers without misleading save controls, stable object names, accessible icon actions, filtered tables, overlay panels, and light-theme scroll behavior while keeping the legacy Staffing page available.
+  version: 0.33.0
+  description: Parallel PySide Staffing v2 dashboard page module for position, employee, classroom, validation, notification, and assignment-history workflows, including visible structured notification logic rows over safe DB/event values.
 functions:
 - name: apply_staffing_v2_light_theme
   description: Force a supplied or current QApplication onto Staffing v2's stable light Fusion Qt style and palette so native dark/high-contrast system color schemes cannot invert dashboard panels, tables, or inputs.
@@ -409,6 +409,14 @@ functions:
       required: true
   returns:
     type: str
+  exceptions: []
+  side_effects: none
+- name: _notification_conditions_text
+  description: Format all ordered notification condition rows as one operator-facing AND expression for rule cards.
+  locked: false
+  inputs:
+    rule: {type: NotificationRule, required: true}
+  returns: {type: str}
   exceptions: []
   side_effects: none
 classes:
@@ -1351,7 +1359,29 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Updates visible Notifications editor controls, recipient chips, variable preview, validation text, and audit panel from the selected rule or clears the editor when no rule is selected.
+    side_effects: Updates visible Notifications editor controls, ordered logic rows, recipient chips, variable preview, validation text, and audit panel from the selected rule or clears the editor when no rule is selected.
+  - name: _clear_notification_condition_rows
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Removes all condition editor rows without changing saved rules.
+  - name: _add_notification_condition_row
+    inputs:
+      condition: {type: 'NotificationCondition | None', required: false, default: null}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Adds one curated field/operator/value row to notification Logic editor.
+  - name: _remove_notification_condition_row
+    inputs:
+      button: {type: Any, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Removes condition row owning supplied remove button.
+  - name: _notification_conditions_from_editor
+    inputs: {}
+    returns: {type: 'list[NotificationCondition]'}
+    exceptions: []
+    side_effects: Reads ordered non-empty structured condition rows from editor.
   - name: _create_notification_rule
     inputs: {}
     returns:
@@ -1917,6 +1947,10 @@ data_structures:
   description: Staffing v2 dedicated mockup QSS including shell colors, cards, chips, buttons, dialogs, light scroll/table/input styling, and app-styled scrollbars.
 - name: ActionCallback
   type: Callable[[int], None]
+- name: NOTIFICATION_CONDITION_FIELDS
+  type: 'tuple[tuple[str, str], ...]'
+- name: NOTIFICATION_CONDITION_OPERATORS
+  type: 'tuple[tuple[str, str], ...]'
 dependencies:
 - dashboard_v2_ui
 - notification_models

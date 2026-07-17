@@ -95,6 +95,16 @@ NOTIFICATION_TEMPLATE_FIELD_CATALOG = (
 )
 
 NOTIFICATION_TEMPLATE_FIELDS = tuple(field.key for field in NOTIFICATION_TEMPLATE_FIELD_CATALOG)
+NOTIFICATION_CONDITION_FIELDS = frozenset(
+    (*NOTIFICATION_TEMPLATE_FIELDS, "decision", "employment_type", "compensation_review_required", "weekly_hours")
+)
+NOTIFICATION_CONDITION_OPERATORS = frozenset(
+    {
+        "equals", "not_equals", "in", "not_in", "contains", "not_contains",
+        "is_blank", "is_not_blank", "greater_than", "greater_than_or_equal",
+        "less_than", "less_than_or_equal",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -249,6 +259,11 @@ def validate_notification_rule(rule: NotificationRule) -> tuple[NotificationRule
                 bool(rule.active),
             )
         )
+    for condition in rule.conditions:
+        if str(condition.field or "").strip() not in NOTIFICATION_CONDITION_FIELDS:
+            add("invalid_condition_field", "Unknown notification condition field.")
+        if str(condition.operator or "").strip() not in NOTIFICATION_CONDITION_OPERATORS:
+            add("invalid_condition_operator", "Unknown notification condition operator.")
     return tuple(issues)
 
 

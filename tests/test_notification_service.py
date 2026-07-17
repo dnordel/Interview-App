@@ -9,12 +9,13 @@ from types import SimpleNamespace
 
 import pytest
 
-from notification_models import NotificationRecipient, NotificationRule
+from notification_models import NotificationCondition, NotificationRecipient, NotificationRule
 import notification_service
 from notification_service import (
     NotificationDirectory,
     NotificationService,
     StaffingNotificationScheduler,
+    notification_conditions_match,
     resolve_notification_recipients,
 )
 from notification_store import NotificationStore
@@ -343,6 +344,57 @@ def test_notification_store_seeds_ten_staffing_workflow_system_rules(tmp_path: P
     assert rules["offer.approved"].sender_account == "hiring_manager"
     assert rules["offer.approved"].required_attachment_key == "offer_pdf_path"
     assert rules["offer.accepted"].required_attachment_key == "onboarding_guide_path"
+    permit_50 = rules["permit.eligible.50d"]
+    assert (permit_50.trigger_timing, permit_50.date_field, permit_50.offset_days) == (
+        "date_offset",
+        "start_date",
+        50,
+    )
+    assert [(item.field, item.operator, item.value) for item in permit_50.conditions] == [
+        ("permit_status", "in", "unknown, no_permit_or_application"),
+        ("position_type", "in", "teacher, aide, assistant director"),
+    ]
+    permit_90 = rules["permit.escalation.90d"]
+    assert (permit_90.trigger_timing, permit_90.date_field, permit_90.offset_days) == (
+        "date_offset",
+        "start_date",
+        90,
+    )
+    assert [(item.field, item.operator, item.value) for item in permit_90.conditions] == [
+        ("permit_status", "in", "unknown, no_permit_or_application"),
+        ("position_type", "in", "teacher, aide, assistant director"),
+    ]
+
+
+def test_existing_permit_system_rule_gains_logic_without_losing_user_disable(tmp_path: Path) -> None:
+    store = NotificationStore(tmp_path / "notifications.sqlite3")
+    store.save_rule(
+        NotificationRule(
+            event_type="permit.escalation.90d",
+            label="System: permit escalation",
+            subject_template="{candidate_name}'s Permit Status",
+            body_template="Body for {candidate_name}",
+            recipients=[NotificationRecipient(recipient_type="role", role_key="director")],
+            active=False,
+            system_rule=True,
+            user_disabled=True,
+        )
+    )
+
+    store.ensure_default_rules()
+
+    [upgraded] = store.list_rules("permit.escalation.90d")
+    assert upgraded.user_disabled is True
+    assert upgraded.active is False
+    assert (upgraded.trigger_timing, upgraded.date_field, upgraded.offset_days) == (
+        "date_offset",
+        "start_date",
+        90,
+    )
+    assert [(item.field, item.operator, item.value) for item in upgraded.conditions] == [
+        ("permit_status", "in", "unknown, no_permit_or_application"),
+        ("position_type", "in", "teacher, aide, assistant director"),
+    ]
 
 
 def test_system_rules_activate_when_dependencies_are_ready_and_preserve_user_disable(tmp_path: Path) -> None:
@@ -757,6 +809,91 @@ def test_notification_service_sends_date_offset_rule_only_on_due_date(tmp_path: 
     assert early[0].status == "not_due"
     assert due[0].status == "sent"
     assert sent == [(["director@example.org"], "Start soon: Jane Doe", "Jane Doe starts on 2026-07-10.")]
+
+
+def test_notification_rule_conditions_use_persisted_db_payload_values(tmp_path: Path) -> None:
+    store = NotificationStore(tmp_path / "notifications.sqlite3")
+    saved = store.save_rule(
+        NotificationRule(
+            event_type="permit.escalation.90d",
+            label="Missing permit at 90 days",
+            subject_template="Permit: {candidate_name}",
+            body_template="Permit status: {permit_status}",
+            recipients=[NotificationRecipient(email="director@example.org")],
+            conditions=[
+                NotificationCondition(
+                    field="permit_status",
+                    operator="in",
+                    value="unknown, no_permit_or_application",
+                )
+            ],
+        )
+    )
+    sent: list[str] = []
+    service = NotificationService(
+        store=store,
+        email_settings=_settings(),
+        send_email=lambda _settings, _recipients, subject, _body: sent.append(subject),
+    )
+
+    approved = service.emit_event(
+        "permit.escalation.90d",
+        {"candidate_name": "Jane Doe", "permit_status": "teacher_permit_approved"},
+        "permit-approved",
+    )
+    missing = service.emit_event(
+        "permit.escalation.90d",
+        {"candidate_name": "Alex Kim", "permit_status": "unknown"},
+        "permit-missing",
+    )
+
+    assert store.get_rule(saved.id or 0).conditions == saved.conditions
+    assert approved[0].status == "condition_not_met"
+    assert missing[0].status == "sent"
+    assert sent == ["Permit: Alex Kim"]
+
+
+@pytest.mark.parametrize(
+    ("condition", "payload", "expected"),
+    [
+        (NotificationCondition("school", "equals", "Palmdale"), {"school": "palmdale"}, True),
+        (NotificationCondition("school", "not_equals", "Hawthorne"), {"school": "Palmdale"}, True),
+        (NotificationCondition("position_type", "not_in", "Chef, Office"), {"position_type": "Teacher"}, True),
+        (NotificationCondition("position", "contains", "Teacher"), {"position": "Preschool Teacher"}, True),
+        (NotificationCondition("position", "not_contains", "Director"), {"position": "Teacher"}, True),
+        (NotificationCondition("candidate_email", "is_blank"), {"candidate_email": ""}, True),
+        (NotificationCondition("candidate_email", "is_not_blank"), {"candidate_email": "a@example.org"}, True),
+        (NotificationCondition("interview_score", "greater_than", "65"), {"interview_score": "80"}, True),
+        (NotificationCondition("weekly_hours", "greater_than_or_equal", "30"), {"weekly_hours": "30"}, True),
+        (NotificationCondition("ece_units", "less_than", "12"), {"ece_units": "6"}, True),
+        (NotificationCondition("director_interview_score", "less_than_or_equal", "7"), {"director_interview_score": "8"}, False),
+    ],
+)
+def test_notification_conditions_support_curated_safe_operators(condition, payload, expected) -> None:
+    assert notification_conditions_match([condition], payload) is expected
+
+
+@pytest.mark.parametrize(
+    "condition",
+    [
+        NotificationCondition("DROP TABLE people", "equals", "x"),
+        NotificationCondition("permit_status", "run_python", "x"),
+    ],
+)
+def test_notification_store_rejects_unsafe_condition_schema(tmp_path: Path, condition) -> None:
+    store = NotificationStore(tmp_path / "notifications.sqlite3")
+
+    with pytest.raises(ValueError, match="condition"):
+        store.save_rule(
+            NotificationRule(
+                event_type="permit.escalation.90d",
+                label="Unsafe",
+                subject_template="Permit",
+                body_template="Body",
+                recipients=[NotificationRecipient(email="director@example.org")],
+                conditions=[condition],
+            )
+        )
 
 
 def test_notification_service_queues_future_date_offset_and_sends_when_due(tmp_path: Path) -> None:

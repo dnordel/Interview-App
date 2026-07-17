@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from email_security import is_valid_email_address
-from notification_models import NotificationRecipient, NotificationRule
+from notification_models import NotificationCondition, NotificationRecipient, NotificationRule
 from notification_templates import validate_notification_rule
 
 
@@ -164,6 +164,11 @@ def _system_workflow_default_rules() -> list[NotificationRule]:
                            "the verification of experience letter and provide it to {candidate_name}.\nIf they have already applied for or "
                            "obtained their permit, please update their profile on the staffing dashboard.\n\nThank you,\nLPL HR System"),
             recipients=_roles("director"), active=False, system_rule=True,
+            trigger_timing="date_offset", date_field="start_date", offset_days=50,
+            conditions=[
+                NotificationCondition("permit_status", "in", "unknown, no_permit_or_application"),
+                NotificationCondition("position_type", "in", "teacher, aide, assistant director"),
+            ],
         ),
         NotificationRule(
             event_type="permit.escalation.90d", label="System: permit escalation",
@@ -172,6 +177,11 @@ def _system_workflow_default_rules() -> list[NotificationRule]:
                            "system does not show that they have applied or been approved for their permit. Please either follow up with "
                            "{candidate_name} or update their profile on the staffing dashboard.\n\nThank you,\nLPL HR System"),
             recipients=_roles("director", "candidate", "executive_director"), active=False, system_rule=True,
+            trigger_timing="date_offset", date_field="start_date", offset_days=90,
+            conditions=[
+                NotificationCondition("permit_status", "in", "unknown, no_permit_or_application"),
+                NotificationCondition("position_type", "in", "teacher, aide, assistant director"),
+            ],
             sender_account="hiring_manager",
         ),
         NotificationRule(
@@ -358,10 +368,25 @@ class NotificationStore:
         ]
         existing_rules = self.list_rules()
         for rule in system_defaults:
-            if any(
-                existing.event_type == rule.event_type and existing.system_rule
-                for existing in existing_rules
-            ):
+            existing_system_rule = next(
+                (
+                    existing
+                    for existing in existing_rules
+                    if existing.event_type == rule.event_type and existing.system_rule
+                ),
+                None,
+            )
+            if existing_system_rule is not None:
+                if rule.conditions and not existing_system_rule.conditions:
+                    existing_system_rule = self.save_rule(
+                        replace(
+                            existing_system_rule,
+                            trigger_timing=rule.trigger_timing,
+                            date_field=rule.date_field,
+                            offset_days=rule.offset_days,
+                            conditions=list(rule.conditions),
+                        )
+                    )
                 self._backfill_default_recipients(rule)
                 continue
             saved = self.save_rule(rule)
@@ -403,6 +428,7 @@ class NotificationStore:
                 required_attachment_key=default_rule.required_attachment_key,
                 system_rule=default_rule.system_rule,
                 user_disabled=existing_rule.user_disabled,
+                conditions=list(existing_rule.conditions),
             )
         )
 
@@ -531,6 +557,22 @@ class NotificationStore:
                             now,
                         ),
                     )
+                conn.execute("DELETE FROM notification_conditions WHERE rule_id = ?", (rule_id,))
+                for sort_order, condition in enumerate(rule.conditions):
+                    conn.execute(
+                        """
+                        INSERT INTO notification_conditions
+                            (rule_id, field_key, operator, expected_value, sort_order)
+                        VALUES (?, ?, ?, ?, ?)
+                        """,
+                        (
+                            rule_id,
+                            str(condition.field or "").strip(),
+                            str(condition.operator or "equals").strip(),
+                            str(condition.value or "").strip(),
+                            sort_order,
+                        ),
+                    )
         return self.get_rule(rule_id)
 
     def get_rule(self, rule_id: int) -> NotificationRule:
@@ -553,6 +595,7 @@ class NotificationStore:
         with self._connect() as conn:
             with conn:
                 conn.execute("DELETE FROM notification_recipients WHERE rule_id = ?", (int(rule_id),))
+                conn.execute("DELETE FROM notification_conditions WHERE rule_id = ?", (int(rule_id),))
                 conn.execute("DELETE FROM notification_rules WHERE id = ?", (int(rule_id),))
 
     def set_rule_active(self, rule_id: int, active: bool) -> None:
@@ -837,6 +880,18 @@ class NotificationStore:
                 _ensure_column(conn, "notification_recipients", "role_key", "TEXT NOT NULL DEFAULT ''")
                 conn.execute(
                     """
+                    CREATE TABLE IF NOT EXISTS notification_conditions (
+                        id INTEGER PRIMARY KEY,
+                        rule_id INTEGER NOT NULL REFERENCES notification_rules(id) ON DELETE CASCADE,
+                        field_key TEXT NOT NULL,
+                        operator TEXT NOT NULL,
+                        expected_value TEXT NOT NULL DEFAULT '',
+                        sort_order INTEGER NOT NULL DEFAULT 0
+                    )
+                    """
+                )
+                conn.execute(
+                    """
                     CREATE TABLE IF NOT EXISTS notification_audit (
                         id INTEGER PRIMARY KEY,
                         event_type TEXT NOT NULL,
@@ -874,6 +929,7 @@ class NotificationStore:
                 )
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_notification_rules_event_type ON notification_rules(event_type)")
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_notification_recipients_rule_id ON notification_recipients(rule_id)")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_notification_conditions_rule_id ON notification_conditions(rule_id)")
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_notification_schedule_due ON notification_schedule(status, due_date)")
                 conn.execute(
                     """
@@ -911,6 +967,23 @@ class NotificationStore:
                 (int(row["id"]),),
             ).fetchall()
         ]
+        conditions = [
+            NotificationCondition(
+                id=int(condition["id"]),
+                field=str(condition["field_key"]),
+                operator=str(condition["operator"]),
+                value=str(condition["expected_value"]),
+            )
+            for condition in conn.execute(
+                """
+                SELECT id, field_key, operator, expected_value
+                FROM notification_conditions
+                WHERE rule_id = ?
+                ORDER BY sort_order, id
+                """,
+                (int(row["id"]),),
+            ).fetchall()
+        ]
         return NotificationRule(
             id=int(row["id"]),
             event_type=str(row["event_type"]),
@@ -926,6 +999,7 @@ class NotificationStore:
             system_rule=bool(row["system_rule"]),
             user_disabled=bool(row["user_disabled"]),
             recipients=recipients,
+            conditions=conditions,
             created_at=str(row["created_at"]),
             updated_at=str(row["updated_at"]),
         )

@@ -12,7 +12,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-17T20:16:44.922528+00:00'
+generated_at_utc: '2026-07-17T21:22:50.044913+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -5124,6 +5124,15 @@ entries:
     - return_type
 - contract: contracts/notification_service.contract.yaml
   symbol: notification_service.load_notification_directory
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/notification_service.contract.yaml
+  symbol: notification_service.notification_conditions_match
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -13079,6 +13088,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/staffing_dashboard_v2.contract.yaml
+  symbol: staffing_dashboard_v2.StaffingDashboardV2Page._add_notification_condition_row
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_v2.contract.yaml
   symbol: staffing_dashboard_v2.StaffingDashboardV2Page._add_notification_recipient_from_text
   kind: method
   tests:
@@ -13376,6 +13394,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/staffing_dashboard_v2.contract.yaml
+  symbol: staffing_dashboard_v2.StaffingDashboardV2Page._clear_notification_condition_rows
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_v2.contract.yaml
   symbol: staffing_dashboard_v2.StaffingDashboardV2Page._clear_notification_filters
   kind: method
   tests:
@@ -13584,6 +13611,15 @@ entries:
     - return_type
 - contract: contracts/staffing_dashboard_v2.contract.yaml
   symbol: staffing_dashboard_v2.StaffingDashboardV2Page._next_classrooms_page
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_v2.contract.yaml
+  symbol: staffing_dashboard_v2.StaffingDashboardV2Page._notification_conditions_from_editor
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -14169,6 +14205,15 @@ entries:
     - return_type
 - contract: contracts/staffing_dashboard_v2.contract.yaml
   symbol: staffing_dashboard_v2.StaffingDashboardV2Page._refresh_validation_table
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_v2.contract.yaml
+  symbol: staffing_dashboard_v2.StaffingDashboardV2Page._remove_notification_condition_row
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -14808,6 +14853,15 @@ entries:
     - return_type
 - contract: contracts/staffing_dashboard_v2.contract.yaml
   symbol: staffing_dashboard_v2._metric_icon_key
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_v2.contract.yaml
+  symbol: staffing_dashboard_v2._notification_conditions_text
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py

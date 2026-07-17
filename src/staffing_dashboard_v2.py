@@ -8,7 +8,7 @@ from typing import Any
 import weakref
 
 from dashboard_v2_ui import apply_dashboard_v2_light_theme, display_role, role_badge_key
-from notification_models import NotificationRecipient, NotificationRule, NotificationTestPayload
+from notification_models import NotificationCondition, NotificationRecipient, NotificationRule, NotificationTestPayload
 from notification_service import EXECUTIVE_DIRECTOR_EMAIL, HIRING_MANAGER_EMAIL, NotificationService
 from notification_store import NotificationStore
 from notification_templates import (
@@ -28,6 +28,29 @@ from staffing_models import (
 )
 from staffing_service import StaffingService, staffing_notification_payload
 from staffing_store import StaffingStore
+
+
+NOTIFICATION_CONDITION_FIELDS = (
+    "permit_status", "assignment_status", "offer_status", "outcome", "decision",
+    "school", "classroom", "program", "position", "position_type", "employment_type",
+    "candidate_email", "degree_type", "degree_in_ece", "ece_units", "years_experience",
+    "interview_score", "director_interview_score", "requested_pay", "offer_amount",
+    "compensation_review_required", "weekly_hours", "notice_given", "final_working_day",
+)
+NOTIFICATION_CONDITION_OPERATORS = (
+    ("Equals", "equals"),
+    ("Does not equal", "not_equals"),
+    ("Is one of", "in"),
+    ("Is not one of", "not_in"),
+    ("Contains", "contains"),
+    ("Does not contain", "not_contains"),
+    ("Is blank", "is_blank"),
+    ("Is not blank", "is_not_blank"),
+    ("Greater than", "greater_than"),
+    ("Greater than or equal", "greater_than_or_equal"),
+    ("Less than", "less_than"),
+    ("Less than or equal", "less_than_or_equal"),
+)
 
 
 def apply_staffing_v2_light_theme(QtWidgets: Any, QtGui: Any, app: Any | None = None) -> None:
@@ -3469,6 +3492,26 @@ class StaffingDashboardV2Page:
         self.notification_rule_offset = self.QtWidgets.QSpinBox()
         self.notification_rule_offset.setObjectName("StaffingV2NotificationOffsetDays")
         self.notification_rule_offset.setRange(0, 365)
+        condition_editor = self.QtWidgets.QWidget()
+        condition_layout = self.QtWidgets.QVBoxLayout(condition_editor)
+        condition_layout.setContentsMargins(0, 0, 0, 0)
+        condition_layout.setSpacing(6)
+        condition_layout.addWidget(self._label("All conditions below must match DB/event values.", "StaffingV2Muted"))
+        self.notification_conditions_table = self.QtWidgets.QTableWidget(0, 4)
+        self.notification_conditions_table.setObjectName("StaffingV2NotificationConditionsTable")
+        self.notification_conditions_table.setHorizontalHeaderLabels(["Field", "Operator", "Value", ""])
+        self.notification_conditions_table.horizontalHeader().setStretchLastSection(False)
+        self.notification_conditions_table.horizontalHeader().setSectionResizeMode(0, self.QtWidgets.QHeaderView.ResizeMode.Stretch)
+        self.notification_conditions_table.horizontalHeader().setSectionResizeMode(1, self.QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+        self.notification_conditions_table.horizontalHeader().setSectionResizeMode(2, self.QtWidgets.QHeaderView.ResizeMode.Stretch)
+        self.notification_conditions_table.horizontalHeader().setSectionResizeMode(3, self.QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+        self.notification_conditions_table.verticalHeader().hide()
+        self.notification_conditions_table.setMinimumHeight(150)
+        condition_layout.addWidget(self.notification_conditions_table)
+        self.notification_condition_add = self.QtWidgets.QPushButton("Add condition")
+        self.notification_condition_add.setObjectName("StaffingV2NotificationConditionAdd")
+        self.notification_condition_add.clicked.connect(lambda _checked=False: self._add_notification_condition_row())
+        condition_layout.addWidget(self.notification_condition_add, 0, self.QtCore.Qt.AlignmentFlag.AlignLeft)
         self.notification_rule_recipients = self.QtWidgets.QLineEdit()
         self.notification_rule_recipients.setObjectName("StaffingV2NotificationRecipients")
         self.notification_rule_recipients.setPlaceholderText("Custom Name <name@example.com>")
@@ -3514,6 +3557,7 @@ class StaffingDashboardV2Page:
         form.addRow("Date field", self.notification_rule_date_field)
         form.addRow("Send timing", self.notification_rule_offset_direction)
         form.addRow("Offset days", self.notification_rule_offset)
+        form.addRow("Logic", condition_editor)
         recipient_row = self.QtWidgets.QHBoxLayout()
         recipient_row.addWidget(self.notification_rule_recipients, 1)
         self.notification_recipient_add = self.QtWidgets.QPushButton("Add")
@@ -3756,13 +3800,15 @@ class StaffingDashboardV2Page:
             timing = "Reference date" if rule.trigger_timing == "date_offset" else "Event"
             recipient_count = sum(1 for recipient in rule.recipients if recipient.active)
             template_status = _notification_validation_text(rule)
+            condition_summary = _notification_conditions_text(rule)
             item = self.QtWidgets.QListWidgetItem(
                 f"{rule.label}\n{rule.event_type}\n{status} · {timing} · Recipients {recipient_count}\n"
+                f"Logic: {condition_summary}\n"
                 f"Subject: {rule.subject_template or 'Missing subject template'}\n"
                 f"Body preview: {(rule.body_template or 'Missing body template')[:140]}\n{template_status}"
             )
             item.setData(self.QtCore.Qt.ItemDataRole.UserRole, rule.id)
-            item.setSizeHint(self.QtCore.QSize(440, 150))
+            item.setSizeHint(self.QtCore.QSize(440, 175 if rule.conditions else 150))
             self.notifications_rule_list.addItem(item)
             self.notifications_rule_list.setItemWidget(item, self._notification_rule_card_widget(rule))
         self.notifications_rule_list.blockSignals(False)
@@ -3810,6 +3856,10 @@ class StaffingDashboardV2Page:
         body = self._label(f"Body preview\n{(rule.body_template or 'Missing body template')[:120]}", "StaffingV2Muted")
         body.setWordWrap(True)
         layout.addWidget(body, 0, 4, 2, 1)
+        if rule.conditions:
+            logic = self._label(f"Logic: {_notification_conditions_text(rule)}", "StaffingV2Muted")
+            logic.setWordWrap(True)
+            layout.addWidget(logic, 2, 0, 1, 5)
         issues = validate_notification_rule(rule)
         if issues:
             blocking = any(issue.blocking for issue in issues)
@@ -3818,7 +3868,7 @@ class StaffingDashboardV2Page:
                 "StaffingV2NeedNowChip" if blocking else "StaffingV2ComingChip",
             )
             issue_label.setWordWrap(True)
-            layout.addWidget(issue_label, 2, 0, 1, 5)
+            layout.addWidget(issue_label, 3 if rule.conditions else 2, 0, 1, 5)
         layout.setColumnStretch(1, 2)
         layout.setColumnStretch(3, 3)
         layout.setColumnStretch(4, 3)
@@ -3848,6 +3898,7 @@ class StaffingDashboardV2Page:
             self.notification_rule_date_field.setCurrentText("")
             self.notification_rule_offset_direction.setCurrentText("On")
             self.notification_rule_offset.setValue(0)
+            self._clear_notification_condition_rows()
             self.notification_rule_recipients.clear()
             self.notification_rule_subject.clear()
             self.notification_rule_body.clear()
@@ -3868,6 +3919,9 @@ class StaffingDashboardV2Page:
             "Before" if int(rule.offset_days) < 0 else "After" if int(rule.offset_days) > 0 else "On"
         )
         self.notification_rule_offset.setValue(abs(int(rule.offset_days)))
+        self._clear_notification_condition_rows()
+        for condition in rule.conditions:
+            self._add_notification_condition_row(condition)
         self.notification_selected_recipients = [recipient for recipient in rule.recipients if recipient.active]
         self.notification_rule_recipients.setText("")
         self._render_notification_recipient_chips()
@@ -3913,6 +3967,7 @@ class StaffingDashboardV2Page:
             trigger_timing=timing,
             date_field=self.notification_rule_date_field.currentText(),
             offset_days=offset_days,
+            conditions=self._notification_conditions_from_editor(),
             subject_template=self.notification_rule_subject.text(),
             body_template=self.notification_rule_body.toPlainText(),
             recipients=self._current_notification_recipients(),
@@ -3984,6 +4039,60 @@ class StaffingDashboardV2Page:
             if key and key not in deduped:
                 deduped[key] = recipient
         return list(deduped.values())
+
+    def _clear_notification_condition_rows(self) -> None:
+        self.notification_conditions_table.setRowCount(0)
+
+    def _add_notification_condition_row(self, condition: NotificationCondition | None = None) -> None:
+        row = self.notification_conditions_table.rowCount()
+        self.notification_conditions_table.insertRow(row)
+        field = self.QtWidgets.QComboBox()
+        field.setEditable(True)
+        field.addItem("")
+        field.addItems(list(NOTIFICATION_CONDITION_FIELDS))
+        field.setCurrentText(str(condition.field if condition is not None else ""))
+        operator = self.QtWidgets.QComboBox()
+        for label, key in NOTIFICATION_CONDITION_OPERATORS:
+            operator.addItem(label, key)
+        selected_operator = str(condition.operator if condition is not None else "equals")
+        operator_index = operator.findData(selected_operator)
+        operator.setCurrentIndex(max(0, operator_index))
+        value = self.QtWidgets.QLineEdit(str(condition.value if condition is not None else ""))
+        value.setPlaceholderText("Comma-separate values for Is one of")
+        remove = self.QtWidgets.QPushButton("Remove")
+        remove.clicked.connect(lambda _checked=False, button=remove: self._remove_notification_condition_row(button))
+        self.notification_conditions_table.setCellWidget(row, 0, field)
+        self.notification_conditions_table.setCellWidget(row, 1, operator)
+        self.notification_conditions_table.setCellWidget(row, 2, value)
+        self.notification_conditions_table.setCellWidget(row, 3, remove)
+        field.currentTextChanged.connect(self._sync_notification_rule_validation)
+        operator.currentIndexChanged.connect(self._sync_notification_rule_validation)
+        value.textChanged.connect(self._sync_notification_rule_validation)
+
+    def _remove_notification_condition_row(self, button: Any) -> None:
+        for row in range(self.notification_conditions_table.rowCount()):
+            if self.notification_conditions_table.cellWidget(row, 3) is button:
+                self.notification_conditions_table.removeRow(row)
+                self._sync_notification_rule_validation()
+                return
+
+    def _notification_conditions_from_editor(self) -> list[NotificationCondition]:
+        conditions: list[NotificationCondition] = []
+        for row in range(self.notification_conditions_table.rowCount()):
+            field = self.notification_conditions_table.cellWidget(row, 0)
+            operator = self.notification_conditions_table.cellWidget(row, 1)
+            value = self.notification_conditions_table.cellWidget(row, 2)
+            field_name = str(field.currentText() if field is not None else "").strip()
+            if not field_name:
+                continue
+            conditions.append(
+                NotificationCondition(
+                    field=field_name,
+                    operator=str(operator.currentData() if operator is not None else "equals"),
+                    value=str(value.text() if value is not None else "").strip(),
+                )
+            )
+        return conditions
 
     def _add_notification_recipient_from_text(self) -> None:
         recipients = _parse_notification_recipients(self.notification_rule_recipients.text())
@@ -4080,6 +4189,7 @@ class StaffingDashboardV2Page:
             trigger_timing=timing,
             date_field=self.notification_rule_date_field.currentText(),
             offset_days=offset_days,
+            conditions=self._notification_conditions_from_editor(),
             subject_template=self.notification_rule_subject.text(),
             body_template=self.notification_rule_body.toPlainText(),
             recipients=self._current_notification_recipients(),
@@ -8695,6 +8805,20 @@ def _notification_schedule_text(rule: NotificationRule) -> str:
     if direction == "on":
         return f"On {rule.date_field or 'reference date'}"
     return f"{days} day{'s' if days != 1 else ''} {direction} {rule.date_field or 'reference date'}"
+
+
+def _notification_conditions_text(rule: NotificationRule) -> str:
+    if not rule.conditions:
+        return "Always"
+    labels = {key: label for label, key in NOTIFICATION_CONDITION_OPERATORS}
+    parts: list[str] = []
+    for condition in rule.conditions:
+        operator = str(condition.operator or "equals")
+        text = f"{condition.field} {labels.get(operator, operator)}"
+        if operator not in {"is_blank", "is_not_blank"}:
+            text += f" {condition.value}"
+        parts.append(text)
+    return " AND ".join(parts)
 
 
 def _notification_attachment_fields(event_type: str) -> tuple[str, ...]:

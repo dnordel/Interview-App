@@ -17,7 +17,7 @@ from candidate_report import CandidateReportRepository
 from data_store import InterviewHistoryStore, SchoolOfferSettingsStore
 from docx import Document
 from interview_runtime import map_indeed_transcript_to_questions, parse_indeed_transcript_text
-from notification_models import NotificationRecipient, NotificationRule, NotificationSendResult
+from notification_models import NotificationCondition, NotificationRecipient, NotificationRule, NotificationSendResult
 from notification_store import NotificationStore
 from staffing_dashboard_v2 import (
     StaffingDashboardV2Page,
@@ -9347,6 +9347,54 @@ def test_pyside_staffing_classroom_detail_matches_dashboard_mockup_shell(
     }
     assert {"Teacher 1", "Imgard M.", "Filled", "Teacher Permit Approved", "Aide 1", "OPEN POSITION", "Need Now"} <= table_text
     assert _staffing_button_for_position(table, "Aide 1").text() == "Mark Coming"
+    window.window.close()
+    app.processEvents()
+
+
+@pytest.mark.pyside_gui
+@pytest.mark.slow_pyside
+def test_pyside_notification_editor_loads_adds_and_saves_condition_rows(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    app, qt_widgets, window, page, store, saved_rules = _open_staffing_v2_notifications_test_window(
+        tmp_path,
+        monkeypatch,
+        [
+            NotificationRule(
+                event_type="permit.escalation.90d",
+                label="Missing permit at 90 days",
+                subject_template="Permit: {candidate_name}",
+                body_template="Status: {permit_status}",
+                recipients=[NotificationRecipient(email="director@example.org")],
+                conditions=[NotificationCondition("permit_status", "in", "unknown, no_permit_or_application")],
+            )
+        ],
+    )
+    saved = saved_rules[0]
+    card = page.findChildren(qt_widgets.QFrame, "StaffingV2NotificationRuleCard")[0]
+    assert "permit_status Is one of unknown, no_permit_or_application" in _widget_text(card)
+    _open_notification_rule_card(app, qt_widgets, page, saved.label)
+    table = page.findChild(qt_widgets.QTableWidget, "StaffingV2NotificationConditionsTable")
+
+    assert table.rowCount() == 1
+    assert table.cellWidget(0, 0).currentText() == "permit_status"
+    assert table.cellWidget(0, 1).currentData() == "in"
+    assert table.cellWidget(0, 2).text() == "unknown, no_permit_or_application"
+
+    page.findChild(qt_widgets.QPushButton, "StaffingV2NotificationConditionAdd").click()
+    app.processEvents()
+    assert table.rowCount() == 2
+    table.cellWidget(1, 0).setCurrentText("school")
+    table.cellWidget(1, 1).setCurrentText("Equals")
+    table.cellWidget(1, 2).setText("Palmdale")
+    page.findChild(qt_widgets.QPushButton, "StaffingV2NotificationSave").click()
+    app.processEvents()
+
+    persisted = store.get_rule(saved.id or 0)
+    assert [(item.field, item.operator, item.value) for item in persisted.conditions] == [
+        ("permit_status", "in", "unknown, no_permit_or_application"),
+        ("school", "equals", "Palmdale"),
+    ]
     window.window.close()
     app.processEvents()
 

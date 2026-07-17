@@ -48,6 +48,7 @@ modules:
     - platform_services
     - scoring_reporting
   notification_service:
+    description: Editable notifications use normalized safe AND condition rows over curated DB/event values, including current permit and role checks for 50/90-day reminders.
     path: src/notification_service.py
     depends_on:
     - notification_models

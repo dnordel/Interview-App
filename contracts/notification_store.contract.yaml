@@ -2,8 +2,8 @@ module:
   name: notification_store
   language: python
   path: src/notification_store.py
-  version: 1.7.0
-  description: SQLite-backed system/editable notification rules, role recipients, persistent rollout metadata, pending schedules, and sanitized successful-send dedupe audit.
+  version: 1.8.0
+  description: SQLite-backed system/editable notification rules with normalized structured condition rows, role recipients, persistent rollout metadata, pending schedules, and sanitized successful-send dedupe audit.
 functions:
 - name: utc_now_iso
   description: Return current UTC timestamp as ISO text without microseconds.
@@ -15,7 +15,7 @@ functions:
   side_effects: none
 classes:
 - name: NotificationStore
-  description: Persists notification rules, recipients, default examples, pending date-offset schedules, and send audit rows.
+  description: Persists notification rules, ordered AND conditions, recipients, default examples, pending date-offset schedules, and send audit rows.
   locked: false
   methods:
   - name: list_rules
@@ -31,7 +31,7 @@ classes:
     inputs: {}
     returns:
       type: None
-    side_effects: Creates inactive editable default notification rule examples when missing for staffing assignment status changes, permit updates, offer generated/approved/accepted, and custom reminders; seeds staffing defaults with Hiring Manager plus Director role recipients, seeds offer-approved with Candidate, seeds offer-accepted with Candidate plus Director plus Executive Director, adds missing staffing.assignment.created, and only backfills recipients for untouched empty defaults.
+    side_effects: Creates inactive editable default notification rule examples when missing for staffing assignment status changes, permit updates, offer generated/approved/accepted, and custom reminders; seeds 50/90-day permit rules with editable permit-status and position-family conditions, and only upgrades missing default conditions without replacing later user edits or disablement.
   - name: save_rule
     inputs:
       rule:
@@ -41,7 +41,7 @@ classes:
       type: NotificationRule
     exceptions:
     - ValueError
-    side_effects: Validates the structured rule, then writes notification rule, trigger timing/date-offset metadata, and explicit-email or role recipient rows; disabled incomplete rules retain warnings while active blocking issues fail closed.
+    side_effects: Validates the structured rule, then writes notification rule, trigger timing/date-offset metadata, ordered condition rows, and explicit-email or role recipient rows; disabled incomplete rules retain warnings while active blocking issues fail closed.
   - name: get_rule
     inputs:
       rule_id:
@@ -59,7 +59,7 @@ classes:
         required: true
     returns:
       type: None
-    side_effects: Deletes one notification rule and its recipients through SQLite cascading delete.
+    side_effects: Deletes one notification rule plus its condition and recipient rows.
   - name: set_rule_active
     inputs:
       rule_id:

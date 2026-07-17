@@ -45,7 +45,7 @@ services:
     modules:
     - onboarding_operations
   notification_service:
-    description: Ten editable system workflow notifications with school role/name directory, shared and Hiring Manager SMTP accounts, DPAPI credentials, required attachments, permanent success dedupe, rollout gating, and five-minute exact-date/noon/permit scheduling.
+    description: Ten editable system workflow notifications with visible safe AND condition rows over curated DB/event fields, school role/name directory, shared and Hiring Manager SMTP accounts, DPAPI credentials, required attachments, permanent success dedupe, rollout gating, and five-minute exact-date/noon/permit scheduling.
     modules:
     - notification_models
     - notification_store

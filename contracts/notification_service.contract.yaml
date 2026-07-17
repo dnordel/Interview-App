@@ -2,9 +2,17 @@ module:
   name: notification_service
   language: python
   path: src/notification_service.py
-  version: 2.0.0
-  description: Notification delivery, editable school role directory and director names, separate Hiring Manager SMTP account with DPAPI secrets, required attachments, and clock-aware staffing date/permit scheduling.
+  version: 2.1.0
+  description: Notification delivery with safe persisted AND conditions, editable school role directory and director names, separate Hiring Manager SMTP account with DPAPI secrets, required attachments, and clock-aware staffing date/permit scheduling.
 functions:
+- name: notification_conditions_match
+  locked: false
+  inputs:
+    conditions: {type: 'list[NotificationCondition]', required: true}
+    payload: {type: 'dict[str, str]', required: true}
+  returns: {type: bool}
+  exceptions: []
+  side_effects: none
 - name: protect_secret
   locked: false
   inputs: {value: {type: str, required: true}}
@@ -211,7 +219,7 @@ classes:
     exceptions: []
     side_effects: none
 - name: NotificationService
-  description: Emits exact-match notification events for active rules with idempotent send audit and runs due date-offset schedules.
+  description: Emits active notification rules only when all structured conditions match current event or scheduled payload values, with idempotent send audit and due date-offset scheduling.
   locked: false
   methods:
   - name: activate_ready_system_rules
@@ -234,7 +242,7 @@ classes:
       type: list[NotificationSendResult]
     exceptions:
     - ValueError
-    side_effects: Reads rules, checks event or date-offset trigger timing, may queue
+    side_effects: Reads rules, checks all structured conditions plus event or date-offset trigger timing, may queue
       future date-offset notifications, may send email, writes audit outcomes.
   - name: send_test
     inputs:

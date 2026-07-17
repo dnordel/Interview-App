@@ -32,6 +32,7 @@ FOCUSED_PYSIDE_GUI_WORKFLOW_EXCEPTIONS = {
     "test_staffing_v2_director_interviews_backfill_passed_history_rows",
     "test_director_staffing_launch_queues_history_backfill_when_edit_lock_exists",
     "test_staffing_v2_director_interviews_delete_checked_pending_rows",
+    "test_pyside_notification_editor_loads_adds_and_saves_condition_rows",
 }
 
 REQUIRED_PYSIDE_GUI_SCENARIO_SURFACES = {

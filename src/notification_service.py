@@ -7,6 +7,7 @@ import re
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 from datetime import date, datetime, time, timedelta
+from decimal import Decimal, InvalidOperation
 from email.message import EmailMessage
 from pathlib import Path
 import smtplib
@@ -15,7 +16,7 @@ import sys
 from typing import Any
 
 from email_security import is_valid_email_address, sanitize_email_subject
-from notification_models import NotificationRecipient, NotificationRule, NotificationSendResult
+from notification_models import NotificationCondition, NotificationRecipient, NotificationRule, NotificationSendResult
 from notification_store import NotificationStore
 from notification_templates import (
     NOTIFICATION_TEMPLATE_FIELDS,
@@ -327,6 +328,52 @@ def _send_email_message(
         smtp.send_message(message)
 
 
+def notification_conditions_match(
+    conditions: list[NotificationCondition],
+    payload: dict[str, str],
+) -> bool:
+    for condition in conditions:
+        actual = str(payload.get(str(condition.field), "")).strip().casefold()
+        operator = str(condition.operator or "equals").strip().casefold()
+        expected = str(condition.value or "").strip().casefold()
+        if operator == "equals":
+            matches = actual == expected
+        elif operator == "not_equals":
+            matches = actual != expected
+        elif operator == "in":
+            values = {item.strip() for item in expected.split(",") if item.strip()}
+            matches = actual in values
+        elif operator == "not_in":
+            values = {item.strip() for item in expected.split(",") if item.strip()}
+            matches = actual not in values
+        elif operator == "contains":
+            matches = expected in actual
+        elif operator == "not_contains":
+            matches = expected not in actual
+        elif operator == "is_blank":
+            matches = not actual
+        elif operator == "is_not_blank":
+            matches = bool(actual)
+        elif operator in {"greater_than", "greater_than_or_equal", "less_than", "less_than_or_equal"}:
+            try:
+                actual_number = Decimal(re.sub(r"[$,%\s]", "", actual))
+                expected_number = Decimal(re.sub(r"[$,%\s]", "", expected))
+            except InvalidOperation:
+                matches = False
+            else:
+                matches = {
+                    "greater_than": actual_number > expected_number,
+                    "greater_than_or_equal": actual_number >= expected_number,
+                    "less_than": actual_number < expected_number,
+                    "less_than_or_equal": actual_number <= expected_number,
+                }[operator]
+        else:
+            matches = False
+        if not matches:
+            return False
+    return True
+
+
 class NotificationService:
     def __init__(
         self,
@@ -622,6 +669,8 @@ class NotificationService:
         return results
 
     def _trigger_block_status(self, rule: NotificationRule, payload: dict[str, str]) -> str:
+        if not notification_conditions_match(rule.conditions, payload):
+            return "condition_not_met"
         timing = str(rule.trigger_timing or "event").strip()
         if timing == "event":
             return ""
