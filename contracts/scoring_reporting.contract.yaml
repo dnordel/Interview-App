@@ -2,7 +2,7 @@ module:
   name: scoring_reporting
   language: python
   path: src/scoring_reporting.py
-  version: 1.1.0
+  version: 1.2.2
   description: Flattened public interface for human scoring, reporting, trait signals,
     exports, referrals, email safety, offers, and templates; only active legacy adapters remain in the compatibility module
     inventory.
@@ -726,6 +726,19 @@ functions:
     end_time_12h: {type: str, required: true}
   returns: {type: OfferSchedule}
   exceptions: [ValueError]
+  side_effects: none
+- name: build_approval_offer_input
+  description: Convert immutable director offer terms into approval-time template input while preserving honorific and fractional weekly-hour precision and defaulting a missing honorific to Ms.
+  locked: false
+  inputs:
+    first_name: {type: str, required: true}
+    last_name: {type: str, required: true}
+    city: {type: str, required: true}
+    position: {type: str, required: true}
+    approval_date: {type: date, required: true}
+    terms: {type: 'dict[str, Any]', required: true}
+  returns: {type: OfferInput}
+  exceptions: [ValueError, TypeError]
   side_effects: none
 - name: parse_requested_hourly_pay
   description: Parse one unambiguous hourly dollar amount while returning null for ranges, multiple values, missing values, or unsafe amounts.
@@ -1517,7 +1530,8 @@ classes:
       question text, and full-width candidate answer boxes, excluding the intro
       script. The export includes transcript text for pre-scored custom and
       scored questions plus manual notes for custom/non-scored questions after
-      the scored block.
+      the scored block. All body text uses a minimum 12-point font; header and
+      footer text may use smaller font sizes.
     locked: false
     inputs:
       rubric:
@@ -1536,7 +1550,7 @@ classes:
     - OSError
     side_effects: Writes a Basic Interview Notes DOCX file to disk.
   - name: export
-    description: Generate the standard human-scored interview notes DOCX using export_basic_interview_notes.
+    description: Generate the standard human-scored interview notes DOCX using export_basic_interview_notes with minimum 12-point body text.
     locked: false
     inputs:
       rubric:

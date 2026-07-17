@@ -1,4 +1,4 @@
-last_updated: '2026-07-16'
+last_updated: '2026-07-17'
 sections:
 - name: interview_app
   tests:
@@ -12,7 +12,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-17T01:17:08.214313+00:00'
+generated_at_utc: '2026-07-17T15:04:15.638329+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -11697,6 +11697,16 @@ entries:
     - security_controls
 - contract: contracts/scoring_reporting.contract.yaml
   symbol: scoring_reporting.available_modules
+  kind: function
+  tests:
+  - path: tests/test_shared_module_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_controls
+- contract: contracts/scoring_reporting.contract.yaml
+  symbol: scoring_reporting.build_approval_offer_input
   kind: function
   tests:
   - path: tests/test_shared_module_contract_interfaces.py

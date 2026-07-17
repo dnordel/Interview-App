@@ -153,13 +153,24 @@ def notification_payload_from_mapping(source: Mapping[str, Any]) -> dict[str, st
     put("interview_date", candidate.get("interview_date") or source.get("interview_date") or source.get("date"))
     put("history_id", source.get("history_id") or source.get("id"))
     put("outcome", scoring.get("outcome") or source.get("outcome"))
-    put("score", scoring.get("percent_of_max") or scoring.get("weighted_total") or source.get("score"))
+    score = scoring.get("percent_of_max") or scoring.get("weighted_total") or source.get("score")
+    put("score", score)
+    put("interview_score", score)
 
     degree = qualification.get("degree_type") or qualification.get("degree") or source.get("degree_type")
+    has_degree = qualification.get("has_degree") if "has_degree" in qualification else source.get("has_degree")
+    degree_in_ece = (
+        qualification.get("degree_in_ece") if "degree_in_ece" in qualification else source.get("degree_in_ece")
+    )
     put("degree", degree)
     put("degree_type", degree)
-    put("has_degree", qualification.get("has_degree") if "has_degree" in qualification else source.get("has_degree"))
-    put("degree_in_ece", qualification.get("degree_in_ece") if "degree_in_ece" in qualification else source.get("degree_in_ece"))
+    put("has_degree", has_degree)
+    put("degree_in_ece", degree_in_ece)
+    has_degree_value = has_degree is True or str(has_degree).strip().casefold() in {"true", "yes", "1"}
+    put("degree_display", degree if has_degree_value and degree else "No")
+    if has_degree_value:
+        degree_in_ece_value = degree_in_ece is True or str(degree_in_ece).strip().casefold() in {"true", "yes", "1"}
+        payload["degree_in_ece_display"] = f"\nDegree in ECE: {'Yes' if degree_in_ece_value else 'No'}"
     ece_units = qualification.get("ece_units_completed") or source.get("ece_units_completed") or source.get("ece_units")
     put("ece_units", ece_units)
     put("ece_units_completed", ece_units)
@@ -171,6 +182,7 @@ def notification_payload_from_mapping(source: Mapping[str, Any]) -> dict[str, st
     experience = qualification.get("years_experience") or source.get("years_experience") or source.get("experience_years")
     put("years_experience", experience)
     put("experience_years", experience)
+    put("experience", experience)
 
     questions = source.get("questions") if isinstance(source.get("questions"), list) else []
     answer_lines: list[str] = []

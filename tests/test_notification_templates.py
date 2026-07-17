@@ -89,11 +89,14 @@ def test_notification_payload_from_mapping_extracts_safe_nested_report_values() 
             "candidate": {
                 "school": "Hawthorne",
                 "qualification": {
+                    "has_degree": True,
                     "degree_type": "BA",
+                    "degree_in_ece": False,
                     "ece_units_completed": 24,
                     "years_experience": 5,
                 },
             },
+            "score": "88%",
             "questions": [
                 {"prompt": "Why preschool?", "transcript": "Because early learning matters."},
                 {"title": "Guidance", "candidate_transcript": "I redirect with routines."},
@@ -106,8 +109,12 @@ def test_notification_payload_from_mapping_extracts_safe_nested_report_values() 
     assert payload["school"] == "Hawthorne"
     assert payload["degree"] == "BA"
     assert payload["degree_type"] == "BA"
+    assert payload["degree_display"] == "BA"
+    assert payload["degree_in_ece_display"] == "\nDegree in ECE: No"
     assert payload["ece_units"] == "24"
     assert payload["years_experience"] == "5"
+    assert payload["experience"] == "5"
+    assert payload["interview_score"] == "88%"
     assert payload["interview_answer_1"] == "Because early learning matters."
     assert payload["interview_answers_summary"] == (
         "Why preschool?: Because early learning matters.\n"

@@ -88,6 +88,7 @@ from notification_service import (
     notification_service_from_onboarding,
     notification_service_from_email_account_settings,
 )
+from notification_templates import notification_payload_from_mapping
 from onboarding_operations import JsonStore, build_dashboard_today_summary, filtered_tasks, task_status
 from platform_services import (
     CONFIG_DIR,
@@ -107,6 +108,7 @@ from scoring_reporting import (
     OfferInput,
     OfferLetterService,
     ScoringEngine,
+    build_approval_offer_input,
     build_offer_filename,
     build_school_offer_filename,
     next_available_offer_path,
@@ -2758,18 +2760,13 @@ class PySideInterviewWindow:
                 build_school_offer_filename(application.school, candidate.legal_name),
             )
             artifact_stage = OfferApprovalArtifactStage(output_path)
-            data = OfferInput(
+            data = build_approval_offer_input(
                 first_name=first_name,
                 last_name=last_name,
                 city=application.school,
                 position=application.position,
-                start_date=approval_date,
-                start_time_12h=str(terms.get("start_time") or "08:00 AM"),
-                end_time_12h=str(terms.get("end_time") or "05:00 PM"),
-                hourly_pay=float(terms.get("hourly_pay") or 0),
-                hours=int(float(terms.get("weekly_hours") or terms.get("hours_week") or 0)),
-                created_on=approval_date,
-                title=str(terms.get("title") or ""),
+                approval_date=approval_date,
+                terms=terms,
             )
             OfferLetterService.render_approved_offer(
                 template_path,
@@ -2910,17 +2907,27 @@ class PySideInterviewWindow:
                         )
                         notification_factory = getattr(self, "_notification_service", None)
                         if callable(notification_factory):
+                            history_store = InterviewHistoryStore(self.model.history_path)
+                            history_row = next(
+                                (
+                                    row
+                                    for row in history_store.load()
+                                    if history_store.build_row_key(row) == application.history_id
+                                ),
+                                {},
+                            )
+                            interview_payload = notification_payload_from_mapping(history_row)
                             payload = {
                                 "candidate_name": candidate.legal_name,
                                 "candidate_email": candidate.email,
                                 "school": application.school,
                                 "position": application.position,
                                 "director_name": actor,
-                                "interview_score": "",
+                                "interview_score": interview_payload.get("interview_score", ""),
                                 "director_interview_score": f"{interview.rating:g}",
-                                "degree_display": "No",
-                                "degree_in_ece_display": "",
-                                "experience": "",
+                                "degree_display": interview_payload.get("degree_display", "No"),
+                                "degree_in_ece_display": interview_payload.get("degree_in_ece_display", ""),
+                                "experience": interview_payload.get("experience", ""),
                                 "requested_pay": terms["requested_pay_raw"],
                                 "offer_amount": terms["hourly_pay"],
                                 "proposed_classroom": terms["proposed_classroom"],
@@ -6605,10 +6612,13 @@ class PySideInterviewWindow:
         if not should_prompt_candidate_contact_handoff(score_value) and _coerce_history_percent(score_value) != 65:
             return
         event_type = "interview.rating.qualified"
+        notification_service = self._notification_service()
+        directory = getattr(notification_service, "directory", None)
+        director_names = getattr(directory, "director_names", {})
         payload = {
             "candidate_name": self.session.candidate_name,
             "school": self.session.school,
-            "director_name": "",
+            "director_name": str(director_names.get(self.session.school.casefold(), "Director")),
             "position": self.session.position,
             "interview_date": self.session.interview_date,
             "outcome": outcome,
@@ -6624,7 +6634,7 @@ class PySideInterviewWindow:
         payload.update(_qualification_notification_payload(getattr(self.session, "qualification", None)))
         key = payload["history_id"] or f"{self.session.candidate_name}:{self.session.interview_date}:{event_type}"
         try:
-            self._notification_service().emit_event(event_type, payload, f"{key}:{event_type}")
+            notification_service.emit_event(event_type, payload, f"{key}:{event_type}")
         except Exception:
             return
 

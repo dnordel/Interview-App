@@ -2,10 +2,11 @@ module:
   name: notification_templates
   language: python
   path: src/notification_templates.py
-  version: 2.0.0
+  version: 2.0.1
   description: Shared curated notification template field catalog, structured rule validation, safe stored-data payload extraction, template extraction, and safe Markdown-to-multipart rendering.
 functions:
 - name: notification_payload_from_mapping
+  description: Extract safe stored candidate, qualification, score, degree-display, experience, and interview-answer values for notification rendering.
   locked: false
   inputs:
     source: {type: 'Mapping[str, Any]', required: true}

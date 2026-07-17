@@ -593,13 +593,13 @@ def test_offer_notification_adapter_sends_candidate_pdf_only() -> None:
             return [SimpleNamespace(status="sent", error="")]
 
     adapter = HiringOfferNotificationAdapter(Notifications())
-    candidate = SimpleNamespace(legal_name="Maya Patel", email="maya@example.com")
+    candidate = SimpleNamespace(legal_name="Maya Patel", email="maya@example.com", honorific="Ms.")
     version = SimpleNamespace(
         version_id="v1",
         approval_date="2026-07-14",
         document_reply_by_date="2026-07-17",
         start_date="2026-08-03",
-        terms={"hourly_pay": "24.00"},
+        terms={"hourly_pay": "24.00", "school": "Palmdale"},
     )
 
     result = adapter(candidate, version, Path("approved.pdf"), "offer-version:v1")
@@ -609,5 +609,7 @@ def test_offer_notification_adapter_sends_candidate_pdf_only() -> None:
     assert event_type == "offer.approved"
     assert key == "offer-version:v1"
     assert payload["candidate_email"] == "maya@example.com"
+    assert payload["honorific"] == "Ms."
+    assert payload["school"] == "Palmdale"
     assert payload["offer_pdf_path"] == "approved.pdf"
     assert payload["attachments"] == ["approved.pdf"]

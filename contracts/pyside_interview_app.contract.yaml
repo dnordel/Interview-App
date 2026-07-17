@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 6.5.0
+  version: 6.5.1
   description: PySide6 operations shell and headless view-model builder for a mockup-driven
     New Interview setup/live flow, Candidates-owned pipeline/history, candidate reports,
     onboarding, staffing, notifications, and admin-only
@@ -2418,6 +2418,7 @@ dependencies:
 - module: hiring_pipeline
 - module: hiring_workspace_v2
 - module: notification_service
+- module: notification_templates
 - module: onboarding_operations
 - module: platform_services
 - module: scoring_reporting

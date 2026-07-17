@@ -2,7 +2,7 @@ module:
   name: hiring_pipeline
   language: python
   path: src/hiring_pipeline.py
-  version: 1.6.0
+  version: 1.6.1
   description: Candidate-profile, application-pipeline, event-audit, and offer-lifecycle persistence in the canonical interview history SQLite database.
 functions:
 - name: normalize_candidate_phone
@@ -159,7 +159,7 @@ classes:
       idempotency_key: {type: str, required: true}
     returns: {type: 'list[Any]'}
     exceptions: []
-    side_effects: Emits one idempotent offer.approved event containing candidate email and approved PDF only.
+    side_effects: Emits one idempotent offer.approved event containing candidate identity, honorific, school, email, approval dates, and approved PDF.
   - name: offer_accepted
     inputs:
       candidate: {type: CandidateProfile, required: true}

@@ -750,7 +750,7 @@ class DocxExporter:
         for style_name in ("Normal", "Title", "Subtitle", "Heading 1", "Heading 2", "Heading 3"):
             style = doc.styles[style_name]
             style.font.name = body_font
-            style.font.size = Pt(11 if style_name == "Normal" else 12)
+            style.font.size = Pt(12)
             style.font.color.rgb = RGBColor.from_string(dark_text)
             style.paragraph_format.space_after = Pt(4)
             style.paragraph_format.line_spacing = 1.12
@@ -760,7 +760,7 @@ class DocxExporter:
                 style.font.color.rgb = RGBColor.from_string(navy)
                 style.paragraph_format.space_after = Pt(6)
             elif style_name == "Subtitle":
-                style.font.size = Pt(11)
+                style.font.size = Pt(12)
                 style.font.color.rgb = RGBColor.from_string("6B7280")
                 style.paragraph_format.space_after = Pt(4)
             elif style_name in {"Heading 1", "Heading 2", "Heading 3"}:
@@ -848,7 +848,7 @@ class DocxExporter:
                 for index, cell in enumerate(row.cells):
                     set_cell_width(cell, width_dxa[min(index, len(width_dxa) - 1)])
 
-        def normalize_paragraph(paragraph: Any, *, size: float = 10.5, color: str = dark_text, bold: bool = False) -> None:
+        def normalize_paragraph(paragraph: Any, *, size: float = 12, color: str = dark_text, bold: bool = False) -> None:
             paragraph.paragraph_format.space_after = Pt(0)
             paragraph.paragraph_format.line_spacing = 1.08
             for run in paragraph.runs:
@@ -865,7 +865,7 @@ class DocxExporter:
             fill: str | None = None,
             color: str = dark_text,
             align: Any | None = None,
-            size: float = 10.5,
+            size: float = 12,
         ) -> None:
             cell.text = str(text)
             cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
@@ -885,7 +885,7 @@ class DocxExporter:
             run = paragraph.add_run(text)
             run.italic = True
             run.font.name = body_font
-            run.font.size = Pt(9)
+            run.font.size = Pt(12)
             run.font.color.rgb = RGBColor.from_string("6B7280")
 
         def add_heading(text: str) -> None:
@@ -898,8 +898,8 @@ class DocxExporter:
             set_table_geometry(table, [2.25, content_width_inches - 2.25])
             for label, value in rows:
                 cells = table.add_row().cells
-                set_cell_text(cells[0], label, bold=True, fill=label_fill, size=10)
-                set_cell_text(cells[1], value if str(value).strip() else "Not provided", size=10)
+                set_cell_text(cells[0], label, bold=True, fill=label_fill, size=12)
+                set_cell_text(cells[1], value if str(value).strip() else "Not provided", size=12)
             return table
 
         def add_spacer(points: float = 4) -> None:
@@ -989,7 +989,7 @@ class DocxExporter:
         normalize_paragraph(title, size=18, color=navy, bold=True)
         subtitle = doc.add_paragraph("Master Template for Python-Generated Candidate Reports", style="Subtitle")
         subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        normalize_paragraph(subtitle, size=11, color="6B7280")
+        normalize_paragraph(subtitle, size=12, color="6B7280")
 
         add_heading("1. Candidate Snapshot")
         add_key_value_table(
@@ -1038,7 +1038,7 @@ class DocxExporter:
             set_table_geometry(score_table, [2.1, 1.0, 0.75, 1.45, 1.9], indent_dxa=360)
             score_headers = ["Trait", "Priority", "Weight", "Raw Score", "Weighted Score"]
             for cell, header_text in zip(score_table.rows[0].cells, score_headers):
-                set_cell_text(cell, header_text, bold=True, fill=score_header_fill, align=WD_ALIGN_PARAGRAPH.CENTER, size=10)
+                set_cell_text(cell, header_text, bold=True, fill=score_header_fill, align=WD_ALIGN_PARAGRAPH.CENTER, size=12)
             for row in rating_rows:
                 cells = score_table.add_row().cells
                 set_cell_text(cells[0], row.get("trait_name") or row.get("trait_id") or "")
@@ -1089,7 +1089,7 @@ class DocxExporter:
                     question_table.style = "Table Grid"
                     set_table_geometry(question_table, [1.25, 2.45, 1.15, 2.35])
                     for cell, header_text in zip(question_table.rows[0].cells, ["Question", "Type / Trait", "Raw Score", "Flags"]):
-                        set_cell_text(cell, header_text, bold=True, fill=answer_header_fill, align=WD_ALIGN_PARAGRAPH.CENTER, size=10)
+                        set_cell_text(cell, header_text, bold=True, fill=answer_header_fill, align=WD_ALIGN_PARAGRAPH.CENTER, size=12)
                     flag_text = (
                         "No example after follow-ups: "
                         f"{format_bool(first_present_bool(item.get('no_example_after_followups'), row.get('no_example_after_followups')))}\n"
@@ -1100,7 +1100,7 @@ class DocxExporter:
                     set_cell_text(body_cells[0], item.get("flow_index") or index, bold=True)
                     set_cell_text(body_cells[1], row.get("trait_name") or item_type.title() or "Question")
                     set_cell_text(body_cells[2], raw_score_text(row, item), align=WD_ALIGN_PARAGRAPH.CENTER)
-                    set_cell_text(body_cells[3], flag_text, size=9.5)
+                    set_cell_text(body_cells[3], flag_text, size=12)
 
                 q_label = doc.add_paragraph()
                 q_label.paragraph_format.space_before = Pt(2)
@@ -1108,12 +1108,12 @@ class DocxExporter:
                 q_run = q_label.add_run("Question Text")
                 q_run.bold = True
                 q_run.font.name = body_font
-                q_run.font.size = Pt(9.5)
+                q_run.font.size = Pt(12)
                 q_run.font.color.rgb = RGBColor.from_string(navy)
                 question_box = doc.add_table(rows=1, cols=1)
                 question_box.style = "Table Grid"
                 set_table_geometry(question_box, [content_width_inches])
-                set_cell_text(question_box.rows[0].cells[0], question, fill=box_fill, size=10)
+                set_cell_text(question_box.rows[0].cells[0], question, fill=box_fill, size=12)
 
                 a_label = doc.add_paragraph()
                 a_label.paragraph_format.space_before = Pt(2)
@@ -1121,12 +1121,12 @@ class DocxExporter:
                 a_run = a_label.add_run("Candidate Answer")
                 a_run.bold = True
                 a_run.font.name = body_font
-                a_run.font.size = Pt(9.5)
+                a_run.font.size = Pt(12)
                 a_run.font.color.rgb = RGBColor.from_string(navy)
                 answer_box = doc.add_table(rows=1, cols=1)
                 answer_box.style = "Table Grid"
                 set_table_geometry(answer_box, [content_width_inches])
-                set_cell_text(answer_box.rows[0].cells[0], answer or "No transcript captured.", fill=box_fill, size=10)
+                set_cell_text(answer_box.rows[0].cells[0], answer or "No transcript captured.", fill=box_fill, size=12)
                 add_spacer(6)
                 if item_type == "trait":
                     seen_scored_question = True
@@ -1135,7 +1135,7 @@ class DocxExporter:
             answer_box = doc.add_table(rows=1, cols=1)
             answer_box.style = "Table Grid"
             set_table_geometry(answer_box, [content_width_inches])
-            set_cell_text(answer_box.rows[0].cells[0], transcript or "No transcript captured.", fill=box_fill, size=10)
+            set_cell_text(answer_box.rows[0].cells[0], transcript or "No transcript captured.", fill=box_fill, size=12)
 
         school_part = sanitize_filename(school) if school else "UnknownSchool"
         filename = f"{interview_date} - {school_part} - {sanitize_filename(cname)} - Basic Interview Notes.docx"
@@ -1560,6 +1560,32 @@ class OfferInput:
     @property
     def offer_deadline(self) -> date:
         return self.created_on + timedelta(days=3)
+
+
+def build_approval_offer_input(
+    *,
+    first_name: str,
+    last_name: str,
+    city: str,
+    position: str,
+    approval_date: date,
+    terms: dict[str, Any],
+) -> OfferInput:
+    """Convert immutable director offer terms without losing display precision."""
+    hours = Decimal(str(terms.get("weekly_hours") or terms.get("hours_week") or 0))
+    return OfferInput(
+        first_name=first_name,
+        last_name=last_name,
+        city=city,
+        position=position,
+        start_date=approval_date,
+        start_time_12h=str(terms.get("start_time") or "08:00 AM"),
+        end_time_12h=str(terms.get("end_time") or "05:00 PM"),
+        hourly_pay=float(terms.get("hourly_pay") or 0),
+        hours=hours,
+        created_on=approval_date,
+        title=str(terms.get("honorific") or terms.get("title") or DEFAULT_CANDIDATE_TITLE),
+    )
 
 
 class OfferTemplateError(ValueError):

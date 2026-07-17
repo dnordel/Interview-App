@@ -3420,6 +3420,14 @@ def test_director_hire_sync_creates_one_pending_offer_with_derived_terms(tmp_pat
             "position": "Teacher",
             "score": 88,
             "outcome": "Hire",
+            "candidate": {
+                "qualification": {
+                    "has_degree": True,
+                    "degree_type": "BA",
+                    "degree_in_ece": True,
+                    "years_experience": 6,
+                }
+            },
             "answers": {"Pay": {"notes": "$24.50 per hour"}},
         }
     )
@@ -3473,6 +3481,14 @@ def test_director_hire_sync_creates_one_pending_offer_with_derived_terms(tmp_pat
     window = object.__new__(pyside_interview_app.PySideInterviewWindow)
     window.model = SimpleNamespace(history_path=history_path)
     window.school_offer_store = offer_settings
+    notifications = []
+
+    class FakeNotifications:
+        def emit_event(self, event_type, payload, idempotency_key):
+            notifications.append((event_type, payload, idempotency_key))
+            return []
+
+    window.notification_service = FakeNotifications()
 
     window._sync_hiring_v2_director_decisions(hiring)
     window._sync_hiring_v2_director_decisions(hiring)
@@ -3485,6 +3501,11 @@ def test_director_hire_sync_creates_one_pending_offer_with_derived_terms(tmp_pat
     assert offers[0].terms["proposed_classroom"] == "Chef"
     assert offers[0].terms["hourly_pay"] == "24.5"
     assert offers[0].terms["honorific"] == "Mr."
+    hire_payload = notifications[0][1]
+    assert hire_payload["interview_score"] == "88"
+    assert hire_payload["degree_display"] == "BA"
+    assert hire_payload["degree_in_ece_display"] == "\nDegree in ECE: Yes"
+    assert hire_payload["experience"] == "6"
 
 def test_pyside_review_table_updates_transcript_when_finalize_worker_reports_transcripts(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -4088,6 +4109,8 @@ def test_pyside_rating_notification_emits_for_hire_and_borderline_only(tmp_path:
     notifications = []
 
     class FakeNotifications:
+        directory = SimpleNamespace(director_names={"palmdale": "Edith"})
+
         def emit_event(self, event_type, payload, idempotency_key):
             notifications.append((event_type, payload, idempotency_key))
             return []
@@ -4113,6 +4136,7 @@ def test_pyside_rating_notification_emits_for_hire_and_borderline_only(tmp_path:
 
     assert [event[0] for event in notifications] == ["interview.rating.qualified", "interview.rating.qualified"]
     assert notifications[0][1]["candidate_name"] == "Jane Doe"
+    assert notifications[0][1]["director_name"] == "Edith"
     assert notifications[0][1]["score"] == "85%"
     assert notifications[0][1]["degree_type"] == "BA"
     assert notifications[0][1]["ece_units_completed"] == "18"

@@ -180,6 +180,8 @@ class HiringOfferNotificationAdapter:
             "candidate": candidate.legal_name,
             "candidate_name": candidate.legal_name,
             "candidate_email": candidate.email,
+            "honorific": candidate.honorific,
+            "school": str(version.terms.get("school", "")),
             "offer_pdf_path": str(resolved_pdf),
             "attachments": [str(resolved_pdf)],
             "offer_date": version.approval_date,

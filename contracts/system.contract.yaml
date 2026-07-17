@@ -218,6 +218,7 @@ modules:
     depends_on:
     - admin_studio
     - notification_service
+    - notification_templates
     - onboarding_operations
     - PySide6
   ui_mode_switch:

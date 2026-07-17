@@ -15,6 +15,7 @@ services:
     - pyside_interview_app
     - scoring_reporting
     - notification_service
+    - notification_templates
   interview_runtime_service:
     description: Interview flow orchestration, state transitions, transcription, and finalization that produces one basic merged interview-notes document (interview_notes_document_path) including candidate-response transcription content while keeping the live-only introduction out of notes and completed-overview surfaces.
     modules:

@@ -8,6 +8,7 @@ from scoring_reporting import (
     OfferInput,
     OfferLetterService,
     OfferTemplateError,
+    build_approval_offer_input,
     build_school_offer_filename,
     derive_offer_schedule,
     next_available_offer_path,
@@ -71,6 +72,43 @@ def test_offer_replacements_preserve_fractional_weekly_hours_and_pto() -> None:
     assert replacements["[Hours]"] == "38.75"
     assert replacements["[PTO]"] == "77.5"
     assert replacements["[PTO2]"] == "155"
+
+
+def test_approval_offer_input_preserves_honorific_and_fractional_hours() -> None:
+    data = build_approval_offer_input(
+        first_name="Maya",
+        last_name="Patel",
+        city="Palmdale",
+        position="Teacher",
+        approval_date=date(2026, 7, 17),
+        terms={
+            "honorific": "Ms.",
+            "start_time": "8:00 AM",
+            "end_time": "4:45 PM",
+            "hourly_pay": "24.50",
+            "weekly_hours": "38.75",
+        },
+    )
+
+    replacements = OfferLetterService.build_replacements(data)
+
+    assert replacements["[Title]"] == "Ms."
+    assert replacements["[Hours]"] == "38.75"
+    assert replacements["[PTO]"] == "77.5"
+    assert replacements["[PTO2]"] == "155"
+
+
+def test_approval_offer_input_defaults_missing_honorific_to_ms() -> None:
+    data = build_approval_offer_input(
+        first_name="Maya",
+        last_name="Patel",
+        city="Palmdale",
+        position="Teacher",
+        approval_date=date(2026, 7, 17),
+        terms={"hourly_pay": "24.50", "weekly_hours": "40"},
+    )
+
+    assert OfferLetterService.build_replacements(data)["[Title]"] == "Ms."
 
 
 def test_derive_offer_schedule_subtracts_lunch_for_long_shift() -> None:

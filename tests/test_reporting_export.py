@@ -12,6 +12,14 @@ def _doc_text(doc) -> str:
     return f"{paragraphs}\n{tables}"
 
 
+def _body_paragraphs(doc):
+    yield from doc.paragraphs
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                yield from cell.paragraphs
+
+
 class TestDocxExporter(unittest.TestCase):
     def _rubric(self):
         return {
@@ -121,6 +129,22 @@ class TestDocxExporter(unittest.TestCase):
         self.assertIn("$24/hour", text)
         self.assertNotIn("Noisy transcript", text)
         self.assertNotIn("Intro script should stay out of notes.", text)
+
+    def test_export_uses_at_least_12_point_font_for_all_body_text(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = DocxExporter(Path(directory)).export(self._rubric(), self._payload(), self._scoring())
+            doc = Document(path)
+
+        undersized_runs = []
+        for paragraph in _body_paragraphs(doc):
+            for run in paragraph.runs:
+                if not run.text.strip():
+                    continue
+                effective_size = run.font.size or paragraph.style.font.size
+                if effective_size is None or effective_size.pt < 12:
+                    undersized_runs.append((run.text, effective_size.pt if effective_size else None))
+
+        self.assertEqual(undersized_runs, [])
 
     def test_all_skipped_traits_use_compact_score_summary(self):
         scoring = self._scoring()
