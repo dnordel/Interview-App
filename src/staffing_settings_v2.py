@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from pathlib import Path
+import threading
 from typing import Any
 
 from admin_studio import AdminStudio
@@ -11,16 +12,17 @@ from notification_service import (
     NotificationDirectory,
     load_email_account_settings,
     load_notification_directory,
+    missing_email_account_fields,
     save_email_account_settings,
     save_notification_directory,
+    verify_email_account_connections,
 )
-from onboarding_operations import verify_email_connection
 
 
 SECTION_SPECS = (
     ("interview_flow", "Interview Flow"),
     ("rubrics", "Rubrics"),
-    ("templates", "Templates & Folders"),
+    ("templates", "School Settings"),
     ("email", "Shared Email Account"),
     ("recipient_directory", "Notification Recipients"),
     ("hiring_manager_email", "Hiring Manager Email Account"),
@@ -54,6 +56,7 @@ class StaffingSettingsV2Page:
             notification_directory_path
             or self.email_settings_path.with_name("notification_directory.json")
         )
+        self.notification_directory = load_notification_directory(self.notification_directory_path)
         self.on_email_settings_saved = on_email_settings_saved
         self.editing = False
         self._syncing = False
@@ -203,6 +206,10 @@ class StaffingSettingsV2Page:
         self.email_incoming_port.setObjectName("StaffingSettingsV2IncomingPort")
         self.email_incoming_port.setRange(1, 65535)
         form.addRow("Incoming port", self.email_incoming_port)
+        self.email_incoming_encryption = QtWidgets.QComboBox()
+        self.email_incoming_encryption.setObjectName("StaffingSettingsV2IncomingEncryption")
+        self.email_incoming_encryption.addItems(["SSL/TLS"])
+        form.addRow("Incoming encryption", self.email_incoming_encryption)
         self.email_username = QtWidgets.QLineEdit()
         self.email_username.setObjectName("StaffingSettingsV2SmtpUsername")
         form.addRow("Username", self.email_username)
@@ -224,14 +231,24 @@ class StaffingSettingsV2Page:
         self.email_remember_password = QtWidgets.QCheckBox("Remember password on this computer")
         self.email_remember_password.setObjectName("StaffingSettingsV2RememberPassword")
         form.addRow("", self.email_remember_password)
+        self.email_shared_password = QtWidgets.QCheckBox(
+            "Store password in shared Dropbox settings (admin-managed; available to all app users)"
+        )
+        self.email_shared_password.setObjectName("StaffingSettingsV2SharedPassword")
+        form.addRow("", self.email_shared_password)
         layout.addLayout(form)
         self.email_status = QtWidgets.QLabel("")
         self.email_status.setObjectName("StaffingSettingsV2EmailStatus")
         self.email_status.setWordWrap(True)
         layout.addWidget(self.email_status)
+        class EmailTestSignals(self.QtCore.QObject):
+            finished = self.QtCore.Signal(object)
+
+        self.email_test_signals = EmailTestSignals(page)
+        self.email_test_signals.finished.connect(self._finish_email_connection_test)
         actions = QtWidgets.QHBoxLayout()
         actions.addStretch(1)
-        self.test_email_button = QtWidgets.QPushButton("Test Connection")
+        self.test_email_button = QtWidgets.QPushButton("Test & Verify Settings")
         self.test_email_button.setObjectName("StaffingSettingsV2TestEmail")
         self.test_email_button.clicked.connect(self._test_email_connection)
         actions.addWidget(self.test_email_button)
@@ -247,12 +264,14 @@ class StaffingSettingsV2Page:
             self.email_account_type,
             self.email_incoming_host,
             self.email_incoming_port,
+            self.email_incoming_encryption,
             self.email_username,
             self.email_password,
             self.email_smtp_host,
             self.email_smtp_port,
             self.email_encryption,
             self.email_remember_password,
+            self.email_shared_password,
         )
         for control in self._email_controls:
             signal = getattr(control, "textChanged", None)
@@ -275,12 +294,14 @@ class StaffingSettingsV2Page:
         self.email_account_type.setCurrentText(settings.account_type or "IMAP")
         self.email_incoming_host.setText(settings.imap_or_pop_host)
         self.email_incoming_port.setValue(settings.imap_or_pop_port or 993)
+        self.email_incoming_encryption.setCurrentText(settings.incoming_encryption or "SSL/TLS")
         self.email_username.setText(settings.smtp_username or settings.username)
         self.email_password.setText(settings.smtp_password or settings.password)
         self.email_smtp_host.setText(settings.smtp_host)
         self.email_smtp_port.setValue(settings.smtp_port or 587)
         self.email_encryption.setCurrentText(settings.smtp_encryption or "STARTTLS")
         self.email_remember_password.setChecked(settings.remember_password)
+        self.email_shared_password.setChecked(settings.password_storage == "shared_config")
         self._syncing = False
 
     def _hiring_manager_email_page(self) -> Any:
@@ -347,7 +368,7 @@ class StaffingSettingsV2Page:
         title = self.QtWidgets.QLabel("Notification Recipients")
         title.setObjectName("StaffingSettingsV2SectionTitle")
         layout.addWidget(title)
-        directory = load_notification_directory(self.notification_directory_path)
+        directory = self.notification_directory
         form = self.QtWidgets.QFormLayout()
         fields: dict[str, Any] = {}
         specs = (
@@ -358,9 +379,6 @@ class StaffingSettingsV2Page:
             ("director_haw", "HAW Director", "StaffingSettingsV2RecipientDirectorHaw", directory.directors.get("hawthorne", "")),
             ("director_pmd", "PMD Director", "StaffingSettingsV2RecipientDirectorPmd", directory.directors.get("palmdale", "")),
             ("director_nlb", "NLB Director", "StaffingSettingsV2RecipientDirectorNlb", directory.directors.get("north long beach", "")),
-            ("director_name_haw", "HAW Director Name", "StaffingSettingsV2RecipientDirectorNameHaw", directory.director_names.get("hawthorne", "")),
-            ("director_name_pmd", "PMD Director Name", "StaffingSettingsV2RecipientDirectorNamePmd", directory.director_names.get("palmdale", "")),
-            ("director_name_nlb", "NLB Director Name", "StaffingSettingsV2RecipientDirectorNameNlb", directory.director_names.get("north long beach", "")),
             ("office_haw", "HAW Office Manager", "StaffingSettingsV2RecipientOfficeHaw", directory.office_managers.get("hawthorne", "")),
             ("office_pmd", "PMD Office Manager", "StaffingSettingsV2RecipientOfficePmd", directory.office_managers.get("palmdale", "")),
             ("office_nlb", "NLB Office Manager", "StaffingSettingsV2RecipientOfficeNlb", directory.office_managers.get("north long beach", "")),
@@ -388,12 +406,7 @@ class StaffingSettingsV2Page:
                         "north long beach": fields["director_nlb"].text().strip(),
                         "long beach": fields["director_nlb"].text().strip(),
                     },
-                    director_names={
-                        "hawthorne": fields["director_name_haw"].text().strip(),
-                        "palmdale": fields["director_name_pmd"].text().strip(),
-                        "north long beach": fields["director_name_nlb"].text().strip(),
-                        "long beach": fields["director_name_nlb"].text().strip(),
-                    },
+                    director_names=dict(directory.director_names),
                     office_managers={
                         "hawthorne": fields["office_haw"].text().strip(),
                         "palmdale": fields["office_pmd"].text().strip(),
@@ -432,8 +445,9 @@ class StaffingSettingsV2Page:
             smtp_encryption=encryption,
             imap_or_pop_host=self.email_incoming_host.text().strip(),
             imap_or_pop_port=self.email_incoming_port.value(),
-            incoming_encryption="SSL/TLS",
+            incoming_encryption=self.email_incoming_encryption.currentText().strip(),
             remember_password=self.email_remember_password.isChecked(),
+            password_storage="shared_config" if self.email_shared_password.isChecked() else "windows_user",
         )
 
     def _email_is_dirty(self) -> bool:
@@ -448,13 +462,7 @@ class StaffingSettingsV2Page:
         self._sync_action_state()
 
     def _validate_email_fields(self, settings: EmailSettings) -> str:
-        missing = []
-        if not settings.sender_email:
-            missing.append("email address")
-        if not settings.smtp_host:
-            missing.append("SMTP server")
-        if not settings.smtp_username:
-            missing.append("username")
+        missing = list(missing_email_account_fields(settings))
         return f"Missing: {', '.join(missing)}" if missing else ""
 
     def _test_email_connection(self) -> None:
@@ -463,12 +471,28 @@ class StaffingSettingsV2Page:
         if error:
             self.email_status.setText(error)
             return
-        try:
-            verify_email_connection(settings)
-        except Exception as exc:
-            self.email_status.setText(f"Connection failed ({type(exc).__name__}).")
+        self.test_email_button.setEnabled(False)
+        self.email_status.setText("Testing incoming and outgoing connections…")
+
+        def verify() -> None:
+            result: object = None
+            try:
+                verify_email_account_connections(settings)
+            except Exception as exc:  # noqa: BLE001 - GUI receives only exception type.
+                result = exc
+            try:
+                self.email_test_signals.finished.emit(result)
+            except RuntimeError:
+                return
+
+        threading.Thread(target=verify, name="shared-email-connection-test", daemon=True).start()
+
+    def _finish_email_connection_test(self, result: object) -> None:
+        self.test_email_button.setEnabled(True)
+        if isinstance(result, Exception):
+            self.email_status.setText(f"Connection verification failed ({type(result).__name__}).")
             return
-        self.email_status.setText("Connection verified. Settings not saved.")
+        self.email_status.setText("Incoming and outgoing connections verified. Settings not saved.")
 
     def _save_email_settings(self) -> None:
         settings = self._email_settings_from_fields()
@@ -488,9 +512,12 @@ class StaffingSettingsV2Page:
         page = QtWidgets.QWidget()
         layout = QtWidgets.QVBoxLayout(page)
         layout.setContentsMargins(18, 8, 8, 8)
-        title = QtWidgets.QLabel("Templates & Folders")
+        title = QtWidgets.QLabel("School Settings")
         title.setObjectName("StaffingSettingsV2SectionTitle")
         layout.addWidget(title)
+        description = QtWidgets.QLabel("View each school's templates, folders, and contact routing in one place.")
+        description.setObjectName("StaffingSettingsV2Muted")
+        layout.addWidget(description)
         top = QtWidgets.QHBoxLayout()
         self.school_selector = QtWidgets.QComboBox()
         self.school_selector.setObjectName("StaffingSettingsV2SchoolSelector")
@@ -527,6 +554,22 @@ class StaffingSettingsV2Page:
             self.school_path_fields[key] = field
             form.addRow(label, field)
         layout.addLayout(form)
+        contacts_label = QtWidgets.QLabel("School contacts")
+        contacts_label.setObjectName("StaffingSettingsV2SubsectionTitle")
+        layout.addWidget(contacts_label)
+        contacts_form = QtWidgets.QFormLayout()
+        self.school_contact_fields: dict[str, Any] = {}
+        contact_specs = (
+            ("director_email", "Director email", "StaffingSettingsV2SchoolDirectorEmail"),
+            ("office_manager_email", "Office Manager email", "StaffingSettingsV2SchoolOfficeManagerEmail"),
+        )
+        for key, label, object_name in contact_specs:
+            field = QtWidgets.QLineEdit()
+            field.setObjectName(object_name)
+            field.setReadOnly(True)
+            self.school_contact_fields[key] = field
+            contacts_form.addRow(label, field)
+        layout.addLayout(contacts_form)
         self.validation_label = QtWidgets.QLabel("")
         self.validation_label.setObjectName("StaffingSettingsV2Validation")
         self.validation_label.setWordWrap(True)
@@ -554,6 +597,13 @@ class StaffingSettingsV2Page:
         self._syncing = True
         for key, field in self.school_path_fields.items():
             field.setText(str(config.get(key, "")))
+        school_key = school.casefold()
+        self.school_contact_fields["director_email"].setText(
+            self.notification_directory.directors.get(school_key, "")
+        )
+        self.school_contact_fields["office_manager_email"].setText(
+            self.notification_directory.office_managers.get(school_key, "")
+        )
         self._syncing = False
         self._sync_validation_label()
 

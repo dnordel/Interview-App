@@ -2,8 +2,30 @@ module:
   name: staffing_change_stage
   language: python
   path: src/staffing_change_stage.py
-  version: 2.1.0
+  version: 2.1.1
   description: Dropbox-safe immutable JSON event outboxes, causal predecessor chains, and delivery receipts for bidirectional staffing changes between lock-isolated admin and school director databases.
+functions:
+- name: _utc_now_iso
+  locked: false
+  inputs: {}
+  returns: {type: str}
+  exceptions: []
+  side_effects: Reads current UTC time.
+- name: _required_text
+  locked: false
+  inputs:
+    value: {type: Any, required: true}
+    label: {type: str, required: true}
+  returns: {type: str}
+  exceptions: [ValueError]
+  side_effects: none
+- name: _safe_slug
+  locked: false
+  inputs:
+    value: {type: str, required: true}
+  returns: {type: str}
+  exceptions: []
+  side_effects: none
 classes:
 - name: StaffingChangeEvent
   description: Immutable staged staffing operation with per-user publisher identity, logical source database, school scope, JSON payload, creation timestamp, and optional predecessor event ID.
@@ -37,3 +59,10 @@ classes:
     exceptions: [ValueError, OSError]
     side_effects: Atomically writes one immutable UUID-named per-replica delivery receipt after successful local replay or an explicit keep-local conflict decision.
 dependencies: []
+data_structures:
+- name: _SCHEMA_VERSION
+  type: int
+- name: _EVENT_KIND
+  type: str
+- name: _RECEIPT_KIND
+  type: str

@@ -623,10 +623,23 @@ class HiringWorkspaceV2Page:
             )
             for column, value in enumerate(values):
                 self.offers_table.setItem(row, column, self.QtWidgets.QTableWidgetItem(str(value)))
+            actions = self.QtWidgets.QWidget()
+            actions_layout = self.QtWidgets.QHBoxLayout(actions)
+            actions_layout.setContentsMargins(4, 2, 4, 2)
+            actions_layout.setSpacing(4)
+            if version.status == "pending_approval":
+                review = self.QtWidgets.QPushButton("Review offer")
+                review.setObjectName("HiringV2ReviewOfferAction")
+                review.clicked.connect(
+                    lambda _checked=False, item=application: self._invoke("review_approval", item)
+                )
+                actions_layout.addWidget(review, 1)
             action = self.QtWidgets.QToolButton()
+            action.setObjectName("HiringV2OfferOverflowAction")
             action.setText("•••")
             action.clicked.connect(lambda _checked=False, item=application: self._open_actions(item))
-            self.offers_table.setCellWidget(row, 6, action)
+            actions_layout.addWidget(action)
+            self.offers_table.setCellWidget(row, 6, actions)
         attention = sum(bool(item.attention_code) for item in self.applications)
         self.offers_status.setText(
             f"Draft {counts['draft']}  ·  Approval {counts['pending_approval']}  ·  "
@@ -647,7 +660,7 @@ class HiringWorkspaceV2Page:
             HiringStage.DIRECTOR_REVIEW: [("Open director review", "director_review")],
             HiringStage.OFFER_DRAFT: [("Create offer", "create_offer")],
             HiringStage.EXECUTIVE_APPROVAL: [
-                ("Review approval", "review_approval"),
+                ("Review offer", "review_approval"),
                 ("Retry send", "retry_send"),
             ],
             HiringStage.OFFER_SENT: [

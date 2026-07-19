@@ -82,6 +82,37 @@ def _page(tmp_path: Path):
 
 
 @pytest.mark.pyside_gui
+def test_settings_page_backfills_all_known_school_offer_templates(tmp_path: Path) -> None:
+    app, qt_widgets, page, _paths = _page(tmp_path)
+
+    selector = page.widget.findChild(qt_widgets.QComboBox, "StaffingSettingsV2SchoolSelector")
+    schools = {selector.itemText(index) for index in range(selector.count())}
+
+    assert schools == {"Hawthorne", "North Long Beach", "Palmdale"}
+    selector.setCurrentText("Hawthorne")
+    app.processEvents()
+    assert page.school_path_fields["full_time_template"].text().endswith(
+        r"HR-HAW\HAW Employment Offers\.Preschool Partners Offer of Employment TEMPLATE - FULL TIME.docx"
+    )
+    assert page.school_path_fields["part_time_template"].text().endswith(
+        r"HR-HAW\HAW Employment Offers\.Preschool Partners Offer of Employment TEMPLATE - PART TIME.docx"
+    )
+    assert page.school_contact_fields["director_email"].text() == "director@launchpadpreschoolHAW.com"
+    assert page.school_contact_fields["office_manager_email"].text() == "admin-haw@launchpadpreschool.com"
+    selector.setCurrentText("North Long Beach")
+    app.processEvents()
+    assert page.school_path_fields["full_time_template"].text().endswith(
+        r"HR-NLB\NLB Employment Offers\.Launch Pad Learning NLB Offer of Employment TEMPLATE - FULL TIME.docx"
+    )
+    assert page.school_path_fields["part_time_template"].text().endswith(
+        r"HR-NLB\NLB Employment Offers\.Launch Pad Learning NLB Offer of Employment TEMPLATE - PART TIME.docx"
+    )
+    assert page.school_contact_fields["director_email"].text() == "director@launchpadpreschoolNLB.com"
+    assert page.school_contact_fields["office_manager_email"].text() == "admin-nlb@launchpadpreschool.com"
+    page.widget.close()
+
+
+@pytest.mark.pyside_gui
 def test_settings_page_uses_notification_sections_and_responsive_navigation(tmp_path: Path) -> None:
     app, qt_widgets, page, _paths = _page(tmp_path)
 
@@ -90,14 +121,15 @@ def test_settings_page_uses_notification_sections_and_responsive_navigation(tmp_
     assert [section_list.item(index).text() for index in range(section_list.count())] == [
         "Interview Flow",
         "Rubrics",
-        "Templates & Folders",
+        "School Settings",
         "Shared Email Account",
         "Notification Recipients",
         "Hiring Manager Email Account",
     ]
-    assert page.widget.findChild(qt_widgets.QLineEdit, "StaffingSettingsV2RecipientDirectorNameHaw").text() == "Netsi"
-    assert page.widget.findChild(qt_widgets.QLineEdit, "StaffingSettingsV2RecipientDirectorNamePmd").text() == "Edith"
-    assert page.widget.findChild(qt_widgets.QLineEdit, "StaffingSettingsV2RecipientDirectorNameNlb").text() == "Claudia"
+    assert page.widget.findChild(qt_widgets.QLineEdit, "StaffingSettingsV2SchoolDirectorName") is None
+    assert page.widget.findChild(qt_widgets.QLineEdit, "StaffingSettingsV2RecipientDirectorNameHaw") is None
+    assert page.widget.findChild(qt_widgets.QLineEdit, "StaffingSettingsV2RecipientDirectorNamePmd") is None
+    assert page.widget.findChild(qt_widgets.QLineEdit, "StaffingSettingsV2RecipientDirectorNameNlb") is None
     assert section_list.isVisible()
     assert not section_selector.isVisible()
 
@@ -211,6 +243,7 @@ def test_settings_rubric_editor_updates_weight_descriptors_and_signal_context(tm
 def test_settings_template_paths_update_draft_and_show_validation(tmp_path: Path) -> None:
     app, qt_widgets, page, _paths = _page(tmp_path)
     page.section_list.setCurrentRow(2)
+    page.school_selector.setCurrentText("Palmdale")
     page.edit_button.click()
     notes_dir = page.widget.findChild(qt_widgets.QLineEdit, "StaffingSettingsV2InterviewNotesDir")
     validation = page.widget.findChild(qt_widgets.QLabel, "StaffingSettingsV2Validation")
@@ -237,8 +270,8 @@ def test_settings_shared_email_account_tests_and_saves_independently(tmp_path: P
     saved_callbacks: list[str] = []
     monkeypatch.setattr(
         staffing_settings_v2,
-        "verify_email_connection",
-        lambda settings: verified.append(settings.smtp_host),
+        "verify_email_account_connections",
+        lambda settings: verified.append(f"{settings.imap_or_pop_host}|{settings.smtp_host}"),
     )
     email_path = tmp_path / "email_account_settings.json"
     page = staffing_settings_v2.StaffingSettingsV2Page(
@@ -252,23 +285,38 @@ def test_settings_shared_email_account_tests_and_saves_independently(tmp_path: P
     page.section_list.setCurrentRow(5)
     sender = page.widget.findChild(qt_widgets.QLineEdit, "StaffingSettingsV2EmailAddress")
     host = page.widget.findChild(qt_widgets.QLineEdit, "StaffingSettingsV2SmtpHost")
+    incoming = page.widget.findChild(qt_widgets.QLineEdit, "StaffingSettingsV2IncomingHost")
     username = page.widget.findChild(qt_widgets.QLineEdit, "StaffingSettingsV2SmtpUsername")
     password = page.widget.findChild(qt_widgets.QLineEdit, "StaffingSettingsV2SmtpPassword")
+    shared_password = page.widget.findChild(qt_widgets.QCheckBox, "StaffingSettingsV2SharedPassword")
     sender.setText("admin@example.com")
+    incoming.setText("imap.example.com")
     host.setText("smtp.example.com")
     username.setText("admin@example.com")
     password.setText("secret-value")
+    shared_password.setChecked(True)
     app.processEvents()
 
     assert password.echoMode() == qt_widgets.QLineEdit.EchoMode.Password
     assert page.is_dirty
-    page.widget.findChild(qt_widgets.QPushButton, "StaffingSettingsV2TestEmail").click()
-    assert verified == ["smtp.example.com"]
+    test_button = page.widget.findChild(qt_widgets.QPushButton, "StaffingSettingsV2TestEmail")
+    assert test_button.text() == "Test & Verify Settings"
+    test_button.click()
+    timer = qt_core.QElapsedTimer()
+    timer.start()
+    expected_status = "Incoming and outgoing connections verified. Settings not saved."
+    while timer.elapsed() < 2000 and page.email_status.text() != expected_status:
+        app.processEvents()
+        qt_core.QThread.msleep(10)
+    assert verified == ["imap.example.com|smtp.example.com"]
+    assert page.email_status.text() == expected_status
     assert not email_path.exists()
     page.widget.findChild(qt_widgets.QPushButton, "StaffingSettingsV2SaveEmail").click()
 
     assert saved_callbacks == ["saved"]
-    assert json.loads(email_path.read_text(encoding="utf-8"))["email"]["smtp_host"] == "smtp.example.com"
+    saved = json.loads(email_path.read_text(encoding="utf-8"))["email"]
+    assert saved["smtp_host"] == "smtp.example.com"
+    assert saved["password_storage"] == "shared_config"
     assert page.is_dirty is False
     page.widget.close()
 

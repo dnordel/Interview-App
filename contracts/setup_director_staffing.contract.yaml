@@ -2,8 +2,8 @@ module:
   name: setup_director_staffing
   language: powershell
   path: setup_director_staffing.ps1
-  version: 1.0.2
-  description: Minimal Windows bootstrap for school-filtered director Staffing v2 launchers; provisions Python 3.11, a director-specific virtual environment, pinned PySide6 and python-docx requirements, and the standalone director_staffing_app entrypoint without FFmpeg, VB-CABLE, audio, transcription, OpenVINO, or GPU setup.
+  version: 1.1.0
+  description: Minimal Windows bootstrap for school-filtered director Staffing v2 launchers; creates or repairs a school-specific desktop shortcut with the bundled Staffing icon, provisions Python 3.11, a director-specific virtual environment, pinned PySide6 and python-docx requirements, and the standalone director_staffing_app entrypoint without FFmpeg, VB-CABLE, audio, transcription, OpenVINO, or GPU setup.
 functions:
 - name: Write-Log
   description: Append director staffing launcher diagnostics to the setup log file.
@@ -16,6 +16,17 @@ functions:
     type: void
   exceptions: []
   side_effects: writes director staffing setup log entries
+- name: Install-DirectorStaffingDesktopShortcut
+  description: Create or repair the current user's school-specific Director Staffing desktop shortcut so it targets the matching minimal VBS launcher and uses the bundled repo-owned icon; invalid school filename characters are removed and shortcut-policy failures are logged without blocking app launch.
+  locked: false
+  inputs:
+    School:
+      type: string
+      required: true
+  returns:
+    type: void
+  exceptions: []
+  side_effects: May create or update a school-specific Director Staffing .lnk on the current user's Desktop and writes launcher diagnostics.
 - name: Run-Proc
   description: Execute a child process from the repo root and return its exit code.
   locked: false

@@ -3,6 +3,8 @@ from __future__ import annotations
 import inspect
 import base64
 import ctypes
+import imaplib
+import poplib
 import re
 from collections.abc import Callable
 from dataclasses import dataclass, replace
@@ -30,6 +32,7 @@ NOTIFICATION_RULES_PATH = USER_ARTIFACTS_DIR / "notification_rules.sqlite3"
 EMAIL_ACCOUNT_SETTINGS_PATH = USER_ARTIFACTS_DIR / "email_account_settings.json"
 HIRING_MANAGER_EMAIL_SETTINGS_PATH = USER_ARTIFACTS_DIR / "hiring_manager_email_account_settings.json"
 NOTIFICATION_DIRECTORY_PATH = USER_ARTIFACTS_DIR / "notification_directory.json"
+CANDIDATE_NOTIFICATION_TEST_EMAIL = "davidn@launchpadpreschool.com"
 SUPPORTED_NOTIFICATION_EVENTS = (
     "interview.rating.qualified",
     "director.interview.hire",
@@ -63,6 +66,94 @@ DIRECTOR_EMAILS_BY_SCHOOL = {
     "palmdale": "director@launchpadpreschoolPMD.com",
 }
 _SESSION_EMAIL_PASSWORDS: dict[str, tuple[str, str]] = {}
+
+
+def candidate_notification_test_recipient(
+    rule: NotificationRule,
+    requested_email: str = "",
+) -> str:
+    """Return safe recipient for candidate-targeted notification tests, else blank."""
+    targets_candidate = any(
+        str(recipient.recipient_type or "").strip().casefold() == "role"
+        and str(recipient.role_key or "").strip().casefold() == "candidate"
+        for recipient in rule.recipients
+    )
+    if not targets_candidate:
+        return ""
+    recipient = str(requested_email or "").strip() or CANDIDATE_NOTIFICATION_TEST_EMAIL
+    if not is_valid_email_address(recipient):
+        raise ValueError("A valid candidate test recipient email is required.")
+    return recipient
+
+
+def missing_email_account_fields(settings: EmailSettings) -> tuple[str, ...]:
+    """Return operator-facing names for required shared-account fields."""
+    username = str(
+        getattr(settings, "smtp_username", "") or getattr(settings, "username", "") or ""
+    ).strip()
+    password = str(
+        getattr(settings, "smtp_password", "") or getattr(settings, "password", "") or ""
+    )
+    fields = (
+        ("email address", str(getattr(settings, "sender_email", "") or "").strip()),
+        (
+            "incoming account type",
+            str(getattr(settings, "account_type", "") or "").strip().upper()
+            if str(getattr(settings, "account_type", "") or "").strip().upper() in {"IMAP", "POP3"}
+            else "",
+        ),
+        ("incoming server", str(getattr(settings, "imap_or_pop_host", "") or "").strip()),
+        ("SMTP server", str(getattr(settings, "smtp_host", "") or "").strip()),
+        ("username", username),
+        ("password", password),
+    )
+    return tuple(label for label, value in fields if not value)
+
+
+def verify_email_account_connections(settings: EmailSettings) -> None:
+    """Authenticate incoming and outgoing shared-account connections without sending."""
+    missing = missing_email_account_fields(settings)
+    if missing:
+        raise ValueError(f"Missing shared email settings: {', '.join(missing)}.")
+    username = str(settings.smtp_username or settings.username).strip()
+    password = str(settings.smtp_password or settings.password)
+    context = ssl.create_default_context()
+    account_type = str(settings.account_type or "").strip().upper()
+    if account_type == "IMAP":
+        incoming = imaplib.IMAP4_SSL(
+            settings.imap_or_pop_host,
+            settings.imap_or_pop_port,
+            ssl_context=context,
+            timeout=30,
+        )
+        try:
+            incoming.login(username, password)
+        finally:
+            incoming.logout()
+    elif account_type == "POP3":
+        incoming = poplib.POP3_SSL(
+            settings.imap_or_pop_host,
+            settings.imap_or_pop_port,
+            timeout=30,
+            context=context,
+        )
+        try:
+            incoming.user(username)
+            incoming.pass_(password)
+        finally:
+            incoming.quit()
+    else:
+        raise ValueError("Incoming account type is not supported.")
+
+    encryption = str(settings.smtp_encryption or "STARTTLS").strip().casefold()
+    if encryption in {"ssl/tls", "ssl", "tls"}:
+        with smtplib.SMTP_SSL(settings.smtp_host, settings.smtp_port, context=context, timeout=30) as smtp:
+            smtp.login(username, password)
+        return
+    with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=30) as smtp:
+        if encryption in {"starttls", "start tls"}:
+            smtp.starttls(context=context)
+        smtp.login(username, password)
 
 
 class _DataBlob(ctypes.Structure):
@@ -206,6 +297,7 @@ class EmailSettings:
     incoming_encryption: str = "SSL/TLS"
     smtp_encryption: str = "STARTTLS"
     remember_password: bool = True
+    password_storage: str = "windows_user"
     require_spa: bool = False
     use_same_credentials: bool = True
     director_and_owners: str = ""
@@ -240,6 +332,7 @@ class EmailSettings:
             incoming_encryption=str(source.get("incoming_encryption", "SSL/TLS") or "SSL/TLS"),
             smtp_encryption=str(smtp_encryption or "STARTTLS"),
             remember_password=bool(source.get("remember_password", True)),
+            password_storage=str(source.get("password_storage", "windows_user") or "windows_user"),
             require_spa=bool(source.get("require_spa", False)),
             use_same_credentials=bool(source.get("use_same_credentials", True)),
             director_and_owners=str(source.get("director_and_owners", "") or ""),
@@ -271,6 +364,7 @@ class EmailSettings:
             "incoming_encryption": self.incoming_encryption,
             "smtp_encryption": self.smtp_encryption,
             "remember_password": self.remember_password,
+            "password_storage": self.password_storage,
             "require_spa": self.require_spa,
             "use_same_credentials": self.use_same_credentials,
             "director_and_owners": self.director_and_owners,
@@ -436,6 +530,32 @@ class NotificationService:
             results.append(self._send_for_rule(rule, event_type, payload, idempotency_key))
         return results
 
+    def render_candidate_event_preview(
+        self,
+        event_type: str,
+        payload: dict[str, str],
+    ) -> str:
+        """Render same active candidate-targeted template used for event delivery."""
+        rules = [rule for rule in self.store.list_rules(str(event_type).strip()) if rule.active]
+        candidate_rules = [
+            rule
+            for rule in rules
+            if any(
+                recipient.active
+                and str(recipient.recipient_type or "").strip().casefold() == "role"
+                and str(recipient.role_key or "").strip().casefold() == "candidate"
+                for recipient in rule.recipients
+            )
+        ]
+        if not candidate_rules:
+            raise ValueError("No active candidate notification template is configured for this event.")
+        rendered = render_notification_templates(candidate_rules[0], payload)
+        if rendered.unresolved_fields:
+            raise ValueError(
+                f"Candidate notification template is missing values: {', '.join(rendered.unresolved_fields)}."
+            )
+        return f"Subject: {rendered.subject}\n\n{rendered.plain_body}"
+
     def send_test(
         self,
         rule_id: int,
@@ -443,6 +563,18 @@ class NotificationService:
         idempotency_key: str,
     ) -> NotificationSendResult:
         rule = self.store.get_rule(int(rule_id))
+        candidate_test_email = candidate_notification_test_recipient(rule)
+        if candidate_test_email:
+            rule = replace(
+                rule,
+                recipients=[
+                    NotificationRecipient(
+                        email=candidate_test_email,
+                        name="Candidate test recipient",
+                        role_label="Candidate test recipient",
+                    )
+                ],
+            )
         return self._send_for_rule(
             rule,
             f"{rule.event_type}.test",
@@ -458,7 +590,9 @@ class NotificationService:
         recipient_email: str,
         idempotency_key: str,
     ) -> NotificationSendResult:
-        recipient = str(recipient_email or "").strip()
+        recipient = candidate_notification_test_recipient(rule, recipient_email)
+        if not recipient:
+            recipient = str(recipient_email or "").strip()
         if not is_valid_email_address(recipient):
             raise ValueError("A valid test recipient email is required.")
         key = str(idempotency_key or "").strip()
@@ -479,6 +613,9 @@ class NotificationService:
                     error=safe_error,
                 )
             return NotificationSendResult(event_type, rule.id, status, recipient_count, safe_error)
+
+        if missing_email_account_fields(self.email_settings):
+            return finish("blocked", error="Shared email account settings are incomplete.")
 
         validation_rule = replace(
             rule,
@@ -501,7 +638,7 @@ class NotificationService:
         try:
             self._deliver_message(
                 [recipient],
-                rendered.subject,
+                f"[THIS IS A TEST] {rendered.subject}",
                 rendered.plain_body,
                 rendered.html_body,
                 attachment_paths,
@@ -567,7 +704,11 @@ class NotificationService:
             return NotificationSendResult(event_type=event_type, rule_id=rule_id, status="blocked", recipient_count=len(recipients), error=blocked_error)
 
         rendered = render_notification_templates(rule, payload)
-        subject = rendered.subject
+        subject = (
+            f"[THIS IS A TEST] {rendered.subject}"
+            if str(event_type).endswith(".test")
+            else rendered.subject
+        )
         body = rendered.plain_body
         required_attachment = str(rule.required_attachment_key or "").strip()
         if required_attachment and not str(payload.get(required_attachment, "") or "").strip():
@@ -931,6 +1072,8 @@ def load_email_account_settings(path: Path = EMAIL_ACCOUNT_SETTINGS_PATH) -> Ema
     source = payload.get("email", payload) if isinstance(payload, dict) else {}
     settings = EmailSettings.from_dict(source if isinstance(source, dict) else {})
     key = str(Path(path).expanduser().resolve())
+    if settings.password_storage == "shared_config":
+        return settings
     if settings.remember_password:
         return replace(
             settings,
@@ -945,6 +1088,10 @@ def save_email_account_settings(settings: EmailSettings, path: Path = EMAIL_ACCO
     target = Path(path)
     key = str(target.expanduser().resolve())
     payload = settings.to_dict()
+    if settings.password_storage == "shared_config":
+        _SESSION_EMAIL_PASSWORDS.pop(key, None)
+        atomic_write_json(target, {"email": payload}, indent=2, ensure_ascii=False)
+        return
     if settings.remember_password:
         payload["password"] = protect_secret(settings.password)
         payload["smtp_password"] = protect_secret(settings.smtp_password)

@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 6.6.1
+  version: 6.8.0
   description: PySide6 operations shell and headless view-model builder for a mockup-driven
     New Interview setup/live flow, Candidates-owned pipeline/history, candidate reports,
     onboarding, staffing, notifications, and admin-only
@@ -218,6 +218,17 @@ functions:
     type: str
   exceptions: []
   side_effects: none
+- name: _convert_offer_docx_to_pdf_path
+  description: Return an existing non-empty offer PDF path or convert an existing DOCX offer letter to a same-stem non-empty PDF through Microsoft Word automation, with a sanitized failure reason for approval review.
+  locked: false
+  inputs:
+    offer_path:
+      type: str
+      required: true
+  returns:
+    type: tuple[str, str]
+  exceptions: []
+  side_effects: May read a DOCX offer letter and write a same-stem PDF; suppresses conversion exceptions and returns the reason instead.
 - name: _ensure_offer_pdf_path
   description: Return an existing offer PDF path or convert an existing DOCX offer letter to a same-stem PDF through Microsoft Word automation when available.
   locked: false
@@ -330,7 +341,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: launch_pyside_interview_app
-  description: Launch the PySide6 redesigned desktop shell using the supplied model or current repository configuration, optionally in director staffing-only mode, showing the first navigation page before secondary pages are built.
+  description: Launch the PySide6 redesigned desktop shell using the supplied model or current repository configuration, optionally in director staffing-only mode, applying the shared Staffing app/taskbar icon and showing the first navigation page before secondary pages are built.
   locked: false
   inputs:
     model:
@@ -349,8 +360,9 @@ functions:
     type: int
   exceptions:
   - PySide6UnavailableError
-  side_effects: Creates a QApplication, applies Staffing v2's forced light Qt theme,
-    opens the redesigned desktop window, and defers secondary page construction until navigation.
+  side_effects: Creates a QApplication, applies Staffing v2's forced light Qt theme
+    and shared repo-owned icon/Windows taskbar identity, opens the redesigned desktop
+    window, and defers secondary page construction until navigation.
 - name: parse_args
   description: Parse PySide app CLI arguments including director staffing-only mode and optional director school filter.
   locked: false
@@ -795,8 +807,18 @@ classes:
     _main_nav_pages_built:
       type: set[int]
   methods:
+  - name: _generate_hiring_offer_artifacts
+    description: Generate one versioned offer DOCX and same-stem PDF together for persistence before approval review.
+    locked: false
+    inputs:
+      application: {type: HiringApplication, required: true}
+      candidate: {type: CandidateProfile, required: true}
+      version: {type: OfferVersion, required: true}
+    returns: {type: 'tuple[Path, Path]'}
+    exceptions: [ValueError, OSError]
+    side_effects: Writes a versioned DOCX and PDF to the configured school offer folder; preserves the DOCX and fails closed if PDF conversion fails.
   - name: _review_hiring_offer_approval
-    description: Preview and approve the exact pending Hiring v2 offer version after validating candidate email, template, rendered DOCX/PDF, terms, and typed approver identity; compensation revisions use the admin-only revision approval path.
+    description: Preview and approve the exact persisted pending Hiring v2 PDF and configured candidate offer-notification template after validating candidate email, artifacts, template values, terms, and typed approver identity; compensation revisions use the admin-only revision approval path.
     locked: false
     inputs:
       service:
@@ -808,7 +830,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Renders and validates approved offer artifacts, presents approval review, persists approval, attempts candidate-only delivery, and refreshes Hiring v2.
+    side_effects: Reuses pre-generated DOCX/PDF artifacts, generates and persists both once for legacy pending offers when absent, renders the active candidate notification-settings template, presents approval review, persists approval, attempts candidate-only delivery, and refreshes Hiring v2.
   - name: _populate_home_candidate_profile
     description: Compatibility no-op retained after profile/contact editing moved from New Interview to Candidates.
     locked: false
@@ -2422,6 +2444,7 @@ data_structures:
     and UI-mode behavior directly with setup_and_run/runtime_wrapper launch support while
     shared runtime/services remain toolkit-neutral.
 dependencies:
+- module: app_branding
 - module: admin_studio
 - module: candidate_report
 - module: dashboard_v2_ui
@@ -2447,3 +2470,4 @@ dependencies:
 - module: staffing_store
 - module: source_update_monitor
 - module: PySide6
+- module: pywin32

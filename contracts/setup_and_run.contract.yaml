@@ -2,15 +2,17 @@ module:
   name: setup_and_run
   language: powershell
   path: setup_and_run.ps1
-  version: 2.0.0
+  version: 2.0.3
   description: Windows launcher bootstrap that checks prerequisites, installs Python
     3.11 when needed, provisions a per-user virtual environment that can reuse system
-    site packages under LOCALAPPDATA instead of the repository folder, persists
+    site packages under LOCALAPPDATA instead of the repository folder, installs
+    the Windows Word COM bridge required for approved-offer PDF rendering, persists
     PySide as the selected UI mode, starts the
     PySide interview app through the runtime wrapper, and can launch the full
     PySide app in director staffing-only mode filtered to one school while reusing
-    the same setup path. The root admin VBS launcher invokes this setup path in
-    PySide mode with its console window hidden.
+    the same setup path. The root admin VBS launcher stays minimal for antivirus
+    compatibility and invokes this setup path in PySide mode with its console window
+    hidden; setup creates or repairs its desktop shortcut with the bundled Staffing icon.
 functions:
 - name: Write-Log
   description: Append launcher diagnostics to the setup log file.
@@ -23,6 +25,14 @@ functions:
     type: void
   exceptions: []
   side_effects: writes launcher log entries
+- name: Install-StaffingDesktopShortcut
+  description: Create or repair the current user's Staffing App desktop shortcut so it targets the minimal admin VBS launcher and uses the bundled repo-owned icon; shortcut-policy failures are logged without blocking app launch.
+  locked: false
+  inputs: {}
+  returns:
+    type: void
+  exceptions: []
+  side_effects: May create or update Staffing App.lnk on the current user's Desktop and writes launcher diagnostics.
 - name: Get-ConfigBaseDir
   description: Ensure the per-user configuration directory exists under LOCALAPPDATA
     and return it.
@@ -330,8 +340,9 @@ functions:
   side_effects: reads the virtual environment pyvenv.cfg file and may write launcher
     log entries when that file cannot be read
 - name: Get-RequirementsFingerprint
-  description: Calculate the SHA256 fingerprint for requirements.txt so setup can
-    detect dependency requirement changes across runs.
+  description: Calculate the SHA256 fingerprint for requirements.txt through the
+    built-in .NET cryptography API so setup can detect dependency requirement changes
+    across Windows PowerShell installations even when Get-FileHash is unavailable.
   locked: false
   inputs:
     RequirementsPath:
@@ -346,7 +357,7 @@ functions:
   description: Create or repair the per-user virtual environment under LOCALAPPDATA
     with system site packages enabled, fingerprint requirements files for setup
     versioning, skip unchanged dependency installs on healthy cached environments,
-    install base requirements only when changed or after venv recreation, add optional
+    install base requirements, including the Windows Word COM bridge, only when changed or after venv recreation, add optional
     NVIDIA GPU dependencies only when supported and changed, install OpenVINO GenAI
     dependencies when changed, and remove NVIDIA-only Python
     wheels on non-NVIDIA systems.

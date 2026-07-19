@@ -2,7 +2,7 @@ module:
   name: staffing_dashboard_v2
   language: python
   path: src/staffing_dashboard_v2.py
-  version: 0.33.0
+  version: 0.35.0
   description: Parallel PySide Staffing v2 dashboard page module for position, employee, classroom, validation, notification, and assignment-history workflows, including visible structured notification logic rows over safe DB/event values.
 functions:
 - name: apply_staffing_v2_light_theme
@@ -1498,7 +1498,24 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Validates an explicit recipient and selected recent/manual payload, then sends the current unsaved draft through a background worker without changing the saved active flag.
+    side_effects: Blocks before payload or network work when shared email settings are incomplete; Candidate-role rules open an editable safe-recipient dialog prefilled from the shared helper, while other rules validate the explicit recipient; then sends the current unsaved draft through a background worker without changing the saved active flag.
+  - name: _prompt_candidate_notification_test_recipient
+    inputs:
+      rule: {type: NotificationRule, required: true}
+    returns: {type: 'str | None'}
+    exceptions: []
+    side_effects: Opens a modal editable candidate test-recipient dialog prefilled with the shared safe default; validates through the shared helper and returns only after Send Test or Cancel.
+  - name: _show_missing_shared_email_settings
+    inputs:
+      missing: {type: 'tuple[str, ...]', required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Shows a blocking operator-facing error with missing shared-account fields and an action to open admin Settings.
+  - name: _open_shared_email_settings
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Opens registered Staffing v2 Settings and selects Shared Email Account when available.
   - name: _toggle_notification_delivery_panel
     inputs:
       expanded: {type: bool, required: true}

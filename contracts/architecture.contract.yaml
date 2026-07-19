@@ -6,7 +6,7 @@ layers:
 - infrastructure
 services:
   hiring_pipeline_service:
-    description: Canonical seven-stage candidate application pipeline, audit timeline, Staffing v2 decision synchronization, immutable numbered offers, approval dates, delivery recovery, negotiation, acceptance, and archive controls.
+    description: Canonical seven-stage candidate application pipeline, audit timeline, Staffing v2 decision synchronization, immutable numbered offers with pre-generated DOCX/PDF artifacts, notification-settings-backed approval previews, approval dates, delivery recovery, negotiation, acceptance, and archive controls.
     modules:
     - dashboard_v2_ui
     - hiring_pipeline
@@ -45,7 +45,7 @@ services:
     modules:
     - onboarding_operations
   notification_service:
-    description: Ten editable system workflow notifications with visible safe AND condition rows over curated DB/event fields, school role/name directory, shared and Hiring Manager SMTP accounts, DPAPI credentials, required attachments, permanent success dedupe, rollout gating, and five-minute exact-date/noon/permit scheduling.
+    description: Ten editable system workflow notifications with visible safe AND condition rows over curated DB/event fields, school role/name directory, shared IMAP/POP and SMTP verification, admin-managed Dropbox-wide or DPAPI password storage, one shared safe-recipient helper and editable confirmation dialog for Candidate notification tests, required attachments, permanent success dedupe, rollout gating, and five-minute exact-date/noon/permit scheduling.
     modules:
     - notification_models
     - notification_store
@@ -66,6 +66,7 @@ services:
   director_staffing_dashboard_service:
     description: Director-facing generated Windows launch paths, one per staffing seed school, for a minimal PySide Staffing v2 app with basic DOCX interview-note generation; each launcher filters to its assigned school and avoids full interview, audio, transcription, FFmpeg, VB-CABLE, OpenVINO, and GPU setup.
     modules:
+    - app_branding
     - director_staffing_launcher
     - director_staffing_app
     - staffing_dashboard_host
@@ -94,6 +95,7 @@ services:
   pyside_interview_redesign_service:
     description: PySide6 Staffing v2-native mockup-driven New Interview setup/live flow, Candidates-owned pipeline/history, Offers, staffing, onboarding, and admin-only Settings content inside the shared Staffing v2 shell, with a cancellable 5-second manual audio test, serialized 15-second post-Begin validation, semantic status colors, capture state, live history refresh, reporting, and Director Review handoff.
     modules:
+    - app_branding
     - admin_studio
     - dashboard_v2_ui
     - pyside_interview_app
@@ -115,6 +117,7 @@ services:
   shared_platform_service:
     description: Shared content/configuration loading, logging, persistence helpers, and runtime wrappers.
     modules:
+    - app_branding
     - platform_services
     - app_logging
     - data_store
@@ -174,6 +177,8 @@ external_apis:
     Purpose: Submit referral payloads generated during interview finalization.
   local_docx_runtime:
     Purpose: Generate interview and onboarding document artifacts.
+  microsoft_word_automation:
+    Purpose: Convert approved DOCX offer artifacts to exact-review PDFs through the Windows pywin32 COM bridge.
 background_jobs:
 - onboarding_operations
 trust_boundaries:

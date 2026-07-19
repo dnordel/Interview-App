@@ -33,6 +33,8 @@ FOCUSED_PYSIDE_GUI_WORKFLOW_EXCEPTIONS = {
     "test_director_staffing_launch_queues_history_backfill_when_edit_lock_exists",
     "test_staffing_v2_director_interviews_delete_checked_pending_rows",
     "test_pyside_notification_editor_loads_adds_and_saves_condition_rows",
+    "test_notification_test_missing_shared_account_opens_email_settings",
+    "test_candidate_notification_test_recipient_dialog",
 }
 
 REQUIRED_PYSIDE_GUI_SCENARIO_SURFACES = {

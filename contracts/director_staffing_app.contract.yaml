@@ -2,8 +2,8 @@ module:
   name: director_staffing_app
   language: python
   path: src/director_staffing_app.py
-  version: 1.6.0
-  description: Minimal PySide entrypoint for the director Staffing v2 dashboard that avoids full interview, audio, and transcription setup while supporting basic DOCX interview-note generation, preserving school-specific DB lock isolation, bidirectionally replaying immutable per-user staged staffing changes with conflict prompts, polling the source-version stamp with restart banner, applying the forced light Staffing v2 theme, and delaying pending director-referral queue/history backfill until after first paint.
+  version: 1.6.1
+  description: Minimal PySide entrypoint for the director Staffing v2 dashboard that avoids full interview, audio, and transcription setup while supporting basic DOCX interview-note generation, preserving school-specific DB lock isolation, bidirectionally replaying immutable per-user staged staffing changes with conflict prompts, polling the source-version stamp with restart banner, applying the forced light Staffing v2 theme and shared Staffing app/taskbar icon, and delaying pending director-referral queue/history backfill until after first paint.
 functions:
 - name: parse_args
   description: Parse director staffing launch arguments.
@@ -293,7 +293,7 @@ functions:
   exceptions: []
   side_effects: Reads QScreen available geometry when available, updates QMainWindow geometry, and displays the QMainWindow maximized.
 - name: launch_director_staffing_app
-  description: Launch the standalone director Staffing v2 PySide window maximized to the current taskbar-safe screen work area with an optional school filter.
+  description: Launch the standalone director Staffing v2 PySide window with the shared Staffing app/taskbar icon, maximized to the current taskbar-safe screen work area with an optional school filter.
   locked: false
   inputs:
     director_school:
@@ -305,7 +305,7 @@ functions:
   exceptions:
   - PySide6UnavailableError
   - OSError
-  side_effects: creates a QApplication/main window, applies Staffing v2's forced light Qt theme, initializes school-specific staffing storage/seed data, builds the shared Staffing v2 page beneath a source-update banner, polls config/source_version.txt every five seconds, can relaunch with the same command line, publishes successful changes to a per-user immutable outbox, replays peer changes every five seconds into only the local DB, prompts before same-entity applies, shows maximized, schedules referral sync, and starts the Qt event loop
+  side_effects: creates a QApplication/main window, applies Staffing v2's forced light Qt theme and shared repo-owned icon/Windows taskbar identity, initializes school-specific staffing storage/seed data, builds the shared Staffing v2 page beneath a source-update banner, polls config/source_version.txt every five seconds, can relaunch with the same command line, publishes successful changes to a per-user immutable outbox, replays peer changes every five seconds into only the local DB, prompts before same-entity applies, shows maximized, schedules referral sync, and starts the Qt event loop
 - name: _queue_dashboard_director_referral_dismissals
   description: Apply and queue director referral dismissal events emitted by the standalone Staffing v2 dashboard delete-selected action.
   locked: false
@@ -341,6 +341,7 @@ functions:
 classes: []
 data_structures: []
 dependencies:
+- module: app_branding
 - module: staffing_change_stage
 - module: staffing_dashboard_host
 - module: staffing_dashboard_v2

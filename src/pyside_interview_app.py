@@ -25,6 +25,7 @@ from types import SimpleNamespace
 from typing import Any, Callable, Sequence
 
 from admin_studio import AdminStudio, AdminStudioPaths
+from app_branding import apply_staffing_app_icon
 from candidate_report import CandidateReportRepository, build_candidate_report_snapshot
 from docx import Document
 from data_store import (
@@ -76,7 +77,7 @@ from hiring_pipeline import (
     HiringOfferNotificationAdapter,
     HiringPipelineStore,
     HiringWorkflowService,
-    OfferApprovalArtifactStage,
+    calculate_offer_approval_dates,
     normalize_candidate_phone,
 )
 from hiring_workspace_v2 import HiringInterviewGuidePage, HiringOfferApprovalDialog, HiringWorkspaceV2Page
@@ -1534,18 +1535,20 @@ def _offer_school_location(school: str) -> str:
     return normalized or "your school"
 
 
-def _ensure_offer_pdf_path(offer_path: str) -> str:
+def _convert_offer_docx_to_pdf_path(offer_path: str) -> tuple[str, str]:
     path_text = str(offer_path or "").strip()
     if not path_text:
-        return ""
+        return "", "Offer document path is blank."
     source = Path(path_text)
-    if source.suffix.casefold() == ".pdf" and source.is_file():
-        return str(source)
+    if source.suffix.casefold() == ".pdf":
+        if source.is_file() and source.stat().st_size > 0:
+            return str(source), ""
+        return "", f"PDF file was not found or is empty: {source}"
     if source.suffix.casefold() != ".docx" or not source.is_file():
-        return ""
+        return "", f"Offer DOCX was not found: {source}"
     pdf_path = source.with_suffix(".pdf")
-    if pdf_path.is_file():
-        return str(pdf_path)
+    if pdf_path.is_file() and pdf_path.stat().st_size > 0:
+        return str(pdf_path), ""
     word = None
     document = None
     try:
@@ -1553,10 +1556,15 @@ def _ensure_offer_pdf_path(offer_path: str) -> str:
 
         word = win32com.client.DispatchEx("Word.Application")
         word.Visible = False
+        word.DisplayAlerts = 0
         document = word.Documents.Open(str(source))
         document.ExportAsFixedFormat(str(pdf_path), 17)
-    except Exception:
-        return ""
+        for _attempt in range(20):
+            if pdf_path.is_file() and pdf_path.stat().st_size > 0:
+                return str(pdf_path), ""
+            time.sleep(0.25)
+    except Exception as exc:
+        return "", f"Microsoft Word could not convert the approved DOCX to PDF: {exc}"
     finally:
         if document is not None:
             try:
@@ -1568,7 +1576,14 @@ def _ensure_offer_pdf_path(offer_path: str) -> str:
                 word.Quit()
             except Exception:
                 pass
-    return str(pdf_path) if pdf_path.is_file() else ""
+    if pdf_path.is_file():
+        return "", f"Microsoft Word created an empty PDF: {pdf_path}"
+    return "", f"Microsoft Word did not create the expected PDF: {pdf_path}"
+
+
+def _ensure_offer_pdf_path(offer_path: str) -> str:
+    pdf_path, _error = _convert_offer_docx_to_pdf_path(offer_path)
+    return pdf_path
 
 
 def _build_pyside_history_rows(
@@ -2586,6 +2601,7 @@ class PySideInterviewWindow:
             HiringPipelineStore(self.model.history_path),
             send_offer=notification_adapter,
             notify_offer_accepted=notification_adapter.offer_accepted,
+            prepare_offer_artifacts=self._generate_hiring_offer_artifacts,
         )
         service.backfill_history()
         service.retry_pending_accepted_notifications()
@@ -2729,69 +2745,106 @@ class PySideInterviewWindow:
         self._refresh_home_draft_panel()
         return workspace
 
+    def _generate_hiring_offer_artifacts(
+        self,
+        application: Any,
+        candidate: Any,
+        version: Any,
+    ) -> tuple[Path, Path]:
+        terms = version.terms
+        template_path = Path(str(terms.get("template_path") or "")).expanduser().resolve()
+        output_dir = Path(str(terms.get("output_dir") or "")).expanduser().resolve()
+        if not template_path.is_file():
+            raise ValueError("Validated offer template is required before submission.")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        first_name, last_name = _split_candidate_name(candidate.legal_name)
+        generated_on = date.today()
+        output_path = next_available_offer_path(
+            output_dir,
+            build_school_offer_filename(application.school, candidate.legal_name),
+        )
+        data = build_approval_offer_input(
+            first_name=first_name,
+            last_name=last_name,
+            city=application.school,
+            position=application.position,
+            approval_date=generated_on,
+            terms=terms,
+        )
+        OfferLetterService.render_approved_offer(
+            template_path,
+            output_path,
+            data,
+            approval_date=generated_on,
+        )
+        pdf_text, pdf_error = _convert_offer_docx_to_pdf_path(str(output_path))
+        if not pdf_text:
+            detail = pdf_error or "Confirm Microsoft Word is installed and can export PDFs."
+            raise ValueError(
+                f"Approved PDF could not be rendered and validated. "
+                f"DOCX saved for records: {output_path}. {detail}"
+            )
+        return output_path.resolve(), Path(pdf_text).resolve()
+
     def _review_hiring_offer_approval(
         self,
         service: HiringWorkflowService,
         application: Any,
     ) -> None:
+        if getattr(self, "hiring_v2_page", None) is not None:
+            self.hiring_v2_page._set_action_state("working", "Preparing approval review...")
         pending = [
             version
             for version in service.store.list_offer_versions(application.application_id)
             if version.status == "pending_approval"
         ]
         if not pending:
+            if getattr(self, "hiring_v2_page", None) is not None:
+                self.hiring_v2_page._set_action_state("error", "No pending offer version found.")
             self.QtWidgets.QMessageBox.warning(self.window, "Executive approval", "No pending offer version found.")
             return
         version = max(pending, key=lambda item: item.version_number)
         candidate = service.store.get_candidate(application.candidate_id)
         terms = version.terms
-        artifact_stage: OfferApprovalArtifactStage | None = None
         try:
-            template_path = Path(str(terms.get("template_path") or "")).expanduser().resolve()
-            output_dir = Path(str(terms.get("output_dir") or "")).expanduser().resolve()
             if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", candidate.email):
                 raise ValueError("Valid candidate email is required before approval.")
-            if not template_path.is_file():
-                raise ValueError("Validated offer template is required before approval.")
-            first_name, last_name = _split_candidate_name(candidate.legal_name)
             approval_date = date.today()
-            output_path = next_available_offer_path(
-                output_dir,
-                build_school_offer_filename(application.school, candidate.legal_name),
+            docx_path = Path(str(getattr(version, "docx_path", "") or "")).expanduser().resolve()
+            pdf_path = Path(str(getattr(version, "pdf_path", "") or "")).expanduser().resolve()
+            if (
+                docx_path.suffix.casefold() != ".docx"
+                or not docx_path.is_file()
+                or docx_path.stat().st_size <= 0
+                or pdf_path.suffix.casefold() != ".pdf"
+                or not pdf_path.is_file()
+                or pdf_path.stat().st_size <= 0
+            ):
+                docx_path, pdf_path = self._generate_hiring_offer_artifacts(
+                    application, candidate, version
+                )
+                version = service.store.record_offer_artifacts(
+                    version.version_id,
+                    docx_path=docx_path,
+                    pdf_path=pdf_path,
+                )
+            approval_dates = calculate_offer_approval_dates(approval_date)
+            payload = HiringOfferNotificationAdapter.payload(candidate, version, pdf_path)
+            payload.update(
+                {
+                    "offer_date": approval_dates.offer_date.isoformat(),
+                    "reply_by_date": approval_dates.reply_by_date.isoformat(),
+                    "start_date": approval_dates.start_date.isoformat(),
+                }
             )
-            artifact_stage = OfferApprovalArtifactStage(output_path)
-            data = build_approval_offer_input(
-                first_name=first_name,
-                last_name=last_name,
-                city=application.school,
-                position=application.position,
-                approval_date=approval_date,
-                terms=terms,
+            rendered_email = self._notification_service().render_candidate_event_preview(
+                "offer.approved", payload
             )
-            OfferLetterService.render_approved_offer(
-                template_path,
-                artifact_stage.staged_docx_path,
-                data,
-                approval_date=approval_date,
-            )
-            pdf_text = _ensure_offer_pdf_path(str(artifact_stage.staged_docx_path))
-            if not pdf_text:
-                raise ValueError("Approved PDF could not be rendered and validated.")
-            pdf_path = Path(pdf_text).resolve()
-            if pdf_path != artifact_stage.staged_pdf_path:
-                raise ValueError("Approved PDF staging path is invalid.")
-            artifact_stage.hashes()
         except (OSError, TypeError, ValueError) as exc:
-            if artifact_stage is not None:
-                artifact_stage.cleanup()
+            if getattr(self, "hiring_v2_page", None) is not None:
+                self.hiring_v2_page._set_action_state("error", f"Approval review failed: {exc}")
             self.QtWidgets.QMessageBox.warning(self.window, "Executive approval", str(exc))
             return
-
-        rendered_email = (
-            f"Subject: Offer of Employment - {application.position}\n\n"
-            f"Hello {candidate.preferred_name or first_name},\n\n"
-            "Your approved offer is attached as a PDF."
-        )
         approval_dialog = HiringOfferApprovalDialog(
             QtCore=self.QtCore,
             QtPdf=self.QtPdf,
@@ -2800,30 +2853,31 @@ class PySideInterviewWindow:
             parent=self.window,
             title=f"Approve offer v{version.version_number}",
             summary=(
-            f"Candidate: {candidate.legal_name}\nEmail: {candidate.email}\n"
-            f"Position: {application.position}\nPay: ${float(terms.get('hourly_pay') or 0):.2f}/hour\n"
-            f"Hours: {terms.get('weekly_hours') or terms.get('hours_week')} weekly\n"
-                f"Destination DOCX: {output_path}\nDestination PDF: {output_path.with_suffix('.pdf')}"
+                f"Candidate: {candidate.legal_name}\nEmail: {candidate.email}\n"
+                f"Position: {application.position}\n"
+                f"Pay: ${float(terms.get('hourly_pay') or 0):.2f}/hour\n"
+                f"Hours: {terms.get('weekly_hours') or terms.get('hours_week')} weekly\n"
+                f"Destination DOCX: {docx_path}\nDestination PDF: {pdf_path}"
             ),
             rendered_email=rendered_email,
             pdf_path=pdf_path,
         )
         if not approval_dialog.exec():
             approval_dialog.close()
-            artifact_stage.cleanup()
+            if getattr(self, "hiring_v2_page", None) is not None:
+                self.hiring_v2_page._set_action_state("ready", "Approval review cancelled.")
             return
         approver_name = approval_dialog.approver_name()
         approval_dialog.close()
         try:
-            promoted = artifact_stage.promote()
             if application.stage.value == "offer_sent":
                 service.approve_compensation_revision(
                     application.application_id,
                     version.version_id,
                     admin_name=approver_name,
                     approval_date=approval_date,
-                    docx_path=promoted.docx_path,
-                    pdf_path=promoted.pdf_path,
+                    docx_path=docx_path,
+                    pdf_path=pdf_path,
                     rendered_email=rendered_email,
                 )
             else:
@@ -2833,12 +2887,16 @@ class PySideInterviewWindow:
                     approver_name=approver_name,
                     approver_role="Executive Director",
                     approval_date=approval_date,
-                    docx_path=promoted.docx_path,
-                    pdf_path=promoted.pdf_path,
+                    docx_path=docx_path,
+                    pdf_path=pdf_path,
                     rendered_email=rendered_email,
                 )
             self.hiring_v2_page.refresh()
+            if getattr(self, "hiring_v2_page", None) is not None:
+                self.hiring_v2_page._set_action_state("success", "Offer approved and send attempted.")
         except ValueError as exc:
+            if getattr(self, "hiring_v2_page", None) is not None:
+                self.hiring_v2_page._set_action_state("error", f"Approval failed: {exc}")
             self.QtWidgets.QMessageBox.warning(self.window, "Executive approval", str(exc))
 
     def _resume_hiring_application(self, application_id: str) -> None:
@@ -8139,6 +8197,7 @@ def launch_pyside_interview_app(
     if director_staffing:
         active_model = build_director_staffing_model(active_model, school=director_school)
     window = PySideInterviewWindow(active_model, defer_secondary_pages=True)
+    apply_staffing_app_icon(_QtGui, app, window.window)
     window.show()
     return app.exec()
 

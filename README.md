@@ -262,6 +262,7 @@ Role-sensitive visibility expectations for manual QA:
 - `user_artifacts/interviews/onboarding_data.json`: onboarding records (created by onboarding app).
 - `user_artifacts/interviews/onboarding_settings.json`: onboarding email/reminder settings (created by onboarding app).
 - `user_artifacts/interview_history.sqlite3`: finalized interview history rows (created by interview app).
+- `user_artifacts/email_account_settings.json`: admin-managed shared incoming/SMTP account used by notification delivery.
 - `user_artifacts/interview_history.json`: legacy finalized interview history rows imported into SQLite when the DB is empty.
 - `user_artifacts/staffing_referrals.sqlite3`: interview-to-staffing director referral queue; legacy `staffing_referrals.pending.jsonl` records import once when present.
 - `user_artifacts/school_offer_settings.json`: local offer-template settings (created by interview app).
@@ -297,6 +298,7 @@ When operating this tool in production environments:
 2. **Use secure credential handling**
    - Do not hardcode SMTP/IMAP/POP credentials in source files.
    - Keep operational credentials outside version control.
+   - When an administrator selects Dropbox-wide password storage, `user_artifacts/email_account_settings.json` contains the shared password so other computers can authenticate without re-entry. Restrict Dropbox folder access to authorized staff; GUI masking does not prevent someone with file access from reading the credential.
    - `onboarding_settings.json` may contain `smtp_password`; for production deployments prefer environment variables (`ONBOARDING_SMTP_PASSWORD`, fallback `SMTP_PASSWORD`) so plaintext file storage can be avoided.
 
 3. **Enforce approved email placeholders**

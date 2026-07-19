@@ -16,6 +16,32 @@ function Write-Log([string]$Message) {
   $Message | Out-File -FilePath $Log -Append -Encoding UTF8
 }
 
+function Install-DirectorStaffingDesktopShortcut {
+  param([Parameter(Mandatory=$true)][string]$School)
+  try {
+    $safeSchool = (($School.Trim() -replace '[<>:"/\\|?*]+', ' ') -replace '\s+', ' ').Trim().TrimEnd('.')
+    if (-not $safeSchool) { return }
+    $launcherPath = Join-Path $AppDir "..START DIRECTOR STAFFING - $safeSchool.vbs"
+    $iconPath = Join-Path $AppDir "assets\staffing_app.ico"
+    if (-not (Test-Path $launcherPath) -or -not (Test-Path $iconPath)) {
+      Write-Log "Skipping director desktop shortcut; launcher or icon is missing."
+      return
+    }
+    $shell = New-Object -ComObject WScript.Shell
+    $shortcutPath = Join-Path ([Environment]::GetFolderPath("Desktop")) "Director Staffing - $safeSchool.lnk"
+    $shortcut = $shell.CreateShortcut($shortcutPath)
+    $shortcut.TargetPath = $launcherPath
+    $shortcut.WorkingDirectory = $AppDir
+    $shortcut.Description = "Launch $safeSchool Director Staffing"
+    $shortcut.IconLocation = "$iconPath,0"
+    $shortcut.Save()
+    Write-Log "Installed director desktop shortcut: $shortcutPath"
+  }
+  catch {
+    Write-Log "Director desktop shortcut install skipped: $($_.Exception.Message)"
+  }
+}
+
 function Run-Proc {
   param(
     [Parameter(Mandatory=$true)][string]$File,
@@ -151,6 +177,7 @@ try {
   $args = @()
   if ($DirectorSchool.Trim()) {
     $args += @("--director-school", $DirectorSchool.Trim())
+    Install-DirectorStaffingDesktopShortcut -School $DirectorSchool
   }
   Start-DirectorStaffingApp -VenvPy $venvPy -AppPath $app -AppArgs $args
 }

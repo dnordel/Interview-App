@@ -176,19 +176,9 @@ class HiringOfferNotificationAdapter:
         idempotency_key: str,
     ) -> list[Any]:
         resolved_pdf = Path(pdf_path)
-        payload = {
-            "candidate": candidate.legal_name,
-            "candidate_name": candidate.legal_name,
-            "candidate_email": candidate.email,
-            "honorific": candidate.honorific,
-            "school": str(version.terms.get("school", "")),
-            "offer_pdf_path": str(resolved_pdf),
-            "attachments": [str(resolved_pdf)],
-            "offer_date": version.approval_date,
-            "reply_by_date": version.document_reply_by_date,
-            "start_date": version.start_date,
-            "offer_version_id": version.version_id,
-        }
+        if resolved_pdf.suffix.casefold() != ".pdf":
+            raise ValueError("Approved offer delivery requires a PDF attachment.")
+        payload = build_offer_notification_payload(candidate, version, resolved_pdf)
         return list(
             self.notification_service.emit_event(
                 "offer.approved",
@@ -196,6 +186,14 @@ class HiringOfferNotificationAdapter:
                 idempotency_key,
             )
         )
+
+    @staticmethod
+    def payload(
+        candidate: CandidateProfile,
+        version: OfferVersion,
+        pdf_path: Path,
+    ) -> dict[str, Any]:
+        return build_offer_notification_payload(candidate, version, pdf_path)
 
     def offer_accepted(
         self,
@@ -219,6 +217,45 @@ class HiringOfferNotificationAdapter:
         return list(
             self.notification_service.emit_event("offer.accepted", payload, idempotency_key)
         )
+
+
+def build_offer_notification_payload(
+    candidate: CandidateProfile,
+    version: OfferVersion,
+    pdf_path: Path,
+) -> dict[str, Any]:
+    """Build shared offer-approved template payload used by preview and send."""
+    school = str(version.terms.get("school", ""))
+    normalized_school = school.strip().casefold()
+    school_code = {
+        "hawthorne": "HAW",
+        "north long beach": "NLB",
+        "long beach": "NLB",
+        "palmdale": "PMD",
+    }.get(normalized_school, school)
+    school_location = {
+        "hawthorne": "Hawthorne",
+        "north long beach": "North Long Beach",
+        "long beach": "North Long Beach",
+        "palmdale": "Palmdale",
+    }.get(normalized_school, school or "your school")
+    resolved_pdf = Path(pdf_path)
+    return {
+        "candidate": candidate.legal_name,
+        "candidate_name": candidate.legal_name,
+        "candidate_email": candidate.email,
+        "honorific": candidate.honorific,
+        "school": school,
+        "school_code": school_code,
+        "school_location": school_location,
+        "position": str(version.terms.get("position", "Teacher")),
+        "offer_pdf_path": str(resolved_pdf),
+        "attachments": [str(resolved_pdf)],
+        "offer_date": version.approval_date,
+        "reply_by_date": version.document_reply_by_date,
+        "start_date": version.start_date,
+        "offer_version_id": version.version_id,
+    }
 
 
 def calculate_offer_approval_dates(approval_date: date) -> OfferApprovalDates:
@@ -580,6 +617,40 @@ class HiringPipelineStore:
             conn.commit()
         if cursor.rowcount != 1:
             raise ValueError("Offer version was not found.")
+        return self.get_offer_version(version_id)
+
+    def record_offer_artifacts(
+        self,
+        version_id: str,
+        *,
+        docx_path: Path,
+        pdf_path: Path,
+    ) -> OfferVersion:
+        """Persist pre-rendered DOCX/PDF paths for one pending offer version."""
+        docx = Path(docx_path).expanduser().resolve()
+        pdf = Path(pdf_path).expanduser().resolve()
+        if docx.suffix.casefold() != ".docx" or not docx.is_file() or docx.stat().st_size <= 0:
+            raise ValueError("Non-empty DOCX offer artifact is required.")
+        if pdf.suffix.casefold() != ".pdf" or not pdf.is_file() or pdf.stat().st_size <= 0:
+            raise ValueError("Non-empty PDF offer artifact is required.")
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute(
+                """
+                UPDATE hiring_offer_versions
+                SET docx_path = ?, pdf_path = ?, docx_sha256 = ?, pdf_sha256 = ?
+                WHERE version_id = ? AND status = 'pending_approval'
+                """,
+                (
+                    str(docx),
+                    str(pdf),
+                    hashlib.sha256(docx.read_bytes()).hexdigest(),
+                    hashlib.sha256(pdf.read_bytes()).hexdigest(),
+                    str(version_id).strip(),
+                ),
+            )
+            conn.commit()
+        if cursor.rowcount != 1:
+            raise ValueError("Only a pending offer version may receive artifacts.")
         return self.get_offer_version(version_id)
 
     def record_offer_approval(
@@ -1174,10 +1245,14 @@ class HiringWorkflowService:
         *,
         send_offer: Callable[[CandidateProfile, OfferVersion, Path, str], list[Any]] | None = None,
         notify_offer_accepted: Callable[[CandidateProfile, OfferVersion, str], list[Any]] | None = None,
+        prepare_offer_artifacts: Callable[
+            [HiringApplication, CandidateProfile, OfferVersion], tuple[Path, Path]
+        ] | None = None,
     ) -> None:
         self.store = store
         self._send_offer = send_offer
         self._notify_offer_accepted = notify_offer_accepted
+        self._prepare_offer_artifacts = prepare_offer_artifacts
 
     def record_initial_interview(self, **values: Any) -> HiringApplication:
         return self.store.record_initial_interview(**values)
@@ -1417,7 +1492,19 @@ class HiringWorkflowService:
             actor=actor,
             payload={"version_id": version_id, "version_number": submitted.version_number},
         )
-        return submitted
+        return self._prepare_pending_offer_artifacts(submitted)
+
+    def _prepare_pending_offer_artifacts(self, version: OfferVersion) -> OfferVersion:
+        if self._prepare_offer_artifacts is None:
+            return version
+        application = self.store.get_application(version.application_id)
+        candidate = self.store.get_candidate(application.candidate_id)
+        docx_path, pdf_path = self._prepare_offer_artifacts(application, candidate, version)
+        return self.store.record_offer_artifacts(
+            version.version_id,
+            docx_path=docx_path,
+            pdf_path=pdf_path,
+        )
 
     def create_compensation_revision(
         self,
@@ -1457,7 +1544,7 @@ class HiringWorkflowService:
                 "supersedes_version_id": prior.version_id,
             },
         )
-        return submitted
+        return self._prepare_pending_offer_artifacts(submitted)
 
     def extend_offer_deadline(
         self,

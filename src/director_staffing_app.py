@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from notification_service import NotificationService, NOTIFICATION_RULES_PATH
+from app_branding import apply_staffing_app_icon
 from staffing_referral_queue import StaffingReferralQueueStore
 from staffing_change_stage import StaffingChangeStage
 from staffing_dashboard_host import StaffingDashboardAccess, StaffingDashboardHost
@@ -340,6 +341,7 @@ def launch_director_staffing_app(*, director_school: str = "") -> int:
     apply_staffing_v2_light_theme(QtWidgets, QtGui, app)
     window = QtWidgets.QMainWindow()
     window.setWindowTitle("Director Staffing Dashboard")
+    apply_staffing_app_icon(QtGui, app, window)
     staffing_path = staffing_db_path_for_school(director_school)
     bootstrap_school_staffing_db_from_base(director_school, staffing_path)
     store = StaffingStore(staffing_path)

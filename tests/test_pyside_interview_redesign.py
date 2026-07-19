@@ -13,11 +13,13 @@ from typing import Any
 
 import pytest
 import pyside_interview_app
+import notification_service
 from candidate_report import CandidateReportRepository
 from data_store import InterviewHistoryStore, SchoolOfferSettingsStore
 from docx import Document
 from interview_runtime import map_indeed_transcript_to_questions, parse_indeed_transcript_text
 from notification_models import NotificationCondition, NotificationRecipient, NotificationRule, NotificationSendResult
+from notification_service import NotificationService
 from notification_store import NotificationStore
 from staffing_dashboard_v2 import (
     StaffingDashboardV2Page,
@@ -61,6 +63,106 @@ def _pyside_window_on_page(model, page_name: str):
         window.staffing_v2_dashboard.show_external_page(page_name.casefold())
     window.QtWidgets.QApplication.processEvents()
     return window
+
+
+def test_offer_pdf_conversion_accepts_existing_non_empty_pdf(tmp_path: Path) -> None:
+    pdf_path = tmp_path / "approved.pdf"
+    pdf_path.write_bytes(b"%PDF-1.4\n")
+
+    converted, error = pyside_interview_app._convert_offer_docx_to_pdf_path(str(pdf_path))
+
+    assert converted == str(pdf_path)
+    assert error == ""
+
+
+def test_offer_pdf_conversion_reports_missing_docx_and_legacy_helper_stays_quiet(tmp_path: Path) -> None:
+    missing_docx = tmp_path / "missing.docx"
+
+    converted, error = pyside_interview_app._convert_offer_docx_to_pdf_path(str(missing_docx))
+
+    assert converted == ""
+    assert "Offer DOCX was not found" in error
+    assert pyside_interview_app._ensure_offer_pdf_path(str(missing_docx)) == ""
+
+
+def test_review_offer_approval_preserves_docx_when_pdf_conversion_fails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    template_path = tmp_path / "template.docx"
+    template_path.write_bytes(b"template")
+    output_dir = tmp_path / "offers"
+    warnings: list[str] = []
+    states: list[tuple[str, str]] = []
+
+    class FakeMessageBox:
+        @staticmethod
+        def warning(_parent: Any, _title: str, text: str) -> None:
+            warnings.append(text)
+
+    class FakeQtWidgets:
+        QMessageBox = FakeMessageBox
+
+    class FakeStore:
+        def list_offer_versions(self, _application_id: str) -> list[Any]:
+            return [
+                SimpleNamespace(
+                    status="pending_approval",
+                    version_number=1,
+                    terms={
+                        "template_path": str(template_path),
+                        "output_dir": str(output_dir),
+                        "hourly_pay": "20",
+                        "weekly_hours": "40",
+                        "start_time": "8:00 AM",
+                        "end_time": "5:00 PM",
+                        "honorific": "Ms.",
+                        "pto": "80",
+                        "pto2": "160",
+                    },
+                )
+            ]
+
+        def get_candidate(self, _candidate_id: str) -> Any:
+            return SimpleNamespace(
+                legal_name="Arlyn Molina Reyes",
+                preferred_name="",
+                email="arlyn@example.com",
+            )
+
+    def fake_render_approved_offer(_template_path, output_path, _data, *, approval_date) -> Path:
+        Path(output_path).write_bytes(b"approved docx")
+        return Path(output_path)
+
+    monkeypatch.setattr(
+        pyside_interview_app.OfferLetterService,
+        "render_approved_offer",
+        fake_render_approved_offer,
+    )
+    monkeypatch.setattr(
+        pyside_interview_app,
+        "_convert_offer_docx_to_pdf_path",
+        lambda _path: ("", "Word unavailable."),
+    )
+
+    window = object.__new__(pyside_interview_app.PySideInterviewWindow)
+    window.QtWidgets = FakeQtWidgets
+    window.window = None
+    window.hiring_v2_page = SimpleNamespace(_set_action_state=lambda state, message: states.append((state, message)))
+    service = SimpleNamespace(store=FakeStore())
+    application = SimpleNamespace(
+        application_id="app-1",
+        candidate_id="candidate-1",
+        school="Palmdale",
+        position="infant_toddler",
+    )
+
+    window._review_hiring_offer_approval(service, application)
+
+    preserved = output_dir / "Launch Pad Learning PMD Offer of Employment to Arlyn Molina Reyes.docx"
+    assert preserved.read_bytes() == b"approved docx"
+    assert warnings and f"DOCX saved for records: {preserved}" in warnings[0]
+    assert states[-1][0] == "error"
 
 
 @pytest.mark.pyside_gui
@@ -5020,6 +5122,157 @@ def _click_message_box_choice(
         button.click()
 
     qt_core.QTimer.singleShot(0, click_when_visible)
+
+
+@pytest.mark.pyside_gui
+@pytest.mark.slow_pyside
+def test_notification_test_missing_shared_account_opens_email_settings(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    qt_core = pytest.importorskip("PySide6.QtCore")
+    monkeypatch.setattr(pyside_interview_app, "EMAIL_ACCOUNT_SETTINGS_PATH", tmp_path / "email-account.json")
+    app, qt_widgets, window, page, _store, _saved_rules = _open_staffing_v2_notifications_test_window(
+        tmp_path,
+        monkeypatch,
+        [
+            NotificationRule(
+                event_type="custom.test",
+                label="Test rule",
+                subject_template="Test",
+                body_template="Test body",
+                active=False,
+            )
+        ],
+    )
+    empty_service = NotificationService(
+        store=NotificationStore(tmp_path / "empty-service.sqlite3"),
+        email_settings=notification_service.EmailSettings(account_type=""),
+    )
+    window.notification_service = empty_service
+    _open_notification_rule_card(app, qt_widgets, page, "Test rule")
+    observed: dict[str, object] = {}
+    _click_message_box_choice(
+        qt_core,
+        qt_widgets,
+        "Open Shared Email Settings",
+        observed,
+        expected_title="Shared Email Account Required",
+    )
+
+    page.findChild(qt_widgets.QPushButton, "StaffingV2NotificationSendTest").click()
+    app.processEvents()
+
+    assert observed["title"] == "Shared Email Account Required"
+    assert "incoming server" in str(observed["text"])
+    assert "password" in str(observed["text"])
+    assert window.staffing_v2_dashboard.current_page_id == "settings"
+    assert window.staffing_settings_v2_page.section_list.currentItem().text() == "Shared Email Account"
+    window.window.close()
+    app.processEvents()
+
+
+@pytest.mark.pyside_gui
+@pytest.mark.slow_pyside
+def test_candidate_notification_test_recipient_dialog(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    qt_core = pytest.importorskip("PySide6.QtCore")
+    send_calls: list[str] = []
+
+    class FakeNotificationService:
+        def send_test_preview(
+            self,
+            rule: NotificationRule,
+            payload: dict[str, str],
+            recipient_email: str,
+            idempotency_key: str,
+        ) -> NotificationSendResult:
+            send_calls.append(recipient_email)
+            return NotificationSendResult(
+                event_type=f"{rule.event_type}.test",
+                rule_id=rule.id,
+                status="sent",
+                recipient_count=1,
+            )
+
+    monkeypatch.setattr(
+        pyside_interview_app,
+        "notification_service_from_email_account_settings",
+        lambda **_kwargs: FakeNotificationService(),
+    )
+    app, qt_widgets, window, page, _store, _saved_rules = _open_staffing_v2_notifications_test_window(
+        tmp_path,
+        monkeypatch,
+        [
+            NotificationRule(
+                event_type="offer.approved",
+                label="Candidate offer",
+                subject_template="Offer for {candidate_name}",
+                body_template="Offer body",
+                recipients=[
+                    NotificationRecipient(
+                        recipient_type="role",
+                        role_key="candidate",
+                        role_label="Candidate",
+                    )
+                ],
+                active=False,
+            )
+        ],
+    )
+    _open_notification_rule_card(app, qt_widgets, page, "Candidate offer")
+    window.staffing_v2_dashboard._manual_notification_test_payload = lambda: {
+        "candidate_name": "Test Candidate"
+    }
+    observed: dict[str, object] = {}
+    dialog_attempts = {"count": 0}
+
+    def edit_and_send() -> None:
+        dialog_attempts["count"] += 1
+        dialog = next(
+            (
+                widget
+                for widget in qt_widgets.QApplication.topLevelWidgets()
+                if isinstance(widget, qt_widgets.QDialog)
+                and widget.objectName() == "StaffingV2CandidateNotificationTestRecipientDialog"
+                and widget.isVisible()
+            ),
+            None,
+        )
+        if dialog is None:
+            if dialog_attempts["count"] < 200:
+                qt_core.QTimer.singleShot(10, edit_and_send)
+            return
+        email = dialog.findChild(
+            qt_widgets.QLineEdit,
+            "StaffingV2CandidateNotificationTestRecipientEmail",
+        )
+        observed["prefill"] = email.text()
+        observed["editable"] = not email.isReadOnly()
+        email.setText("alternate@example.org")
+        send = next(button for button in dialog.findChildren(qt_widgets.QPushButton) if button.text() == "Send Test")
+        observed["button_at_bottom"] = send.geometry().center().y() > email.geometry().center().y()
+        send.click()
+
+    qt_core.QTimer.singleShot(0, edit_and_send)
+    page.findChild(qt_widgets.QPushButton, "StaffingV2NotificationSendTest").click()
+    status = page.findChild(qt_widgets.QLabel, "StaffingV2NotificationsStatus")
+    deadline = time.monotonic() + 5
+    while time.monotonic() < deadline and status.text() != "Test send sent.":
+        app.processEvents()
+        time.sleep(0.01)
+
+    assert observed == {
+        "prefill": "davidn@launchpadpreschool.com",
+        "editable": True,
+        "button_at_bottom": True,
+    }
+    assert send_calls == ["alternate@example.org"]
+    assert status.text() == "Test send sent."
+    window.window.close()
+    app.processEvents()
 
 
 @pytest.mark.pyside_gui

@@ -1,4 +1,8 @@
 modules:
+  app_branding:
+    path: src/app_branding.py
+    depends_on:
+    - assets_staffing_app_ico
   dashboard_v2_ui:
     path: src/dashboard_v2_ui.py
     depends_on: []
@@ -48,7 +52,7 @@ modules:
     - platform_services
     - scoring_reporting
   notification_service:
-    description: Editable notifications use normalized safe AND condition rows over curated DB/event values, including current permit and role checks for 50/90-day reminders.
+    description: Editable notifications use normalized safe AND condition rows over curated DB/event values, fail closed on incomplete shared email settings, support admin-verified IMAP/POP plus SMTP connections, and route Candidate tests through one shared safe-recipient helper.
     path: src/notification_service.py
     depends_on:
     - notification_models
@@ -110,6 +114,7 @@ modules:
   director_staffing_app:
     path: src/director_staffing_app.py
     depends_on:
+    - app_branding
     - staffing_change_stage
     - staffing_dashboard_v2
     - staffing_dashboard_host
@@ -164,6 +169,7 @@ modules:
   pyside_interview_app:
     path: src/pyside_interview_app.py
     depends_on:
+    - app_branding
     - admin_studio
     - dashboard_v2_ui
     - data_store
@@ -188,6 +194,7 @@ modules:
     - source_update_monitor
     - ui_mode_switch
     - PySide6
+    - pywin32
   candidate_report:
     path: src/candidate_report.py
     depends_on:
@@ -428,6 +435,7 @@ module_metadata:
     - Acts as the single PySide desktop parity surface for desktop GUI responsibilities.
     - Hosts admin-only Settings inside the shared Staffing v2 shell and delegates draft validation, backups, and confirmed JSON persistence to admin_studio.
     - Offer generation resolves school-specific full-time or part-time templates and output folders from school_offer_settings_json, requires Mr. or Ms. title selection, preserves existing offers with revision suffixes, and prefills editable shift times from the exact school-scoped completed Director Staffing v2 hire decision.
+    - Pending offers expose a direct Review offer action beside the overflow menu; submission generates and persists same-stem DOCX and PDF artifacts together so review reuses the saved PDF, approval review renders the active candidate offer template from Notification Settings, and every initial, edited, or retried candidate delivery attaches only the approved PDF and never the retained Word artifact.
     - Finalize progress is user-closable and does not cancel background transcription or finalize work.
     - Finalize progress renders sanitized task rows with right-side statuses limited to Processing, Finished, Timed-out, or Queued.
     - Completed overview uses existing ScoringEngine totals, marks only ratings of 5 as strengths, marks ratings of 3 or below as review items, treats ratings of 4 as neutral, and shows an explicit empty state when either summary has no score-derived items.

@@ -135,6 +135,19 @@ def test_primary_admin_vbs_launcher_starts_pyside_setup_hidden() -> None:
     assert "..START PROGRAM.bat" not in launcher_text
 
 
+def test_primary_admin_vbs_stays_thin_and_setup_creates_portable_shortcut() -> None:
+    launcher_text = Path("..START PROGRAM.vbs").read_text(encoding="utf-8")
+    setup_text = SETUP_SCRIPT.read_text(encoding="utf-8")
+
+    assert "CreateShortcut" not in launcher_text
+    assert "function Install-StaffingDesktopShortcut" in setup_text
+    assert 'Join-Path $AppDir "assets\\staffing_app.ico"' in setup_text
+    assert '"Staffing App.lnk"' in setup_text
+    assert '$shortcut.TargetPath = $launcherPath' in setup_text
+    assert '$shortcut.IconLocation = "$iconPath,0"' in setup_text
+    assert "Install-StaffingDesktopShortcut" in setup_text
+
+
 def test_setup_and_run_launches_runtime_wrapper_with_venv_python() -> None:
     script_text = SETUP_SCRIPT.read_text(encoding="utf-8")
 
@@ -173,7 +186,9 @@ def test_setup_and_run_versions_requirements_and_checks_pyside_dependency() -> N
 
     assert "Get-RequirementsFingerprint" in function_names
     assert "RequirementsFingerprint" in script_text
-    assert 'Get-FileHash -Algorithm SHA256 -Path $RequirementsPath' in script_text
+    assert "Get-FileHash" not in script_text
+    assert '[System.Security.Cryptography.SHA256]::Create()' in script_text
+    assert '$sha256.ComputeHash($stream)' in script_text
     assert '@{ Package = "PySide6"; Module = "PySide6" }' in script_text
 
 
@@ -198,6 +213,12 @@ def test_setup_and_run_keeps_nvidia_packages_out_of_base_requirements() -> None:
     assert "nvidia-" not in requirements_text
     assert "nvidia-cublas-cu12" in gpu_requirements_text
     assert "nvidia-cudnn-cu12" in gpu_requirements_text
+
+
+def test_base_requirements_install_word_pdf_automation_on_windows() -> None:
+    requirements_text = Path("requirements.txt").read_text(encoding="utf-8").lower()
+
+    assert 'pywin32==312; sys_platform == "win32"' in requirements_text
 
 
 def test_setup_and_run_cleans_up_nvidia_packages_without_nvidia_gpu() -> None:

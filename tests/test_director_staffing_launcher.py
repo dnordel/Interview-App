@@ -36,6 +36,7 @@ def test_director_bat_runs_minimal_staffing_setup_only() -> None:
         assert vbs_text.splitlines() == generator.director_vbs_launcher_body(school).splitlines()
         assert 'cd /d "%~dp0"' in text
         assert 'shell.Run command, 0, False' in vbs_text
+        assert "CreateShortcut" not in vbs_text
         assert f'wscript.exe "%CD%\\{generator.director_vbs_launcher_filename(school)}"' in text
 
 
@@ -88,6 +89,17 @@ def test_director_vbs_restores_existing_dashboard_before_exiting() -> None:
     assert "WScript.Sleep 100" in body
     assert 'shell.SendKeys "% x"' in body
     assert body.index('shell.SendKeys "% x"') < body.index("WScript.Quit 0")
+
+
+def test_director_setup_creates_school_specific_portable_desktop_shortcut() -> None:
+    setup_text = Path("setup_director_staffing.ps1").read_text(encoding="utf-8")
+
+    assert "function Install-DirectorStaffingDesktopShortcut" in setup_text
+    assert 'Join-Path $AppDir "assets\\staffing_app.ico"' in setup_text
+    assert '"Director Staffing - $safeSchool.lnk"' in setup_text
+    assert '$shortcut.TargetPath = $launcherPath' in setup_text
+    assert '$shortcut.IconLocation = "$iconPath,0"' in setup_text
+    assert "Install-DirectorStaffingDesktopShortcut -School $DirectorSchool" in setup_text
 
 
 def test_director_entrypoint_uses_staffing_only_modules_and_requirements() -> None:

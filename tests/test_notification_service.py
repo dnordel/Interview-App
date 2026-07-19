@@ -15,8 +15,11 @@ from notification_service import (
     NotificationDirectory,
     NotificationService,
     StaffingNotificationScheduler,
+    candidate_notification_test_recipient,
+    missing_email_account_fields,
     notification_conditions_match,
     resolve_notification_recipients,
+    verify_email_account_connections,
 )
 from notification_store import NotificationStore
 from staffing_store import StaffingStore
@@ -24,7 +27,76 @@ from onboarding_operations import EmailSettings
 
 
 def _settings() -> EmailSettings:
-    return EmailSettings(sender_email="sender@example.org", smtp_host="smtp.example.org")
+    return EmailSettings(
+        sender_email="sender@example.org",
+        account_type="IMAP",
+        imap_or_pop_host="imap.example.org",
+        smtp_host="smtp.example.org",
+        smtp_username="sender@example.org",
+        smtp_password="test-secret",
+    )
+
+
+def test_candidate_notification_test_recipient_defaults_to_safe_admin_address() -> None:
+    rule = NotificationRule(
+        event_type="offer.approved",
+        label="Candidate offer",
+        subject_template="Offer",
+        body_template="Body",
+        recipients=[NotificationRecipient(recipient_type="role", role_key="candidate")],
+    )
+
+    assert candidate_notification_test_recipient(rule) == "davidn@launchpadpreschool.com"
+
+
+def test_candidate_notification_test_recipient_accepts_edited_safe_address() -> None:
+    rule = NotificationRule(
+        event_type="offer.approved",
+        label="Candidate offer",
+        subject_template="Offer",
+        body_template="Body",
+        recipients=[NotificationRecipient(recipient_type="role", role_key="candidate")],
+    )
+
+    assert candidate_notification_test_recipient(rule, " qa@example.org ") == "qa@example.org"
+
+
+def test_candidate_notification_test_recipient_rejects_invalid_edited_address() -> None:
+    rule = NotificationRule(
+        event_type="offer.approved",
+        label="Candidate offer",
+        subject_template="Offer",
+        body_template="Body",
+        recipients=[NotificationRecipient(recipient_type="role", role_key="candidate")],
+    )
+
+    with pytest.raises(ValueError, match="valid candidate test recipient"):
+        candidate_notification_test_recipient(rule, "not-an-email")
+
+
+def test_candidate_notification_test_recipient_skips_non_candidate_rule() -> None:
+    rule = NotificationRule(
+        event_type="staffing.assignment.need_now",
+        label="Director notice",
+        subject_template="Need now",
+        body_template="Body",
+        recipients=[NotificationRecipient(recipient_type="role", role_key="director")],
+    )
+
+    assert candidate_notification_test_recipient(rule) == ""
+
+
+def test_shared_email_completeness_names_every_missing_operator_field() -> None:
+    missing = missing_email_account_fields(notification_service.EmailSettings(account_type=""))
+
+    assert missing == (
+        "email address",
+        "incoming account type",
+        "incoming server",
+        "SMTP server",
+        "username",
+        "password",
+    )
 
 
 @pytest.mark.skipif(not sys.platform.startswith("win"), reason="Windows DPAPI only")
@@ -52,6 +124,141 @@ def test_email_settings_dpapi_round_trip_and_session_only_mode(tmp_path: Path) -
     payload = json.loads(path.read_text(encoding="utf-8"))["email"]
     assert payload["password"] == ""
     assert payload["smtp_password"] == ""
+
+
+def test_shared_config_password_round_trip_does_not_depend_on_dpapi_or_session(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    path = tmp_path / "email-account.json"
+    settings = notification_service.EmailSettings(
+        sender_email="shared@example.org",
+        smtp_host="smtp.example.org",
+        username="shared@example.org",
+        password="portable-secret",
+        smtp_username="shared@example.org",
+        smtp_password="portable-secret",
+        password_storage="shared_config",
+    )
+    monkeypatch.setattr(notification_service, "protect_secret", lambda _value: pytest.fail("DPAPI used"))
+
+    notification_service.save_email_account_settings(settings, path)
+    notification_service._SESSION_EMAIL_PASSWORDS.clear()
+    loaded = notification_service.load_email_account_settings(path)
+
+    assert loaded.password_storage == "shared_config"
+    assert loaded.smtp_password == "portable-secret"
+
+
+def test_verify_email_account_authenticates_imap_then_smtp_starttls(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[tuple[str, object]] = []
+
+    class FakeImap:
+        def __init__(self, host: str, port: int, *, ssl_context: object, timeout: int) -> None:
+            calls.append(("imap-connect", (host, port, bool(ssl_context), timeout)))
+
+        def login(self, username: str, password: str) -> None:
+            calls.append(("imap-login", (username, password)))
+
+        def logout(self) -> None:
+            calls.append(("imap-logout", None))
+
+    class FakeSmtp:
+        def __init__(self, host: str, port: int, *, timeout: int) -> None:
+            calls.append(("smtp-connect", (host, port, timeout)))
+
+        def __enter__(self) -> "FakeSmtp":
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+        def starttls(self, *, context: object) -> None:
+            calls.append(("smtp-starttls", bool(context)))
+
+        def login(self, username: str, password: str) -> None:
+            calls.append(("smtp-login", (username, password)))
+
+    monkeypatch.setattr(notification_service.imaplib, "IMAP4_SSL", FakeImap)
+    monkeypatch.setattr(notification_service.smtplib, "SMTP", FakeSmtp)
+    settings = notification_service.EmailSettings(
+        account_type="IMAP",
+        sender_email="shared@example.org",
+        imap_or_pop_host="imap.example.org",
+        imap_or_pop_port=993,
+        incoming_encryption="SSL/TLS",
+        smtp_host="smtp.example.org",
+        smtp_port=587,
+        smtp_encryption="STARTTLS",
+        smtp_username="shared@example.org",
+        smtp_password="portable-secret",
+    )
+
+    verify_email_account_connections(settings)
+
+    assert calls == [
+        ("imap-connect", ("imap.example.org", 993, True, 30)),
+        ("imap-login", ("shared@example.org", "portable-secret")),
+        ("imap-logout", None),
+        ("smtp-connect", ("smtp.example.org", 587, 30)),
+        ("smtp-starttls", True),
+        ("smtp-login", ("shared@example.org", "portable-secret")),
+    ]
+
+
+def test_verify_email_account_supports_pop3_ssl(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[tuple[str, object]] = []
+
+    class FakePop:
+        def __init__(self, host: str, port: int, *, timeout: int, context: object) -> None:
+            calls.append(("pop-connect", (host, port, timeout, bool(context))))
+
+        def user(self, username: str) -> None:
+            calls.append(("pop-user", username))
+
+        def pass_(self, password: str) -> None:
+            calls.append(("pop-password", password))
+
+        def quit(self) -> None:
+            calls.append(("pop-quit", None))
+
+    class FakeSmtp:
+        def __init__(self, *_args: object, **_kwargs: object) -> None:
+            pass
+
+        def __enter__(self) -> "FakeSmtp":
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+        def login(self, *_args: object) -> None:
+            pass
+
+    monkeypatch.setattr(notification_service.poplib, "POP3_SSL", FakePop)
+    monkeypatch.setattr(notification_service.smtplib, "SMTP", FakeSmtp)
+    settings = notification_service.EmailSettings(
+        account_type="POP3",
+        sender_email="shared@example.org",
+        imap_or_pop_host="pop.example.org",
+        imap_or_pop_port=995,
+        incoming_encryption="SSL/TLS",
+        smtp_host="smtp.example.org",
+        smtp_encryption="None",
+        smtp_username="shared@example.org",
+        smtp_password="portable-secret",
+    )
+
+    verify_email_account_connections(settings)
+
+    assert calls == [
+        ("pop-connect", ("pop.example.org", 995, 30, True)),
+        ("pop-user", "shared@example.org"),
+        ("pop-password", "portable-secret"),
+        ("pop-quit", None),
+    ]
 
 
 def test_notification_sender_accepts_onboarding_email_settings_shape(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -111,6 +318,9 @@ def test_notification_sender_builds_plain_and_html_alternatives(monkeypatch: pyt
         def starttls(self, **_kwargs: object) -> None:
             pass
 
+        def login(self, _username: str, _password: str) -> None:
+            pass
+
         def send_message(self, message: object) -> None:
             messages.append(message)
 
@@ -154,8 +364,52 @@ def test_notification_service_sends_current_draft_to_explicit_test_recipient_wit
     )
 
     assert result.status == "sent"
-    assert sent == [(["tester@example.org"], "Hello Alex", "Hi Alex")]
+    assert sent == [(["tester@example.org"], "[THIS IS A TEST] Hello Alex", "Hi Alex")]
     assert store.list_audit() == []
+
+
+def test_candidate_notification_preview_uses_shared_default_without_explicit_recipient(tmp_path: Path) -> None:
+    sent: list[list[str]] = []
+    service = NotificationService(
+        store=NotificationStore(tmp_path / "notifications.sqlite3"),
+        email_settings=_settings(),
+        send_email=lambda _settings, recipients, _subject, _body: sent.append(recipients),
+    )
+    rule = NotificationRule(
+        event_type="custom.candidate",
+        label="Candidate notice",
+        subject_template="Test",
+        body_template="Body",
+        recipients=[NotificationRecipient(recipient_type="role", role_key="candidate")],
+        active=False,
+    )
+
+    result = service.send_test_preview(rule, {}, "", "candidate-preview-default")
+
+    assert result.status == "sent"
+    assert sent == [["davidn@launchpadpreschool.com"]]
+
+
+def test_notification_service_preview_blocks_incomplete_shared_email_before_delivery(tmp_path: Path) -> None:
+    delivered: list[str] = []
+    service = NotificationService(
+        store=NotificationStore(tmp_path / "notifications.sqlite3"),
+        email_settings=notification_service.EmailSettings(account_type=""),
+        send_email=lambda *_args: delivered.append("sent"),
+    )
+    rule = NotificationRule(
+        event_type="custom.preview",
+        label="Preview",
+        subject_template="Hello",
+        body_template="Body",
+        active=False,
+    )
+
+    result = service.send_test_preview(rule, {}, "tester@example.org", "missing-shared-email")
+
+    assert result.status == "blocked"
+    assert result.error == "Shared email account settings are incomplete."
+    assert delivered == []
 
 
 def test_notification_service_saved_draft_test_blocks_invalid_template_and_audits(tmp_path: Path) -> None:
@@ -715,6 +969,32 @@ def test_notification_service_attaches_offer_pdf_from_payload(tmp_path: Path) ->
     assert sent == [(["jane@example.org"], "Offer for Jane Doe", "Attached.", [str(pdf_path)])]
 
 
+def test_candidate_offer_preview_uses_active_notification_settings_template(tmp_path: Path) -> None:
+    store = NotificationStore(tmp_path / "notifications.sqlite3")
+    store.save_rule(
+        NotificationRule(
+            event_type="offer.approved",
+            label="Configured candidate offer",
+            subject_template="Configured offer for {candidate_name}",
+            body_template="Hello {honorific} {candidate_name} at {school_location}.",
+            recipients=[NotificationRecipient(recipient_type="role", role_key="candidate")],
+            active=True,
+        )
+    )
+    service = NotificationService(store=store, email_settings=_settings(), send_email=lambda *_: None)
+
+    preview = service.render_candidate_event_preview(
+        "offer.approved",
+        {
+            "candidate_name": "Jane Doe",
+            "honorific": "Ms.",
+            "school_location": "Palmdale",
+        },
+    )
+
+    assert preview == "Subject: Configured offer for Jane Doe\n\nHello Ms. Jane Doe at Palmdale."
+
+
 def test_notification_service_test_send_uses_disabled_rule_without_enabling(tmp_path: Path) -> None:
     store = NotificationStore(tmp_path / "notifications.sqlite3")
     saved = store.save_rule(
@@ -743,10 +1023,46 @@ def test_notification_service_test_send_uses_disabled_rule_without_enabling(tmp_
     [rule] = store.list_rules("staffing.assignment.need_now")
     assert result.status == "sent"
     assert rule.active is False
-    assert sent == [(["director@example.org"], "Need now: Teacher 1", "Hawthorne needs Teacher 1.")]
+    assert sent == [
+        (["director@example.org"], "[THIS IS A TEST] Need now: Teacher 1", "Hawthorne needs Teacher 1.")
+    ]
     [audit] = store.list_audit(saved.id, limit=1)
     assert audit["status"] == "sent"
     assert audit["event_type"] == "staffing.assignment.need_now.test"
+
+
+def test_saved_candidate_notification_test_uses_sole_safe_default_recipient(tmp_path: Path) -> None:
+    store = NotificationStore(tmp_path / "notifications.sqlite3")
+    saved = store.save_rule(
+        NotificationRule(
+            event_type="custom.candidate",
+            label="Candidate offer",
+            subject_template="Offer for {candidate_name}",
+            body_template="Offer body",
+            recipients=[
+                NotificationRecipient(recipient_type="role", role_key="candidate"),
+                NotificationRecipient(email="director@example.org"),
+            ],
+            active=False,
+        )
+    )
+    sent: list[tuple[list[str], str]] = []
+    service = NotificationService(
+        store=store,
+        email_settings=_settings(),
+        send_email=lambda _settings, recipients, subject, _body: sent.append((recipients, subject)),
+    )
+
+    result = service.send_test(
+        saved.id or 0,
+        {"candidate_name": "Real Candidate", "candidate_email": "real-candidate@example.org"},
+        "candidate-safe-test",
+    )
+
+    assert result.status == "sent"
+    assert sent == [
+        (["davidn@launchpadpreschool.com"], "[THIS IS A TEST] Offer for Real Candidate")
+    ]
 
 
 def test_notification_service_test_send_blocks_missing_smtp_and_sanitizes_audit(tmp_path: Path) -> None:

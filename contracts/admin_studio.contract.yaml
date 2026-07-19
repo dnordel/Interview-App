@@ -2,7 +2,7 @@ module:
   name: admin_studio
   language: python
   path: src/admin_studio.py
-  version: 3.0.0
+  version: 3.0.1
   description: Single admin boundary for local configuration review, draft editing,
     dirty tracking, validation, backup creation, and review-then-apply persistence
     for Staffing v2 Settings, including contractor offer templates and draft-only
@@ -284,6 +284,8 @@ classes:
   locked: false
   methods:
   - name: load
+    description: Load admin configuration, backfilling known school offer-template
+      defaults while preserving saved per-school overrides.
     inputs:
       paths:
         type: AdminStudioPaths | None
@@ -291,7 +293,8 @@ classes:
         default: None
     returns:
       type: AdminStudio
-    side_effects: Reads rubric, question override, and school settings JSON.
+    side_effects: Reads rubric, question override, and school settings JSON without
+      writing backfilled defaults until a confirmed apply.
   - name: create_draft
     inputs: {}
     returns:

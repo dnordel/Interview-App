@@ -2,9 +2,31 @@ module:
   name: notification_service
   language: python
   path: src/notification_service.py
-  version: 2.1.0
-  description: Notification delivery with safe persisted AND conditions, editable school role directory and director names, separate Hiring Manager SMTP account with DPAPI secrets, required attachments, and clock-aware staffing date/permit scheduling.
+  version: 2.4.0
+  description: Notification delivery with safe persisted AND conditions, editable school role directory and director names, shared incoming/SMTP account validation, admin-managed shared-config or DPAPI password storage, required attachments, and clock-aware staffing date/permit scheduling.
 functions:
+- name: candidate_notification_test_recipient
+  locked: false
+  inputs:
+    rule: {type: NotificationRule, required: true}
+    requested_email: {type: str, required: false, default: ''}
+  returns: {type: str}
+  exceptions: [ValueError]
+  side_effects: none
+- name: missing_email_account_fields
+  locked: false
+  inputs:
+    settings: {type: EmailSettings, required: true}
+  returns: {type: 'tuple[str, ...]'}
+  exceptions: []
+  side_effects: none
+- name: verify_email_account_connections
+  locked: false
+  inputs:
+    settings: {type: EmailSettings, required: true}
+  returns: {type: None}
+  exceptions: [ValueError, OSError, imaplib.IMAP4.error, poplib.error_proto, smtplib.SMTPException]
+  side_effects: Authenticates to configured IMAP or POP3 SSL/TLS and SMTP transport without sending email or exposing credentials.
 - name: notification_conditions_match
   locked: false
   inputs:
@@ -140,7 +162,7 @@ functions:
       default: EMAIL_ACCOUNT_SETTINGS_PATH
   returns:
     type: None
-  side_effects: Writes SMTP settings with DPAPI-encrypted remembered password, or retains an unremembered password only in process memory.
+  side_effects: Writes incoming and SMTP settings with either an admin-selected shared-config password for Dropbox-wide use, a DPAPI-encrypted Windows-user password, or a session-only password.
 - name: load_notification_directory
   locked: false
   inputs:
@@ -199,7 +221,7 @@ classes:
     exceptions: []
     side_effects: Rechecks current staffing and permit state and emits idempotent due events.
 - name: EmailSettings
-  description: Lightweight SMTP settings value used by notification_service without importing onboarding or DOCX/reporting modules.
+  description: Lightweight incoming and SMTP settings value including explicit shared-config or Windows-user password storage policy.
   locked: false
   methods:
   - name: from_dict
@@ -259,7 +281,7 @@ classes:
       type: NotificationSendResult
     exceptions:
     - ValueError
-    side_effects: Reads the selected rule by id, bypasses only the rule active flag and date-offset trigger gate, enforces recipients, SMTP settings, and template variables, may send email, and writes sanitized audit outcomes.
+    side_effects: Reads the selected rule by id, replaces all recipients with the shared safe default when the rule targets Candidate, bypasses only the rule active flag and date-offset trigger gate, prefixes the delivered subject with '[THIS IS A TEST]', enforces SMTP settings and template variables, may send email, and writes sanitized audit outcomes.
   - name: send_test_preview
     inputs:
       rule: {type: NotificationRule, required: true}
@@ -268,7 +290,7 @@ classes:
       idempotency_key: {type: str, required: true}
     returns: {type: NotificationSendResult}
     exceptions: [ValueError]
-    side_effects: Sends the current draft as multipart plain text and safe HTML to one explicit validated recipient; saved rules write sanitized audit rows while unsaved rules remain session-only.
+    side_effects: Uses the shared candidate-test helper to validate or default Candidate-role test recipients, blocks incomplete shared-account settings, otherwise prefixes the delivered subject with '[THIS IS A TEST]' and sends the current draft as multipart plain text and safe HTML to the sole validated test recipient; saved rules write sanitized audit rows while unsaved rules remain session-only.
   - name: run_due_notifications
     inputs: {}
     returns:
@@ -277,7 +299,16 @@ classes:
     side_effects: Reads pending date-offset notification schedules, sends due or
       overdue notifications, records audit outcomes, and marks schedule rows sent,
       blocked, failed, or duplicate.
+  - name: render_candidate_event_preview
+    inputs:
+      event_type: {type: str, required: true}
+      payload: {type: 'dict[str, str]', required: true}
+    returns: {type: str}
+    exceptions: [ValueError]
+    side_effects: Reads the first active candidate-targeted rule for the event and renders its configured subject and plain-text body without sending or writing audit state; missing rules or template values fail closed.
 data_structures:
+- name: CANDIDATE_NOTIFICATION_TEST_EMAIL
+  type: str
 - name: HIRING_MANAGER_EMAIL
   type: str
 - name: EXECUTIVE_DIRECTOR_EMAIL

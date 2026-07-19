@@ -2,9 +2,19 @@ module:
   name: hiring_pipeline
   language: python
   path: src/hiring_pipeline.py
-  version: 1.7.0
-  description: Candidate-profile, application-pipeline, event-audit, and offer-lifecycle persistence in the canonical interview history SQLite database.
+  version: 1.8.0
+  description: Candidate-profile, application-pipeline, event-audit, and PDF-only candidate offer-delivery lifecycle persistence in the canonical interview history SQLite database.
 functions:
+- name: build_offer_notification_payload
+  description: Build shared offer-approved notification values used by both approval preview and candidate delivery, including canonical school code and location.
+  locked: false
+  inputs:
+    candidate: {type: CandidateProfile, required: true}
+    version: {type: OfferVersion, required: true}
+    pdf_path: {type: Path, required: true}
+  returns: {type: 'dict[str, Any]'}
+  exceptions: []
+  side_effects: none
 - name: normalize_candidate_phone
   description: Validate and normalize one U.S. candidate phone number to canonical display form.
   locked: false
@@ -146,7 +156,7 @@ classes:
     skipped_rows: {type: int}
   methods: []
 - name: HiringOfferNotificationAdapter
-  description: Candidate-only approved-offer PDF notification boundary adapter.
+  description: Candidate-only approved-offer notification boundary that rejects every non-PDF attachment before notification delivery.
   locked: false
   attributes:
     notification_service: {type: Any}
@@ -158,8 +168,8 @@ classes:
       pdf_path: {type: Path, required: true}
       idempotency_key: {type: str, required: true}
     returns: {type: 'list[Any]'}
-    exceptions: []
-    side_effects: Emits one idempotent offer.approved event containing candidate identity, honorific, school, email, approval dates, and approved PDF.
+    exceptions: [ValueError]
+    side_effects: Emits one idempotent offer.approved event containing candidate identity, honorific, school, email, approval dates, and only the approved PDF; Word documents fail closed before delivery.
   - name: offer_accepted
     inputs:
       candidate: {type: CandidateProfile, required: true}
@@ -168,6 +178,14 @@ classes:
     returns: {type: 'list[Any]'}
     exceptions: []
     side_effects: Emits an idempotent offer.accepted event with candidate contact, school director name, and configured onboarding guide.
+  - name: payload
+    inputs:
+      candidate: {type: CandidateProfile, required: true}
+      version: {type: OfferVersion, required: true}
+      pdf_path: {type: Path, required: true}
+    returns: {type: 'dict[str, Any]'}
+    exceptions: []
+    side_effects: none
 - name: HiringPipelineStore
   description: Deep SQLite repository for candidate identities, application cycles, and lifecycle events.
   locked: false
@@ -292,6 +310,14 @@ classes:
     returns: {type: OfferVersion}
     exceptions: [ValueError]
     side_effects: Persists validated approval artifacts and dates on one pending offer version.
+  - name: record_offer_artifacts
+    inputs:
+      version_id: {type: str, required: true}
+      docx_path: {type: Path, required: true}
+      pdf_path: {type: Path, required: true}
+    returns: {type: OfferVersion}
+    exceptions: [ValueError]
+    side_effects: Validates and persists non-empty DOCX and PDF artifacts plus hashes on one pending offer version before approval review.
   - name: record_offer_delivery
     inputs:
       version_id: {type: str, required: true}
@@ -459,7 +485,7 @@ classes:
       actor: {type: str, required: true}
     returns: {type: OfferVersion}
     exceptions: [ValueError]
-    side_effects: Marks one draft pending approval, advances application stage, and appends an audit event.
+    side_effects: Marks one draft pending approval, advances application stage, appends an audit event, and generates and persists both DOCX and PDF artifacts when an artifact preparer is configured.
   - name: create_compensation_revision
     inputs:
       application_id: {type: str, required: true}
@@ -494,7 +520,7 @@ classes:
       rendered_email: {type: str, required: false, default: ''}
     returns: {type: OfferVersion}
     exceptions: [ValueError]
-    side_effects: Admin-approves, redates, delivers, and supersedes a compensation revision without executive review.
+    side_effects: Admin-approves, redates, delivers only the revised PDF to the candidate, and supersedes a compensation revision without executive review; the retained Word artifact is never attached.
   - name: retry_offer_send
     inputs:
       application_id: {type: str, required: true}

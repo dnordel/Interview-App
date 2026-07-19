@@ -9,7 +9,13 @@ import weakref
 
 from dashboard_v2_ui import apply_dashboard_v2_light_theme, display_role, role_badge_key
 from notification_models import NotificationCondition, NotificationRecipient, NotificationRule, NotificationTestPayload
-from notification_service import EXECUTIVE_DIRECTOR_EMAIL, HIRING_MANAGER_EMAIL, NotificationService
+from notification_service import (
+    EXECUTIVE_DIRECTOR_EMAIL,
+    HIRING_MANAGER_EMAIL,
+    NotificationService,
+    candidate_notification_test_recipient,
+    missing_email_account_fields,
+)
 from notification_store import NotificationStore
 from notification_templates import (
     NOTIFICATION_TEMPLATE_FIELD_CATALOG,
@@ -4246,21 +4252,36 @@ class StaffingDashboardV2Page:
         dialog.show()
 
     def _send_notification_test(self) -> None:
-        recipient = self.notification_test_recipient.text().strip()
+        service = self.notification_service_factory() if self.notification_service_factory else NotificationService(
+            store=self._notification_store()
+        )
+        settings = getattr(service, "email_settings", None)
+        if settings is not None:
+            missing = missing_email_account_fields(settings)
+            if missing:
+                self._show_missing_shared_email_settings(missing)
+                return
+        rule = self._notification_rule_from_editor()
+        candidate_default = candidate_notification_test_recipient(rule)
+        if candidate_default:
+            recipient = self._prompt_candidate_notification_test_recipient(rule)
+            if recipient is None:
+                return
+            self.notification_test_recipient.setText(recipient)
+        else:
+            recipient = self.notification_test_recipient.text().strip()
         if not recipient:
             self.notifications_status.setText("Enter an explicit test recipient email.")
             return
         payload = self._selected_notification_test_payload()
         if payload is None:
             return
-        rule = self._notification_rule_from_editor()
         key = f"staffing-v2-test:{self.selected_notification_rule_id or 'draft'}:{datetime.now(timezone.utc).isoformat()}"
         self.notification_test_send.setEnabled(False)
         self.notifications_status.setText("Sending test notification…")
 
         def send() -> None:
             try:
-                service = self.notification_service_factory() if self.notification_service_factory else NotificationService(store=self._notification_store())
                 result: object = service.send_test_preview(rule, payload, recipient, key)
             except Exception as exc:  # noqa: BLE001 - passed through sanitizer on GUI thread.
                 result = exc
@@ -4270,6 +4291,94 @@ class StaffingDashboardV2Page:
                 return
 
         threading.Thread(target=send, name="notification-test-send", daemon=True).start()
+
+    def _prompt_candidate_notification_test_recipient(
+        self,
+        rule: NotificationRule,
+    ) -> str | None:
+        default_email = candidate_notification_test_recipient(rule)
+        dialog = self.QtWidgets.QDialog(self.widget)
+        dialog.setObjectName("StaffingV2CandidateNotificationTestRecipientDialog")
+        dialog.setWindowTitle("Candidate Notification Test Recipient")
+        dialog.setModal(True)
+        dialog.resize(480, 190)
+        layout = self.QtWidgets.QVBoxLayout(dialog)
+        layout.addWidget(
+            self._label(
+                "This test replaces the candidate recipient with the safe address below.",
+                "StaffingV2Muted",
+            )
+        )
+        email = self.QtWidgets.QLineEdit(default_email)
+        email.setObjectName("StaffingV2CandidateNotificationTestRecipientEmail")
+        email.selectAll()
+        layout.addWidget(email)
+        error = self._label("", "StaffingV2NeedNowChip")
+        error.setWordWrap(True)
+        layout.addWidget(error)
+        layout.addStretch(1)
+        actions = self.QtWidgets.QHBoxLayout()
+        actions.addStretch(1)
+        cancel = self.QtWidgets.QPushButton("Cancel")
+        cancel.clicked.connect(dialog.reject)
+        actions.addWidget(cancel)
+        send = self.QtWidgets.QPushButton("Send Test")
+        send.setDefault(True)
+        actions.addWidget(send)
+        layout.addLayout(actions)
+        selected: dict[str, str] = {}
+
+        def accept_recipient() -> None:
+            try:
+                selected["email"] = candidate_notification_test_recipient(rule, email.text())
+            except ValueError as exc:
+                error.setText(str(exc))
+                email.setFocus()
+                return
+            dialog.accept()
+
+        send.clicked.connect(accept_recipient)
+        email.returnPressed.connect(accept_recipient)
+        if not dialog.exec():
+            return None
+        return selected.get("email")
+
+    def _show_missing_shared_email_settings(self, missing: tuple[str, ...]) -> None:
+        field_text = ", ".join(missing)
+        self.notifications_status.setText(
+            "Shared email account is incomplete. Open Settings and enter required account details."
+        )
+        dialog = self.QtWidgets.QMessageBox(self.widget)
+        dialog.setWindowTitle("Shared Email Account Required")
+        dialog.setIcon(self.QtWidgets.QMessageBox.Icon.Warning)
+        dialog.setText(f"Missing shared email settings: {field_text}.")
+        dialog.setInformativeText(
+            "An administrator must enter and save IMAP/POP, SMTP, username, and password settings before tests can send."
+        )
+        open_settings = dialog.addButton(
+            "Open Shared Email Settings",
+            self.QtWidgets.QMessageBox.ButtonRole.ActionRole,
+        )
+        dialog.addButton(self.QtWidgets.QMessageBox.StandardButton.Cancel)
+        dialog.exec()
+        if dialog.clickedButton() is open_settings:
+            self._open_shared_email_settings()
+
+    def _open_shared_email_settings(self) -> None:
+        self._show_settings_view()
+        settings_widget = self._settings_page_widget
+        if settings_widget is None:
+            return
+        section_list = settings_widget.findChild(
+            self.QtWidgets.QListWidget,
+            "StaffingSettingsV2SectionList",
+        )
+        if section_list is None:
+            return
+        for index in range(section_list.count()):
+            if section_list.item(index).text() == "Shared Email Account":
+                section_list.setCurrentRow(index)
+                return
 
     def _finish_notification_test_send(self, result: object) -> None:
         self.notification_test_send.setEnabled(True)

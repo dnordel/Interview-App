@@ -171,6 +171,49 @@ def test_offer_drafts_are_versioned_and_selected_version_is_submitted(tmp_path: 
     ]
 
 
+def test_offer_submission_generates_and_persists_docx_and_pdf_together(tmp_path: Path) -> None:
+    calls: list[str] = []
+
+    def prepare(_application, _candidate, version):
+        calls.append(version.version_id)
+        docx = tmp_path / "offer.docx"
+        pdf = tmp_path / "offer.pdf"
+        docx.write_bytes(b"docx")
+        pdf.write_bytes(b"%PDF")
+        return docx, pdf
+
+    service = HiringWorkflowService(
+        HiringPipelineStore(tmp_path / "history.sqlite3"),
+        prepare_offer_artifacts=prepare,
+    )
+    application = service.start_external_offer_application(
+        legal_name="Maya Patel",
+        email="maya@example.com",
+        phone="",
+        school="Palmdale",
+        position="Teacher",
+        actor="Admin",
+        honorific="Ms.",
+    )
+    draft = service.create_offer_draft(
+        application.application_id,
+        terms={"school": "Palmdale", "position": "Teacher"},
+        actor="Admin",
+    )
+
+    submitted = service.submit_offer_for_approval(
+        application.application_id,
+        draft.version_id,
+        actor="Admin",
+    )
+
+    assert calls == [draft.version_id]
+    assert submitted.docx_path == str((tmp_path / "offer.docx").resolve())
+    assert submitted.pdf_path == str((tmp_path / "offer.pdf").resolve())
+    assert submitted.docx_sha256
+    assert submitted.pdf_sha256
+
+
 def test_director_offer_submission_is_idempotent_by_source_key(tmp_path: Path) -> None:
     service = HiringWorkflowService(HiringPipelineStore(tmp_path / "history.sqlite3"))
     application = service.start_application(
@@ -376,10 +419,13 @@ def test_admin_compensation_revision_only_changes_pay_and_hours(tmp_path: Path) 
             "outcome": "Hire",
         }
     )
-    service = HiringWorkflowService(
-        HiringPipelineStore(history_path),
-        send_offer=lambda *args: [SimpleNamespace(status="sent", error="")],
-    )
+    sent_attachments: list[tuple[str, Path]] = []
+
+    def send_offer(_candidate, version, pdf_path, _idempotency_key):
+        sent_attachments.append((version.version_id, Path(pdf_path)))
+        return [SimpleNamespace(status="sent", error="")]
+
+    service = HiringWorkflowService(HiringPipelineStore(history_path), send_offer=send_offer)
     application = service.backfill_history()[0]
     service.record_director_decision(application.application_id, decision="Hire", actor="Director")
     original = service.create_offer_draft(
@@ -420,6 +466,24 @@ def test_admin_compensation_revision_only_changes_pay_and_hours(tmp_path: Path) 
         "school": "Palmdale",
     }
     assert revision.status == "pending_approval"
+
+    edited_docx = tmp_path / "offer-v2-edited.docx"
+    edited_pdf = tmp_path / "offer-v2-edited.pdf"
+    edited_docx.write_bytes(b"internal editable record")
+    edited_pdf.write_bytes(b"%PDF-1.4\nfinal edited offer")
+    delivered = service.approve_compensation_revision(
+        application.application_id,
+        revision.version_id,
+        admin_name="Admin User",
+        approval_date=date(2026, 7, 14),
+        docx_path=edited_docx,
+        pdf_path=edited_pdf,
+    )
+
+    assert delivered.status == "sent"
+    assert sent_attachments == [(revision.version_id, edited_pdf.resolve())]
+    assert sent_attachments[0][1].suffix.casefold() == ".pdf"
+    assert sent_attachments[0][1] != edited_docx.resolve()
 
 
 def test_deadline_extension_does_not_change_document_and_only_latest_sent_can_be_accepted(tmp_path: Path) -> None:
@@ -652,3 +716,22 @@ def test_offer_notification_adapter_sends_candidate_pdf_only() -> None:
     assert payload["school"] == "Palmdale"
     assert payload["offer_pdf_path"] == "approved.pdf"
     assert payload["attachments"] == ["approved.pdf"]
+
+
+def test_offer_notification_adapter_rejects_word_document_attachment() -> None:
+    class Notifications:
+        def emit_event(self, *_args, **_kwargs):
+            raise AssertionError("DOCX must never reach notification delivery")
+
+    adapter = HiringOfferNotificationAdapter(Notifications())
+    candidate = SimpleNamespace(legal_name="Maya Patel", email="maya@example.com", honorific="Ms.")
+    version = SimpleNamespace(
+        version_id="v2",
+        approval_date="2026-07-14",
+        document_reply_by_date="2026-07-17",
+        start_date="2026-08-03",
+        terms={"school": "Palmdale"},
+    )
+
+    with pytest.raises(ValueError, match="PDF"):
+        adapter(candidate, version, Path("edited-offer.docx"), "offer-version:v2")

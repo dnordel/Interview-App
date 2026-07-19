@@ -271,6 +271,66 @@ def test_hiring_workspace_generate_offer_button_creates_external_offer(tmp_path:
     app.processEvents()
 
 
+def test_pending_offer_row_has_direct_review_offer_button_beside_menu(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6 import QtCore, QtTest, QtWidgets
+    from hiring_workspace_v2 import HiringWorkspaceV2Page
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    service = HiringWorkflowService(HiringPipelineStore(tmp_path / "review-offer.sqlite3"))
+    application = service.start_application(
+        legal_name="Maya Patel",
+        email="maya@example.com",
+        phone="",
+        school="Palmdale",
+        position="Preschool",
+        actor="Admin",
+    )
+    service.finalize_initial_interview(
+        application.application_id,
+        history_id="hist-review-offer",
+        score=80,
+        outcome="Hire",
+        actor="Admin",
+    )
+    service.record_director_decision(application.application_id, decision="Hire", actor="Director")
+    draft = service.create_offer_draft(
+        application.application_id,
+        terms={
+            "hourly_pay": "24.00",
+            "weekly_hours": "40",
+            "template_path": "offer.docx",
+            "output_dir": "offers",
+        },
+        actor="Admin",
+    )
+    service.submit_offer_for_approval(application.application_id, draft.version_id, actor="Admin")
+    reviewed: list[str] = []
+    page = HiringWorkspaceV2Page(
+        QtCore=QtCore,
+        QtWidgets=QtWidgets,
+        service=service,
+        actions={"review_approval": lambda item: reviewed.append(item.application_id)},
+    )
+    page.offers_widget.show()
+    app.processEvents()
+
+    actions = page.offers_table.cellWidget(0, 6)
+    review_button = actions.findChild(QtWidgets.QPushButton, "HiringV2ReviewOfferAction")
+    menu_button = actions.findChild(QtWidgets.QToolButton, "HiringV2OfferOverflowAction")
+
+    assert review_button is not None
+    assert review_button.text() == "Review offer"
+    assert menu_button is not None
+    assert menu_button.text() == "•••"
+    QtTest.QTest.mouseClick(review_button, QtCore.Qt.MouseButton.LeftButton)
+    app.processEvents()
+    assert reviewed == [application.application_id]
+
+    page.offers_widget.close()
+    app.processEvents()
+
+
 @pytest.mark.pyside_gui
 @pytest.mark.visual_inspection
 def test_hiring_workspace_visual_sizes_have_no_page_horizontal_scroll(

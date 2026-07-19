@@ -10,6 +10,7 @@ from typing import Any, Optional
 
 from platform_services import (
     ConfigValidationError,
+    DEFAULT_SCHOOL_OPTIONS,
     atomic_write_json,
     load_json_dict,
     normalize_question_overrides_config,
@@ -59,7 +60,8 @@ def default_school_offer_settings() -> dict[str, dict[str, str]]:
             "offer_output_dir": DEFAULT_SCHOOL_OFFER_DIRS[school],
             "interview_notes_dir": notes_dir,
         }
-        for school, notes_dir in DEFAULT_SCHOOL_INTERVIEW_NOTES_DIRS.items()
+        for school in DEFAULT_SCHOOL_OPTIONS
+        for notes_dir in (DEFAULT_SCHOOL_INTERVIEW_NOTES_DIRS[school],)
     }
 
 

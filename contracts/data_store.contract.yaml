@@ -9,7 +9,8 @@ functions:
 - name: default_school_offer_settings
   description: Return default per-school offer settings with portable full-time and
     part-time template paths, offer output folders, contractor slots, and interview-notes
-    folder fragments for known schools.
+    folder fragments for the three canonical app schools; legacy school aliases remain
+    supported by path resolution.
   locked: false
   inputs: {}
   returns:

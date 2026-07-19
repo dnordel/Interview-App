@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from data_store import QuestionOverridesStore, SchoolOfferSettingsStore
+from data_store import QuestionOverridesStore, SchoolOfferSettingsStore, default_school_offer_settings
 from platform_services import (
     DEFAULT_RUBRIC_PATH,
     QUESTIONS_OVERRIDE_PATH,
@@ -417,11 +417,14 @@ class AdminStudio:
         rubric = _read_json_object(paths.rubric_path)
         overrides_store = QuestionOverridesStore(paths.overrides_path)
         school_store = SchoolOfferSettingsStore(paths.school_settings_path)
+        school_settings = default_school_offer_settings()
+        for school, saved in school_store.load().items():
+            school_settings.setdefault(school, {}).update(saved)
         return cls(
             paths=paths,
             rubric=rubric,
             overrides=overrides_store.data,
-            school_settings=school_store.load(),
+            school_settings=school_settings,
         )
 
     def create_draft(self) -> AdminStudioDraft:
