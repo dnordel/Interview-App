@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
@@ -32,27 +31,6 @@ class QuestionSettingsService:
 
     def save_rubric(self, rubric: dict[str, Any]) -> None:
         atomic_write_json(self.rubric_path, rubric, indent=2, ensure_ascii=False)
-
-    def export_questions(self, rubric: dict[str, Any], path: Path) -> None:
-        payload = {
-            "tracks": rubric.get("tracks", {}),
-            "traits": rubric.get("traits", []),
-        }
-        atomic_write_json(path, payload, indent=2, ensure_ascii=False)
-
-    def import_questions(self, rubric: dict[str, Any], path: Path) -> dict[str, Any]:
-        with Path(path).open("r", encoding="utf-8") as handle:
-            payload = json.load(handle) or {}
-        traits = payload.get("traits")
-        if not isinstance(traits, list) or not traits:
-            raise ValueError("Imported file must include a non-empty 'traits' list.")
-
-        merged = deepcopy(rubric)
-        tracks = payload.get("tracks")
-        if isinstance(tracks, dict) and tracks:
-            merged["tracks"] = tracks
-        merged["traits"] = [self._validated_trait(merged, trait) for trait in traits]
-        return merged
 
     def update_trait(self, rubric: dict[str, Any], trait_id: str, updates: dict[str, Any]) -> dict[str, Any]:
         trait_id = ensure_valid_trait_id(trait_id)

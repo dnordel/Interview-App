@@ -2,7 +2,7 @@ module:
   name: onboarding_operations
   language: python
   path: src/onboarding_operations.py
-  version: 0.19.2
+  version: 1.0.0
   description: Flattened public interface for onboarding models, storage, scheduling, reminders, notifications, dashboard actions, and onboarding UI composition helpers.
 functions:
 - name: resolve_smtp_password
@@ -16,14 +16,6 @@ functions:
     type: str
   exceptions: []
   side_effects: Reads environment variables without logging secrets.
-- name: today_local
-  description: Return the current local date.
-  locked: false
-  inputs: {}
-  returns:
-    type: date
-  exceptions: []
-  side_effects: Reads system date.
 - name: parse_date
   description: Parse a YYYY-MM-DD date string.
   locked: false
@@ -168,17 +160,6 @@ functions:
     type: str
   exceptions: []
   side_effects: none
-- name: build_specific_date_reference
-  description: Build a fixed-date onboarding task reference string.
-  locked: false
-  inputs:
-    value:
-      type: date
-      required: true
-  returns:
-    type: str
-  exceptions: []
-  side_effects: none
 - name: parse_specific_date_reference
   description: Parse a fixed-date onboarding task reference string.
   locked: false
@@ -188,17 +169,6 @@ functions:
       required: true
   returns:
     type: date | None
-  exceptions: []
-  side_effects: none
-- name: task_status_badge_text
-  description: Build display text for a task status badge.
-  locked: false
-  inputs:
-    status:
-      type: str
-      required: true
-  returns:
-    type: str
   exceptions: []
   side_effects: none
 - name: task_status
@@ -299,20 +269,6 @@ functions:
     type: list[EmployeeTask]
   exceptions: []
   side_effects: none
-- name: urgent_filter_result_count
-  description: Count tasks matching the urgent filter.
-  locked: false
-  inputs:
-    tasks:
-      type: list[EmployeeTask]
-      required: true
-    today:
-      type: date
-      required: true
-  returns:
-    type: int
-  exceptions: []
-  side_effects: none
 - name: task_display_sort_key
   description: Build task sorting key for filtered task lists.
   locked: false
@@ -325,17 +281,6 @@ functions:
       required: true
   returns:
     type: tuple[int, date, str]
-  exceptions: []
-  side_effects: none
-- name: format_due_date_short
-  description: Format an ISO due date for compact dashboard display.
-  locked: false
-  inputs:
-    due_date:
-      type: str | None
-      required: true
-  returns:
-    type: str
   exceptions: []
   side_effects: none
 - name: filter_for_dashboard_kpi

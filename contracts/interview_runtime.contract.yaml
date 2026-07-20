@@ -2,7 +2,7 @@ module:
   name: interview_runtime
   language: python
   path: src/interview_runtime.py
-  version: 2.0.0
+  version: 3.0.0
   description: Flattened public interface for interview state, session management,
     audio/transcription runtime, controllers, history, and
     finalize pipeline; only active legacy adapters remain in the compatibility module
@@ -965,18 +965,6 @@ classes:
       type: None
     exceptions: []
     side_effects: none
-  - name: load_draft_payload
-    description: Load and normalize persisted draft JSON payload.
-    locked: false
-    inputs:
-      draft_path:
-        type: Path
-        required: true
-    returns:
-      type: dict[str, Any]
-    exceptions:
-    - SessionPayloadValidationError
-    side_effects: Reads draft file from disk.
   - name: load_session_payload
     description: Load and normalize persisted interview session payload.
     locked: false
@@ -1176,17 +1164,6 @@ classes:
       type: int
     exceptions: []
     side_effects: none
-  - name: is_pending
-    description: Return whether a flow has pending transcription work.
-    locked: false
-    inputs:
-      flow_idx:
-        type: int
-        required: true
-    returns:
-      type: bool
-    exceptions: []
-    side_effects: none
   - name: clear
     description: Clear all queue, cancellation, error, and job tracking state.
     locked: false
@@ -1206,17 +1183,6 @@ classes:
       type: bool
     exceptions: []
     side_effects: none
-  - name: clear_error
-    description: Clear stored transcription error for a flow.
-    locked: false
-    inputs:
-      flow_idx:
-        type: int
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Updates in-memory queue state.
   - name: error_reasons
     description: Return a copy of stored transcription error reasons.
     locked: false
@@ -1310,30 +1276,6 @@ classes:
       type: None
     exceptions: []
     side_effects: none
-  - name: append_live_segment
-    description: Synchronize transcript content for one flow index through the app
-      adapter without writing a standalone transcript document.
-    locked: false
-    inputs:
-      flow_idx:
-        type: int
-        required: true
-      segment_text:
-        type: str
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Updates in-memory/session transcript state.
-  - name: rewrite_from_flow
-    description: Synchronize flow transcript state without writing a standalone transcript
-      document.
-    locked: false
-    inputs: {}
-    returns:
-      type: None
-    exceptions: []
-    side_effects: none
 - name: RuntimeConfig
   description: Immutable Whisper runtime backend/model/device/compute-type selection.
   locked: false
@@ -1367,14 +1309,6 @@ classes:
       type: None
     exceptions: []
     side_effects: none
-  - name: wait_for_pending_transcriptions
-    description: Block until pending queue items complete.
-    locked: false
-    inputs: {}
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Blocks on transcription queue state.
   - name: background_transcribe_question
     description: Stop/transcribe a question recording, persist transcript state, and
       handle cancellation/timeouts.
@@ -1428,25 +1362,6 @@ classes:
     exceptions: []
     side_effects: Starts audio recording subprocesses; may use DEFAULT_WINDOWS_MIC_DEVICE
       when app settings omit windows_microphone_device.
-  - name: start_recording_with_runtime_fallback
-    description: Start recording with preferred Whisper runtime and CPU fallback for
-      device runtime errors.
-    locked: false
-    inputs:
-      start_recording:
-        type: Any
-        required: true
-      base_dir:
-        type: Path
-        required: true
-      base_name:
-        type: str
-        required: true
-    returns:
-      type: Any
-    exceptions:
-    - Exception
-    side_effects: Persists runtime choice and emits fallback warning.
 - name: FlowController
   description: Controller adapter for interview question navigation and active-flow
     discovery.
@@ -1467,14 +1382,6 @@ classes:
       type: None
     exceptions: []
     side_effects: none
-  - name: go_next
-    description: Navigate to the next interview question.
-    locked: false
-    inputs: {}
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Triggers UI navigation.
   - name: go_back
     description: Navigate to the previous interview question.
     locked: false
@@ -1510,14 +1417,6 @@ classes:
       type: None
     exceptions: []
     side_effects: none
-  - name: refresh_dashboard
-    description: Refresh dashboard snapshot data through the app adapter.
-    locked: false
-    inputs: {}
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Updates in-memory dashboard state.
 - name: HistoryController
   description: Coordinates history data loading, selected row state, and action callback
     routing.
@@ -1542,17 +1441,6 @@ classes:
       type: None
     exceptions: []
     side_effects: none
-  - name: build_history_table
-    description: Create the history table section and mount the history grid widget.
-    locked: false
-    inputs:
-      parent:
-        type: Any
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Updates in-memory UI state.
   - name: refresh_history_tree
     description: Refresh row data and filtering for the history grid, using the history
       store's DB-backed filtered search when available and falling back to grid filtering
@@ -1564,14 +1452,6 @@ classes:
     exceptions: []
     side_effects: May query DB-backed history search, updates grid rows/filter text,
       and updates in-memory row state.
-  - name: selected_history_row
-    description: Return the currently selected history row from the grid.
-    locked: false
-    inputs: {}
-    returns:
-      type: dict[str, Any] | None
-    exceptions: []
-    side_effects: none
 - name: FinalizeContext
   description: Dataclass carrying finalize payload, scoring, transcript metadata,
     canonical interview notes path, and legacy transcript compatibility field through

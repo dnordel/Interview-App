@@ -2,7 +2,7 @@ module:
   name: dashboard_v2_ui
   language: python
   path: src/dashboard_v2_ui.py
-  version: 1.1.0
+  version: 2.0.0
   description: Shared Staffing v2 visual primitives for light theme, semantic colors, readable role presentation, page registration, full or rail navigation, locked active-work navigation, overlay panels, cards, chips, and scroll behavior.
 functions:
 - name: display_role
@@ -97,13 +97,6 @@ classes:
     returns: {type: 'tuple[Any, Any]'}
     exceptions: []
     side_effects: Creates a themed card frame and layout.
-  - name: semantic_chip
-    inputs:
-      text: {type: str, required: true}
-      state: {type: str, required: true}
-    returns: {type: Any}
-    exceptions: [ValueError]
-    side_effects: Creates an accessible text and color semantic chip.
 - name: DashboardV2OverlayPanel
   description: Shared right-side scrollable overlay with a sticky footer.
   locked: false

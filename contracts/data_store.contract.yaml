@@ -2,7 +2,7 @@ module:
   name: data_store
   language: python
   path: src/data_store.py
-  version: 2.0.0
+  version: 3.0.0
   description: SQLite-backed interview history store plus JSON-backed stores and
     loaders for interview runtime and onboarding settings.
 functions:
@@ -160,16 +160,6 @@ classes:
         required: true
     returns:
       type: list[str]
-  - name: set_trait_order
-    inputs:
-      track_key:
-        type: str
-        required: true
-      trait_ids:
-        type: list[str]
-        required: true
-    returns:
-      type: None
   - name: get_trait_question_override
     inputs:
       trait_id:
@@ -177,23 +167,6 @@ classes:
         required: true
     returns:
       type: str | None
-  - name: set_trait_question_override
-    inputs:
-      trait_id:
-        type: str
-        required: true
-      text:
-        type: str
-        required: true
-    returns:
-      type: None
-  - name: clear_trait_question_override
-    inputs:
-      trait_id:
-        type: str
-        required: true
-    returns:
-      type: None
   - name: list_custom_questions
     inputs:
       track_key:
@@ -201,34 +174,6 @@ classes:
         required: true
     returns:
       type: list[dict[str, Any]]
-  - name: upsert_custom_question
-    description: Add or replace one custom question for a track; custom question id
-      must be non-empty.
-    inputs:
-      track_key:
-        type: str
-        required: true
-      q:
-        type: dict[str, Any]
-        required: true
-    returns:
-      type: None
-    exceptions:
-    - ValueError
-    side_effects: Writes question_overrides.json.
-  - name: delete_custom_question
-    description: Delete one custom question for a track; missing ids are tolerated.
-    inputs:
-      track_key:
-        type: str
-        required: true
-      qid:
-        type: str
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Writes question_overrides.json.
   - name: get_question_flow_raw
     inputs:
       track_key:
@@ -259,29 +204,6 @@ classes:
         required: true
     returns:
       type: list[dict[str, Any]]
-  - name: remove_custom_from_flow
-    inputs:
-      track_key:
-        type: str
-        required: true
-      qid:
-        type: str
-        required: true
-    returns:
-      type: None
-  - name: insert_custom_into_flow
-    inputs:
-      track_key:
-        type: str
-        required: true
-      qid:
-        type: str
-        required: true
-      index:
-        type: int
-        required: true
-    returns:
-      type: None
 - name: InterviewHistoryStore
   description: Persists finalized interview history entries to a sibling SQLite
     database with queryable metadata columns, row-level write/update/delete operations,

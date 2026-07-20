@@ -2,7 +2,7 @@ module:
   name: ui_feedback
   language: python
   path: src/ui_feedback.py
-  version: 2.0.0
+  version: 3.0.0
   description: Shared validation feedback and sanitized error-copy helpers without Tk widget dependencies.
 functions:
 - name: format_guidance
@@ -45,24 +45,6 @@ functions:
     type: str
   exceptions: []
   side_effects: none
-- name: append_error_log
-  description: Append technical error details to a local log path.
-  locked: false
-  inputs:
-    log_path:
-      type: Path
-      required: true
-    title:
-      type: str
-      required: true
-    technical_details:
-      type: str
-      required: true
-  returns:
-    type: None
-  exceptions:
-  - OSError
-  side_effects: writes log file entries
 - name: present_transcription_partial_warning
   description: Returns standardized partial-transcript warning copy and forwards it to a generic presenter when supplied.
   locked: false
@@ -106,31 +88,6 @@ functions:
     type: None
   exceptions: []
   side_effects: calls inline_validation.show
-classes:
-- name: InlineValidationMessage
-  description: Toolkit-neutral inline validation presenter adapter.
-  locked: false
-  attributes:
-    message_var:
-      type: Any
-    message_label:
-      type: Any
-  methods:
-  - name: show
-    inputs:
-      issue:
-        type: str
-      next_step:
-        type: str
-      focus_widget:
-        type: Any | None
-      severity:
-        type: str
-    returns:
-      type: None
-  - name: clear
-    inputs: {}
-    returns:
-      type: None
+classes: []
 data_structures: []
 dependencies: []

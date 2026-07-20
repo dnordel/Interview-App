@@ -51,21 +51,9 @@ class QuestionRuntimeDefinitionService:
         if existing_path and existing_path.exists():
             existing_path.unlink()
 
-    def sync_with_trait(self, trait_id: str, trait_name: str, question: str) -> RuntimeSignalDefinition:
-        existing = self._load_definition_or_empty(trait_id)
-        definition = normalize_runtime_definition(existing, trait_id=trait_id, trait_name=trait_name)
-        definition["question"] = question.strip()
-        return self.save_definition(trait_id, trait_name, definition)
-
     def add_core_signal(self, definition: dict[str, Any], signal: dict[str, Any]) -> RuntimeSignalDefinition:
         normalized = normalize_runtime_definition(definition)
         normalized["core_signals"].append(_normalize_signal(signal, default_group="Core"))
-        return _finalize_definition(normalized)
-
-    def update_core_signal(self, definition: dict[str, Any], signal_ref: str, updates: dict[str, Any]) -> RuntimeSignalDefinition:
-        normalized = normalize_runtime_definition(definition)
-        updated_signals = _replace_signal(normalized["core_signals"], signal_ref, updates, default_group="Core")
-        normalized["core_signals"] = updated_signals
         return _finalize_definition(normalized)
 
     def delete_core_signal(self, definition: dict[str, Any], signal_ref: str) -> RuntimeSignalDefinition:
@@ -76,16 +64,6 @@ class QuestionRuntimeDefinitionService:
     def add_extended_group(self, definition: dict[str, Any], group: dict[str, Any]) -> RuntimeSignalDefinition:
         normalized = normalize_runtime_definition(definition)
         normalized["extended_signal_groups"].append(_normalize_group(group))
-        return _finalize_definition(normalized)
-
-    def update_extended_group(self, definition: dict[str, Any], group_id: str, updates: dict[str, Any]) -> RuntimeSignalDefinition:
-        normalized = normalize_runtime_definition(definition)
-        normalized["extended_signal_groups"] = _replace_group(normalized["extended_signal_groups"], group_id, updates)
-        return _finalize_definition(normalized)
-
-    def delete_extended_group(self, definition: dict[str, Any], group_id: str) -> RuntimeSignalDefinition:
-        normalized = normalize_runtime_definition(definition)
-        normalized["extended_signal_groups"] = _delete_group(normalized["extended_signal_groups"], group_id)
         return _finalize_definition(normalized)
 
     def add_group_signal(self, definition: dict[str, Any], group_id: str, signal: dict[str, Any]) -> RuntimeSignalDefinition:
@@ -209,14 +187,6 @@ def normalize_runtime_definition(
         "extended_signal_groups": [_normalize_group(group) for group in _as_dict_list(source.get("extended_signal_groups"))],
     }
     return _finalize_definition(normalized)
-
-
-def normalize_runtime_signal(signal: dict[str, Any], *, default_group: str) -> RuntimeSignalRecord:
-    return _normalize_signal(signal, default_group=default_group)
-
-
-def normalize_runtime_group(group: dict[str, Any]) -> RuntimeSignalGroup:
-    return _normalize_group(group)
 
 
 def runtime_trait_id_for_rubric_trait(trait_id: str) -> str:

@@ -2,7 +2,7 @@ module:
   name: scoring_reporting
   language: python
   path: src/scoring_reporting.py
-  version: 2.0.0
+  version: 3.0.0
   description: Flattened public interface for human scoring, reporting, trait signals,
     exports, referrals, email safety, offers, and templates; only active legacy adapters remain in the compatibility module
     inventory.
@@ -112,17 +112,6 @@ functions:
       required: true
   returns:
     type: str | None
-  exceptions: []
-  side_effects: none
-- name: sender_email_domain_type
-  description: Classify sender domain as public, education, organization, or unknown.
-  locked: false
-  inputs:
-    value:
-      type: str
-      required: true
-  returns:
-    type: str
   exceptions: []
   side_effects: none
 - name: normalize_referral_packet
@@ -250,39 +239,6 @@ functions:
     type: list[PlaceholderMeta]
   exceptions: []
   side_effects: none
-- name: placeholder_tokens_for_context
-  description: Return placeholder token strings for a context.
-  locked: false
-  inputs:
-    context:
-      type: str
-      required: true
-  returns:
-    type: list[str]
-  exceptions: []
-  side_effects: none
-- name: placeholder_picker_options
-  description: Build ordered picker labels for one or more contexts.
-  locked: false
-  inputs:
-    contexts:
-      type: Iterable[str]
-      required: true
-  returns:
-    type: list[str]
-  exceptions: []
-  side_effects: none
-- name: token_from_picker_label
-  description: Extract raw placeholder token from picker label text.
-  locked: false
-  inputs:
-    label:
-      type: str
-      required: true
-  returns:
-    type: str
-  exceptions: []
-  side_effects: none
 - name: token_to_key
   description: Convert placeholder token into canonical placeholder key.
   locked: false
@@ -398,47 +354,6 @@ functions:
     type: bool
   exceptions: []
   side_effects: Mutates widget text content.
-- name: insert_token_into_focused_widget
-  description: Insert token into focused widget-like object when it is in the allowed set.
-  locked: false
-  inputs:
-    root:
-      type: Any
-      required: true
-    token:
-      type: str
-      required: true
-    allowed_widgets:
-      type: Iterable[Any]
-      required: false
-      default: ()
-  returns:
-    type: bool
-  exceptions: []
-  side_effects: Mutates focused widget text content.
-- name: open_outlook_draft
-  description: Opens an Outlook draft on Windows and attaches only existing files
-    from the provided attachment list.
-  locked: false
-  inputs:
-    subject:
-      type: str
-      required: true
-    body:
-      type: str
-      required: true
-    attachments:
-      type: list[str]
-      required: true
-    to_recipients:
-      type: str
-      required: false
-      default: ''
-  returns:
-    type: None
-  exceptions:
-  - DirectorEmailDraftError
-  side_effects: launches Outlook via PowerShell COM automation on Windows
 - name: build_mailto_url
   description: Builds a sanitized mailto URL for fallback email draft flows.
   locked: false
@@ -558,14 +473,6 @@ functions:
   exceptions:
   - DirectorReferralError
   side_effects: Sends an HTTPS request to the configured referral endpoint.
-- name: default_referral_endpoint
-  description: Return the configured director referral endpoint from environment variables.
-  locked: false
-  inputs: {}
-  returns:
-    type: str
-  exceptions: []
-  side_effects: Reads environment variables.
 - name: append_communication_log
   description: Append a director referral communication event as JSONL under the base
     communications directory.
@@ -656,24 +563,6 @@ functions:
       required: true
   returns:
     type: list[dict[str, Any]]
-  exceptions: []
-  side_effects: none
-- name: build_offer_filename
-  description: Build a safe offer letter filename from candidate name and creation
-    date.
-  locked: false
-  inputs:
-    first_name:
-      type: str
-      required: true
-    last_name:
-      type: str
-      required: true
-    created_on:
-      type: date
-      required: true
-  returns:
-    type: str
   exceptions: []
   side_effects: none
 - name: build_school_offer_filename
@@ -1654,17 +1543,6 @@ classes:
     PLACEHOLDER_ORDER:
       type: list[str]
   methods:
-  - name: classify_employment_type
-    description: Classify weekly hours as full_time or part_time for template selection.
-    locked: false
-    inputs:
-      hours:
-        type: int
-        required: true
-    returns:
-      type: str
-    exceptions: []
-    side_effects: none
   - name: validate_template_path
     description: Validate that an offer template exists and uses an allowed Word file
       suffix.

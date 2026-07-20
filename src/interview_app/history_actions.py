@@ -56,9 +56,6 @@ class HistoryActionsService:
             return
         messagebox.showinfo("Offer Workflow", transition["done_message"])
 
-    def handle_retranscribe_for_row(self, row: dict[str, Any]) -> None:
-        messagebox.showinfo("Transcription", "Retranscription is no longer available from interview history.")
-
     def handle_delete_for_row(self, row: dict[str, Any]) -> None:
         row_key = self._row_key(row)
         if not row_key:

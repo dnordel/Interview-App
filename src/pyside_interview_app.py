@@ -7,7 +7,6 @@ import os
 import queue
 import re
 import shutil
-import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -1238,33 +1237,6 @@ def staffing_db_path_for_school(school: str, *, base_path: Path | None = None) -
     if not slug:
         return resolved_base
     return resolved_base.with_name(f"{resolved_base.stem}_{slug}{resolved_base.suffix}")
-
-
-def director_offer_shift_for_history(
-    history_id: str,
-    school: str,
-    *,
-    base_path: Path | None = None,
-) -> tuple[str, str]:
-    clean_history_id = str(history_id or "").strip()
-    clean_school = str(school or "").strip()
-    if not clean_history_id or not clean_school:
-        return "", ""
-    shared_path = Path(base_path or STAFFING_DB_PATH)
-    school_path = staffing_db_path_for_school(clean_school, base_path=shared_path)
-    for path in dict.fromkeys((school_path, shared_path)):
-        if not path.exists():
-            continue
-        try:
-            interview = StaffingService(StaffingStore(path)).find_completed_director_interview(
-                history_id=clean_history_id,
-                school=clean_school,
-            )
-        except (OSError, sqlite3.Error, ValueError):
-            continue
-        if interview is not None:
-            return interview.proposed_shift_start, interview.proposed_shift_end
-    return "", ""
 
 
 def _bootstrap_school_staffing_db_from_base(school: str, school_path: Path, *, base_path: Path | None = None) -> None:

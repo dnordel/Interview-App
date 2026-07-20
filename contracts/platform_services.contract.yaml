@@ -2,7 +2,7 @@ module:
   name: platform_services
   language: python
   path: src/platform_services.py
-  version: 1.0.0
+  version: 2.0.0
   description: Flattened public interface for shared content, logging, config, persistence,
     path, runtime, document, cleanup, and UX metrics helpers; only active legacy adapters
     remain in the compatibility module inventory.
@@ -853,30 +853,6 @@ classes:
     exceptions:
     - OSError
     side_effects: Appends JSONL metric event to disk when required fields are valid.
-  - name: log_keyboard_path_completed
-    description: Log keyboard completion telemetry.
-    locked: false
-    inputs:
-      screen_id:
-        type: str
-        required: true
-      flow_id:
-        type: str
-        required: true
-      completed_via_keyboard:
-        type: bool
-        required: true
-      keyboard_step_count:
-        type: int
-        required: true
-      abandoned:
-        type: bool
-        required: true
-    returns:
-      type: None
-    exceptions:
-    - OSError
-    side_effects: Appends JSONL metric event to disk when identifiers are valid.
   - name: log_overdue_once
     description: Log at most one overdue event per task and due date for the logger
       instance.
@@ -905,18 +881,6 @@ classes:
     exceptions:
     - OSError
     side_effects: Reads metrics JSONL file from disk.
-  - name: export_events_csv
-    description: Export current metrics events to CSV.
-    locked: false
-    inputs:
-      export_dir:
-        type: str | Path
-        required: true
-    returns:
-      type: Path
-    exceptions:
-    - OSError
-    side_effects: Creates export directory and writes CSV file.
   - name: _load_overdue_event_keys
     description: Load already logged overdue event keys.
     locked: false

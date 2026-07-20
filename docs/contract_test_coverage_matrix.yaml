@@ -12,7 +12,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-20T21:29:04.153892+00:00'
+generated_at_utc: '2026-07-20T21:42:37.954982+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -764,15 +764,6 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/dashboard_v2_ui.contract.yaml
-  symbol: dashboard_v2_ui.DashboardV2Shell.semantic_chip
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/dashboard_v2_ui.contract.yaml
   symbol: dashboard_v2_ui.DashboardV2Shell.set_navigation_locked
   kind: method
   tests:
@@ -1070,24 +1061,6 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/data_store.contract.yaml
-  symbol: data_store.QuestionOverridesStore.clear_trait_question_override
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/data_store.contract.yaml
-  symbol: data_store.QuestionOverridesStore.delete_custom_question
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/data_store.contract.yaml
   symbol: data_store.QuestionOverridesStore.ensure_flow
   kind: method
   tests:
@@ -1124,15 +1097,6 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/data_store.contract.yaml
-  symbol: data_store.QuestionOverridesStore.insert_custom_into_flow
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/data_store.contract.yaml
   symbol: data_store.QuestionOverridesStore.list_custom_questions
   kind: method
   tests:
@@ -1151,15 +1115,6 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/data_store.contract.yaml
-  symbol: data_store.QuestionOverridesStore.remove_custom_from_flow
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/data_store.contract.yaml
   symbol: data_store.QuestionOverridesStore.save
   kind: method
   tests:
@@ -1170,33 +1125,6 @@ entries:
     - return_type
 - contract: contracts/data_store.contract.yaml
   symbol: data_store.QuestionOverridesStore.set_question_flow
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/data_store.contract.yaml
-  symbol: data_store.QuestionOverridesStore.set_trait_order
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/data_store.contract.yaml
-  symbol: data_store.QuestionOverridesStore.set_trait_question_override
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/data_store.contract.yaml
-  symbol: data_store.QuestionOverridesStore.upsert_custom_question
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -2439,16 +2367,6 @@ entries:
     - return_type
     - security_side_effects
 - contract: contracts/interview_app_history_actions.contract.yaml
-  symbol: interview_app_history_actions.HistoryActionsService.handle_retranscribe_for_row
-  kind: method
-  tests:
-  - path: tests/test_interview_app_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_side_effects
-- contract: contracts/interview_app_history_actions.contract.yaml
   symbol: interview_app_history_actions.HistoryActionsService.offer_transition
   kind: method
   tests:
@@ -2697,26 +2615,6 @@ entries:
     - return_type
     - security_leakage_prevention
 - contract: contracts/interview_runtime.contract.yaml
-  symbol: interview_runtime.AudioRuntimeController.start_recording_with_runtime_fallback
-  kind: method
-  tests:
-  - path: tests/test_interview_root_contracts.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_leakage_prevention
-- contract: contracts/interview_runtime.contract.yaml
-  symbol: interview_runtime.AudioRuntimeController.wait_for_pending_transcriptions
-  kind: method
-  tests:
-  - path: tests/test_interview_root_contracts.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_leakage_prevention
-- contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime.BoundedTranscriptionExecutor.__init__
   kind: method
   tests:
@@ -2748,16 +2646,6 @@ entries:
     - security_leakage_prevention
 - contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime.DashboardController.__init__
-  kind: method
-  tests:
-  - path: tests/test_interview_root_contracts.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_leakage_prevention
-- contract: contracts/interview_runtime.contract.yaml
-  symbol: interview_runtime.DashboardController.refresh_dashboard
   kind: method
   tests:
   - path: tests/test_interview_root_contracts.py
@@ -2887,16 +2775,6 @@ entries:
     - return_type
     - security_leakage_prevention
 - contract: contracts/interview_runtime.contract.yaml
-  symbol: interview_runtime.FlowController.go_next
-  kind: method
-  tests:
-  - path: tests/test_interview_root_contracts.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_leakage_prevention
-- contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime.HistoryController.__init__
   kind: method
   tests:
@@ -2907,27 +2785,7 @@ entries:
     - return_type
     - security_leakage_prevention
 - contract: contracts/interview_runtime.contract.yaml
-  symbol: interview_runtime.HistoryController.build_history_table
-  kind: method
-  tests:
-  - path: tests/test_interview_root_contracts.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_leakage_prevention
-- contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime.HistoryController.refresh_history_tree
-  kind: method
-  tests:
-  - path: tests/test_interview_root_contracts.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_leakage_prevention
-- contract: contracts/interview_runtime.contract.yaml
-  symbol: interview_runtime.HistoryController.selected_history_row
   kind: method
   tests:
   - path: tests/test_interview_root_contracts.py
@@ -3037,16 +2895,6 @@ entries:
     - return_type
     - security_leakage_prevention
 - contract: contracts/interview_runtime.contract.yaml
-  symbol: interview_runtime.InterviewSessionManager.load_draft_payload
-  kind: method
-  tests:
-  - path: tests/test_interview_root_contracts.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_leakage_prevention
-- contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime.InterviewSessionManager.load_session_payload
   kind: method
   tests:
@@ -3137,26 +2985,6 @@ entries:
     - return_type
     - security_leakage_prevention
 - contract: contracts/interview_runtime.contract.yaml
-  symbol: interview_runtime.TranscriptWriterController.append_live_segment
-  kind: method
-  tests:
-  - path: tests/test_interview_root_contracts.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_leakage_prevention
-- contract: contracts/interview_runtime.contract.yaml
-  symbol: interview_runtime.TranscriptWriterController.rewrite_from_flow
-  kind: method
-  tests:
-  - path: tests/test_interview_root_contracts.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_leakage_prevention
-- contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime.TranscriptionQueueState.cancel
   kind: method
   tests:
@@ -3168,16 +2996,6 @@ entries:
     - security_leakage_prevention
 - contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime.TranscriptionQueueState.clear
-  kind: method
-  tests:
-  - path: tests/test_interview_root_contracts.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_leakage_prevention
-- contract: contracts/interview_runtime.contract.yaml
-  symbol: interview_runtime.TranscriptionQueueState.clear_error
   kind: method
   tests:
   - path: tests/test_interview_root_contracts.py
@@ -3208,16 +3026,6 @@ entries:
     - security_leakage_prevention
 - contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime.TranscriptionQueueState.is_canceled
-  kind: method
-  tests:
-  - path: tests/test_interview_root_contracts.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_leakage_prevention
-- contract: contracts/interview_runtime.contract.yaml
-  symbol: interview_runtime.TranscriptionQueueState.is_pending
   kind: method
   tests:
   - path: tests/test_interview_root_contracts.py
@@ -3803,15 +3611,6 @@ entries:
     - return_type
 - contract: contracts/notification_service.contract.yaml
   symbol: notification_service.candidate_notification_test_recipient
-  kind: function
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/notification_service.contract.yaml
-  symbol: notification_service.emit_notification_event
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -4965,16 +4764,6 @@ entries:
     - return_type
     - security_validation
 - contract: contracts/onboarding_operations.contract.yaml
-  symbol: onboarding_operations.build_specific_date_reference
-  kind: function
-  tests:
-  - path: tests/test_onboarding_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_validation
-- contract: contracts/onboarding_operations.contract.yaml
   symbol: onboarding_operations.calculate_due_date
   kind: function
   tests:
@@ -5066,16 +4855,6 @@ entries:
     - security_validation
 - contract: contracts/onboarding_operations.contract.yaml
   symbol: onboarding_operations.first_matching_navigation
-  kind: function
-  tests:
-  - path: tests/test_onboarding_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_validation
-- contract: contracts/onboarding_operations.contract.yaml
-  symbol: onboarding_operations.format_due_date_short
   kind: function
   tests:
   - path: tests/test_onboarding_contract_interfaces.py
@@ -5425,16 +5204,6 @@ entries:
     - return_type
     - security_validation
 - contract: contracts/onboarding_operations.contract.yaml
-  symbol: onboarding_operations.task_status_badge_text
-  kind: function
-  tests:
-  - path: tests/test_onboarding_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_validation
-- contract: contracts/onboarding_operations.contract.yaml
   symbol: onboarding_operations.to_date_str
   kind: function
   tests:
@@ -5445,27 +5214,7 @@ entries:
     - return_type
     - security_validation
 - contract: contracts/onboarding_operations.contract.yaml
-  symbol: onboarding_operations.today_local
-  kind: function
-  tests:
-  - path: tests/test_onboarding_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_validation
-- contract: contracts/onboarding_operations.contract.yaml
   symbol: onboarding_operations.unknown_placeholder_actionable_message
-  kind: function
-  tests:
-  - path: tests/test_onboarding_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_validation
-- contract: contracts/onboarding_operations.contract.yaml
-  symbol: onboarding_operations.urgent_filter_result_count
   kind: function
   tests:
   - path: tests/test_onboarding_contract_interfaces.py
@@ -8019,25 +7768,7 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/platform_services.contract.yaml
-  symbol: platform_services.UxMetricsLogger.export_events_csv
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/platform_services.contract.yaml
   symbol: platform_services.UxMetricsLogger.log_event
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/platform_services.contract.yaml
-  symbol: platform_services.UxMetricsLogger.log_keyboard_path_completed
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -9927,15 +9658,6 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.director_offer_shift_for_history
-  kind: function
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.latest_pyside_draft_path
   kind: function
   tests:
@@ -10278,15 +10000,6 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/question_runtime_definition_service.contract.yaml
-  symbol: question_runtime_definition_service.QuestionRuntimeDefinitionService.delete_extended_group
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/question_runtime_definition_service.contract.yaml
   symbol: question_runtime_definition_service.QuestionRuntimeDefinitionService.delete_group_signal
   kind: method
   tests:
@@ -10306,33 +10019,6 @@ entries:
     - return_type
 - contract: contracts/question_runtime_definition_service.contract.yaml
   symbol: question_runtime_definition_service.QuestionRuntimeDefinitionService.save_definition
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/question_runtime_definition_service.contract.yaml
-  symbol: question_runtime_definition_service.QuestionRuntimeDefinitionService.sync_with_trait
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/question_runtime_definition_service.contract.yaml
-  symbol: question_runtime_definition_service.QuestionRuntimeDefinitionService.update_core_signal
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/question_runtime_definition_service.contract.yaml
-  symbol: question_runtime_definition_service.QuestionRuntimeDefinitionService.update_extended_group
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -10404,24 +10090,6 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/question_runtime_definition_service.contract.yaml
-  symbol: question_runtime_definition_service.normalize_runtime_group
-  kind: function
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/question_runtime_definition_service.contract.yaml
-  symbol: question_runtime_definition_service.normalize_runtime_signal
-  kind: function
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/question_runtime_definition_service.contract.yaml
   symbol: question_runtime_definition_service.runtime_trait_id_for_rubric_trait
   kind: function
   tests:
@@ -10468,24 +10136,6 @@ entries:
     - return_type
 - contract: contracts/question_settings_service.contract.yaml
   symbol: question_settings_service.QuestionSettingsService.delete_trait
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/question_settings_service.contract.yaml
-  symbol: question_settings_service.QuestionSettingsService.export_questions
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/question_settings_service.contract.yaml
-  symbol: question_settings_service.QuestionSettingsService.import_questions
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -10920,16 +10570,6 @@ entries:
     - return_type
     - security_controls
 - contract: contracts/scoring_reporting.contract.yaml
-  symbol: scoring_reporting.OfferLetterService.classify_employment_type
-  kind: method
-  tests:
-  - path: tests/test_shared_module_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_controls
-- contract: contracts/scoring_reporting.contract.yaml
   symbol: scoring_reporting.OfferLetterService.render_approved_offer
   kind: method
   tests:
@@ -11200,16 +10840,6 @@ entries:
     - return_type
     - security_controls
 - contract: contracts/scoring_reporting.contract.yaml
-  symbol: scoring_reporting.build_offer_filename
-  kind: function
-  tests:
-  - path: tests/test_shared_module_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_controls
-- contract: contracts/scoring_reporting.contract.yaml
   symbol: scoring_reporting.build_school_offer_filename
   kind: function
   tests:
@@ -11270,16 +10900,6 @@ entries:
     - return_type
     - security_controls
 - contract: contracts/scoring_reporting.contract.yaml
-  symbol: scoring_reporting.default_referral_endpoint
-  kind: function
-  tests:
-  - path: tests/test_shared_module_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_controls
-- contract: contracts/scoring_reporting.contract.yaml
   symbol: scoring_reporting.default_signal_ui_definition
   kind: function
   tests:
@@ -11321,16 +10941,6 @@ entries:
     - security_controls
 - contract: contracts/scoring_reporting.contract.yaml
   symbol: scoring_reporting.find_unknown_placeholders
-  kind: function
-  tests:
-  - path: tests/test_shared_module_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_controls
-- contract: contracts/scoring_reporting.contract.yaml
-  symbol: scoring_reporting.insert_token_into_focused_widget
   kind: function
   tests:
   - path: tests/test_shared_module_contract_interfaces.py
@@ -11610,16 +11220,6 @@ entries:
     - return_type
     - security_controls
 - contract: contracts/scoring_reporting.contract.yaml
-  symbol: scoring_reporting.open_outlook_draft
-  kind: function
-  tests:
-  - path: tests/test_shared_module_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_controls
-- contract: contracts/scoring_reporting.contract.yaml
   symbol: scoring_reporting.parse_clock_12h
   kind: function
   tests:
@@ -11651,26 +11251,6 @@ entries:
     - security_controls
 - contract: contracts/scoring_reporting.contract.yaml
   symbol: scoring_reporting.placeholder_meta_for_context
-  kind: function
-  tests:
-  - path: tests/test_shared_module_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_controls
-- contract: contracts/scoring_reporting.contract.yaml
-  symbol: scoring_reporting.placeholder_picker_options
-  kind: function
-  tests:
-  - path: tests/test_shared_module_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_controls
-- contract: contracts/scoring_reporting.contract.yaml
-  symbol: scoring_reporting.placeholder_tokens_for_context
   kind: function
   tests:
   - path: tests/test_shared_module_contract_interfaces.py
@@ -11780,16 +11360,6 @@ entries:
     - return_type
     - security_controls
 - contract: contracts/scoring_reporting.contract.yaml
-  symbol: scoring_reporting.sender_email_domain_type
-  kind: function
-  tests:
-  - path: tests/test_shared_module_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_controls
-- contract: contracts/scoring_reporting.contract.yaml
   symbol: scoring_reporting.sender_email_error_reason
   kind: function
   tests:
@@ -11811,16 +11381,6 @@ entries:
     - security_controls
 - contract: contracts/scoring_reporting.contract.yaml
   symbol: scoring_reporting.signal_selection_aliases
-  kind: function
-  tests:
-  - path: tests/test_shared_module_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_controls
-- contract: contracts/scoring_reporting.contract.yaml
-  symbol: scoring_reporting.token_from_picker_label
   kind: function
   tests:
   - path: tests/test_shared_module_contract_interfaces.py
@@ -15820,33 +15380,6 @@ entries:
 - contract: contracts/trait_based_scoring_engine.contract.yaml
   symbol: trait_based_scoring_engine.ScoringEngine.validate_configured_paths
   kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/ui_feedback.contract.yaml
-  symbol: ui_feedback.InlineValidationMessage.clear
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/ui_feedback.contract.yaml
-  symbol: ui_feedback.InlineValidationMessage.show
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/ui_feedback.contract.yaml
-  symbol: ui_feedback.append_error_log
-  kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
     focus:

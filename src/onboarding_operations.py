@@ -47,10 +47,6 @@ def resolve_smtp_password(stored_password: str) -> str:
     return str(stored_password or "")
 
 
-def today_local() -> date:
-    return date.today()
-
-
 def parse_date(value: str) -> date:
     return datetime.strptime(value, DATE_FMT).date()
 
@@ -941,10 +937,6 @@ def _derive_last_error(summary: Any) -> str:
     return ""
 
 
-def build_specific_date_reference(value: date) -> str:
-    return f"{SPECIFIC_DATE_REFERENCE_PREFIX}{value.isoformat()}"
-
-
 def parse_specific_date_reference(reference: str) -> date | None:
     normalized = str(reference or "").strip()
     if not normalized.startswith(SPECIFIC_DATE_REFERENCE_PREFIX):
@@ -958,12 +950,6 @@ def parse_specific_date_reference(reference: str) -> date | None:
         return datetime.strptime(date_part, "%Y-%m-%d").date()
     except ValueError:
         return None
-
-
-def task_status_badge_text(status: str) -> str:
-    icon = TASK_STATUS_ICONS.get(status, "•")
-    label = TASK_STATUS_LABELS.get(status, status.title())
-    return f"{icon} {label}"
 
 
 def task_status(task: Any, today: date) -> str:
@@ -1082,21 +1068,11 @@ def filtered_tasks(tasks: list[Any], today: date, filter_key: str) -> list[Any]:
     return sorted(selected, key=lambda task: task_display_sort_key(task, today))
 
 
-def urgent_filter_result_count(tasks: list[Any], today: date) -> int:
-    return len(filtered_tasks(tasks, today, "urgent"))
-
-
 def task_display_sort_key(task: Any, today: date) -> tuple[int, date, str]:
     status = task_status(task, today)
     priority = _status_priority(status)
     due = _parse_onboarding_date(task.due_date) if task.due_date else date.max
     return priority, due, task.title.lower()
-
-
-def format_due_date_short(due_date: str | None) -> str:
-    if not due_date:
-        return "—"
-    return _parse_onboarding_date(due_date).strftime("%b %d")
 
 
 def filter_for_dashboard_kpi(kpi_key: str) -> str | None:

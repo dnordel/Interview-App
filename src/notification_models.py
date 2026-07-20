@@ -4,13 +4,6 @@ from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
-class NotificationEvent:
-    event_type: str
-    payload: dict[str, str]
-    idempotency_key: str
-
-
-@dataclass(frozen=True)
 class NotificationRecipient:
     email: str = ""
     name: str = ""

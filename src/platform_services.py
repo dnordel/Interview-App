@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import csv
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
@@ -615,29 +614,6 @@ class UxMetricsLogger:
         event_type = f"ux.{app}.{surface}.{kind}"
         self.log_event(event_type, **payload)
 
-    def log_keyboard_path_completed(
-        self,
-        *,
-        screen_id: str,
-        flow_id: str,
-        completed_via_keyboard: bool,
-        keyboard_step_count: int,
-        abandoned: bool,
-    ) -> None:
-        clean_screen_id = _sanitize_event_token(screen_id)
-        clean_flow_id = _sanitize_event_token(flow_id)
-        if not clean_screen_id or not clean_flow_id:
-            return
-        safe_step_count = max(0, int(keyboard_step_count))
-        self.log_event(
-            "ux.keyboard_path_completed",
-            screen_id=clean_screen_id,
-            flow_id=clean_flow_id,
-            completed_via_keyboard=bool(completed_via_keyboard),
-            keyboard_step_count=safe_step_count,
-            abandoned=bool(abandoned),
-        )
-
     def log_overdue_once(self, *, task_id: str, due_date: str | None, **fields: Any) -> bool:
         event_key = f"{task_id}|{due_date or ''}|{EVENT_TASK_OVERDUE}"
         if not task_id or event_key in self._overdue_event_keys:
@@ -663,21 +639,6 @@ class UxMetricsLogger:
                 if isinstance(payload, dict):
                     events.append(payload)
         return events
-
-    def export_events_csv(self, export_dir: str | Path) -> Path:
-        destination = Path(export_dir)
-        destination.mkdir(parents=True, exist_ok=True)
-        export_path = destination / f"ux_metrics_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-        events = self.read_events()
-        fieldnames = _collect_fieldnames(events)
-
-        with export_path.open("w", encoding="utf-8", newline="") as handle:
-            writer = csv.DictWriter(handle, fieldnames=fieldnames)
-            writer.writeheader()
-            for event in events:
-                writer.writerow({name: event.get(name, "") for name in fieldnames})
-
-        return export_path
 
     def _load_overdue_event_keys(self) -> set[str]:
         keys: set[str] = set()

@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 8.0.1
+  version: 9.0.0
   description: PySide6 operations shell and headless view-model builder for a mockup-driven
     New Interview setup/live flow, Candidates-owned pipeline/history, candidate reports,
     onboarding, staffing, notifications, and admin-only
@@ -68,24 +68,6 @@ functions:
     type: Path
   exceptions: []
   side_effects: none
-- name: director_offer_shift_for_history
-  description: Read proposed shift start and end values from a completed hire decision matched by exact history ID and school, checking the school-specific director Staffing v2 database before the shared staffing database.
-  locked: false
-  inputs:
-    history_id:
-      type: str
-      required: true
-    school:
-      type: str
-      required: true
-    base_path:
-      type: Path | None
-      required: false
-      default: null
-  returns:
-    type: tuple[str, str]
-  exceptions: []
-  side_effects: Reads existing staffing SQLite databases without creating missing database files.
 - name: staffing_referral_queue_db_path
   description: Return the central staffing referral queue SQLite path, deriving a sibling DB path from an injected legacy JSONL queue path for tests and migrations.
   locked: false

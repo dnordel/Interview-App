@@ -316,10 +316,6 @@ class QuestionOverridesStore:
     def get_trait_order(self, track_key: str) -> list[str]:
         return list(self.data.get("track_trait_order", {}).get(track_key, []) or [])
 
-    def set_trait_order(self, track_key: str, trait_ids: list[str]) -> None:
-        self.data.setdefault("track_trait_order", {})[track_key] = list(trait_ids)
-        self.save()
-
     # ---- Trait question text overrides ----
     def get_trait_question_override(self, trait_id: str) -> str | None:
         v = (self.data.get("trait_question_overrides", {}) or {}).get(trait_id)
@@ -327,42 +323,10 @@ class QuestionOverridesStore:
             return v
         return None
 
-    def set_trait_question_override(self, trait_id: str, text: str) -> None:
-        self.data.setdefault("trait_question_overrides", {})[trait_id] = text.strip()
-        self.save()
-
-    def clear_trait_question_override(self, trait_id: str) -> None:
-        overrides = self.data.setdefault("trait_question_overrides", {})
-        if trait_id in overrides:
-            del overrides[trait_id]
-            self.save()
-
     # ---- Custom questions (CRUD per track) ----
     def list_custom_questions(self, track_key: str) -> list[dict[str, Any]]:
         items = list((self.data.get("custom_questions", {}) or {}).get(track_key, []) or [])
         return sorted(items, key=lambda x: (int(x.get("order", 999999)), str(x.get("text", "")).lower()))
-
-    def upsert_custom_question(self, track_key: str, q: dict[str, Any]) -> None:
-        self.data.setdefault("custom_questions", {}).setdefault(track_key, [])
-        items = self.data["custom_questions"][track_key]
-
-        qid = str(q.get("id") or "").strip()
-        if not qid:
-            raise ValueError("Custom question requires an id")
-
-        for i, it in enumerate(items):
-            if str(it.get("id")) == qid:
-                items[i] = q
-                self.save()
-                return
-
-        items.append(q)
-        self.save()
-
-    def delete_custom_question(self, track_key: str, qid: str) -> None:
-        items = self.data.setdefault("custom_questions", {}).setdefault(track_key, [])
-        self.data["custom_questions"][track_key] = [it for it in items if str(it.get("id")) != str(qid)]
-        self.save()
 
     # ---- Mixed interview flow (per track) ----
     @staticmethod
@@ -431,20 +395,6 @@ class QuestionOverridesStore:
             self.set_question_flow(track_key, out)
 
         return out
-
-    def remove_custom_from_flow(self, track_key: str, qid: str) -> None:
-        flow = self.get_question_flow_raw(track_key)
-        flow = [it for it in flow if not (it.get("type") == "custom" and str(it.get("id")) == str(qid))]
-        self.set_question_flow(track_key, flow)
-
-    def insert_custom_into_flow(self, track_key: str, qid: str, index: int) -> None:
-        flow = self.get_question_flow_raw(track_key)
-        if any(it.get("type") == "custom" and it.get("id") == qid for it in flow):
-            return
-        index = max(0, min(index, len(flow)))
-        flow.insert(index, {"type": "custom", "id": qid})
-        self.set_question_flow(track_key, flow)
-
 
 # =========================
 # Scoring and decisions

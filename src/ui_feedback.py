@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime
-from pathlib import Path
 from typing import Any
 
 VALIDATION_SEVERITY_INFO = "info"
@@ -14,12 +11,6 @@ VALIDATION_SEVERITIES = {
     VALIDATION_SEVERITY_WARNING,
     VALIDATION_SEVERITY_ERROR,
     VALIDATION_SEVERITY_BLOCKING,
-}
-VALIDATION_INLINE_COLORS = {
-    VALIDATION_SEVERITY_INFO: "#1d4ed8",
-    VALIDATION_SEVERITY_WARNING: "#92400e",
-    VALIDATION_SEVERITY_ERROR: "#b91c1c",
-    VALIDATION_SEVERITY_BLOCKING: "#991b1b",
 }
 TRANSCRIPTION_PARTIAL_WARNING_COPY = "Transcription still processing in background; report may be partial."
 
@@ -40,39 +31,6 @@ def sanitize_user_error(message: str) -> str:
 
 def format_guidance(issue: str, next_step: str) -> str:
     return f"{issue.strip()} {next_step.strip()}".strip()
-
-
-@dataclass(slots=True)
-class InlineValidationMessage:
-    message_var: Any
-    message_label: Any
-
-    def show(
-        self,
-        *,
-        issue: str,
-        next_step: str,
-        focus_widget: Any | None = None,
-        severity: str = VALIDATION_SEVERITY_ERROR,
-    ) -> None:
-        normalized = severity if severity in VALIDATION_SEVERITIES else VALIDATION_SEVERITY_ERROR
-        if hasattr(self.message_label, "configure"):
-            self.message_label.configure(foreground=VALIDATION_INLINE_COLORS[normalized])
-        if hasattr(self.message_var, "set"):
-            self.message_var.set(format_guidance(sanitize_user_error(issue), next_step))
-        if focus_widget is not None and hasattr(focus_widget, "focus_set"):
-            focus_widget.focus_set()
-
-    def clear(self) -> None:
-        if hasattr(self.message_var, "set"):
-            self.message_var.set("")
-
-
-def append_error_log(log_path: Path, title: str, technical_details: str) -> None:
-    log_path.parent.mkdir(parents=True, exist_ok=True)
-    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with log_path.open("a", encoding="utf-8") as handle:
-        handle.write(f"\n[{ts}] {title}\n{technical_details.rstrip()}\n")
 
 
 def present_transcription_partial_warning(presenter: Any | None, *, auto_expire_ms: int | None = 12000) -> str:

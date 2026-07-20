@@ -2,7 +2,7 @@ module:
   name: notification_service
   language: python
   path: src/notification_service.py
-  version: 2.6.0
+  version: 3.0.0
   description: Notification delivery with safe persisted AND conditions, editable school role directory and director names, shared incoming/SMTP account validation, admin-managed shared-config or DPAPI password storage, required attachments, and clock-aware staffing date/permit scheduling.
 functions:
 - name: candidate_notification_test_recipient
@@ -102,31 +102,6 @@ functions:
     type: tuple[list[str], str]
   exceptions: []
   side_effects: Validates approved-offer PDF and optional accepted-offer onboarding guide attachment paths without logging file contents or secrets.
-- name: emit_notification_event
-  locked: false
-  inputs:
-    event_type:
-      type: str
-      required: true
-    payload:
-      type: dict[str, str]
-      required: true
-    idempotency_key:
-      type: str
-      required: true
-    store_path:
-      type: Path
-      required: false
-      default: NOTIFICATION_RULES_PATH
-    email_settings:
-      type: EmailSettings | None
-      required: false
-      default: null
-  returns:
-    type: list[NotificationSendResult]
-  exceptions:
-  - ValueError
-  side_effects: Reads notification rules, may send email, writes notification audit.
 - name: notification_service_from_onboarding
   locked: false
   inputs:

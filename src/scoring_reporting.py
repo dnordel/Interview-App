@@ -9,8 +9,6 @@ import json
 import os
 from pathlib import Path
 import re
-import subprocess
-import sys
 from types import ModuleType
 from typing import Any, Final, Iterable, Optional
 from urllib import error, request
@@ -42,14 +40,6 @@ CANONICAL_DEGREE_TYPES: tuple[str, ...] = (
 )
 
 _EMAIL_PATTERN = re.compile(r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$")
-_PUBLIC_EMAIL_DOMAINS = {
-    "gmail.com",
-    "yahoo.com",
-    "outlook.com",
-    "hotmail.com",
-    "icloud.com",
-}
-
 REQUIRED_PACKET_DOCS: Final[tuple[tuple[str, str], ...]] = (
     ("resume_path", "Resume"),
     ("interview_notes_document_path", "Interview notes document"),
@@ -257,18 +247,6 @@ def sender_email_error_reason(value: str) -> str | None:
     return None
 
 
-def sender_email_domain_type(value: str) -> str:
-    email = str(value or "").strip().lower()
-    if "@" not in email:
-        return "unknown"
-    domain = email.split("@", 1)[1]
-    if domain in _PUBLIC_EMAIL_DOMAINS:
-        return "public"
-    if domain.endswith(".edu"):
-        return "education"
-    return "organization"
-
-
 def normalize_referral_packet(packet: dict[str, str] | None) -> dict[str, str]:
     source = packet or {}
     normalized = {key: "" for key, _ in ALL_PACKET_DOCS}
@@ -308,28 +286,6 @@ def is_supported_document_path(path_text: str) -> bool:
 def placeholder_meta_for_context(context: str) -> list[PlaceholderMeta]:
     keys = PLACEHOLDERS_BY_CONTEXT.get(context, ())
     return [PLACEHOLDER_METADATA[key] for key in keys if key in PLACEHOLDER_METADATA]
-
-
-def placeholder_tokens_for_context(context: str) -> list[str]:
-    return [meta.token for meta in placeholder_meta_for_context(context)]
-
-
-def placeholder_picker_options(contexts: Iterable[str]) -> list[str]:
-    options: list[str] = []
-    seen: set[str] = set()
-    for context in contexts:
-        for meta in placeholder_meta_for_context(context):
-            if meta.key in seen:
-                continue
-            options.append(f"{meta.token} / {meta.alternate_token} — {meta.label}: {meta.description}")
-            seen.add(meta.key)
-    return options
-
-
-def token_from_picker_label(label: str) -> str:
-    prefix = label.split(" ", 1)[0].strip()
-    token = prefix.split("/", 1)[0].strip()
-    return token if token_to_key(token) else ""
 
 
 def token_to_key(token: str) -> str:
@@ -419,16 +375,6 @@ def insert_token_into_widget(widget: Any, token: str) -> bool:
     if callable(focus_set):
         focus_set()
     return True
-
-
-def insert_token_into_focused_widget(root: Any, token: str, allowed_widgets: Iterable[Any]) -> bool:
-    focus_get = getattr(root, "focus_get", None)
-    if not callable(focus_get):
-        return False
-    focused = focus_get()
-    if focused in set(allowed_widgets):
-        return insert_token_into_widget(focused, token)
-    return False
 
 
 class ReportingValidationError(ValueError):
@@ -1122,48 +1068,6 @@ class DirectorEmailDraftError(RuntimeError):
     pass
 
 
-def open_outlook_draft(*, subject: str, body: str, attachments: list[str], to_recipients: str = "") -> None:
-    if not sys.platform.startswith("win"):
-        raise DirectorEmailDraftError("Outlook draft is only supported on Windows.")
-
-    existing_files = [str(Path(path).expanduser()) for path in attachments if Path(path).expanduser().exists()]
-    escaped_subject = _ps_quote(sanitize_email_subject(subject))
-    escaped_body = _ps_quote(body)
-    escaped_to = _ps_quote(to_recipients)
-    attachment_script = "\n".join(
-        [f"$mail.Attachments.Add('{_ps_quote(path)}') | Out-Null" for path in existing_files]
-    )
-
-    script = (
-        "$ErrorActionPreference = 'Stop'\n"
-        "try {\n"
-        "  $outlook = New-Object -ComObject Outlook.Application\n"
-        "  if ($null -eq $outlook) { throw 'Outlook COM automation is unavailable.' }\n"
-        "  $mail = $outlook.CreateItem(0)\n"
-        "  if ($null -eq $mail) { throw 'Unable to create an Outlook draft item.' }\n"
-        f"  $mail.Subject = '{escaped_subject}'\n"
-        f"  $mail.Body = '{escaped_body}'\n"
-        f"  $mail.To = '{escaped_to}'\n"
-        f"  {attachment_script}\n"
-        "  $mail.Display()\n"
-        "} catch {\n"
-        "  Write-Error $_.Exception.Message\n"
-        "  exit 1\n"
-        "}\n"
-    )
-
-    try:
-        subprocess.run(
-            ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-    except subprocess.CalledProcessError as exc:
-        stderr = (exc.stderr or "").strip()
-        raise DirectorEmailDraftError(f"Could not open Outlook draft. {stderr}".strip()) from exc
-
-
 def build_mailto_url(*, subject: str, body: str, to_recipients: str = "") -> str:
     recipient_value = _normalize_mailto_recipients(to_recipients)
     query_parts: list[str] = []
@@ -1189,10 +1093,6 @@ def _normalize_mailto_recipients(to_recipients: str) -> str:
     recipients = [token.strip() for token in raw_recipients.replace(";", ",").split(",")]
     encoded_recipients = [quote(recipient, safe="@") for recipient in recipients if recipient]
     return separator.join(encoded_recipients)
-
-
-def _ps_quote(value: str) -> str:
-    return str(value or "").replace("'", "''")
 
 
 class DirectorReferralError(RuntimeError):
@@ -1287,10 +1187,6 @@ def send_director_packet(
         raise DirectorReferralError(f"Referral endpoint rejected packet ({exc.code}): {exc.reason}") from exc
     except error.URLError as exc:
         raise DirectorReferralError(f"Failed to reach referral endpoint: {exc.reason}") from exc
-
-
-def default_referral_endpoint() -> str:
-    return str(os.environ.get("DIRECTOR_REFERRAL_ENDPOINT", "")).strip()
 
 
 def append_communication_log(base_dir: Path, event: dict[str, Any], *, candidate_name: str) -> Path:
@@ -1584,10 +1480,6 @@ class OfferLetterService:
         "[OfferDeadline]",
     ]
 
-    @staticmethod
-    def classify_employment_type(hours: int) -> str:
-        return "full_time" if hours >= 30 else "part_time"
-
     @classmethod
     def validate_template_path(cls, path: Path) -> None:
         if path.suffix.lower() not in cls.ALLOWED_TEMPLATE_SUFFIXES:
@@ -1688,12 +1580,6 @@ class OfferLetterService:
         paragraph.runs[0].text = text
         for run in paragraph.runs[1:]:
             run.text = ""
-
-
-def build_offer_filename(first_name: str, last_name: str, created_on: date) -> str:
-    date_part = created_on.strftime("%Y-%m-%d")
-    name_part = sanitize_filename(f"{first_name.strip()}_{last_name.strip()}")
-    return f"{date_part} - Offer - {name_part}.docx"
 
 
 def build_school_offer_filename(school: str, candidate_full_name: str) -> str:

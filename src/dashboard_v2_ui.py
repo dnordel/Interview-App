@@ -202,16 +202,6 @@ class DashboardV2Shell:
         layout.setSpacing(8)
         return frame, layout
 
-    def semantic_chip(self, text: str, state: str) -> Any:
-        if state not in SEMANTIC_COLORS:
-            raise ValueError(f"Unknown semantic state: {state}")
-        chip = self.QtWidgets.QLabel(text)
-        chip.setObjectName("DashboardV2SemanticChip")
-        chip.setProperty("semanticState", state)
-        chip.setAccessibleName(f"{text}: {state}")
-        return chip
-
-
 class DashboardV2OverlayPanel:
     def __init__(self, *, QtCore: Any, QtWidgets: Any, parent: Any, object_name: str, width: int = 430) -> None:
         self.QtCore = QtCore

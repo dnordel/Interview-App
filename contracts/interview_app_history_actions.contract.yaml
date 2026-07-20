@@ -2,7 +2,7 @@ module:
   name: interview_app_history_actions
   language: python
   path: src/interview_app/history_actions.py
-  version: 1.6.1
+  version: 2.0.0
   description: Contracts for history_actions module; history retranscription is retired
     and unavailable from interview history.
 functions: []
@@ -59,18 +59,6 @@ classes:
     exceptions: []
     side_effects: may open offer/onboarding UI, draft email, update history state,
       and show an informational dialog
-  - name: handle_retranscribe_for_row
-    description: Compatibility handler for retired history retranscription action;
-      shows an informational dialog and does not modify history.
-    locked: false
-    inputs:
-      row:
-        type: dict[str, Any]
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: may notify caller through messagebox-compatible adapter
   - name: handle_delete_for_row
     description: Confirm with the operator, delete one selected finalized interview
       history row by stable row key, and refresh the history UI when deletion succeeds.

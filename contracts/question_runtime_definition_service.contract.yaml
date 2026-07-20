@@ -2,7 +2,7 @@ module:
   name: question_runtime_definition_service
   language: python
   path: src/question_runtime_definition_service.py
-  version: 2.0.0
+  version: 3.0.0
   description: Trait runtime signal-definition helpers used by PySide Admin Studio and scoring configuration.
 functions:
   - name: default_runtime_definition
@@ -38,33 +38,6 @@ functions:
         default: ""
     returns:
       type: RuntimeSignalDefinition
-    exceptions:
-      - ValueError
-    side_effects: none
-  - name: normalize_runtime_signal
-    description: Normalize one runtime signal record for editor validation and persistence.
-    locked: false
-    inputs:
-      signal:
-        type: dict[str, Any]
-        required: true
-      default_group:
-        type: str
-        required: true
-    returns:
-      type: RuntimeSignalRecord
-    exceptions:
-      - ValueError
-    side_effects: none
-  - name: normalize_runtime_group
-    description: Normalize one extended signal group payload for editor validation and persistence.
-    locked: false
-    inputs:
-      group:
-        type: dict[str, Any]
-        required: true
-    returns:
-      type: RuntimeSignalGroup
     exceptions:
       - ValueError
     side_effects: none
@@ -205,38 +178,12 @@ classes:
             required: true
         returns:
           type: None
-      - name: sync_with_trait
-        inputs:
-          trait_id:
-            type: str
-            required: true
-          trait_name:
-            type: str
-            required: true
-          question:
-            type: str
-            required: true
-        returns:
-          type: RuntimeSignalDefinition
       - name: add_core_signal
         inputs:
           definition:
             type: dict[str, Any]
             required: true
           signal:
-            type: dict[str, Any]
-            required: true
-        returns:
-          type: RuntimeSignalDefinition
-      - name: update_core_signal
-        inputs:
-          definition:
-            type: dict[str, Any]
-            required: true
-          signal_ref:
-            type: str
-            required: true
-          updates:
             type: dict[str, Any]
             required: true
         returns:
@@ -258,29 +205,6 @@ classes:
             required: true
           group:
             type: dict[str, Any]
-            required: true
-        returns:
-          type: RuntimeSignalDefinition
-      - name: update_extended_group
-        inputs:
-          definition:
-            type: dict[str, Any]
-            required: true
-          group_id:
-            type: str
-            required: true
-          updates:
-            type: dict[str, Any]
-            required: true
-        returns:
-          type: RuntimeSignalDefinition
-      - name: delete_extended_group
-        inputs:
-          definition:
-            type: dict[str, Any]
-            required: true
-          group_id:
-            type: str
             required: true
         returns:
           type: RuntimeSignalDefinition

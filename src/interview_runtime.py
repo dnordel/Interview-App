@@ -51,9 +51,6 @@ class _RuntimeMessageBox:
     def showinfo(self, *_args: Any, **_kwargs: Any) -> None:
         return None
 
-    def askyesnocancel(self, *_args: Any, **_kwargs: Any) -> bool | None:
-        return True
-
     def askretrycancel(self, *_args: Any, **_kwargs: Any) -> bool:
         return False
 
@@ -423,10 +420,6 @@ class InterviewSessionManager:
         self._session_store = session_store
         self._today_provider = today_provider
 
-    def load_draft_payload(self, draft_path: Path) -> dict[str, Any]:
-        payload = self._draft_manager.load_draft(draft_path)
-        return self.normalize_payload(payload)
-
     def load_session_payload(
         self,
         *,
@@ -707,18 +700,6 @@ def format_transcription_health_summary(
         reason = transcription_errors.get(flow_idx, "")
         details.append(f"{label}: {sanitize_transcription_error_reason(reason)}")
     return ", ".join(labels), "\n".join(details), build_transcription_log_hint(log_path)
-
-
-def format_runtime_init_error_message(log_path: Path | None) -> str:
-    hint = f"{DIAGNOSTIC_LOG_MARKER} {redact_paths(str(log_path))}" if log_path is not None else "Diagnostic log unavailable."
-    return (
-        "Unable to prepare interview recording/transcript files.\n\n"
-        "Next steps:\n"
-        "1) Check that your base directory exists and is writable.\n"
-        "2) Open Settings and confirm the base directory path.\n"
-        "3) Click Start Interview again after fixing access.\n\n"
-        f"{hint}"
-    )
 
 
 def write_transcription_diagnostic(
@@ -1215,10 +1196,6 @@ class TranscriptionQueueState:
         with self._condition:
             return len(self._pending_flow_transcriptions)
 
-    def is_pending(self, flow_idx: int) -> bool:
-        with self._condition:
-            return flow_idx in self._pending_flow_transcriptions
-
     def clear(self) -> None:
         with self._condition:
             self._pending_flow_transcriptions.clear()
@@ -1232,10 +1209,6 @@ class TranscriptionQueueState:
     def is_canceled(self, flow_idx: int) -> bool:
         with self._condition:
             return flow_idx in self._canceled_flow_transcriptions
-
-    def clear_error(self, flow_idx: int) -> None:
-        with self._condition:
-            self._question_transcription_errors.pop(flow_idx, None)
 
     def error_reasons(self) -> dict[int, str]:
         with self._condition:
@@ -1409,13 +1382,6 @@ class TranscriptWriterController:
     def __init__(self, app: Any, shared_state: Any) -> None:
         self.app = app
         self.shared_state = shared_state
-
-    def append_live_segment(self, flow_idx: int, segment_text: str) -> None:
-        self.app._append_live_transcript_for_flow(flow_idx, segment_text)
-
-    def rewrite_from_flow(self) -> None:
-        flow_tx = self.app._build_flow_transcript()
-        self.app._rewrite_live_transcript_docx_from_flow(flow_tx)
 
 
 @dataclass(frozen=True)
@@ -1671,9 +1637,6 @@ class AudioRuntimeController:
         self.app = app
         self.shared_state = shared_state
 
-    def wait_for_pending_transcriptions(self) -> None:
-        self.app._transcription_queue_state.wait_for_pending()
-
     def background_transcribe_question(
         self,
         *,
@@ -1786,37 +1749,6 @@ class AudioRuntimeController:
             whisper_settings=self.app._current_whisper_transcription_settings(),
         )
 
-    def start_recording_with_runtime_fallback(
-        self,
-        start_recording: Any,
-        *,
-        base_dir: Path,
-        base_name: str,
-    ) -> Any:
-        preferred_runtime = resolve_runtime(self.app.settings)
-        try:
-            session = self.start_recording_session(
-                start_recording,
-                base_dir=base_dir,
-                base_name=base_name,
-                runtime_config=preferred_runtime,
-            )
-            persist_runtime_choice(self.app.settings, preferred_runtime, "preferred")
-            return session
-        except Exception as exc:
-            fallback_runtime = fallback_from_exception(exc, preferred_runtime, self.app.settings)
-            if fallback_runtime is None:
-                raise
-            session = self.start_recording_session(
-                start_recording,
-                base_dir=base_dir,
-                base_name=base_name,
-                runtime_config=fallback_runtime,
-            )
-            persist_runtime_choice(self.app.settings, fallback_runtime, "cpu_fallback")
-            self.app._warn_whisper_fallback_once()
-            return session
-
     def _cleanup_canceled_result(self, result: Any) -> None:
         self.app._delete_file_if_exists(Path(result.mic_wav))
         self.app._delete_file_if_exists(Path(result.sys_wav))
@@ -1850,9 +1782,6 @@ class FlowController:
         self.app = app
         self.shared_state = shared_state
 
-    def go_next(self) -> None:
-        self.app.next_question()
-
     def go_back(self) -> None:
         self.app.prev_question()
 
@@ -1864,9 +1793,6 @@ class DashboardController:
     def __init__(self, app: Any, shared_state: Any) -> None:
         self.app = app
         self.shared_state = shared_state
-
-    def refresh_dashboard(self) -> None:
-        self.app._refresh_dashboard_snapshot()
 
 
 def _history_path_exists(path_value: str) -> bool:
@@ -1888,25 +1814,6 @@ class HistoryController:
         self._grid_factory = grid_factory
         self.history_grid: Any | None = None
 
-    def build_history_table(self, parent: Any) -> None:
-        if self._grid_factory is None:
-            raise RuntimeError("Legacy history table UI has been removed; use the PySide history view.")
-        box = parent
-        self.history_grid = self._grid_factory(
-            box,
-            on_offer_action=self._on_offer_action,
-            on_retranscribe_action=self._on_retranscribe_action,
-            on_open_transcript_link=self._on_open_transcript_link,
-            on_open_notes_link=self._on_open_notes_link,
-            on_regenerate_notes_action=self._on_regenerate_notes_action,
-            on_delete_action=self._on_delete_action,
-            on_row_selected=self._on_row_selected,
-            on_sort_changed=self._on_sort_changed,
-            sort_column=self.app.history_sort_column,
-            sort_desc=self.app.history_sort_desc,
-        )
-        self.history_grid.pack(fill="both", expand=True)
-
     def refresh_history_tree(self) -> None:
         if self.history_grid is None:
             return
@@ -1921,11 +1828,6 @@ class HistoryController:
         rows = self.history_grid.visible_rows()
         self.app.history_rows = rows
         self.shared_state.history_rows = rows
-
-    def selected_history_row(self) -> dict[str, Any] | None:
-        if self.history_grid is None:
-            return None
-        return self.history_grid.selected_row()
 
     def _on_sort_changed(self, column: str, desc: bool) -> None:
         self.app.history_sort_column = column

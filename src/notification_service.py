@@ -1018,18 +1018,6 @@ def _notification_attachment_paths(event_type: str, payload: dict[str, str]) -> 
     return paths, ""
 
 
-def emit_notification_event(
-    event_type: str,
-    payload: dict[str, str],
-    idempotency_key: str,
-    *,
-    store_path: Path = NOTIFICATION_RULES_PATH,
-    email_settings: EmailSettings | None = None,
-) -> list[NotificationSendResult]:
-    service = NotificationService(store=NotificationStore(store_path), email_settings=email_settings)
-    return service.emit_event(event_type, payload, idempotency_key)
-
-
 def notification_service_from_onboarding(
     *,
     root_dir: Path,

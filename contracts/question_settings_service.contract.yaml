@@ -2,7 +2,7 @@ module:
   name: question_settings_service
   language: python
   path: src/question_settings_service.py
-  version: 2.0.0
+  version: 3.0.0
   description: Rubric question-settings service used by PySide Admin Studio and headless tests.
 functions: []
 classes:
@@ -37,26 +37,6 @@ classes:
             required: true
         returns:
           type: None
-      - name: export_questions
-        inputs:
-          rubric:
-            type: dict[str, Any]
-            required: true
-          path:
-            type: Path
-            required: true
-        returns:
-          type: None
-      - name: import_questions
-        inputs:
-          rubric:
-            type: dict[str, Any]
-            required: true
-          path:
-            type: Path
-            required: true
-        returns:
-          type: dict[str, Any]
       - name: update_trait
         inputs:
           rubric:
