@@ -7,7 +7,13 @@ import queue
 import pytest
 
 import pyside_interview_app
-from pyside_interview_app import PySideInterviewSession, build_interview_redesign_model
+from pyside_interview_app import (
+    _INTERVIEW_HOME_TAB_INDEX,
+    _INTERVIEW_LIVE_TAB_INDEX,
+    _INTERVIEW_REVIEW_TAB_INDEX,
+    PySideInterviewSession,
+    build_interview_redesign_model,
+)
 from pyside_completed_interview import (
     CompletionState,
     build_completed_interview_view_model,
@@ -209,7 +215,7 @@ def test_pyside_completed_overview_processing_to_complete_scenario(
     window._render_review_page()
     app.processEvents()
 
-    page = window.interview_tabs.widget(3)
+    page = window.interview_tabs.widget(_INTERVIEW_REVIEW_TAB_INDEX)
     assert page.findChild(qt_widgets.QLabel, "CompletedInterviewTitle").text() == "Interview Complete"
     assert page.findChild(qt_widgets.QLabel, "CompletedInterviewStatus").text() == "Finalizing interview"
     assert page.findChild(qt_widgets.QProgressBar, "CompletedInterviewProgress").value() < 100
@@ -241,7 +247,7 @@ def test_pyside_completed_overview_processing_to_complete_scenario(
         for label in page.findChildren(qt_widgets.QLabel)
     ) == 2
     window.window.show()
-    window.interview_tabs.setCurrentIndex(3)
+    window.interview_tabs.setCurrentIndex(_INTERVIEW_REVIEW_TAB_INDEX)
     window._show_hiring_closeout()
     app.processEvents()
     original_font = app.font()
@@ -312,7 +318,7 @@ def test_pyside_completed_typography_stress_visual_scenario(
     window.session = session
     window._review_history_id = "completed-overview-fixture"
     window._render_review_page()
-    window.interview_tabs.setCurrentIndex(3)
+    window.interview_tabs.setCurrentIndex(_INTERVIEW_REVIEW_TAB_INDEX)
     window._show_hiring_closeout()
     window.window.resize(1672, 941)
     window.window.show()
@@ -345,7 +351,7 @@ def test_pyside_completed_overview_failure_wins_after_partial_history_persistenc
     window._render_review_page()
     app.processEvents()
 
-    page = window.interview_tabs.widget(3)
+    page = window.interview_tabs.widget(_INTERVIEW_REVIEW_TAB_INDEX)
     assert page.findChild(qt_widgets.QLabel, "CompletedInterviewStatus").text() == "Finalization failed"
     assert page.findChild(qt_widgets.QPushButton, "CompletedInterviewRetry") is not None
     assert not page.findChild(qt_widgets.QPushButton, "CompletedInterviewFinish").isEnabled()
@@ -391,11 +397,11 @@ def test_pyside_completed_transcript_browser_scenario(tmp_path: Path) -> None:
     window.session = session
     window._review_history_id = "completed-overview-fixture"
     window._render_review_page()
-    window.interview_tabs.setCurrentIndex(3)
+    window.interview_tabs.setCurrentIndex(_INTERVIEW_REVIEW_TAB_INDEX)
     window.window.show()
     app.processEvents()
 
-    page = window.interview_tabs.widget(3)
+    page = window.interview_tabs.widget(_INTERVIEW_REVIEW_TAB_INDEX)
     cards = page.findChildren(qt_widgets.QFrame, "CompletedTranscriptCard")
     assert len(cards) == len([item for item in workflow if item.kind != "intro"])
     skipped_card = next(card for card in cards if card.property("questionId") == skipped.question_id)
@@ -443,9 +449,9 @@ def test_pyside_completed_detail_edit_scenario(tmp_path: Path) -> None:
     window.session = session
     window._review_history_id = "completed-overview-fixture"
     window._render_review_page()
-    window.interview_tabs.setCurrentIndex(3)
+    window.interview_tabs.setCurrentIndex(_INTERVIEW_REVIEW_TAB_INDEX)
     app.processEvents()
-    page = window.interview_tabs.widget(3)
+    page = window.interview_tabs.widget(_INTERVIEW_REVIEW_TAB_INDEX)
     card = next(
         card
         for card in page.findChildren(qt_widgets.QFrame, "CompletedTranscriptCard")
@@ -495,11 +501,13 @@ def test_pyside_completed_non_scored_detail_preserves_mark_important(tmp_path: P
     window.session = session
     window._review_history_id = "completed-overview-fixture"
     window._render_review_page()
-    window.interview_tabs.setCurrentIndex(3)
+    window.interview_tabs.setCurrentIndex(_INTERVIEW_REVIEW_TAB_INDEX)
 
     card = next(
         card
-        for card in window.interview_tabs.widget(3).findChildren(qt_widgets.QFrame, "CompletedTranscriptCard")
+        for card in window.interview_tabs.widget(_INTERVIEW_REVIEW_TAB_INDEX).findChildren(
+            qt_widgets.QFrame, "CompletedTranscriptCard"
+        )
         if card.property("questionId") == question.question_id
     )
 
@@ -547,9 +555,9 @@ def test_pyside_completed_actions_and_finish_scenario(tmp_path: Path) -> None:
         {"open_candidate_report": lambda _self, history_id, school: opened.append((history_id, school))},
     )()
     window._render_review_page()
-    window.interview_tabs.setCurrentIndex(3)
+    window.interview_tabs.setCurrentIndex(_INTERVIEW_REVIEW_TAB_INDEX)
     app.processEvents()
-    page = window.interview_tabs.widget(3)
+    page = window.interview_tabs.widget(_INTERVIEW_REVIEW_TAB_INDEX)
 
     page.findChild(qt_widgets.QPushButton, "CompletedInterviewReport").click()
     assert opened == [("completed-overview-fixture", "Hawthorne")]
@@ -562,7 +570,7 @@ def test_pyside_completed_actions_and_finish_scenario(tmp_path: Path) -> None:
 
     page.findChild(qt_widgets.QPushButton, "CompletedInterviewBack").click()
     app.processEvents()
-    assert window.interview_tabs.currentIndex() == 2
+    assert window.interview_tabs.currentIndex() == _INTERVIEW_LIVE_TAB_INDEX
     assert session.current_index == len(session._workflow_items()) - 1
     assert window.recording_session is None
 
@@ -570,12 +578,14 @@ def test_pyside_completed_actions_and_finish_scenario(tmp_path: Path) -> None:
     session.save_draft()
     window._review_history_id = "completed-overview-fixture"
     window._render_review_page()
-    window.interview_tabs.setCurrentIndex(3)
+    window.interview_tabs.setCurrentIndex(_INTERVIEW_REVIEW_TAB_INDEX)
     app.processEvents()
-    window.interview_tabs.widget(3).findChild(qt_widgets.QPushButton, "CompletedInterviewFinish").click()
+    window.interview_tabs.widget(_INTERVIEW_REVIEW_TAB_INDEX).findChild(
+        qt_widgets.QPushButton, "CompletedInterviewFinish"
+    ).click()
     app.processEvents()
     assert window.session is None
-    assert window.interview_tabs.currentIndex() == 0
+    assert window.interview_tabs.currentIndex() == _INTERVIEW_HOME_TAB_INDEX
     assert not session.draft_path.exists()
     assert window.home_candidate_input.text() == ""
     window.window.close()
@@ -612,7 +622,7 @@ def test_pyside_completed_export_actions_write_docx_pdf_and_utf8_txt(tmp_path: P
     window.session = session
     window._review_history_id = "completed-overview-fixture"
     window._render_review_page()
-    page = window.interview_tabs.widget(3)
+    page = window.interview_tabs.widget(_INTERVIEW_REVIEW_TAB_INDEX)
     page.findChild(qt_widgets.QPushButton, "CompletedInterviewExport").click()
     app.processEvents()
     menu = window.completed_export_menu
@@ -646,7 +656,9 @@ def test_pyside_completed_export_cancel_and_pdf_failure_are_safe(tmp_path: Path,
     window.session = session
     window._review_history_id = "completed-overview-fixture"
     window._render_review_page()
-    export = window.interview_tabs.widget(3).findChild(qt_widgets.QPushButton, "CompletedInterviewExport")
+    export = window.interview_tabs.widget(_INTERVIEW_REVIEW_TAB_INDEX).findChild(
+        qt_widgets.QPushButton, "CompletedInterviewExport"
+    )
     export.click()
     app.processEvents()
     actions = {action.text(): action for action in window.completed_export_menu.actions()}
@@ -678,7 +690,9 @@ def test_pyside_completed_finish_surfaces_draft_cleanup_failure(tmp_path: Path, 
     window.session = session
     window._review_history_id = "completed-overview-fixture"
     window._render_review_page()
-    window.interview_tabs.widget(3).findChild(qt_widgets.QPushButton, "CompletedInterviewFinish").click()
+    window.interview_tabs.widget(_INTERVIEW_REVIEW_TAB_INDEX).findChild(
+        qt_widgets.QPushButton, "CompletedInterviewFinish"
+    ).click()
     app.processEvents()
     assert window.session is session
     assert warnings == ["The completed interview was saved, but its local draft could not be removed. Try Save & Finish again."]

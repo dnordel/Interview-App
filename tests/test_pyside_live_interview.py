@@ -7,7 +7,12 @@ from types import SimpleNamespace
 import pytest
 
 import pyside_interview_app
-from pyside_interview_app import PySideInterviewSession, build_interview_redesign_model
+from pyside_interview_app import (
+    _INTERVIEW_LIVE_TAB_INDEX,
+    _INTERVIEW_REVIEW_TAB_INDEX,
+    PySideInterviewSession,
+    build_interview_redesign_model,
+)
 from pyside_live_interview import LiveQuestionSpec, derive_live_stages
 from visual_test_support import (
     TYPOGRAPHY_STRESS_TEXT,
@@ -59,10 +64,10 @@ def test_pyside_live_introduction_screen_scenario(tmp_path: Path) -> None:
     window.session_track_key = session.track_key
     window.session_index = session.current_index
     window._render_live_question_page()
-    window.interview_tabs.setCurrentIndex(2)
+    window.interview_tabs.setCurrentIndex(_INTERVIEW_LIVE_TAB_INDEX)
     app.processEvents()
 
-    page = window.interview_tabs.widget(2)
+    page = window.interview_tabs.widget(_INTERVIEW_LIVE_TAB_INDEX)
     assert page.findChild(qt_widgets.QLabel, "LiveInterviewPageTitle").text() == "Live Interview Introduction Script"
     assert page.findChild(qt_widgets.QLabel, "LiveInterviewCandidateName").text() == "Sofia Ramirez"
     assert page.findChild(qt_widgets.QTextEdit, "LiveInterviewerNotes") is None
@@ -144,7 +149,7 @@ def test_pyside_live_typography_stress_visual_scenario(
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     window.session = session
     window.session_track_key = session.track_key
-    window.interview_tabs.setCurrentIndex(2)
+    window.interview_tabs.setCurrentIndex(_INTERVIEW_LIVE_TAB_INDEX)
     window.staffing_v2_dashboard.show_external_page("interviews")
     window.hiring_v2_router.show_interview()
     window.window.resize(1672, 941)
@@ -182,8 +187,8 @@ def test_pyside_live_back_button_saves_current_controls_without_advancing(tmp_pa
     window.session = session
     window.session_index = session.current_index
     window._render_live_question_page()
-    window.interview_tabs.setCurrentIndex(2)
-    page = window.interview_tabs.widget(2)
+    window.interview_tabs.setCurrentIndex(_INTERVIEW_LIVE_TAB_INDEX)
+    page = window.interview_tabs.widget(_INTERVIEW_LIVE_TAB_INDEX)
     page.findChild(qt_widgets.QTextEdit, "LiveInterviewerNotes").setPlainText("Saved before going back.")
     page.findChild(qt_widgets.QCheckBox, "LiveMarkImportant").setChecked(True)
 
@@ -258,10 +263,10 @@ def test_pyside_live_non_scored_transcript_and_audio_scenario(tmp_path: Path) ->
     window.session_track_key = session.track_key
     window.session_index = session.current_index
     window._render_live_question_page()
-    window.interview_tabs.setCurrentIndex(2)
+    window.interview_tabs.setCurrentIndex(_INTERVIEW_LIVE_TAB_INDEX)
     app.processEvents()
 
-    page = window.interview_tabs.widget(2)
+    page = window.interview_tabs.widget(_INTERVIEW_LIVE_TAB_INDEX)
     assert page.findChild(qt_widgets.QLabel, "LiveInterviewPageTitle").text() == "Live Interview Non-Scored Questions"
     transcript = page.findChild(qt_widgets.QLabel, "LiveTranscriptText")
     assert "long-term relationships" in transcript.text()
@@ -342,7 +347,7 @@ def test_pyside_live_asr_failure_warning_never_exposes_exception_speech(
     window.session = session
     window.session_index = session.current_index
     window._render_live_question_page()
-    window.interview_tabs.setCurrentIndex(2)
+    window.interview_tabs.setCurrentIndex(_INTERVIEW_LIVE_TAB_INDEX)
     private_text = "candidate said private family details"
     window.recording_session = type(
         "FailingRecorder",
@@ -357,7 +362,9 @@ def test_pyside_live_asr_failure_warning_never_exposes_exception_speech(
         if window._live_transcript_queue is None:
             break
 
-    warning = window.interview_tabs.widget(2).findChild(qt_widgets.QLabel, "PySideRecordingWarning")
+    warning = window.interview_tabs.widget(_INTERVIEW_LIVE_TAB_INDEX).findChild(
+        qt_widgets.QLabel, "PySideRecordingWarning"
+    )
     assert not warning.isHidden()
     assert "temporarily unavailable" in warning.text()
     assert private_text not in warning.text()
@@ -398,10 +405,10 @@ def test_pyside_live_scored_rating_and_anchor_scenario(tmp_path: Path) -> None:
     window.session_track_key = session.track_key
     window.session_index = session.current_index
     window._render_live_question_page()
-    window.interview_tabs.setCurrentIndex(2)
+    window.interview_tabs.setCurrentIndex(_INTERVIEW_LIVE_TAB_INDEX)
     app.processEvents()
 
-    page = window.interview_tabs.widget(2)
+    page = window.interview_tabs.widget(_INTERVIEW_LIVE_TAB_INDEX)
     assert page.findChild(qt_widgets.QLabel, "LiveInterviewPageTitle").text() == "Live Interview Scored Question and Rating"
     assert page.findChild(qt_widgets.QLabel, "LiveQuestionPriority").text() == "Critical"
     assert page.findChild(qt_widgets.QLabel, "LiveQuestionWeight").text() == "Weight 3x"
@@ -478,8 +485,8 @@ def test_pyside_live_availability_page_uses_non_scored_controls_and_public_next(
     window.session = session
     window.session_index = availability_index
     window._render_live_question_page()
-    window.interview_tabs.setCurrentIndex(2)
-    page = window.interview_tabs.widget(2)
+    window.interview_tabs.setCurrentIndex(_INTERVIEW_LIVE_TAB_INDEX)
+    page = window.interview_tabs.widget(_INTERVIEW_LIVE_TAB_INDEX)
     app.processEvents()
 
     assert page.findChild(qt_widgets.QLabel, "LiveInterviewPageTitle").text() == "Live Interview Availability & Pay"
@@ -492,7 +499,7 @@ def test_pyside_live_availability_page_uses_non_scored_controls_and_public_next(
     app.processEvents()
 
     assert session.current_index == availability_index + 1
-    assert window.interview_tabs.currentIndex() == 3
+    assert window.interview_tabs.currentIndex() == _INTERVIEW_REVIEW_TAB_INDEX
     window.window.close()
     app.processEvents()
 
@@ -529,7 +536,7 @@ def test_pyside_live_screens_responsive_render_scenario(
     session.start(candidate_name="Sofia Ramirez", school="Hawthorne", track_key="infant_toddler")
     window.session = session
     window.session_track_key = session.track_key
-    window.interview_tabs.setCurrentIndex(2)
+    window.interview_tabs.setCurrentIndex(_INTERVIEW_LIVE_TAB_INDEX)
     window.staffing_v2_dashboard.show_external_page("interviews")
     window.hiring_v2_router.show_interview()
     window.window.show()
@@ -557,9 +564,11 @@ def test_pyside_live_screens_responsive_render_scenario(
             app.processEvents()
             adaptive = window.live_page._adaptive_content
             assert adaptive.property("layoutMode") == ("narrow" if narrow else "desktop")
-            scroll = window.interview_tabs.widget(2).findChild(qt_widgets.QScrollArea, "LiveInterviewScroll")
+            scroll = window.interview_tabs.widget(_INTERVIEW_LIVE_TAB_INDEX).findChild(
+                qt_widgets.QScrollArea, "LiveInterviewScroll"
+            )
             assert scroll.horizontalScrollBar().maximum() == 0
-            assert_widget_text_glyphs_supported(window.interview_tabs.widget(2))
+            assert_widget_text_glyphs_supported(window.interview_tabs.widget(_INTERVIEW_LIVE_TAB_INDEX))
             main = window.live_page._main_panel
             side = window.live_page._side_panel
             primary = window.live_page._primary_button

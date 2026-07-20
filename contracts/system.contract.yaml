@@ -278,7 +278,6 @@ modules:
     - staffing_service
     - staffing_store
     - source_update_monitor
-    - ui_mode_switch
     - PySide6
     - pywin32
   candidate_report:
@@ -315,28 +314,6 @@ modules:
     - notification_templates
     - onboarding_operations
     - PySide6
-  ui_mode_switch:
-    path: src/ui_mode_switch.py
-    depends_on: []
-  web_scored_question:
-    path: web/scored-question/
-    depends_on:
-    - config_rubric_json
-    - trait_based_scoring_json
-  web_app:
-    path: web/app/
-    depends_on:
-    - config_rubric_json
-    - question_overrides_json
-    - interview_history_db
-    - school_offer_settings_json
-    - trait_based_scoring_json
-    - web_app_backend
-  web_app_backend:
-    path: src/web_app_backend.py
-    depends_on:
-    - platform_services
-    - scoring_reporting
   config_rubric_json:
     path: config/rubric.json
     depends_on: []

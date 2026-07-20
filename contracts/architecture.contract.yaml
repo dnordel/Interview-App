@@ -86,15 +86,6 @@ services:
     - source_update_monitor
     - pyside_interview_app
     - director_staffing_app
-  web_scored_question_service:
-    description: Static browser prototype for scored competency question UI, reading local rubric and merged weighted trait-signal JSON for teacher and Behavior Support Specialist roles without changing desktop session persistence.
-    modules:
-    - web_scored_question
-  web_app_migration_service:
-    description: Static browser migration shell for start, candidate setup, interview, onboarding, settings, question editor, and history surfaces. It reads local JSON config, user_artifacts history/settings, and merged weighted trait-signal data while PySide remains the current desktop entry point.
-    modules:
-    - web_app
-    - web_app_backend
   pyside_interview_redesign_service:
     description: PySide6 Staffing v2-native mockup-driven New Interview setup/live flow, Candidates-owned pipeline/history, Offers, staffing, onboarding, and admin-only Settings content inside the shared Staffing v2 shell, with a cancellable 5-second manual audio test, serialized 15-second post-Begin validation, semantic status colors, capture state, live history refresh, reporting, and Director Review handoff.
     modules:
@@ -130,7 +121,6 @@ services:
     - split_pytest_runner
     - full_pytest_runner
     - pytest_duration_catalog
-    - ui_mode_switch
     - source_update_monitor
     - update_source_version
   shared_content_security_service:
@@ -163,7 +153,6 @@ datastores:
     - pyside_interview_app
     - hiring_pipeline
     - hiring_workspace_v2
-    - web_app_backend
     - candidate_report
   staffing_referral_queue_db:
     type: sqlite
