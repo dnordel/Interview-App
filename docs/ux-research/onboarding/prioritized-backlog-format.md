@@ -20,7 +20,7 @@ Use this format after each research round to convert findings into implementatio
 
 | Backlog ID | Finding ID | Decision ID | Issue ID | Priority | User impact summary | Repro steps ref | Proposed change | Code location(s) | Owner | Implementation status | Target release | Verification artifacts (test notes / telemetry query / PR) | Review checkpoint (date + reviewer) | Closure criteria tied to success metric(s) |
 | --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| ONB-B001 | ONB-F001 | ONB-D001 | ONB-I004 | 14 | Users cannot locate dry-run toggle and fear accidental sends | ONB-F001 steps | Add explicit mode selector with persistent state badge | `src/onboarding_reminder_runner.py`, `src/onboarding_scheduler_dialog.py` | Eng | Planned | 2026.01 | TN-ONB-003; `ux.onboarding.dry_run_toggle_usage`; PR #145 | 2025-12-08, UX + Eng reviewer | Dry-run toggle discovery ≥90% and accidental live-send attempts ≤2% |
+| ONB-B001 | ONB-F001 | ONB-D001 | ONB-I004 | 14 | Users cannot locate dry-run toggle and fear accidental sends | ONB-F001 steps | Add explicit mode selector with persistent state badge | `src/onboarding_operations.py` | Eng | Planned | 2026.01 | TN-ONB-003; `ux.onboarding.dry_run_toggle_usage`; PR #145 | 2025-12-08, UX + Eng reviewer | Dry-run toggle discovery ≥90% and accidental live-send attempts ≤2% |
 
 ## Required Traceability Fields
 
@@ -36,11 +36,11 @@ Use this format after each research round to convert findings into implementatio
 
 | Finding Type | Primary Modules |
 | --- | --- |
-| Add employee flow confusion | `src/onboarding_app.pyw`, `src/onboarding_models.py`, `src/onboarding_storage.py` |
-| Urgent filter discoverability/accuracy | `src/onboarding_task_filters.py`, `src/dashboard_today.py` |
-| Dry-run reminder clarity | `src/onboarding_reminder_runner.py`, `src/onboarding_send_guardrails.py` |
-| Live-run reminder completion/errors | `src/onboarding_notifier.py`, `src/onboarding_scheduler.py`, `src/onboarding_scheduler_status.py` |
-| Invalid sender email recovery | `src/email_security.py`, `src/onboarding_send_guardrails.py`, `src/onboarding_ui_helpers.py` |
+| Add employee flow confusion | `src/onboarding_operations.py` |
+| Urgent filter discoverability/accuracy | `src/onboarding_operations.py` |
+| Dry-run reminder clarity | `src/onboarding_operations.py` |
+| Live-run reminder completion/errors | `src/onboarding_operations.py` |
+| Invalid sender email recovery | `src/email_security.py`, `src/onboarding_operations.py` |
 
 ## Backlog Entry Notes
 

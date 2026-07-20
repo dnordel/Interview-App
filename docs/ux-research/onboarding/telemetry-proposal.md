@@ -1,8 +1,8 @@
-# Telemetry Proposal: Onboarding Friction to `ux_metrics`
+# Telemetry Proposal: Onboarding Friction to `platform_services`
 
 Canonical spec reference: [`docs/UX_EVENT_NAMING.md`](../../UX_EVENT_NAMING.md).
 
-This proposal links observed usability friction points to measurable `ux_metrics` events.
+This proposal links observed usability friction points to measurable `platform_services` events.
 
 ## Event Principles
 
@@ -12,7 +12,7 @@ This proposal links observed usability friction points to measurable `ux_metrics
 
 ## Friction-to-Event Mapping
 
-| Observed friction point | Canonical event (`ux_metrics`) | Trigger | Properties |
+| Observed friction point | Canonical event (`platform_services`) | Trigger | Properties |
 | --- | --- | --- | --- |
 | Cannot find add employee action | `ux.onboarding.add_employee_form.view` | User opens create form | `entry_point`, `time_from_screen_open_ms` |
 | Repeated validation errors when saving employee | `ux.onboarding.add_employee_form.validation_error` | Save blocked by validation | `error_type`, `required_fields_missing_count` |
@@ -32,11 +32,10 @@ This proposal links observed usability friction points to measurable `ux_metrics
 
 ## Suggested Implementation Touchpoints
 
-- `src/ux_metrics.py` for event definitions.
+- `src/platform_services.py` for event definitions.
 - `src/onboarding_app.pyw` for add employee interactions.
-- `src/onboarding_task_filters.py` for urgent filter events.
-- `src/onboarding_reminder_runner.py` and `src/onboarding_notifier.py` for dry/live run events.
-- `src/onboarding_send_guardrails.py` and `src/email_security.py` for validation and recovery events.
+- `src/onboarding_operations.py` for urgent filters, dry/live reminder runs, notifier behavior, and send guardrails.
+- `src/email_security.py` for validation and recovery events.
 
 ## Migration Note (Legacy Names)
 

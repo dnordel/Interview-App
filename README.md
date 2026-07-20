@@ -379,7 +379,7 @@ Open **Edit Questions** and ensure the selected role track has at least one acti
 - `src/pyside_interview_app.py`: supported desktop interview app entry point.
 - `src/app_content.py`: shared constants and helper content.
 - `src/data_store.py`: rubric/question persistence.
-- `src/reporting.py`: scoring, draft management, DOCX export.
+- `src/scoring_reporting.py`: scoring, draft management, DOCX export.
 - `src/interview_audio_recorder.py`: optional recording/transcription integration.
 - `src/onboarding_operations.py`: onboarding scheduling, reminders, and dashboard operations used by PySide.
 - `config/rubric.json`: interview rubric configuration.
@@ -422,7 +422,7 @@ python tools/check_docx_environment.py
 The check prints the resolved `docx.__file__` path and fails if it appears to come from an incompatible `docx` package instead of `python-docx`.
 
 ```bash
-python -m compileall src/pyside_interview_app.py src/app_content.py src/data_store.py src/reporting.py
+python -m compileall src/pyside_interview_app.py src/app_content.py src/data_store.py src/scoring_reporting.py
 ```
 
 ```bash

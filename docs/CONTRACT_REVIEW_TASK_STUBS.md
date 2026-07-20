@@ -65,7 +65,7 @@ Align package-level interview workflow modules with module contracts and depende
 Cover non-package interview modules that power interview state, UI flow, and transcript/finalization support.
 
 ### Task stub
-- [ ] Inventory interview-focused modules in `src/` (for example: `question_screens.py`, `ui_windows.py`, `interview_state.py`, `transcript_accumulator.py`, `interview_audio_recorder.py`, `runtime_wrapper.py`).
+- [ ] Inventory interview-focused modules in `src/` (for example: `interview_runtime.py`, `interview_audio_recorder.py`, and `runtime_wrapper.py`).
 - [ ] Create missing module contracts for each inventory module.
 - [ ] Update existing contracts where function/method signatures drift from code.
 - [ ] Validate all locked interfaces remain unchanged.
@@ -107,7 +107,7 @@ Ensure onboarding scheduling, reminders, notifications, and dashboard modules ar
 Contract-align cross-cutting modules used by both interview and onboarding flows.
 
 ### Task stub
-- [ ] Inventory shared modules (for example: storage, logging, reporting, template placeholders, diagnostics, email security, export).
+- [ ] Inventory shared modules (for example: `platform_services.py`, `scoring_reporting.py`, storage, logging, diagnostics, email security, and export).
 - [ ] Add missing module contract files for every shared module.
 - [ ] Reconcile inputs/outputs and side effects for each function/method.
 - [ ] Verify locked interfaces are unchanged; create additive interfaces if needed.

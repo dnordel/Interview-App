@@ -33,7 +33,7 @@ def test_scheduler_status_text_uses_result_error_message_then_fallback():
 
 
 def test_scheduler_command_example_renders_windows_task_command():
-    script_path = Path("C:/Apps/onboarding_reminder_runner.py")
+    script_path = Path("C:/Apps/onboarding_operations.py")
 
     command = onboarding_operations.scheduler_command_example(script_path)
 
@@ -41,3 +41,7 @@ def test_scheduler_command_example_renders_windows_task_command():
     assert "OnboardingReminderRunner" in command
     assert '--run-reminders' in command
     assert str(script_path) in command
+
+
+def test_scheduler_script_path_defaults_to_canonical_onboarding_operations() -> None:
+    assert Path(onboarding_operations.scheduler_script_path()).name == "onboarding_operations.py"

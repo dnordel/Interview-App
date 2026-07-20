@@ -1423,7 +1423,7 @@ def scheduler_status_text(status: dict[str, Any]) -> str:
 
 
 def scheduler_script_path(script_path: str | Path | None = None) -> str:
-    candidate = Path(script_path) if script_path else Path(__file__).resolve().with_name("onboarding_reminder_runner.py")
+    candidate = Path(script_path) if script_path else Path(__file__).resolve()
     return str(candidate)
 
 

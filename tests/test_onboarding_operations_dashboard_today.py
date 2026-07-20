@@ -1,3 +1,5 @@
+"""Canonical onboarding_operations dashboard-summary behavior tests."""
+
 from datetime import date
 
 from onboarding_operations import (

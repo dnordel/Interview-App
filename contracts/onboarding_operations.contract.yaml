@@ -2,7 +2,7 @@ module:
   name: onboarding_operations
   language: python
   path: src/onboarding_operations.py
-  version: 0.19.1
+  version: 0.19.2
   description: Flattened public interface for onboarding models, storage, scheduling, reminders, notifications, dashboard actions, and onboarding UI composition helpers.
 functions:
 - name: resolve_smtp_password
@@ -637,7 +637,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: scheduler_script_path
-  description: Resolve the onboarding app script path used by scheduler setup instructions.
+  description: Resolve the canonical onboarding operations script path used by scheduler setup instructions.
   locked: false
   inputs:
     script_path:

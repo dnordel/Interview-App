@@ -1,4 +1,4 @@
-# Telemetry Mapping for UX Findings (`ux_metrics`)
+# Telemetry Mapping for UX Findings (`platform_services`)
 
 Canonical spec reference: [`docs/UX_EVENT_NAMING.md`](../../UX_EVENT_NAMING.md).
 
@@ -12,7 +12,7 @@ This mapping links observed usability findings to candidate instrumentation even
 
 ## Proposed Event Map
 
-| Workflow Step | Canonical Event Name (`ux_metrics`) | Trigger | Key Properties |
+| Workflow Step | Canonical Event Name (`platform_services`) | Trigger | Key Properties |
 | --- | --- | --- | --- |
 | Start interview session | `ux.interview.session_start.click` | User initiates interview | `entry_point`, `has_template`, `timestamp_ms` |
 | Session initialized | `ux.interview.session_start.completion` | Session load succeeds | `load_ms`, `resume_state` |
