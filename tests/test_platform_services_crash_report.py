@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from app_logging import write_crash_report
+from platform_services import write_crash_report
 
 
 def _raise_error() -> None:

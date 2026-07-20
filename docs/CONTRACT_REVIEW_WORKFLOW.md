@@ -46,7 +46,7 @@ Run this workflow for any pull request that changes:
    - Run `python tools/check_contract_review.py --section coverage-matrix`.
    - Confirm `last_updated` is fresh and referenced tests still exist.
 5. **Contract interface tests (owner: PR author)**
-   - Run `pytest tests/test_onboarding_contract_interfaces.py tests/test_interview_app_contract_interfaces.py tests/test_interview_root_contracts.py`.
+   - Run `pytest tests/test_onboarding_contract_interfaces.py tests/test_interview_runtime_contract_interfaces.py tests/test_interview_root_contracts.py`.
 
 ## Security Gates
 Each pass must explicitly verify:

@@ -2,7 +2,7 @@ module:
   name: interview_runtime
   language: python
   path: src/interview_runtime.py
-  version: 3.0.0
+  version: 4.0.0
   description: Flattened public interface for interview state, session management,
     audio/transcription runtime, controllers, history, and
     finalize pipeline; only active legacy adapters remain in the compatibility module
@@ -419,7 +419,11 @@ functions:
 - name: resolve_default_windows_system_device
   description: Resolve VB-CABLE system capture device using probing and known aliases.
   locked: false
-  inputs: {}
+  inputs:
+    device_probe:
+      type: Callable[[], Sequence[str]]
+      required: false
+      default: list_windows_dshow_audio_devices
   returns:
     type: str
   exceptions: []
@@ -429,7 +433,11 @@ functions:
     microphone aliases so interview recordings keep a mic backup alongside system
     capture.
   locked: false
-  inputs: {}
+  inputs:
+    device_probe:
+      type: Callable[[], Sequence[str]]
+      required: false
+      default: list_windows_dshow_audio_devices
   returns:
     type: str
   exceptions: []
@@ -1305,6 +1313,14 @@ classes:
       shared_state:
         type: Any
         required: true
+      microphone_resolver:
+        type: Callable[[], str]
+        required: false
+        default: resolve_default_windows_microphone_device
+      system_resolver:
+        type: Callable[[], str]
+        required: false
+        default: resolve_default_windows_system_device
     returns:
       type: None
     exceptions: []
@@ -1417,6 +1433,98 @@ classes:
       type: None
     exceptions: []
     side_effects: none
+- name: HistoryActionsService
+  description: Coordinates history-row offer, delete, and notification behavior through injected operator dialogs and notification-service construction.
+  locked: false
+  attributes:
+    app:
+      type: Any
+    dialogs:
+      type: Any
+    notification_service_factory:
+      type: Callable[..., Any]
+  methods:
+  - name: __init__
+    description: Configure app state and injectable dialog and notification dependencies.
+    locked: false
+    inputs:
+      app:
+        type: Any
+        required: true
+      dialogs:
+        type: Any
+        required: false
+        default: messagebox
+      notification_service_factory:
+        type: Callable[..., Any]
+        required: false
+        default: notification_service_from_onboarding
+    returns:
+      type: None
+    exceptions: []
+    side_effects: none
+  - name: offer_transition
+    description: Return next offer workflow status and completion message for current status.
+    locked: false
+    inputs:
+      status:
+        type: str
+        required: true
+    returns:
+      type: OfferTransitionResult | None
+    exceptions: []
+    side_effects: none
+  - name: update_history_offer_status
+    description: Persist offer status, emit notification, and refresh history after successful update.
+    locked: false
+    inputs:
+      row:
+        type: dict[str, Any]
+        required: true
+      status:
+        type: str
+        required: true
+      offer_path:
+        type: str
+        required: false
+        default: ''
+    returns:
+      type: bool
+    exceptions: []
+    side_effects: Updates persisted history and may emit notification and refresh UI.
+  - name: handle_offer_action_for_row
+    description: Route offer action through generator, onboarding, or status-transition behavior.
+    locked: false
+    inputs:
+      row:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: May open UI, draft email, update history, emit notification, and show dialog.
+  - name: handle_delete_for_row
+    description: Confirm and delete selected finalized history row, then refresh history.
+    locked: false
+    inputs:
+      row:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: None
+    exceptions: []
+    side_effects: Shows confirmation dialog and may delete persisted history.
+  - name: _row_key
+    description: Build stable history row key using configured history store.
+    locked: false
+    inputs:
+      row:
+        type: dict[str, Any]
+        required: true
+    returns:
+      type: HistoryRowKey
+    exceptions: []
+    side_effects: none
 - name: HistoryController
   description: Coordinates history data loading, selected row state, and action callback
     routing.
@@ -1486,6 +1594,20 @@ classes:
   attributes:
     sent_referral_keys:
       type: set[str]
+    exporter_factory:
+      type: Callable[..., Any]
+    integration_payload_builder:
+      type: Callable[..., dict[str, Any]]
+    integration_payload_serializer:
+      type: Callable[..., Path]
+    director_packet_builder:
+      type: Callable[..., dict[str, Any]]
+    director_packet_sender:
+      type: Callable[..., dict[str, Any]]
+    communication_log_appender:
+      type: Callable[..., Path]
+    candidate_report_builder:
+      type: Callable[..., dict[str, Any]]
   methods:
   - name: export_report
     description: Export merged interview notes and store the canonical interview notes
@@ -1591,6 +1713,14 @@ classes:
         type: FinalizeGateways | None
         required: false
         default: null
+      dialogs:
+        type: Any
+        required: false
+        default: messagebox
+      scoring_engine:
+        type: Any
+        required: false
+        default: ScoringEngine
     returns:
       type: None
     exceptions: []
@@ -1697,14 +1827,10 @@ data_structures:
   description: Human-readable wrapper policy for remaining interview runtime compatibility
     modules.
 dependencies:
+- module: candidate_report
 - module: data_store
+- module: notification_service
 - module: platform_services
 - module: ui_feedback
 - module: scoring_reporting
 - module: interview_audio_recorder
-- module: interview_app_audio_devices
-- module: interview_app_audio_runtime
-- module: interview_app_finalize_pipeline
-- module: interview_app_history_actions
-- module: interview_app_session_manager
-- module: interview_app_transcription_queue

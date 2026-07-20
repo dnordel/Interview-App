@@ -2,7 +2,7 @@ module:
   name: platform_services
   language: python
   path: src/platform_services.py
-  version: 2.0.0
+  version: 3.0.0
   description: Flattened public interface for shared content, logging, config, persistence,
     path, runtime, document, cleanup, and UX metrics helpers; only active legacy adapters
     remain in the compatibility module inventory.
@@ -72,6 +72,19 @@ functions:
   exceptions:
   - OSError
   side_effects: Creates log directories/files and mutates global logging configuration.
+- name: reconfigure_app_logging
+  description: Replace and close only app-owned logging handlers, then configure logging for the requested app root.
+  locked: false
+  inputs:
+    app_root:
+      type: Path | None
+      required: false
+      default: null
+  returns:
+    type: Path
+  exceptions:
+  - OSError
+  side_effects: Closes app-owned handlers, preserves unrelated root handlers, creates log files, and mutates global logging configuration.
 - name: get_configured_log_path
   description: Return current configured application log file path.
   locked: false
@@ -1040,5 +1053,3 @@ data_structures:
   description: Active Word document backend, either python-docx or fallback.
 dependencies:
 - module: data_store
-- module: path_validation
-- module: storage_utils

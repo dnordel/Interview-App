@@ -22,13 +22,13 @@ modules:
   interview_runtime:
     path: src/interview_runtime.py
     depends_on:
+    - candidate_report
+    - data_store
+    - notification_service
     - platform_services
     - scoring_reporting
+    - ui_feedback
     - interview_audio_recorder
-    - interview_app_audio_runtime
-    - interview_app_finalize_pipeline
-    - interview_app_history_actions
-    - interview_app_session_manager
   interview_audio_preflight:
     path: src/interview_audio_preflight.py
     depends_on: []
@@ -341,10 +341,6 @@ modules:
   trait_based_scoring_json:
     path: Trait-Based Scoring/preschool_teacher_interview_signals_weighted.json
     depends_on: []
-  app_logging:
-    path: src/app_logging.py
-    depends_on:
-    - platform_services
   check_contract_review:
     path: tools/check_contract_review.py
     depends_on: []
@@ -371,21 +367,6 @@ modules:
     - platform_services
     - interview_history_db
     - legacy_interview_history_json
-  interview_app___init__:
-    path: src/interview_app/__init__.py
-    depends_on:
-    - interview_app_finalize_pipeline
-    - interview_app_history_actions
-    - interview_runtime
-  interview_app_finalize_pipeline:
-    path: src/interview_app/finalize_pipeline.py
-    depends_on:
-    - interview_runtime
-    - scoring_reporting
-  interview_app_history_actions:
-    path: src/interview_app/history_actions.py
-    depends_on:
-    - interview_runtime
   interview_audio_recorder:
     path: src/interview_audio_recorder.py
     depends_on:
@@ -408,8 +389,6 @@ module_metadata:
     constraints:
     - Requires interview_notes_document_path as the only canonical document artifact field.
     - Referral/integration dispatches must read interview_notes_document_path from finalize context payloads.
-  interview_app_finalize_pipeline:
-    constraints:
     - Finalize processing produces one basic merged interview-notes artifact referenced by interview_notes_document_path.
   pyside_interview_app:
     constraints:

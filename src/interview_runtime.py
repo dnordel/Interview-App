@@ -54,9 +54,13 @@ class _RuntimeMessageBox:
     def askretrycancel(self, *_args: Any, **_kwargs: Any) -> bool:
         return False
 
+    def askyesno(self, *_args: Any, **_kwargs: Any) -> bool:
+        return False
+
 
 messagebox = _RuntimeMessageBox()
 from platform_services import EVENT_INTERVIEW_FINALIZED, is_valid_date_yyyy_mm_dd
+from notification_service import notification_service_from_onboarding
 
 
 CURRENT_SCHEMA_VERSION = 1
@@ -1592,12 +1596,11 @@ def resolve_preferred_windows_audio_device(
     return preferred_name
 
 
-def resolve_default_windows_system_device() -> str:
+def resolve_default_windows_system_device(
+    *,
+    device_probe: Callable[[], Sequence[str]] = list_windows_dshow_audio_devices,
+) -> str:
     preferred = _WINDOWS_AUDIO_DEVICE_ALIASES[0]
-    device_probe = _resolve_audio_devices_symbol(
-        "list_windows_dshow_audio_devices",
-        list_windows_dshow_audio_devices,
-    )
     resolved = resolve_preferred_windows_audio_device(
         preferred_name=preferred,
         aliases=_WINDOWS_AUDIO_DEVICE_ALIASES[1:],
@@ -1608,12 +1611,11 @@ def resolve_default_windows_system_device() -> str:
     return resolved
 
 
-def resolve_default_windows_microphone_device() -> str:
+def resolve_default_windows_microphone_device(
+    *,
+    device_probe: Callable[[], Sequence[str]] = list_windows_dshow_audio_devices,
+) -> str:
     preferred = DEFAULT_WINDOWS_MIC_DEVICE
-    device_probe = _resolve_audio_devices_symbol(
-        "list_windows_dshow_audio_devices",
-        list_windows_dshow_audio_devices,
-    )
     resolved = resolve_preferred_windows_audio_device(
         preferred_name=preferred,
         aliases=_WINDOWS_MIC_DEVICE_ALIASES[1:],
@@ -1624,18 +1626,19 @@ def resolve_default_windows_microphone_device() -> str:
     return resolved
 
 
-def _resolve_audio_runtime_symbol(symbol_name: str, fallback: Any) -> Any:
-    return fallback
-
-
-def _resolve_audio_devices_symbol(symbol_name: str, fallback: Any) -> Any:
-    return fallback
-
-
 class AudioRuntimeController:
-    def __init__(self, app: Any, shared_state: Any) -> None:
+    def __init__(
+        self,
+        app: Any,
+        shared_state: Any,
+        *,
+        microphone_resolver: Callable[[], str] = resolve_default_windows_microphone_device,
+        system_resolver: Callable[[], str] = resolve_default_windows_system_device,
+    ) -> None:
         self.app = app
         self.shared_state = shared_state
+        self._microphone_resolver = microphone_resolver
+        self._system_resolver = system_resolver
 
     def background_transcribe_question(
         self,
@@ -1728,20 +1731,14 @@ class AudioRuntimeController:
         settings = getattr(self.app, "settings", {})
         mic_device = str(
             settings.get("windows_microphone_device")
-            or _resolve_audio_runtime_symbol(
-                "resolve_default_windows_microphone_device",
-                resolve_default_windows_microphone_device,
-            )()
+            or self._microphone_resolver()
         ).strip()
         return start_recording(
             os_name="windows" if sys.platform.startswith("win") else "linux",
             output_dir=base_dir,
             base_name=base_name,
-            win_mic_device=mic_device or resolve_default_windows_microphone_device(),
-            win_sys_device=_resolve_audio_runtime_symbol(
-                "resolve_default_windows_system_device",
-                resolve_default_windows_system_device,
-            )(),
+            win_mic_device=mic_device or self._microphone_resolver(),
+            win_sys_device=self._system_resolver(),
             whisper_model=runtime_config.model,
             whisper_device=runtime_config.device,
             whisper_compute_type=runtime_config.compute_type,
@@ -1800,6 +1797,99 @@ def _history_path_exists(path_value: str) -> bool:
         return Path(str(path_value)).is_file()
     except (OSError, ValueError):
         return False
+
+
+class HistoryActionsService:
+    def __init__(
+        self,
+        app: Any,
+        *,
+        dialogs: Any = messagebox,
+        notification_service_factory: Callable[..., Any] = notification_service_from_onboarding,
+    ) -> None:
+        self.app = app
+        self.dialogs = dialogs
+        self.notification_service_factory = notification_service_factory
+
+    @staticmethod
+    def offer_transition(status: str) -> OfferTransitionResult | None:
+        transitions: dict[str, OfferTransitionResult] = {
+            "not_generated": {"next_status": "generated", "done_message": "Offer generated."},
+            "generated": {"next_status": "approved", "done_message": "Offer marked as approved."},
+            "approved": {"next_status": "accepted", "done_message": "Offer marked as accepted."},
+            "accepted": {"next_status": "welcome_email_sent", "done_message": "Welcome email sent."},
+        }
+        return transitions.get(status)
+
+    def update_history_offer_status(self, row: dict[str, Any], status: str, offer_path: str = "") -> bool:
+        row_key = self._row_key(row)
+        if not row_key:
+            return False
+        if not self.app.history_store.update_offer_state(row_key, status, offer_path):
+            return False
+        self._emit_offer_notification(row, status, row_key)
+        self.app._refresh_history_tree()
+        return True
+
+    def handle_offer_action_for_row(self, row: dict[str, Any]) -> None:
+        status = str(row.get("offer_status", "not_generated")).strip().lower() or "not_generated"
+        if status == "not_generated":
+            self.app._open_offer_generator(row)
+            return
+        if status == "welcome_email_sent":
+            self.app._open_onboarding_tracker()
+            return
+        transition = self.offer_transition(status)
+        if transition is None or not self.app._draft_offer_email_for_transition(status, row):
+            return
+        if not self.update_history_offer_status(row, transition["next_status"]):
+            return
+        self.dialogs.showinfo("Offer Workflow", transition["done_message"])
+
+    def handle_delete_for_row(self, row: dict[str, Any]) -> None:
+        row_key = self._row_key(row)
+        if not row_key:
+            return
+        candidate = str(row.get("candidate_name") or "this interview").strip() or "this interview"
+        if not self.dialogs.askyesno(
+            "Delete History Entry",
+            f"Delete history entry for {candidate}?\n\nThis removes the row from interview history.",
+        ):
+            return
+        if self.app.history_store.delete_row(row_key):
+            self.app._refresh_history_tree()
+
+    def _row_key(self, row: dict[str, Any]) -> HistoryRowKey:
+        return str(self.app.history_store.build_row_key(row)).strip()
+
+    def _emit_offer_notification(self, row: dict[str, Any], status: str, row_key: str) -> None:
+        event_type = {
+            "generated": "offer.generated",
+            "approved": "offer.approved",
+            "accepted": "offer.accepted",
+            "welcome_email_sent": "offer.welcome_email_sent",
+        }.get(str(status or "").strip().lower())
+        if not event_type:
+            return
+        service = getattr(self.app, "notification_service", None)
+        if service is None:
+            service = self.notification_service_factory(root_dir=Path.cwd())
+        payload = {
+            "candidate_name": str(row.get("candidate_name") or row.get("candidate") or "").strip(),
+            "school": str(row.get("school") or "").strip(),
+            "position": str(row.get("position") or row.get("role") or "").strip(),
+            "offer_status": str(status or "").strip().lower(),
+            "generated_date": date.today().isoformat(),
+            "start_date": str(row.get("start_date") or "").strip(),
+            "notice_given": str(row.get("notice_given") or row.get("date_notice_given") or "").strip(),
+            "date_notice_given": str(row.get("date_notice_given") or row.get("notice_given") or "").strip(),
+            "final_working_day": str(row.get("final_working_day") or row.get("last_working_day") or "").strip(),
+            "last_working_day": str(row.get("last_working_day") or row.get("final_working_day") or "").strip(),
+        }
+        try:
+            service.emit_event(event_type, payload, f"{row_key}:{event_type}")
+        except Exception:
+            return
 
 
 class HistoryController:
@@ -2023,35 +2113,18 @@ def format_finalize_progress_tasks(tasks: Any, *, fallback: str = "") -> str:
     return "\n".join(lines)
 
 
-def _resolve_finalize_gateway_symbol(symbol_name: str, fallback: Any) -> Any:
-    return fallback
-
-
-def _resolve_finalize_pipeline_symbol(symbol_name: str, fallback: Any) -> Any:
-    module = sys.modules.get("interview_app.finalize_pipeline")
-    if module is not None and hasattr(module, symbol_name):
-        return getattr(module, symbol_name)
-    return fallback
-
-
-def _app_module_symbol(app: Any, symbol_name: str, fallback: Any) -> Any:
-    module = sys.modules.get(type(app).__module__)
-    if module is not None and hasattr(module, symbol_name):
-        return getattr(module, symbol_name)
-    app_init = getattr(type(app), "__init__", None)
-    app_globals = getattr(app_init, "__globals__", {})
-    if isinstance(app_globals, dict) and symbol_name in app_globals:
-        return app_globals[symbol_name]
-    return fallback
-
-
 @dataclass(slots=True)
 class FinalizeGateways:
     sent_referral_keys: set[str] = field(default_factory=set)
+    exporter_factory: Callable[..., Any] = DocxExporter
+    integration_payload_builder: Callable[..., dict[str, Any]] = build_integration_payload
+    integration_payload_serializer: Callable[..., Path] = serialize_integration_payload
+    director_packet_builder: Callable[..., dict[str, Any]] = build_director_packet
+    director_packet_sender: Callable[..., dict[str, Any]] = send_director_packet
+    communication_log_appender: Callable[..., Path] = append_communication_log
+    candidate_report_builder: Callable[..., dict[str, Any]] = build_candidate_report_snapshot
 
     def export_report(self, app: Any, context: FinalizeContext) -> str:
-        exporter_fallback = _resolve_finalize_gateway_symbol("DocxExporter", DocxExporter)
-        exporter_cls = _app_module_symbol(app, "DocxExporter", exporter_fallback)
         output_dir_resolver = app.__dict__.get("_interview_notes_output_dir")
         if output_dir_resolver is None:
             output_dir_resolver = getattr(type(app), "_interview_notes_output_dir", None)
@@ -2066,7 +2139,7 @@ class FinalizeGateways:
                 if callable(output_dir_resolver)
                 else Path(app.settings["base_dir"]) / "Indeed Interview Notes"
             )
-        exporter = exporter_cls(output_dir)
+        exporter = self.exporter_factory(output_dir)
         out_path = exporter.export(app._rubric_with_question_overrides(), context.payload, context.scoring)
         normalized_path = Path(out_path).as_posix().strip()
         app.state.referral_packet["interview_notes_path"] = normalized_path
@@ -2075,8 +2148,6 @@ class FinalizeGateways:
         return out_path
 
     def export_basic_report(self, app: Any, context: FinalizeContext) -> str:
-        exporter_fallback = _resolve_finalize_gateway_symbol("DocxExporter", DocxExporter)
-        exporter_cls = _app_module_symbol(app, "DocxExporter", exporter_fallback)
         output_dir_resolver = app.__dict__.get("_interview_notes_output_dir")
         if output_dir_resolver is None:
             output_dir_resolver = getattr(type(app), "_interview_notes_output_dir", None)
@@ -2091,7 +2162,7 @@ class FinalizeGateways:
                 if callable(output_dir_resolver)
                 else Path(app.settings["base_dir"]) / "Indeed Interview Notes"
             )
-        exporter = exporter_cls(output_dir)
+        exporter = self.exporter_factory(output_dir)
         export_basic = getattr(exporter, "export_basic_interview_notes", None)
         out_path = (
             export_basic(app._rubric_with_question_overrides(), context.payload, context.scoring)
@@ -2105,12 +2176,12 @@ class FinalizeGateways:
         return out_path
 
     def export_integration(self, app: Any, context: FinalizeContext) -> Path:
-        builder_fallback = _resolve_finalize_gateway_symbol("build_integration_payload", build_integration_payload)
-        serializer_fallback = _resolve_finalize_gateway_symbol("serialize_integration_payload", serialize_integration_payload)
-        payload_builder = _app_module_symbol(app, "build_integration_payload", builder_fallback)
-        payload_serializer = _app_module_symbol(app, "serialize_integration_payload", serializer_fallback)
-        integration_payload = payload_builder(context.payload, context.scoring, include_flow_slices=True)
-        return payload_serializer(
+        integration_payload = self.integration_payload_builder(
+            context.payload,
+            context.scoring,
+            include_flow_slices=True,
+        )
+        return self.integration_payload_serializer(
             Path(app.settings["base_dir"]),
             integration_payload,
             candidate_name=app.state.candidate_name,
@@ -2137,7 +2208,7 @@ class FinalizeGateways:
             "offer_letter_path": "",
             "flow_recordings": context.recording_metadata,
         }
-        report_snapshot = build_candidate_report_snapshot(
+        report_snapshot = self.candidate_report_builder(
             context.payload,
             context.scoring,
             history_entry,
@@ -2165,9 +2236,7 @@ class FinalizeGateways:
         out_path: str,
         integration_path: Path,
     ) -> tuple[dict[str, Any], Path | None]:
-        builder_fallback = _resolve_finalize_gateway_symbol("build_director_packet", build_director_packet)
-        packet_builder = _app_module_symbol(app, "build_director_packet", builder_fallback)
-        director_packet = packet_builder(
+        director_packet = self.director_packet_builder(
             payload=context.payload,
             scoring=context.scoring,
             report_path=out_path,
@@ -2184,9 +2253,7 @@ class FinalizeGateways:
         if dedupe_key in self.sent_referral_keys:
             return director_packet, None
 
-        sender = _resolve_finalize_gateway_symbol("send_director_packet", send_director_packet)
-        log_appender = _resolve_finalize_gateway_symbol("append_communication_log", append_communication_log)
-        send_result = sender(director_packet, endpoint)
+        send_result = self.director_packet_sender(director_packet, endpoint)
         self.sent_referral_keys.add(dedupe_key)
 
         log_event = {
@@ -2195,7 +2262,11 @@ class FinalizeGateways:
             "endpoint": endpoint,
             "status": send_result.get("status", "unknown"),
         }
-        comm_log_path = log_appender(Path(app.settings["base_dir"]), log_event)
+        comm_log_path = self.communication_log_appender(
+            Path(app.settings["base_dir"]),
+            log_event,
+            candidate_name=app.state.candidate_name,
+        )
         return director_packet, comm_log_path
 
     def _referral_dedupe_key(self, director_packet: dict[str, Any], endpoint: str) -> str:
@@ -2208,19 +2279,28 @@ def raise_legacy_finalize_guardrail() -> None:
 
 
 class FinalizePipelineController:
-    def __init__(self, app: Any, shared_state: Any, gateways: FinalizeGateways | None = None) -> None:
+    def __init__(
+        self,
+        app: Any,
+        shared_state: Any,
+        gateways: FinalizeGateways | None = None,
+        *,
+        dialogs: Any = messagebox,
+        scoring_engine: Any = ScoringEngine,
+    ) -> None:
         self.app = app
         self.shared_state = shared_state
         self.gateways = gateways or FinalizeGateways()
+        self.dialogs = dialogs
+        self.scoring_engine = scoring_engine
 
     def finalize_interview(self) -> None:
-        messagebox_module = _resolve_finalize_pipeline_symbol("messagebox", messagebox)
         try:
             self._dispatch_finalize_work()
         except ReportingValidationError as exc:
-            messagebox_module.showerror("Finalize Error", str(exc))
+            self.dialogs.showerror("Finalize Error", str(exc))
         except Exception as exc:
-            messagebox_module.showerror("Finalize Error", f"{exc}\n\n{traceback.format_exc()}")
+            self.dialogs.showerror("Finalize Error", f"{exc}\n\n{traceback.format_exc()}")
 
     def _dispatch_finalize_work(self) -> None:
         if bool(getattr(self.app, "_finalize_worker_running", False)):
@@ -2252,8 +2332,7 @@ class FinalizePipelineController:
     def run_finalize_pipeline(self) -> dict[str, Any]:
         if hasattr(self.app, "_report_finalize_progress"):
             self.app._report_finalize_progress("Scoring interview")
-        scoring_engine = _resolve_finalize_pipeline_symbol("ScoringEngine", ScoringEngine)
-        scoring = scoring_engine.evaluate(
+        scoring = self.scoring_engine.evaluate(
             self.app._rubric_with_question_overrides(),
             self.app.state.track,
             self.app.state.trait_inputs,
@@ -2349,7 +2428,6 @@ class FinalizePipelineController:
         self._handle_finalize_failure(status)
 
     def _handle_finalize_success(self, status: dict[str, Any]) -> None:
-        messagebox_module = _resolve_finalize_pipeline_symbol("messagebox", messagebox)
         result = status["result"]
         self.app.last_finalize_result = result
         self.app.metrics_logger.log_ux_completion(app="interview", surface="finalize", outcome="completed", track=self.app.state.track)
@@ -2360,13 +2438,12 @@ class FinalizePipelineController:
             self.app._show_finalize_partial_transcript_warning(PENDING_TRANSCRIPTION_WARNING)
         warning_text = "\n\nWarnings:\n- " + "\n- ".join(str(w) for w in warnings) if warnings else ""
         self.app._prompt_resume_if_outcome_requires_it(scoring)
-        messagebox_module.showinfo("Finalized", f"Outcome: {scoring['outcome']}\nWeighted Total: {scoring['weighted_total']}/{scoring['max_weighted_total']}\nPercent: {scoring.get('percent_of_max_label', str(scoring['percent_of_max']) + '%')}\nSkipped scored questions: {scoring.get('skipped_traits_count', 0)}\n\nReport saved to:\n{result['out_path']}\n\nJSON export saved to:\n{result['integration_path']}{warning_text}")
+        self.dialogs.showinfo("Finalized", f"Outcome: {scoring['outcome']}\nWeighted Total: {scoring['weighted_total']}/{scoring['max_weighted_total']}\nPercent: {scoring.get('percent_of_max_label', str(scoring['percent_of_max']) + '%')}\nSkipped scored questions: {scoring.get('skipped_traits_count', 0)}\n\nReport saved to:\n{result['out_path']}\n\nJSON export saved to:\n{result['integration_path']}{warning_text}")
         transcript_path = str(result.get("transcript_path") or "").strip()
         self.app._delete_interview_recording_artifacts()
         self.app.current_finalize_correlation_id = ""
 
     def _handle_finalize_failure(self, status: dict[str, Any]) -> None:
-        messagebox_module = _resolve_finalize_pipeline_symbol("messagebox", messagebox)
         err = status.get("error")
         if int(status.get("attempt", 1)) == 1:
             self._start_finalize_worker_non_blocking(attempt=2)
@@ -2377,9 +2454,9 @@ class FinalizePipelineController:
             self.app.recording_base_name = ""
         if isinstance(err, ReportingValidationError):
             self.app.current_finalize_correlation_id = ""
-            messagebox_module.showerror("Finalize Error", str(err))
+            self.dialogs.showerror("Finalize Error", str(err))
             return
-        should_retry = messagebox_module.askretrycancel("Finalize Error", f"{err}\n\n{status.get('tb', '')}")
+        should_retry = self.dialogs.askretrycancel("Finalize Error", f"{err}\n\n{status.get('tb', '')}")
         if should_retry:
             self._start_finalize_worker_non_blocking(attempt=1)
             return
@@ -2422,8 +2499,6 @@ def validate_before_finalize(app: Any) -> None:
 
 _COMPAT_MODULES: tuple[str, ...] = (
     "interview_audio_recorder",
-    "interview_app.finalize_pipeline",
-    "interview_app.history_actions",
 )
 
 _WRAPPER_POLICY = (

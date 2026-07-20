@@ -36,29 +36,6 @@ superseded-by: n/a
 
 ---
 
-## Section A — `src/interview_app/` package modules
-
-### Objective
-Align package-level interview workflow modules with module contracts and dependency graph.
-
-### Task stub
-- [ ] Build a file inventory for all Python modules in `src/interview_app/`.
-- [ ] For each module, map functions/classes/methods with input/output signatures.
-- [ ] Create missing `contracts/interview_app_<module>.contract.yaml` files using schema-compliant fields.
-- [ ] Reconcile drift in existing `interview_app_*` contracts (inputs, returns, methods, dependencies, version).
-- [ ] Validate `locked: true` interfaces and log any violations without changing locked signatures.
-- [ ] Update `contracts/system.contract.yaml` dependency edges for package-internal imports.
-- [ ] Update `contracts/architecture.contract.yaml` service/module assignments if boundaries changed.
-- [ ] Add or extend tests so each contracted function/method has at least one unit test.
-
-### Definition of done
-- Every module under `src/interview_app/` has a contract.
-- Contract signatures match code signatures.
-- System and architecture contracts reflect current structure.
-- Unit tests exist for all contracted functions/methods in this section.
-
----
-
 ## Section B — Interview workflow root modules in `src/`
 
 ### Objective
@@ -196,13 +173,12 @@ Create repeatable review mechanics so contract synchronization is sustainable.
 
 ## Suggested execution order
 1. Section F (governance baseline)
-2. Section A (interview package)
-3. Section B (interview root modules)
-4. Section C (onboarding modules)
-5. Section D (shared modules)
-6. Section E (config/schema alignment)
-7. Section G (test coverage completion)
-8. Section H (tooling/process hardening)
+2. Section B (interview root modules)
+3. Section C (onboarding modules)
+4. Section D (shared modules)
+5. Section E (config/schema alignment)
+6. Section G (test coverage completion)
+7. Section H (tooling/process hardening)
 
 ## Backlog task title template
 Use this naming pattern for issue tracking:

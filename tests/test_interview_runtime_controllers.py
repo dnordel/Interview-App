@@ -6,8 +6,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from interview_runtime import AudioRuntimeController
-from interview_app.finalize_pipeline import FinalizePipelineController
-from interview_runtime import AppSharedState, HistoryController, TranscriptionQueueState
+from interview_runtime import AppSharedState, FinalizePipelineController, HistoryController, TranscriptionQueueState
 import interview_runtime
 
 
@@ -291,8 +290,7 @@ def test_finalize_interview_warns_when_pending_transcriptions_exist() -> None:
     assert warning_messages == ["Transcription still processing in background; report may be partial."]
 
 
-def test_finalize_success_surfaces_partial_transcript_warning(monkeypatch) -> None:
-    monkeypatch.setattr("interview_app.finalize_pipeline.messagebox.showinfo", lambda *_args, **_kwargs: None)
+def test_finalize_success_surfaces_partial_transcript_warning() -> None:
     app = SimpleNamespace(
         last_finalize_result={},
         metrics_logger=SimpleNamespace(log_ux_completion=lambda **_kwargs: None, log_event=lambda *_args, **_kwargs: None),
@@ -304,7 +302,11 @@ def test_finalize_success_surfaces_partial_transcript_warning(monkeypatch) -> No
         _show_finalize_partial_transcript_warning=lambda _msg: setattr(app, "warning_seen", True),
         warning_seen=False,
     )
-    controller = FinalizePipelineController(app, AppSharedState())
+    controller = FinalizePipelineController(
+        app,
+        AppSharedState(),
+        dialogs=SimpleNamespace(showinfo=lambda *_args, **_kwargs: None),
+    )
 
     controller._handle_finalize_success(
         {

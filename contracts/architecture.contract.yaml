@@ -20,9 +20,6 @@ services:
     description: Interview flow orchestration, state transitions, transcription, and finalization that produces one basic merged interview-notes document (interview_notes_document_path) including candidate-response transcription content while keeping the live-only introduction out of notes and completed-overview surfaces.
     modules:
     - interview_runtime
-    - interview_app___init__
-    - interview_app_finalize_pipeline
-    - interview_app_history_actions
     - interview_audio_recorder
     - runtime_wrapper
   onboarding_operations_service:
@@ -113,7 +110,6 @@ services:
     modules:
     - app_branding
     - platform_services
-    - app_logging
     - data_store
     - runtime_wrapper
     - check_contract_review
@@ -127,7 +123,6 @@ services:
     description: Cross-cutting shared utilities for logging, templating, exports, diagnostics, and email/input safety.
     modules:
     - scoring_reporting
-    - app_logging
     - notification_store
 datastores:
   onboarding_pilot_evidence:

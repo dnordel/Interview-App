@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import importlib
 import json
 import logging
-import app_logging
+
+from platform_services import reconfigure_app_logging
 
 
 def _reset_root_handlers() -> None:
@@ -16,12 +16,10 @@ def _reset_root_handlers() -> None:
 
 def test_initialize_app_logging_creates_fixed_log_file(tmp_path, monkeypatch) -> None:
     _reset_root_handlers()
-    module = importlib.reload(app_logging)
-
     monkeypatch.delenv("INTERVIEW_APP_DEBUG", raising=False)
     monkeypatch.delenv("INTERVIEW_APP_LOG_LEVEL", raising=False)
 
-    log_path = module.initialize_app_logging(app_root=tmp_path)
+    log_path = reconfigure_app_logging(app_root=tmp_path)
 
     assert log_path == tmp_path / "logs" / "interview-app.log"
     assert log_path.exists()
@@ -29,11 +27,10 @@ def test_initialize_app_logging_creates_fixed_log_file(tmp_path, monkeypatch) ->
 
 def test_initialize_app_logging_redacts_candidate_data(tmp_path, monkeypatch) -> None:
     _reset_root_handlers()
-    module = importlib.reload(app_logging)
     monkeypatch.delenv("INTERVIEW_APP_DEBUG", raising=False)
 
-    log_path = module.initialize_app_logging(app_root=tmp_path)
-    logger = logging.getLogger("tests.app_logging")
+    log_path = reconfigure_app_logging(app_root=tmp_path)
+    logger = logging.getLogger("tests.platform_services_logging")
     logger.info(
         "candidate contact john.doe@example.com +1 415 555 0100",
         extra={"candidate_name": "John Doe", "phone": "+1 415 555 0100"},
@@ -52,10 +49,22 @@ def test_initialize_app_logging_redacts_candidate_data(tmp_path, monkeypatch) ->
 
 def test_initialize_app_logging_honors_debug_env(tmp_path, monkeypatch) -> None:
     _reset_root_handlers()
-    module = importlib.reload(app_logging)
-
     monkeypatch.setenv("INTERVIEW_APP_DEBUG", "true")
     monkeypatch.delenv("INTERVIEW_APP_LOG_LEVEL", raising=False)
 
-    module.initialize_app_logging(app_root=tmp_path)
+    reconfigure_app_logging(app_root=tmp_path)
     assert logging.getLogger().level == logging.DEBUG
+
+
+def test_reconfigure_app_logging_preserves_unowned_handlers(tmp_path) -> None:
+    _reset_root_handlers()
+    root_logger = logging.getLogger()
+    unowned_handler = logging.StreamHandler()
+    root_logger.addHandler(unowned_handler)
+
+    reconfigure_app_logging(app_root=tmp_path)
+    reconfigure_app_logging(app_root=tmp_path / "second")
+
+    assert unowned_handler in root_logger.handlers
+    app_handlers = [handler for handler in root_logger.handlers if getattr(handler, "_lpl_interview_app_handler", False)]
+    assert len(app_handlers) == 1

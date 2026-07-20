@@ -26,17 +26,18 @@ def _module_name_for_path(path: Path, source_root: Path) -> str:
 def test_init_module_and_sibling_py_have_distinct_names():
     source_root = Path("src")
 
-    init_name = _module_name_for_path(Path("src/interview_app/__init__.py"), source_root)
+    source_root = Path(".")
+    init_name = _module_name_for_path(Path("tools/__init__.py"), source_root)
     py_name = _module_name_for_path(Path("src/pyside_interview_app.py"), source_root)
 
-    assert init_name == "interview_app.__init__"
-    assert py_name == "pyside_interview_app"
+    assert init_name == "tools.__init__"
+    assert py_name == "src.pyside_interview_app"
     assert init_name != py_name
 
 
 def test_regular_module_name_mapping_drops_suffix_only():
     source_root = Path("src")
 
-    module_name = _module_name_for_path(Path("src/interview_app/history_actions.py"), source_root)
+    module_name = _module_name_for_path(Path("src/interview_runtime.py"), source_root)
 
-    assert module_name == "interview_app.history_actions"
+    assert module_name == "interview_runtime"

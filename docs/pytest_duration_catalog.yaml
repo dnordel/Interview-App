@@ -86,26 +86,6 @@ entries:
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_app_logging.py::test_initialize_app_logging_creates_fixed_log_file
-  duration_seconds_n2: 0.002
-  duration_source: measured
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_app_logging.py::test_initialize_app_logging_redacts_candidate_data
-  duration_seconds_n2: 0.005
-  duration_source: measured
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_app_logging.py::test_initialize_app_logging_honors_debug_env
-  duration_seconds_n2: 0.002
-  duration_source: measured
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_app_logging_crash_report.py::test_write_crash_report_includes_origin_and_traceback
-  duration_seconds_n2: 0.005
-  duration_source: measured
-  gui_heavy: false
-  placement: fast
 - nodeid: tests/test_assistant_director_role.py::test_assistant_director_track_loads_from_config_without_code_branch
   duration_seconds_n2: 0.002
   duration_source: measured
@@ -856,186 +836,6 @@ entries:
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-raise_legacy_finalize_guardrail-contract_inputs0-None]
-  duration_seconds_n2: 0.001
-  duration_source: collection_default
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-validate_before_finalize-contract_inputs1-None]
-  duration_seconds_n2: 0.001
-  duration_source: collection_default
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-finalize_interview-contract_inputs2-FinalizePipelineController]
-  duration_seconds_n2: 0.001
-  duration_source: collection_default
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-run_finalize_pipeline-contract_inputs3-FinalizePipelineController]
-  duration_seconds_n2: 0.001
-  duration_source: collection_default
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_dispatch_finalize_work-contract_inputs4-FinalizePipelineController]
-  duration_seconds_n2: 0.001
-  duration_source: collection_default
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_start_finalize_worker_non_blocking-contract_inputs5-FinalizePipelineController]
-  duration_seconds_n2: 0.001
-  duration_source: collection_default
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_restore_main_window_focus-contract_inputs6-FinalizePipelineController]
-  duration_seconds_n2: 0.001
-  duration_source: collection_default
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_warn_if_finalize_starts_with_pending_transcriptions-contract_inputs7-FinalizePipelineController]
-  duration_seconds_n2: 0.001
-  duration_source: collection_default
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_build_transcript_metadata-contract_inputs8-FinalizePipelineController]
-  duration_seconds_n2: 0.001
-  duration_source: collection_default
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_pending_transcription_indices-contract_inputs9-FinalizePipelineController]
-  duration_seconds_n2: 0.001
-  duration_source: collection_default
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_pending_transcription_snapshot-contract_inputs10-FinalizePipelineController]
-  duration_seconds_n2: 0.001
-  duration_source: collection_default
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_collect_pending_flow_indices-contract_inputs11-FinalizePipelineController]
-  duration_seconds_n2: 0.001
-  duration_source: collection_default
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_safe_int_indices-contract_inputs12-FinalizePipelineController]
-  duration_seconds_n2: 0.001
-  duration_source: collection_default
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-poll_finalize_worker-contract_inputs13-FinalizePipelineController]
-  duration_seconds_n2: 0.001
-  duration_source: collection_default
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_handle_finalize_success-contract_inputs14-FinalizePipelineController]
-  duration_seconds_n2: 0.001
-  duration_source: collection_default
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_finalize_pipeline.contract.yaml-src/interview_app/finalize_pipeline.py-_handle_finalize_failure-contract_inputs15-FinalizePipelineController]
-  duration_seconds_n2: 0.001
-  duration_source: collection_default
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_actions.contract.yaml-src/interview_app/history_actions.py-offer_transition-contract_inputs16-HistoryActionsService]
-  duration_seconds_n2: 0.001
-  duration_source: collection_default
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_actions.contract.yaml-src/interview_app/history_actions.py-update_history_offer_status-contract_inputs17-HistoryActionsService]
-  duration_seconds_n2: 0.001
-  duration_source: collection_default
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_actions.contract.yaml-src/interview_app/history_actions.py-handle_offer_action_for_row-contract_inputs18-HistoryActionsService]
-  duration_seconds_n2: 0.001
-  duration_source: collection_default
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_actions.contract.yaml-src/interview_app/history_actions.py-handle_delete_for_row-contract_inputs19-HistoryActionsService]
-  duration_seconds_n2: 0.001
-  duration_source: collection_default
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_contract_symbol_signature_exists[contracts\\interview_app_history_actions.contract.yaml-src/interview_app/history_actions.py-_row_key-contract_inputs20-HistoryActionsService]
-  duration_seconds_n2: 0.001
-  duration_source: collection_default
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_security_value_or_default_enforces_stripped_defaults
-  duration_seconds_n2: 0.0
-  duration_source: measured
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_security_transcription_cancel_is_side_effect_safe
-  duration_seconds_n2: 0.001
-  duration_source: measured
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_security_offer_transition_requires_known_status
-  duration_seconds_n2: 0.0
-  duration_source: measured
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_contract_interfaces.py::test_security_queue_cancel_is_idempotent
-  duration_seconds_n2: 0.001
-  duration_source: measured
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_controllers.py::test_audio_runtime_transcription_state_transitions
-  duration_seconds_n2: 0.003
-  duration_source: measured
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_controllers.py::test_history_controller_refresh_renders_rows
-  duration_seconds_n2: 0.0
-  duration_source: measured
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_controllers.py::test_history_controller_refresh_uses_db_search_when_available
-  duration_seconds_n2: 0.0
-  duration_source: measured
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_controllers.py::test_history_controller_open_notes_opens_existing_document_without_prompt
-  duration_seconds_n2: 0.001
-  duration_source: measured
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_controllers.py::test_history_controller_leaves_existing_records_unchanged_when_regeneration_is_requested
-  duration_seconds_n2: 0.0
-  duration_source: measured
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_controllers.py::test_finalize_controller_poll_retries_first_failure_keeps_progress_open
-  duration_seconds_n2: 0.0
-  duration_source: measured
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_controllers.py::test_finalize_interview_dispatches_worker_returns_to_start_and_keeps_progress_open
-  duration_seconds_n2: 0.0
-  duration_source: measured
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_controllers.py::test_finalize_interview_ignores_second_click_while_worker_running
-  duration_seconds_n2: 0.0
-  duration_source: measured
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_controllers.py::test_finalize_interview_restores_main_window_focus_after_dispatch
-  duration_seconds_n2: 0.0
-  duration_source: measured
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_controllers.py::test_finalize_interview_warns_when_pending_transcriptions_exist
-  duration_seconds_n2: 0.0
-  duration_source: measured
-  gui_heavy: false
-  placement: fast
-- nodeid: tests/test_interview_app_controllers.py::test_finalize_success_surfaces_partial_transcript_warning
-  duration_seconds_n2: 0.0
-  duration_source: measured
-  gui_heavy: false
-  placement: fast
 - nodeid: tests/test_interview_audio_preflight.py::test_audio_preflight_reports_both_channels_and_candidate_transcription_ready
   duration_seconds_n2: 0.007
   duration_source: measured
@@ -1526,57 +1326,87 @@ entries:
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs89-HistoryController]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs89-HistoryActionsService]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-refresh_history_tree-contract_inputs90-HistoryController]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-offer_transition-contract_inputs90-HistoryActionsService]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-export_report-contract_inputs91-FinalizeGateways]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-update_history_offer_status-contract_inputs91-HistoryActionsService]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-export_basic_report-contract_inputs92-FinalizeGateways]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-handle_offer_action_for_row-contract_inputs92-HistoryActionsService]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-export_integration-contract_inputs93-FinalizeGateways]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-handle_delete_for_row-contract_inputs93-HistoryActionsService]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-persist_finalize_history-contract_inputs94-FinalizeGateways]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_row_key-contract_inputs94-HistoryActionsService]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-send_referral-contract_inputs95-FinalizeGateways]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs95-HistoryController]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs96-FinalizePipelineController]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-refresh_history_tree-contract_inputs96-HistoryController]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-finalize_interview-contract_inputs97-FinalizePipelineController]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-export_report-contract_inputs97-FinalizeGateways]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-run_finalize_pipeline-contract_inputs98-FinalizePipelineController]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-export_basic_report-contract_inputs98-FinalizeGateways]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-poll_finalize_worker-contract_inputs99-FinalizePipelineController]
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-export_integration-contract_inputs99-FinalizeGateways]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-persist_finalize_history-contract_inputs100-FinalizeGateways]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-send_referral-contract_inputs101-FinalizeGateways]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs102-FinalizePipelineController]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-finalize_interview-contract_inputs103-FinalizePipelineController]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-run_finalize_pipeline-contract_inputs104-FinalizePipelineController]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_interview_root_contracts.py::test_interview_root_contract_signatures[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-poll_finalize_worker-contract_inputs105-FinalizePipelineController]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
@@ -1632,6 +1462,91 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_interview_runtime_audio_runtime.py::test_start_recording_session_uses_resolved_windows_system_device
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_interview_runtime_contract_interfaces.py::test_security_value_or_default_enforces_stripped_defaults
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_interview_runtime_contract_interfaces.py::test_security_transcription_cancel_is_side_effect_safe
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_interview_runtime_contract_interfaces.py::test_security_offer_transition_requires_known_status
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_interview_runtime_contract_interfaces.py::test_history_delete_uses_injected_dialogs
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_interview_runtime_contract_interfaces.py::test_history_offer_notification_uses_injected_factory
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_interview_runtime_contract_interfaces.py::test_security_queue_cancel_is_idempotent
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_interview_runtime_controllers.py::test_audio_runtime_transcription_state_transitions
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_interview_runtime_controllers.py::test_history_controller_refresh_renders_rows
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_interview_runtime_controllers.py::test_history_controller_refresh_uses_db_search_when_available
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_interview_runtime_controllers.py::test_history_controller_open_notes_opens_existing_document_without_prompt
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_interview_runtime_controllers.py::test_history_controller_leaves_existing_records_unchanged_when_regeneration_is_requested
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_interview_runtime_controllers.py::test_finalize_controller_poll_retries_first_failure_keeps_progress_open
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_interview_runtime_controllers.py::test_finalize_interview_dispatches_worker_returns_to_start_and_keeps_progress_open
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_interview_runtime_controllers.py::test_finalize_interview_ignores_second_click_while_worker_running
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_interview_runtime_controllers.py::test_finalize_interview_restores_main_window_focus_after_dispatch
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_interview_runtime_controllers.py::test_finalize_interview_warns_when_pending_transcriptions_exist
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_interview_runtime_controllers.py::test_finalize_success_surfaces_partial_transcript_warning
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
@@ -5138,6 +5053,31 @@ entries:
   duration_source: collection_default
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_platform_services_crash_report.py::test_write_crash_report_includes_origin_and_traceback
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_platform_services_logging.py::test_initialize_app_logging_creates_fixed_log_file
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_platform_services_logging.py::test_initialize_app_logging_redacts_candidate_data
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_platform_services_logging.py::test_initialize_app_logging_honors_debug_env
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_platform_services_logging.py::test_reconfigure_app_logging_preserves_unowned_handlers
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_platform_services_path_validation.py::test_validate_existing_file_path_returns_file_for_valid_pdf
   duration_seconds_n2: 0.001
   duration_source: collection_default
@@ -7197,1077 +7137,1347 @@ entries:
   duration_source: measured
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\app_logging.contract.yaml-src/app_logging.py-initialize_app_logging-contract_inputs0-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-compose_intro_script-contract_inputs0-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\app_logging.contract.yaml-src/app_logging.py-get_configured_log_path-contract_inputs1-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-text_suggests_no_example-contract_inputs1-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\app_logging.contract.yaml-src/app_logging.py-write_crash_report-contract_inputs2-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-sanitize_filename-contract_inputs2-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\app_logging.contract.yaml-src/app_logging.py-_build_crash_payload-contract_inputs3-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-is_valid_date_yyyy_mm_dd-contract_inputs3-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\app_logging.contract.yaml-src/app_logging.py-_traceback_origin-contract_inputs4-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-now_stamp-contract_inputs4-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\app_logging.contract.yaml-src/app_logging.py-install_uncaught_exception_hooks-contract_inputs5-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-initialize_app_logging-contract_inputs5-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\app_logging.contract.yaml-src/app_logging.py-_attach_handler_once-contract_inputs6-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-reconfigure_app_logging-contract_inputs6-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\app_logging.contract.yaml-src/app_logging.py-_resolve_log_level-contract_inputs7-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-get_configured_log_path-contract_inputs7-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\app_logging.contract.yaml-src/app_logging.py-_redact_field-contract_inputs8-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-write_crash_report-contract_inputs8-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\app_logging.contract.yaml-src/app_logging.py-_redact_value-contract_inputs9-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-_build_crash_payload-contract_inputs9-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\app_logging.contract.yaml-src/app_logging.py-_redact_text-contract_inputs10-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-_traceback_origin-contract_inputs10-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\app_logging.contract.yaml-src/app_logging.py-_serialize-contract_inputs11-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-install_uncaught_exception_hooks-contract_inputs11-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\app_logging.contract.yaml-src/app_logging.py-filter-contract_inputs12-RedactionFilter]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-_attach_handler_once-contract_inputs12-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\app_logging.contract.yaml-src/app_logging.py-format-contract_inputs13-JsonLogFormatter]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-_resolve_log_level-contract_inputs13-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\app_logging.contract.yaml-src/app_logging.py-_collect_extras-contract_inputs14-JsonLogFormatter]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-_redact_field-contract_inputs14-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-normalize_candidate_title-contract_inputs15-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-_redact_value-contract_inputs15-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-normalize_degree_type-contract_inputs16-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-_redact_text-contract_inputs16-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-coerce_non_negative_int-contract_inputs17-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-_serialize-contract_inputs17-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-validate_candidate_qualification-contract_inputs18-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-_is_within-contract_inputs18-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-parse_yes_no-contract_inputs19-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-_safe_to_delete-contract_inputs19-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-sanitize_email_subject-contract_inputs20-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-extract_artifact_paths-contract_inputs20-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-is_valid_email_address-contract_inputs21-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-delete_recording_artifacts-contract_inputs21-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-sender_email_error_reason-contract_inputs22-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-cleanup_stale_artifacts-contract_inputs22-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-normalize_referral_packet-contract_inputs23-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-build_monthly_summary-contract_inputs23-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-missing_required_docs-contract_inputs24-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-parse_args-contract_inputs24-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-validate_referral_packet-contract_inputs25-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-main-contract_inputs25-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-is_supported_document_path-contract_inputs26-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-_resolve_app_root-contract_inputs26-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-available_modules-contract_inputs27-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-_configure_runtime_logging-contract_inputs27-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-load_compat_module-contract_inputs28-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-_enable_faulthandler-contract_inputs28-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-module_ownership-contract_inputs29-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-_install_global_exception_hooks-contract_inputs29-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-wrapper_policy-contract_inputs30-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-_install_trace_logging-contract_inputs30-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-public_symbols-contract_inputs31-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-_is_under_root-contract_inputs31-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-resolve_compat_symbol-contract_inputs32-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-_env_debug_enabled-contract_inputs32-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-placeholder_meta_for_context-contract_inputs33-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-write_wrapper_crash_report-contract_inputs33-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-token_to_key-contract_inputs34-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-traceback_origin-contract_inputs34-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_match_key-contract_inputs35-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-inventory_config_assets-contract_inputs35-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-extract_placeholders-contract_inputs36-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-load_json_dict-contract_inputs36-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-missing_placeholder_keys-contract_inputs37-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-validate_rubric_config-contract_inputs37-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-find_unknown_placeholders-contract_inputs38-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-validate_disqualifier_config-contract_inputs38-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-validate_template_map-contract_inputs39-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-normalize_question_overrides_config-contract_inputs39-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-render_template-contract_inputs40-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-atomic_write_json-contract_inputs40-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-insert_token_into_widget-contract_inputs41-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-safe_read_json-contract_inputs41-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-build_mailto_url-contract_inputs42-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-validate_existing_file_path-contract_inputs42-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_normalize_mailto_recipients-contract_inputs43-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-available_modules-contract_inputs43-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_ps_quote-contract_inputs44-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-load_compat_module-contract_inputs44-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_allowed_referral_hosts_from_env-contract_inputs45-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-module_ownership-contract_inputs45-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_validate_referral_endpoint-contract_inputs46-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-wrapper_policy-contract_inputs46-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-build_director_packet-contract_inputs47-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-public_symbols-contract_inputs47-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-send_director_packet-contract_inputs48-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-resolve_compat_symbol-contract_inputs48-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-append_communication_log-contract_inputs49-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-__dir__-contract_inputs49-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-normalize_outcome_label-contract_inputs50-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-__init__-contract_inputs50-UxMetricsLogger]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-build_integration_payload-contract_inputs51-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-log_event-contract_inputs51-UxMetricsLogger]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-serialize_integration_payload-contract_inputs52-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-log_ux_view-contract_inputs52-UxMetricsLogger]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_trait_note-contract_inputs53-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-log_ux_click-contract_inputs53-UxMetricsLogger]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_flow_slices-contract_inputs54-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-log_ux_validation_error-contract_inputs54-UxMetricsLogger]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-build_school_offer_filename-contract_inputs55-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-log_ux_completion-contract_inputs55-UxMetricsLogger]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-next_available_offer_path-contract_inputs56-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-log_onboarding_canonical_event-contract_inputs56-UxMetricsLogger]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-parse_clock_12h-contract_inputs57-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-_log_ux_event-contract_inputs57-UxMetricsLogger]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-derive_offer_schedule-contract_inputs58-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-log_overdue_once-contract_inputs58-UxMetricsLogger]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-build_approval_offer_input-contract_inputs59-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-read_events-contract_inputs59-UxMetricsLogger]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-parse_requested_hourly_pay-contract_inputs60-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-_load_overdue_event_keys-contract_inputs60-UxMetricsLogger]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-build_signal_dictionary_index-contract_inputs61-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-filter-contract_inputs61-RedactionFilter]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-normalize_trait_signal-contract_inputs62-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-format-contract_inputs62-JsonLogFormatter]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-resolve_trait_signal_selection_id-contract_inputs63-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\platform_services.contract.yaml-src/platform_services.py-_collect_extras-contract_inputs63-JsonLogFormatter]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-resolve_trait_signal_runtime_id-contract_inputs64-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-normalize_candidate_title-contract_inputs64-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-signal_selection_aliases-contract_inputs65-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-normalize_degree_type-contract_inputs65-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-resolve_trait_signal_label-contract_inputs66-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-coerce_non_negative_int-contract_inputs66-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-resolve_trait_signal_weight-contract_inputs67-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-validate_candidate_qualification-contract_inputs67-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-normalize_core_signals-contract_inputs68-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-parse_yes_no-contract_inputs68-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-normalize_extended_signal_groups-contract_inputs69-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-sanitize_email_subject-contract_inputs69-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-iter_trait_schema_signals-contract_inputs70-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-is_valid_email_address-contract_inputs70-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-load_trait_definitions_from_runtime_bundle-contract_inputs71-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-sender_email_error_reason-contract_inputs71-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-load_trait_definitions_from_contract-contract_inputs72-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-normalize_referral_packet-contract_inputs72-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-load_trait_definitions_from_dir-contract_inputs73-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-missing_required_docs-contract_inputs73-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-canonical_trait_id-contract_inputs74-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-validate_referral_packet-contract_inputs74-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-trait_id_aliases-contract_inputs75-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-is_supported_document_path-contract_inputs75-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_resolve_traits_dir_from_bundle-contract_inputs76-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-available_modules-contract_inputs76-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_resolve_traits_dir_from_contract_payload-contract_inputs77-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-load_compat_module-contract_inputs77-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_load_json-contract_inputs78-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-module_ownership-contract_inputs78-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_load_yaml-contract_inputs79-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-wrapper_policy-contract_inputs79-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-default_signal_ui_definition-contract_inputs80-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-public_symbols-contract_inputs80-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-load_trait_signal_ui_definition-contract_inputs81-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-resolve_compat_symbol-contract_inputs81-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-ensure_trait_signal_ui_definition-contract_inputs82-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-placeholder_meta_for_context-contract_inputs82-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-normalize_trait_signal_selection_state-contract_inputs83-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-token_to_key-contract_inputs83-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-write_canonical_selected_signal_ids-contract_inputs84-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_match_key-contract_inputs84-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-count_selected_trait_checkbox_entries-contract_inputs85-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-extract_placeholders-contract_inputs85-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-resolve_trait_selection_value-contract_inputs86-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-missing_placeholder_keys-contract_inputs86-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-trait_requires_signal_selection-contract_inputs87-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-find_unknown_placeholders-contract_inputs87-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-build_trait_scoring_payload-contract_inputs88-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-validate_template_map-contract_inputs88-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-load_module_contract_runtime_bundle-contract_inputs89-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-render_template-contract_inputs89-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-load_trait_definitions-contract_inputs90-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-insert_token_into_widget-contract_inputs90-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-validate_runtime_bundle_metadata-contract_inputs91-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-build_mailto_url-contract_inputs91-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-normalize_trait_state_item-contract_inputs92-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_normalize_mailto_recipients-contract_inputs92-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-normalize_app_trait_state-contract_inputs93-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_allowed_referral_hosts_from_env-contract_inputs93-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-validate_normalized_state-contract_inputs94-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_validate_referral_endpoint-contract_inputs94-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-invoke_scoring_engine-contract_inputs95-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-build_director_packet-contract_inputs95-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-map_engine_output_to_normalized_shape-contract_inputs96-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-send_director_packet-contract_inputs96-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-__dir__-contract_inputs97-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-append_communication_log-contract_inputs97-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-to_dict-contract_inputs98-CandidateQualification]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-normalize_outcome_label-contract_inputs98-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-from_dict-contract_inputs99-CandidateQualification]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-build_integration_payload-contract_inputs99-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_coerce_raw_score-contract_inputs100-ScoringEngine]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-serialize_integration_payload-contract_inputs100-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_get_track_config-contract_inputs101-ScoringEngine]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_trait_note-contract_inputs101-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_resolve_track_key_for_scoring-contract_inputs102-ScoringEngine]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_flow_slices-contract_inputs102-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_calculate_percent-contract_inputs103-ScoringEngine]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-build_school_offer_filename-contract_inputs103-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_is_critical_priority-contract_inputs104-ScoringEngine]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-next_available_offer_path-contract_inputs104-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-evaluate-contract_inputs105-ScoringEngine]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-parse_clock_12h-contract_inputs105-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-__init__-contract_inputs106-DraftManager]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-derive_offer_schedule-contract_inputs106-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-save_draft-contract_inputs107-DraftManager]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-build_approval_offer_input-contract_inputs107-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-load_draft-contract_inputs108-DraftManager]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-parse_requested_hourly_pay-contract_inputs108-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-__init__-contract_inputs109-DocxExporter]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-build_signal_dictionary_index-contract_inputs109-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_require_candidate-contract_inputs110-DocxExporter]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-normalize_trait_signal-contract_inputs110-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_require_candidate_field-contract_inputs111-DocxExporter]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-resolve_trait_signal_selection_id-contract_inputs111-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_extract_full_candidate_transcript-contract_inputs112-DocxExporter]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-resolve_trait_signal_runtime_id-contract_inputs112-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-export_basic_interview_notes-contract_inputs113-DocxExporter]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-signal_selection_aliases-contract_inputs113-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-export-contract_inputs114-DocxExporter]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-resolve_trait_signal_label-contract_inputs114-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-pto-contract_inputs115-OfferInput]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-resolve_trait_signal_weight-contract_inputs115-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-pto2-contract_inputs116-OfferInput]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-normalize_core_signals-contract_inputs116-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-offer_deadline-contract_inputs117-OfferInput]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-normalize_extended_signal_groups-contract_inputs117-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-validate_template_path-contract_inputs118-OfferLetterService]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-iter_trait_schema_signals-contract_inputs118-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-build_replacements-contract_inputs119-OfferLetterService]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-load_trait_definitions_from_runtime_bundle-contract_inputs119-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-render_offer-contract_inputs120-OfferLetterService]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-load_trait_definitions_from_contract-contract_inputs120-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-render_approved_offer-contract_inputs121-OfferLetterService]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-load_trait_definitions_from_dir-contract_inputs121-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_replace_document_text-contract_inputs122-OfferLetterService]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-canonical_trait_id-contract_inputs122-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_replace_in_paragraph-contract_inputs123-OfferLetterService]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-trait_id_aliases-contract_inputs123-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-__eq__-contract_inputs124-CanonicalSignalRecord]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_resolve_traits_dir_from_bundle-contract_inputs124-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-__eq__-contract_inputs125-CanonicalSignalGroupRecord]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_resolve_traits_dir_from_contract_payload-contract_inputs125-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_safe_token-contract_inputs126-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_load_json-contract_inputs126-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-available_modules-contract_inputs127-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_load_yaml-contract_inputs127-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-load_compat_module-contract_inputs128-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-default_signal_ui_definition-contract_inputs128-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-module_ownership-contract_inputs129-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-load_trait_signal_ui_definition-contract_inputs129-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-wrapper_policy-contract_inputs130-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-ensure_trait_signal_ui_definition-contract_inputs130-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-public_symbols-contract_inputs131-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-normalize_trait_signal_selection_state-contract_inputs131-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-resolve_compat_symbol-contract_inputs132-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-write_canonical_selected_signal_ids-contract_inputs132-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__dir__-contract_inputs133-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-count_selected_trait_checkbox_entries-contract_inputs133-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-append_candidate_segment_text-contract_inputs134-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-resolve_trait_selection_value-contract_inputs134-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-sanitize_transcription_error_reason-contract_inputs135-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-trait_requires_signal_selection-contract_inputs135-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-build_transcription_log_hint-contract_inputs136-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-build_trait_scoring_payload-contract_inputs136-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-format_transcription_health_summary-contract_inputs137-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-load_module_contract_runtime_bundle-contract_inputs137-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-write_transcription_diagnostic-contract_inputs138-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-load_trait_definitions-contract_inputs138-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-probe_audio_file-contract_inputs139-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-validate_runtime_bundle_metadata-contract_inputs139-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-build_flow_time_windows-contract_inputs140-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-normalize_trait_state_item-contract_inputs140-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-map_segments_to_flow_indices-contract_inputs141-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-normalize_app_trait_state-contract_inputs141-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-parse_indeed_transcript_text-contract_inputs142-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-validate_normalized_state-contract_inputs142-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-infer_indeed_interviewer_speaker-contract_inputs143-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-invoke_scoring_engine-contract_inputs143-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-map_indeed_transcript_to_questions-contract_inputs144-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-map_engine_output_to_normalized_shape-contract_inputs144-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-write_merged_timestamped_transcript-contract_inputs145-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-__dir__-contract_inputs145-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-recommended_max_workers-contract_inputs146-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-to_dict-contract_inputs146-CandidateQualification]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-resolve_transcription_max_workers-contract_inputs147-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-from_dict-contract_inputs147-CandidateQualification]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-resolve_transcription_job_timeout_seconds-contract_inputs148-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_coerce_raw_score-contract_inputs148-ScoringEngine]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-resolve_runtime-contract_inputs149-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_get_track_config-contract_inputs149-ScoringEngine]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_openvino_genai_available-contract_inputs150-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_resolve_track_key_for_scoring-contract_inputs150-ScoringEngine]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-fallback_from_exception-contract_inputs151-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_calculate_percent-contract_inputs151-ScoringEngine]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-persist_runtime_choice-contract_inputs152-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_is_critical_priority-contract_inputs152-ScoringEngine]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-list_windows_dshow_audio_devices-contract_inputs153-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-evaluate-contract_inputs153-ScoringEngine]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-resolve_preferred_windows_audio_device-contract_inputs154-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-__init__-contract_inputs154-DraftManager]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-resolve_default_windows_system_device-contract_inputs155-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-save_draft-contract_inputs155-DraftManager]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-resolve_default_windows_microphone_device-contract_inputs156-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-load_draft-contract_inputs156-DraftManager]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-build_finalize_context-contract_inputs157-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-__init__-contract_inputs157-DocxExporter]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-finalize_progress_status_label-contract_inputs158-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_require_candidate-contract_inputs158-DocxExporter]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-build_finalize_progress_tasks-contract_inputs159-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_require_candidate_field-contract_inputs159-DocxExporter]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-format_finalize_progress_tasks-contract_inputs160-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_extract_full_candidate_transcript-contract_inputs160-DocxExporter]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-raise_legacy_finalize_guardrail-contract_inputs161-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-export_basic_interview_notes-contract_inputs161-DocxExporter]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-validate_before_finalize-contract_inputs162-None]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-export-contract_inputs162-DocxExporter]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-to_dict-contract_inputs163-InterviewState]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-pto-contract_inputs163-OfferInput]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs164-InterviewSessionContext]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-pto2-contract_inputs164-OfferInput]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-safe_interview_date-contract_inputs165-InterviewSessionContext]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-offer_deadline-contract_inputs165-OfferInput]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-safe_base_name-contract_inputs166-InterviewSessionContext]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-validate_template_path-contract_inputs166-OfferLetterService]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-active_session_key-contract_inputs167-InterviewSessionContext]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-build_replacements-contract_inputs167-OfferLetterService]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-validate_runtime_base_dir-contract_inputs168-InterviewSessionContext]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-render_offer-contract_inputs168-OfferLetterService]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-runtime_init_log_path-contract_inputs169-InterviewSessionContext]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-render_approved_offer-contract_inputs169-OfferLetterService]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs170-InterviewSessionStore]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_replace_document_text-contract_inputs170-OfferLetterService]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-session_path-contract_inputs171-InterviewSessionStore]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-_replace_in_paragraph-contract_inputs171-OfferLetterService]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-load-contract_inputs172-InterviewSessionStore]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-__eq__-contract_inputs172-CanonicalSignalRecord]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-save_question_snapshot-contract_inputs173-InterviewSessionStore]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\scoring_reporting.contract.yaml-src/scoring_reporting.py-__eq__-contract_inputs173-CanonicalSignalGroupRecord]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs174-InterviewSessionManager]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_safe_token-contract_inputs174-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-load_session_payload-contract_inputs175-InterviewSessionManager]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-available_modules-contract_inputs175-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-normalize_payload-contract_inputs176-InterviewSessionManager]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-load_compat_module-contract_inputs176-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-normalize_session_payload-contract_inputs177-InterviewSessionManager]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-module_ownership-contract_inputs177-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-hydrate_state-contract_inputs178-InterviewSessionManager]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-wrapper_policy-contract_inputs178-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-hydrate_state_from_session_payload-contract_inputs179-InterviewSessionManager]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-public_symbols-contract_inputs179-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-build_resume_instruction-contract_inputs180-InterviewSessionManager]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-resolve_compat_symbol-contract_inputs180-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-enqueue-contract_inputs181-TranscriptionQueueState]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__dir__-contract_inputs181-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-mark_started-contract_inputs182-TranscriptionQueueState]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-append_candidate_segment_text-contract_inputs182-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-mark_completed-contract_inputs183-TranscriptionQueueState]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-sanitize_transcription_error_reason-contract_inputs183-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-mark_failed-contract_inputs184-TranscriptionQueueState]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-build_transcription_log_hint-contract_inputs184-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-mark_timed_out-contract_inputs185-TranscriptionQueueState]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-format_transcription_health_summary-contract_inputs185-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-cancel-contract_inputs186-TranscriptionQueueState]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-write_transcription_diagnostic-contract_inputs186-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-next_payload-contract_inputs187-TranscriptionQueueState]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-probe_audio_file-contract_inputs187-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-wait_for_pending-contract_inputs188-TranscriptionQueueState]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-build_flow_time_windows-contract_inputs188-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-pending_count-contract_inputs189-TranscriptionQueueState]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-map_segments_to_flow_indices-contract_inputs189-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-clear-contract_inputs190-TranscriptionQueueState]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-parse_indeed_transcript_text-contract_inputs190-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-is_canceled-contract_inputs191-TranscriptionQueueState]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-infer_indeed_interviewer_speaker-contract_inputs191-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-error_reasons-contract_inputs192-TranscriptionQueueState]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-map_indeed_transcript_to_questions-contract_inputs192-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs193-BoundedTranscriptionExecutor]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-write_merged_timestamped_transcript-contract_inputs193-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-submit-contract_inputs194-BoundedTranscriptionExecutor]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-recommended_max_workers-contract_inputs194-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-shutdown-contract_inputs195-BoundedTranscriptionExecutor]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-resolve_transcription_max_workers-contract_inputs195-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs196-TranscriptWriterController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-resolve_transcription_job_timeout_seconds-contract_inputs196-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs197-AudioRuntimeController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-resolve_runtime-contract_inputs197-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-background_transcribe_question-contract_inputs198-AudioRuntimeController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_openvino_genai_available-contract_inputs198-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-start_recording_session-contract_inputs199-AudioRuntimeController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-fallback_from_exception-contract_inputs199-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs200-FlowController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-persist_runtime_choice-contract_inputs200-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-go_back-contract_inputs201-FlowController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-list_windows_dshow_audio_devices-contract_inputs201-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-active_flow-contract_inputs202-FlowController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-resolve_preferred_windows_audio_device-contract_inputs202-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs203-DashboardController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-resolve_default_windows_system_device-contract_inputs203-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs204-HistoryController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-resolve_default_windows_microphone_device-contract_inputs204-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-refresh_history_tree-contract_inputs205-HistoryController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-build_finalize_context-contract_inputs205-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-export_report-contract_inputs206-FinalizeGateways]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-finalize_progress_status_label-contract_inputs206-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-export_basic_report-contract_inputs207-FinalizeGateways]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-build_finalize_progress_tasks-contract_inputs207-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-export_integration-contract_inputs208-FinalizeGateways]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-format_finalize_progress_tasks-contract_inputs208-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-persist_finalize_history-contract_inputs209-FinalizeGateways]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-raise_legacy_finalize_guardrail-contract_inputs209-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-send_referral-contract_inputs210-FinalizeGateways]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-validate_before_finalize-contract_inputs210-None]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs211-FinalizePipelineController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-to_dict-contract_inputs211-InterviewState]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-finalize_interview-contract_inputs212-FinalizePipelineController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs212-InterviewSessionContext]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-run_finalize_pipeline-contract_inputs213-FinalizePipelineController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-safe_interview_date-contract_inputs213-InterviewSessionContext]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-poll_finalize_worker-contract_inputs214-FinalizePipelineController]
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-safe_base_name-contract_inputs214-InterviewSessionContext]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-active_session_key-contract_inputs215-InterviewSessionContext]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-validate_runtime_base_dir-contract_inputs216-InterviewSessionContext]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-runtime_init_log_path-contract_inputs217-InterviewSessionContext]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs218-InterviewSessionStore]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-session_path-contract_inputs219-InterviewSessionStore]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-load-contract_inputs220-InterviewSessionStore]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-save_question_snapshot-contract_inputs221-InterviewSessionStore]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs222-InterviewSessionManager]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-load_session_payload-contract_inputs223-InterviewSessionManager]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-normalize_payload-contract_inputs224-InterviewSessionManager]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-normalize_session_payload-contract_inputs225-InterviewSessionManager]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-hydrate_state-contract_inputs226-InterviewSessionManager]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-hydrate_state_from_session_payload-contract_inputs227-InterviewSessionManager]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-build_resume_instruction-contract_inputs228-InterviewSessionManager]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-enqueue-contract_inputs229-TranscriptionQueueState]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-mark_started-contract_inputs230-TranscriptionQueueState]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-mark_completed-contract_inputs231-TranscriptionQueueState]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-mark_failed-contract_inputs232-TranscriptionQueueState]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-mark_timed_out-contract_inputs233-TranscriptionQueueState]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-cancel-contract_inputs234-TranscriptionQueueState]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-next_payload-contract_inputs235-TranscriptionQueueState]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-wait_for_pending-contract_inputs236-TranscriptionQueueState]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-pending_count-contract_inputs237-TranscriptionQueueState]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-clear-contract_inputs238-TranscriptionQueueState]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-is_canceled-contract_inputs239-TranscriptionQueueState]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-error_reasons-contract_inputs240-TranscriptionQueueState]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs241-BoundedTranscriptionExecutor]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-submit-contract_inputs242-BoundedTranscriptionExecutor]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-shutdown-contract_inputs243-BoundedTranscriptionExecutor]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs244-TranscriptWriterController]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs245-AudioRuntimeController]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-background_transcribe_question-contract_inputs246-AudioRuntimeController]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-start_recording_session-contract_inputs247-AudioRuntimeController]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs248-FlowController]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-go_back-contract_inputs249-FlowController]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-active_flow-contract_inputs250-FlowController]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs251-DashboardController]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs252-HistoryActionsService]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-offer_transition-contract_inputs253-HistoryActionsService]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-update_history_offer_status-contract_inputs254-HistoryActionsService]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-handle_offer_action_for_row-contract_inputs255-HistoryActionsService]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-handle_delete_for_row-contract_inputs256-HistoryActionsService]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-_row_key-contract_inputs257-HistoryActionsService]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs258-HistoryController]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-refresh_history_tree-contract_inputs259-HistoryController]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-export_report-contract_inputs260-FinalizeGateways]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-export_basic_report-contract_inputs261-FinalizeGateways]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-export_integration-contract_inputs262-FinalizeGateways]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-persist_finalize_history-contract_inputs263-FinalizeGateways]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-send_referral-contract_inputs264-FinalizeGateways]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-__init__-contract_inputs265-FinalizePipelineController]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-finalize_interview-contract_inputs266-FinalizePipelineController]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-run_finalize_pipeline-contract_inputs267-FinalizePipelineController]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_shared_module_contract_interfaces.py::test_shared_contract_symbol_signature_exists[contracts\\interview_runtime.contract.yaml-src/interview_runtime.py-poll_finalize_worker-contract_inputs268-FinalizePipelineController]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false

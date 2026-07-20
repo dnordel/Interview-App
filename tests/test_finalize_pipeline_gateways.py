@@ -7,8 +7,7 @@ import pytest
 
 from candidate_report import CandidateReportRepository
 from data_store import InterviewHistoryStore
-from interview_runtime import FinalizeGateways
-from interview_app.finalize_pipeline import FinalizePipelineController, PENDING_TRANSCRIPTION_WARNING
+from interview_runtime import FinalizeGateways, FinalizePipelineController, PENDING_TRANSCRIPTION_WARNING
 
 
 class _GatewayStub:
@@ -64,13 +63,18 @@ def _build_app(flow_recordings: dict[int, dict] | None = None):
     return app
 
 
-def test_finalize_pipeline_accumulates_warnings(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        "interview_app.finalize_pipeline.ScoringEngine.evaluate",
-        staticmethod(lambda *_args, **_kwargs: {"outcome": "Hire", "percent_of_max": 92}),
-    )
+def _scoring_engine(result: dict[str, object]) -> SimpleNamespace:
+    return SimpleNamespace(evaluate=lambda *_args, **_kwargs: result)
+
+
+def test_finalize_pipeline_accumulates_warnings() -> None:
     app = _build_app(flow_recordings={})
-    controller = FinalizePipelineController(app, shared_state=SimpleNamespace(), gateways=_GatewayStub())
+    controller = FinalizePipelineController(
+        app,
+        shared_state=SimpleNamespace(),
+        gateways=_GatewayStub(),
+        scoring_engine=_scoring_engine({"outcome": "Hire", "percent_of_max": 92}),
+    )
 
     result = controller.run_finalize_pipeline()
 
@@ -80,11 +84,7 @@ def test_finalize_pipeline_accumulates_warnings(monkeypatch: pytest.MonkeyPatch)
     ]
 
 
-def test_finalize_pipeline_retry_safe_does_not_resend_after_first_failure(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        "interview_app.finalize_pipeline.ScoringEngine.evaluate",
-        staticmethod(lambda *_args, **_kwargs: {"outcome": "Hire", "percent_of_max": 99}),
-    )
+def test_finalize_pipeline_retry_safe_does_not_resend_after_first_failure() -> None:
     send_calls = {"count": 0}
     append_calls = {"count": 0}
 
@@ -92,34 +92,27 @@ def test_finalize_pipeline_retry_safe_does_not_resend_after_first_failure(monkey
         send_calls["count"] += 1
         return {"status": "ok"}
 
-    def _append_log(_base_dir, _event):
+    def _append_log(_base_dir, _event, *, candidate_name):
         append_calls["count"] += 1
         if append_calls["count"] == 1:
             raise RuntimeError("disk full")
         return Path("/tmp/comm-log.json")
 
-    monkeypatch.setattr("interview_runtime.send_director_packet", _send_packet)
-    monkeypatch.setattr("interview_runtime.append_communication_log", _append_log)
-    monkeypatch.setattr(
-        "interview_runtime.build_director_packet",
-        lambda **_kwargs: {"documents": {"final_report_path": "/tmp/final-notes.docx"}},
-    )
-    monkeypatch.setattr(
-        "interview_runtime.build_integration_payload",
-        lambda *_args, **_kwargs: {"candidate": "Ada"},
-    )
-    monkeypatch.setattr(
-        "interview_runtime.serialize_integration_payload",
-        lambda *_args, **_kwargs: Path("/tmp/integration.json"),
-    )
-    monkeypatch.setattr(
-        "interview_runtime.DocxExporter",
-        lambda *_args, **_kwargs: SimpleNamespace(export=lambda *_a, **_k: "/tmp/final-notes.docx"),
-    )
-
     app = _build_app(flow_recordings={1: {"base_name": "session1"}})
-    gateways = FinalizeGateways()
-    controller = FinalizePipelineController(app, shared_state=SimpleNamespace(), gateways=gateways)
+    gateways = FinalizeGateways(
+        exporter_factory=lambda *_args, **_kwargs: SimpleNamespace(export=lambda *_a, **_k: "/tmp/final-notes.docx"),
+        integration_payload_builder=lambda *_args, **_kwargs: {"candidate": "Ada"},
+        integration_payload_serializer=lambda *_args, **_kwargs: Path("/tmp/integration.json"),
+        director_packet_builder=lambda **_kwargs: {"documents": {"final_report_path": "/tmp/final-notes.docx"}},
+        director_packet_sender=_send_packet,
+        communication_log_appender=_append_log,
+    )
+    controller = FinalizePipelineController(
+        app,
+        shared_state=SimpleNamespace(),
+        gateways=gateways,
+        scoring_engine=_scoring_engine({"outcome": "Hire", "percent_of_max": 99}),
+    )
 
     with pytest.raises(RuntimeError, match="disk full"):
         controller.run_finalize_pipeline()
@@ -130,14 +123,15 @@ def test_finalize_pipeline_retry_safe_does_not_resend_after_first_failure(monkey
     assert result["director_packet"]["documents"]["final_report_path"] == "/tmp/final-notes.docx"
 
 
-def test_finalize_pipeline_result_payload_invariants(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        "interview_app.finalize_pipeline.ScoringEngine.evaluate",
-        staticmethod(lambda *_args, **_kwargs: {"outcome": "Hire", "percent_of_max": 88}),
-    )
+def test_finalize_pipeline_result_payload_invariants() -> None:
     app = _build_app(flow_recordings={1: {"base_name": "session1"}})
     gateway = _GatewayStub()
-    controller = FinalizePipelineController(app, shared_state=SimpleNamespace(), gateways=gateway)
+    controller = FinalizePipelineController(
+        app,
+        shared_state=SimpleNamespace(),
+        gateways=gateway,
+        scoring_engine=_scoring_engine({"outcome": "Hire", "percent_of_max": 88}),
+    )
 
     result = controller.run_finalize_pipeline()
     context = gateway.contexts[0]
@@ -157,11 +151,7 @@ def test_finalize_pipeline_result_payload_invariants(monkeypatch: pytest.MonkeyP
 
 
 
-def test_finalize_pipeline_partial_result_has_remaining_indices(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        "interview_app.finalize_pipeline.ScoringEngine.evaluate",
-        staticmethod(lambda *_args, **_kwargs: {"outcome": "Hire", "percent_of_max": 90}),
-    )
+def test_finalize_pipeline_partial_result_has_remaining_indices() -> None:
 
     class _PendingQueueState:
         def __init__(self, pending: set[int]) -> None:
@@ -169,7 +159,7 @@ def test_finalize_pipeline_partial_result_has_remaining_indices(monkeypatch: pyt
 
     app = _build_app(flow_recordings={1: {"base_name": "session1"}})
     app._transcription_queue_state = _PendingQueueState({2})
-    controller = FinalizePipelineController(app, shared_state=SimpleNamespace(), gateways=_GatewayStub())
+    controller = FinalizePipelineController(app, shared_state=SimpleNamespace(), gateways=_GatewayStub(), scoring_engine=_scoring_engine({"outcome": "Hire", "percent_of_max": 90}))
 
     result = controller.run_finalize_pipeline()
 
@@ -178,15 +168,11 @@ def test_finalize_pipeline_partial_result_has_remaining_indices(monkeypatch: pyt
     assert result["remaining_question_indices"] == [3]
 
 
-def test_finalize_result_includes_partial_transcript_fields(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        "interview_app.finalize_pipeline.ScoringEngine.evaluate",
-        staticmethod(lambda *_args, **_kwargs: {"outcome": "Hire", "percent_of_max": 91}),
-    )
+def test_finalize_result_includes_partial_transcript_fields() -> None:
     app = _build_app(flow_recordings={1: {"base_name": "session1"}})
     app._transcription_queue_state = SimpleNamespace(_pending_flow_transcriptions={3})
     shared_state = SimpleNamespace(transcription=SimpleNamespace(pending_flow_transcriptions={1}))
-    controller = FinalizePipelineController(app, shared_state=shared_state, gateways=_GatewayStub())
+    controller = FinalizePipelineController(app, shared_state=shared_state, gateways=_GatewayStub(), scoring_engine=_scoring_engine({"outcome": "Hire", "percent_of_max": 91}))
 
     result = controller.run_finalize_pipeline()
 
@@ -195,14 +181,10 @@ def test_finalize_result_includes_partial_transcript_fields(monkeypatch: pytest.
     assert result["remaining_question_indices"]
 
 
-def test_finalize_pipeline_marks_partial_transcript_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        "interview_app.finalize_pipeline.ScoringEngine.evaluate",
-        staticmethod(lambda *_args, **_kwargs: {"outcome": "Hire", "percent_of_max": 88}),
-    )
+def test_finalize_pipeline_marks_partial_transcript_metadata() -> None:
     app = _build_app(flow_recordings={1: {"base_name": "session1"}})
     app._transcription_queue_state = SimpleNamespace(_pending_flow_transcriptions={0, 2})
-    controller = FinalizePipelineController(app, shared_state=SimpleNamespace(), gateways=_GatewayStub())
+    controller = FinalizePipelineController(app, shared_state=SimpleNamespace(), gateways=_GatewayStub(), scoring_engine=_scoring_engine({"outcome": "Hire", "percent_of_max": 88}))
 
     result = controller.run_finalize_pipeline()
     context = controller.gateways.contexts[0]
@@ -226,8 +208,7 @@ def test_warn_if_finalize_starts_with_pending_transcriptions() -> None:
     assert app.warning_message == PENDING_TRANSCRIPTION_WARNING
 
 
-def test_handle_finalize_success_warns_on_partial_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("interview_app.finalize_pipeline.messagebox.showinfo", lambda *_args, **_kwargs: None)
+def test_handle_finalize_success_warns_on_partial_metadata() -> None:
     app = _build_app(flow_recordings={1: {"base_name": "session1"}})
     app.metrics_logger = SimpleNamespace(log_ux_completion=lambda **_kwargs: None, log_event=lambda *_args, **_kwargs: None)
     app._prompt_resume_if_outcome_requires_it = lambda _scoring: None
@@ -236,7 +217,12 @@ def test_handle_finalize_success_warns_on_partial_metadata(monkeypatch: pytest.M
     app.show_start_screen = lambda: None
     app.warning_message = ""
     app._show_finalize_partial_transcript_warning = lambda message: setattr(app, "warning_message", message)
-    controller = FinalizePipelineController(app, shared_state=SimpleNamespace(), gateways=_GatewayStub())
+    controller = FinalizePipelineController(
+        app,
+        shared_state=SimpleNamespace(),
+        gateways=_GatewayStub(),
+        dialogs=SimpleNamespace(showinfo=lambda *_args, **_kwargs: None),
+    )
 
     controller._handle_finalize_success(
         {
@@ -260,14 +246,10 @@ def test_handle_finalize_success_warns_on_partial_metadata(monkeypatch: pytest.M
     assert app.warning_message == PENDING_TRANSCRIPTION_WARNING
 
 
-def test_finalize_pipeline_includes_timeout_failure_warning(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        "interview_app.finalize_pipeline.ScoringEngine.evaluate",
-        staticmethod(lambda *_args, **_kwargs: {"outcome": "Hire", "percent_of_max": 81}),
-    )
+def test_finalize_pipeline_includes_timeout_failure_warning() -> None:
     app = _build_app(flow_recordings={1: {"base_name": "session1"}})
     app._collect_transcription_health_warnings = lambda: ["Audio transcription failed for Q2. Details:\nQ2: transcription_timeout"]
-    controller = FinalizePipelineController(app, shared_state=SimpleNamespace(), gateways=_GatewayStub())
+    controller = FinalizePipelineController(app, shared_state=SimpleNamespace(), gateways=_GatewayStub(), scoring_engine=_scoring_engine({"outcome": "Hire", "percent_of_max": 81}))
 
     result = controller.run_finalize_pipeline()
     context = controller.gateways.contexts[0]
@@ -276,15 +258,11 @@ def test_finalize_pipeline_includes_timeout_failure_warning(monkeypatch: pytest.
     assert context.payload["transcript_metadata"]["transcript_complete"] is True
 
 
-def test_finalize_pipeline_uses_shared_state_pending_indices(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        "interview_app.finalize_pipeline.ScoringEngine.evaluate",
-        staticmethod(lambda *_args, **_kwargs: {"outcome": "Hire", "percent_of_max": 87}),
-    )
+def test_finalize_pipeline_uses_shared_state_pending_indices() -> None:
     app = _build_app(flow_recordings={1: {"base_name": "session1"}})
     app._transcription_queue_state = SimpleNamespace(_pending_flow_transcriptions={"1", "bad"})
     shared_state = SimpleNamespace(transcription=SimpleNamespace(pending_flow_transcriptions={0, "2"}))
-    controller = FinalizePipelineController(app, shared_state=shared_state, gateways=_GatewayStub())
+    controller = FinalizePipelineController(app, shared_state=shared_state, gateways=_GatewayStub(), scoring_engine=_scoring_engine({"outcome": "Hire", "percent_of_max": 87}))
 
     result = controller.run_finalize_pipeline()
 

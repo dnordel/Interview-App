@@ -10,13 +10,13 @@ from typing import Any
 import pytest
 import yaml
 
-from app_logging import RedactionFilter
+from platform_services import RedactionFilter
 from scoring_reporting import sanitize_email_subject, sender_email_error_reason, serialize_integration_payload
 from platform_services import atomic_write_json, safe_read_json
 from interview_runtime import probe_audio_file, write_transcription_diagnostic
 
 SHARED_CONTRACTS = [
-    Path("contracts/app_logging.contract.yaml"),
+    Path("contracts/platform_services.contract.yaml"),
     Path("contracts/scoring_reporting.contract.yaml"),
     Path("contracts/interview_runtime.contract.yaml"),
 ]

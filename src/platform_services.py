@@ -27,6 +27,7 @@ from typing import Any, Collection
 
 _APP_LOG_PATH: Path | None = None
 _INITIALIZED = False
+_APP_LOG_HANDLER_MARKER = "_lpl_interview_app_handler"
 
 LOG_FORMAT = "%(asctime)s %(levelname)s %(name)s %(message)s"
 _TRACE_EVENTS = {"call", "exception", "return"}
@@ -669,6 +670,7 @@ def initialize_app_logging(*, app_root: Path | None = None) -> Path:
     )
     handler.setFormatter(JsonLogFormatter())
     handler.addFilter(RedactionFilter())
+    setattr(handler, _APP_LOG_HANDLER_MARKER, True)
 
     root_logger = logging.getLogger()
     root_logger.setLevel(_resolve_log_level())
@@ -682,6 +684,19 @@ def initialize_app_logging(*, app_root: Path | None = None) -> Path:
         extra={"log_path": str(log_path), "log_level": logging.getLevelName(root_logger.level)},
     )
     return log_path
+
+
+def reconfigure_app_logging(*, app_root: Path | None = None) -> Path:
+    global _APP_LOG_PATH, _INITIALIZED
+    root_logger = logging.getLogger()
+    for handler in list(root_logger.handlers):
+        if not bool(getattr(handler, _APP_LOG_HANDLER_MARKER, False)):
+            continue
+        root_logger.removeHandler(handler)
+        handler.close()
+    _APP_LOG_PATH = None
+    _INITIALIZED = False
+    return initialize_app_logging(app_root=app_root)
 
 
 def get_configured_log_path() -> Path | None:
@@ -768,6 +783,7 @@ def _attach_handler_once(root_logger: logging.Logger, handler: logging.Handler) 
     for existing in root_logger.handlers:
         existing_path = getattr(existing, "baseFilename", None)
         if target_path is not None and existing_path == target_path:
+            handler.close()
             return
     root_logger.addHandler(handler)
 
@@ -1739,7 +1755,6 @@ except Exception:  # pragma: no cover - fallback used in constrained environment
                 self.tables.append(table)
 
 _COMPAT_MODULES: tuple[str, ...] = (
-    "app_logging",
     "data_store",
     "runtime_wrapper",
 )

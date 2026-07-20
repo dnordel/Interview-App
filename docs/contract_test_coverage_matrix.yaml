@@ -1,8 +1,8 @@
 last_updated: '2026-07-20'
 sections:
-- name: interview_app
+- name: interview_runtime
   tests:
-  - tests/test_interview_app_contract_interfaces.py
+  - tests/test_interview_runtime_contract_interfaces.py
 - name: onboarding
   tests:
   - tests/test_onboarding_contract_interfaces.py
@@ -12,7 +12,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-20T21:42:37.954982+00:00'
+generated_at_utc: '2026-07-20T21:58:34.350170+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -22,7 +22,7 @@ security_test_mapping:
   - tests/test_interview_root_contracts.py
   - tests/test_onboarding_contract_interfaces.py
   side_effect_controls:
-  - tests/test_interview_app_contract_interfaces.py
+  - tests/test_interview_runtime_contract_interfaces.py
   - tests/test_shared_module_contract_interfaces.py
   leakage_prevention:
   - tests/test_interview_root_contracts.py
@@ -217,156 +217,6 @@ entries:
     - behavior
     - parameter_validation
     - return_type
-- contract: contracts/app_logging.contract.yaml
-  symbol: app_logging.JsonLogFormatter._collect_extras
-  kind: method
-  tests:
-  - path: tests/test_shared_module_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_controls
-- contract: contracts/app_logging.contract.yaml
-  symbol: app_logging.JsonLogFormatter.format
-  kind: method
-  tests:
-  - path: tests/test_shared_module_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_controls
-- contract: contracts/app_logging.contract.yaml
-  symbol: app_logging.RedactionFilter.filter
-  kind: method
-  tests:
-  - path: tests/test_shared_module_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_controls
-- contract: contracts/app_logging.contract.yaml
-  symbol: app_logging._attach_handler_once
-  kind: function
-  tests:
-  - path: tests/test_shared_module_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_controls
-- contract: contracts/app_logging.contract.yaml
-  symbol: app_logging._build_crash_payload
-  kind: function
-  tests:
-  - path: tests/test_shared_module_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_controls
-- contract: contracts/app_logging.contract.yaml
-  symbol: app_logging._redact_field
-  kind: function
-  tests:
-  - path: tests/test_shared_module_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_controls
-- contract: contracts/app_logging.contract.yaml
-  symbol: app_logging._redact_text
-  kind: function
-  tests:
-  - path: tests/test_shared_module_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_controls
-- contract: contracts/app_logging.contract.yaml
-  symbol: app_logging._redact_value
-  kind: function
-  tests:
-  - path: tests/test_shared_module_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_controls
-- contract: contracts/app_logging.contract.yaml
-  symbol: app_logging._resolve_log_level
-  kind: function
-  tests:
-  - path: tests/test_shared_module_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_controls
-- contract: contracts/app_logging.contract.yaml
-  symbol: app_logging._serialize
-  kind: function
-  tests:
-  - path: tests/test_shared_module_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_controls
-- contract: contracts/app_logging.contract.yaml
-  symbol: app_logging._traceback_origin
-  kind: function
-  tests:
-  - path: tests/test_shared_module_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_controls
-- contract: contracts/app_logging.contract.yaml
-  symbol: app_logging.get_configured_log_path
-  kind: function
-  tests:
-  - path: tests/test_shared_module_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_controls
-- contract: contracts/app_logging.contract.yaml
-  symbol: app_logging.initialize_app_logging
-  kind: function
-  tests:
-  - path: tests/test_shared_module_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_controls
-- contract: contracts/app_logging.contract.yaml
-  symbol: app_logging.install_uncaught_exception_hooks
-  kind: function
-  tests:
-  - path: tests/test_shared_module_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_controls
-- contract: contracts/app_logging.contract.yaml
-  symbol: app_logging.write_crash_report
-  kind: function
-  tests:
-  - path: tests/test_shared_module_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_controls
 - contract: contracts/candidate_report.contract.yaml
   symbol: candidate_report.CandidateReportRepository.__init__
   kind: method
@@ -2176,216 +2026,6 @@ entries:
     - behavior
     - parameter_validation
     - return_type
-- contract: contracts/interview_app_finalize_pipeline.contract.yaml
-  symbol: interview_app_finalize_pipeline.FinalizePipelineController._build_transcript_metadata
-  kind: method
-  tests:
-  - path: tests/test_interview_app_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_side_effects
-- contract: contracts/interview_app_finalize_pipeline.contract.yaml
-  symbol: interview_app_finalize_pipeline.FinalizePipelineController._collect_pending_flow_indices
-  kind: method
-  tests:
-  - path: tests/test_interview_app_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_side_effects
-- contract: contracts/interview_app_finalize_pipeline.contract.yaml
-  symbol: interview_app_finalize_pipeline.FinalizePipelineController._dispatch_finalize_work
-  kind: method
-  tests:
-  - path: tests/test_interview_app_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_side_effects
-- contract: contracts/interview_app_finalize_pipeline.contract.yaml
-  symbol: interview_app_finalize_pipeline.FinalizePipelineController._handle_finalize_failure
-  kind: method
-  tests:
-  - path: tests/test_interview_app_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_side_effects
-- contract: contracts/interview_app_finalize_pipeline.contract.yaml
-  symbol: interview_app_finalize_pipeline.FinalizePipelineController._handle_finalize_success
-  kind: method
-  tests:
-  - path: tests/test_interview_app_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_side_effects
-- contract: contracts/interview_app_finalize_pipeline.contract.yaml
-  symbol: interview_app_finalize_pipeline.FinalizePipelineController._pending_transcription_indices
-  kind: method
-  tests:
-  - path: tests/test_interview_app_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_side_effects
-- contract: contracts/interview_app_finalize_pipeline.contract.yaml
-  symbol: interview_app_finalize_pipeline.FinalizePipelineController._pending_transcription_snapshot
-  kind: method
-  tests:
-  - path: tests/test_interview_app_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_side_effects
-- contract: contracts/interview_app_finalize_pipeline.contract.yaml
-  symbol: interview_app_finalize_pipeline.FinalizePipelineController._restore_main_window_focus
-  kind: method
-  tests:
-  - path: tests/test_interview_app_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_side_effects
-- contract: contracts/interview_app_finalize_pipeline.contract.yaml
-  symbol: interview_app_finalize_pipeline.FinalizePipelineController._safe_int_indices
-  kind: method
-  tests:
-  - path: tests/test_interview_app_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_side_effects
-- contract: contracts/interview_app_finalize_pipeline.contract.yaml
-  symbol: interview_app_finalize_pipeline.FinalizePipelineController._start_finalize_worker_non_blocking
-  kind: method
-  tests:
-  - path: tests/test_interview_app_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_side_effects
-- contract: contracts/interview_app_finalize_pipeline.contract.yaml
-  symbol: interview_app_finalize_pipeline.FinalizePipelineController._warn_if_finalize_starts_with_pending_transcriptions
-  kind: method
-  tests:
-  - path: tests/test_interview_app_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_side_effects
-- contract: contracts/interview_app_finalize_pipeline.contract.yaml
-  symbol: interview_app_finalize_pipeline.FinalizePipelineController.finalize_interview
-  kind: method
-  tests:
-  - path: tests/test_interview_app_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_side_effects
-- contract: contracts/interview_app_finalize_pipeline.contract.yaml
-  symbol: interview_app_finalize_pipeline.FinalizePipelineController.poll_finalize_worker
-  kind: method
-  tests:
-  - path: tests/test_interview_app_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_side_effects
-- contract: contracts/interview_app_finalize_pipeline.contract.yaml
-  symbol: interview_app_finalize_pipeline.FinalizePipelineController.run_finalize_pipeline
-  kind: method
-  tests:
-  - path: tests/test_interview_app_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_side_effects
-- contract: contracts/interview_app_finalize_pipeline.contract.yaml
-  symbol: interview_app_finalize_pipeline.raise_legacy_finalize_guardrail
-  kind: function
-  tests:
-  - path: tests/test_interview_app_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_side_effects
-- contract: contracts/interview_app_finalize_pipeline.contract.yaml
-  symbol: interview_app_finalize_pipeline.validate_before_finalize
-  kind: function
-  tests:
-  - path: tests/test_interview_app_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_side_effects
-- contract: contracts/interview_app_history_actions.contract.yaml
-  symbol: interview_app_history_actions.HistoryActionsService._row_key
-  kind: method
-  tests:
-  - path: tests/test_interview_app_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_side_effects
-- contract: contracts/interview_app_history_actions.contract.yaml
-  symbol: interview_app_history_actions.HistoryActionsService.handle_delete_for_row
-  kind: method
-  tests:
-  - path: tests/test_interview_app_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_side_effects
-- contract: contracts/interview_app_history_actions.contract.yaml
-  symbol: interview_app_history_actions.HistoryActionsService.handle_offer_action_for_row
-  kind: method
-  tests:
-  - path: tests/test_interview_app_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_side_effects
-- contract: contracts/interview_app_history_actions.contract.yaml
-  symbol: interview_app_history_actions.HistoryActionsService.offer_transition
-  kind: method
-  tests:
-  - path: tests/test_interview_app_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_side_effects
-- contract: contracts/interview_app_history_actions.contract.yaml
-  symbol: interview_app_history_actions.HistoryActionsService.update_history_offer_status
-  kind: method
-  tests:
-  - path: tests/test_interview_app_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_side_effects
 - contract: contracts/interview_audio_preflight.contract.yaml
   symbol: interview_audio_preflight.evaluate_audio_preflight
   kind: function
@@ -2766,6 +2406,66 @@ entries:
     - security_leakage_prevention
 - contract: contracts/interview_runtime.contract.yaml
   symbol: interview_runtime.FlowController.go_back
+  kind: method
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime.HistoryActionsService.__init__
+  kind: method
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime.HistoryActionsService._row_key
+  kind: method
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime.HistoryActionsService.handle_delete_for_row
+  kind: method
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime.HistoryActionsService.handle_offer_action_for_row
+  kind: method
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime.HistoryActionsService.offer_transition
+  kind: method
+  tests:
+  - path: tests/test_interview_root_contracts.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_leakage_prevention
+- contract: contracts/interview_runtime.contract.yaml
+  symbol: interview_runtime.HistoryActionsService.update_history_offer_status
   kind: method
   tests:
   - path: tests/test_interview_root_contracts.py
@@ -7717,569 +7417,642 @@ entries:
   symbol: platform_services.JsonLogFormatter._collect_extras
   kind: method
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.JsonLogFormatter.format
   kind: method
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.RedactionFilter.filter
   kind: method
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.UxMetricsLogger.__init__
   kind: method
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.UxMetricsLogger._load_overdue_event_keys
   kind: method
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.UxMetricsLogger._log_ux_event
   kind: method
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.UxMetricsLogger.log_event
   kind: method
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.UxMetricsLogger.log_onboarding_canonical_event
   kind: method
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.UxMetricsLogger.log_overdue_once
   kind: method
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.UxMetricsLogger.log_ux_click
   kind: method
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.UxMetricsLogger.log_ux_completion
   kind: method
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.UxMetricsLogger.log_ux_validation_error
   kind: method
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.UxMetricsLogger.log_ux_view
   kind: method
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.UxMetricsLogger.read_events
   kind: method
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.__dir__
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services._attach_handler_once
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services._build_crash_payload
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services._configure_runtime_logging
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services._enable_faulthandler
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services._env_debug_enabled
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services._install_global_exception_hooks
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services._install_trace_logging
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services._is_under_root
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services._is_within
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services._redact_field
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services._redact_text
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services._redact_value
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services._resolve_app_root
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services._resolve_log_level
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services._safe_to_delete
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services._serialize
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services._traceback_origin
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.atomic_write_json
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.available_modules
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.build_monthly_summary
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.cleanup_stale_artifacts
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.compose_intro_script
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.delete_recording_artifacts
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.extract_artifact_paths
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.get_configured_log_path
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.initialize_app_logging
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.install_uncaught_exception_hooks
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.inventory_config_assets
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.is_valid_date_yyyy_mm_dd
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.load_compat_module
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.load_json_dict
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.main
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.module_ownership
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.normalize_question_overrides_config
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.now_stamp
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.parse_args
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.public_symbols
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
+- contract: contracts/platform_services.contract.yaml
+  symbol: platform_services.reconfigure_app_logging
+  kind: function
+  tests:
+  - path: tests/test_shared_module_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.resolve_compat_symbol
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.safe_read_json
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.sanitize_filename
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.text_suggests_no_example
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.traceback_origin
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.validate_disqualifier_config
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.validate_existing_file_path
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.validate_rubric_config
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.wrapper_policy
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.write_crash_report
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/platform_services.contract.yaml
   symbol: platform_services.write_wrapper_crash_report
   kind: function
   tests:
-  - path: tests/test_contract_coverage_matrix.py
+  - path: tests/test_shared_module_contract_interfaces.py
     focus:
     - behavior
     - parameter_validation
     - return_type
+    - security_controls
 - contract: contracts/pyside_completed_interview.contract.yaml
   symbol: pyside_completed_interview.CompletedInterviewPage.render
   kind: method
@@ -10721,16 +10494,6 @@ entries:
     - security_controls
 - contract: contracts/scoring_reporting.contract.yaml
   symbol: scoring_reporting._normalize_mailto_recipients
-  kind: function
-  tests:
-  - path: tests/test_shared_module_contract_interfaces.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-    - security_controls
-- contract: contracts/scoring_reporting.contract.yaml
-  symbol: scoring_reporting._ps_quote
   kind: function
   tests:
   - path: tests/test_shared_module_contract_interfaces.py

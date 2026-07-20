@@ -384,17 +384,6 @@ functions:
     type: str
   exceptions: []
   side_effects: none
-- name: _ps_quote
-  description: Escape a value for single-quoted PowerShell string usage.
-  locked: false
-  inputs:
-    value:
-      type: str
-      required: true
-  returns:
-    type: str
-  exceptions: []
-  side_effects: none
 - name: _allowed_referral_hosts_from_env
   description: Load allowed director referral endpoint hosts from environment configuration.
   locked: false

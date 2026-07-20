@@ -8,7 +8,7 @@ cleanup after production imports move to the five public modules.
 
 | Target module | Legacy modules initially exposed |
 |---|---|
-| `platform_services` | `app_logging`, `data_store`, `runtime_wrapper` |
+| `platform_services` | `data_store`, `runtime_wrapper` |
 | `ui_composition` | `ui_windows`, interview router/shell/view modules |
 | `interview_runtime` | interview state/session modules, audio recorder, transcription diagnostics/queue/executor/processor/writer/summary, interview controllers, history actions/controllers, finalize context/gateways/pipeline |
 | `scoring_reporting` | none |
@@ -36,9 +36,9 @@ cleanup after production imports move to the five public modules.
 - `onboarding_migrations` remains a live behavior module, not a compatibility wrapper.
 - Remaining legacy import paths stay valid where wrappers still exist.
 - Physical moves completed:
-  - `platform_services`: `app_logging`, `data_store` config dependencies, `runtime_wrapper`
+  - `platform_services`: `data_store` config dependencies, `runtime_wrapper`
   - `ui_composition`: `interview_app.ui_router`, `interview_app.ui_shell`, `interview_app.view_protocols`, `ui_windows` shared imports
-  - `interview_runtime`: only `interview_app.finalize_pipeline` and `interview_app.history_actions` remain pending special compatibility cleanup
+  - `interview_runtime`: only active `interview_audio_recorder` remains
   - `scoring_reporting`: no compatibility wrappers remain
   - `onboarding_operations`: all listed onboarding helpers now live directly in `onboarding_operations`; no legacy onboarding wrappers remain
 - Contract review and full pytest passed after the production import audit.

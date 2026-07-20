@@ -29,7 +29,7 @@ Use this checklist when any PR changes interfaces, contracts, or contract govern
   - `python tools/check_contract_review.py --section coverage-matrix`
 - [ ] Contract interface tests:
   - `pytest tests/test_onboarding_contract_interfaces.py`
-  - `pytest tests/test_interview_app_contract_interfaces.py`
+  - `pytest tests/test_interview_runtime_contract_interfaces.py`
   - `pytest tests/test_interview_root_contracts.py`
 
 ## Security Review Gates

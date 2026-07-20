@@ -8,23 +8,19 @@ class _AppStub:
         return {"beam_size": 1}
 
 
-def test_start_recording_session_uses_resolved_windows_system_device(monkeypatch, tmp_path: Path):
+def test_start_recording_session_uses_resolved_windows_system_device(tmp_path: Path):
     captured = {}
 
     def _start_recording(**kwargs):
         captured.update(kwargs)
         return object()
 
-    monkeypatch.setattr(
-        "interview_runtime.resolve_default_windows_system_device",
-        lambda: "VB-Audio Virtual Cable (CABLE Input)",
+    controller = AudioRuntimeController(
+        app=_AppStub(),
+        shared_state=object(),
+        microphone_resolver=lambda: "Microphone (Realtek USB Audio)",
+        system_resolver=lambda: "VB-Audio Virtual Cable (CABLE Input)",
     )
-    monkeypatch.setattr(
-        "interview_runtime.resolve_default_windows_microphone_device",
-        lambda: "Microphone (Realtek USB Audio)",
-    )
-
-    controller = AudioRuntimeController(app=_AppStub(), shared_state=object())
     runtime_config = RuntimeConfig(model="small", device="cpu", compute_type="int8")
 
     controller.start_recording_session(

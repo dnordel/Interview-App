@@ -93,15 +93,6 @@ def _mapping_rules() -> list[Rule]:
             ],
         ),
         Rule(
-            predicate=lambda symbol, contract: contract.startswith("contracts/interview_app_"),
-            tests=[
-                {
-                    "path": "tests/test_interview_app_contract_interfaces.py",
-                    "focus": ["behavior", "parameter_validation", "return_type", "security_side_effects"],
-                }
-            ],
-        ),
-        Rule(
             predicate=lambda symbol, contract: contract
             in {
                 "contracts/runtime_wrapper.contract.yaml",
@@ -117,8 +108,7 @@ def _mapping_rules() -> list[Rule]:
         Rule(
             predicate=lambda symbol, contract: contract
             in {
-                "contracts/app_logging.contract.yaml",
-                "contracts/scoring_reporting.contract.yaml",
+                "contracts/platform_services.contract.yaml",
                 "contracts/scoring_reporting.contract.yaml",
             },
             tests=[
@@ -172,7 +162,7 @@ def build_matrix() -> dict[str, Any]:
     return {
         "last_updated": date.today().isoformat(),
         "sections": [
-            {"name": "interview_app", "tests": ["tests/test_interview_app_contract_interfaces.py"]},
+            {"name": "interview_runtime", "tests": ["tests/test_interview_runtime_contract_interfaces.py"]},
             {"name": "onboarding", "tests": ["tests/test_onboarding_contract_interfaces.py"]},
             {"name": "shared", "tests": ["tests/test_shared_module_contract_interfaces.py"]},
             {"name": "root", "tests": ["tests/test_interview_root_contracts.py"]},
@@ -189,7 +179,7 @@ def build_matrix() -> dict[str, Any]:
                 "tests/test_onboarding_contract_interfaces.py",
             ],
             "side_effect_controls": [
-                "tests/test_interview_app_contract_interfaces.py",
+                "tests/test_interview_runtime_contract_interfaces.py",
                 "tests/test_shared_module_contract_interfaces.py",
             ],
             "leakage_prevention": [
