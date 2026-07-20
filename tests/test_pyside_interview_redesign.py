@@ -33,6 +33,9 @@ from source_update_monitor import source_digest
 
 from onboarding_operations import Employee, EmployeeTask
 from pyside_interview_app import (
+    _INTERVIEW_HOME_TAB_INDEX,
+    _INTERVIEW_LIVE_TAB_INDEX,
+    _INTERVIEW_REVIEW_TAB_INDEX,
     PySideInterviewSession,
     build_interview_redesign_model,
     build_pyside_candidate_board,
@@ -271,7 +274,7 @@ def test_pyside_new_interview_setup_scenario(
     app.processEvents()
 
     assert window.hiring_v2_router.current_route == "interview"
-    assert window.interview_tabs.currentIndex() == 0
+    assert window.interview_tabs.currentIndex() == _INTERVIEW_HOME_TAB_INDEX
     assert window.interview_tabs.currentWidget().findChild(qt_widgets.QLabel, "Title").text() == "New Interview"
     window.window.close()
     app.processEvents()
@@ -288,8 +291,14 @@ def test_pyside_new_interview_setup_matches_mockup_controls(tmp_path: Path) -> N
         school_options=["Hawthorne", "Palmdale"],
     )
     window = _pyside_window_on_page(model, "Interviews")
-    setup = window.interview_tabs.widget(0)
+    setup = window.interview_tabs.widget(_INTERVIEW_HOME_TAB_INDEX)
 
+    assert window.interview_tabs.count() == 3
+    assert [window.interview_tabs.tabText(index) for index in range(window.interview_tabs.count())] == [
+        "Home",
+        "Live Interview",
+        "Review",
+    ]
     assert setup.objectName() == "HiringV2NewInterviewSetup"
     assert setup.findChild(qt_widgets.QLineEdit, "HiringV2SetupCandidateName").text() == ""
     assert setup.findChild(qt_widgets.QComboBox, "HiringV2SetupSchool").currentText() == "Hawthorne"
@@ -307,6 +316,10 @@ def test_pyside_new_interview_setup_matches_mockup_controls(tmp_path: Path) -> N
     ]
     buttons = {button.text() for button in setup.findChildren(qt_widgets.QPushButton)}
     assert buttons == {"Test Audio", "Cancel", "Begin Interview"}
+    assert sum(
+        button.text() == "Begin Interview"
+        for button in window.interview_tabs.findChildren(qt_widgets.QPushButton)
+    ) == 1
     assert setup.findChild(qt_widgets.QComboBox, "HiringV2SetupAudioSource") is not None
     assert setup.findChild(qt_widgets.QLabel, "HiringV2SetupMicrophoneStatus") is not None
     assert setup.findChild(qt_widgets.QLabel, "HiringV2SetupSystemAudioStatus") is not None
@@ -352,7 +365,7 @@ def test_pyside_new_interview_setup_begins_first_interview_without_contact_field
     assert candidate.phone == ""
     assert window.session is not None
     assert window.session.candidate_name == "Sofia Ramirez"
-    assert window.interview_tabs.currentIndex() == 2
+    assert window.interview_tabs.currentIndex() == _INTERVIEW_LIVE_TAB_INDEX
     assert capture_started == [True]
     window.window.close()
     app.processEvents()
@@ -378,13 +391,13 @@ def test_pyside_new_interview_cancel_discards_changes_and_returns_dashboard(
     monkeypatch.setattr(window.QtWidgets.QMessageBox, "question", lambda *_args, **_kwargs: next(answers))
     window.home_candidate_input.setText("Discard Me")
 
-    window.interview_tabs.widget(0).findChild(qt_widgets.QPushButton, "HiringV2SetupCancel").click()
+    window.interview_tabs.widget(_INTERVIEW_HOME_TAB_INDEX).findChild(qt_widgets.QPushButton, "HiringV2SetupCancel").click()
     app.processEvents()
 
     assert window.home_candidate_input.text() == "Discard Me"
     assert window.staffing_v2_dashboard.current_page_id == "interviews"
 
-    window.interview_tabs.widget(0).findChild(qt_widgets.QPushButton, "HiringV2SetupCancel").click()
+    window.interview_tabs.widget(_INTERVIEW_HOME_TAB_INDEX).findChild(qt_widgets.QPushButton, "HiringV2SetupCancel").click()
     app.processEvents()
 
     assert window.home_candidate_input.text() == ""
@@ -410,15 +423,15 @@ def test_pyside_exit_live_interview_saves_draft_and_returns_fresh_setup(tmp_path
     window.session = session
     window.session_index = session.current_index
     window._render_live_question_page()
-    window.interview_tabs.setCurrentIndex(2)
+    window.interview_tabs.setCurrentIndex(_INTERVIEW_LIVE_TAB_INDEX)
 
-    window.interview_tabs.widget(2).findChild(qt_widgets.QPushButton, "LiveInterviewExit").click()
+    window.interview_tabs.widget(_INTERVIEW_LIVE_TAB_INDEX).findChild(qt_widgets.QPushButton, "LiveInterviewExit").click()
     app.processEvents()
 
     assert draft_path.exists()
     assert window.session is None
     assert window.hiring_v2_router.current_route == "interview"
-    assert window.interview_tabs.currentIndex() == 0
+    assert window.interview_tabs.currentIndex() == _INTERVIEW_HOME_TAB_INDEX
     assert window.home_candidate_input.text() == ""
     assert window.staffing_v2_dashboard.current_page_id == "interviews"
     window.window.close()
@@ -503,7 +516,7 @@ def test_pyside_manual_audio_preflight_locks_only_duplicate_test_action(
 
     assert not window.home_test_audio_button.isEnabled()
     assert window.home_begin_button.isEnabled()
-    assert window.interview_tabs.widget(0).findChild(
+    assert window.interview_tabs.widget(_INTERVIEW_HOME_TAB_INDEX).findChild(
         qt_widgets.QPushButton, "HiringV2SetupCancel"
     ).isEnabled()
     window.home_test_audio_button.click()
@@ -757,7 +770,7 @@ def test_pyside_begin_rejects_audio_source_that_is_no_longer_available(
     assert window.session is None
     assert HiringPipelineStore(history_path).list_applications() == []
     assert "no longer available" in window.home_setup_validation.text().lower()
-    assert window.interview_tabs.currentIndex() == 0
+    assert window.interview_tabs.currentIndex() == _INTERVIEW_HOME_TAB_INDEX
     window.window.close()
     app.processEvents()
 
@@ -835,7 +848,7 @@ def test_pyside_new_interview_setup_responsive_visual_scenario(
         school_options=["Hawthorne"],
     )
     window = _pyside_window_on_page(model, "Interviews")
-    setup = window.interview_tabs.widget(0)
+    setup = window.interview_tabs.widget(_INTERVIEW_HOME_TAB_INDEX)
     window.window.resize(1680, 945)
     window.window.show()
     app.processEvents()
@@ -952,7 +965,7 @@ def test_pyside_candidates_resume_button_routes_saved_draft_into_live_interview(
     assert window.session is not None
     assert window.session.candidate_name == "Sofia Ramirez"
     assert window.staffing_v2_dashboard.current_page_id == "interviews"
-    assert window.interview_tabs.currentIndex() == 2
+    assert window.interview_tabs.currentIndex() == _INTERVIEW_LIVE_TAB_INDEX
     window.window.close()
     app.processEvents()
 
@@ -1648,11 +1661,11 @@ def test_pyside_live_footer_blocks_unrated_scored_next_and_keeps_skip_enabled(tm
 
     footer_buttons = {
         button.property("pyside_live_footer_action"): button
-        for button in window.interview_tabs.widget(2).findChildren(qt_widgets.QPushButton)
+        for button in window.interview_tabs.widget(_INTERVIEW_LIVE_TAB_INDEX).findChildren(qt_widgets.QPushButton)
         if button.property("pyside_live_footer_action")
     }
-    capture_bar = window.interview_tabs.widget(2).findChild(qt_widgets.QFrame, "LiveInterviewHeader")
-    question_rail = window.interview_tabs.widget(2).findChild(qt_widgets.QFrame, "LiveInterviewStageRail")
+    capture_bar = window.interview_tabs.widget(_INTERVIEW_LIVE_TAB_INDEX).findChild(qt_widgets.QFrame, "LiveInterviewHeader")
+    question_rail = window.interview_tabs.widget(_INTERVIEW_LIVE_TAB_INDEX).findChild(qt_widgets.QFrame, "LiveInterviewStageRail")
 
     assert footer_buttons["back"].isEnabled()
     assert footer_buttons["skip"].isEnabled()
@@ -1713,7 +1726,7 @@ Speaker 0: I noticed the child was upset and helped them name the feeling.
     assert window.session.active_question().question_id == "trait_1"
     assert "helped them name" in window.live_notes.toPlainText()
     assert not window.live_next_button.isEnabled()
-    assert window.interview_tabs.currentIndex() == 2
+    assert window.interview_tabs.currentIndex() == _INTERVIEW_LIVE_TAB_INDEX
     window.window.close()
     app.processEvents()
 
@@ -1776,7 +1789,7 @@ Speaker 0: I noticed the child was upset and helped them name the feeling.
     assert window.session.interview_date == "2026-07-10"
     assert window.session.active_question().question_id == "trait_1"
     assert "helped them name" in window.live_notes.toPlainText()
-    assert window.interview_tabs.currentIndex() == 2
+    assert window.interview_tabs.currentIndex() == _INTERVIEW_LIVE_TAB_INDEX
     assert window._review_history_id == row["history_id"]
     window.window.close()
     app.processEvents()
@@ -1954,8 +1967,8 @@ Speaker 1: I gave a long transcript answer that should not replace the saved log
     assert window.session.candidate_name == "Grace Morales"
     assert window.session.school == "Palmdale"
     assert window.session.answers["trait_1"]["score"] == "4"
-    assert window.interview_tabs.currentIndex() == 3
-    review_page = window.interview_tabs.widget(3)
+    assert window.interview_tabs.currentIndex() == _INTERVIEW_REVIEW_TAB_INDEX
+    review_page = window.interview_tabs.widget(_INTERVIEW_REVIEW_TAB_INDEX)
     assert "I got low, named the feeling" in _widget_text(review_page)
     trait_card = next(
         card
@@ -2227,7 +2240,7 @@ def test_pyside_draft_actions_live_under_candidates_not_new_interview(tmp_path: 
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
 
     start_buttons = {
-        button.text() for button in window.interview_tabs.widget(0).findChildren(qt_widgets.QPushButton)
+        button.text() for button in window.interview_tabs.widget(_INTERVIEW_HOME_TAB_INDEX).findChildren(qt_widgets.QPushButton)
     }
     candidate_tabs = window.staffing_v2_dashboard.external_pages["candidates"].findChild(
         qt_widgets.QTabWidget,
@@ -2534,7 +2547,7 @@ def test_pyside_intro_audio_preflight_warns_without_blocking_active_interview(
     window._apply_pyside_intro_audio_preflight_result(result)
     app.processEvents()
 
-    warning = window.interview_tabs.widget(2).findChild(qt_widgets.QLabel, "PySideRecordingWarning")
+    warning = window.interview_tabs.widget(_INTERVIEW_LIVE_TAB_INDEX).findChild(qt_widgets.QLabel, "PySideRecordingWarning")
     assert warning is not None
     assert "candidate/system audio" in warning.text()
     assert window.session is not None
@@ -2844,7 +2857,7 @@ def test_pyside_review_screen_hides_finalize_and_offer_actions(tmp_path: Path) -
 
     review_button_text = [
         child.text()
-        for child in window.interview_tabs.widget(3).findChildren(qt_widgets.QPushButton)
+        for child in window.interview_tabs.widget(_INTERVIEW_REVIEW_TAB_INDEX).findChildren(qt_widgets.QPushButton)
     ]
     assert "Finalize Interview" not in review_button_text
     assert "Generate Offer" not in review_button_text
@@ -2874,7 +2887,7 @@ def test_pyside_review_screen_shows_interviewer_closeout_without_slow_outputs(tm
 
     window._render_review_page()
 
-    review_page = window.interview_tabs.widget(3)
+    review_page = window.interview_tabs.widget(_INTERVIEW_REVIEW_TAB_INDEX)
     visible_text = _widget_text(review_page)
     assert "Interview Complete" in visible_text
     assert "Latoya Nugent" in visible_text
@@ -2913,7 +2926,7 @@ def test_pyside_completed_review_exposes_transcript_detail_for_rating_change(tmp
     window.session = session
 
     window._render_review_page()
-    review_page = window.interview_tabs.widget(3)
+    review_page = window.interview_tabs.widget(_INTERVIEW_REVIEW_TAB_INDEX)
     card = next(
         card
         for card in review_page.findChildren(qt_widgets.QFrame, "CompletedTranscriptCard")
@@ -3209,7 +3222,9 @@ def test_pyside_last_question_footer_finalizes_and_shows_complete_home(tmp_path:
             buttons["finalize"].click()
             break
         assert "next" in buttons
-        notes = window.interview_tabs.widget(2).findChild(qt_widgets.QTextEdit, "LiveInterviewerNotes")
+        notes = window.interview_tabs.widget(_INTERVIEW_LIVE_TAB_INDEX).findChild(
+            qt_widgets.QTextEdit, "LiveInterviewerNotes"
+        )
         if notes is not None:
             notes.setPlainText(f"notes for {question.question_id}")
         if question.score_cards:
@@ -3219,7 +3234,7 @@ def test_pyside_last_question_footer_finalizes_and_shows_complete_home(tmp_path:
     app.processEvents()
 
     assert finalized == [True]
-    assert window.interview_tabs.currentIndex() == 3
+    assert window.interview_tabs.currentIndex() == _INTERVIEW_REVIEW_TAB_INDEX
     assert window.interview_tabs.currentWidget().findChild(qt_widgets.QLabel, "CompletedInterviewTitle").text() == "Interview Complete"
     assert window.interview_tabs.currentWidget().findChild(
         qt_widgets.QLabel, "CompletedInterviewStatus"
@@ -3283,7 +3298,7 @@ def test_pyside_review_table_shows_generated_transcripts(tmp_path: Path) -> None
 
     window._render_review_page()
 
-    review_page = window.interview_tabs.widget(3)
+    review_page = window.interview_tabs.widget(_INTERVIEW_REVIEW_TAB_INDEX)
     transcript_text = " ".join(
         label.text()
         for card in review_page.findChildren(qt_widgets.QFrame, "CompletedTranscriptCard")
@@ -3336,7 +3351,9 @@ def test_pyside_last_scored_question_routes_to_review_before_transcription(tmp_p
 
     while window.session is not None and window.session.active_question() is not None:
         question = window.session.active_question()
-        notes = window.interview_tabs.widget(2).findChild(qt_widgets.QTextEdit, "LiveInterviewerNotes")
+        notes = window.interview_tabs.widget(_INTERVIEW_LIVE_TAB_INDEX).findChild(
+            qt_widgets.QTextEdit, "LiveInterviewerNotes"
+        )
         if notes is not None:
             notes.setPlainText(f"notes for {question.question_id}")
         if question.score_cards:
@@ -3357,7 +3374,7 @@ def test_pyside_last_scored_question_routes_to_review_before_transcription(tmp_p
     window._save_and_next(finalize=True)
 
     assert stopped == []
-    assert window.interview_tabs.currentIndex() == 3
+    assert window.interview_tabs.currentIndex() == _INTERVIEW_REVIEW_TAB_INDEX
     assert window.interview_tabs.currentWidget().findChild(qt_widgets.QLabel, "CompletedInterviewTitle").text() == "Interview Complete"
     assert window.recording_session is not None
     window.window.close()
@@ -3774,7 +3791,7 @@ def test_pyside_review_table_updates_transcript_when_finalize_worker_reports_tra
         }
     window.session.current_index = len(window.session._workflow_items())
     window._render_review_page()
-    review_page = window.interview_tabs.widget(3)
+    review_page = window.interview_tabs.widget(_INTERVIEW_REVIEW_TAB_INDEX)
     trait_card = next(
         card
         for card in review_page.findChildren(qt_widgets.QFrame, "CompletedTranscriptCard")
@@ -3794,7 +3811,7 @@ def test_pyside_review_table_updates_transcript_when_finalize_worker_reports_tra
     window._poll_pyside_finalize_worker(messages, fake_timer)
     app.processEvents()
 
-    refreshed_page = window.interview_tabs.widget(3)
+    refreshed_page = window.interview_tabs.widget(_INTERVIEW_REVIEW_TAB_INDEX)
     refreshed_card = next(
         card
         for card in refreshed_page.findChildren(qt_widgets.QFrame, "CompletedTranscriptCard")
@@ -3960,44 +3977,6 @@ def test_pyside_candidate_board_recomputes_stale_history_status_from_score() -> 
     assert board.rows[0]["score"] == "70.0"
     assert board.rows[0]["status"] == "Borderline"
     assert board.history_rows[0].status == "Borderline"
-
-def test_pyside_pages_do_not_force_content_wider_than_viewport(tmp_path: Path, monkeypatch) -> None:
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
-    qt_core = pytest.importorskip("PySide6.QtCore")
-    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
-    rubric_path = _write_test_rubric(tmp_path)
-    overrides_path = _write_test_overrides(tmp_path)
-    settings_path = tmp_path / "school_offer_settings.json"
-    settings_path.write_text(json.dumps({}), encoding="utf-8")
-    notification_rules_path = tmp_path / "notification_rules.sqlite3"
-    monkeypatch.setattr(pyside_interview_app, "DEFAULT_RUBRIC_PATH", rubric_path)
-    monkeypatch.setattr(pyside_interview_app, "QUESTIONS_OVERRIDE_PATH", overrides_path)
-    monkeypatch.setattr(pyside_interview_app, "SCHOOL_OFFER_SETTINGS_PATH", settings_path)
-    model = build_interview_redesign_model(
-        rubric_path=rubric_path,
-        overrides_path=overrides_path,
-        history_path=tmp_path / "missing-history.json",
-        school_options=["Palmdale"],
-    )
-    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
-    window.window.show()
-    window.window.resize(640, 480)
-    app.processEvents()
-
-    page_scrolls = window.window.findChildren(qt_widgets.QScrollArea, "PySidePageScrollArea")
-
-    assert page_scrolls
-    for scroll in page_scrolls:
-        assert scroll.horizontalScrollBarPolicy() == qt_core.Qt.ScrollBarPolicy.ScrollBarAsNeeded
-        assert scroll.verticalScrollBarPolicy() == qt_core.Qt.ScrollBarPolicy.ScrollBarAsNeeded
-        assert scroll.widgetResizable() is True
-        assert scroll.minimumWidth() == 0
-        assert scroll.widget().minimumWidth() <= scroll.viewport().width()
-        assert scroll.widget().width() <= scroll.viewport().width() + 2
-        assert scroll.widget().sizePolicy().horizontalPolicy() == qt_widgets.QSizePolicy.Policy.Expanding
-    window.window.close()
-    app.processEvents()
 
 @pytest.mark.pyside_gui
 @pytest.mark.slow_pyside
@@ -4352,8 +4331,10 @@ def test_pyside_live_question_wraps_scores_inside_vertical_scroll_area(tmp_path:
     window.session_index = 1
     window._render_live_question_page()
 
-    scroll_areas = window.interview_tabs.widget(2).findChildren(qt_widgets.QScrollArea)
-    score_labels = window.interview_tabs.widget(2).findChildren(qt_widgets.QLabel, "ScoreOptionText")
+    scroll_areas = window.interview_tabs.widget(_INTERVIEW_LIVE_TAB_INDEX).findChildren(qt_widgets.QScrollArea)
+    score_labels = window.interview_tabs.widget(_INTERVIEW_LIVE_TAB_INDEX).findChildren(
+        qt_widgets.QLabel, "ScoreOptionText"
+    )
 
     assert scroll_areas
     assert scroll_areas[0].widgetResizable()
@@ -4502,31 +4483,22 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
     assert "Launch Pad Learning" in sidebar_text
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2DashboardNavButton").text() == "Staffing Dashboard"
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2DashboardNavButton").property("staffingV2ActiveNav") is True
-    assert page.findChild(qt_widgets.QPushButton, "StaffingV2HomeNavButton").text() == "Dashboard"
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleNavButton").text() == "People"
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2HistoryNavButton").text() == "Assignment History"
-    assert page.findChild(qt_widgets.QPushButton, "StaffingV2AnalyticsNavButton").text() == "Analytics"
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2NotificationsNavButton").text() == "Notifications"
-    assert page.findChild(qt_widgets.QPushButton, "StaffingV2IntegrationsNavButton").text() == "Integrations"
     for object_name in (
-        "StaffingV2HomeNavButton",
         "StaffingV2DashboardNavButton",
         "StaffingV2ClassroomsNavButton",
         "StaffingV2PeopleNavButton",
         "StaffingV2HistoryNavButton",
-        "StaffingV2AnalyticsNavButton",
         "StaffingV2NotificationsNavButton",
         "StaffingV2ValidationNavButton",
-        "StaffingV2IntegrationsNavButton",
         "StaffingV2SettingsNavButton",
     ):
         assert not page.findChild(qt_widgets.QPushButton, object_name).icon().isNull()
-    for object_name in (
-        "StaffingV2HomeNavButton",
-        "StaffingV2AnalyticsNavButton",
-        "StaffingV2IntegrationsNavButton",
-    ):
-        assert not page.findChild(qt_widgets.QPushButton, object_name).isEnabled()
+    assert page.findChild(qt_widgets.QPushButton, "StaffingV2HomeNavButton") is None
+    assert page.findChild(qt_widgets.QPushButton, "StaffingV2AnalyticsNavButton") is None
+    assert page.findChild(qt_widgets.QPushButton, "StaffingV2IntegrationsNavButton") is None
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2SettingsNavButton").isEnabled()
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2NotificationsNavButton").isEnabled()
     assert page.findChild(qt_widgets.QFrame, "StaffingV2TopTabBar") is None

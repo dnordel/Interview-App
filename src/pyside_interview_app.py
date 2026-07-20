@@ -85,7 +85,7 @@ from notification_service import (
     notification_service_from_email_account_settings,
 )
 from notification_templates import notification_payload_from_mapping
-from onboarding_operations import JsonStore, build_dashboard_today_summary, filtered_tasks, task_status
+from onboarding_operations import build_dashboard_today_summary, filtered_tasks, task_status
 from platform_services import (
     CONFIG_DIR,
     DEFAULT_RUBRIC_PATH,
@@ -126,6 +126,9 @@ LOGGER = logging.getLogger(__name__)
 NAVIGATION = ["Staffing v2"]
 DIRECTOR_STAFFING_NAVIGATION = ["Staffing v2"]
 SETUP_STEPS = ["Candidate", "Interview Plan", "Ready"]
+_INTERVIEW_HOME_TAB_INDEX = 0
+_INTERVIEW_LIVE_TAB_INDEX = 1
+_INTERVIEW_REVIEW_TAB_INDEX = 2
 STAFFING_DB_PATH = DEFAULT_BASE_DIR / "staffing_dashboard.sqlite3"
 STAFFING_REFERRAL_QUEUE_PATH = DEFAULT_BASE_DIR / "staffing_referrals.pending.jsonl"
 STAFFING_REFERRAL_QUEUE_DB_PATH = DEFAULT_BASE_DIR / "staffing_referrals.sqlite3"
@@ -2179,7 +2182,7 @@ class PySideInterviewWindow:
             dashboard.set_navigation_locked(False)
             dashboard.set_navigation_mode("full")
             self.hiring_v2_router.show_interview()
-            self.interview_tabs.setCurrentIndex(0)
+            self.interview_tabs.setCurrentIndex(_INTERVIEW_HOME_TAB_INDEX)
             if self.session is None:
                 self._reset_new_interview_setup()
 
@@ -2205,7 +2208,7 @@ class PySideInterviewWindow:
             self.session = self._session_from_history_row(row)
             self._review_history_id = row.row_key
             self._render_review_page()
-            self.interview_tabs.setCurrentIndex(3)
+            self.interview_tabs.setCurrentIndex(_INTERVIEW_REVIEW_TAB_INDEX)
             self._show_hiring_closeout()
 
         def history_row(application: Any) -> PySideHistoryRow | None:
@@ -2477,7 +2480,9 @@ class PySideInterviewWindow:
         self._render_live_question_page()
         self._render_review_page()
         self._start_pyside_interview_recording()
-        self.interview_tabs.setCurrentIndex(2 if self.session.active_question() is not None else 3)
+        self.interview_tabs.setCurrentIndex(
+            _INTERVIEW_LIVE_TAB_INDEX if self.session.active_question() is not None else _INTERVIEW_REVIEW_TAB_INDEX
+        )
         self._set_hiring_focus_mode(self.session.active_question() is not None)
 
     def _sync_hiring_v2_director_decisions(self, service: HiringWorkflowService) -> None:
@@ -3165,7 +3170,7 @@ class PySideInterviewWindow:
             staffing_sidebar = getattr(getattr(self, "staffing_v2_dashboard", None), "staffing_sidebar", None)
             sidebar_width = int(staffing_sidebar.width()) if staffing_sidebar is not None else 0
             live_page.set_narrow(max(0, int(self.window.width()) - sidebar_width - 40) < 1180)
-            live_scroll = self.interview_tabs.widget(2).findChild(
+            live_scroll = self.interview_tabs.widget(_INTERVIEW_LIVE_TAB_INDEX).findChild(
                 self.QtWidgets.QScrollArea,
                 "LiveInterviewScroll",
             )
@@ -3179,7 +3184,7 @@ class PySideInterviewWindow:
             staffing_sidebar = getattr(getattr(self, "staffing_v2_dashboard", None), "staffing_sidebar", None)
             completed_sidebar_width = int(staffing_sidebar.width()) if staffing_sidebar is not None else 0
             completed_page.set_narrow(max(0, int(self.window.width()) - completed_sidebar_width - 40) < 1180)
-            completed_scroll = self.interview_tabs.widget(3).findChild(
+            completed_scroll = self.interview_tabs.widget(_INTERVIEW_REVIEW_TAB_INDEX).findChild(
                 self.QtWidgets.QScrollArea,
                 "CompletedInterviewScroll",
             )
@@ -3302,7 +3307,6 @@ class PySideInterviewWindow:
         self.interview_tabs = self.QtWidgets.QTabWidget()
         self.interview_tabs.setObjectName("HiringV2InterviewRouteStack")
         self.interview_tabs.addTab(self._home_tab(), "Home")
-        self.interview_tabs.addTab(self._setup_tab(), "Setup")
         self.interview_tabs.addTab(self._live_question_tab(), "Live Interview")
         self.interview_tabs.addTab(self._review_tab(), "Review")
         self.interview_tabs.tabBar().hide()
@@ -3686,44 +3690,6 @@ class PySideInterviewWindow:
             validation.setText(result.warning)
             validation.setVisible(bool(result.warning))
 
-    def _setup_tab(self) -> Any:
-        page, layout = self._page()
-        header_row = self.QtWidgets.QHBoxLayout()
-        for index, step in enumerate(self.model.setup_steps, start=1):
-            header_row.addWidget(self._label(f"Step {index}: {step}", "SectionTitle"))
-        layout.addLayout(header_row)
-
-        body = self.QtWidgets.QHBoxLayout()
-        candidate, candidate_layout = self._surface()
-        candidate_layout.addWidget(self._label("Candidate", "SectionTitle"))
-        form = self.QtWidgets.QFormLayout()
-        form.addRow("Name", self.QtWidgets.QLineEdit())
-        school = self.QtWidgets.QComboBox()
-        school.addItems(self.model.school_options)
-        form.addRow("School", school)
-        role = self.QtWidgets.QComboBox()
-        role.addItems(list(self.model.track_labels.values()))
-        form.addRow("Role Track", role)
-        candidate_layout.addLayout(form)
-        body.addWidget(candidate, 1)
-
-        ready, ready_layout = self._surface()
-        ready_layout.addWidget(self._label("Readiness Check", "SectionTitle"))
-        for check in self.model.readiness_checks:
-            checkbox = self.QtWidgets.QCheckBox(check.label)
-            checkbox.setChecked(check.ready)
-            checkbox.setEnabled(False)
-            ready_layout.addWidget(checkbox)
-        intro = self.QtWidgets.QTextEdit()
-        intro.setPlainText(compose_intro_script(self.model.school_options[0] if self.model.school_options else ""))
-        intro.setReadOnly(True)
-        ready_layout.addWidget(self._label("Intro Script"))
-        ready_layout.addWidget(intro, 1)
-        ready_layout.addWidget(self._primary_button("Begin Interview"))
-        body.addWidget(ready, 1)
-        layout.addLayout(body, 1)
-        return page
-
     def _first_flow_item(self, *, kind: str | None = None) -> FlowQuestion | None:
         for flow in self.model.flows.values():
             for item in flow.items:
@@ -3888,7 +3854,7 @@ class PySideInterviewWindow:
         self._start_pyside_interview_recording()
         self._render_live_question_page()
         self._render_review_page()
-        self.interview_tabs.setCurrentIndex(2)
+        self.interview_tabs.setCurrentIndex(_INTERVIEW_LIVE_TAB_INDEX)
         self._set_hiring_focus_mode(True)
 
     def _import_indeed_transcript_from_home(self) -> None:
@@ -3946,7 +3912,9 @@ class PySideInterviewWindow:
         router = getattr(self, "hiring_v2_router", None)
         if router is not None:
             router.show_interview()
-        self.interview_tabs.setCurrentIndex(2 if session.active_question() is not None else 3)
+        self.interview_tabs.setCurrentIndex(
+            _INTERVIEW_LIVE_TAB_INDEX if session.active_question() is not None else _INTERVIEW_REVIEW_TAB_INDEX
+        )
         if hasattr(self, "home_draft_label"):
             self.home_draft_label.setText(
                 f"Imported Indeed transcript: {result.mapped_count} answers split, {skipped_count} questions marked skipped."
@@ -4381,7 +4349,7 @@ class PySideInterviewWindow:
         self._render_live_question_page()
         self._render_review_page()
         self._refresh_home_draft_panel()
-        self.interview_tabs.setCurrentIndex(3)
+        self.interview_tabs.setCurrentIndex(_INTERVIEW_REVIEW_TAB_INDEX)
         if hasattr(self, "home_draft_label"):
             skipped_count = len(result.unmatched_question_ids)
             self.home_draft_label.setText(
@@ -4409,7 +4377,9 @@ class PySideInterviewWindow:
         router = getattr(self, "hiring_v2_router", None)
         if router is not None:
             router.show_interview()
-        self.interview_tabs.setCurrentIndex(2 if self.session.active_question() is not None else 3)
+        self.interview_tabs.setCurrentIndex(
+            _INTERVIEW_LIVE_TAB_INDEX if self.session.active_question() is not None else _INTERVIEW_REVIEW_TAB_INDEX
+        )
         self._set_hiring_focus_mode(self.session.active_question() is not None)
 
     def _refresh_home_draft_panel(self) -> None:
@@ -4615,7 +4585,7 @@ class PySideInterviewWindow:
     def _save_and_next(self, *, finalize: bool = False, skip: bool = False) -> None:
         item = self._active_question()
         if item is None:
-            self.interview_tabs.setCurrentIndex(3)
+            self.interview_tabs.setCurrentIndex(_INTERVIEW_REVIEW_TAB_INDEX)
             return
         current_index = self.session.current_index if self.session is not None else self.session_index
         qualification: dict[str, Any] | None = None
@@ -4685,12 +4655,12 @@ class PySideInterviewWindow:
             if finalize:
                 self._generate_interview_notes_from_session()
             self._render_review_page()
-            self.interview_tabs.setCurrentIndex(3)
+            self.interview_tabs.setCurrentIndex(_INTERVIEW_REVIEW_TAB_INDEX)
             self._show_hiring_closeout()
             return
         if finalize:
             self._render_review_page()
-            self.interview_tabs.setCurrentIndex(3)
+            self.interview_tabs.setCurrentIndex(_INTERVIEW_REVIEW_TAB_INDEX)
             self._show_hiring_closeout()
             self._generate_interview_notes_from_session()
             return
@@ -4737,7 +4707,7 @@ class PySideInterviewWindow:
         if router is not None:
             router.show_interview()
         self._reset_new_interview_setup()
-        self.interview_tabs.setCurrentIndex(0)
+        self.interview_tabs.setCurrentIndex(_INTERVIEW_HOME_TAB_INDEX)
 
     def _save_live_snapshot_without_navigation(self) -> None:
         if getattr(self, "session", None) is None or getattr(self, "live_page", None) is None:
@@ -5603,7 +5573,7 @@ class PySideInterviewWindow:
         self.session_index = self.session.current_index
         self.session.save_draft()
         self._render_live_question_page()
-        self.interview_tabs.setCurrentIndex(2)
+        self.interview_tabs.setCurrentIndex(_INTERVIEW_LIVE_TAB_INDEX)
         self._set_hiring_focus_mode(True)
 
     def _open_completed_candidate_report(self) -> None:
@@ -5745,7 +5715,7 @@ class PySideInterviewWindow:
         self._completed_artifacts_dirty = False
         self._set_hiring_focus_mode(False)
         self._reset_new_interview_setup()
-        self.interview_tabs.setCurrentIndex(0)
+        self.interview_tabs.setCurrentIndex(_INTERVIEW_HOME_TAB_INDEX)
         dashboard = getattr(self, "staffing_v2_dashboard", None)
         if dashboard is not None and "interviews" in dashboard.external_pages:
             dashboard.show_external_page("interviews")
@@ -6083,7 +6053,7 @@ class PySideInterviewWindow:
     def _reset_completed_overview_scroll(self) -> None:
         if not hasattr(self, "interview_tabs"):
             return
-        review_page = self.interview_tabs.widget(3)
+        review_page = self.interview_tabs.widget(_INTERVIEW_REVIEW_TAB_INDEX)
         scroll = review_page.findChild(self.QtWidgets.QScrollArea, "CompletedInterviewScroll")
         if scroll is not None:
             scroll.horizontalScrollBar().setValue(0)
@@ -6229,42 +6199,6 @@ class PySideInterviewWindow:
             overrides_path=QUESTIONS_OVERRIDE_PATH,
             school_settings_path=SCHOOL_OFFER_SETTINGS_PATH,
         )
-
-    def _onboarding_page(self) -> Any:
-        page, layout = self._page()
-        layout.addWidget(self._label("Onboarding", "Title"))
-        try:
-            state = JsonStore(Path.cwd()).load()
-            board = build_pyside_onboarding_board(
-                employees=state.employees,
-                scheduler_settings=state.scheduler_settings,
-                today=date.today(),
-            )
-        except Exception:
-            board = PySideOnboardingBoard(overdue=0, due_today=0, due_soon=0, next_task="", rows=[])
-
-        metrics, metrics_layout = self._surface()
-        metrics_layout.addWidget(self._label("Today", "SectionTitle"))
-        metrics_layout.addWidget(
-            self._label(
-                f"Overdue: {board.overdue}    Due today: {board.due_today}    Due soon: {board.due_soon}\n"
-                f"Next task: {board.next_task or 'None'}"
-            )
-        )
-        layout.addWidget(metrics)
-
-        tasks, tasks_layout = self._surface()
-        tasks_layout.addWidget(self._label("Employee Checklist", "SectionTitle"))
-        table = self.QtWidgets.QTableWidget(len(board.rows), 5)
-        table.setHorizontalHeaderLabels(["Employee", "School", "Next Task", "Due", "Status"])
-        for row_index, row in enumerate(board.rows):
-            values = [row["employee"], row["school"], row["next_task"], row["next_due"], row["status"]]
-            for column, value in enumerate(values):
-                table.setItem(row_index, column, self.QtWidgets.QTableWidgetItem(value))
-        table.horizontalHeader().setStretchLastSection(True)
-        tasks_layout.addWidget(table)
-        layout.addWidget(tasks, 1)
-        return page
 
     def _staffing_v2_page(self) -> Any:
         self.staffing_store.initialize()

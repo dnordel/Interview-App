@@ -434,10 +434,7 @@ QPushButton[staffingV2NavItem="true"]:hover {
     background-color: #f1f5f9;
     color: #0f172a;
 }
-QPushButton#StaffingV2HomeNavButton:disabled,
-QPushButton#StaffingV2AnalyticsNavButton:disabled,
 QPushButton#StaffingV2NotificationsNavButton:disabled,
-QPushButton#StaffingV2IntegrationsNavButton:disabled,
 QPushButton#StaffingV2SettingsNavButton:disabled {
     color: #64748b;
 }
@@ -1353,8 +1350,6 @@ class StaffingDashboardV2Page:
         sidebar_layout.addWidget(self.sidebar_scroll, 1)
 
         _, staffing_layout = self._sidebar_section("staffing", "STAFFING")
-        self.home_nav_button = self._sidebar_button("StaffingV2HomeNavButton", "Dashboard", "dashboard")
-        self.home_nav_button.setEnabled(False)
         self.dashboard_nav_button = self._sidebar_button("StaffingV2DashboardNavButton", "Staffing Dashboard", "dashboard")
         self.dashboard_nav_button.clicked.connect(self._show_dashboard_view)
         self.classrooms_nav_button = self._sidebar_button("StaffingV2ClassroomsNavButton", "Classrooms", "classrooms")
@@ -1364,7 +1359,6 @@ class StaffingDashboardV2Page:
         self.history_nav_button = self._sidebar_button("StaffingV2HistoryNavButton", "Assignment History", "history")
         self.history_nav_button.clicked.connect(self._show_history_view)
         for button in (
-            self.home_nav_button,
             self.dashboard_nav_button,
             self.classrooms_nav_button,
             self.people_nav_button,
@@ -1372,28 +1366,20 @@ class StaffingDashboardV2Page:
         ):
             staffing_layout.addWidget(button)
             self._navigation_section_for_button[button] = "staffing"
-        self.analytics_nav_button = self._sidebar_button("StaffingV2AnalyticsNavButton", "Analytics", "analytics")
-        self.analytics_nav_button.setEnabled(False)
         self.notifications_nav_button = self._sidebar_button("StaffingV2NotificationsNavButton", "Notifications", "notifications")
         self.notifications_nav_button.clicked.connect(self._show_notifications_view)
-        staffing_layout.addWidget(self.analytics_nav_button)
         staffing_layout.addWidget(self.notifications_nav_button)
-        self._navigation_section_for_button[self.analytics_nav_button] = "staffing"
         self._navigation_section_for_button[self.notifications_nav_button] = "staffing"
         self.system_section_widget, system_layout = self._sidebar_section("system", "SYSTEM")
         self.system_section_label = self.section_buttons["system"]
         self.validation_nav_button = self._sidebar_button("StaffingV2ValidationNavButton", "Validation", "validation")
         self.validation_nav_button.clicked.connect(self._show_validation_view)
-        self.integrations_nav_button = self._sidebar_button("StaffingV2IntegrationsNavButton", "Integrations", "integrations")
-        self.integrations_nav_button.setEnabled(False)
         self.settings_nav_button = self._sidebar_button("StaffingV2SettingsNavButton", "Settings", "settings")
         self.settings_nav_button.setEnabled(False)
         self.settings_nav_button.clicked.connect(self._show_settings_view)
         system_layout.addWidget(self.validation_nav_button)
-        system_layout.addWidget(self.integrations_nav_button)
         system_layout.addWidget(self.settings_nav_button)
         self._navigation_section_for_button[self.validation_nav_button] = "system"
-        self._navigation_section_for_button[self.integrations_nav_button] = "system"
         self._navigation_section_for_button[self.settings_nav_button] = "system"
         self.sidebar_layout.addStretch(1)
         self.sidebar_footer = self.QtWidgets.QWidget()
@@ -1845,15 +1831,12 @@ class StaffingDashboardV2Page:
 
     def _base_nav_buttons(self) -> list[Any]:
         return [
-            self.home_nav_button,
             self.dashboard_nav_button,
             self.classrooms_nav_button,
             self.people_nav_button,
             self.history_nav_button,
-            self.analytics_nav_button,
             self.notifications_nav_button,
             self.validation_nav_button,
-            self.integrations_nav_button,
             self.settings_nav_button,
         ]
 

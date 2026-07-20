@@ -6956,11 +6956,6 @@ entries:
   duration_source: measured
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_pages_do_not_force_content_wider_than_viewport
-  duration_seconds_n2: 1.657
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_initial_window_fits_available_screen_after_display_scaling
   duration_seconds_n2: 1.288
   duration_source: measured

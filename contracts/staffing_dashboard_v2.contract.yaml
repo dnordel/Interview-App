@@ -2,7 +2,7 @@ module:
   name: staffing_dashboard_v2
   language: python
   path: src/staffing_dashboard_v2.py
-  version: 1.0.0
+  version: 1.0.1
   description: Parallel PySide Staffing v2 dashboard page module with compact uniform navigation, a user-toggleable icon rail, independently collapsible scrollable sections, and position, employee, classroom, validation, notification, and assignment-history workflows, including visible structured notification logic rows over safe DB/event values.
 functions:
 - name: apply_staffing_v2_light_theme
