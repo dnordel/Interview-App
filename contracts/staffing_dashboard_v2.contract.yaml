@@ -2,7 +2,7 @@ module:
   name: staffing_dashboard_v2
   language: python
   path: src/staffing_dashboard_v2.py
-  version: 0.37.0
+  version: 1.0.0
   description: Parallel PySide Staffing v2 dashboard page module with compact uniform navigation, a user-toggleable icon rail, independently collapsible scrollable sections, and position, employee, classroom, validation, notification, and assignment-history workflows, including visible structured notification logic rows over safe DB/event values.
 functions:
 - name: apply_staffing_v2_light_theme
@@ -255,17 +255,6 @@ functions:
   inputs:
     status:
       type: str
-      required: true
-  returns:
-    type: str
-  exceptions: []
-  side_effects: none
-- name: _format_notification_recipients
-  description: Format notification recipients as comma-separated display text for Staffing v2 Notifications editor fields.
-  locked: false
-  inputs:
-    recipients:
-      type: list[NotificationRecipient]
       required: true
   returns:
     type: str
@@ -984,12 +973,6 @@ classes:
       type: None
     exceptions: []
     side_effects: Copies applied Classroom Management filter state into draft drawer controls, positions the drawer as an overlay over the dashboard, shows it, and does not resize dashboard content or mutate staffing data.
-  - name: _position_classrooms_filter_drawer
-    inputs: {}
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Positions the Classroom Management filter drawer over the right side of the dashboard without adding it to the dashboard layout.
   - name: _reset_classrooms_filter_drawer
     inputs: {}
     returns:

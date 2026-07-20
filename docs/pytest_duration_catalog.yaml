@@ -4774,367 +4774,367 @@ entries:
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-__init__-contract_inputs375-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-__init__-contract_inputs375-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-insert_employee-contract_inputs376-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-insert_employee-contract_inputs376-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-list_employees-contract_inputs377-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-list_employees-contract_inputs377-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-employee_for_application-contract_inputs378-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-employee_for_application-contract_inputs378-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-possible_duplicate_employees-contract_inputs379-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-possible_duplicate_employees-contract_inputs379-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-replace_employee-contract_inputs380-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-replace_employee-contract_inputs380-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-get_employee-contract_inputs381-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-get_employee-contract_inputs381-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-insert_task-contract_inputs382-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-insert_task-contract_inputs382-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-get_task-contract_inputs383-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-get_task-contract_inputs383-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-list_tasks-contract_inputs384-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-list_tasks-contract_inputs384-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-set_task_status-contract_inputs385-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-set_task_status-contract_inputs385-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-replace_task-contract_inputs386-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-replace_task-contract_inputs386-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-insert_task_comment-contract_inputs387-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-insert_task_comment-contract_inputs387-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-get_task_comment-contract_inputs388-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-get_task_comment-contract_inputs388-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-list_task_comments-contract_inputs389-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-list_task_comments-contract_inputs389-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-revise_task_comment-contract_inputs390-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-revise_task_comment-contract_inputs390-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-list_task_comment_revisions-contract_inputs391-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-list_task_comment_revisions-contract_inputs391-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-insert_task_attachment-contract_inputs392-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-insert_task_attachment-contract_inputs392-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-get_task_attachment-contract_inputs393-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-get_task_attachment-contract_inputs393-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-list_task_attachments-contract_inputs394-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-list_task_attachments-contract_inputs394-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-end_employment-contract_inputs395-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-end_employment-contract_inputs395-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-transfer_employee-contract_inputs396-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-transfer_employee-contract_inputs396-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-mark_did_not_start-contract_inputs397-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-mark_did_not_start-contract_inputs397-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-archive_correction-contract_inputs398-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-archive_correction-contract_inputs398-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-permanently_remove_employee-contract_inputs399-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-permanently_remove_employee-contract_inputs399-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-append_audit_event-contract_inputs400-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-append_audit_event-contract_inputs400-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-list_audit_events-contract_inputs401-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-list_audit_events-contract_inputs401-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-get_tombstone-contract_inputs402-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-get_tombstone-contract_inputs402-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-data_revision-contract_inputs403-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-data_revision-contract_inputs403-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-has_sent_reminder_batch-contract_inputs404-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-has_sent_reminder_batch-contract_inputs404-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-record_reminder_message_run-contract_inputs405-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-record_reminder_message_run-contract_inputs405-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-list_reminder_runs-contract_inputs406-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-list_reminder_runs-contract_inputs406-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-has_scheduler_run-contract_inputs407-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-has_scheduler_run-contract_inputs407-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-record_scheduler_run-contract_inputs408-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-record_scheduler_run-contract_inputs408-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-scheduler_health-contract_inputs409-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-scheduler_health-contract_inputs409-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-insert_filled_artifact-contract_inputs410-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-insert_filled_artifact-contract_inputs410-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-get_filled_artifact-contract_inputs411-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-get_filled_artifact-contract_inputs411-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-list_filled_artifacts-contract_inputs412-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-list_filled_artifacts-contract_inputs412-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-list_employee_filled_artifacts-contract_inputs413-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-list_employee_filled_artifacts-contract_inputs413-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-update_intake_submission_status-contract_inputs414-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-update_intake_submission_status-contract_inputs414-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-list_owner_roles-contract_inputs415-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-list_owner_roles-contract_inputs415-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-upsert_owner_role-contract_inputs416-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-upsert_owner_role-contract_inputs416-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-get_owner_role-contract_inputs417-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-get_owner_role-contract_inputs417-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-insert_intake_field-contract_inputs418-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-insert_intake_field-contract_inputs418-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-get_intake_field-contract_inputs419-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-get_intake_field-contract_inputs419-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-list_intake_fields-contract_inputs420-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-list_intake_fields-contract_inputs420-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-deprecate_intake_field-contract_inputs421-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-deprecate_intake_field-contract_inputs421-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-insert_pdf_mapping-contract_inputs422-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-insert_pdf_mapping-contract_inputs422-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-list_pdf_mappings-contract_inputs423-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-list_pdf_mappings-contract_inputs423-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-insert_intake_submission-contract_inputs424-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-insert_intake_submission-contract_inputs424-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-get_intake_submission-contract_inputs425-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-get_intake_submission-contract_inputs425-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-next_package_version-contract_inputs426-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-next_package_version-contract_inputs426-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-insert_document_package-contract_inputs427-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-insert_document_package-contract_inputs427-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-get_document_package-contract_inputs428-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-get_document_package-contract_inputs428-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-get_document_package_contents-contract_inputs429-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-get_document_package_contents-contract_inputs429-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-publish_document_package-contract_inputs430-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-publish_document_package-contract_inputs430-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-latest_published_document_package-contract_inputs431-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-latest_published_document_package-contract_inputs431-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-list_document_package_versions-contract_inputs432-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-list_document_package_versions-contract_inputs432-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-_ensure_employee_columns-contract_inputs433-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-_ensure_employee_columns-contract_inputs433-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-insert_task_template-contract_inputs434-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-insert_task_template-contract_inputs434-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-insert_task_template_attachment-contract_inputs435-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-insert_task_template_attachment-contract_inputs435-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-get_task_template_attachment-contract_inputs436-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-get_task_template_attachment-contract_inputs436-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-list_task_template_attachments-contract_inputs437-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-list_task_template_attachments-contract_inputs437-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-next_task_template_version-contract_inputs438-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-next_task_template_version-contract_inputs438-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-publish_task_template-contract_inputs439-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-publish_task_template-contract_inputs439-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-deprecate_task_template-contract_inputs440-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-deprecate_task_template-contract_inputs440-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-get_task_template-contract_inputs441-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-get_task_template-contract_inputs441-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-applicable_task_templates-contract_inputs442-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-applicable_task_templates-contract_inputs442-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-list_task_template_versions-contract_inputs443-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-list_task_template_versions-contract_inputs443-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-_ensure_task_columns-contract_inputs444-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-_ensure_task_columns-contract_inputs444-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-_ensure_task_template_columns-contract_inputs445-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-_ensure_task_template_columns-contract_inputs445-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-_ensure_intake_submission_columns-contract_inputs446-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-_ensure_intake_submission_columns-contract_inputs446-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store_v2.contract.yaml-src/onboarding_store.py-_add_column_if_missing-contract_inputs447-OnboardingStore]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_store.contract.yaml-src/onboarding_store.py-_add_column_if_missing-contract_inputs447-OnboardingStore]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false

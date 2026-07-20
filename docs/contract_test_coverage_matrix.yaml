@@ -12,7 +12,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-20T19:03:51.020642+00:00'
+generated_at_utc: '2026-07-20T21:00:50.843534+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -9448,7 +9448,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.__init__
   kind: method
   tests:
@@ -9458,7 +9458,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore._add_column_if_missing
   kind: method
   tests:
@@ -9468,7 +9468,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore._ensure_employee_columns
   kind: method
   tests:
@@ -9478,7 +9478,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore._ensure_intake_submission_columns
   kind: method
   tests:
@@ -9488,7 +9488,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore._ensure_task_columns
   kind: method
   tests:
@@ -9498,7 +9498,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore._ensure_task_template_columns
   kind: method
   tests:
@@ -9508,7 +9508,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.append_audit_event
   kind: method
   tests:
@@ -9518,7 +9518,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.applicable_task_templates
   kind: method
   tests:
@@ -9528,7 +9528,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.archive_correction
   kind: method
   tests:
@@ -9538,7 +9538,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.data_revision
   kind: method
   tests:
@@ -9548,7 +9548,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.deprecate_intake_field
   kind: method
   tests:
@@ -9558,7 +9558,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.deprecate_task_template
   kind: method
   tests:
@@ -9568,7 +9568,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.employee_for_application
   kind: method
   tests:
@@ -9578,7 +9578,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.end_employment
   kind: method
   tests:
@@ -9588,7 +9588,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.get_document_package
   kind: method
   tests:
@@ -9598,7 +9598,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.get_document_package_contents
   kind: method
   tests:
@@ -9608,7 +9608,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.get_employee
   kind: method
   tests:
@@ -9618,7 +9618,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.get_filled_artifact
   kind: method
   tests:
@@ -9628,7 +9628,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.get_intake_field
   kind: method
   tests:
@@ -9638,7 +9638,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.get_intake_submission
   kind: method
   tests:
@@ -9648,7 +9648,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.get_owner_role
   kind: method
   tests:
@@ -9658,7 +9658,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.get_task
   kind: method
   tests:
@@ -9668,7 +9668,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.get_task_attachment
   kind: method
   tests:
@@ -9678,7 +9678,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.get_task_comment
   kind: method
   tests:
@@ -9688,7 +9688,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.get_task_template
   kind: method
   tests:
@@ -9698,7 +9698,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.get_task_template_attachment
   kind: method
   tests:
@@ -9708,7 +9708,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.get_tombstone
   kind: method
   tests:
@@ -9718,7 +9718,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.has_scheduler_run
   kind: method
   tests:
@@ -9728,7 +9728,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.has_sent_reminder_batch
   kind: method
   tests:
@@ -9738,7 +9738,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.insert_document_package
   kind: method
   tests:
@@ -9748,7 +9748,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.insert_employee
   kind: method
   tests:
@@ -9758,7 +9758,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.insert_filled_artifact
   kind: method
   tests:
@@ -9768,7 +9768,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.insert_intake_field
   kind: method
   tests:
@@ -9778,7 +9778,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.insert_intake_submission
   kind: method
   tests:
@@ -9788,7 +9788,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.insert_pdf_mapping
   kind: method
   tests:
@@ -9798,7 +9798,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.insert_task
   kind: method
   tests:
@@ -9808,7 +9808,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.insert_task_attachment
   kind: method
   tests:
@@ -9818,7 +9818,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.insert_task_comment
   kind: method
   tests:
@@ -9828,7 +9828,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.insert_task_template
   kind: method
   tests:
@@ -9838,7 +9838,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.insert_task_template_attachment
   kind: method
   tests:
@@ -9848,7 +9848,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.latest_published_document_package
   kind: method
   tests:
@@ -9858,7 +9858,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.list_audit_events
   kind: method
   tests:
@@ -9868,7 +9868,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.list_document_package_versions
   kind: method
   tests:
@@ -9878,7 +9878,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.list_employee_filled_artifacts
   kind: method
   tests:
@@ -9888,7 +9888,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.list_employees
   kind: method
   tests:
@@ -9898,7 +9898,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.list_filled_artifacts
   kind: method
   tests:
@@ -9908,7 +9908,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.list_intake_fields
   kind: method
   tests:
@@ -9918,7 +9918,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.list_owner_roles
   kind: method
   tests:
@@ -9928,7 +9928,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.list_pdf_mappings
   kind: method
   tests:
@@ -9938,7 +9938,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.list_reminder_runs
   kind: method
   tests:
@@ -9948,7 +9948,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.list_task_attachments
   kind: method
   tests:
@@ -9958,7 +9958,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.list_task_comment_revisions
   kind: method
   tests:
@@ -9968,7 +9968,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.list_task_comments
   kind: method
   tests:
@@ -9978,7 +9978,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.list_task_template_attachments
   kind: method
   tests:
@@ -9988,7 +9988,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.list_task_template_versions
   kind: method
   tests:
@@ -9998,7 +9998,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.list_tasks
   kind: method
   tests:
@@ -10008,7 +10008,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.mark_did_not_start
   kind: method
   tests:
@@ -10018,7 +10018,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.next_package_version
   kind: method
   tests:
@@ -10028,7 +10028,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.next_task_template_version
   kind: method
   tests:
@@ -10038,7 +10038,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.permanently_remove_employee
   kind: method
   tests:
@@ -10048,7 +10048,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.possible_duplicate_employees
   kind: method
   tests:
@@ -10058,7 +10058,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.publish_document_package
   kind: method
   tests:
@@ -10068,7 +10068,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.publish_task_template
   kind: method
   tests:
@@ -10078,7 +10078,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.record_reminder_message_run
   kind: method
   tests:
@@ -10088,7 +10088,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.record_scheduler_run
   kind: method
   tests:
@@ -10098,7 +10098,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.replace_employee
   kind: method
   tests:
@@ -10108,7 +10108,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.replace_task
   kind: method
   tests:
@@ -10118,7 +10118,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.revise_task_comment
   kind: method
   tests:
@@ -10128,7 +10128,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.scheduler_health
   kind: method
   tests:
@@ -10138,7 +10138,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.set_task_status
   kind: method
   tests:
@@ -10148,7 +10148,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.transfer_employee
   kind: method
   tests:
@@ -10158,7 +10158,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.update_intake_submission_status
   kind: method
   tests:
@@ -10168,7 +10168,7 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
-- contract: contracts/onboarding_store_v2.contract.yaml
+- contract: contracts/onboarding_store.contract.yaml
   symbol: onboarding_store.OnboardingStore.upsert_owner_role
   kind: method
   tests:
@@ -11730,15 +11730,6 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._close_pyside_finalize_progress
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._collect_indeed_transcript_import_request
   kind: method
   tests:
@@ -11848,15 +11839,6 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._history_payload_for_row
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._horizontal_scroll_panel
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -12046,24 +12028,6 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._poll_staffing_referral_queue
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._populate_home_candidate_profile
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._preload_recording_interface
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -12684,15 +12648,6 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app._history_outcome_color
-  kind: function
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app._history_status_from_score
   kind: function
   tests:
@@ -12702,34 +12657,7 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app._history_token_matches
-  kind: function
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app._normalize_history_search
-  kind: function
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app._offer_school_code
-  kind: function
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app._offer_school_location
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -16487,15 +16415,6 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/staffing_dashboard_v2.contract.yaml
-  symbol: staffing_dashboard_v2.StaffingDashboardV2Page._position_classrooms_filter_drawer
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/staffing_dashboard_v2.contract.yaml
   symbol: staffing_dashboard_v2.StaffingDashboardV2Page._prepared_lazy_view
   kind: method
   tests:
@@ -17433,15 +17352,6 @@ entries:
     - return_type
 - contract: contracts/staffing_dashboard_v2.contract.yaml
   symbol: staffing_dashboard_v2._drawer_action_icon_key
-  kind: function
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/staffing_dashboard_v2.contract.yaml
-  symbol: staffing_dashboard_v2._format_notification_recipients
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py

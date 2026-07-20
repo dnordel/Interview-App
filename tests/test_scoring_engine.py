@@ -1,6 +1,6 @@
 import unittest
 
-from scoring_reporting import ReportingValidationError, ScoringEngine
+from scoring_reporting import ScoringEngine
 
 
 class TestScoringEngineEvaluate(unittest.TestCase):

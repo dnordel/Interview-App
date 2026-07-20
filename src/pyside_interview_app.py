@@ -17,24 +17,21 @@ import wave
 from uuid import uuid4
 from difflib import SequenceMatcher
 from dataclasses import dataclass, field, replace
-from datetime import date, timedelta
+from datetime import date
 from datetime import datetime
 from pathlib import Path
-from string import Formatter
 from types import SimpleNamespace
-from typing import Any, Callable, Sequence
+from typing import Any, Sequence
 
 from admin_studio import AdminStudio, AdminStudioPaths
 from app_branding import apply_staffing_app_icon
 from candidate_report import CandidateReportRepository, build_candidate_report_snapshot
-from docx import Document
 from data_store import (
     InterviewHistoryStore,
     InterviewAppSettingsStore,
     QuestionOverridesStore,
     RubricLoader,
     SchoolOfferSettingsStore,
-    default_school_offer_settings,
     resolve_interview_notes_output_dir,
     resolve_offer_output_dir,
     resolve_offer_template_path,
@@ -68,7 +65,6 @@ from pyside_live_interview import (
 from pyside_completed_interview import (
     CompletedInterviewCallbacks,
     CompletedInterviewPage,
-    CompletedInterviewViewModel,
     CompletionState,
     build_completed_interview_view_model,
     build_completed_transcript_export,
@@ -86,7 +82,6 @@ from notification_service import (
     EMAIL_ACCOUNT_SETTINGS_PATH,
     NOTIFICATION_RULES_PATH,
     StaffingNotificationScheduler,
-    notification_service_from_onboarding,
     notification_service_from_email_account_settings,
 )
 from notification_templates import notification_payload_from_mapping
@@ -104,13 +99,11 @@ from platform_services import (
     compose_intro_script,
 )
 from scoring_reporting import (
-    POSITION_OPTIONS,
     DocxExporter,
     OfferInput,
     OfferLetterService,
     ScoringEngine,
     build_approval_offer_input,
-    build_offer_filename,
     build_school_offer_filename,
     next_available_offer_path,
     derive_offer_schedule,
@@ -1343,11 +1336,6 @@ def _notification_text(value: Any) -> str:
     return str(value)
 
 
-def _table_text(table: Any, row: int, column: int) -> str:
-    item = table.item(row, column)
-    return item.text().strip() if item is not None else ""
-
-
 def _qualification_notification_payload(qualification: Any) -> dict[str, str]:
     payload = qualification.to_dict() if hasattr(qualification, "to_dict") else {}
     if not isinstance(payload, dict):
@@ -1368,22 +1356,6 @@ def _qualification_notification_payload(qualification: Any) -> dict[str, str]:
         "degree_in_ece_display": f"\nDegree in ECE: {degree_in_ece}" if has_degree else "",
         "experience": experience,
     }
-
-
-def _offer_school_code(school: str) -> str:
-    normalized = str(school or "").strip().casefold()
-    if normalized == "hawthorne":
-        return "HAW"
-    if normalized == "north long beach":
-        return "NLB"
-    if normalized == "palmdale":
-        return "PMD"
-    return str(school or "").strip()
-
-
-def _offer_school_location(school: str) -> str:
-    normalized = str(school or "").strip()
-    return normalized or "your school"
 
 
 def _convert_offer_docx_to_pdf_path(offer_path: str) -> tuple[str, str]:
@@ -1640,70 +1612,6 @@ def _build_track_flow(
     return TrackFlow(track_key=track_key, label=track_label, items=items)
 
 
-class _InMemoryRubricLoader:
-    def __init__(self, data: dict[str, Any]) -> None:
-        self.data = data
-
-    def get_traits_for_track(self, track_key: str) -> list[dict[str, Any]]:
-        out: list[dict[str, Any]] = []
-        for trait in self.data.get("traits", []) or []:
-            if not isinstance(trait, dict):
-                continue
-            applicable = trait.get("applicable_tracks", []) or []
-            if "all" in applicable or track_key in applicable:
-                out.append(trait)
-        return out
-
-
-class _InMemoryQuestionOverridesStore:
-    def __init__(self, data: dict[str, Any]) -> None:
-        self.data = data
-
-    def get_trait_order(self, track_key: str) -> list[str]:
-        return list((self.data.get("track_trait_order", {}) or {}).get(track_key, []) or [])
-
-    def get_trait_question_override(self, trait_id: str) -> str | None:
-        value = (self.data.get("trait_question_overrides", {}) or {}).get(trait_id)
-        if isinstance(value, str) and value.strip():
-            return value
-        return None
-
-    def list_custom_questions(self, track_key: str) -> list[dict[str, Any]]:
-        items = list((self.data.get("custom_questions", {}) or {}).get(track_key, []) or [])
-        return sorted(items, key=lambda item: (int(item.get("order", 999999)), str(item.get("text", "")).lower()))
-
-    def ensure_flow(
-        self,
-        track_key: str,
-        valid_trait_ids_in_order: list[str],
-        valid_custom_ids_in_order: list[str],
-    ) -> list[dict[str, Any]]:
-        raw = list((self.data.get("track_question_flow", {}) or {}).get(track_key, []) or [])
-        valid_traits = set(valid_trait_ids_in_order)
-        valid_customs = set(valid_custom_ids_in_order)
-        out: list[dict[str, Any]] = []
-        seen_traits: set[str] = set()
-        seen_customs: set[str] = set()
-        for item in raw:
-            if not isinstance(item, dict):
-                continue
-            item_type = str(item.get("type", "")).strip().lower()
-            item_id = str(item.get("id", "")).strip()
-            if item_type == "trait" and item_id in valid_traits and item_id not in seen_traits:
-                out.append({"type": "trait", "id": item_id})
-                seen_traits.add(item_id)
-            if item_type == "custom" and item_id in valid_customs and item_id not in seen_customs:
-                out.append({"type": "custom", "id": item_id})
-                seen_customs.add(item_id)
-        for trait_id in valid_trait_ids_in_order:
-            if trait_id not in seen_traits:
-                out.append({"type": "trait", "id": trait_id})
-        for custom_id in valid_custom_ids_in_order:
-            if custom_id not in seen_customs:
-                out.append({"type": "custom", "id": custom_id})
-        return out
-
-
 def build_interview_redesign_model(
     *,
     rubric_path: Path = DEFAULT_RUBRIC_PATH,
@@ -1918,48 +1826,9 @@ def _split_candidate_name(candidate_name: str) -> tuple[str, str]:
     return parts[0], parts[-1]
 
 
-def _safe_filename(value: str) -> str:
-    cleaned = "".join(ch if ch.isalnum() or ch in {"_", "-"} else "_" for ch in value.strip())
-    return cleaned.strip("_") or "Candidate"
-
-
-def _parse_iso_or_us_date(value: str) -> date:
-    text = value.strip()
-    for fmt in ("%Y-%m-%d", "%m/%d/%Y"):
-        try:
-            return datetime.strptime(text, fmt).date()
-        except ValueError:
-            continue
-    raise ValueError("Date must be YYYY-MM-DD or MM/DD/YYYY.")
-
-
 def _normalize_history_search(value: str) -> str:
     text = "".join(ch.lower() if ch.isalnum() else " " for ch in value)
     return " ".join(text.split())
-
-
-def _history_token_matches(term: str, candidates: list[str]) -> bool:
-    if not term:
-        return True
-    for candidate in candidates:
-        if term in candidate or candidate in term:
-            return True
-        if SequenceMatcher(None, term, candidate).ratio() >= 0.78:
-            return True
-    return False
-
-
-def _history_outcome_color(outcome: str) -> str:
-    normalized = _normalize_history_search(outcome)
-    if normalized in {"no hire", "reject", "rejected"}:
-        return "#fee2e2"
-    if normalized in {"hire", "hired", "accepted"}:
-        return "#dcfce7"
-    if normalized in {"needs follow up", "follow up", "followup", "pending"}:
-        return "#fef3c7"
-    if normalized in {"incomplete", "processing"}:
-        return "#e5e7eb"
-    return ""
 
 
 class PySide6UnavailableError(RuntimeError):
@@ -2876,12 +2745,6 @@ class PySideInterviewWindow:
         timer.timeout.connect(lambda: self._poll_recording_interface_preload(results, timer))
         timer.start(50)
 
-    def _preload_recording_interface(self) -> None:
-        try:
-            self._recording_preload_state = self._probe_recording_interface()
-        except Exception as exc:
-            self.recording_warning = f"Recording preload unavailable: {exc}"
-
     def _probe_recording_interface(self) -> dict[str, Any]:
         resolve_runtime(self._recording_runtime_settings())
         if not sys.platform.startswith("win"):
@@ -3432,20 +3295,6 @@ class PySideInterviewWindow:
             widest = max(widest, metrics.horizontalAdvance(item.text()))
         return widest + int(padding)
 
-    def _horizontal_scroll_panel(self, child_layout: Any, object_name: str) -> Any:
-        content = self.QtWidgets.QWidget()
-        content.setLayout(child_layout)
-        content.setSizePolicy(self.QtWidgets.QSizePolicy.Policy.Minimum, self.QtWidgets.QSizePolicy.Policy.Fixed)
-        scroll = self.QtWidgets.QScrollArea()
-        scroll.setObjectName(object_name)
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(self.QtWidgets.QFrame.Shape.NoFrame)
-        scroll.setHorizontalScrollBarPolicy(self.QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        scroll.setVerticalScrollBarPolicy(self.QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll.setSizePolicy(self.QtWidgets.QSizePolicy.Policy.Expanding, self.QtWidgets.QSizePolicy.Policy.Fixed)
-        scroll.setWidget(content)
-        return scroll
-
     def _hiring_interview_guide_widget(self) -> Any:
         page, layout = self._page()
         page.setObjectName("HiringV2InterviewGuide")
@@ -3836,9 +3685,6 @@ class PySideInterviewWindow:
         if validation is not None:
             validation.setText(result.warning)
             validation.setVisible(bool(result.warning))
-
-    def _populate_home_candidate_profile(self) -> None:
-        return
 
     def _setup_tab(self) -> Any:
         page, layout = self._page()
@@ -6270,13 +6116,6 @@ class PySideInterviewWindow:
         self.pyside_finalize_progress_label = None
         self._pyside_finalize_progress_queue = None
 
-    def _close_pyside_finalize_progress(self) -> None:
-        dialog = self.pyside_finalize_progress_dialog
-        if dialog is not None:
-            dialog.close()
-        self._clear_pyside_finalize_progress_dialog()
-        self._pyside_finalize_progress_queue = None
-
     def _schedule_close_pyside_finalize_progress(self) -> None:
         return
 
@@ -6895,15 +6734,6 @@ class PySideInterviewWindow:
                 continue
             return {"email": candidate.email, "honorific": candidate.honorific}
         return {}
-
-    def _placeholder_page(self, title: str, body: str) -> Any:
-        page, layout = self._page()
-        layout.addWidget(self._label(title, "Title"))
-        frame, frame_layout = self._surface()
-        frame_layout.addWidget(self._label(body))
-        layout.addWidget(frame)
-        layout.addStretch(1)
-        return page
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:

@@ -3,9 +3,6 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import Any
-
-
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SEED_PATH = ROOT / "config" / "staffing_seed.json"
 

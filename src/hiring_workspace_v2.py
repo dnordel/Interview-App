@@ -5,7 +5,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from dashboard_v2_ui import DashboardV2OverlayPanel, SEMANTIC_COLORS, display_role, role_badge_key
+from dashboard_v2_ui import DashboardV2OverlayPanel, display_role, role_badge_key
 from hiring_pipeline import HiringApplication, HiringStage, HiringWorkflowService
 
 

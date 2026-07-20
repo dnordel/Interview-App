@@ -21,7 +21,6 @@ from email_security import is_valid_email_address, sanitize_email_subject
 from notification_models import NotificationCondition, NotificationRecipient, NotificationRule, NotificationSendResult
 from notification_store import NotificationStore
 from notification_templates import (
-    NOTIFICATION_TEMPLATE_FIELDS,
     render_notification_templates,
     validate_notification_rule,
 )
@@ -33,32 +32,6 @@ EMAIL_ACCOUNT_SETTINGS_PATH = USER_ARTIFACTS_DIR / "email_account_settings.json"
 HIRING_MANAGER_EMAIL_SETTINGS_PATH = USER_ARTIFACTS_DIR / "hiring_manager_email_account_settings.json"
 NOTIFICATION_DIRECTORY_PATH = USER_ARTIFACTS_DIR / "notification_directory.json"
 CANDIDATE_NOTIFICATION_TEST_EMAIL = "davidn@launchpadpreschool.com"
-SUPPORTED_NOTIFICATION_EVENTS = (
-    "interview.rating.qualified",
-    "director.interview.hire",
-    "employment.start.today",
-    "employment.notice.given",
-    "employment.last_day",
-    "permit.eligible.50d",
-    "permit.escalation.90d",
-    "staffing.assignment.created",
-    "staffing.assignment.need_now",
-    "staffing.assignment.coming",
-    "staffing.assignment.filled",
-    "staffing.assignment.replace",
-    "staffing.assignment.not_needed",
-    "staffing.permit.updated",
-    "offer.generated",
-    "offer.approved",
-    "offer.accepted",
-    "offer.welcome_email_sent",
-    "interview.rating.hire",
-    "interview.rating.borderline",
-    "onboarding.task.created",
-    "onboarding.task.completed",
-    "onboarding.task.overdue",
-    "onboarding.digest.due",
-)
 HIRING_MANAGER_EMAIL = "recruiting@launchpadpreschool.com"
 EXECUTIVE_DIRECTOR_EMAIL = "deidre@launchpadpreschool.com"
 DIRECTOR_EMAILS_BY_SCHOOL = {
@@ -1233,13 +1206,6 @@ def _missing_template_keys(templates: list[str], payload: dict[str, str]) -> set
     for template in templates:
         found.update(match.group(1) for match in re.finditer(r"{([A-Za-z_][A-Za-z0-9_]*)}", str(template or "")))
     return found - available
-
-
-def _render_notification_template(template: str, payload: dict[str, str]) -> str:
-    def replace(match: re.Match[str]) -> str:
-        return payload.get(match.group(1), "")
-
-    return re.sub(r"{([A-Za-z_][A-Za-z0-9_]*)}", replace, str(template or ""))
 
 
 def _sanitize_error(value: str) -> str:

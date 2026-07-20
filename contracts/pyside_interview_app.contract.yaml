@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 7.0.0
+  version: 8.0.0
   description: PySide6 operations shell and headless view-model builder for a mockup-driven
     New Interview setup/live flow, Candidates-owned pipeline/history, candidate reports,
     onboarding, staffing, notifications, and admin-only
@@ -196,28 +196,6 @@ functions:
     type: str
   exceptions: []
   side_effects: none
-- name: _offer_school_code
-  description: Return the Launch Pad Learning offer-email school code HAW, NLB, or PMD for a supported school, falling back to the supplied school text.
-  locked: false
-  inputs:
-    school:
-      type: str
-      required: true
-  returns:
-    type: str
-  exceptions: []
-  side_effects: none
-- name: _offer_school_location
-  description: Return human-readable school location text for offer email templates.
-  locked: false
-  inputs:
-    school:
-      type: str
-      required: true
-  returns:
-    type: str
-  exceptions: []
-  side_effects: none
 - name: _convert_offer_docx_to_pdf_path
   description: Return an existing non-empty offer PDF path or convert an existing DOCX offer letter to a same-stem non-empty PDF through Microsoft Word automation, with a sanitized failure reason for approval review.
   locked: false
@@ -309,31 +287,6 @@ functions:
   locked: false
   inputs:
     value:
-      type: str
-      required: true
-  returns:
-    type: str
-  exceptions: []
-  side_effects: none
-- name: _history_token_matches
-  description: Return whether one normalized search term approximately matches any normalized history metadata token.
-  locked: false
-  inputs:
-    term:
-      type: str
-      required: true
-    candidates:
-      type: list[str]
-      required: true
-  returns:
-    type: bool
-  exceptions: []
-  side_effects: none
-- name: _history_outcome_color
-  description: Map a normalized hiring outcome/status label to a soft table-row background color for the PySide history grid.
-  locked: false
-  inputs:
-    outcome:
       type: str
       required: true
   returns:
@@ -826,14 +779,6 @@ classes:
       type: None
     exceptions: []
     side_effects: Reuses pre-generated DOCX/PDF artifacts, generates and persists both once for legacy pending offers when absent, renders the active candidate notification-settings template, presents approval review, persists approval, attempts candidate-only delivery, and refreshes Hiring v2.
-  - name: _populate_home_candidate_profile
-    description: Compatibility no-op retained after profile/contact editing moved from New Interview to Candidates.
-    locked: false
-    inputs: {}
-    returns:
-      type: None
-    exceptions: []
-    side_effects: none
   - name: _hiring_candidates_workspace
     description: Build temporary Candidates tabs that own Candidate Roster and Pipeline / History plus transcript-import and saved-draft actions.
     locked: false
@@ -1028,16 +973,6 @@ classes:
       type: None
     exceptions: []
     side_effects: Starts a daemon thread and Qt poll timer.
-  - name: _preload_recording_interface
-    description: Resolve the configured recording runtime and warm the cached Windows
-      system-audio device lookup without starting a recording session.
-    locked: false
-    inputs: {}
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Stores probed runtime/device state, may run cached FFmpeg enumeration,
-      and stores a non-blocking recording warning if preload fails.
   - name: _recording_warning_text
     description: Return operator-facing PySide recording warning text including the
       selected Windows system-audio capture device when available so wrong output
@@ -1207,21 +1142,6 @@ classes:
       type: int
     exceptions: []
     side_effects: none
-  - name: _horizontal_scroll_panel
-    description: Wrap a horizontal PySide layout in a frame-free scroll area so
-      controls remain readable on narrow windows instead of being clipped.
-    locked: false
-    inputs:
-      child_layout:
-        type: QLayout
-        required: true
-      object_name:
-        type: str
-        required: true
-    returns:
-      type: QScrollArea
-    exceptions: []
-    side_effects: Creates PySide scroll/content widgets.
   - name: _admin_studio_paths
     description: Build the AdminStudioPaths using the current PySide module config
       constants.
@@ -1553,15 +1473,6 @@ classes:
     exceptions: []
     side_effects: May read local InterviewHistoryStore rows and updates visible
       progress label text.
-  - name: _close_pyside_finalize_progress
-    description: Close the PySide finalize progress dialog and stop progress polling
-      without cancelling background transcription or finalize work.
-    locked: false
-    inputs: {}
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Closes QDialog and clears progress widget references.
   - name: _schedule_close_pyside_finalize_progress
     description: Schedule the PySide finalize progress dialog to close shortly after
       successful finalize while leaving failure states visible

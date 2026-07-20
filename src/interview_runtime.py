@@ -1112,13 +1112,6 @@ def map_indeed_transcript_to_questions(
 
 
 _SUMMARY_UNAVAILABLE_PREFIX = "Summary unavailable:"
-_DEFAULT_MISSING_SUMMARY = (
-    f"{_SUMMARY_UNAVAILABLE_PREFIX} transformers summarization model/runtime is unavailable."
-)
-_SUMMARY_TASK = "summarization"
-_TEXT2TEXT_TASK = "text2text-generation"
-_SUMMARIZATION_PREFIX = "summarize: "
-_UNKNOWN_TASK_MARKER = "Unknown task"
 
 
 class TranscriptionQueueState:

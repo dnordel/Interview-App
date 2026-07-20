@@ -15,7 +15,6 @@ RuntimeSignalGroup = dict[str, Any]
 TRAIT_FILE_PATTERN = "T*.json"
 TRAIT_ID_ALIAS_PATTERN = re.compile(r"trait_(\d+)", re.IGNORECASE)
 PREFIXED_TRAIT_ID_ALIAS_PATTERN = re.compile(r"([A-Za-z][A-Za-z0-9]*)_trait_(\d+)", re.IGNORECASE)
-BSS_TRAIT_ID_ALIAS_PATTERN = PREFIXED_TRAIT_ID_ALIAS_PATTERN
 RUNTIME_TRAIT_ID_PATTERN = re.compile(r"(?:[A-Z][A-Z0-9]*_)?T\d+(?:_[A-Za-z0-9_]+)?")
 SIGNAL_ID_PATTERN = re.compile(r"^[A-Za-z0-9_]+$")
 GROUP_ID_PATTERN = re.compile(r"^[A-Za-z0-9_]+$")

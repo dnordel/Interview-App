@@ -306,10 +306,6 @@ class RecordingSession:
             except Exception:
                 pass
 
-    def _ensure_not_stopped(self) -> None:
-        if self._stopped:
-            raise RuntimeError("This RecordingSession has already been stopped.")
-
     def _popen_kwargs(self) -> dict[str, Any]:
         kwargs: dict[str, Any] = {
             "stdout": subprocess.DEVNULL,

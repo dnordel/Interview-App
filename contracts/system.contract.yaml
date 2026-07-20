@@ -464,11 +464,6 @@ modules:
     path: src/interview_app/transcript_processor.py
     depends_on:
     - interview_runtime
-  interview_app_transcript_summary:
-    path: src/interview_app/transcript_summary.py
-    depends_on:
-    - interview_runtime
-    - transformers
   interview_app_transcript_writer:
     path: src/interview_app/transcript_writer.py
     depends_on:

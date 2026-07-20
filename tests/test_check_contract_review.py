@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from tools.check_contract_review import _check_coverage_matrix, run_checks
 
 

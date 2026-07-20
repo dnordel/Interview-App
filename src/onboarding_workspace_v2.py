@@ -2345,13 +2345,6 @@ class OnboardingDashboardV2Workspace:
         )
         return page, layout
 
-    def _add_summary(self, layout: Any, text: str) -> None:
-        label = self.QtWidgets.QLabel(text)
-        label.setObjectName("OnboardingV2SummaryState")
-        label.setWordWrap(True)
-        layout.addWidget(label)
-        layout.addStretch(1)
-
     def _add_empty_state(self, layout: Any, text: str) -> None:
         label = self.QtWidgets.QLabel(text)
         label.setObjectName("OnboardingV2EmptyState")

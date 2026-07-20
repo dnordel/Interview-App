@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-import json
 import queue
 import threading
 from pathlib import Path
 from types import SimpleNamespace
 
-from data_store import InterviewHistoryStore
 from interview_app.audio_runtime import AudioRuntimeController
 from interview_app.finalize_pipeline import FinalizePipelineController
 from interview_app.history_controller import HistoryController

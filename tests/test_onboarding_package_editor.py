@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pytest
 
 from onboarding_package_editor import DocumentPackageDraftEditor

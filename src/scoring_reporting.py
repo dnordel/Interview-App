@@ -638,33 +638,6 @@ class DraftManager:
             return json.load(f)
 
 
-_EXECUTIVE_SUMMARY_HEADINGS: Final[dict[str, str]] = {
-    "recommendation": "recommendation",
-    "overall fit": "overall_fit",
-    "overall fit summary": "overall_fit",
-    "key strengths": "strengths",
-    "strengths": "strengths",
-    "key concerns": "concerns",
-    "key concerns or risks": "concerns",
-    "concerns": "concerns",
-    "concerns or risks": "concerns",
-    "risks": "concerns",
-    "role-specific analysis": "role_specific",
-    "role specific analysis": "role_specific",
-    "role-specific match": "role_specific",
-    "role specific match": "role_specific",
-    "score pattern analysis": "score_pattern",
-    "score pattern": "score_pattern",
-    "suggested follow-up questions": "follow_up",
-    "suggested follow up questions": "follow_up",
-    "follow-up questions": "follow_up",
-    "follow up questions": "follow_up",
-    "final hiring notes": "final_notes",
-    "hiring notes": "final_notes",
-}
-_EXECUTIVE_SUMMARY_LIST_SECTIONS: Final[set[str]] = {"strengths", "concerns", "follow_up"}
-
-
 class DocxExporter:
     """Exports a finalized interview report to a single .docx file (one per candidate)."""
 

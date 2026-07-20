@@ -19,7 +19,6 @@ from notification_service import (
 from notification_store import NotificationStore
 from notification_templates import (
     NOTIFICATION_TEMPLATE_FIELD_CATALOG,
-    NOTIFICATION_TEMPLATE_FIELDS,
     notification_template_fields,
     render_notification_templates,
     validate_notification_rule,
@@ -2275,11 +2274,6 @@ class StaffingDashboardV2Page:
     def _open_classrooms_filter_drawer(self) -> None:
         self._sync_classrooms_filter_drawer_from_state()
         self.classrooms_filter_drawer_panel.show_overlay()
-
-    def _position_classrooms_filter_drawer(self) -> None:
-        if not hasattr(self, "classrooms_filter_drawer"):
-            return
-        self.classrooms_filter_drawer_panel.reposition()
 
     def _reset_classrooms_filter_drawer(self) -> None:
         state = self._default_classrooms_filter_state()
@@ -8914,17 +8908,6 @@ def _parse_int_or_none(value: str) -> int | None:
         return None
 
 
-def _format_notification_recipients(recipients: list[NotificationRecipient]) -> str:
-    parts: list[str] = []
-    for recipient in recipients:
-        email = str(recipient.email or "").strip()
-        if not email:
-            continue
-        label = str(recipient.role_label or recipient.name or "").strip()
-        parts.append(f"{label} <{email}>" if label else email)
-    return ", ".join(parts)
-
-
 def _parse_notification_recipients(value: str) -> list[NotificationRecipient]:
     recipients: list[NotificationRecipient] = []
     for raw_part in str(value or "").split(","):
@@ -9243,15 +9226,6 @@ def _action_menu_specs(status: str) -> list[tuple[str, str]]:
     }.get(status, [("View Details", "view_details")])
 
 
-def _status_color(status: str) -> str:
-    return {
-        "need_now": "#fee2e2",
-        "replace": "#ffedd5",
-        "coming": "#fef3c7",
-        "filled": "#dcfce7",
-        "healthy": "#dcfce7",
-        "dont_need_now": "#f1f5f9",
-    }.get(status, "#ffffff")
 
 
 def _chip_object_name(status: str) -> str:
