@@ -3,3 +3,6 @@ soundfile==0.13.1
 faster-whisper==1.2.1
 PySide6==6.8.1.1
 pywin32==312; sys_platform == "win32"
+cryptography==45.0.5
+pypdf==5.7.0
+reportlab==4.4.2

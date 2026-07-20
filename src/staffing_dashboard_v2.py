@@ -400,16 +400,29 @@ QLabel#StaffingV2SidebarSection {
     font-size: 11px;
     font-weight: 800;
 }
-QPushButton#StaffingV2DashboardNavButton,
-QPushButton#StaffingV2HomeNavButton,
-QPushButton#StaffingV2ClassroomsNavButton,
-QPushButton#StaffingV2PeopleNavButton,
-QPushButton#StaffingV2HistoryNavButton,
-QPushButton#StaffingV2AnalyticsNavButton,
-QPushButton#StaffingV2NotificationsNavButton,
-QPushButton#StaffingV2ValidationNavButton,
-QPushButton#StaffingV2IntegrationsNavButton,
-QPushButton#StaffingV2SettingsNavButton {
+QToolButton[staffingV2SectionHeader="true"] {
+    background-color: transparent;
+    color: #64748b;
+    border: none;
+    padding: 6px 2px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 800;
+}
+QToolButton[staffingV2SectionHeader="true"]:hover {
+    color: #1d4ed8;
+}
+QToolButton#StaffingV2NavigationToggle {
+    background-color: transparent;
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
+    padding: 5px;
+}
+QToolButton#StaffingV2NavigationToggle:hover {
+    background-color: #f1f5f9;
+    border-color: #cbd5e1;
+}
+QPushButton[staffingV2NavItem="true"] {
     background-color: transparent;
     color: #334155;
     border: none;
@@ -417,6 +430,10 @@ QPushButton#StaffingV2SettingsNavButton {
     padding: 10px 12px;
     text-align: left;
     font-weight: 600;
+}
+QPushButton[staffingV2NavItem="true"]:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
 }
 QPushButton#StaffingV2HomeNavButton:disabled,
 QPushButton#StaffingV2AnalyticsNavButton:disabled,
@@ -1260,14 +1277,20 @@ class StaffingDashboardV2Page:
         self.visible_validation_issues: list[dict[str, str]] = []
         self._lazy_views_built: set[str] = set()
         self.external_sections: dict[str, Any] = {}
+        self.section_buttons: dict[str, Any] = {}
+        self.section_contents: dict[str, Any] = {}
         self.external_nav_buttons: dict[str, Any] = {}
         self.external_pages: dict[str, Any] = {}
+        self.external_page_providers: dict[str, Callable[[], Any]] = {}
+        self.external_before_leave: dict[str, Callable[[], bool]] = {}
         self.current_page_id = "staffing_dashboard"
         self._settings_page_factory: Callable[[], Any] | None = None
         self._settings_before_leave: Callable[[], bool] | None = None
         self._settings_page_widget: Any | None = None
         self._navigation_locked = False
+        self._navigation_mode = "full"
         self._navigation_labels: dict[Any, str] = {}
+        self._navigation_section_for_button: dict[Any, str] = {}
         self._navigation_enabled_before_lock: dict[Any, bool] = {}
         self.widget = QtWidgets.QWidget()
         self.widget.setObjectName("PySideStaffingV2Page")
@@ -1298,12 +1321,39 @@ class StaffingDashboardV2Page:
         self.staffing_sidebar.setObjectName("StaffingV2Sidebar")
         self.staffing_sidebar.setFixedWidth(252)
         sidebar_layout = self.QtWidgets.QVBoxLayout(self.staffing_sidebar)
-        self.sidebar_layout = sidebar_layout
+        self.sidebar_root_layout = sidebar_layout
         sidebar_layout.setContentsMargins(16, 22, 16, 18)
         sidebar_layout.setSpacing(10)
-        sidebar_layout.addWidget(self._label("Launch Pad Learning", "StaffingV2Brand"))
-        sidebar_layout.addSpacing(18)
-        sidebar_layout.addWidget(self._label("STAFFING", "StaffingV2SidebarSection"))
+        sidebar_header = self.QtWidgets.QHBoxLayout()
+        self.sidebar_brand = self._label("Launch Pad Learning", "StaffingV2Brand")
+        sidebar_header.addWidget(self.sidebar_brand, 1)
+        self.navigation_toggle_button = self.QtWidgets.QToolButton()
+        self.navigation_toggle_button.setObjectName("StaffingV2NavigationToggle")
+        self.navigation_toggle_button.setAccessibleName("Collapse navigation")
+        self.navigation_toggle_button.setToolTip("Collapse navigation")
+        self.navigation_toggle_button.setFixedSize(32, 32)
+        self.navigation_toggle_button.setIcon(
+            self.widget.style().standardIcon(self.QtWidgets.QStyle.StandardPixmap.SP_ArrowLeft)
+        )
+        self.navigation_toggle_button.clicked.connect(self.toggle_navigation_mode)
+        sidebar_header.addWidget(self.navigation_toggle_button)
+        sidebar_layout.addLayout(sidebar_header)
+        sidebar_layout.addSpacing(8)
+
+        self.sidebar_scroll = self.QtWidgets.QScrollArea()
+        self.sidebar_scroll.setObjectName("StaffingV2SidebarScroll")
+        self.sidebar_scroll.setWidgetResizable(True)
+        self.sidebar_scroll.setFrameShape(self.QtWidgets.QFrame.Shape.NoFrame)
+        self.sidebar_scroll.setHorizontalScrollBarPolicy(self.QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.sidebar_navigation = self.QtWidgets.QWidget()
+        self.sidebar_navigation.setObjectName("StaffingV2SidebarNavigation")
+        self.sidebar_layout = self.QtWidgets.QVBoxLayout(self.sidebar_navigation)
+        self.sidebar_layout.setContentsMargins(0, 0, 0, 0)
+        self.sidebar_layout.setSpacing(10)
+        self.sidebar_scroll.setWidget(self.sidebar_navigation)
+        sidebar_layout.addWidget(self.sidebar_scroll, 1)
+
+        _, staffing_layout = self._sidebar_section("staffing", "STAFFING")
         self.home_nav_button = self._sidebar_button("StaffingV2HomeNavButton", "Dashboard", "dashboard")
         self.home_nav_button.setEnabled(False)
         self.dashboard_nav_button = self._sidebar_button("StaffingV2DashboardNavButton", "Staffing Dashboard", "dashboard")
@@ -1321,17 +1371,18 @@ class StaffingDashboardV2Page:
             self.people_nav_button,
             self.history_nav_button,
         ):
-            sidebar_layout.addWidget(button)
-        sidebar_layout.addSpacing(16)
+            staffing_layout.addWidget(button)
+            self._navigation_section_for_button[button] = "staffing"
         self.analytics_nav_button = self._sidebar_button("StaffingV2AnalyticsNavButton", "Analytics", "analytics")
         self.analytics_nav_button.setEnabled(False)
         self.notifications_nav_button = self._sidebar_button("StaffingV2NotificationsNavButton", "Notifications", "notifications")
         self.notifications_nav_button.clicked.connect(self._show_notifications_view)
-        sidebar_layout.addWidget(self.analytics_nav_button)
-        sidebar_layout.addWidget(self.notifications_nav_button)
-        sidebar_layout.addSpacing(16)
-        self.system_section_label = self._label("SYSTEM", "StaffingV2SidebarSection")
-        sidebar_layout.addWidget(self.system_section_label)
+        staffing_layout.addWidget(self.analytics_nav_button)
+        staffing_layout.addWidget(self.notifications_nav_button)
+        self._navigation_section_for_button[self.analytics_nav_button] = "staffing"
+        self._navigation_section_for_button[self.notifications_nav_button] = "staffing"
+        self.system_section_widget, system_layout = self._sidebar_section("system", "SYSTEM")
+        self.system_section_label = self.section_buttons["system"]
         self.validation_nav_button = self._sidebar_button("StaffingV2ValidationNavButton", "Validation", "validation")
         self.validation_nav_button.clicked.connect(self._show_validation_view)
         self.integrations_nav_button = self._sidebar_button("StaffingV2IntegrationsNavButton", "Integrations", "integrations")
@@ -1339,18 +1390,27 @@ class StaffingDashboardV2Page:
         self.settings_nav_button = self._sidebar_button("StaffingV2SettingsNavButton", "Settings", "settings")
         self.settings_nav_button.setEnabled(False)
         self.settings_nav_button.clicked.connect(self._show_settings_view)
-        sidebar_layout.addWidget(self.validation_nav_button)
-        sidebar_layout.addWidget(self.integrations_nav_button)
-        sidebar_layout.addWidget(self.settings_nav_button)
-        sidebar_layout.addStretch(1)
+        system_layout.addWidget(self.validation_nav_button)
+        system_layout.addWidget(self.integrations_nav_button)
+        system_layout.addWidget(self.settings_nav_button)
+        self._navigation_section_for_button[self.validation_nav_button] = "system"
+        self._navigation_section_for_button[self.integrations_nav_button] = "system"
+        self._navigation_section_for_button[self.settings_nav_button] = "system"
+        self.sidebar_layout.addStretch(1)
+        self.sidebar_footer = self.QtWidgets.QWidget()
+        self.sidebar_footer.setObjectName("StaffingV2SidebarFooter")
+        sidebar_footer_layout = self.QtWidgets.QVBoxLayout(self.sidebar_footer)
+        sidebar_footer_layout.setContentsMargins(0, 0, 0, 0)
+        sidebar_footer_layout.setSpacing(10)
         env_card, env_layout = self._panel("StaffingV2SidebarCard")
         env_layout.addWidget(self._label("Environment", "StaffingV2Muted"))
         env_layout.addWidget(self._label("Production", "StaffingV2Muted"))
         env_layout.addWidget(self._label("v 1.4.0", "StaffingV2Muted"))
-        sidebar_layout.addWidget(env_card)
+        sidebar_footer_layout.addWidget(env_card)
         user_card, user_layout = self._panel("StaffingV2SidebarCard")
         user_layout.addWidget(self._label("AD   Admin User", "StaffingV2Muted"))
-        sidebar_layout.addWidget(user_card)
+        sidebar_footer_layout.addWidget(user_card)
+        sidebar_layout.addWidget(self.sidebar_footer)
         shell_layout.addWidget(self.staffing_sidebar)
 
         content = self.QtWidgets.QWidget()
@@ -1546,13 +1606,50 @@ class StaffingDashboardV2Page:
     def _sidebar_button(self, object_name: str, text: str, icon_key: str = "") -> Any:
         button = self.QtWidgets.QPushButton(text)
         button.setObjectName(object_name)
-        button.setMinimumHeight(40)
+        button.setFixedHeight(40)
+        button.setSizePolicy(
+            self.QtWidgets.QSizePolicy.Policy.Expanding,
+            self.QtWidgets.QSizePolicy.Policy.Fixed,
+        )
+        button.setProperty("staffingV2NavItem", True)
         button.setProperty("staffingV2ActiveNav", False)
-        if icon_key:
-            self._set_button_icon(button, icon_key)
+        self._set_button_icon(button, icon_key or "page")
         button.setToolTip(text)
+        button.setAccessibleName(text)
         self._navigation_labels[button] = text
         return button
+
+    def _sidebar_section(self, section_id: str, label: str, *, insert_at: int | None = None) -> tuple[Any, Any]:
+        section = self.QtWidgets.QWidget()
+        section.setObjectName(f"StaffingV2SidebarSectionContainer_{section_id}")
+        layout = self.QtWidgets.QVBoxLayout(section)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(6)
+        heading = self.QtWidgets.QToolButton()
+        heading.setObjectName(f"StaffingV2SidebarSection_{section_id}")
+        heading.setText(label)
+        heading.setToolButtonStyle(self.QtCore.Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        heading.setArrowType(self.QtCore.Qt.ArrowType.DownArrow)
+        heading.setCheckable(True)
+        heading.setChecked(True)
+        heading.setProperty("staffingV2SectionHeader", True)
+        heading.setAccessibleName(f"{label.title()} navigation section")
+        heading.setToolTip(f"Collapse {label.title()}")
+        heading.clicked.connect(lambda checked, key=section_id: self.set_section_expanded(key, checked))
+        layout.addWidget(heading)
+        content = self.QtWidgets.QWidget()
+        content.setObjectName(f"StaffingV2SidebarSectionContent_{section_id}")
+        content_layout = self.QtWidgets.QVBoxLayout(content)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(6)
+        layout.addWidget(content)
+        if insert_at is None:
+            self.sidebar_layout.addWidget(section)
+        else:
+            self.sidebar_layout.insertWidget(max(0, insert_at), section)
+        self.section_buttons[section_id] = heading
+        self.section_contents[section_id] = content
+        return section, content_layout
 
     def register_external_section(self, section_id: str, label: str) -> None:
         clean_id = str(section_id or "").strip()
@@ -1561,39 +1658,62 @@ class StaffingDashboardV2Page:
             raise ValueError("External dashboard section ID and label are required.")
         if clean_id in self.external_sections:
             raise ValueError(f"External dashboard section already exists: {clean_id}")
-        section = self.QtWidgets.QWidget()
+        index = self.sidebar_layout.indexOf(self.system_section_widget)
+        section, content_layout = self._sidebar_section(clean_id, clean_label, insert_at=index)
         section.setObjectName(f"StaffingV2ExternalSectionContainer_{clean_id}")
-        layout = self.QtWidgets.QVBoxLayout(section)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(6)
-        heading = self._label(clean_label, f"StaffingV2ExternalSection_{clean_id}")
-        heading.setProperty("staffingV2FullText", clean_label)
-        layout.addWidget(heading)
-        index = self.sidebar_layout.indexOf(self.system_section_label)
-        self.sidebar_layout.insertWidget(max(0, index), section)
-        self.external_sections[clean_id] = layout
+        heading = self.section_buttons[clean_id]
+        heading.setObjectName(f"StaffingV2ExternalSection_{clean_id}")
+        content = self.section_contents[clean_id]
+        content.setObjectName(f"StaffingV2ExternalSectionContent_{clean_id}")
+        self.external_sections[clean_id] = content_layout
 
     def register_external_page(
         self,
         section_id: str,
         page_id: str,
         label: str,
-        widget: Any,
+        widget: Any | None = None,
         *,
         icon_key: str = "",
+        provider: Callable[[], Any] | None = None,
+        before_leave: Callable[[], bool] | None = None,
     ) -> Any:
         if section_id not in self.external_sections:
             raise ValueError(f"Unknown external dashboard section: {section_id}")
         clean_id = str(page_id or "").strip()
         if not clean_id or clean_id in self.external_pages:
             raise ValueError(f"Invalid or duplicate external dashboard page: {clean_id}")
+        if (widget is None) == (provider is None):
+            raise ValueError("External dashboard page requires exactly one widget or provider.")
+        if provider is not None and not callable(provider):
+            raise TypeError("External dashboard page provider must be callable.")
+        if before_leave is not None and not callable(before_leave):
+            raise TypeError("External dashboard before-leave guard must be callable.")
         button = self._sidebar_button(f"StaffingV2ExternalNav_{clean_id}", label, icon_key)
         button.clicked.connect(lambda _checked=False, key=clean_id: self.show_external_page(key))
         self.external_sections[section_id].addWidget(button)
-        self.page_stack.addWidget(widget)
+        if widget is not None:
+            self.page_stack.addWidget(widget)
+        else:
+            self.external_page_providers[clean_id] = provider
+        if before_leave is not None:
+            self.external_before_leave[clean_id] = before_leave
         self.external_nav_buttons[clean_id] = button
         self.external_pages[clean_id] = widget
+        self._navigation_section_for_button[button] = section_id
         return button
+
+    def set_section_expanded(self, section_id: str, expanded: bool) -> None:
+        if section_id not in self.section_buttons:
+            raise ValueError(f"Unknown dashboard section: {section_id}")
+        button = self.section_buttons[section_id]
+        expanded = bool(expanded)
+        button.setChecked(expanded)
+        button.setArrowType(
+            self.QtCore.Qt.ArrowType.DownArrow if expanded else self.QtCore.Qt.ArrowType.RightArrow
+        )
+        button.setToolTip(f"{'Collapse' if expanded else 'Expand'} {button.text().title()}")
+        self.section_contents[section_id].setVisible(expanded or self._navigation_mode == "rail")
 
     def register_settings_page(
         self,
@@ -1632,6 +1752,9 @@ class StaffingDashboardV2Page:
     def _can_leave_current_page(self, target_page_id: str) -> bool:
         if target_page_id == self.current_page_id:
             return True
+        external_guard = self.external_before_leave.get(self.current_page_id)
+        if external_guard is not None:
+            return bool(external_guard())
         if self.current_page_id == "settings" and self._settings_before_leave is not None:
             return bool(self._settings_before_leave())
         if self.current_page_id == "notifications":
@@ -1660,19 +1783,52 @@ class StaffingDashboardV2Page:
         active = self.external_nav_buttons[page_id]
         if self._navigation_locked and not active.isEnabled():
             return
-        self._activate_page(page_id, active, self.external_pages[page_id])
+        self._activate_page(page_id, active, lambda: self._external_page_widget(page_id))
+
+    def _external_page_widget(self, page_id: str) -> Any:
+        widget = self.external_pages[page_id]
+        if widget is not None:
+            return widget
+        provider = self.external_page_providers[page_id]
+        widget = provider()
+        if widget is None:
+            raise ValueError(f"Staffing v2 page provider returned no widget: {page_id}")
+        self.external_pages[page_id] = widget
+        self.page_stack.addWidget(widget)
+        return widget
 
     def set_navigation_mode(self, mode: str) -> None:
         if mode not in {"full", "rail"}:
             raise ValueError("Staffing v2 navigation mode must be full or rail.")
         rail = mode == "rail"
+        self._navigation_mode = mode
         self.staffing_sidebar.setFixedWidth(64 if rail else 252)
+        self.sidebar_root_layout.setContentsMargins(
+            12 if rail else 16,
+            18 if rail else 22,
+            12 if rail else 16,
+            12 if rail else 18,
+        )
+        self.sidebar_brand.setVisible(not rail)
+        self.sidebar_footer.setVisible(not rail)
+        action = "Expand navigation" if rail else "Collapse navigation"
+        self.navigation_toggle_button.setAccessibleName(action)
+        self.navigation_toggle_button.setToolTip(action)
+        arrow = (
+            self.QtWidgets.QStyle.StandardPixmap.SP_ArrowRight
+            if rail
+            else self.QtWidgets.QStyle.StandardPixmap.SP_ArrowLeft
+        )
+        self.navigation_toggle_button.setIcon(self.widget.style().standardIcon(arrow))
         for button, label in self._navigation_labels.items():
             button.setText("" if rail else label)
             button.setToolTip(label)
-        for layout in self.external_sections.values():
-            heading = layout.itemAt(0).widget()
+        for section_id, heading in self.section_buttons.items():
             heading.setVisible(not rail)
+            self.section_contents[section_id].setVisible(rail or heading.isChecked())
+
+    def toggle_navigation_mode(self) -> None:
+        self.set_navigation_mode("full" if self._navigation_mode == "rail" else "rail")
 
     def set_navigation_locked(self, locked: bool) -> None:
         self._navigation_locked = bool(locked)
@@ -1745,6 +1901,7 @@ class StaffingDashboardV2Page:
             "info": pixmaps.SP_MessageBoxInformation,
             "integrations": pixmaps.SP_DriveNetIcon,
             "notifications": pixmaps.SP_MessageBoxInformation,
+            "page": pixmaps.SP_FileIcon,
             "people": pixmaps.SP_FileDialogDetailedView,
             "search": pixmaps.SP_FileDialogContentsView,
             "settings": pixmaps.SP_FileDialogDetailedView,
@@ -1759,6 +1916,9 @@ class StaffingDashboardV2Page:
         return self.widget.style().standardIcon(mapping.get(icon_key, pixmaps.SP_FileIcon))
 
     def _set_active_nav(self, active_button: Any) -> None:
+        section_id = self._navigation_section_for_button.get(active_button)
+        if section_id is not None:
+            self.set_section_expanded(section_id, True)
         for button in [*self._base_nav_buttons(), *self.external_nav_buttons.values()]:
             is_active = button is active_button
             button.setProperty("staffingV2ActiveNav", is_active)

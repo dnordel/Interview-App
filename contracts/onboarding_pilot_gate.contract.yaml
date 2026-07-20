@@ -1,0 +1,48 @@
+module:
+  name: onboarding_pilot_gate
+  language: python
+  path: src/onboarding_pilot_gate.py
+  version: 1.0.0
+  description: PII-safe tamper-evident five-business-day Palmdale evidence gate and ordered Director-school rollout approvals.
+functions:
+- name: record_pilot_day
+  inputs:
+    path: {type: Path, required: true}
+    business_date: {type: date, required: true}
+    device_id: {type: str, required: true}
+    scenarios: {type: 'Iterable[str]', required: true}
+    defects: {type: 'Iterable[Mapping[str, str]]', required: true}
+  returns: {type: None}
+  exceptions: [ValueError, OSError]
+  side_effects: Hashes device identity and atomically appends one hash-chained weekday evidence record.
+- name: evaluate_pilot_gate
+  inputs:
+    path: {type: Path, required: true}
+  returns: {type: PilotGateResult}
+  exceptions: [ValueError, OSError]
+  side_effects: Validates hash chain and evaluates days, devices, scenarios, and blocking defects without mutation.
+- name: approve_rollout
+  inputs:
+    path: {type: Path, required: true}
+    school: {type: str, required: true}
+    actor: {type: str, required: true}
+    confirm_no_critical_high: {type: bool, required: true}
+    reason: {type: str, required: true}
+  returns: {type: None}
+  exceptions: [ValueError, OSError]
+  side_effects: Appends hashed explicit Hawthorne or North Long Beach approval after ordered gate validation.
+- name: enabled_director_schools
+  inputs:
+    path: {type: Path, required: true}
+  returns: {type: 'tuple[str, ...]'}
+  exceptions: []
+  side_effects: Reads approvals and fails closed to Palmdale when evidence is absent or corrupted.
+classes:
+- name: PilotGateResult
+  description: Immutable rollout readiness counts and missing/blocking status.
+  locked: false
+  methods: []
+data_structures:
+- name: REQUIRED_PILOT_SCENARIOS
+  type: 'tuple[str, ...]'
+dependencies: []

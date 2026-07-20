@@ -57,6 +57,7 @@ SUPPORTED_NOTIFICATION_EVENTS = (
     "onboarding.task.created",
     "onboarding.task.completed",
     "onboarding.task.overdue",
+    "onboarding.digest.due",
 )
 HIRING_MANAGER_EMAIL = "recruiting@launchpadpreschool.com"
 EXECUTIVE_DIRECTOR_EMAIL = "deidre@launchpadpreschool.com"
@@ -1084,6 +1085,40 @@ def load_email_account_settings(path: Path = EMAIL_ACCOUNT_SETTINGS_PATH) -> Ema
     return replace(settings, password=session_password, smtp_password=session_smtp_password)
 
 
+def migrate_legacy_onboarding_email_account(
+    *,
+    legacy_path: Path,
+    shared_path: Path = EMAIL_ACCOUNT_SETTINGS_PATH,
+) -> bool:
+    """Copy a legacy onboarding SMTP account once, never replacing shared settings."""
+    shared_payload = safe_read_json(Path(shared_path), default={}, expected_type=dict)
+    shared_email = dict(shared_payload.get("email") or {}) if isinstance(shared_payload, dict) else {}
+    meaningful_fields = {
+        "account_label",
+        "display_name",
+        "smtp_host",
+        "smtp_username",
+        "smtp_password",
+        "username",
+        "password",
+        "sender_email",
+        "imap_or_pop_host",
+    }
+    if any(str(shared_email.get(field) or "").strip() for field in meaningful_fields):
+        return False
+
+    legacy_payload = safe_read_json(Path(legacy_path), default={}, expected_type=dict)
+    legacy_email = dict(legacy_payload.get("email") or {}) if isinstance(legacy_payload, dict) else {}
+    legacy = EmailSettings.from_dict(legacy_email)
+    if not legacy.smtp_host or not legacy.sender_email:
+        return False
+    save_email_account_settings(
+        replace(legacy, remember_password=True, password_storage="shared_config"),
+        Path(shared_path),
+    )
+    return True
+
+
 def save_email_account_settings(settings: EmailSettings, path: Path = EMAIL_ACCOUNT_SETTINGS_PATH) -> None:
     target = Path(path)
     key = str(target.expanduser().resolve())
@@ -1123,6 +1158,55 @@ def save_notification_directory(
         if not is_valid_email_address(email):
             raise ValueError("Notification directory contains an invalid email address.")
     atomic_write_json(Path(path), directory.to_dict(), indent=2, ensure_ascii=False)
+
+
+def resolve_onboarding_role_recipient(
+    directory: NotificationDirectory,
+    *,
+    school: str,
+    role: str,
+    director_resolver: Callable[[str], Any] | None = None,
+) -> str:
+    school_name = str(school or "").strip()
+    school_key = school_name.casefold()
+    role_key = str(role or "").strip().casefold()
+    if role_key == "director":
+        if director_resolver is not None:
+            director_resolver(school_name)
+        return str(directory.directors.get(school_key) or "").strip()
+    if role_key == "office manager":
+        return str(directory.office_managers.get(school_key) or "").strip()
+    if role_key == "payroll":
+        return str(directory.payroll or "").strip()
+    if role_key in {"admin", "hr", "hr manager"}:
+        return str(directory.hr_manager or "").strip()
+    return ""
+
+
+def send_onboarding_reminder_digest(
+    settings: EmailSettings,
+    message: Any,
+    *,
+    rule_store: NotificationStore | None = None,
+) -> None:
+    school = str(message.school or "").strip()
+    role = str(message.role or "").strip()
+    recipient = str(message.recipient or "").strip()
+    task_count = len(tuple(message.task_ids))
+    subject = f"{school} onboarding tasks due — {role}"
+    body = (
+        f"{task_count} onboarding tasks require attention. "
+        "Open the Onboarding Tasks page for authorized details."
+    )
+    if rule_store is not None:
+        rules = [rule for rule in rule_store.list_rules("onboarding.digest.due") if rule.active]
+        if not rules:
+            raise ValueError("Enable the Onboarding due digest rule in Notifications before sending.")
+        rendered = render_notification_templates(rules[0], {
+            "school": school, "owner_role": role, "task_count": str(task_count),
+        })
+        subject, body = rendered.subject, rendered.plain_body
+    _send_email_message(settings, [recipient], subject, body)
 
 
 def notification_service_from_email_account_settings(

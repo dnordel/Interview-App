@@ -1,0 +1,151 @@
+module:
+  name: onboarding_sync
+  language: python
+  path: src/onboarding_sync.py
+  version: 1.5.0
+  description: Encrypted onboarding workflow replication over immutable cross-database events and receipts.
+functions: []
+classes:
+- name: OnboardingChangeStage
+  description: Onboarding compatibility adapter for the generic change stage.
+  locked: false
+  methods:
+  - name: __init__
+    inputs:
+      path: {type: Path, required: true}
+    returns: {type: None}
+    exceptions: [ValueError]
+    side_effects: none
+- name: OnboardingSyncConflict
+  description: Same-field conflict metadata with non-sensitive local/incoming values and masked indicators for sensitive fields.
+  locked: false
+  methods: []
+- name: OnboardingSyncCoordinator
+  description: Publishes encrypted projections and replays authorized pending events.
+  locked: false
+  methods:
+  - name: __init__
+    inputs:
+      store: {type: OnboardingStore, required: true}
+      stage: {type: OnboardingChangeStage, required: true}
+      vault: {type: OnboardingVault, required: true}
+      replica: {type: str, required: true}
+      school_scope: {type: str, required: false, default: ''}
+      conflict_resolver: {type: 'Callable[[OnboardingSyncConflict], bool | str] | None', required: false, default: null}
+      artifact_root: {type: 'Path | None', required: false, default: null}
+    returns: {type: None}
+    exceptions: [ValueError]
+    side_effects: none
+  - name: publish_employee
+    inputs:
+      employee: {type: OnboardingEmployee, required: true}
+      base: {type: 'OnboardingEmployee | None', required: true}
+      changed_fields: {type: 'tuple[str, ...]', required: true}
+    returns: {type: str}
+    exceptions: [ValueError, OSError]
+    side_effects: Writes one immutable encrypted change event.
+  - name: publish_task
+    inputs:
+      task: {type: OnboardingTask, required: true}
+      base: {type: 'OnboardingTask | None', required: true}
+      changed_fields: {type: 'tuple[str, ...]', required: true}
+    returns: {type: str}
+    exceptions: [ValueError, OSError]
+    side_effects: Writes one immutable encrypted change event.
+  - name: publish_task_comment
+    inputs:
+      comment: {type: TaskComment, required: true}
+    returns: {type: str}
+    exceptions: [ValueError, OSError, sqlite3.DatabaseError]
+    side_effects: Writes one encrypted comment snapshot with immutable revision history.
+  - name: publish_task_attachment
+    inputs:
+      attachment: {type: TaskAttachment, required: true}
+    returns: {type: str}
+    exceptions: [ValueError, VaultIntegrityError, OSError, sqlite3.DatabaseError]
+    side_effects: Writes one encrypted attachment metadata and content event after hash validation.
+  - name: publish_owner_role
+    inputs:
+      config: {type: OwnerRoleConfig, required: true}
+    returns: {type: str}
+    exceptions: [ValueError, OSError]
+    side_effects: Writes one encrypted school/global owner-role configuration event.
+  - name: publish_intake_field
+    inputs:
+      field: {type: IntakeField, required: true}
+    returns: {type: str}
+    exceptions: [ValueError, OSError]
+    side_effects: Writes one encrypted global reusable intake-field event.
+  - name: publish_intake_submission
+    inputs:
+      submission: {type: IntakeSubmission, required: true}
+    returns: {type: str}
+    exceptions: [ValueError, OSError]
+    side_effects: Writes one encrypted school-scoped intake submission or correction event.
+  - name: publish_document_package
+    inputs:
+      package: {type: DocumentPackageVersion, required: true}
+    returns: {type: str}
+    exceptions: [ValueError, VaultIntegrityError, OSError, sqlite3.DatabaseError]
+    side_effects: Writes encrypted package metadata and authenticated ordered PDF contents.
+  - name: publish_task_template
+    inputs:
+      template: {type: TaskTemplateVersion, required: true}
+    returns: {type: str}
+    exceptions: [ValueError, OSError]
+    side_effects: Writes one encrypted draft, published, or deprecated task-template event including validated encrypted attachment snapshots.
+  - name: health
+    inputs: {}
+    returns: {type: OnboardingSyncHealth}
+    exceptions: [ValueError, OSError]
+    side_effects: Reads PII-safe stage, replay-integrity, delayed-predecessor, and deferred-conflict health.
+  - name: conflicts
+    inputs: {}
+    returns: {type: 'tuple[OnboardingSyncConflict, ...]'}
+    exceptions: []
+    side_effects: Reads unresolved deferred conflicts.
+  - name: publish_pdf_mapping
+    inputs:
+      mapping: {type: PdfFieldMapping, required: true}
+    returns: {type: str}
+    exceptions: [ValueError, OSError]
+    side_effects: Writes one encrypted global PDF-field mapping event.
+  - name: publish_filled_artifact
+    inputs:
+      artifact: {type: FilledArtifact, required: true}
+      sealed_path: {type: Path, required: true}
+    returns: {type: str}
+    exceptions: [ValueError, VaultIntegrityError, OSError]
+    side_effects: Validates and publishes encrypted filled metadata plus its encrypted vault envelope.
+  - name: publish_employee_transfer
+    inputs:
+      before: {type: OnboardingEmployee, required: true}
+      after: {type: OnboardingEmployee, required: true}
+      tasks: {type: 'tuple[OnboardingTask, ...]', required: true}
+    returns: {type: str}
+    exceptions: [ValueError, OSError]
+    side_effects: Writes one encrypted cross-school employee and task-history transfer event.
+  - name: publish_employee_tombstone
+    inputs:
+      employee: {type: OnboardingEmployee, required: true}
+      action: {type: str, required: true}
+      tombstone_payload: {type: 'dict[str, object]', required: true}
+    returns: {type: str}
+    exceptions: [ValueError, OSError]
+    side_effects: Writes one encrypted non-PII deletion or retention-purge tombstone event.
+  - name: replay_pending
+    inputs: {}
+    returns: {type: int}
+    exceptions: [OSError, sqlite3.DatabaseError]
+    side_effects: Applies authorized events, leaves damaged/deferred events unacknowledged, records PII-safe issues, and continues unrelated replay.
+dependencies:
+- module: cross_database_change_stage
+- module: onboarding_store
+- module: onboarding_vault
+data_structures:
+- name: OnboardingSyncConflict
+  type: frozen dataclass
+- name: OnboardingSyncHealth
+  type: frozen dataclass
+- name: OnboardingSyncIssue
+  type: frozen dataclass

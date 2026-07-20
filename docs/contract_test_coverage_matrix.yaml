@@ -1,4 +1,4 @@
-last_updated: '2026-07-19'
+last_updated: '2026-07-20'
 sections:
 - name: interview_app
   tests:
@@ -12,7 +12,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-19T22:04:55.934527+00:00'
+generated_at_utc: '2026-07-20T19:03:51.020642+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -837,6 +837,69 @@ entries:
     - return_type
 - contract: contracts/config_adapters.contract.yaml
   symbol: config_adapters.validate_rubric_config
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/cross_database_change_stage.contract.yaml
+  symbol: cross_database_change_stage.CrossDatabaseChangeStage.acknowledge
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/cross_database_change_stage.contract.yaml
+  symbol: cross_database_change_stage.CrossDatabaseChangeStage.health_issues
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/cross_database_change_stage.contract.yaml
+  symbol: cross_database_change_stage.CrossDatabaseChangeStage.pending_for
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/cross_database_change_stage.contract.yaml
+  symbol: cross_database_change_stage.CrossDatabaseChangeStage.publish
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/cross_database_change_stage.contract.yaml
+  symbol: cross_database_change_stage._required_text
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/cross_database_change_stage.contract.yaml
+  symbol: cross_database_change_stage._safe_slug
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/cross_database_change_stage.contract.yaml
+  symbol: cross_database_change_stage._utc_now_iso
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -1700,6 +1763,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/director_staffing_app.contract.yaml
+  symbol: director_staffing_app.install_director_window_close_guard
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/director_staffing_app.contract.yaml
   symbol: director_staffing_app.launch_director_staffing_app
   kind: function
   tests:
@@ -1863,6 +1935,15 @@ entries:
     - return_type
 - contract: contracts/generate_director_staffing_launchers.contract.yaml
   symbol: generate_director_staffing_launchers.main
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/gui_action_behavior_coverage.contract.yaml
+  symbol: gui_action_behavior_coverage.audit_gui_action_coverage
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -2277,6 +2358,15 @@ entries:
     - return_type
 - contract: contracts/hiring_pipeline.contract.yaml
   symbol: hiring_pipeline.HiringWorkflowService.retry_offer_send
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/hiring_pipeline.contract.yaml
+  symbol: hiring_pipeline.HiringWorkflowService.retry_onboarding_handoff
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -5186,6 +5276,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/notification_service.contract.yaml
+  symbol: notification_service.migrate_legacy_onboarding_email_account
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/notification_service.contract.yaml
   symbol: notification_service.missing_email_account_fields
   kind: function
   tests:
@@ -5240,6 +5339,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/notification_service.contract.yaml
+  symbol: notification_service.resolve_onboarding_role_recipient
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/notification_service.contract.yaml
   symbol: notification_service.save_email_account_settings
   kind: function
   tests:
@@ -5250,6 +5358,15 @@ entries:
     - return_type
 - contract: contracts/notification_service.contract.yaml
   symbol: notification_service.save_notification_directory
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/notification_service.contract.yaml
+  symbol: notification_service.send_onboarding_reminder_digest
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -5591,6 +5708,26 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
+- contract: contracts/onboarding_attachments.contract.yaml
+  symbol: onboarding_attachments.WindowsDefenderAttachmentScanner.__call__
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_attachments.contract.yaml
+  symbol: onboarding_attachments.validate_task_attachment
+  kind: function
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
 - contract: contracts/onboarding_dashboard_actions.contract.yaml
   symbol: onboarding_dashboard_actions._count_tasks_for_filter
   kind: function
@@ -5743,6 +5880,26 @@ entries:
     - security_validation
 - contract: contracts/onboarding_migrations.contract.yaml
   symbol: onboarding_migrations.backfill_onboarding_metadata
+  kind: function
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_migrations.contract.yaml
+  symbol: onboarding_migrations.migrate_legacy_json_to_v2
+  kind: function
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_migrations.contract.yaml
+  symbol: onboarding_migrations.preview_legacy_json_migration
   kind: function
   tests:
   - path: tests/test_onboarding_contract_interfaces.py
@@ -7381,6 +7538,286 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
+- contract: contracts/onboarding_package_editor.contract.yaml
+  symbol: onboarding_package_editor.DocumentPackageDraftEditor.__init__
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_package_editor.contract.yaml
+  symbol: onboarding_package_editor.DocumentPackageDraftEditor.add
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_package_editor.contract.yaml
+  symbol: onboarding_package_editor.DocumentPackageDraftEditor.clear
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_package_editor.contract.yaml
+  symbol: onboarding_package_editor.DocumentPackageDraftEditor.move
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_package_editor.contract.yaml
+  symbol: onboarding_package_editor.DocumentPackageDraftEditor.remove
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_package_editor.contract.yaml
+  symbol: onboarding_package_editor.DocumentPackageDraftEditor.replace
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_paths.contract.yaml
+  symbol: onboarding_paths.OnboardingPaths.director_replica
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_paths.contract.yaml
+  symbol: onboarding_paths.OnboardingPaths.from_user_artifacts
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_paths.contract.yaml
+  symbol: onboarding_paths.migrate_legacy_onboarding_artifacts
+  kind: function
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_pdf_fill.contract.yaml
+  symbol: onboarding_pdf_fill.PdfFillEngine.__init__
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_pdf_fill.contract.yaml
+  symbol: onboarding_pdf_fill.PdfFillEngine.fill_document
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_pdf_fill.contract.yaml
+  symbol: onboarding_pdf_fill.PdfFillEngine.merge_documents
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_pdf_fill.contract.yaml
+  symbol: onboarding_pdf_fill._formatted_value
+  kind: function
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_pdf_fill.contract.yaml
+  symbol: onboarding_pdf_fill._sha256_file
+  kind: function
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_pdf_fill.contract.yaml
+  symbol: onboarding_pdf_fill._write_json_atomic
+  kind: function
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_pdf_fill.contract.yaml
+  symbol: onboarding_pdf_fill.detect_acroform_fields
+  kind: function
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_pdf_fill.contract.yaml
+  symbol: onboarding_pdf_fill.format_pdf_value
+  kind: function
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_pdf_mapper_v2.contract.yaml
+  symbol: onboarding_pdf_mapper_v2.OnboardingPdfMapperCanvas.__init__
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_pdf_mapper_v2.contract.yaml
+  symbol: onboarding_pdf_mapper_v2.OnboardingPdfMapperCanvas.add_pdf_box
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_pdf_mapper_v2.contract.yaml
+  symbol: onboarding_pdf_mapper_v2.OnboardingPdfMapperCanvas.load_pdf
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_pdf_mapper_v2.contract.yaml
+  symbol: onboarding_pdf_mapper_v2.OnboardingPdfMapperCanvas.move_box
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_pdf_mapper_v2.contract.yaml
+  symbol: onboarding_pdf_mapper_v2.OnboardingPdfMapperCanvas.pdf_rect
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_pdf_mapper_v2.contract.yaml
+  symbol: onboarding_pdf_mapper_v2.OnboardingPdfMapperCanvas.resize_box
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_pilot_gate.contract.yaml
+  symbol: onboarding_pilot_gate.approve_rollout
+  kind: function
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_pilot_gate.contract.yaml
+  symbol: onboarding_pilot_gate.enabled_director_schools
+  kind: function
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_pilot_gate.contract.yaml
+  symbol: onboarding_pilot_gate.evaluate_pilot_gate
+  kind: function
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_pilot_gate.contract.yaml
+  symbol: onboarding_pilot_gate.record_pilot_day
+  kind: function
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_pilot_gate_cli.contract.yaml
+  symbol: onboarding_pilot_gate_cli.main
+  kind: function
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
 - contract: contracts/onboarding_reminder_health.contract.yaml
   symbol: onboarding_reminder_health._coerce_datetime
   kind: function
@@ -7681,6 +8118,46 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
+- contract: contracts/onboarding_reminders_v2.contract.yaml
+  symbol: onboarding_reminders_v2.OnboardingReminderCoordinator.__init__
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_reminders_v2.contract.yaml
+  symbol: onboarding_reminders_v2.OnboardingReminderCoordinator.preview
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_reminders_v2.contract.yaml
+  symbol: onboarding_reminders_v2.OnboardingReminderCoordinator.retry_failed
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_reminders_v2.contract.yaml
+  symbol: onboarding_reminders_v2.OnboardingReminderCoordinator.send
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
 - contract: contracts/onboarding_scheduler.contract.yaml
   symbol: onboarding_scheduler._monthly_anchor_date
   kind: function
@@ -7861,6 +8338,26 @@ entries:
     - parameter_validation
     - return_type
     - security_validation
+- contract: contracts/onboarding_scheduler_v2.contract.yaml
+  symbol: onboarding_scheduler_v2.OnboardingAutomaticReminderScheduler.__init__
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_scheduler_v2.contract.yaml
+  symbol: onboarding_scheduler_v2.OnboardingAutomaticReminderScheduler.run_if_due
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
 - contract: contracts/onboarding_send_guardrails.contract.yaml
   symbol: onboarding_send_guardrails.recipient_warning_text
   kind: function
@@ -7904,6 +8401,966 @@ entries:
 - contract: contracts/onboarding_send_guardrails.contract.yaml
   symbol: onboarding_send_guardrails.validate_sender_email
   kind: function
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingAccess.__post_init__
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.__init__
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService._generate_assigned_packages
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService._publish_submission_artifacts
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService._task_reaches
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService._task_template_values
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.accept_legacy_offer
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.accept_offer
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.add_task_attachment
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.add_task_comment
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.add_task_template_attachment
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.apply_task_template_upgrade
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.archive_correction
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.cleanup_decrypted_artifacts
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.close_filled_artifact
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.close_task_attachment
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.complete_task
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.configure_owner_role
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.correct_intake_submission
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.create_document_package_draft
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.create_employee
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.create_intake_field
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.create_pdf_mapping
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.create_task
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.create_task_template_draft
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.current_director
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.deprecate_intake_field
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.deprecate_task_template
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.edit_task_comment
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.export_filled_artifact
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.forget_device
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.generate_filled_package
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.get_employee
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.get_intake_field
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.get_task
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.import_legacy_data
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.latest_published_document_package
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.list_document_package_versions
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.list_employee_audit_events
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.list_employee_filled_artifacts
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.list_employees
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.list_intake_fields
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.list_owner_roles
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.list_pdf_mappings
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.list_reminder_run_history
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.list_sync_conflicts
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.list_task_attachments
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.list_task_audit_events
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.list_task_comment_revisions
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.list_task_comments
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.list_task_template_attachments
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.list_task_template_versions
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.list_tasks
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.lock_onboarding
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.mark_did_not_start
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.mark_employment_ended
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.masked_ssn
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.open_filled_artifact
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.open_task_attachment
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.permanently_delete_employee
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.preview_employee_package_upgrade
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.preview_legacy_import
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.preview_pdf_mapping
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.preview_reminders
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.preview_retention_purge
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.preview_task_template_upgrade
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.publish_document_package
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.publish_task_template
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.purge_retained_employee
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.query_tasks
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.read_task_attachment
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.record_scheduler_run
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.redact_task_comment
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.resolve_owner_recipient
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.retry_failed_reminders
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.reveal_ssn
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.scheduler_health
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.scheduler_run_recorded
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.search_intake_fields
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.send_reminder_preview
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.submit_intake
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.suggest_similar_intake_fields
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.sync_health
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.sync_pending
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.task_metrics
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.transfer_employee
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.update_employee
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.update_task
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.upgrade_employee_package
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service.OnboardingService.validate_document_package
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service._date_text
+  kind: function
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service._required_text
+  kind: function
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service._utc_now
+  kind: function
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_service.contract.yaml
+  symbol: onboarding_service._validate_intake_value
+  kind: function
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_staffing_bridge.contract.yaml
+  symbol: onboarding_staffing_bridge.StaffingDirectorResolver.__call__
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_staffing_bridge.contract.yaml
+  symbol: onboarding_staffing_bridge.StaffingDirectorResolver.__init__
+  kind: method
   tests:
   - path: tests/test_onboarding_contract_interfaces.py
     focus:
@@ -7983,6 +9440,916 @@ entries:
     - security_validation
 - contract: contracts/onboarding_storage.contract.yaml
   symbol: onboarding_storage.JsonStore.save
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.__init__
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore._add_column_if_missing
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore._ensure_employee_columns
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore._ensure_intake_submission_columns
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore._ensure_task_columns
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore._ensure_task_template_columns
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.append_audit_event
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.applicable_task_templates
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.archive_correction
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.data_revision
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.deprecate_intake_field
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.deprecate_task_template
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.employee_for_application
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.end_employment
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.get_document_package
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.get_document_package_contents
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.get_employee
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.get_filled_artifact
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.get_intake_field
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.get_intake_submission
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.get_owner_role
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.get_task
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.get_task_attachment
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.get_task_comment
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.get_task_template
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.get_task_template_attachment
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.get_tombstone
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.has_scheduler_run
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.has_sent_reminder_batch
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.insert_document_package
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.insert_employee
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.insert_filled_artifact
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.insert_intake_field
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.insert_intake_submission
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.insert_pdf_mapping
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.insert_task
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.insert_task_attachment
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.insert_task_comment
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.insert_task_template
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.insert_task_template_attachment
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.latest_published_document_package
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.list_audit_events
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.list_document_package_versions
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.list_employee_filled_artifacts
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.list_employees
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.list_filled_artifacts
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.list_intake_fields
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.list_owner_roles
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.list_pdf_mappings
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.list_reminder_runs
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.list_task_attachments
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.list_task_comment_revisions
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.list_task_comments
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.list_task_template_attachments
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.list_task_template_versions
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.list_tasks
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.mark_did_not_start
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.next_package_version
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.next_task_template_version
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.permanently_remove_employee
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.possible_duplicate_employees
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.publish_document_package
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.publish_task_template
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.record_reminder_message_run
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.record_scheduler_run
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.replace_employee
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.replace_task
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.revise_task_comment
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.scheduler_health
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.set_task_status
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.transfer_employee
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.update_intake_submission_status
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_store_v2.contract.yaml
+  symbol: onboarding_store.OnboardingStore.upsert_owner_role
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_sync.contract.yaml
+  symbol: onboarding_sync.OnboardingChangeStage.__init__
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_sync.contract.yaml
+  symbol: onboarding_sync.OnboardingSyncCoordinator.__init__
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_sync.contract.yaml
+  symbol: onboarding_sync.OnboardingSyncCoordinator.conflicts
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_sync.contract.yaml
+  symbol: onboarding_sync.OnboardingSyncCoordinator.health
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_sync.contract.yaml
+  symbol: onboarding_sync.OnboardingSyncCoordinator.publish_document_package
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_sync.contract.yaml
+  symbol: onboarding_sync.OnboardingSyncCoordinator.publish_employee
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_sync.contract.yaml
+  symbol: onboarding_sync.OnboardingSyncCoordinator.publish_employee_tombstone
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_sync.contract.yaml
+  symbol: onboarding_sync.OnboardingSyncCoordinator.publish_employee_transfer
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_sync.contract.yaml
+  symbol: onboarding_sync.OnboardingSyncCoordinator.publish_filled_artifact
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_sync.contract.yaml
+  symbol: onboarding_sync.OnboardingSyncCoordinator.publish_intake_field
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_sync.contract.yaml
+  symbol: onboarding_sync.OnboardingSyncCoordinator.publish_intake_submission
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_sync.contract.yaml
+  symbol: onboarding_sync.OnboardingSyncCoordinator.publish_owner_role
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_sync.contract.yaml
+  symbol: onboarding_sync.OnboardingSyncCoordinator.publish_pdf_mapping
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_sync.contract.yaml
+  symbol: onboarding_sync.OnboardingSyncCoordinator.publish_task
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_sync.contract.yaml
+  symbol: onboarding_sync.OnboardingSyncCoordinator.publish_task_attachment
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_sync.contract.yaml
+  symbol: onboarding_sync.OnboardingSyncCoordinator.publish_task_comment
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_sync.contract.yaml
+  symbol: onboarding_sync.OnboardingSyncCoordinator.publish_task_template
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_sync.contract.yaml
+  symbol: onboarding_sync.OnboardingSyncCoordinator.replay_pending
   kind: method
   tests:
   - path: tests/test_onboarding_contract_interfaces.py
@@ -8134,6 +10501,246 @@ entries:
 - contract: contracts/onboarding_ui_helpers.contract.yaml
   symbol: onboarding_ui_helpers.task_status_badge_text
   kind: function
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_vault.contract.yaml
+  symbol: onboarding_vault.EncryptedArtifactVault.__init__
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_vault.contract.yaml
+  symbol: onboarding_vault.EncryptedArtifactVault.cleanup_stale
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_vault.contract.yaml
+  symbol: onboarding_vault.EncryptedArtifactVault.cleanup_temp
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_vault.contract.yaml
+  symbol: onboarding_vault.EncryptedArtifactVault.open_temp
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_vault.contract.yaml
+  symbol: onboarding_vault.EncryptedArtifactVault.seal_file
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_vault.contract.yaml
+  symbol: onboarding_vault.OnboardingKeyring.__init__
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_vault.contract.yaml
+  symbol: onboarding_vault.OnboardingKeyring.create
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_vault.contract.yaml
+  symbol: onboarding_vault.OnboardingKeyring.unlock_with_passphrase
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_vault.contract.yaml
+  symbol: onboarding_vault.OnboardingKeyring.unlock_with_recovery_key
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_vault.contract.yaml
+  symbol: onboarding_vault.OnboardingVault.__init__
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_vault.contract.yaml
+  symbol: onboarding_vault.OnboardingVault.cache_for_device
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_vault.contract.yaml
+  symbol: onboarding_vault.OnboardingVault.decrypt
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_vault.contract.yaml
+  symbol: onboarding_vault.OnboardingVault.encrypt
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_vault.contract.yaml
+  symbol: onboarding_vault.OnboardingVault.forget_device
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_vault.contract.yaml
+  symbol: onboarding_vault.OnboardingVault.from_device_cache
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_vault.contract.yaml
+  symbol: onboarding_vault.OnboardingVault.lock
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_vault.contract.yaml
+  symbol: onboarding_vault.load_or_create_device_vault
+  kind: function
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_workspace_v2.contract.yaml
+  symbol: onboarding_workspace_v2.OnboardingDashboardV2Workspace.__init__
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_workspace_v2.contract.yaml
+  symbol: onboarding_workspace_v2.OnboardingDashboardV2Workspace.mark_dirty
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_workspace_v2.contract.yaml
+  symbol: onboarding_workspace_v2.OnboardingDashboardV2Workspace.refresh_after_handoff
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_workspace_v2.contract.yaml
+  symbol: onboarding_workspace_v2.OnboardingDashboardV2Workspace.register_edit_session
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_workspace_v2.contract.yaml
+  symbol: onboarding_workspace_v2.OnboardingDashboardV2Workspace.register_with
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_workspace_v2.contract.yaml
+  symbol: onboarding_workspace_v2.OnboardingDashboardV2Workspace.request_close
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_workspace_v2.contract.yaml
+  symbol: onboarding_workspace_v2.OnboardingDashboardV2Workspace.request_navigation_away
+  kind: method
   tests:
   - path: tests/test_onboarding_contract_interfaces.py
     focus:
@@ -8997,6 +11604,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._accept_hiring_offer_into_onboarding
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._admin_studio_paths
   kind: method
   tests:
@@ -9105,15 +11721,6 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._clear_staffing_replacement
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._close_flow_timestamp
   kind: method
   tests:
@@ -9141,24 +11748,6 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._confirm_staffing_move
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._deferred_main_nav_page
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._delete_latest_draft
   kind: method
   tests:
@@ -9178,15 +11767,6 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._emit_pyside_rating_notification
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._ensure_main_nav_page
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -9223,15 +11803,6 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._fit_window_to_available_screen
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._focus_staffing_filter_controls
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -9375,42 +11946,6 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._mark_staffing_coming
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._mark_staffing_filled
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._mark_staffing_not_needed
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._mark_staffing_replacing
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._matching_history_row_for_indeed_import
   kind: method
   tests:
@@ -9430,42 +11965,6 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._open_history_notes
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._open_staffing_add_position_dialog
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._open_staffing_assignment_details
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._open_staffing_assignment_details_from_table
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._open_staffing_position
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -9663,51 +12162,6 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._refresh_staffing_classroom_choices
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._refresh_staffing_classroom_detail
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._refresh_staffing_dashboard
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._refresh_staffing_metric_cards
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._refresh_staffing_positions_table
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._refresh_widget_style
   kind: method
   tests:
@@ -9825,15 +12279,6 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._revert_staffing_coming
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._review_hiring_offer_approval
   kind: method
   tests:
@@ -9888,15 +12333,6 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._run_staffing_action
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._scaled_list_width
   kind: method
   tests:
@@ -9942,61 +12378,7 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._select_main_nav_row
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._select_staffing_classroom_index
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._select_staffing_school_index
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._selected_setup_audio_source
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._selected_staffing_classroom
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._selected_staffing_classroom_rows
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._selected_staffing_school
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -10050,15 +12432,6 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._show_staffing_detail_drawer
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._skip_live_question
   kind: method
   tests:
@@ -10068,52 +12441,7 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._staffing_action_button
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._staffing_candidate_contact
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._staffing_color_key
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._staffing_detail_drawer
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._staffing_metric_card
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._staffing_permit_combo
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -10132,15 +12460,6 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._staffing_v2_page
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._staffing_workbook_board
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -10285,24 +12604,6 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._update_review_rating
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._update_staffing_permit
-  kind: method
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/pyside_interview_app.contract.yaml
-  symbol: pyside_interview_app.PySideInterviewWindow._update_staffing_permit_from_table
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -10689,7 +12990,25 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pytest_duration_catalog.contract.yaml
+  symbol: pytest_duration_catalog.benchmark_gui_catalog
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pytest_duration_catalog.contract.yaml
   symbol: pytest_duration_catalog.build_benchmark_commands
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pytest_duration_catalog.contract.yaml
+  symbol: pytest_duration_catalog.build_gui_benchmark_command
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -13142,6 +15461,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/staffing_dashboard_host.contract.yaml
+  symbol: staffing_dashboard_host.StaffingDashboardHost._default_onboarding_store_path
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_host.contract.yaml
   symbol: staffing_dashboard_host.StaffingDashboardHost._default_open_document
   kind: method
   tests:
@@ -13160,6 +15488,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/staffing_dashboard_host.contract.yaml
+  symbol: staffing_dashboard_host.StaffingDashboardHost._onboarding_device_cache_path
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_host.contract.yaml
   symbol: staffing_dashboard_host.StaffingDashboardHost._open_legacy_report
   kind: method
   tests:
@@ -13169,7 +15506,34 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/staffing_dashboard_host.contract.yaml
+  symbol: staffing_dashboard_host.StaffingDashboardHost._prompt_onboarding_secret
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_host.contract.yaml
+  symbol: staffing_dashboard_host.StaffingDashboardHost._resolve_onboarding_vault
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_host.contract.yaml
   symbol: staffing_dashboard_host.StaffingDashboardHost._warn
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_host.contract.yaml
+  symbol: staffing_dashboard_host.StaffingDashboardHost.cleanup_onboarding
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -13188,6 +15552,24 @@ entries:
     - return_type
 - contract: contracts/staffing_dashboard_host.contract.yaml
   symbol: staffing_dashboard_host.StaffingDashboardHost.open_candidate_report
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_host.contract.yaml
+  symbol: staffing_dashboard_host.StaffingDashboardHost.request_onboarding_close
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_host.contract.yaml
+  symbol: staffing_dashboard_host.StaffingDashboardHost.resume_onboarding
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -13287,6 +15669,15 @@ entries:
     - return_type
 - contract: contracts/staffing_dashboard_v2.contract.yaml
   symbol: staffing_dashboard_v2.StaffingDashboardV2Page._apply_validation_filters
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_v2.contract.yaml
+  symbol: staffing_dashboard_v2.StaffingDashboardV2Page._base_nav_buttons
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -13647,6 +16038,15 @@ entries:
     - return_type
 - contract: contracts/staffing_dashboard_v2.contract.yaml
   symbol: staffing_dashboard_v2.StaffingDashboardV2Page._ensure_lazy_view
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_v2.contract.yaml
+  symbol: staffing_dashboard_v2.StaffingDashboardV2Page._external_page_widget
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -14699,6 +17099,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/staffing_dashboard_v2.contract.yaml
+  symbol: staffing_dashboard_v2.StaffingDashboardV2Page._sidebar_section
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_v2.contract.yaml
   symbol: staffing_dashboard_v2.StaffingDashboardV2Page._standard_icon
   kind: method
   tests:
@@ -14825,7 +17234,61 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/staffing_dashboard_v2.contract.yaml
+  symbol: staffing_dashboard_v2.StaffingDashboardV2Page.register_external_page
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_v2.contract.yaml
+  symbol: staffing_dashboard_v2.StaffingDashboardV2Page.register_external_section
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_v2.contract.yaml
   symbol: staffing_dashboard_v2.StaffingDashboardV2Page.register_settings_page
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_v2.contract.yaml
+  symbol: staffing_dashboard_v2.StaffingDashboardV2Page.set_navigation_locked
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_v2.contract.yaml
+  symbol: staffing_dashboard_v2.StaffingDashboardV2Page.set_navigation_mode
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_v2.contract.yaml
+  symbol: staffing_dashboard_v2.StaffingDashboardV2Page.set_section_expanded
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_v2.contract.yaml
+  symbol: staffing_dashboard_v2.StaffingDashboardV2Page.toggle_navigation_mode
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py

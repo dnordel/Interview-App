@@ -1031,6 +1031,145 @@ def test_notification_service_test_send_uses_disabled_rule_without_enabling(tmp_
     assert audit["event_type"] == "staffing.assignment.need_now.test"
 
 
+def test_notification_store_seeds_editable_onboarding_workflow_templates(tmp_path: Path) -> None:
+    store = NotificationStore(tmp_path / "notifications.sqlite3")
+
+    store.ensure_default_rules()
+
+    rules = {
+        rule.event_type: rule
+        for rule in store.list_rules()
+        if rule.event_type.startswith("onboarding.")
+    }
+    assert set(rules) == {
+        "onboarding.task.created",
+        "onboarding.task.completed",
+        "onboarding.task.overdue",
+        "onboarding.digest.due",
+    }
+    assert all(not rule.active for rule in rules.values())
+    assert all(not rule.system_rule for rule in rules.values())
+    assert [recipient.role_key for recipient in rules["onboarding.task.created"].recipients] == [
+        "director"
+    ]
+    assert "{task_count}" in rules["onboarding.digest.due"].body_template
+
+
+def test_legacy_onboarding_email_migrates_only_into_empty_shared_account(tmp_path: Path) -> None:
+    legacy_path = tmp_path / "onboarding_settings.json"
+    shared_path = tmp_path / "email_account_settings.json"
+    notification_service.atomic_write_json(
+        legacy_path,
+        {
+            "email": {
+                "smtp_host": "smtp.legacy.example",
+                "smtp_port": 465,
+                "smtp_username": "legacy@example.com",
+                "smtp_password": "legacy-secret",
+                "sender_email": "legacy@example.com",
+                "smtp_encryption": "SSL/TLS",
+            }
+        },
+    )
+
+    assert notification_service.migrate_legacy_onboarding_email_account(
+        legacy_path=legacy_path,
+        shared_path=shared_path,
+    ) is True
+    migrated = notification_service.load_email_account_settings(shared_path)
+    assert migrated.smtp_host == "smtp.legacy.example"
+    assert migrated.sender_email == "legacy@example.com"
+
+    notification_service.save_email_account_settings(
+        replace(migrated, smtp_host="smtp.shared.example"),
+        shared_path,
+    )
+    assert notification_service.migrate_legacy_onboarding_email_account(
+        legacy_path=legacy_path,
+        shared_path=shared_path,
+    ) is False
+    assert notification_service.load_email_account_settings(shared_path).smtp_host == "smtp.shared.example"
+
+
+def test_onboarding_recipient_resolution_validates_current_director_then_uses_directory() -> None:
+    directory = notification_service.NotificationDirectory.defaults()
+    resolved_schools = []
+
+    director_email = notification_service.resolve_onboarding_role_recipient(
+        directory,
+        school="Palmdale",
+        role="Director",
+        director_resolver=lambda school: resolved_schools.append(school) or object(),
+    )
+
+    assert director_email == directory.directors["palmdale"]
+    assert resolved_schools == ["Palmdale"]
+    assert notification_service.resolve_onboarding_role_recipient(
+        directory, school="Palmdale", role="Payroll"
+    ) == directory.payroll
+    assert notification_service.resolve_onboarding_role_recipient(
+        directory, school="Palmdale", role="Office Manager"
+    ) == directory.office_managers["palmdale"]
+    assert notification_service.resolve_onboarding_role_recipient(
+        directory, school="Palmdale", role="IT"
+    ) == ""
+
+
+def test_onboarding_digest_sender_uses_shared_account_and_pii_safe_counts(monkeypatch) -> None:
+    delivered = []
+    monkeypatch.setattr(
+        notification_service,
+        "_send_email_message",
+        lambda settings, recipients, subject, body: delivered.append(
+            (settings.sender_email, recipients, subject, body)
+        ),
+    )
+    message = type(
+        "Message",
+        (),
+        {
+            "school": "Palmdale",
+            "role": "Director",
+            "recipient": "director@example.com",
+            "task_ids": ("private-task-1", "private-task-2"),
+        },
+    )()
+
+    notification_service.send_onboarding_reminder_digest(_settings(), message)
+
+    assert delivered == [
+        (
+            "sender@example.org",
+            ["director@example.com"],
+            "Palmdale onboarding tasks due — Director",
+            "2 onboarding tasks require attention. Open the Onboarding Tasks page for authorized details.",
+        )
+    ]
+
+
+def test_onboarding_digest_sender_renders_active_shared_notification_rule(tmp_path: Path, monkeypatch) -> None:
+    store = NotificationStore(tmp_path / "notifications.sqlite3")
+    store.save_rule(NotificationRule(
+        event_type="onboarding.digest.due", label="Custom digest",
+        subject_template="{school}: {task_count} items for {owner_role}",
+        body_template="Review {task_count} items for {owner_role}.", active=True,
+        recipients=[NotificationRecipient(email="configured@example.com")],
+    ))
+    delivered = []
+    monkeypatch.setattr(
+        notification_service, "_send_email_message",
+        lambda settings, recipients, subject, body: delivered.append((recipients, subject, body)),
+    )
+    message = type("Message", (), {
+        "school": "Palmdale", "role": "Payroll", "recipient": "payroll@example.com",
+        "task_ids": ("private-1", "private-2", "private-3"),
+    })()
+
+    notification_service.send_onboarding_reminder_digest(_settings(), message, rule_store=store)
+
+    assert delivered == [(["payroll@example.com"], "Palmdale: 3 items for Payroll", "Review 3 items for Payroll.")]
+
+
 def test_saved_candidate_notification_test_uses_sole_safe_default_recipient(tmp_path: Path) -> None:
     store = NotificationStore(tmp_path / "notifications.sqlite3")
     saved = store.save_rule(

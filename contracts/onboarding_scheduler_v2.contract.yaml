@@ -1,0 +1,32 @@
+module:
+  name: onboarding_scheduler_v2
+  language: python
+  path: src/onboarding_scheduler_v2.py
+  version: 1.1.0
+  description: Admin-only weekday 8 AM onboarding reminder scheduler using the normal fresh-preview and PII-safe persistence boundary.
+functions: []
+classes:
+- name: OnboardingAutomaticReminderScheduler
+  description: Runs at most once per local weekday at 8 AM through OnboardingService.
+  locked: false
+  methods:
+  - name: __init__
+    inputs:
+      service: {type: OnboardingService, required: true}
+      recipient_resolver: {type: 'Callable[[str, str], str]', required: true}
+      admin_fallback_email: {type: 'str | Callable[[], str]', required: true}
+      sender: {type: 'Callable[[ReminderPreviewMessage], None]', required: true}
+      config_revision: {type: 'Callable[[], str] | None', required: false, default: null}
+    returns: {type: None}
+    exceptions: [PermissionError]
+    side_effects: Validates Admin access and stores notification callbacks; callable fallback is resolved fresh for each run.
+  - name: run_if_due
+    inputs:
+      now: {type: datetime, required: true}
+    returns: {type: 'ReminderSendResult | None'}
+    exceptions: [ValueError, OSError, sqlite3.DatabaseError]
+    side_effects: On a due weekday 8 AM window, syncs, previews, sends, and persists one scheduler receipt.
+dependencies:
+- module: onboarding_service
+- module: onboarding_reminders_v2
+data_structures: []

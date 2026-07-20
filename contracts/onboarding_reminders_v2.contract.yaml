@@ -1,0 +1,70 @@
+module:
+  name: onboarding_reminders_v2
+  language: python
+  path: src/onboarding_reminders_v2.py
+  version: 1.2.0
+  description: PII-safe grouped reminder preview, confirmation, dedupe, send, and failed-message retry coordinator.
+functions: []
+classes:
+- name: ReminderPreviewMessage
+  description: One school and role reminder message without employee PII.
+  locked: false
+  methods: []
+- name: ReminderPreview
+  description: Immutable ten-minute send authorization token.
+  locked: false
+  methods: []
+- name: ReminderSendResult
+  description: PII-safe reminder run counts.
+  locked: false
+  methods: []
+- name: OnboardingReminderCoordinator
+  description: Builds and sends school-role reminder batches.
+  locked: false
+  methods:
+  - name: __init__
+    inputs:
+      store: {type: OnboardingStore, required: true}
+      role: {type: str, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: none
+  - name: preview
+    inputs:
+      recipient_resolver: {type: 'Callable[[str, str], str]', required: true}
+      admin_fallback_email: {type: str, required: true}
+      now: {type: datetime, required: true}
+      school_scope: {type: str, required: false, default: ''}
+      config_revision: {type: str, required: false, default: ''}
+    returns: {type: ReminderPreview}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Reads due tasks and caches a short-lived immutable preview.
+  - name: send
+    inputs:
+      token: {type: str, required: true}
+      sender: {type: 'Callable[[ReminderPreviewMessage], None]', required: true}
+      now: {type: datetime, required: true}
+      confirmed: {type: bool, required: true}
+      admin_override_reason: {type: str, required: false, default: ''}
+      config_revision: {type: str, required: false, default: ''}
+    returns: {type: ReminderSendResult}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Sends messages and records PII-safe run rows.
+  - name: retry_failed
+    inputs:
+      run_id: {type: str, required: true}
+      sender: {type: 'Callable[[ReminderPreviewMessage], None]', required: true}
+      now: {type: datetime, required: true}
+      confirmed: {type: bool, required: true}
+    returns: {type: ReminderSendResult}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Sends only failed messages and records a new PII-safe run.
+dependencies:
+- module: onboarding_store
+data_structures:
+- name: ReminderPreviewMessage
+  type: frozen dataclass
+- name: ReminderPreview
+  type: frozen dataclass
+- name: ReminderSendResult
+  type: frozen dataclass

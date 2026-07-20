@@ -1,0 +1,148 @@
+module:
+  name: onboarding_vault
+  language: python
+  path: src/onboarding_vault.py
+  version: 1.2.0
+  description: AES-GCM per-school envelope encryption, shared passphrase/recovery organization keyring, Windows DPAPI device cache, and contained encrypted artifact opening.
+functions:
+- name: load_or_create_device_vault
+  locked: false
+  inputs:
+    key_path: {type: Path, required: true}
+  returns: {type: OnboardingVault}
+  exceptions: [ValueError, VaultIntegrityError, OSError]
+  side_effects: Loads a DPAPI cache or race-safely creates and atomically stores one Windows-user-wrapped key for isolated local use.
+classes:
+- name: VaultIntegrityError
+  description: Authentication, keyring, or device-cache integrity failure.
+  locked: false
+  methods: []
+- name: OnboardingVault
+  description: AES-GCM envelope encryptor deriving isolated per-school data keys from one organization master key.
+  locked: false
+  methods:
+  - name: __init__
+    inputs:
+      organization_master_key: {type: bytes, required: true}
+    returns: {type: None}
+    exceptions: [ValueError]
+    side_effects: none
+  - name: encrypt
+    inputs:
+      school: {type: str, required: true}
+      plaintext: {type: bytes, required: true}
+      context: {type: str, required: true}
+    returns: {type: bytes}
+    exceptions: [ValueError]
+    side_effects: Reads cryptographically secure random bytes for an AES-GCM nonce.
+  - name: lock
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Clears the organization master key from the active vault instance until restart or explicit unlock.
+  - name: decrypt
+    inputs:
+      school: {type: str, required: true}
+      envelope: {type: bytes, required: true}
+      context: {type: str, required: true}
+    returns: {type: bytes}
+    exceptions: [ValueError, VaultIntegrityError]
+    side_effects: none
+  - name: cache_for_device
+    inputs:
+      cache_path: {type: Path, required: true}
+    returns: {type: None}
+    exceptions: [VaultIntegrityError, OSError]
+    side_effects: Atomically stores the organization key wrapped by Windows DPAPI for the current user/device.
+  - name: from_device_cache
+    inputs:
+      cls: {type: type, required: true}
+      cache_path: {type: Path, required: true}
+    returns: {type: OnboardingVault}
+    exceptions: [VaultIntegrityError, OSError]
+    side_effects: Reads and unwraps one Windows DPAPI device cache.
+  - name: forget_device
+    inputs:
+      cache_path: {type: Path, required: true}
+    returns: {type: None}
+    exceptions: [OSError]
+    side_effects: Deletes the local device cache when present.
+- name: OnboardingKeyring
+  description: Shared JSON keyring containing separately passphrase- and recovery-wrapped organization keys.
+  locked: false
+  methods:
+  - name: __init__
+    inputs:
+      path: {type: Path, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: none
+  - name: create
+    inputs:
+      cls: {type: type, required: true}
+      path: {type: Path, required: true}
+      passphrase: {type: str, required: true}
+      recovery_key: {type: str, required: true}
+    returns: {type: OnboardingVault}
+    exceptions: [ValueError, OSError]
+    side_effects: Generates one organization master key and atomically stores passphrase/recovery AES-GCM wrappers in a shared JSON keyring.
+  - name: unlock_with_passphrase
+    inputs:
+      passphrase: {type: str, required: true}
+    returns: {type: OnboardingVault}
+    exceptions: [VaultIntegrityError, OSError]
+    side_effects: Reads and unlocks the shared keyring.
+  - name: unlock_with_recovery_key
+    inputs:
+      recovery_key: {type: str, required: true}
+    returns: {type: OnboardingVault}
+    exceptions: [VaultIntegrityError, OSError]
+    side_effects: Reads and recovery-unlocks the shared keyring.
+- name: EncryptedArtifactVault
+  description: Encrypted artifact storage with short-lived contained decrypted copies.
+  locked: false
+  methods:
+  - name: __init__
+    inputs:
+      root: {type: Path, required: true}
+      temp_root: {type: Path, required: true}
+      vault: {type: OnboardingVault, required: true}
+    returns: {type: None}
+    exceptions: [ValueError]
+    side_effects: Creates artifact and temporary roots.
+  - name: seal_file
+    inputs:
+      school: {type: str, required: true}
+      source_path: {type: Path, required: true}
+      artifact_id: {type: str, required: true}
+    returns: {type: Path}
+    exceptions: [ValueError, OSError]
+    side_effects: Encrypts and atomically stores one artifact.
+  - name: open_temp
+    inputs:
+      school: {type: str, required: true}
+      sealed_path: {type: Path, required: true}
+      artifact_id: {type: str, required: true}
+      suffix: {type: str, required: true}
+    returns: {type: Path}
+    exceptions: [ValueError, VaultIntegrityError, OSError]
+    side_effects: Creates one short-lived decrypted copy inside the configured temp root.
+  - name: cleanup_temp
+    inputs:
+      path: {type: Path, required: true}
+    returns: {type: None}
+    exceptions: [ValueError, OSError]
+    side_effects: Deletes one contained temporary copy.
+  - name: cleanup_stale
+    inputs: {}
+    returns: {type: int}
+    exceptions: [OSError]
+    side_effects: Deletes stale temporary artifact files.
+dependencies:
+- module: cryptography
+- module: pywin32
+data_structures:
+- name: _MAGIC
+  type: bytes
+- name: _NONCE_BYTES
+  type: int

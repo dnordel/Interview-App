@@ -41,6 +41,7 @@ class StaffingSettingsV2Page:
         hiring_manager_email_settings_path: Path | None = None,
         notification_directory_path: Path | None = None,
         on_email_settings_saved: Callable[[], None] | None = None,
+        onboarding_service: Any | None = None,
     ) -> None:
         self.QtCore = QtCore
         self.QtGui = QtGui
@@ -58,6 +59,10 @@ class StaffingSettingsV2Page:
         )
         self.notification_directory = load_notification_directory(self.notification_directory_path)
         self.on_email_settings_saved = on_email_settings_saved
+        self.onboarding_service = onboarding_service
+        self.section_specs = SECTION_SPECS + (
+            (("onboarding_roles", "Onboarding Owner Roles"),) if onboarding_service is not None else ()
+        )
         self.editing = False
         self._syncing = False
         self._selected_question: tuple[str, str, str] | None = None
@@ -126,7 +131,7 @@ class StaffingSettingsV2Page:
 
         self.section_selector = QtWidgets.QComboBox()
         self.section_selector.setObjectName("StaffingSettingsV2SectionSelector")
-        self.section_selector.addItems([label for _key, label in SECTION_SPECS])
+        self.section_selector.addItems([label for _key, label in self.section_specs])
         self.section_selector.currentIndexChanged.connect(self._select_section_index)
         self.section_selector.hide()
         root.addWidget(self.section_selector)
@@ -136,7 +141,7 @@ class StaffingSettingsV2Page:
         self.section_list = QtWidgets.QListWidget()
         self.section_list.setObjectName("StaffingSettingsV2SectionList")
         self.section_list.setFixedWidth(220)
-        for _key, label in SECTION_SPECS:
+        for _key, label in self.section_specs:
             self.section_list.addItem(label)
         self.section_list.currentRowChanged.connect(self._select_section_index)
         body.addWidget(self.section_list)
@@ -144,7 +149,7 @@ class StaffingSettingsV2Page:
         self.stack.setObjectName("StaffingSettingsV2Stack")
         self.stack.setMinimumSize(0, 0)
         self.stack.setSizePolicy(QtWidgets.QSizePolicy.Policy.Ignored, QtWidgets.QSizePolicy.Policy.Expanding)
-        for key, label in SECTION_SPECS:
+        for key, label in self.section_specs:
             page = self._section_page(key, label)
             self._section_widgets[key] = page
             self.stack.addWidget(page)
@@ -169,6 +174,8 @@ class StaffingSettingsV2Page:
             return self._recipient_directory_page()
         if key == "hiring_manager_email":
             return self._hiring_manager_email_page()
+        if key == "onboarding_roles":
+            return self._onboarding_owner_roles_page()
         page = self.QtWidgets.QWidget()
         page.setMinimumSize(0, 0)
         layout = self.QtWidgets.QVBoxLayout(page)
@@ -1145,7 +1152,7 @@ class StaffingSettingsV2Page:
         self._sync_action_state()
 
     def _select_section_index(self, index: int) -> None:
-        if index < 0 or index >= len(SECTION_SPECS):
+        if index < 0 or index >= len(self.section_specs):
             return
         self._syncing = True
         self.stack.setCurrentIndex(index)
@@ -1313,6 +1320,54 @@ class StaffingSettingsV2Page:
         dialog.setDefaultButton(stay)
         dialog.exec()
         return "discard" if dialog.clickedButton() is discard else "stay"
+
+    def _onboarding_owner_roles_page(self) -> Any:
+        page = self.QtWidgets.QWidget()
+        layout = self.QtWidgets.QVBoxLayout(page)
+        layout.setContentsMargins(18, 8, 8, 8)
+        title = self.QtWidgets.QLabel("Onboarding Owner Roles")
+        title.setObjectName("StaffingSettingsV2SectionTitle")
+        layout.addWidget(title)
+        layout.addWidget(self.QtWidgets.QLabel("Configure accountable owner recipients by school."))
+        form = self.QtWidgets.QFormLayout()
+        school = self.QtWidgets.QComboBox()
+        school.setObjectName("StaffingSettingsV2OnboardingRoleSchool")
+        school.addItems(["Palmdale", "Hawthorne", "North Long Beach"])
+        form.addRow("School", school)
+        role = self.QtWidgets.QLineEdit()
+        role.setObjectName("StaffingSettingsV2OnboardingRoleName")
+        form.addRow("Role", role)
+        email = self.QtWidgets.QLineEdit()
+        email.setObjectName("StaffingSettingsV2OnboardingRoleEmail")
+        form.addRow("Recipient email", email)
+        active = self.QtWidgets.QCheckBox("Active")
+        active.setObjectName("StaffingSettingsV2OnboardingRoleActive")
+        active.setChecked(True)
+        form.addRow("", active)
+        layout.addLayout(form)
+        save = self.QtWidgets.QPushButton("Save Owner Role")
+        save.setObjectName("StaffingSettingsV2SaveOnboardingRole")
+        status = self.QtWidgets.QLabel("")
+        status.setObjectName("StaffingSettingsV2OnboardingRoleStatus")
+
+        def save_role() -> None:
+            try:
+                self.onboarding_service.configure_owner_role(
+                    school=school.currentText(),
+                    role=role.text().strip(),
+                    email=email.text().strip(),
+                    active=active.isChecked(),
+                )
+            except ValueError as exc:
+                status.setText(str(exc))
+                return
+            status.setText(f"{role.text().strip()} saved for {school.currentText()}.")
+
+        save.clicked.connect(save_role)
+        layout.addWidget(save)
+        layout.addWidget(status)
+        layout.addStretch(1)
+        return page
 
 
 SETTINGS_QSS = """

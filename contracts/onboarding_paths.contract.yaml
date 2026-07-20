@@ -1,0 +1,36 @@
+module:
+  name: onboarding_paths
+  language: python
+  path: src/onboarding_paths.py
+  version: 1.0.0
+  description: Portable repo-relative shared onboarding layout plus additive legacy artifact migration.
+functions:
+- name: migrate_legacy_onboarding_artifacts
+  locked: false
+  inputs:
+    paths: {type: OnboardingPaths, required: true}
+    schools: {type: 'Iterable[str]', required: false, default: '()'}
+  returns: {type: 'tuple[Path, ...]'}
+  exceptions: [ValueError, OSError]
+  side_effects: Atomically copies existing legacy replicas and keyring into the v2 layout without overwriting or deleting sources.
+classes:
+- name: OnboardingPaths
+  description: Immutable resolver for shared onboarding replicas, changes, keyring, and encrypted files.
+  locked: false
+  methods:
+  - name: from_user_artifacts
+    inputs:
+      user_artifacts: {type: Path, required: true}
+    returns: {type: OnboardingPaths}
+    exceptions: []
+    side_effects: none
+  - name: director_replica
+    inputs:
+      school: {type: str, required: true}
+    returns: {type: Path}
+    exceptions: [ValueError]
+    side_effects: none
+data_structures:
+- name: OnboardingPaths
+  type: frozen dataclass
+dependencies: []

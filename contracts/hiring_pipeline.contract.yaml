@@ -2,7 +2,7 @@ module:
   name: hiring_pipeline
   language: python
   path: src/hiring_pipeline.py
-  version: 1.8.0
+  version: 1.9.0
   description: Candidate-profile, application-pipeline, event-audit, and PDF-only candidate offer-delivery lifecycle persistence in the canonical interview history SQLite database.
 functions:
 - name: build_offer_notification_payload
@@ -436,6 +436,7 @@ classes:
       application_id: {type: str, required: true}
       decision: {type: str, required: true}
       actor: {type: str, required: true}
+      actor_id: {type: str, required: false, default: ''}
     returns: {type: HiringApplication}
     exceptions: [ValueError]
     side_effects: Advances a director-review application to offer draft or closed and appends an audit event.
@@ -444,6 +445,7 @@ classes:
       history_id: {type: str, required: true}
       decision: {type: str, required: true}
       actor: {type: str, required: false, default: Staffing v2}
+      actor_id: {type: str, required: false, default: ''}
     returns: {type: HiringApplication}
     exceptions: [ValueError]
     side_effects: Idempotently applies the authoritative Staffing v2 director outcome by history ID.
@@ -553,6 +555,13 @@ classes:
     returns: {type: bool}
     exceptions: [ValueError]
     side_effects: Retries the accepted-offer onboarding notification and clears Attention only after sent or permanent duplicate success.
+  - name: retry_onboarding_handoff
+    inputs:
+      application_id: {type: str, required: true}
+      actor: {type: str, required: true}
+    returns: {type: bool}
+    exceptions: [ValueError]
+    side_effects: Retries one accepted application marked onboarding_handoff_pending, records PII-safe outcome category, and clears Attention only after idempotent handoff success.
   - name: retry_pending_accepted_notifications
     inputs: {}
     returns: {type: int}

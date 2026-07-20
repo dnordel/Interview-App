@@ -9,7 +9,7 @@ import sqlite3
 import sys
 from datetime import date
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Callable, Sequence
 
 from notification_service import NotificationService, NOTIFICATION_RULES_PATH
 from app_branding import apply_staffing_app_icon
@@ -334,6 +334,34 @@ def _show_director_staffing_window_maximized(window: Any, QtWidgets: Any) -> Non
     window.showMaximized()
 
 
+def install_director_window_close_guard(
+    QtCore: Any,
+    window: Any,
+    *,
+    request_close: Callable[[], bool],
+    cleanup: Callable[[], None],
+) -> Any:
+    class CloseGuard(QtCore.QObject):
+        bypass = False
+        completed = False
+
+        def eventFilter(self, watched: Any, event: Any) -> bool:
+            if watched is not window or event.type() != QtCore.QEvent.Type.Close:
+                return False
+            if not self.bypass and not request_close():
+                event.ignore()
+                return True
+            if not self.completed:
+                cleanup()
+                self.completed = True
+            return False
+
+    guard = CloseGuard(window)
+    window.installEventFilter(guard)
+    setattr(window, "_onboarding_close_guard", guard)
+    return guard
+
+
 def launch_director_staffing_app(*, director_school: str = "") -> int:
     from PySide6 import QtCore, QtGui, QtWidgets
 
@@ -398,10 +426,20 @@ def launch_director_staffing_app(*, director_school: str = "") -> int:
     )
     dashboard = host.page
     source_update_detector = SourceUpdateDetector(SOURCE_VERSION_PATH, source_root=SOURCE_UPDATE_ROOT)
+    close_guard = install_director_window_close_guard(
+        QtCore,
+        window,
+        request_close=host.request_onboarding_close,
+        cleanup=host.cleanup_onboarding,
+    )
 
     def restart_after_source_update() -> None:
+        if not host.request_onboarding_close():
+            return
+        close_guard.bypass = True
         started = relaunch_application(QtCore, window.close, cwd=ROOT)
         if not started:
+            close_guard.bypass = False
             QtWidgets.QMessageBox.warning(
                 window,
                 "Restart Failed",

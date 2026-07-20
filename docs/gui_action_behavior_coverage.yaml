@@ -1,0 +1,256 @@
+version: 1
+description: >-
+  Frozen pre-policy PySide GUI action inventory. New or structurally changed buttons and actions
+  must move their fingerprints into covered_actions and name tests that click or trigger the GUI
+  control and assert an observable result.
+grandfathered_files:
+  src/candidate_report_dialog.py:
+    count: 26
+    sha256: fd4140517195707731c8c6c0e31bf2cb52b9f85b782e31b6d06c3088a7b8ebfd
+  src/dashboard_v2_ui.py:
+    count: 1
+    sha256: 189e559c792066853650015647c559d32600d685c1f1125fd1117ed56d217caa
+  src/hiring_workspace_v2.py:
+    count: 21
+    sha256: eb0942d643b9d3db2301303ab8adbd5e6d5af7f1ae3d1071e48f2309baf814f8
+  src/onboarding_workspace_v2.py:
+    count: 0
+    sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  src/pyside_completed_interview.py:
+    count: 7
+    sha256: 04a6c581b6149c6cbb97a58d7654362da3454af14022c57ac8f53c952f473634
+  src/pyside_interview_app.py:
+    count: 22
+    sha256: 2893ba6002a1beef163e0558fdc395016f71feea943ea23465e513d128be30aa
+  src/pyside_live_interview.py:
+    count: 8
+    sha256: 745a5a06fdd013cb4d582edba76bd0f9b2e4d08307ce1a5b81e33b954b30dec7
+  src/source_update_monitor.py:
+    count: 1
+    sha256: 3eca7c9ce9c2aa4bc18df0aaa6b21f2cdfb51434fab4d1b3866c0f204737a439
+  src/staffing_dashboard_v2.py:
+    count: 163
+    sha256: d8588bb3af161d162b3db44693feae379ce4f7e12681037da92e32a97e40162c
+  src/staffing_settings_v2.py:
+    count: 0
+    sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+# Add future fingerprints here; never refresh grandfathered hashes for a new control.
+# covered_actions:
+#   0123456789abcdef0123:
+#     behavioral_tests:
+#     - tests/test_example_gui.py::test_save_button_persists_visible_change
+covered_actions:
+  f91ceac5a06eb25160a3:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_templates_workflow_publishes_template_package_and_visual_mapping]
+  bb83ef7ac7df8e7a06ed:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_employee_drawer_opens_and_exports_authorized_filled_artifact]
+  63b019b68660d0fa8b2e:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_employee_drawer_opens_and_exports_authorized_filled_artifact]
+  e2f983734f30d7cfbcad:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_templates_workflow_publishes_template_package_and_visual_mapping]
+  f89e8c229923fa7fa738:
+    behavioral_tests: [tests/test_staffing_settings_v2.py::test_admin_settings_configures_onboarding_owner_role]
+  c24674feda9211d5a040:
+    behavioral_tests: [tests/test_staffing_settings_v2.py::test_settings_publish_and_discard_use_confirmed_admin_draft]
+  7d99540997f806ecc4ab:
+    behavioral_tests: [tests/test_staffing_settings_v2.py::test_settings_publish_and_discard_use_confirmed_admin_draft]
+  a5b76eb4b352b59f550c:
+    behavioral_tests: [tests/test_staffing_settings_v2.py::test_settings_publish_and_discard_use_confirmed_admin_draft]
+  2b526459dc2303716fe0:
+    behavioral_tests: [tests/test_staffing_settings_v2.py::test_settings_publish_and_discard_use_confirmed_admin_draft]
+  1e6e6d45e610125fc3fe:
+    behavioral_tests: [tests/test_staffing_settings_v2.py::test_settings_shared_email_account_tests_and_saves_independently]
+  53180d0c09c4bf9a3c21:
+    behavioral_tests: [tests/test_staffing_settings_v2.py::test_settings_shared_email_account_tests_and_saves_independently]
+  d85a9d68f818460ddec2:
+    behavioral_tests: [tests/test_staffing_settings_v2.py::test_settings_publish_and_discard_use_confirmed_admin_draft]
+  17d63b2a2f58db8e48ca:
+    behavioral_tests: [tests/test_staffing_settings_v2.py::test_settings_publish_and_discard_use_confirmed_admin_draft]
+  6a480eec6f2fe75b5412:
+    behavioral_tests: [tests/test_staffing_settings_v2.py::test_settings_template_paths_update_draft_and_show_validation]
+  293235735326cc341cb6:
+    behavioral_tests: [tests/test_staffing_settings_v2.py::test_settings_template_paths_update_draft_and_show_validation]
+  67bca7f50b55bf35cc42:
+    behavioral_tests: [tests/test_staffing_settings_v2.py::test_settings_rubric_editor_updates_and_duplicates_selected_trait]
+  c748bae61b592248e490:
+    behavioral_tests: [tests/test_staffing_settings_v2.py::test_settings_rubric_editor_updates_and_duplicates_selected_trait]
+  d6472e695db2d981a9e3:
+    behavioral_tests: [tests/test_staffing_settings_v2.py::test_settings_interview_flow_adds_duplicates_reorders_and_deletes_question]
+  02ab550366da791763b9:
+    behavioral_tests: [tests/test_staffing_settings_v2.py::test_settings_interview_flow_adds_duplicates_reorders_and_deletes_question]
+  6d584550c1dfce29408f:
+    behavioral_tests: [tests/test_staffing_settings_v2.py::test_settings_interview_flow_adds_duplicates_reorders_and_deletes_question]
+  1bd53ea88f7be43fc451:
+    behavioral_tests: [tests/test_staffing_settings_v2.py::test_settings_interview_flow_adds_duplicates_reorders_and_deletes_question]
+  38aee9c2acf807d99c1c:
+    behavioral_tests: [tests/test_staffing_settings_v2.py::test_settings_interview_flow_adds_duplicates_reorders_and_deletes_question]
+  92a53a96be31a208830a:
+    behavioral_tests: [tests/test_staffing_settings_v2.py::test_settings_interview_flow_adds_duplicates_reorders_and_deletes_question]
+  624f0cba2e4fa3a22f2a:
+    behavioral_tests: [tests/test_staffing_settings_v2.py::test_settings_interview_flow_adds_duplicates_reorders_and_deletes_question]
+  45807f3b9bec094148dc:
+    behavioral_tests: [tests/test_staffing_settings_v2.py::test_settings_interview_flow_adds_duplicates_reorders_and_deletes_question]
+  7f0f5e65b64ad9d358f6:
+    behavioral_tests: [tests/test_staffing_settings_v2.py::test_settings_publish_and_discard_use_confirmed_admin_draft]
+  b10a7cfb10b3f4d5cf53:
+    behavioral_tests: [tests/test_staffing_settings_v2.py::test_settings_publish_and_discard_use_confirmed_admin_draft]
+  20a7fcc2dd5242743ea3:
+    behavioral_tests: [tests/test_staffing_settings_v2.py::test_settings_publish_and_discard_use_confirmed_admin_draft]
+  95a265ebc17ae985b1e6:
+    behavioral_tests: [tests/test_staffing_settings_v2.py::test_settings_publish_and_discard_use_confirmed_admin_draft]
+  4d7cac41f2e548d8acdc:
+    behavioral_tests: [tests/test_staffing_settings_v2.py::test_settings_publish_and_discard_use_confirmed_admin_draft]
+  737cdfd1d603adfaa260:
+    behavioral_tests: [tests/test_staffing_settings_v2.py::test_settings_publish_and_discard_use_confirmed_admin_draft]
+  542e8fda72592ac9e448:
+    behavioral_tests: [tests/test_dashboard_v2_ui.py::test_staffing_v2_sidebar_toggle_reclaims_content_width_and_restores_labels]
+  0451a881488c60677381:
+    behavioral_tests: [tests/test_dashboard_v2_ui.py::test_staffing_v2_sidebar_sections_expand_collapse_and_reopen_for_active_page]
+  4d8b298baf62d251af17:
+    behavioral_tests: [tests/test_dashboard_v2_ui.py::test_staffing_v2_rail_keeps_icon_and_accessible_name_for_pages_without_explicit_icon]
+  b315b9e2383fe651431a:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_task_drawer_adds_subtask_and_secure_attachment_then_cleans_temp]
+  268c30480c1a5cb6ff06:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_task_drawer_adds_subtask_and_secure_attachment_then_cleans_temp]
+  d3ca8dbaf76038648611:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_task_drawer_completes_subtask_and_edits_own_comment_revision]
+  fdcbf707aae10507e015:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_task_drawer_completes_subtask_and_edits_own_comment_revision]
+  f8c2428c09e749f0257c:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_admin_task_drawer_redacts_selected_comment_with_reason]
+  e576cf6e7e0ebad96c58:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_task_drawer_adds_subtask_and_secure_attachment_then_cleans_temp]
+  6c4f3dfd0187f2de675a:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_task_drawer_adds_subtask_and_secure_attachment_then_cleans_temp]
+  5a18e81cbe6dcba47816:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_overview_kpi_navigates_to_task_queue_with_matching_filter]
+  5e880078912a4c07a939:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_density_persists_and_narrow_tasks_switch_to_stacked_cards]
+  8ac41d3c47c095691d5a:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_director_employee_drawer_marks_did_not_start_and_hides_admin_actions]
+  20f6fb907eb5f09151a7:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_employee_separation_and_retention_preview_purge_actions]
+  12ba2a7aaf8e24ded1b9:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_admin_employee_transfer_archive_and_typed_delete_refresh_roster]
+  aa36cd7e2a76182b42fe:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_admin_employee_transfer_archive_and_typed_delete_refresh_roster]
+  af36ec3065260c44758a:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_admin_employee_transfer_archive_and_typed_delete_refresh_roster]
+  fdd752580db87ec6c321:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_employee_separation_and_retention_preview_purge_actions]
+  ded8b9bcf4bddb229f09:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_employee_separation_and_retention_preview_purge_actions]
+  7b621788753f88b9d807:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_director_creates_school_employee_and_top_level_task_from_v2_pages]
+  ded9bae6361774ab7037:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_director_creates_school_employee_and_top_level_task_from_v2_pages]
+  f688c5bee6e7870e7310:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_density_persists_and_narrow_tasks_switch_to_stacked_cards]
+  61ca4bbc104af123e718:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_director_employee_drawer_marks_did_not_start_and_hides_admin_actions]
+  0c46bbf0ea34b1aadef9:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_director_creates_school_employee_and_top_level_task_from_v2_pages]
+  5b531ab096c8c1e43fa9:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_templates_workflow_publishes_template_package_and_visual_mapping]
+  ccae2e599c7496630a93:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_templates_workflow_publishes_template_package_and_visual_mapping]
+  fe8b5da3aa5bf3fa0979:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_templates_workflow_publishes_template_package_and_visual_mapping]
+  ceb658119a3117effc68:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_templates_workflow_publishes_template_package_and_visual_mapping]
+  48cf3046aabaf7ec9c48:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_templates_workflow_publishes_template_package_and_visual_mapping]
+  20f4594007b26a3fbddf:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_templates_workflow_publishes_template_package_and_visual_mapping]
+  307606cac74bc585f33f:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_templates_workflow_publishes_template_package_and_visual_mapping]
+  1b461f2501ddea7df333:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_templates_workflow_publishes_template_package_and_visual_mapping]
+  77f40b2c14ce22da3d1f:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_templates_workflow_publishes_template_package_and_visual_mapping]
+  df658968aefdf02f0bb8:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_templates_workflow_publishes_template_package_and_visual_mapping]
+  580d499eb40f7daf8891:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_templates_workflow_publishes_template_package_and_visual_mapping]
+  4a4a24f2c16fad277543:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_templates_workflow_publishes_template_package_and_visual_mapping]
+  352f4863ee79692d4f5b:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_templates_workflow_publishes_template_package_and_visual_mapping]
+  0a7b3a1a862ccbfe8bc6:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_templates_workflow_publishes_template_package_and_visual_mapping]
+  22aee4fbecec68415573:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_templates_page_previews_and_applies_selected_employee_upgrades]
+  45ac52b2eec927439e3e:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_templates_page_previews_and_applies_selected_employee_upgrades]
+  0586da04353d8a5c2a12:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_templates_page_previews_and_applies_selected_employee_upgrades]
+  3744927c2b386bcfd079:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_templates_page_previews_and_applies_selected_employee_upgrades]
+  22dbaf596d281c42bac1:
+    behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_communications_preview_send_and_failed_only_retry_have_behavior]
+  1e6abfabc4ad1129d4ae:
+    behavioral_tests:
+    - tests/test_onboarding_workspace_v2.py::test_task_detail_adds_encrypted_comment_and_refreshes_visible_history
+  3adf9510956039394cc5:
+    behavioral_tests:
+    - tests/test_onboarding_workspace_v2.py::test_employee_profile_drawer_saves_authorized_profile_changes
+  da750e0dd9a402748ea6:
+    behavioral_tests:
+    - tests/test_onboarding_workspace_v2.py::test_templates_page_lists_versions_and_creates_reusable_field_inline
+  2575b63e12798785186e:
+    behavioral_tests:
+    - tests/test_onboarding_workspace_v2.py::test_workspace_task_filters_actions_kpi_and_secure_reveal_have_behavior
+  ba9b86c2b499082a429d:
+    behavioral_tests:
+    - tests/test_onboarding_workspace_v2.py::test_workspace_task_filters_actions_kpi_and_secure_reveal_have_behavior
+  e9da158305bc47e399ae:
+    behavioral_tests:
+    - tests/test_onboarding_workspace_v2.py::test_workspace_task_filters_actions_kpi_and_secure_reveal_have_behavior
+  f680491dd6585526d229:
+    behavioral_tests:
+    - tests/test_onboarding_workspace_v2.py::test_workspace_task_filters_actions_kpi_and_secure_reveal_have_behavior
+  559dab26069204a2a23e:
+    behavioral_tests:
+    - tests/test_onboarding_workspace_v2.py::test_workspace_task_filters_actions_kpi_and_secure_reveal_have_behavior
+  c43a1ea38b417eb22e61:
+    behavioral_tests:
+    - tests/test_onboarding_workspace_v2.py::test_workspace_task_filters_actions_kpi_and_secure_reveal_have_behavior
+  6a2cd7e24c360f073c76:
+    behavioral_tests:
+    - tests/test_onboarding_workspace_v2.py::test_task_page_full_filters_and_inline_editor_update_selected_task
+  23f2971ad7a59859b561:
+    behavioral_tests:
+    - tests/test_onboarding_workspace_v2.py::test_task_page_full_filters_and_inline_editor_update_selected_task
+  f83522bb70a12f174ce0:
+    behavioral_tests:
+    - tests/test_onboarding_workspace_v2.py::test_overview_lock_and_forget_device_controls_apply_distinct_security_actions
+  4bb63d7fdf5bc363e0f1:
+    behavioral_tests:
+    - tests/test_onboarding_workspace_v2.py::test_overview_lock_and_forget_device_controls_apply_distinct_security_actions
+  1e9365d4fa19f9a963d3:
+    behavioral_tests:
+    - tests/test_onboarding_workspace_v2.py::test_workspace_leave_guard_save_discard_and_stay_choices_have_behavior
+  59afe082e3a4941aaad8:
+    behavioral_tests:
+    - tests/test_onboarding_workspace_v2.py::test_workspace_leave_guard_save_discard_and_stay_choices_have_behavior
+  5e582edbaec920feaeb6:
+    behavioral_tests:
+    - tests/test_onboarding_workspace_v2.py::test_workspace_leave_guard_save_discard_and_stay_choices_have_behavior
+  0e1703ec512d87ba9f3f:
+    behavioral_tests:
+    - tests/test_onboarding_workspace_v2.py::test_communications_preview_send_and_failed_only_retry_have_behavior
+  9c9643fc82fc9d37c3ce:
+    behavioral_tests:
+    - tests/test_onboarding_workspace_v2.py::test_communications_preview_send_and_failed_only_retry_have_behavior
+  8e61dc82f9e51b53c487:
+    behavioral_tests:
+    - tests/test_onboarding_workspace_v2.py::test_communications_preview_send_and_failed_only_retry_have_behavior
+  fb573c65370bc09ceba1:
+    behavioral_tests:
+    - tests/test_onboarding_workspace_v2.py::test_admin_templates_page_previews_and_idempotently_imports_legacy_json
+  3052be01c89b2a7f7386:
+    behavioral_tests:
+    - tests/test_onboarding_workspace_v2.py::test_admin_templates_page_previews_and_idempotently_imports_legacy_json
+  793829684290d5b6536a:
+    behavioral_tests:
+    - tests/test_onboarding_workspace_v2.py::test_admin_templates_page_previews_and_idempotently_imports_legacy_json

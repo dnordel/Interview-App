@@ -1,0 +1,48 @@
+module:
+  name: onboarding_package_editor
+  language: python
+  path: src/onboarding_package_editor.py
+  version: 1.0.0
+  description: Ordered validated PDF selection model for immutable document-package drafts.
+functions: []
+classes:
+- name: DocumentPackageDraftEditor
+  description: Adds, replaces, removes, and reorders regular PDF sources before service submission.
+  locked: false
+  methods:
+  - name: __init__
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: none
+  - name: add
+    inputs: {path: {type: Path, required: true}}
+    returns: {type: None}
+    exceptions: [ValueError, OSError]
+    side_effects: Validates and appends one PDF path.
+  - name: replace
+    inputs:
+      index: {type: int, required: true}
+      path: {type: Path, required: true}
+    returns: {type: Path}
+    exceptions: [ValueError, OSError]
+    side_effects: Validates and replaces one selected PDF path.
+  - name: remove
+    inputs: {index: {type: int, required: true}}
+    returns: {type: Path}
+    exceptions: [ValueError]
+    side_effects: Removes one PDF path.
+  - name: move
+    inputs:
+      index: {type: int, required: true}
+      destination: {type: int, required: true}
+    returns: {type: None}
+    exceptions: [ValueError]
+    side_effects: Reorders one PDF path.
+  - name: clear
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Clears the draft selection.
+dependencies: []
+data_structures: []

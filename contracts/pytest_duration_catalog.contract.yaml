@@ -2,9 +2,29 @@ module:
   name: pytest_duration_catalog
   language: python
   path: tools/pytest_duration_catalog.py
-  version: 1.1.0
-  description: Maintains collected pytest node ids, durations measured with eight workers, measured/default duration source, GUI-heavy classification, and scheduler placement metadata; duration_seconds_n2 remains the legacy storage key.
+  version: 1.2.0
+  description: Maintains collected pytest node ids, full setup/call/teardown durations, measured/default duration source, GUI-heavy classification, and scheduler placement metadata; duration_seconds_n2 remains the legacy storage key.
 functions:
+- name: build_gui_benchmark_command
+  description: Build a GUI-only benchmark command using item-level xdist load scheduling, one-item chunks, complete duration output, and short tracebacks.
+  locked: false
+  inputs:
+    workers: {type: int, required: false, default: 2}
+    python_executable: {type: str, required: false}
+  returns: {type: 'list[str]'}
+  exceptions: [ValueError]
+  side_effects: none
+- name: benchmark_gui_catalog
+  description: Refresh collection metadata and benchmark only GUI tests with deterministic cleanup and item-level worker distribution.
+  locked: false
+  inputs:
+    path: {type: Path, required: false}
+    workers: {type: int, required: false, default: 2}
+    python_executable: {type: str, required: false}
+    call: {type: 'Callable[..., int]', required: false}
+  returns: {type: int}
+  exceptions: [ValueError]
+  side_effects: Launches offscreen GUI pytest with src on PYTHONPATH and updates complete measured durations through PYTEST_DURATION_CATALOG_OUT.
 - name: build_benchmark_commands
   description: Build an n-worker non-GUI phase and duration-sorted fresh GUI batches so Qt state cannot accumulate during catalog measurement.
   locked: false
@@ -114,7 +134,7 @@ functions:
   exceptions: []
   side_effects: launches pytest collect-only and writes docs/pytest_duration_catalog.yaml
 - name: main
-  description: Parse CLI options for catalog maintenance.
+  description: Parse CLI options for collection refresh, full benchmarking, or reliable GUI-only benchmarking.
   locked: false
   inputs:
     argv:
@@ -123,7 +143,7 @@ functions:
   returns:
     type: int
   exceptions: []
-  side_effects: optionally refreshes docs/pytest_duration_catalog.yaml
+  side_effects: optionally refreshes or benchmarks docs/pytest_duration_catalog.yaml
 classes: []
 data_structures: []
 dependencies:

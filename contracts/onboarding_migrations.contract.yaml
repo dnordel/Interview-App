@@ -2,10 +2,29 @@ module:
   name: onboarding_migrations
   language: python
   path: src/onboarding_migrations.py
-  version: 1.0.1
-  description: Compatibility wrapper for onboarding metadata migrations now implemented
-    by onboarding_operations.
+  version: 1.2.0
+  description: Compatibility metadata migrations plus fail-closed, previewed, backed-up, idempotent legacy JSON import into onboarding v2.
 functions:
+- name: preview_legacy_json_migration
+  description: Validates and summarizes a legacy onboarding JSON file without mutation.
+  locked: false
+  inputs:
+    source_path: {type: Path, required: true}
+  returns: {type: LegacyJsonMigrationPreview}
+  exceptions: [ValueError, OSError]
+  side_effects: Reads and hashes one legacy JSON file.
+- name: migrate_legacy_json_to_v2
+  description: Backs up and idempotently imports validated legacy employees and tasks.
+  locked: false
+  inputs:
+    source_path: {type: Path, required: true}
+    service: {type: OnboardingService, required: true}
+    backup_dir: {type: Path, required: true}
+    confirmed: {type: bool, required: true}
+    expected_sha256: {type: str, required: false, default: ''}
+  returns: {type: LegacyJsonMigrationResult}
+  exceptions: [ValueError, PermissionError, OSError, sqlite3.DatabaseError]
+  side_effects: Atomically creates a content-addressed backup and inserts missing v2 projections.
 - name: backfill_onboarding_metadata
   description: backfill_onboarding_metadata function in onboarding_migrations.
   locked: false
@@ -90,6 +109,14 @@ functions:
   exceptions: []
   side_effects: none
 classes:
+- name: LegacyJsonMigrationPreview
+  description: Validated import counts, warnings, path, and source digest.
+  locked: false
+  methods: []
+- name: LegacyJsonMigrationResult
+  description: Backup location and counts created by one confirmed import.
+  locked: false
+  methods: []
 - name: OnboardingMigrationSummary
   description: OnboardingMigrationSummary class in onboarding_migrations.
   locked: false
@@ -106,3 +133,4 @@ data_structures:
   type: dict[str, dict[str, Any]]
 dependencies:
 - module: onboarding_operations
+- module: onboarding_service

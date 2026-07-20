@@ -13,6 +13,8 @@ from hiring_pipeline import (
     calculate_offer_approval_dates,
     normalize_candidate_phone,
 )
+from onboarding_service import OnboardingAccess, OnboardingService
+from onboarding_store import OnboardingStore
 
 
 def test_offer_approval_artifact_stage_promotes_previewed_bytes_unchanged(tmp_path: Path) -> None:
@@ -586,6 +588,122 @@ def test_offer_acceptance_is_preserved_when_notification_blocks_and_retries(tmp_
     assert retried is True
     assert store.get_application(application.application_id).attention_code == ""
     assert service.retry_pending_accepted_notifications() == 0
+
+
+def test_offer_acceptance_calls_idempotent_onboarding_handoff_with_director_snapshot(tmp_path: Path) -> None:
+    store = HiringPipelineStore(tmp_path / "history.sqlite3")
+    handoffs = []
+    service = HiringWorkflowService(
+        store,
+        onboarding_accept_offer=lambda application, candidate, version, director_id, director_name: handoffs.append(
+            (application, candidate, version, director_id, director_name)
+        ),
+    )
+    application = service.start_application(
+        legal_name="Ari Lane",
+        email="ari@example.org",
+        phone="6615550123",
+        school="Palmdale",
+        position="Teacher",
+        actor="Interviewer",
+    )
+    store.update_application_stage(application.application_id, HiringStage.DIRECTOR_REVIEW)
+    service.record_director_decision(
+        application.application_id,
+        decision="hire",
+        actor="Director Jones",
+        actor_id="staffing-interview-42",
+    )
+    offer = service.create_offer_draft(
+        application.application_id,
+        terms={"school": "Palmdale", "position": "Teacher"},
+        actor="HR",
+    )
+    store.set_offer_status(offer.version_id, "sent")
+    store.update_application_stage(application.application_id, HiringStage.OFFER_SENT)
+
+    service.accept_offer(application.application_id, offer.version_id, actor="Admin")
+
+    assert len(handoffs) == 1
+    assert handoffs[0][3:] == ("staffing-interview-42", "Director Jones")
+
+
+def test_notification_retry_does_not_clear_failed_onboarding_handoff_attention(tmp_path: Path) -> None:
+    store = HiringPipelineStore(tmp_path / "history.sqlite3")
+    service = HiringWorkflowService(
+        store,
+        onboarding_accept_offer=lambda *_args: (_ for _ in ()).throw(RuntimeError("handoff failed")),
+        notify_offer_accepted=lambda *_args: [SimpleNamespace(status="sent", error="")],
+    )
+    application = service.start_application(
+        legal_name="Ari Lane", email="ari@example.org", phone="6615550123",
+        school="Palmdale", position="Teacher", actor="Interviewer",
+    )
+    store.update_application_stage(application.application_id, HiringStage.DIRECTOR_REVIEW)
+    service.record_director_decision(application.application_id, decision="hire", actor="Director")
+    offer = service.create_offer_draft(
+        application.application_id,
+        terms={"school": "Palmdale", "position": "Teacher"},
+        actor="HR",
+    )
+    store.set_offer_status(offer.version_id, "sent")
+    store.update_application_stage(application.application_id, HiringStage.OFFER_SENT)
+
+    accepted = service.accept_offer(application.application_id, offer.version_id, actor="Admin")
+
+    assert accepted.attention_code == "onboarding_handoff_pending"
+
+
+def test_failed_accepted_offer_handoff_retries_into_real_onboarding_without_duplicates(tmp_path: Path) -> None:
+    onboarding = OnboardingService(
+        OnboardingStore(tmp_path / "onboarding.sqlite3"),
+        OnboardingAccess("admin", "admin-1"),
+    )
+    template = onboarding.create_task_template_draft(
+        template_key="orientation", school="Palmdale", title="Orientation",
+        owner_role="Director", due_offset_days=0,
+    )
+    onboarding.publish_task_template(template.id)
+    attempts = {"count": 0}
+
+    def handoff(application, candidate, version, director_id, director_name):
+        attempts["count"] += 1
+        if attempts["count"] == 1:
+            raise OSError("temporary handoff failure")
+        return onboarding.accept_offer(
+            application_id=application.application_id,
+            legal_name=candidate.legal_name, school=application.school,
+            role=application.position, acceptance_date="2026-07-20",
+            start_date=str(version.start_date or version.terms["start_date"]),
+            email=candidate.email, phone=candidate.phone,
+            hiring_director_id=director_id, hiring_director_name=director_name,
+        )
+
+    store = HiringPipelineStore(tmp_path / "hiring.sqlite3")
+    service = HiringWorkflowService(store, onboarding_accept_offer=handoff)
+    application = service.start_application(
+        legal_name="Ari Lane", email="ari@example.org", phone="6615550123",
+        school="Palmdale", position="Teacher", actor="Interviewer",
+    )
+    store.update_application_stage(application.application_id, HiringStage.DIRECTOR_REVIEW)
+    service.record_director_decision(
+        application.application_id, decision="hire", actor="Director Jones",
+        actor_id="staffing-director-42",
+    )
+    offer = service.create_offer_draft(
+        application.application_id,
+        terms={"school": "Palmdale", "position": "Teacher", "start_date": "2026-08-03"},
+        actor="HR",
+    )
+    store.set_offer_status(offer.version_id, "sent")
+    store.update_application_stage(application.application_id, HiringStage.OFFER_SENT)
+
+    assert service.accept_offer(application.application_id, offer.version_id, actor="Admin").attention_code == "onboarding_handoff_pending"
+    assert service.retry_onboarding_handoff(application.application_id, actor="Admin") is True
+    assert store.get_application(application.application_id).attention_code == ""
+    assert len(onboarding.list_employees()) == 1
+    assert len(onboarding.list_tasks()) == 1
+    assert onboarding.list_employees()[0].hiring_director_id == "staffing-director-42"
 
 
 def test_start_then_finalize_keeps_one_application_cycle(tmp_path: Path) -> None:

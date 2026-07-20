@@ -144,6 +144,44 @@ def build_benchmark_commands(
     return commands
 
 
+def build_gui_benchmark_command(*, workers: int = 2, python_executable: str = sys.executable) -> list[str]:
+    """Build reliable GUI-only benchmark command with item-level xdist scheduling."""
+
+    if workers < 1:
+        raise ValueError("Benchmark worker count must be positive.")
+    return [
+        python_executable,
+        "-m",
+        "pytest",
+        "-n",
+        str(workers),
+        "--dist=load",
+        "--maxschedchunk=1",
+        "--durations=0",
+        "--tb=short",
+        "-m",
+        "pyside_gui",
+    ]
+
+
+def benchmark_gui_catalog(
+    path: Path = CATALOG_PATH,
+    *,
+    workers: int = 2,
+    python_executable: str = sys.executable,
+    call: Callable[..., int] = subprocess.call,
+) -> int:
+    """Measure GUI tests with cleanup between items and item-level parallel scheduling."""
+
+    refresh_catalog_from_collection(path)
+    command = build_gui_benchmark_command(workers=workers, python_executable=python_executable)
+    env = {**os.environ, "PYTEST_DURATION_CATALOG_OUT": str(Path(path).resolve())}
+    env.setdefault("QT_QPA_PLATFORM", "offscreen")
+    source_path = str(ROOT / "src")
+    env["PYTHONPATH"] = source_path + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
+    return int(call(command, cwd=ROOT, env=env))
+
+
 def benchmark_catalog(
     path: Path = CATALOG_PATH,
     *,
@@ -170,6 +208,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Maintain pytest duration catalog coverage.")
     parser.add_argument("--refresh-from-collection", action="store_true")
     parser.add_argument("--benchmark", action="store_true")
+    parser.add_argument("--benchmark-gui", action="store_true")
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--catalog", type=Path, default=CATALOG_PATH)
     args = parser.parse_args(argv)
@@ -178,6 +217,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.benchmark:
         return benchmark_catalog(args.catalog, workers=args.workers)
+    if args.benchmark_gui:
+        return benchmark_gui_catalog(args.catalog, workers=args.workers)
     parser.error("No action requested.")
     return 2
 

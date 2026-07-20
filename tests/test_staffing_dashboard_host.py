@@ -5,9 +5,12 @@ import sqlite3
 from pathlib import Path
 
 import pytest
+from datetime import date, timedelta
 
 from candidate_report import CandidateReportRepository
 from data_store import InterviewHistoryStore
+from onboarding_sync import OnboardingSyncConflict
+from onboarding_pilot_gate import REQUIRED_PILOT_SCENARIOS, approve_rollout, record_pilot_day
 from staffing_dashboard_host import StaffingDashboardAccess, StaffingDashboardHost
 from staffing_service import StaffingService
 from staffing_store import StaffingStore
@@ -80,6 +83,9 @@ def _host(
     store: StaffingStore,
     history_path: Path | None = None,
     open_document=None,
+    director_school: str = "Hawthorne",
+    onboarding_pilot_schools: tuple[str, ...] = ("Palmdale",),
+    onboarding_rollout_path: Path | None = None,
 ) -> StaffingDashboardHost:
     qt_core, qt_gui, qt_widgets, _app = _qt()
     parent = qt_widgets.QWidget()
@@ -93,10 +99,12 @@ def _host(
         access=StaffingDashboardAccess(
             role=role,
             actor=f"{role}-user",
-            school_scope="Hawthorne" if role == "director" else "",
+            school_scope=director_school if role == "director" else "",
         ),
         history_path=history_path or tmp_path / "interview_history.sqlite3",
         notification_store_path=tmp_path / f"{role}-notifications.sqlite3",
+        onboarding_pilot_schools=onboarding_pilot_schools,
+        onboarding_rollout_path=onboarding_rollout_path,
         open_document=open_document,
     )
 
@@ -112,6 +120,197 @@ def test_access_config_is_immutable_normalized_and_rejects_unknown_role() -> Non
         StaffingDashboardAccess(role="owner", actor="owner")
     with pytest.raises(Exception):
         access.role = "admin"
+
+
+def test_host_registers_admin_and_director_onboarding_navigation(tmp_path: Path) -> None:
+    admin = _host(tmp_path, role="admin", store=_store(tmp_path, "admin-onboarding.sqlite3"))
+    director = _host(
+        tmp_path,
+        role="director",
+        store=_store(tmp_path, "director-onboarding.sqlite3"),
+        director_school="Palmdale",
+    )
+    non_pilot = _host(tmp_path, role="director", store=_store(tmp_path, "director-nonpilot.sqlite3"))
+
+    assert set(admin.page.external_pages) == {
+        "onboarding_tasks",
+        "onboarding_overview",
+        "onboarding_employees",
+        "onboarding_templates",
+        "onboarding_communications",
+    }
+    assert set(director.page.external_pages) == {
+        "onboarding_tasks",
+        "onboarding_overview",
+        "onboarding_employees",
+        "onboarding_communications",
+    }
+    assert set(non_pilot.page.external_pages) == set()
+
+
+def test_host_enables_hawthorne_only_after_recorded_rollout_approval(tmp_path: Path) -> None:
+    evidence = tmp_path / "onboarding" / "pilot" / "evidence.jsonl"
+    monday = date(2026, 7, 20)
+    for offset in range(5):
+        record_pilot_day(
+            evidence, business_date=monday + timedelta(days=offset),
+            device_id=f"device-{offset % 2}", scenarios=REQUIRED_PILOT_SCENARIOS,
+            defects=(),
+        )
+    approve_rollout(
+        evidence, school="Hawthorne", actor="admin",
+        confirm_no_critical_high=True, reason="Palmdale gate passed",
+    )
+
+    host = _host(
+        tmp_path, role="director", store=_store(tmp_path, "hawthorne-approved.sqlite3"),
+        director_school="Hawthorne", onboarding_rollout_path=evidence,
+    )
+
+    assert host.onboarding_workspace is not None
+
+
+def test_admin_host_wires_shared_notification_directory_sender_and_scheduler(tmp_path: Path) -> None:
+    admin = _host(tmp_path, role="admin", store=_store(tmp_path, "admin-communications.sqlite3"))
+
+    assert admin.onboarding_workspace is not None
+    assert admin.onboarding_workspace.admin_fallback_email == "recruiting@launchpadpreschool.com"
+    assert admin.onboarding_workspace.reminder_recipient_resolver("Palmdale", "Payroll") == (
+        "payroll@launchpadpreschool.com"
+    )
+    assert admin.onboarding_scheduler is not None
+    assert admin.onboarding_workspace.service.artifact_vault is not None
+    assert admin.onboarding_workspace.service.artifact_vault.root == (tmp_path / "onboarding" / "vault").resolve()
+
+
+def test_host_uses_portable_onboarding_layout_and_migrates_legacy_replica(tmp_path: Path) -> None:
+    legacy = tmp_path / "onboarding_palmdale.sqlite3"
+    from onboarding_store import OnboardingStore
+
+    OnboardingStore(legacy)
+    director = _host(
+        tmp_path,
+        role="director",
+        store=_store(tmp_path, "portable-director.sqlite3"),
+        director_school="Palmdale",
+    )
+
+    expected = tmp_path / "onboarding" / "directors" / "palmdale.sqlite3"
+    assert director.onboarding_store is not None
+    assert director.onboarding_store.path == expected
+    assert expected.exists()
+    assert legacy.exists()
+
+
+@pytest.mark.parametrize("school", ["Palmdale", "Hawthorne", "North Long Beach"])
+def test_each_canonical_launcher_scope_uses_its_own_authorized_replica(tmp_path: Path, school: str) -> None:
+    host = _host(
+        tmp_path,
+        role="director",
+        store=_store(tmp_path, f"{school}.staffing.sqlite3"),
+        director_school=school,
+        onboarding_pilot_schools=("Palmdale", "Hawthorne", "North Long Beach"),
+    )
+    service = host.onboarding_workspace.service
+
+    assert service.access.school_scope == school
+    assert host.onboarding_store.path == host.onboarding_paths.director_replica(school)
+    other_school = "Hawthorne" if school != "Hawthorne" else "Palmdale"
+    with pytest.raises(PermissionError, match="outside the director school scope"):
+        service.create_employee(
+            legal_name="Jordan Lee",
+            school=other_school,
+            role="Teacher",
+            acceptance_date="2026-07-01",
+            start_date="2026-07-15",
+        )
+
+
+def test_host_replays_shared_onboarding_changes_between_admin_and_director(tmp_path: Path) -> None:
+    admin = _host(tmp_path, role="admin", store=_store(tmp_path, "sync-admin-staffing.sqlite3"))
+    director = _host(
+        tmp_path,
+        role="director",
+        store=_store(tmp_path, "sync-director-staffing.sqlite3"),
+        director_school="Palmdale",
+    )
+    employee = admin.onboarding_workspace.service.create_employee(
+        legal_name="Jordan Lee",
+        school="Palmdale",
+        role="Teacher",
+        acceptance_date="2026-07-01",
+        start_date="2026-07-15",
+    )
+
+    assert director.sync_onboarding() == 1
+    assert director.onboarding_workspace.service.get_employee(employee.id).school == "Palmdale"
+
+
+def test_sync_conflict_prompt_identifies_versions_and_explicit_choices(tmp_path: Path, monkeypatch) -> None:
+    _qt_core, _qt_gui, qt_widgets, _app = _qt()
+    host = _host(tmp_path, role="admin", store=_store(tmp_path, "conflict-staffing.sqlite3"))
+    observed: dict[str, str] = {}
+
+    def answer(_parent, title, text, *_args):
+        observed.update(title=title, text=text)
+        return qt_widgets.QMessageBox.StandardButton.Yes
+
+    monkeypatch.setattr(qt_widgets.QMessageBox, "question", answer)
+    accepted = host._resolve_onboarding_sync_conflict(
+        OnboardingSyncConflict(
+            event_id="event-1",
+            source_replica="director:palmdale",
+            entity_type="employee",
+            entity_id="employee-1",
+            school="Palmdale",
+            fields=("notes",),
+            local_version=3,
+            incoming_version=4,
+        )
+    )
+
+    assert accepted is True
+    assert observed["title"] == "Onboarding Sync Conflict"
+    assert "Employee employee-1" in observed["text"]
+    assert "Local version: 3" in observed["text"]
+    assert "Incoming version: 4" in observed["text"]
+    assert "Yes — Use Incoming" in observed["text"]
+    assert "No — Keep Local" in observed["text"]
+
+
+def test_sync_conflict_defers_when_onboarding_edit_session_stays_open(tmp_path: Path, monkeypatch) -> None:
+    _qt_core, _qt_gui, qt_widgets, _app = _qt()
+    host = _host(tmp_path, role="admin", store=_store(tmp_path, "defer-conflict.sqlite3"))
+    host.onboarding_workspace.request_navigation_away = lambda: False
+    monkeypatch.setattr(
+        qt_widgets.QMessageBox, "question",
+        lambda *_args, **_kwargs: pytest.fail("conflict choice must wait for edit resolution"),
+    )
+
+    resolution = host._resolve_onboarding_sync_conflict(
+        OnboardingSyncConflict(
+            event_id="event-defer", source_replica="director:palmdale",
+            entity_type="employee", entity_id="employee-1", school="Palmdale",
+            fields=("notes",), local_version=1, incoming_version=2,
+        )
+    )
+
+    assert resolution == "defer"
+
+
+def test_host_close_guard_delegates_to_onboarding_workspace_and_stops_sync_after_accept(tmp_path: Path) -> None:
+    host = _host(tmp_path, role="admin", store=_store(tmp_path, "close-guard.sqlite3"))
+    host.onboarding_workspace.request_close = lambda: False
+    assert host.request_onboarding_close() is False
+    assert host.onboarding_sync_timer.isActive()
+
+    host.onboarding_workspace.request_close = lambda: True
+    assert host.request_onboarding_close() is True
+    assert host.onboarding_sync_timer.isActive()
+    host.cleanup_onboarding()
+    assert not host.onboarding_sync_timer.isActive()
+    host.resume_onboarding()
+    assert host.onboarding_sync_timer.isActive()
 
 
 def test_director_notification_test_payloads_are_school_scoped(tmp_path: Path) -> None:
@@ -205,7 +404,9 @@ def test_admin_and_director_hosts_share_v2_widget_and_native_actions(tmp_path: P
         host.parent.close()
         app.processEvents()
 
-    assert object_names[0] == object_names[1]
+    shared_admin = {name for name in object_names[0] if "onboarding" not in name.casefold()}
+    shared_director = {name for name in object_names[1] if "onboarding" not in name.casefold()}
+    assert shared_admin == shared_director
     assert "StaffingV2PendingCandidateReportLink" not in object_names[0]
 
 

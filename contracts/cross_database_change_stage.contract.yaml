@@ -1,0 +1,71 @@
+module:
+  name: cross_database_change_stage
+  language: python
+  path: src/cross_database_change_stage.py
+  version: 1.2.0
+  description: Domain-neutral immutable JSON event outboxes, causal predecessor chains, and delivery receipts for lock-isolated SQLite replicas.
+functions:
+- name: _utc_now_iso
+  locked: false
+  inputs: {}
+  returns: {type: str}
+  exceptions: []
+  side_effects: Reads current UTC time.
+- name: _required_text
+  locked: false
+  inputs:
+    value: {type: Any, required: true}
+    label: {type: str, required: true}
+  returns: {type: str}
+  exceptions: [ValueError]
+  side_effects: none
+- name: _safe_slug
+  locked: false
+  inputs:
+    value: {type: str, required: true}
+  returns: {type: str}
+  exceptions: []
+  side_effects: none
+classes:
+- name: CrossDatabaseChangeEvent
+  description: Immutable domain-scoped operation with publisher identity, logical source database, school scope, JSON payload, creation timestamp, and optional predecessor event ID.
+  locked: false
+- name: CrossDatabaseChangeStage
+  description: Publishes domain-isolated operations and exposes ordered, independently acknowledged delivery to peer database replicas.
+  locked: false
+  methods:
+  - name: health_issues
+    inputs: {}
+    returns: {type: 'tuple[CrossDatabaseStageIssue, ...]'}
+    exceptions: [ValueError, OSError]
+    side_effects: Scans artifacts and reports PII-safe corruption, divergent Dropbox-copy, and delayed-predecessor diagnostics without acknowledging damaged files.
+  - name: publish
+    inputs:
+      source_replica: {type: str, required: true}
+      source_database: {type: str, required: false, default: ''}
+      school: {type: str, required: true}
+      operation: {type: str, required: true}
+      payload: {type: 'dict[str, Any]', required: true}
+    returns: {type: str}
+    exceptions: [ValueError, OSError]
+    side_effects: Atomically writes one immutable domain-scoped JSON event after linking the publisher predecessor.
+  - name: pending_for
+    inputs:
+      replica: {type: str, required: true}
+      school: {type: str, required: false, default: ''}
+    returns: {type: 'list[CrossDatabaseChangeEvent]'}
+    exceptions: [ValueError, OSError]
+    side_effects: Validates and reads domain event and receipt artifacts, ignores divergent conflict copies while retaining canonical events, and returns causally ordered unacknowledged events.
+  - name: acknowledge
+    inputs:
+      event_id: {type: str, required: true}
+      replica: {type: str, required: true}
+    returns: {type: void}
+    exceptions: [ValueError, OSError]
+    side_effects: Atomically writes one immutable domain-scoped delivery receipt.
+dependencies: []
+data_structures:
+- name: _SCHEMA_VERSION
+  type: int
+- name: CrossDatabaseStageIssue
+  type: dataclass

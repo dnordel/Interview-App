@@ -1,0 +1,33 @@
+module:
+  name: gui_action_behavior_coverage
+  language: python
+  path: tools/gui_action_behavior_coverage.py
+  version: 1.0.0
+  description: >-
+    Detects new or structurally changed PySide buttons and actions and requires each fingerprint
+    to reference a behavioral pytest that invokes the GUI control and asserts an observable result.
+functions:
+- name: audit_gui_action_coverage
+  description: Compare current PySide action fingerprints with the frozen baseline and behavioral-test registry.
+  locked: false
+  inputs:
+    source_root:
+      type: Path
+      required: false
+      default: src
+    policy_path:
+      type: Path
+      required: false
+      default: docs/gui_action_behavior_coverage.yaml
+  returns:
+    type: list[str]
+  exceptions:
+  - OSError
+  - SyntaxError
+  - yaml.YAMLError
+  side_effects: reads Python source, GUI action policy, and referenced pytest modules
+classes: []
+data_structures: []
+dependencies:
+- module: docs/gui_action_behavior_coverage.yaml
+- module: yaml

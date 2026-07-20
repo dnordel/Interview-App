@@ -1,0 +1,33 @@
+module:
+  name: onboarding_attachments
+  language: python
+  path: src/onboarding_attachments.py
+  version: 1.0.0
+  description: Fail-closed validation and Windows Defender scanning for managed onboarding task attachments.
+functions:
+- name: validate_task_attachment
+  locked: false
+  inputs:
+    path_value: {type: Path, required: true}
+  returns: {type: ValidatedAttachment}
+  exceptions: [ValueError, OSError]
+  side_effects: Reads and hashes one contained attachment candidate.
+classes:
+- name: ValidatedAttachment
+  description: Validated attachment metadata and content.
+  locked: false
+  methods: []
+- name: WindowsDefenderAttachmentScanner
+  description: Optional Windows Defender command-line malware scanner.
+  locked: false
+  methods:
+  - name: __call__
+    inputs:
+      path: {type: Path, required: true}
+    returns: {type: str}
+    exceptions: [ValueError, OSError]
+    side_effects: Runs Windows Defender without a shell when available.
+dependencies: []
+data_structures:
+- name: ValidatedAttachment
+  type: frozen dataclass

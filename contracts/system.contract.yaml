@@ -107,6 +107,9 @@ modules:
     - staffing_dashboard_v2
     - staffing_service
     - staffing_store
+    - notification_service
+    - onboarding_scheduler_v2
+    - onboarding_pilot_gate
     - PySide6
     - candidate_report
     - candidate_report_dialog
@@ -138,7 +141,90 @@ modules:
     - staffing_models
   staffing_change_stage:
     path: src/staffing_change_stage.py
+    depends_on:
+    - cross_database_change_stage
+  cross_database_change_stage:
+    path: src/cross_database_change_stage.py
     depends_on: []
+  onboarding_store:
+    path: src/onboarding_store.py
+    depends_on:
+    - onboarding_vault
+  onboarding_paths:
+    path: src/onboarding_paths.py
+    depends_on: []
+  onboarding_service:
+    path: src/onboarding_service.py
+    depends_on:
+    - onboarding_store
+    - onboarding_attachments
+    - onboarding_reminders_v2
+    - onboarding_staffing_bridge
+    - onboarding_sync
+    - onboarding_pdf_fill
+    - onboarding_vault
+    - onboarding_migrations
+  onboarding_migrations:
+    path: src/onboarding_migrations.py
+    depends_on:
+    - onboarding_service
+    - onboarding_operations
+  onboarding_pilot_gate:
+    path: src/onboarding_pilot_gate.py
+    depends_on: []
+  onboarding_pilot_gate_cli:
+    path: tools/onboarding_pilot_gate_cli.py
+    depends_on:
+    - onboarding_pilot_gate
+  onboarding_workspace_v2:
+    path: src/onboarding_workspace_v2.py
+    depends_on:
+    - onboarding_service
+    - onboarding_package_editor
+    - onboarding_pdf_fill
+    - onboarding_pdf_mapper_v2
+    - staffing_dashboard_v2
+    - PySide6
+  onboarding_vault:
+    path: src/onboarding_vault.py
+    depends_on:
+    - cryptography
+    - pywin32
+  onboarding_pdf_fill:
+    path: src/onboarding_pdf_fill.py
+    depends_on:
+    - onboarding_store
+    - pypdf
+    - reportlab
+  onboarding_pdf_mapper_v2:
+    path: src/onboarding_pdf_mapper_v2.py
+    depends_on:
+    - PySide6
+  onboarding_package_editor:
+    path: src/onboarding_package_editor.py
+    depends_on: []
+  onboarding_attachments:
+    path: src/onboarding_attachments.py
+    depends_on: []
+  onboarding_staffing_bridge:
+    path: src/onboarding_staffing_bridge.py
+    depends_on:
+    - staffing_store
+  onboarding_reminders_v2:
+    path: src/onboarding_reminders_v2.py
+    depends_on:
+    - onboarding_store
+  onboarding_scheduler_v2:
+    path: src/onboarding_scheduler_v2.py
+    depends_on:
+    - onboarding_service
+    - onboarding_reminders_v2
+  onboarding_sync:
+    path: src/onboarding_sync.py
+    depends_on:
+    - cross_database_change_stage
+    - onboarding_store
+    - onboarding_vault
   source_update_monitor:
     path: src/source_update_monitor.py
     depends_on:
@@ -285,6 +371,10 @@ modules:
   check_contract_review:
     path: tools/check_contract_review.py
     depends_on: []
+  gui_action_behavior_coverage:
+    path: tools/gui_action_behavior_coverage.py
+    depends_on:
+    - docs_gui_action_behavior_coverage_yaml
   split_pytest_runner:
     path: tools/split_pytest_runner.py
     depends_on: []
@@ -294,6 +384,9 @@ modules:
     - update_source_version
   pytest_duration_catalog:
     path: tools/pytest_duration_catalog.py
+    depends_on: []
+  docs_gui_action_behavior_coverage_yaml:
+    path: docs/gui_action_behavior_coverage.yaml
     depends_on: []
   data_store:
     path: src/data_store.py

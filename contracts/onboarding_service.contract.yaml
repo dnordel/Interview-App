@@ -1,0 +1,763 @@
+module:
+  name: onboarding_service
+  language: python
+  path: src/onboarding_service.py
+  version: 2.12.0
+  description: Toolkit-neutral onboarding application service enforcing admin and school Director authorization inside every public workflow.
+functions:
+- name: _required_text
+  locked: false
+  inputs:
+    value: {type: str, required: true}
+    label: {type: str, required: true}
+  returns: {type: str}
+  exceptions: [ValueError]
+  side_effects: none
+- name: _date_text
+  locked: false
+  inputs:
+    value: {type: str, required: true}
+    label: {type: str, required: true}
+  returns: {type: str}
+  exceptions: [ValueError]
+  side_effects: none
+- name: _utc_now
+  locked: false
+  inputs: {}
+  returns: {type: str}
+  exceptions: []
+  side_effects: Reads current UTC time.
+- name: _validate_intake_value
+  locked: false
+  inputs:
+    field: {type: IntakeField, required: true}
+    value: {type: object, required: true}
+  returns: {type: object}
+  exceptions: [ValueError]
+  side_effects: none
+classes:
+- name: OnboardingAccess
+  description: Immutable role, actor, and optional school scope used by service authorization.
+  locked: false
+  methods:
+  - name: __post_init__
+    inputs: {}
+    returns: {type: None}
+    exceptions: [ValueError]
+    side_effects: Normalizes access fields and requires a school scope for Directors.
+- name: OnboardingPermissionError
+  description: Raised when an onboarding operation is outside the actor authorization scope.
+  locked: false
+  methods: []
+- name: OnboardingService
+  description: Validates and coordinates onboarding workflows over one authorized SQLite replica.
+  locked: false
+  methods:
+  - name: __init__
+    inputs:
+      store: {type: OnboardingStore, required: true}
+      access: {type: OnboardingAccess, required: true}
+      attachment_scanner: {type: 'Callable[[Path], str] | None', required: false, default: null}
+      sync: {type: 'OnboardingSyncCoordinator | None', required: false, default: null}
+      director_resolver: {type: 'Callable[[str], DirectorIdentity] | None', required: false, default: null}
+      device_cache_path: {type: 'Path | None', required: false, default: null}
+      artifact_vault: {type: 'EncryptedArtifactVault | None', required: false, default: null}
+      notification_dispatcher: {type: 'Callable[[str, dict[str, str], str], object] | None', required: false, default: null}
+    returns: {type: None}
+    exceptions: []
+    side_effects: none
+  - name: lock_onboarding
+    inputs: {}
+    returns: {type: None}
+    exceptions: [ValueError, OSError, sqlite3.DatabaseError]
+    side_effects: Replays pending events then clears the in-memory organization key while preserving the Windows device cache.
+  - name: forget_device
+    inputs: {}
+    returns: {type: None}
+    exceptions: [ValueError, OSError, sqlite3.DatabaseError]
+    side_effects: Replays pending events, deletes the configured Windows device cache, and clears the in-memory organization key.
+  - name: cleanup_decrypted_artifacts
+    inputs: {}
+    returns: {type: int}
+    exceptions: [OSError]
+    side_effects: Removes every decrypted temporary onboarding artifact from the contained temp vault.
+  - name: sync_pending
+    inputs: {}
+    returns: {type: int}
+    exceptions: [ValueError, OSError, sqlite3.DatabaseError]
+    side_effects: Replays and acknowledges authorized pending onboarding events when sync is configured.
+  - name: sync_health
+    inputs: {}
+    returns: {type: object}
+    exceptions: []
+    side_effects: Reads current PII-safe stage, replay-integrity, and deferred-conflict health.
+  - name: list_sync_conflicts
+    inputs: {}
+    returns: {type: 'tuple[object, ...]'}
+    exceptions: []
+    side_effects: Reads unresolved/deferred conflict projections.
+  - name: preview_legacy_import
+    inputs:
+      source_path: {type: Path, required: true}
+    returns: {type: LegacyJsonMigrationPreview}
+    exceptions: [ValueError, OnboardingPermissionError, OSError]
+    side_effects: Admin-only validation and SHA-256 preview of one legacy onboarding JSON source.
+  - name: import_legacy_data
+    inputs:
+      source_path: {type: Path, required: true}
+      backup_dir: {type: Path, required: true}
+      expected_sha256: {type: str, required: true}
+      confirmation: {type: str, required: true}
+    returns: {type: LegacyJsonMigrationResult}
+    exceptions: [ValueError, OnboardingPermissionError, OSError, sqlite3.DatabaseError]
+    side_effects: Requires typed IMPORT, verifies preview digest, creates backup, idempotently imports records, and emits PII-safe audit metadata.
+  - name: create_employee
+    inputs:
+      legal_name: {type: str, required: true}
+      school: {type: str, required: true}
+      role: {type: str, required: true}
+      acceptance_date: {type: str, required: true}
+      start_date: {type: str, required: true}
+      preferred_name: {type: str, required: false, default: ''}
+      address_line1: {type: str, required: false, default: ''}
+      address_line2: {type: str, required: false, default: ''}
+      city: {type: str, required: false, default: ''}
+      state: {type: str, required: false, default: ''}
+      postal_code: {type: str, required: false, default: ''}
+      personal_email: {type: str, required: false, default: ''}
+      work_email: {type: str, required: false, default: ''}
+      phone: {type: str, required: false, default: ''}
+      notes: {type: str, required: false, default: ''}
+      source_history_id: {type: str, required: false, default: ''}
+      dob: {type: str, required: false, default: ''}
+      ssn: {type: str, required: false, default: ''}
+    returns: {type: OnboardingEmployee}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Creates one UUID employee at version one plus its audit event.
+  - name: list_employees
+    inputs: {}
+    returns: {type: 'list[OnboardingEmployee]'}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Reads all employees for admins or only the Director school scope.
+  - name: update_employee
+    inputs:
+      employee_id: {type: str, required: true}
+      expected_version: {type: int, required: true}
+      changes: {type: 'dict[str, str]', required: true}
+    returns: {type: OnboardingEmployee}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Validates and atomically updates authorized profile fields with optimistic concurrency.
+  - name: accept_offer
+    inputs:
+      application_id: {type: str, required: true}
+      legal_name: {type: str, required: true}
+      school: {type: str, required: true}
+      role: {type: str, required: true}
+      acceptance_date: {type: str, required: true}
+      start_date: {type: str, required: true}
+      email: {type: str, required: true}
+      phone: {type: str, required: true}
+      hiring_director_id: {type: str, required: true}
+      hiring_director_name: {type: str, required: true}
+    returns: {type: OnboardingEmployee}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Idempotently creates one onboarding employee keyed by source application after Hire contact validation and immutable hiring-Director snapshot capture.
+  - name: accept_legacy_offer
+    inputs:
+      application_id: {type: str, required: true}
+      legal_name: {type: str, required: true}
+      school: {type: str, required: true}
+      role: {type: str, required: true}
+      acceptance_date: {type: str, required: true}
+      start_date: {type: str, required: true}
+      email: {type: str, required: false, default: ''}
+      phone: {type: str, required: false, default: ''}
+      hiring_director_id: {type: str, required: false, default: legacy}
+      hiring_director_name: {type: str, required: false, default: Legacy import}
+    returns: {type: OnboardingEmployee}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Admin-only idempotent legacy handoff that surfaces incomplete contact as Attention.
+  - name: create_task
+    inputs:
+      employee_id: {type: str, required: true}
+      title: {type: str, required: true}
+      owner_role: {type: str, required: true}
+      due_date: {type: str, required: true}
+      watcher_roles: {type: 'list[str] | None', required: false, default: null}
+      critical: {type: bool, required: false, default: false}
+      dependency_ids: {type: 'list[str] | None', required: false, default: null}
+      parent_task_id: {type: str, required: false, default: ''}
+      required: {type: bool, required: false, default: true}
+      template_key: {type: str, required: false, default: ''}
+      template_version: {type: int, required: false, default: 0}
+      template_id: {type: str, required: false, default: ''}
+      notes: {type: str, required: false, default: ''}
+      package_version_id: {type: str, required: false, default: ''}
+    returns: {type: OnboardingTask}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Creates one versioned task plus normalized dependencies and audit event after employee/school authorization.
+  - name: create_task_template_draft
+    inputs:
+      template_key: {type: str, required: true}
+      school: {type: str, required: true}
+      title: {type: str, required: true}
+      owner_role: {type: str, required: true}
+      due_offset_days: {type: int, required: true}
+      watcher_roles: {type: 'list[str] | None', required: false, default: null}
+      critical: {type: bool, required: false, default: false}
+      package_key: {type: str, required: false, default: ''}
+      content: {type: str, required: false, default: ''}
+      base_template_id: {type: str, required: false, default: ''}
+      override_fields: {type: 'list[str] | None', required: false, default: null}
+    returns: {type: TaskTemplateVersion}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Creates an admin-only immutable draft template version.
+  - name: list_task_template_versions
+    inputs: {}
+    returns: {type: 'list[TaskTemplateVersion]'}
+    exceptions: [OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Admin-only reads every immutable task-template version.
+  - name: add_task_template_attachment
+    inputs:
+      template_id: {type: str, required: true}
+      path: {type: Path, required: true}
+    returns: {type: TaskTemplateAttachment}
+    exceptions: [ValueError, OnboardingPermissionError, OSError, sqlite3.DatabaseError]
+    side_effects: Admin-only validates, scans, hashes, encrypts, and syncs one draft-template attachment snapshot.
+  - name: list_task_template_attachments
+    inputs: {template_id: {type: str, required: true}}
+    returns: {type: 'list[TaskTemplateAttachment]'}
+    exceptions: [ValueError, OnboardingPermissionError, VaultIntegrityError, sqlite3.DatabaseError]
+    side_effects: Admin-only reads decrypted attachment metadata for one immutable template version.
+  - name: publish_task_template
+    inputs:
+      template_id: {type: str, required: true}
+    returns: {type: TaskTemplateVersion}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Publishes one draft template version.
+  - name: deprecate_task_template
+    inputs:
+      template_id: {type: str, required: true}
+    returns: {type: TaskTemplateVersion}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Admin-only deprecates one published version while preserving task snapshots.
+  - name: preview_task_template_upgrade
+    inputs:
+      template_id: {type: str, required: true}
+      employee_ids: {type: 'list[str]', required: true}
+    returns: {type: 'tuple[TaskTemplateUpgradePreview, ...]'}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Computes exact template snapshot fields that would change for selected active employees.
+  - name: apply_task_template_upgrade
+    inputs:
+      template_id: {type: str, required: true}
+      employee_ids: {type: 'list[str]', required: true}
+    returns: {type: 'list[OnboardingTask]'}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Applies one published template snapshot only to selected active employee tasks and publishes sync.
+  - name: _task_template_values
+    inputs:
+      template: {type: TaskTemplateVersion, required: true}
+      employee: {type: OnboardingEmployee, required: true}
+    returns: {type: 'dict[str, object]'}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Resolves due date and latest published package snapshot.
+  - name: get_task
+    inputs:
+      task_id: {type: str, required: true}
+    returns: {type: OnboardingTask}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Reads one school-authorized task.
+  - name: update_task
+    inputs:
+      task_id: {type: str, required: true}
+      expected_version: {type: int, required: true}
+      changes: {type: 'dict[str, object]', required: true}
+    returns: {type: OnboardingTask}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Validates and optimistically updates authorized task collaboration fields, then publishes sync.
+  - name: _task_reaches
+    inputs:
+      start_task_id: {type: str, required: true}
+      target_task_id: {type: str, required: true}
+    returns: {type: bool}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Reads task dependencies to reject cycles.
+  - name: list_tasks
+    inputs: {}
+    returns: {type: 'list[OnboardingTask]'}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Reads all tasks for admins or only the Director school scope.
+  - name: query_tasks
+    inputs:
+      search: {type: str, required: false, default: ''}
+      school: {type: str, required: false, default: ''}
+      owner_role: {type: str, required: false, default: ''}
+      watcher_role: {type: str, required: false, default: ''}
+      employee_id: {type: str, required: false, default: ''}
+      statuses: {type: 'tuple[str, ...]', required: false, default: '()'}
+      urgency: {type: str, required: false, default: ''}
+      blocked: {type: 'bool | None', required: false, default: null}
+      due_from: {type: str, required: false, default: ''}
+      due_to: {type: str, required: false, default: ''}
+      as_of: {type: str, required: false, default: ''}
+    returns: {type: 'list[OnboardingTask]'}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Reads authorized tasks and applies combined task queue filters.
+  - name: task_metrics
+    inputs:
+      as_of: {type: str, required: true}
+    returns: {type: TaskMetrics}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Computes authorized queue counts with blocked overdue work separated from actionable overdue work.
+  - name: get_employee
+    inputs:
+      employee_id: {type: str, required: true}
+    returns: {type: OnboardingEmployee}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Reads one school-authorized employee.
+  - name: complete_task
+    inputs:
+      task_id: {type: str, required: true}
+    returns: {type: OnboardingTask}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Marks incomplete-dependency work blocked or completes the task with version and audit increments.
+  - name: add_task_comment
+    inputs:
+      task_id: {type: str, required: true}
+      body: {type: str, required: true}
+    returns: {type: TaskComment}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Adds an encrypted author-owned comment and initial revision.
+  - name: list_task_comments
+    inputs:
+      task_id: {type: str, required: true}
+    returns: {type: 'list[TaskComment]'}
+    exceptions: [ValueError, OnboardingPermissionError, VaultIntegrityError, sqlite3.DatabaseError]
+    side_effects: School-authorized read of current encrypted task comments.
+  - name: edit_task_comment
+    inputs:
+      comment_id: {type: str, required: true}
+      body: {type: str, required: true}
+    returns: {type: TaskComment}
+    exceptions: [ValueError, PermissionError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Adds an immutable encrypted revision when invoked by the author.
+  - name: redact_task_comment
+    inputs:
+      comment_id: {type: str, required: true}
+      reason: {type: str, required: true}
+    returns: {type: TaskComment}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Admin-redacts a comment with encrypted reason and revision.
+  - name: list_task_comment_revisions
+    inputs:
+      comment_id: {type: str, required: true}
+    returns: {type: 'list[TaskCommentRevision]'}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Reads authorized decrypted comment revisions.
+  - name: add_task_attachment
+    inputs:
+      task_id: {type: str, required: true}
+      path: {type: Path, required: true}
+    returns: {type: TaskAttachment}
+    exceptions: [ValueError, OnboardingPermissionError, OSError, sqlite3.DatabaseError]
+    side_effects: Validates, scans, hashes, and stores an encrypted attachment.
+  - name: read_task_attachment
+    inputs:
+      attachment_id: {type: str, required: true}
+    returns: {type: bytes}
+    exceptions: [ValueError, OnboardingPermissionError, VaultIntegrityError, sqlite3.DatabaseError]
+    side_effects: Replays pending events, then reads and verifies one authorized encrypted attachment.
+  - name: list_task_attachments
+    inputs:
+      task_id: {type: str, required: true}
+    returns: {type: 'list[TaskAttachment]'}
+    exceptions: [ValueError, OnboardingPermissionError, VaultIntegrityError, sqlite3.DatabaseError]
+    side_effects: School-authorized read of encrypted task attachment metadata.
+  - name: list_task_audit_events
+    inputs:
+      task_id: {type: str, required: true}
+    returns: {type: 'list[dict[str, object]]'}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: School-authorized read of PII-safe task audit events.
+  - name: list_employee_audit_events
+    inputs:
+      employee_id: {type: str, required: true}
+    returns: {type: 'list[dict[str, object]]'}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: School-authorized read of PII-safe employee audit events.
+  - name: list_employee_filled_artifacts
+    inputs: {employee_id: {type: str, required: true}}
+    returns: {type: 'list[FilledArtifact]'}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Reads filled package metadata only after employee school authorization.
+  - name: open_task_attachment
+    inputs:
+      attachment_id: {type: str, required: true}
+    returns: {type: Path}
+    exceptions: [ValueError, OnboardingPermissionError, VaultIntegrityError, OSError, sqlite3.DatabaseError]
+    side_effects: Preflight-syncs, verifies, audits, and opens one attachment through a contained randomized temp copy.
+  - name: close_task_attachment
+    inputs:
+      path: {type: Path, required: true}
+    returns: {type: None}
+    exceptions: [ValueError, OSError]
+    side_effects: Removes one contained decrypted task-attachment temp copy.
+  - name: preview_reminders
+    inputs:
+      recipient_resolver: {type: 'Callable[[str, str], str]', required: true}
+      admin_fallback_email: {type: str, required: true}
+      now: {type: datetime, required: true}
+      config_revision: {type: str, required: false, default: ''}
+    returns: {type: ReminderPreview}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Replays pending events, then creates one ten-minute role-grouped preview for the authorized scope.
+  - name: send_reminder_preview
+    inputs:
+      token: {type: str, required: true}
+      sender: {type: 'Callable[[ReminderPreviewMessage], None]', required: true}
+      now: {type: datetime, required: true}
+      confirmed: {type: bool, required: true}
+      admin_override_reason: {type: str, required: false, default: ''}
+      config_revision: {type: str, required: false, default: ''}
+    returns: {type: ReminderSendResult}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Replays pending events, sends a fresh confirmed preview, and records PII-safe run rows.
+  - name: retry_failed_reminders
+    inputs:
+      run_id: {type: str, required: true}
+      sender: {type: 'Callable[[ReminderPreviewMessage], None]', required: true}
+      now: {type: datetime, required: true}
+      confirmed: {type: bool, required: true}
+    returns: {type: ReminderSendResult}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Replays pending events and retries only messages that failed in one prior run.
+  - name: list_reminder_run_history
+    inputs:
+      limit: {type: int, required: false, default: 100}
+    returns: {type: 'list[dict[str, object]]'}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Reads PII-safe reminder outcomes filtered to Director school scope.
+  - name: scheduler_run_recorded
+    inputs:
+      local_day: {type: str, required: true}
+    returns: {type: bool}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Admin-only check for one automatic local-day scheduler receipt.
+  - name: record_scheduler_run
+    inputs:
+      local_day: {type: str, required: true}
+      state: {type: str, required: true}
+      sent_count: {type: int, required: true}
+      failed_count: {type: int, required: true}
+      skipped_count: {type: int, required: true}
+      created_at: {type: str, required: true}
+    returns: {type: None}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Admin-only persistence of one PII-safe automatic scheduler health row.
+  - name: scheduler_health
+    inputs: {}
+    returns: {type: 'dict[str, object]'}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Reads the latest PII-safe scheduler health status.
+  - name: list_owner_roles
+    inputs:
+      school: {type: str, required: false, default: ''}
+    returns: {type: 'list[OwnerRoleConfig]'}
+    exceptions: [ValueError, OnboardingPermissionError, VaultIntegrityError, sqlite3.DatabaseError]
+    side_effects: Reads active global and school owner-role configuration for authorized scope.
+  - name: configure_owner_role
+    inputs:
+      school: {type: str, required: true}
+      role: {type: str, required: true}
+      email: {type: str, required: false, default: ''}
+      active: {type: bool, required: false, default: true}
+    returns: {type: OwnerRoleConfig}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Admin-only encrypted owner-role configuration update.
+  - name: resolve_owner_recipient
+    inputs:
+      role: {type: str, required: true}
+      admin_fallback_email: {type: str, required: true}
+      school: {type: str, required: false, default: ''}
+    returns: {type: 'tuple[str, str]'}
+    exceptions: [ValueError, OnboardingPermissionError, VaultIntegrityError, sqlite3.DatabaseError]
+    side_effects: Resolves configured owner email or returns Admin fallback plus warning.
+  - name: mark_employment_ended
+    inputs:
+      employee_id: {type: str, required: true}
+      last_working_day: {type: str, required: true}
+      departure_category: {type: str, required: true}
+      departure_director_id: {type: str, required: true}
+      departure_director_name: {type: str, required: true}
+      notes: {type: str, required: false, default: ''}
+    returns: {type: OnboardingEmployee}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Validates standard departure data and archives the employee while cancelling remaining tasks and snapshotting departure attribution.
+  - name: transfer_employee
+    inputs:
+      employee_id: {type: str, required: true}
+      new_school: {type: str, required: true}
+    returns: {type: OnboardingEmployee}
+    exceptions: [ValueError, OnboardingPermissionError, VaultIntegrityError, sqlite3.DatabaseError]
+    side_effects: Performs one admin-only employee/task transfer with school-key re-encryption.
+  - name: current_director
+    inputs:
+      employee_id: {type: str, required: true}
+    returns: {type: DirectorIdentity}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Dynamically resolves the unique active Staffing Director.
+  - name: mark_did_not_start
+    inputs:
+      employee_id: {type: str, required: true}
+      reason: {type: str, required: true}
+      notes: {type: str, required: false, default: ''}
+    returns: {type: OnboardingEmployee}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Archives a pre-start employee and cancels remaining tasks without departure-Director attribution.
+  - name: archive_correction
+    inputs:
+      employee_id: {type: str, required: true}
+      reason: {type: str, required: true}
+    returns: {type: OnboardingEmployee}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Admin-archives a duplicate, test, or cancelled-before-start correction.
+  - name: permanently_delete_employee
+    inputs:
+      employee_id: {type: str, required: true}
+      confirmation: {type: str, required: true}
+    returns: {type: None}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Permanently removes correction PII and creates a non-PII tombstone.
+  - name: preview_retention_purge
+    inputs:
+      as_of: {type: str, required: true}
+      retention_years: {type: int, required: false, default: 7}
+    returns: {type: 'list[RetentionPurgeCandidate]'}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Reads eligible archived records without mutation.
+  - name: purge_retained_employee
+    inputs:
+      employee_id: {type: str, required: true}
+      as_of: {type: str, required: true}
+      confirmation: {type: str, required: true}
+      retention_years: {type: int, required: false, default: 7}
+    returns: {type: None}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Removes eligible employee PII and creates a non-employee-PII purge tombstone.
+  - name: masked_ssn
+    inputs:
+      employee_id: {type: str, required: true}
+    returns: {type: str}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Reads only the authorized masked SSN representation.
+  - name: reveal_ssn
+    inputs:
+      employee_id: {type: str, required: true}
+      reason: {type: str, required: true}
+    returns: {type: str}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Returns authorized SSN and writes a PII-safe reveal audit event.
+  - name: create_intake_field
+    inputs:
+      stable_id: {type: str, required: true}
+      label: {type: str, required: true}
+      field_type: {type: str, required: true}
+      sensitivity: {type: str, required: true}
+      aliases: {type: 'list[str]', required: true}
+      validation: {type: 'dict[str, object] | None', required: false, default: null}
+      help_text: {type: str, required: false, default: ''}
+      options: {type: 'list[str] | None', required: false, default: null}
+    returns: {type: IntakeField}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Creates an admin-only reusable field definition.
+  - name: get_intake_field
+    inputs:
+      field_id: {type: str, required: true}
+    returns: {type: IntakeField}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Reads an admin-authorized field.
+  - name: list_intake_fields
+    inputs: {}
+    returns: {type: 'list[IntakeField]'}
+    exceptions: [OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Admin-only reads active and deprecated reusable intake fields.
+  - name: list_pdf_mappings
+    inputs: {}
+    returns: {type: 'list[PdfFieldMapping]'}
+    exceptions: [OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Admin-only reads all persisted visual PDF mappings.
+  - name: search_intake_fields
+    inputs:
+      query: {type: str, required: true}
+    returns: {type: 'list[IntakeField]'}
+    exceptions: [OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Searches current field labels, stable IDs, and aliases.
+  - name: suggest_similar_intake_fields
+    inputs:
+      label: {type: str, required: true}
+      aliases: {type: 'list[str] | None', required: false, default: null}
+    returns: {type: 'list[IntakeField]'}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Scores active reusable fields by normalized label and alias similarity.
+  - name: deprecate_intake_field
+    inputs:
+      field_id: {type: str, required: true}
+    returns: {type: IntakeField}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Deprecates a field without removing existing mappings.
+  - name: create_pdf_mapping
+    inputs:
+      document_key: {type: str, required: true}
+      page_number: {type: int, required: true}
+      rect: {type: 'tuple[float, float, float, float]', required: true}
+      field_id: {type: str, required: false, default: ''}
+      new_field: {type: 'dict[str, object] | None', required: false, default: null}
+      required: {type: bool, required: false, default: false}
+      font_name: {type: str, required: false, default: Helvetica}
+      font_size: {type: float, required: false, default: 10.0}
+      alignment: {type: str, required: false, default: left}
+      multiline: {type: bool, required: false, default: false}
+      formatting: {type: 'dict[str, object] | None', required: false, default: null}
+    returns: {type: PdfFieldMapping}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Selects an existing field or atomically creates one inline, then stores one validated visual PDF mapping.
+  - name: submit_intake
+    inputs:
+      submission_id: {type: str, required: true}
+      employee_id: {type: str, required: true}
+      application_id: {type: str, required: true}
+      schema_version: {type: int, required: true}
+      values: {type: 'dict[str, object]', required: true}
+    returns: {type: IntakeSubmission}
+    exceptions: [ValueError, OnboardingPermissionError, VaultIntegrityError, sqlite3.DatabaseError]
+    side_effects: Fails closed on unknown or invalid fields and idempotently stores one encrypted typed intake submission.
+  - name: correct_intake_submission
+    inputs:
+      submission_id: {type: str, required: true}
+      correction_id: {type: str, required: true}
+      values: {type: 'dict[str, object]', required: true}
+    returns: {type: IntakeSubmission}
+    exceptions: [ValueError, OnboardingPermissionError, VaultIntegrityError, sqlite3.DatabaseError]
+    side_effects: Stores a new encrypted immutable submission revision linked to its predecessor.
+  - name: create_document_package_draft
+    inputs:
+      package_key: {type: str, required: true}
+      school: {type: str, required: true}
+      title: {type: str, required: true}
+      document_paths: {type: 'list[Path]', required: true}
+    returns: {type: DocumentPackageVersion}
+    exceptions: [ValueError, OnboardingPermissionError, OSError, sqlite3.DatabaseError]
+    side_effects: Validates PDF type, signature, and size; hashes and encrypts ordered files into a new admin-only draft version.
+  - name: publish_document_package
+    inputs:
+      package_version_id: {type: str, required: true}
+    returns: {type: DocumentPackageVersion}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Publishes one immutable package version.
+  - name: validate_document_package
+    inputs: {package_version_id: {type: str, required: true}}
+    returns: {type: 'tuple[str, ...]'}
+    exceptions: [ValueError, OnboardingPermissionError, VaultIntegrityError, sqlite3.DatabaseError]
+    side_effects: Admin-only decrypts and validates ordered PDF hashes, sizes, structure, and pages.
+  - name: latest_published_document_package
+    inputs:
+      package_key: {type: str, required: true}
+      school: {type: str, required: true}
+    returns: {type: 'DocumentPackageVersion | None'}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Reads the latest published school package version.
+  - name: list_document_package_versions
+    inputs: {}
+    returns: {type: 'list[DocumentPackageVersion]'}
+    exceptions: [OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Admin-only reads every immutable document-package version.
+  - name: upgrade_employee_package
+    inputs:
+      package_key: {type: str, required: true}
+      package_version_id: {type: str, required: true}
+      employee_ids: {type: 'list[str]', required: true}
+    returns: {type: int}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Explicitly upgrades matching package-bearing task snapshots for selected employees.
+  - name: preview_employee_package_upgrade
+    inputs:
+      package_key: {type: str, required: true}
+      package_version_id: {type: str, required: true}
+      employee_ids: {type: 'list[str]', required: true}
+    returns: {type: 'tuple[str, ...]'}
+    exceptions: [ValueError, OnboardingPermissionError, sqlite3.DatabaseError]
+    side_effects: Computes selected employees whose package snapshot would change.
+  - name: _generate_assigned_packages
+    inputs:
+      submission: {type: IntakeSubmission, required: true}
+      employee: {type: OnboardingEmployee, required: true}
+    returns: {type: IntakeSubmission}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Generates assigned packages or records PII-safe Attention state.
+  - name: preview_pdf_mapping
+    inputs: {source_path: {type: Path, required: true}}
+    returns: {type: PdfMappingPreviewResult}
+    exceptions: [ValueError, OnboardingPermissionError, OSError, VaultIntegrityError, sqlite3.DatabaseError]
+    side_effects: Admin-only detects AcroForms, generates synthetic typed values and preview output, and reports per-mapping fit plus signature manifest.
+  - name: _publish_submission_artifacts
+    inputs:
+      submission_id: {type: str, required: true}
+    returns: {type: None}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Publishes generated artifacts only after their owning intake submission event.
+  - name: generate_filled_package
+    inputs:
+      submission_id: {type: str, required: true}
+      package_version_id: {type: str, required: true}
+      publish_sync: {type: bool, required: false, default: true}
+    returns: {type: GeneratedPackageArtifacts}
+    exceptions: [ValueError, OnboardingPermissionError, VaultIntegrityError, OSError, sqlite3.DatabaseError]
+    side_effects: Fills, merges, hashes, encrypts, persists, syncs, and temp-cleans one package revision.
+  - name: open_filled_artifact
+    inputs:
+      employee_id: {type: str, required: true}
+      artifact_id: {type: str, required: true}
+      suffix: {type: str, required: true}
+    returns: {type: Path}
+    exceptions: [ValueError, OnboardingPermissionError, VaultIntegrityError, OSError, sqlite3.DatabaseError]
+    side_effects: Preflight-syncs and opens one verified authorized short-lived decrypted copy with audit.
+  - name: close_filled_artifact
+    inputs: {path: {type: Path, required: true}}
+    returns: {type: None}
+    exceptions: [ValueError, OSError]
+    side_effects: Removes one contained decrypted temporary artifact.
+  - name: export_filled_artifact
+    inputs:
+      employee_id: {type: str, required: true}
+      artifact_id: {type: str, required: true}
+      destination: {type: Path, required: true}
+      confirmed_sensitive: {type: bool, required: true}
+    returns: {type: Path}
+    exceptions: [ValueError, OnboardingPermissionError, VaultIntegrityError, OSError, sqlite3.DatabaseError]
+    side_effects: Requires sensitive-data confirmation, exports atomically, temp-cleans, and audits.
+dependencies:
+- module: onboarding_store
+data_structures:
+- name: TaskMetrics
+  type: frozen dataclass
+- name: GeneratedPackageArtifacts
+  type: frozen dataclass
+- name: TaskTemplateUpgradePreview
+  type: frozen dataclass
+- name: PdfMappingFitResult
+  type: frozen dataclass
+- name: PdfMappingPreviewResult
+  type: frozen dataclass
+- name: RetentionPurgeCandidate
+  type: frozen dataclass
+- name: OnboardingRole
+  type: Literal[admin, director]
+- name: DEPARTURE_CATEGORIES
+  type: set[str]
+- name: INTAKE_FIELD_TYPES
+  type: set[str]
+- name: DID_NOT_START_REASONS
+  type: set[str]
+- name: TASK_EDIT_FIELDS
+  type: set[str]

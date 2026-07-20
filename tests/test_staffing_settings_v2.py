@@ -185,8 +185,8 @@ def test_pyside_admin_settings_live_inside_staffing_v2_shell(tmp_path: Path, mon
     )
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
 
-    assert model.navigation == ["Staffing", "Staffing v2", "Onboarding"]
-    assert "Admin" not in [window.sidebar.item(index).text() for index in range(window.sidebar.count())]
+    assert model.navigation == ["Staffing v2"]
+    assert window.window.findChild(qt_widgets.QFrame, "PySideSidebar") is None
     assert window.staffing_v2_dashboard.settings_nav_button.isEnabled()
     assert not hasattr(window, "staffing_settings_v2_page")
 
@@ -333,6 +333,52 @@ def test_settings_exposes_hiring_manager_smtp_and_recipient_directory(tmp_path: 
     assert payroll.text() == "payroll@launchpadpreschool.com"
     page.widget.close()
     app.processEvents()
+
+
+@pytest.mark.pyside_gui
+def test_admin_settings_configures_onboarding_owner_role(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_core = pytest.importorskip("PySide6.QtCore")
+    qt_gui = pytest.importorskip("PySide6.QtGui")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    from staffing_settings_v2 import StaffingSettingsV2Page
+
+    class OwnerRoleService:
+        def __init__(self) -> None:
+            self.saved = []
+
+        def list_owner_roles(self, *, school: str):
+            return []
+
+        def configure_owner_role(self, **values):
+            self.saved.append(values)
+
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    service = OwnerRoleService()
+    paths = _settings_paths(tmp_path)
+    page = StaffingSettingsV2Page(
+        QtCore=qt_core,
+        QtGui=qt_gui,
+        QtWidgets=qt_widgets,
+        studio=_load_studio(paths),
+        email_settings_path=tmp_path / "email_account_settings.json",
+        onboarding_service=service,
+    )
+    page.widget.show()
+    school = page.widget.findChild(qt_widgets.QComboBox, "StaffingSettingsV2OnboardingRoleSchool")
+    role = page.widget.findChild(qt_widgets.QLineEdit, "StaffingSettingsV2OnboardingRoleName")
+    email = page.widget.findChild(qt_widgets.QLineEdit, "StaffingSettingsV2OnboardingRoleEmail")
+    save = page.widget.findChild(qt_widgets.QPushButton, "StaffingSettingsV2SaveOnboardingRole")
+
+    school.setCurrentText("Palmdale")
+    role.setText("IT")
+    email.setText("it@example.com")
+    save.click()
+    app.processEvents()
+
+    assert service.saved == [{"school": "Palmdale", "role": "IT", "email": "it@example.com", "active": True}]
+    assert page.widget.findChild(qt_widgets.QLabel, "StaffingSettingsV2OnboardingRoleStatus").text() == "IT saved for Palmdale."
+    page.widget.close()
 
 
 @pytest.mark.pyside_gui

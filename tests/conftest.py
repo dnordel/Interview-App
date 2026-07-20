@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import gc
 import importlib
 import os
 import sys
@@ -60,6 +61,54 @@ _MEASURED_SLOW_PYSIDE_TESTS = {
 _DURATION_REPORTS: dict[str, float] = {}
 
 
+@pytest.fixture(autouse=True)
+def _isolate_notification_artifacts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """Keep tests from reading production notification rules or SMTP credentials."""
+
+    import notification_service
+
+    rules_path = tmp_path / "notification_rules.sqlite3"
+    settings_path = tmp_path / "email_account_settings.json"
+    monkeypatch.setattr(notification_service, "NOTIFICATION_RULES_PATH", rules_path)
+    monkeypatch.setattr(notification_service, "EMAIL_ACCOUNT_SETTINGS_PATH", settings_path)
+    for module_name in ("pyside_interview_app", "director_staffing_app"):
+        module = sys.modules.get(module_name)
+        if module is None:
+            continue
+        if hasattr(module, "NOTIFICATION_RULES_PATH"):
+            monkeypatch.setattr(module, "NOTIFICATION_RULES_PATH", rules_path)
+        if hasattr(module, "EMAIL_ACCOUNT_SETTINGS_PATH"):
+            monkeypatch.setattr(module, "EMAIL_ACCOUNT_SETTINGS_PATH", settings_path)
+
+
+def _dispose_qt_top_level_widgets(qt_widgets: object | None = None, qt_core: object | None = None) -> int:
+    """Delete surviving Qt windows and flush deferred deletes between GUI tests."""
+
+    widgets_module = qt_widgets or sys.modules.get("PySide6.QtWidgets")
+    core_module = qt_core or sys.modules.get("PySide6.QtCore")
+    if widgets_module is None or core_module is None:
+        return 0
+    application = widgets_module.QApplication.instance()
+    if application is None:
+        return 0
+    application.processEvents()
+    widgets = list(application.topLevelWidgets())
+    for widget in widgets:
+        widget.deleteLater()
+    core_module.QCoreApplication.sendPostedEvents(None, core_module.QEvent.Type.DeferredDelete)
+    gc.collect()
+    return len(widgets)
+
+
+@pytest.fixture(autouse=True)
+def _isolate_pyside_gui_test(request: pytest.FixtureRequest):
+    """Prevent closed Qt object trees from accumulating inside xdist workers."""
+
+    yield
+    if request.node.get_closest_marker("pyside_gui") is not None:
+        _dispose_qt_top_level_widgets()
+
+
 def pytest_configure(config: pytest.Config) -> None:
     """Validate that the correct DOCX library is importable before test collection."""
 
@@ -85,9 +134,15 @@ def _duration_catalog_by_nodeid() -> dict[str, dict[str, object]]:
 
 def _slow_pyside_weight(item: pytest.Item) -> float:
     entry = _duration_catalog_by_nodeid().get(item.nodeid)
-    if entry is None:
+    if entry is None or entry.get("duration_source") != "measured":
         return 10.0
     return float(entry.get("duration_seconds_n2", 10.0))
+
+
+def _order_pyside_gui_items(items: Sequence[pytest.Item]) -> list[pytest.Item]:
+    """Put longest measured GUI tests first; prioritize unmeasured new tests."""
+
+    return sorted(items, key=lambda item: (-_slow_pyside_weight(item), item.nodeid))
 
 
 def _spread_slow_pyside_items(items: Sequence[pytest.Item], *, worker_count: int = 24) -> list[pytest.Item]:
@@ -122,13 +177,16 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
             item.add_marker(pytest.mark.pyside_gui)
             item.add_marker(pytest.mark.slow_pyside)
     worker_count = getattr(config.option, "numprocesses", None)
-    if worker_count and not getattr(config.option, "markexpr", ""):
+    marker_expression = str(getattr(config.option, "markexpr", "") or "").strip()
+    if worker_count and marker_expression == "pyside_gui":
+        items[:] = _order_pyside_gui_items(items)
+    elif worker_count and not marker_expression:
         items[:] = _spread_slow_pyside_items(items, worker_count=worker_count if isinstance(worker_count, int) else 24)
 
 
 def pytest_runtest_logreport(report: pytest.TestReport) -> None:
-    if report.when == "call" and os.environ.get("PYTEST_DURATION_CATALOG_OUT"):
-        _DURATION_REPORTS[report.nodeid] = report.duration
+    if report.when in {"setup", "call", "teardown"} and os.environ.get("PYTEST_DURATION_CATALOG_OUT"):
+        _DURATION_REPORTS[report.nodeid] = _DURATION_REPORTS.get(report.nodeid, 0.0) + report.duration
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:

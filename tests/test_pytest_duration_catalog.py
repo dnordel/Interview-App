@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import os
 from pathlib import Path
 
 from tools import pytest_duration_catalog
@@ -142,6 +143,53 @@ def test_benchmark_commands_use_eight_workers_and_fresh_gui_batches() -> None:
         "python.exe", "-m", "pytest", "-n", "8", "--dist=load", "--maxschedchunk=1",
     ]
     assert commands[1][7:] == ["gui-long", "gui-short"]
+
+
+def test_gui_benchmark_uses_item_level_workers_and_full_duration_reporting() -> None:
+    command = pytest_duration_catalog.build_gui_benchmark_command(
+        workers=2,
+        python_executable="python.exe",
+    )
+
+    assert command == [
+        "python.exe",
+        "-m",
+        "pytest",
+        "-n",
+        "2",
+        "--dist=load",
+        "--maxschedchunk=1",
+        "--durations=0",
+        "--tb=short",
+        "-m",
+        "pyside_gui",
+    ]
+
+
+def test_gui_benchmark_refreshes_temp_catalog_and_exports_measurement_path(tmp_path, monkeypatch) -> None:
+    catalog_path = tmp_path / "timings.yaml"
+    calls: list[tuple[list[str], dict[str, object]]] = []
+    monkeypatch.setattr(pytest_duration_catalog, "refresh_catalog_from_collection", lambda path: None)
+
+    def fake_call(command: list[str], **kwargs) -> int:
+        calls.append((command, kwargs))
+        return 0
+
+    exit_code = pytest_duration_catalog.benchmark_gui_catalog(
+        catalog_path,
+        workers=2,
+        python_executable="python.exe",
+        call=fake_call,
+    )
+
+    assert exit_code == 0
+    assert calls[0][0] == pytest_duration_catalog.build_gui_benchmark_command(
+        workers=2,
+        python_executable="python.exe",
+    )
+    assert calls[0][1]["env"]["PYTEST_DURATION_CATALOG_OUT"] == str(catalog_path.resolve())
+    assert calls[0][1]["env"]["QT_QPA_PLATFORM"] == "offscreen"
+    assert calls[0][1]["env"]["PYTHONPATH"].split(os.pathsep)[0].endswith("src")
 
 
 def test_gui_scenario_catalog_entries_have_measured_scheduler_durations() -> None:

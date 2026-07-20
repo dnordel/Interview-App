@@ -1,0 +1,53 @@
+module:
+  name: onboarding_pdf_mapper_v2
+  language: python
+  path: src/onboarding_pdf_mapper_v2.py
+  version: 1.0.0
+  description: Rendered PDF mapping canvas with drawable, movable, selectable, and resizable coordinate boxes.
+functions: []
+classes:
+- name: OnboardingPdfMapperCanvas
+  description: PySide graphics view translating visual boxes to PDF coordinates.
+  locked: false
+  methods:
+  - name: __init__
+    inputs: {parent: {type: 'QWidget | None', required: false, default: null}}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Creates a PDF document and graphics scene.
+  - name: load_pdf
+    inputs:
+      path: {type: Path, required: true}
+      page_number: {type: int, required: false, default: 1}
+    returns: {type: None}
+    exceptions: [ValueError, OSError]
+    side_effects: Loads and renders one PDF page.
+  - name: add_pdf_box
+    inputs: {rect: {type: 'tuple[float, float, float, float]', required: true}}
+    returns: {type: QGraphicsRectItem}
+    exceptions: [ValueError]
+    side_effects: Adds one visual mapping rectangle.
+  - name: pdf_rect
+    inputs: {item: {type: QGraphicsRectItem, required: true}}
+    returns: {type: 'tuple[float, float, float, float]'}
+    exceptions: []
+    side_effects: none
+  - name: resize_box
+    inputs:
+      item: {type: QGraphicsRectItem, required: true}
+      width: {type: float, required: true}
+      height: {type: float, required: true}
+    returns: {type: None}
+    exceptions: [ValueError]
+    side_effects: Resizes one mapping rectangle.
+  - name: move_box
+    inputs:
+      item: {type: QGraphicsRectItem, required: true}
+      x: {type: float, required: true}
+      y: {type: float, required: true}
+    returns: {type: None}
+    exceptions: [ValueError]
+    side_effects: Moves one mapping rectangle in PDF coordinates.
+dependencies:
+- module: PySide6
+data_structures: []

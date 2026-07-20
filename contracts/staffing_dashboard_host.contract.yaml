@@ -2,8 +2,8 @@ module:
   name: staffing_dashboard_host
   language: python
   path: src/staffing_dashboard_host.py
-  version: 1.2.0
-  description: Shared role-aware Staffing v2 host used by embedded admin/director mode and standalone director launchers; owns one StaffingDashboardV2Page construction path, school-scoped candidate-report authorization, curated notification test payload enrichment from structured interview reports, structured/legacy report opening, dialog retention, and privacy-safe failures.
+  version: 1.8.0
+  description: Shared role-aware Staffing v2 host used by embedded admin/director mode and standalone director launchers; owns Staffing and lazy Onboarding workspace composition, school-scoped candidate-report authorization, curated notification test payload enrichment, report opening, and privacy-safe failures.
 functions: []
 classes:
 - name: StaffingDashboardAccess
@@ -28,6 +28,10 @@ classes:
       access: {type: StaffingDashboardAccess, required: true}
       history_path: {type: Path, required: true}
       notification_store_path: {type: Path, required: true}
+      onboarding_store_path: {type: 'Path | None', required: false, default: null}
+      onboarding_vault: {type: 'OnboardingVault | None', required: false, default: null}
+      onboarding_pilot_schools: {type: 'tuple[str, ...]', required: false, default: '[Palmdale]'}
+      onboarding_rollout_path: {type: 'Path | None', required: false, default: null}
       notification_service_factory: {type: 'Callable[[], Any] | None', required: false, default: null}
       director_referral_dismissal_callback: {type: 'Callable[[list[Any], str, str], None] | None', required: false, default: null}
       rubric: {type: 'dict[str, Any] | None', required: false, default: null}
@@ -37,7 +41,22 @@ classes:
       app_version: {type: str, required: false, default: ''}
     returns: {type: None}
     exceptions: [ValueError]
-    side_effects: Builds one shared StaffingDashboardV2Page with role/school/removal configuration and shared candidate-report callback; admin-only finalization callback is discarded for director access.
+    side_effects: Builds the shared dashboard; enabled Onboarding wires portable encrypted sync, shared email/directory reminders, and the Admin-only automatic scheduler.
+  - name: request_onboarding_close
+    inputs: {}
+    returns: {type: bool}
+    exceptions: []
+    side_effects: Delegates close/restart authorization to Onboarding Save/Discard/Stay guard.
+  - name: cleanup_onboarding
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Stops periodic onboarding sync after final close approval.
+  - name: resume_onboarding
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Restarts periodic onboarding sync when an approved application restart fails to launch.
   - name: widget
     inputs: {}
     returns: {type: Any}
@@ -81,6 +100,31 @@ classes:
     returns: {type: None}
     exceptions: [OSError]
     side_effects: Opens one validated local document through the operating system.
+  - name: _default_onboarding_store_path
+    inputs:
+      notification_store_path: {type: Path, required: true}
+    returns: {type: Path}
+    exceptions: []
+    side_effects: none
+  - name: _resolve_onboarding_vault
+    inputs:
+      shared_root: {type: Path, required: true}
+    returns: {type: OnboardingVault}
+    exceptions: [ValueError, VaultIntegrityError, OSError]
+    side_effects: Loads a local DPAPI cache, unlocks the shared keyring by environment or masked prompt, or performs first-run admin keyring setup and caches it for the Windows user/device.
+  - name: _prompt_onboarding_secret
+    inputs:
+      title: {type: str, required: true}
+      label: {type: str, required: true}
+    returns: {type: str}
+    exceptions: [ValueError]
+    side_effects: Shows a masked input dialog.
+  - name: _onboarding_device_cache_path
+    inputs:
+      keyring_path: {type: Path, required: true}
+    returns: {type: Path}
+    exceptions: []
+    side_effects: Reads LOCALAPPDATA and resolves a keyring-specific DPAPI cache path.
 data_structures:
 - name: StaffingDashboardRole
   type: Literal[admin, director]
@@ -90,6 +134,12 @@ dependencies:
 - module: candidate_report
 - module: candidate_report_dialog
 - module: notification_templates
+- module: onboarding_service
+- module: onboarding_paths
+- module: onboarding_pilot_gate
+- module: onboarding_store
+- module: onboarding_workspace_v2
+- module: onboarding_vault
 - module: staffing_dashboard_v2
 - module: staffing_service
 - module: staffing_store

@@ -1,0 +1,74 @@
+module:
+  name: onboarding_workspace_v2
+  language: python
+  path: src/onboarding_workspace_v2.py
+  version: 1.9.0
+  description: Complete role-aware Onboarding v2 UI with responsive task/employee drawers, immutable template/package/mapping workflows, communications, density persistence, and guarded sensitive edits.
+functions: []
+classes:
+- name: OnboardingDashboardV2Workspace
+  description: Owns Onboarding Tasks, Overview, Employees, Templates, and Communications page factories plus one shared leave guard.
+  locked: false
+  methods:
+  - name: __init__
+    inputs:
+      QtCore: {type: Any, required: true}
+      QtWidgets: {type: Any, required: true}
+      service: {type: OnboardingService, required: true}
+      reminder_recipient_resolver: {type: 'Callable[[str, str], str] | None', required: false, default: null}
+      admin_fallback_email: {type: 'str | Callable[[], str]', required: false, default: ''}
+      reminder_sender: {type: 'Callable[[Any], None] | None', required: false, default: null}
+      reminder_config_revision: {type: 'Callable[[], str] | None', required: false, default: null}
+      clock: {type: 'Callable[[], datetime] | None', required: false, default: null}
+      file_opener: {type: 'Callable[[Path], None] | None', required: false, default: null}
+      settings: {type: 'Any | None', required: false, default: null}
+      migration_backup_dir: {type: 'Path | None', required: false, default: null}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Prepares lazy page factories, fresh reminder fallback resolution, secure filled-artifact open/export controls, and local density settings without constructing widgets.
+  - name: register_with
+    inputs:
+      dashboard: {type: StaffingDashboardV2Page, required: true}
+    returns: {type: None}
+    exceptions: [ValueError, TypeError]
+    side_effects: Registers the ONBOARDING section and role-authorized lazy pages with the shared shell; the Tasks page exposes authorized queue filters and version-guarded inline editing through OnboardingService.
+  - name: request_navigation_away
+    inputs: {}
+    returns: {type: bool}
+    exceptions: []
+    side_effects: When dirty, prompts Save, Discard, or Stay and clears dirty state only after Save or Discard.
+  - name: request_close
+    inputs: {}
+    returns: {type: bool}
+    exceptions: []
+    side_effects: Applies shared leave guard and sensitive cleanup before application close or restart.
+  - name: refresh_after_handoff
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Invalidates built inactive Onboarding pages so a successful accepted-offer handoff appears on next navigation.
+  - name: mark_dirty
+    inputs:
+      session_key: {type: str, required: false, default: ''}
+    returns: {type: None}
+    exceptions: [ValueError]
+    side_effects: Marks legacy or one registered page edit session as having unsaved changes.
+  - name: register_edit_session
+    inputs:
+      key: {type: str, required: true}
+      save: {type: 'Callable[[], bool]', required: true}
+      discard: {type: 'Callable[[], None]', required: true}
+      cleanup: {type: 'Callable[[], None]', required: true}
+    returns: {type: None}
+    exceptions: [ValueError]
+    side_effects: Registers page save, discard, and sensitive cleanup callbacks for shared leave guards.
+dependencies:
+- module: onboarding_service
+- module: onboarding_package_editor
+- module: onboarding_pdf_fill
+- module: onboarding_pdf_mapper_v2
+- module: staffing_dashboard_v2
+- module: PySide6
+data_structures:
+- name: _PAGES
+  type: tuple

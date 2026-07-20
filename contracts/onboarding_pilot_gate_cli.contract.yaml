@@ -1,0 +1,17 @@
+module:
+  name: onboarding_pilot_gate_cli
+  language: python
+  path: tools/onboarding_pilot_gate_cli.py
+  version: 1.0.0
+  description: Operator CLI for PII-safe Onboarding pilot-day recording, status reporting, and ordered school approval.
+functions:
+- name: main
+  inputs:
+    argv: {type: 'list[str] | None', required: false, default: null}
+  returns: {type: int}
+  exceptions: [ValueError, OSError, SystemExit]
+  side_effects: Executes record-day, status, or approve command against configured evidence file.
+classes: []
+data_structures: []
+dependencies:
+- module: onboarding_pilot_gate

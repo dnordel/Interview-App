@@ -41,9 +41,26 @@ services:
     - interview_app_session_context
     - interview_app_session_manager
   onboarding_operations_service:
-    description: Onboarding scheduling, reminders, dashboard actions, notifications, and storage.
+    description: Role-authorized encrypted onboarding workflows, portable Windows replicas, immutable cross-device sync, digest-bound legacy migration, shared reminders, guarded close/restart, and evidence-gated Director-school rollout in the Staffing v2 shell.
     modules:
     - onboarding_operations
+    - onboarding_store
+    - onboarding_paths
+    - onboarding_service
+    - onboarding_workspace_v2
+    - cross_database_change_stage
+    - onboarding_vault
+    - onboarding_pdf_fill
+    - onboarding_pdf_mapper_v2
+    - onboarding_package_editor
+    - onboarding_attachments
+    - onboarding_staffing_bridge
+    - onboarding_sync
+    - onboarding_reminders_v2
+    - onboarding_scheduler_v2
+    - onboarding_migrations
+    - onboarding_pilot_gate
+    - onboarding_pilot_gate_cli
   notification_service:
     description: Ten editable system workflow notifications with visible safe AND condition rows over curated DB/event fields, school role/name directory, shared IMAP/POP and SMTP verification, admin-managed Dropbox-wide or DPAPI password storage, one shared safe-recipient helper and editable confirmation dialog for Candidate notification tests, required attachments, permanent success dedupe, rollout gating, and five-minute exact-date/noon/permit scheduling.
     modules:
@@ -58,6 +75,7 @@ services:
     - staffing_models
     - staffing_store
     - staffing_change_stage
+    - cross_database_change_stage
     - staffing_service
     - staffing_dashboard_v2
     - staffing_dashboard_host
@@ -125,6 +143,7 @@ services:
     - runtime_wrapper
     - storage_utils
     - check_contract_review
+    - gui_action_behavior_coverage
     - split_pytest_runner
     - full_pytest_runner
     - pytest_duration_catalog
@@ -140,6 +159,13 @@ services:
     - storage_utils
     - notification_store
 datastores:
+  onboarding_pilot_evidence:
+    type: file_system_jsonl
+    description: PII-safe hash-chained business-day evidence and ordered rollout approvals under user_artifacts/onboarding/pilot; corrupted state fails closed to Palmdale.
+    used_by:
+    - onboarding_pilot_gate
+    - onboarding_pilot_gate_cli
+    - staffing_dashboard_host
   staffing_change_event_files:
     type: file_system_json
     description: Immutable UUID-named, predecessor-linked cross-database staffing events in separate per-user outbox directories plus immutable per-database delivery receipts, stored beside staffing_dashboard.sqlite3 and merged safely by Dropbox without shared DB locks or out-of-order applies.

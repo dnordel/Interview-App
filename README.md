@@ -63,6 +63,10 @@ The tool is optimized for local/offline usage and can run without optional audio
 ### Onboarding App
 
 - Template-driven onboarding checklist management.
+- Staffing v2-native Tasks, Overview, Employees, Templates, and Communications pages with launcher-enforced school scope.
+- Encrypted employee/task/template attachments and filled-package open/export through short-lived audited temp files.
+- Shared Notifications rules drive immediate task events and reminder digests; owner recipients are configured in Staffing Settings.
+- Cross-computer Windows replicas replay before/after mutations and surface damaged artifacts, Dropbox conflict copies, delayed predecessors, and masked field conflicts without blocking unrelated work.
 - Employee start/acceptance date-based task scheduling.
 - Per-task reminder cadence options.
 - Reminder and escalation email settings.
@@ -213,13 +217,20 @@ Each action button remains keyboard reachable in tab order and includes an inlin
 
 ### Onboarding App Workflow
 
-1. Launch onboarding tracker and start in **Daily workflow** actions.
-2. Use **Run Reminders Now** for production sends, or **Run Reminders (Dry Run)** for safe verification.
-3. Add employee details (including acceptance and start dates).
-4. Apply default or custom onboarding task templates.
-5. Mark task completion status.
-6. Configure reminder cadence and recipient settings from **Communications**.
-7. Use **Admin & advanced** actions only for infrequent operational changes (for example storage location).
+1. Open **ONBOARDING → Tasks** inside Staffing v2.
+2. Use Overview, Employees, Templates, and Communications for authorized workflow details.
+3. Admin may preview and import legacy onboarding JSON from Templates; import requires typed `IMPORT` and creates a digest-bound backup.
+4. Admin creates global or school-override task-template versions, may attach validated encrypted files, and previews PDF mapping fit with synthetic data before publish/generation.
+5. Employee drawer exposes authorized task/package progress plus confirmed, audited filled-package Open/Export actions.
+4. Director launchers remain school-scoped. Palmdale is enabled by default; later schools require recorded rollout approval.
+
+Pilot evidence is stored under `user_artifacts/onboarding/pilot/` without names, contacts, or raw device IDs. Example commands:
+
+```powershell
+python tools/onboarding_pilot_gate_cli.py record-day --path user_artifacts/onboarding/pilot/evidence.jsonl --date 2026-07-20 --device COMPUTER-ID --all-scenarios
+python tools/onboarding_pilot_gate_cli.py status --path user_artifacts/onboarding/pilot/evidence.jsonl
+python tools/onboarding_pilot_gate_cli.py approve --path user_artifacts/onboarding/pilot/evidence.jsonl --school Hawthorne --actor ADMIN-ID --reason "Palmdale gate passed" --confirm-no-critical-high
+```
 
 ## Keyboard Shortcuts
 
@@ -261,6 +272,7 @@ Role-sensitive visibility expectations for manual QA:
 - `config/disqualifier_signals.json`: disqualifier cues for evaluation.
 - `user_artifacts/interviews/onboarding_data.json`: onboarding records (created by onboarding app).
 - `user_artifacts/interviews/onboarding_settings.json`: onboarding email/reminder settings (created by onboarding app).
+- `user_artifacts/onboarding/`: encrypted v2 replicas, vault artifacts, sync events, migration backups, and PII-safe pilot evidence.
 - `user_artifacts/interview_history.sqlite3`: finalized interview history rows (created by interview app).
 - `user_artifacts/email_account_settings.json`: admin-managed shared incoming/SMTP account used by notification delivery.
 - `user_artifacts/interview_history.json`: legacy finalized interview history rows imported into SQLite when the DB is empty.

@@ -3,7 +3,7 @@ from __future__ import annotations
 from tools import full_pytest_runner
 
 
-def test_full_suite_updates_source_version_before_metadata_preflight() -> None:
+def test_full_suite_does_not_update_source_version_when_metadata_fails() -> None:
     launched: list[list[str]] = []
 
     def fake_call(command: list[str]) -> int:
@@ -13,10 +13,10 @@ def test_full_suite_updates_source_version_before_metadata_preflight() -> None:
     exit_code = full_pytest_runner.run_full_suite(python_executable="python.exe", call=fake_call)
 
     assert exit_code == 6
-    assert launched == [["python.exe", "tools/update_source_version.py"]]
+    assert "tools/update_source_version.py" not in [item for command in launched for item in command]
 
 
-def test_gui_timing_batches_sort_longest_first_and_limit_worker_reuse() -> None:
+def test_legacy_gui_timing_batches_sort_longest_first() -> None:
     entries = [
         {"nodeid": "gui-short", "duration_seconds_n2": 1.0, "gui_heavy": True},
         {"nodeid": "not-gui", "duration_seconds_n2": 99.0, "gui_heavy": False},
@@ -34,14 +34,21 @@ def test_full_suite_runs_gui_timing_preflight_before_combined_full_suite() -> No
         python_executable="python.exe",
         metadata_workers=8,
         full_workers=24,
-        gui_workers=24,
+        gui_workers=2,
         catalog_entries=[
             {"nodeid": "tests/gui_slow.py::test_slow", "duration_seconds_n2": 5.0, "gui_heavy": True},
             {"nodeid": "tests/gui_fast.py::test_fast", "duration_seconds_n2": 1.0, "gui_heavy": True},
         ],
     )
 
-    assert quick_command == ["python.exe", "-m", "pytest", "-q", "tests/test_pytest_duration_catalog.py"]
+    assert quick_command == [
+        "python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_pytest_duration_catalog.py",
+        "tests/test_gui_action_behavior_coverage.py",
+    ]
     assert non_gui_command[:8] == [
         "python.exe",
         "-m",
@@ -52,8 +59,9 @@ def test_full_suite_runs_gui_timing_preflight_before_combined_full_suite() -> No
         "--dist=load",
         "--maxschedchunk=1",
     ]
-    assert ["-m", "not slow_pyside"] == non_gui_command[8:10]
+    assert ["-m", "not pyside_gui and not slow_pyside"] == non_gui_command[8:10]
     assert "--ignore=tests/test_pytest_duration_catalog.py" in non_gui_command
+    assert "--ignore=tests/test_gui_action_behavior_coverage.py" in non_gui_command
     assert len(gui_commands) == 1
     assert gui_commands[0][:8] == [
         "python.exe",
@@ -65,7 +73,7 @@ def test_full_suite_runs_gui_timing_preflight_before_combined_full_suite() -> No
         "--dist=load",
         "--maxschedchunk=1",
     ]
-    assert gui_commands[0][8:] == ["tests/gui_slow.py::test_slow", "tests/gui_fast.py::test_fast"]
+    assert gui_commands[0][8:] == ["-m", "pyside_gui"]
 
 
 def test_full_suite_returns_combined_full_suite_failure_after_preflight_passes() -> None:
@@ -86,12 +94,13 @@ def test_full_suite_returns_combined_full_suite_failure_after_preflight_passes()
     assert exit_code == 3
     assert len(launched) == 3
     assert launched[2][launched[2].index("-n") + 1] == "24"
-    assert launched[2][-3:-1] == ["-m", "not slow_pyside"]
+    marker_index = launched[2].index("not pyside_gui and not slow_pyside") - 1
+    assert launched[2][marker_index : marker_index + 2] == ["-m", "not pyside_gui and not slow_pyside"]
 
 
 def test_full_suite_stops_after_gui_timing_preflight_failures() -> None:
     launched: list[list[str]] = []
-    exit_codes = iter([0, 7])
+    exit_codes = iter([7])
 
     def fake_call(command: list[str]) -> int:
         launched.append(command)
@@ -105,8 +114,8 @@ def test_full_suite_stops_after_gui_timing_preflight_failures() -> None:
     )
 
     assert exit_code == 7
-    assert len(launched) == 2
-    assert "tests/test_pytest_duration_catalog.py" in launched[1]
+    assert len(launched) == 1
+    assert "tests/test_pytest_duration_catalog.py" in launched[0]
 
 
 def test_full_suite_starts_combined_full_phase_after_preflight_passes() -> None:
@@ -122,5 +131,36 @@ def test_full_suite_starts_combined_full_phase_after_preflight_passes() -> None:
     assert exit_code == 5
     assert len(launched) == 4
     assert launched[2][launched[2].index("-n") + 1] == "24"
-    assert launched[3][launched[3].index("-n") + 1] == "24"
-    assert any("test_" in argument for argument in launched[3][8:])
+    assert launched[3][launched[3].index("-n") + 1] == "2"
+    assert launched[3][-2:] == ["-m", "pyside_gui"]
+
+
+def test_full_suite_updates_source_version_only_after_every_test_phase_passes() -> None:
+    launched: list[list[str]] = []
+
+    def fake_call(command: list[str]) -> int:
+        launched.append(command)
+        return 0
+
+    assert full_pytest_runner.run_full_suite(python_executable="python.exe", call=fake_call) == 0
+    assert launched[-1] == ["python.exe", "tools/update_source_version.py"]
+    assert launched.count(["python.exe", "tools/update_source_version.py"]) == 2
+
+
+def test_failed_full_phase_restores_preflight_source_stamp(tmp_path) -> None:
+    stamp = tmp_path / "source_version.txt"
+    stamp.write_text("original\n", encoding="utf-8")
+    calls = 0
+
+    def fake_call(command: list[str]) -> int:
+        nonlocal calls
+        calls += 1
+        if "tools/update_source_version.py" in command:
+            stamp.write_text("provisional\n", encoding="utf-8")
+            return 0
+        return 0 if calls == 1 else 3
+
+    assert full_pytest_runner.run_full_suite(
+        python_executable="python.exe", call=fake_call, source_version_path=stamp,
+    ) == 3
+    assert stamp.read_text(encoding="utf-8") == "original\n"

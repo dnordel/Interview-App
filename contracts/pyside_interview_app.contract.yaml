@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 6.8.0
+  version: 7.0.0
   description: PySide6 operations shell and headless view-model builder for a mockup-driven
     New Interview setup/live flow, Candidates-owned pipeline/history, candidate reports,
     onboarding, staffing, notifications, and admin-only
@@ -12,7 +12,7 @@ module:
     configuration or shared email-account edits exist.
 functions:
 - name: build_interview_redesign_model
-  description: Build workflow-first home, setup, live interview, review, offer, classroom-detail staffing, onboarding, and admin view data from rubric, intro script, question flow, and InterviewHistoryStore rows, importing legacy JSON only through the store when applicable.
+  description: Build workflow-first home, setup, live interview, review, offer, Staffing v2, onboarding, and admin view data from rubric, intro script, question flow, and InterviewHistoryStore rows, importing legacy JSON only through the store when applicable.
   locked: false
   inputs:
     rubric_path:
@@ -778,14 +778,13 @@ classes:
     - ValueError
     side_effects: Reads PySide draft JSON.
 - name: PySideInterviewWindow
-  description: Main PySide6 operations shell. Interviews owns mockup-driven setup, focused
-    live interview, recording/transcription status, and closeout. Candidates owns roster,
-    application pipeline, history, transcript import, and draft recovery. Hiring v2 owns
-    those candidate and offer surfaces plus immutable offer approval preview,
-    immutable offer approval preview, delivery, negotiation, and acceptance. Staffing,
-    Staffing v2, Onboarding, and Admin remain separate navigation surfaces. Deferred
-    construction builds only the actual default Staffing v2 page and leaves every
-    other outer page as a placeholder until selected.
+  description: Main PySide6 operations window hosted entirely by the Staffing v2 shell.
+    Interviews owns mockup-driven setup, focused live interview, recording/transcription
+    status, and closeout. Candidates owns roster, application pipeline, history,
+    transcript import, and draft recovery. Hiring v2 owns those candidate and offer
+    surfaces plus immutable offer approval preview, delivery, negotiation, and acceptance.
+    Onboarding and admin Settings are lazy shared-shell pages. The legacy outer shell and
+    legacy Staffing page are removed.
   locked: false
   attributes:
     model:
@@ -802,10 +801,6 @@ classes:
       type: QTableWidget | None
     admin_studio:
       type: AdminStudio
-    _main_nav_page_names:
-      type: list[str]
-    _main_nav_pages_built:
-      type: set[int]
   methods:
   - name: _generate_hiring_offer_artifacts
     description: Generate one versioned offer DOCX and same-stem PDF together for persistence before approval review.
@@ -1585,43 +1580,8 @@ classes:
       type: None
     exceptions: []
     side_effects: Writes PySide draft JSON, starts recorder-stop worker when needed, clears session state, unlocks navigation, and changes visible tab.
-  - name: _select_main_nav_row
-    description: Ensure a deferred main navigation page is built, switch the main PySide stack to the selected navigation row, hide the legacy Interview Assistant sidebar when the temporary Staffing v2 page is active so Staffing v2 can render its own mockup-style shell, and resynchronize the shared StaffingDashboardV2Page scroll behavior after full/admin navigation activates Staffing v2.
-    locked: false
-    inputs:
-      index:
-        type: int
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: May build and replace one deferred stack page, changes the visible
-      stack index, toggles sidebar_panel visibility, and schedules the shared Staffing v2 page to resync scrollbars when Staffing v2 becomes active.
-  - name: _deferred_main_nav_page
-    description: Return a lightweight placeholder widget for a secondary main navigation page so launcher startup can show the first page before heavier pages are constructed.
-    locked: false
-    inputs:
-      name:
-        type: str
-        required: true
-    returns:
-      type: QWidget
-    exceptions: []
-    side_effects: Creates a lightweight QWidget placeholder.
-  - name: _ensure_main_nav_page
-    description: Build one deferred main navigation page on first use and replace its placeholder without rebuilding pages already loaded.
-    locked: false
-    inputs:
-      index:
-        type: int
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: May construct one page widget, replace the matching stacked-widget
-      placeholder, and mark that navigation index as loaded.
   - name: _staffing_v2_page
-    description: Build one shared role-aware StaffingDashboardHost for the admin or director Staffing v2 surface, register lazy Settings only for admins, and pass notification, report, school-scope, and referral callbacks through the common composition path; director staffing-only launches hide Settings and defer referral sync until after first paint.
+    description: Build one shared role-aware StaffingDashboardHost for the admin or director Staffing v2 surface, including role-scoped lazy Onboarding pages, register lazy Settings only for admins, and pass notification, report, school-scope, and referral callbacks through the common composition path; director staffing-only launches hide Settings and defer referral sync until after first paint.
     locked: false
     inputs: {}
     returns:
@@ -1642,7 +1602,17 @@ classes:
     inputs: {}
     returns: {type: bool}
     exceptions: []
-    side_effects: Delegates application-close guarding to loaded Settings; after confirmed close, stops manual-preflight and live ASR/audio timers, clears preload and transcript queues, and asynchronously stops any active temporary or interview recording session.
+    side_effects: Delegates application-close guarding to loaded Settings and Onboarding; after confirmed close, stops onboarding sync, manual-preflight and live ASR/audio timers, clears queues, and asynchronously stops active recording.
+  - name: _accept_hiring_offer_into_onboarding
+    inputs:
+      application: {type: Any, required: true}
+      candidate: {type: Any, required: true}
+      version: {type: Any, required: true}
+      director_id: {type: str, required: true}
+      director_name: {type: str, required: true}
+    returns: {type: Any}
+    exceptions: [ValueError, OSError, sqlite3.DatabaseError]
+    side_effects: Idempotently hands accepted offer into OnboardingService and invalidates inactive Onboarding pages for fresh display.
   - name: _invalidate_notification_service
     inputs: {}
     returns: {type: None}
@@ -1738,355 +1708,6 @@ classes:
       type: None
     exceptions: []
     side_effects: Appends one sanitized director candidate referral event to the central staffing referral queue SQLite database without opening or mutating staffing databases.
-  - name: _focus_staffing_filter_controls
-    description: Route the legacy Staffing Filters button to existing visible school/classroom filter controls instead of leaving the button inert.
-    locked: false
-    inputs: {}
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Moves focus to the staffing school selector when present and updates the staffing status label with filter guidance.
-  - name: _open_staffing_add_position_dialog
-    description: Route the legacy Staffing Add Position button through a position-name prompt and service-backed need-now position creation for the selected school/classroom.
-    locked: false
-    inputs: {}
-    returns:
-      type: None
-    exceptions: []
-    side_effects: May open a PySide input dialog, create a staffing position through StaffingService.add_position, refresh the staffing dashboard, open the created assignment drawer, and update the staffing status label.
-  - name: _refresh_staffing_dashboard
-    description: Initialize local staffing storage, import seed data when the staffing DB is empty or clearly missing seed assignments, compute metrics, and refresh the hidden compatibility metric label, school/classroom selectors, classroom list, metric cards, positions table, and hidden legacy school-tabbed workbook boards.
-    locked: false
-    inputs: {}
-    returns:
-      type: None
-    exceptions: []
-    side_effects: May create or read user_artifacts/staffing_dashboard.sqlite3, may import config/staffing_seed.json via the repo config directory independent of launch cwd, and updates visible school/classroom selectors, classroom list, classroom detail widgets, positions table, plus hidden legacy school-tabbed staffing board widgets.
-  - name: _select_staffing_school_index
-    description: Synchronize the hidden legacy Staffing school tab plus visible classroom selector/list/detail to the selected school index from the explicit school selector.
-    locked: false
-    inputs:
-      index:
-        type: int
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Changes the active PySide staffing school tab when index is valid and refreshes visible classroom choices/detail.
-  - name: _select_staffing_classroom_index
-    description: Synchronize the visible Staffing classroom selector and classroom list, then refresh the selected classroom detail surface.
-    locked: false
-    inputs:
-      index:
-        type: int
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Changes visible classroom selector/list selection and refreshes detail widgets.
-  - name: _refresh_staffing_classroom_choices
-    description: Populate visible classroom selector and classroom list for the selected staffing school; selector items stay as classroom names while list items include Need, Replace, Filled, and Don't Need status-count overview text, color yellow when Need Now count is above 0, red when Replace count is above 0 and Need Now is 0, and green otherwise, and keep enough width/word-wrap to avoid clipping the summary text.
-    locked: false
-    inputs: {}
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Updates PySide combo/list widgets, stores classroom names on list item user data, applies aggregate classroom need/replacement backgrounds, sets classroom list width/wrap behavior, and preserves current classroom when still present.
-  - name: _selected_staffing_school
-    description: Return currently selected staffing school from the visible selector, falling back to the first loaded school.
-    locked: false
-    inputs: {}
-    returns:
-      type: str
-    exceptions: []
-    side_effects: none
-  - name: _selected_staffing_classroom
-    description: Return currently selected staffing classroom from the visible selector, falling back to first row for the selected school.
-    locked: false
-    inputs: {}
-    returns:
-      type: str
-    exceptions: []
-    side_effects: none
-  - name: _selected_staffing_classroom_rows
-    description: Return staffing metric rows for the currently selected school/classroom detail view.
-    locked: false
-    inputs: {}
-    returns:
-      type: list[Any]
-    exceptions: []
-    side_effects: none
-  - name: _refresh_staffing_classroom_detail
-    description: Refresh selected classroom title, subtitle, priority badge, metric cards, and positions table.
-    locked: false
-    inputs: {}
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Updates visible PySide classroom-detail widgets.
-  - name: _refresh_staffing_metric_cards
-    description: Rebuild the mockup-style selected-classroom metric cards for editable classroom program, licensed capacity, total positions, filled, open, and average days to fill.
-    locked: false
-    inputs:
-      rows:
-        type: list[Any]
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Deletes/recreates PySide metric card widgets.
-  - name: _staffing_metric_card
-    description: Build one mockup-style staffing metric card widget.
-    locked: false
-    inputs:
-      label:
-        type: str
-        required: true
-      value:
-        type: str
-        required: true
-    returns:
-      type: QFrame
-    exceptions: []
-    side_effects: Creates PySide labels in a surface frame.
-  - name: _refresh_staffing_positions_table
-    description: Rebuild selected-classroom positions table with position, person, status, start date, days open, permit status, and action columns.
-    locked: false
-    inputs:
-      rows:
-        type: list[Any]
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Updates PySide table items and action button widgets.
-  - name: _staffing_color_key
-    description: Build the compact workbook color-code key for staffing status and permit meanings.
-    locked: false
-    inputs: {}
-    returns:
-      type: QWidget
-    exceptions: []
-    side_effects: Creates PySide label widgets with workbook color swatches.
-  - name: _staffing_workbook_board
-    description: Build the single school-scoped workbook-style Staffing board showing ratio bands, classrooms, actual names/open positions, status colors, capacity, editable permit-status dropdowns, details, drag/drop-enabled rows, click-to-edit details, and action menu controls without separate Role or Position columns.
-    locked: false
-    inputs:
-      rows:
-        type: list[Any]
-        required: true
-    returns:
-      type: QTableWidget
-    exceptions: []
-    side_effects: Creates PySide table widgets for workbook-style staffing rows and inline permit status dropdown widgets.
-  - name: _staffing_permit_combo
-    description: Build an inline permit-status dropdown for a staffed row.
-    locked: false
-    inputs:
-      assignment_id:
-        type: int
-        required: true
-      permit_status:
-        type: str
-        required: true
-      has_person:
-        type: bool
-        required: true
-    returns:
-      type: QComboBox
-    exceptions: []
-    side_effects: Creates a PySide combo box and connects changes to service-backed permit updates.
-  - name: _staffing_action_button
-    description: Build one PySide action button for a staffing assignment status, wired to the service-backed transition handler for that row.
-    locked: false
-    inputs:
-      assignment_id:
-        type: int
-        required: true
-      status:
-        type: str
-        required: true
-    returns:
-      type: QToolButton
-    exceptions: []
-    side_effects: Creates a PySide tool button/menu and connects its clicked signal.
-  - name: _open_staffing_assignment_details_from_table
-    description: Route a clicked staffing row to the right-side assignment/person detail drawer unless the click is on the permit dropdown or action column.
-    locked: false
-    inputs:
-      table:
-        type: QTableWidget
-        required: true
-      row:
-        type: int
-        required: true
-      column:
-        type: int
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: May open the staffing assignment detail drawer.
-  - name: _open_staffing_assignment_details
-    description: Open the right-side PySide details drawer for one staffing assignment/person.
-    locked: false
-    inputs:
-      assignment_id:
-        type: int
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Shows or refreshes the staffing assignment detail drawer.
-  - name: _staffing_detail_drawer
-    description: Build the initially hidden right-side staffing detail drawer frame.
-    locked: false
-    inputs: {}
-    returns:
-      type: QFrame
-    exceptions: []
-    side_effects: Creates PySide drawer frame and stores its layout reference.
-  - name: _show_staffing_detail_drawer
-    description: Populate and show the right-side staffing detail drawer for a person or open position, including editable person, position, status, classroom, program, start date, permit, shift, and notes fields plus relevant action buttons.
-    locked: false
-    inputs:
-      assignment:
-        type: Any
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Rebuilds PySide drawer labels, dropdowns, date/time pickers, notes editor, and buttons; saving routes all assignment/person edits through StaffingService and refreshes the dashboard.
-  - name: _confirm_staffing_move
-    description: Confirm and execute a drag/drop teacher move from one staffing assignment to another through StaffingService.
-    locked: false
-    inputs:
-      source_assignment_id:
-        type: int
-        required: true
-      target_assignment_id:
-        type: int
-        required: true
-    returns:
-      type: bool
-    exceptions: []
-    side_effects: Shows confirmation dialog; may update staffing SQLite rows and refresh dashboard.
-  - name: _open_staffing_position
-    description: Open a staffing position through StaffingService and refresh the Staffing dashboard.
-    locked: false
-    inputs:
-      assignment_id:
-        type: int
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Updates staffing SQLite rows and visible PySide staffing dashboard widgets.
-  - name: _mark_staffing_filled
-    description: Mark a coming staffing position filled through StaffingService and refresh the Staffing dashboard.
-    locked: false
-    inputs:
-      assignment_id:
-        type: int
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Updates staffing SQLite rows and visible PySide staffing dashboard widgets.
-  - name: _mark_staffing_coming
-    description: Show the guided Mark Coming dialog for incoming person, start date, role, permit status, and units; saving marks a staffing position coming through StaffingService and refreshes the Staffing dashboard.
-    locked: false
-    inputs:
-      assignment_id:
-        type: int
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Shows a nonblocking PySide guided action dialog; saving updates staffing SQLite rows, optionally updates permit status, and refreshes visible PySide staffing dashboard widgets.
-  - name: _mark_staffing_replacing
-    description: Show the guided Replace Employee dialog with date picker widgets for notice date and final working day that default to today and open the calendar when users click either the field or dropdown arrow, a fixed reason dropdown, and dialog-local save errors; saving marks a filled staffing position as replacing through StaffingService and refreshes the Staffing dashboard.
-    locked: false
-    inputs:
-      assignment_id:
-        type: int
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Shows a nonblocking PySide guided action dialog; failed saves keep the dialog open with an inline error, while valid saving updates staffing SQLite rows and refreshes visible PySide staffing dashboard widgets.
-  - name: _revert_staffing_coming
-    description: Revert a coming staffing assignment to need_now through StaffingService and refresh the Staffing dashboard.
-    locked: false
-    inputs:
-      assignment_id:
-        type: int
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Updates staffing SQLite rows and visible PySide staffing dashboard widgets.
-  - name: _clear_staffing_replacement
-    description: Clear a replacement assignment back to need_now through StaffingService and refresh the Staffing dashboard.
-    locked: false
-    inputs:
-      assignment_id:
-        type: int
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Updates staffing SQLite rows and visible PySide staffing dashboard widgets.
-  - name: _mark_staffing_not_needed
-    description: Confirm and mark a staffing assignment not needed through StaffingService.
-    locked: false
-    inputs:
-      assignment_id:
-        type: int
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Shows confirmation, updates staffing SQLite rows, and refreshes visible widgets.
-  - name: _update_staffing_permit
-    description: Show the guided Update Permit Status dialog for permit status, units, and effective date; saving updates assigned person's permit through StaffingService.
-    locked: false
-    inputs:
-      assignment_id:
-        type: int
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Shows a nonblocking PySide guided action dialog, updates people table, and refreshes visible widgets.
-  - name: _update_staffing_permit_from_table
-    description: Update assigned person's permit from the inline Staffing table dropdown through StaffingService.
-    locked: false
-    inputs:
-      assignment_id:
-        type: int
-        required: true
-      permit_status:
-        type: str
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Updates people table through StaffingService, queues when locked, and refreshes visible widgets.
-  - name: _run_staffing_action
-    description: Run a StaffingService transition with notification service attached, surface exact validation failures without leaking secrets, queue locked-DB edits for later replay, and refresh staffing widgets on success or queued save.
-    locked: false
-    inputs:
-      action:
-        type: Any
-        required: true
-      success_message:
-        type: str
-        required: true
-    returns:
-      type: None
-    exceptions: []
-    side_effects: Updates staffing SQLite rows through the supplied action or queues a pending operation when the DB is locked, updates visible PySide status/metric/table widgets immediately, and schedules a short retry refresh for queued operations.
   - name: _notification_service
     description: Return cached generic notification service backed by shared company
       Email Settings and current notification rules path.
@@ -2405,8 +2026,8 @@ data_structures:
   type: dataclass
   description: Headless UI model for navigation, setup readiness, interview flows,
     home dashboard/history data, rubric data, and the history store path used for
-    offer-status persistence; director_staffing_school optionally filters the Staffing
-    v2 page to one assigned school in director mode.
+    offer-status persistence; director_staffing_only explicitly selects director mode,
+    while director_staffing_school optionally filters Staffing v2 to one assigned school.
 - name: PySideHistoryRow
   type: dataclass
   description: Render-ready finalized interview history row with stable row key,

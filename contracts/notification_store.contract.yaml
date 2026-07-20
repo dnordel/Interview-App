@@ -2,7 +2,7 @@ module:
   name: notification_store
   language: python
   path: src/notification_store.py
-  version: 1.8.0
+  version: 1.10.0
   description: SQLite-backed system/editable notification rules with normalized structured condition rows, role recipients, persistent rollout metadata, pending schedules, and sanitized successful-send dedupe audit.
 functions:
 - name: utc_now_iso
@@ -31,7 +31,7 @@ classes:
     inputs: {}
     returns:
       type: None
-    side_effects: Creates inactive editable default notification rule examples when missing for staffing assignment status changes, permit updates, offer generated/approved/accepted, and custom reminders; seeds 50/90-day permit rules with editable permit-status and position-family conditions, and only upgrades missing default conditions without replacing later user edits or disablement.
+    side_effects: Creates inactive editable default notification rule examples when missing for staffing, offer, onboarding task, permit, and custom-reminder workflows; only upgrades missing defaults without replacing later user edits or disablement.
   - name: save_rule
     inputs:
       rule:

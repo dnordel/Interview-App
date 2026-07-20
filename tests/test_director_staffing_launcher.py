@@ -51,6 +51,12 @@ def test_director_launchers_match_staffing_seed_schools() -> None:
         assert (ROOT / generator.director_vbs_launcher_filename(school)).exists()
 
 
+def test_director_launcher_scope_is_exactly_three_canonical_locations() -> None:
+    generator = _load_launcher_generator()
+
+    assert generator.load_staffing_schools() == ["Hawthorne", "North Long Beach", "Palmdale"]
+
+
 def test_generate_director_staffing_launchers_from_seed(tmp_path: Path) -> None:
     generator = _load_launcher_generator()
     seed_path = tmp_path / "staffing_seed.json"
@@ -240,6 +246,31 @@ def test_staffing_v2_forces_light_fusion_theme_for_consistent_colors() -> None:
     assert app.palette().color(qt_gui.QPalette.ColorRole.Window).name().lower() == "#f8fafc"
     assert app.palette().color(qt_gui.QPalette.ColorRole.Base).name().lower() == "#ffffff"
     assert app.palette().color(qt_gui.QPalette.ColorRole.Text).name().lower() == "#0f172a"
+
+
+@pytest.mark.pyside_gui
+def test_director_window_close_guard_cancels_or_cleans_onboarding_close() -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_core = pytest.importorskip("PySide6.QtCore")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    module = _load_director_staffing_app()
+    window = qt_widgets.QMainWindow()
+    allowed = {"value": False}
+    cleaned: list[bool] = []
+    module.install_director_window_close_guard(
+        qt_core, window,
+        request_close=lambda: allowed["value"],
+        cleanup=lambda: cleaned.append(True),
+    )
+    window.show()
+
+    assert window.close() is False
+    assert cleaned == []
+    allowed["value"] = True
+    assert window.close() is True
+    app.processEvents()
+    assert cleaned == [True]
 
 
 def test_director_staffing_app_backfills_palmdale_history_referrals(tmp_path: Path) -> None:

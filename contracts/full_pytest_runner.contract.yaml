@@ -2,14 +2,14 @@ module:
   name: full_pytest_runner
   language: python
   path: tools/full_pytest_runner.py
-  version: 1.3.0
-  description: Source-version-and-metadata preflight full-suite runner that updates the deployment stamp, validates every duration/scenario metatest, then runs both non-GUI and duration-sorted fresh GUI batches with 24 workers.
+  version: 2.2.0
+  description: Metadata-first full-suite runner that isolates GUI tests, exposes a reversible current-source stamp during validation, and retains an authoritative deployment stamp only after every phase passes.
 functions:
 - name: build_gui_test_batches
   locked: false
   inputs:
     entries: {type: 'list[dict[str, Any]]', required: true}
-    gui_workers: {type: int, required: false, default: 24}
+    gui_workers: {type: int, required: false, default: 2}
   returns: {type: 'list[list[str]]'}
   exceptions: [ValueError]
   side_effects: none
@@ -19,7 +19,7 @@ functions:
     python_executable: {type: str, required: false}
     metadata_workers: {type: int, required: false}
     full_workers: {type: int, required: false}
-    gui_workers: {type: int, required: false, default: 24}
+    gui_workers: {type: int, required: false, default: 2}
     catalog_entries: {type: 'list[dict[str, Any]] | None', required: false}
   returns: {type: 'tuple[list[str], list[str], list[list[str]]]'}
   exceptions: []
@@ -30,17 +30,28 @@ functions:
     python_executable: {type: str, required: false}
     metadata_workers: {type: int, required: false}
     full_workers: {type: int, required: false}
-    gui_workers: {type: int, required: false, default: 24}
+    gui_workers: {type: int, required: false, default: 2}
     call: {type: 'Callable[[list[str]], int]', required: false}
+    source_version_path: {type: Path, required: false, default: SOURCE_VERSION_PATH}
   returns: {type: int}
   exceptions: []
-  side_effects: Runs tools/update_source_version.py first, then metadata and non-GUI phases followed by duration-sorted GUI batches with fresh xdist workers; stops before later work after failure.
+  side_effects: Runs metadata, writes a reversible test stamp, executes isolated non-GUI and GUI phases, restores the prior stamp on failure, then regenerates the retained deployment stamp only after success.
 classes: []
 data_structures:
 - name: GUI_TIMING_PREFLIGHT_PATH
   type: str
-  description: Whole metadata preflight file; using the file path automatically includes newly added metatests.
+  description: Duration and GUI scheduling metadata preflight file.
+- name: GUI_ACTION_PREFLIGHT_PATH
+  type: str
+  description: GUI button/action behavioral-coverage metadata preflight file.
+- name: METADATA_PREFLIGHT_PATHS
+  type: tuple[str, str]
+  description: Ordered metadata files run before any full-suite phase and excluded from the later non-GUI phase.
+- name: SOURCE_VERSION_PATH
+  type: Path
+  description: Repository deployment stamp temporarily snapshotted during full validation.
 dependencies:
 - module: update_source_version
+- module: gui_action_behavior_coverage
 - module: pytest
 - module: pytest-xdist

@@ -2,8 +2,8 @@ module:
   name: staffing_dashboard_v2
   language: python
   path: src/staffing_dashboard_v2.py
-  version: 0.35.0
-  description: Parallel PySide Staffing v2 dashboard page module for position, employee, classroom, validation, notification, and assignment-history workflows, including visible structured notification logic rows over safe DB/event values.
+  version: 0.37.0
+  description: Parallel PySide Staffing v2 dashboard page module with compact uniform navigation, a user-toggleable icon rail, independently collapsible scrollable sections, and position, employee, classroom, validation, notification, and assignment-history workflows, including visible structured notification logic rows over safe DB/event values.
 functions:
 - name: apply_staffing_v2_light_theme
   description: Force a supplied or current QApplication onto Staffing v2's stable light Fusion Qt style and palette so native dark/high-contrast system color schemes cannot invert dashboard panels, tables, or inputs.
@@ -612,7 +612,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Creates the visible Staffing v2 shell and main dashboard QWidget tree, defers hidden Classroom Management, People, Assignment History, Notifications, and Validation sub-dashboard widget trees until first navigation, starts a retained minute timer that refreshes once when the local date changes, reads initial dashboard staffing metrics through the supplied service factory, stores director referral removal actor/source metadata, and wires optional candidate-report and dismissal callbacks.
+    side_effects: Creates the visible Staffing v2 shell with a scrollable, section-collapsible full sidebar and user-toggleable icon rail plus the main dashboard QWidget tree, defers hidden Classroom Management, People, Assignment History, Notifications, and Validation sub-dashboard widget trees until first navigation, starts a retained minute timer that refreshes once when the local date changes, reads initial dashboard staffing metrics through the supplied service factory, stores director referral removal actor/source metadata, and wires optional candidate-report and dismissal callbacks.
   - name: refresh
     inputs:
       include_lazy:
@@ -630,6 +630,25 @@ classes:
     returns: {type: None}
     exceptions: [ValueError, TypeError]
     side_effects: Registers one lazy Settings page factory and optional leave guard, then enables the existing Settings navigation item without constructing the page.
+  - name: register_external_section
+    inputs:
+      section_id: {type: str, required: true}
+      label: {type: str, required: true}
+    returns: {type: None}
+    exceptions: [ValueError]
+    side_effects: Inserts one expanded, independently collapsible external navigation section before System.
+  - name: register_external_page
+    inputs:
+      section_id: {type: str, required: true}
+      page_id: {type: str, required: true}
+      label: {type: str, required: true}
+      widget: {type: QWidget | None, required: false, default: null}
+      icon_key: {type: str, required: false, default: ''}
+      provider: {type: "Callable[[], QWidget] | None", required: false, default: null}
+      before_leave: {type: "Callable[[], bool] | None", required: false, default: null}
+    returns: {type: QWidget}
+    exceptions: [ValueError, TypeError]
+    side_effects: Registers one eager widget or lazy one-time provider plus an optional shared navigation leave guard.
   - name: hide_settings_navigation
     inputs: {}
     returns: {type: None}
@@ -645,7 +664,7 @@ classes:
       target_page_id: {type: str, required: true}
     returns: {type: bool}
     exceptions: []
-    side_effects: Invokes the active Settings or Notifications leave guard when navigation targets a different page.
+    side_effects: Invokes the active external-page, Settings, or Notifications leave guard when navigation targets a different page.
   - name: _activate_page
     inputs:
       page_id: {type: str, required: true}
@@ -662,6 +681,41 @@ classes:
     returns: {type: QWidget}
     exceptions: [AttributeError]
     side_effects: Constructs one named lazy view when needed, refreshes it, and returns its stored widget after navigation has been approved.
+  - name: _external_page_widget
+    inputs:
+      page_id: {type: str, required: true}
+    returns: {type: QWidget}
+    exceptions: [ValueError]
+    side_effects: Resolves and caches one external lazy provider result and adds it to the shared page stack exactly once.
+  - name: set_section_expanded
+    inputs:
+      section_id: {type: str, required: true}
+      expanded: {type: bool, required: true}
+    returns: {type: None}
+    exceptions: [ValueError]
+    side_effects: Updates one section header arrow, accessible tooltip, checked state, and child-navigation visibility while keeping all icon buttons available in rail mode.
+  - name: set_navigation_mode
+    inputs:
+      mode: {type: str, required: true}
+    returns: {type: None}
+    exceptions: [ValueError]
+    side_effects: Switches between the 252-pixel full sidebar and 64-pixel icon rail, preserving full labels in tooltips and accessible names, hiding full-only section/footer content, and updating the toggle affordance.
+  - name: toggle_navigation_mode
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Toggles the visible navigation between full sidebar and compact icon rail modes.
+  - name: set_navigation_locked
+    inputs:
+      locked: {type: bool, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Disables unrelated navigation during focused work and restores each prior enabled state when unlocked.
+  - name: _base_nav_buttons
+    inputs: {}
+    returns: {type: 'list[QPushButton]'}
+    exceptions: []
+    side_effects: none
   - name: refresh_all
     inputs: {}
     returns:
@@ -789,7 +843,15 @@ classes:
     returns:
       type: QPushButton
     exceptions: []
-    side_effects: Creates a mockup-style Staffing v2 sidebar navigation button with stable objectName, minimum height, active-nav property, and optional Qt standard icon.
+    side_effects: Creates a uniform fixed-height Staffing v2 sidebar navigation button with stable objectName, active-nav property, tooltip, accessible name, and explicit or fallback Qt standard icon.
+  - name: _sidebar_section
+    inputs:
+      section_id: {type: str, required: true}
+      label: {type: str, required: true}
+      insert_at: {type: 'int | None', required: false, default: null}
+    returns: {type: 'tuple[QWidget, QVBoxLayout]'}
+    exceptions: []
+    side_effects: Creates and registers one expanded keyboard-focusable section header and collapsible child-navigation container at the requested sidebar position.
   - name: _set_button_icon
     inputs:
       button:
@@ -819,7 +881,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Updates staffingV2ActiveNav properties and repolishes Staffing v2 sidebar buttons so the selected sub-dashboard uses the mockup active nav style.
+    side_effects: Reopens the selected page's section, updates staffingV2ActiveNav properties, and repolishes Staffing v2 sidebar buttons so the selected sub-dashboard uses the mockup active nav style.
   - name: _show_dashboard_view
     inputs: {}
     returns:

@@ -2,7 +2,7 @@ module:
   name: notification_service
   language: python
   path: src/notification_service.py
-  version: 2.4.0
+  version: 2.6.0
   description: Notification delivery with safe persisted AND conditions, editable school role directory and director names, shared incoming/SMTP account validation, admin-managed shared-config or DPAPI password storage, required attachments, and clock-aware staffing date/permit scheduling.
 functions:
 - name: candidate_notification_test_recipient
@@ -177,6 +177,32 @@ functions:
   returns: {type: None}
   exceptions: [ValueError]
   side_effects: Validates recipient emails and writes the notification directory JSON.
+- name: migrate_legacy_onboarding_email_account
+  locked: false
+  inputs:
+    legacy_path: {type: Path, required: true}
+    shared_path: {type: Path, required: false, default: EMAIL_ACCOUNT_SETTINGS_PATH}
+  returns: {type: bool}
+  exceptions: [ValueError, OSError]
+  side_effects: Copies a valid legacy onboarding SMTP account only when the shared account has no meaningful configured values.
+- name: resolve_onboarding_role_recipient
+  locked: false
+  inputs:
+    directory: {type: NotificationDirectory, required: true}
+    school: {type: str, required: true}
+    role: {type: str, required: true}
+    director_resolver: {type: 'Callable[[str], Any] | None', required: false, default: null}
+  returns: {type: str}
+  exceptions: [ValueError]
+  side_effects: Validates current Staffing Director identity when requested and reads the shared role directory.
+- name: send_onboarding_reminder_digest
+  locked: false
+  inputs:
+    settings: {type: EmailSettings, required: true}
+    message: {type: Any, required: true}
+  returns: {type: None}
+  exceptions: [OSError, smtplib.SMTPException]
+  side_effects: Sends one PII-safe school-role task-count digest through the shared SMTP account.
 - name: notification_service_from_email_account_settings
   locked: false
   inputs:

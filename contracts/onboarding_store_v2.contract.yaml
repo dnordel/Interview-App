@@ -1,0 +1,548 @@
+module:
+  name: onboarding_store
+  language: python
+  path: src/onboarding_store.py
+  version: 2.8.0
+  description: SQLite persistence for versioned onboarding employees, audit events, and tombstones in one admin or school replica.
+functions: []
+classes:
+- name: OnboardingEmployee
+  description: Immutable employee projection stored in an onboarding replica.
+  locked: false
+  methods: []
+- name: OnboardingStore
+  description: Initializes and persists one SQLite onboarding replica.
+  locked: false
+  methods:
+  - name: __init__
+    inputs:
+      path: {type: Path, required: true}
+      vault: {type: 'OnboardingVault | None', required: false, default: null}
+    returns: {type: None}
+    exceptions: [OSError, sqlite3.DatabaseError]
+    side_effects: Creates the parent directory, database schema, indexes, audit table, and tombstone table.
+  - name: insert_employee
+    inputs:
+      employee: {type: OnboardingEmployee, required: true}
+      actor: {type: str, required: true}
+    returns: {type: None}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Inserts an employee and matching creation audit event in one transaction.
+  - name: list_employees
+    inputs:
+      school: {type: str, required: false, default: ''}
+    returns: {type: 'list[OnboardingEmployee]'}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Reads non-deleted employees, optionally constrained to one school.
+  - name: employee_for_application
+    inputs:
+      application_id: {type: str, required: true}
+    returns: {type: 'OnboardingEmployee | None'}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Reads one active employee by unique source application ID.
+  - name: possible_duplicate_employees
+    inputs:
+      legal_name: {type: str, required: true}
+      school: {type: str, required: true}
+    returns: {type: 'list[OnboardingEmployee]'}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Reads possible same-name same-school manual duplicates without linking them.
+  - name: replace_employee
+    inputs:
+      employee: {type: OnboardingEmployee, required: true}
+      expected_version: {type: 'int | None', required: false, default: null}
+      actor: {type: str, required: false, default: ''}
+      changed_fields: {type: 'tuple[str, ...]', required: false, default: '()'}
+    returns: {type: None}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Replaces mutable employee projection fields by UUID.
+  - name: get_employee
+    inputs:
+      employee_id: {type: str, required: true}
+    returns: {type: OnboardingEmployee}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Reads one non-deleted employee by UUID.
+  - name: insert_task
+    inputs:
+      task: {type: OnboardingTask, required: true}
+      actor: {type: str, required: true}
+      created_at: {type: str, required: true}
+    returns: {type: None}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Inserts one task, normalized dependency rows, and creation audit in one transaction.
+  - name: get_task
+    inputs:
+      task_id: {type: str, required: true}
+    returns: {type: OnboardingTask}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Reads one task and its dependencies by UUID.
+  - name: list_tasks
+    inputs:
+      school: {type: str, required: false, default: ''}
+    returns: {type: 'list[OnboardingTask]'}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Reads ordered tasks, optionally constrained to one school.
+  - name: set_task_status
+    inputs:
+      task_id: {type: str, required: true}
+      status: {type: str, required: true}
+      actor: {type: str, required: true}
+      updated_at: {type: str, required: true}
+    returns: {type: OnboardingTask}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Increments task version, changes status, and appends one audit event atomically.
+  - name: replace_task
+    inputs:
+      task: {type: OnboardingTask, required: true}
+      expected_version: {type: int, required: true}
+      actor: {type: str, required: true}
+      updated_at: {type: str, required: true}
+      changed_fields: {type: 'tuple[str, ...]', required: true}
+    returns: {type: None}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Optimistically replaces a task projection and dependency rows.
+  - name: insert_task_comment
+    inputs:
+      comment: {type: TaskComment, required: true}
+    returns: {type: None}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Inserts an encrypted comment and its initial revision.
+  - name: get_task_comment
+    inputs:
+      comment_id: {type: str, required: true}
+    returns: {type: TaskComment}
+    exceptions: [ValueError, VaultIntegrityError, sqlite3.DatabaseError]
+    side_effects: Reads one current decrypted comment revision.
+  - name: list_task_comments
+    inputs:
+      task_id: {type: str, required: true}
+    returns: {type: 'list[TaskComment]'}
+    exceptions: [ValueError, VaultIntegrityError, sqlite3.DatabaseError]
+    side_effects: Reads current decrypted comments for one task in chronological order.
+  - name: revise_task_comment
+    inputs:
+      comment_id: {type: str, required: true}
+      body: {type: str, required: true}
+      editor: {type: str, required: true}
+      reason: {type: str, required: true}
+      redacted: {type: bool, required: true}
+      updated_at: {type: str, required: true}
+    returns: {type: TaskComment}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Appends an encrypted immutable comment revision.
+  - name: list_task_comment_revisions
+    inputs:
+      comment_id: {type: str, required: true}
+    returns: {type: 'list[TaskCommentRevision]'}
+    exceptions: [ValueError, VaultIntegrityError, sqlite3.DatabaseError]
+    side_effects: Reads ordered decrypted revisions.
+  - name: insert_task_attachment
+    inputs:
+      attachment: {type: TaskAttachment, required: true}
+      content: {type: bytes, required: true}
+    returns: {type: None}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Encrypts and inserts attachment name and content.
+  - name: get_task_attachment
+    inputs:
+      attachment_id: {type: str, required: true}
+    returns: {type: 'tuple[TaskAttachment, bytes]'}
+    exceptions: [ValueError, VaultIntegrityError, sqlite3.DatabaseError]
+    side_effects: Reads and decrypts one attachment.
+  - name: list_task_attachments
+    inputs:
+      task_id: {type: str, required: true}
+    returns: {type: 'list[TaskAttachment]'}
+    exceptions: [ValueError, VaultIntegrityError, sqlite3.DatabaseError]
+    side_effects: Reads ordered decrypted attachment metadata for one task.
+  - name: end_employment
+    inputs:
+      employee_id: {type: str, required: true}
+      last_working_day: {type: str, required: true}
+      departure_category: {type: str, required: true}
+      departure_notes: {type: str, required: true}
+      departure_director_id: {type: str, required: true}
+      departure_director_name: {type: str, required: true}
+      actor: {type: str, required: true}
+      archived_at: {type: str, required: true}
+    returns: {type: OnboardingEmployee}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Archives the employee, snapshots departure attribution, cancels remaining tasks, and writes audit in one transaction.
+  - name: transfer_employee
+    inputs:
+      employee_id: {type: str, required: true}
+      new_school: {type: str, required: true}
+      actor: {type: str, required: true}
+      updated_at: {type: str, required: true}
+    returns: {type: OnboardingEmployee}
+    exceptions: [ValueError, VaultIntegrityError, sqlite3.DatabaseError]
+    side_effects: Re-encrypts contact values under the new school key, moves employee/tasks, increments versions, and audits the transfer atomically.
+  - name: mark_did_not_start
+    inputs:
+      employee_id: {type: str, required: true}
+      reason: {type: str, required: true}
+      notes: {type: str, required: true}
+      actor: {type: str, required: true}
+      archived_at: {type: str, required: true}
+    returns: {type: OnboardingEmployee}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Archives a pre-start employee without departure-Director attribution, cancels remaining tasks, and audits the reason.
+  - name: archive_correction
+    inputs:
+      employee_id: {type: str, required: true}
+      reason: {type: str, required: true}
+      actor: {type: str, required: true}
+      archived_at: {type: str, required: true}
+    returns: {type: OnboardingEmployee}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Archives one correction record and cancels remaining tasks.
+  - name: permanently_remove_employee
+    inputs:
+      employee_id: {type: str, required: true}
+      actor: {type: str, required: true}
+      deleted_at: {type: str, required: true}
+      tombstone_payload: {type: 'dict[str, Any]', required: true}
+      action: {type: str, required: true}
+    returns: {type: None}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Deletes employee PII and related rows while retaining a non-PII tombstone and audit.
+  - name: append_audit_event
+    inputs:
+      entity_id: {type: str, required: true}
+      action: {type: str, required: true}
+      actor: {type: str, required: true}
+      school: {type: str, required: true}
+      version: {type: int, required: true}
+      details: {type: 'dict[str, Any] | None', required: false, default: null}
+      created_at: {type: str, required: true}
+    returns: {type: None}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Appends one PII-safe audit event.
+  - name: list_audit_events
+    inputs:
+      entity_id: {type: str, required: false, default: ''}
+    returns: {type: 'list[dict[str, Any]]'}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Reads ordered audit events.
+  - name: get_tombstone
+    inputs:
+      entity_id: {type: str, required: true}
+    returns: {type: 'dict[str, Any]'}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Reads one non-PII deletion tombstone.
+  - name: data_revision
+    inputs: {}
+    returns: {type: int}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Reads the mutation revision used to invalidate previews.
+  - name: has_sent_reminder_batch
+    inputs:
+      school: {type: str, required: true}
+      local_day: {type: str, required: true}
+    returns: {type: bool}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Reads PII-safe reminder history.
+  - name: record_reminder_message_run
+    inputs:
+      run_id: {type: str, required: true}
+      school: {type: str, required: true}
+      local_day: {type: str, required: true}
+      role: {type: str, required: true}
+      state: {type: str, required: true}
+      task_count: {type: int, required: true}
+      error_category: {type: str, required: true}
+      created_at: {type: str, required: true}
+    returns: {type: None}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Appends one PII-safe reminder result row.
+  - name: list_reminder_runs
+    inputs:
+      school: {type: str, required: false, default: ''}
+      limit: {type: int, required: false, default: 100}
+    returns: {type: 'list[dict[str, Any]]'}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Reads newest PII-safe reminder outcomes with optional school filtering.
+  - name: has_scheduler_run
+    inputs:
+      local_day: {type: str, required: true}
+    returns: {type: bool}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Checks the once-per-local-day automatic scheduler receipt.
+  - name: record_scheduler_run
+    inputs:
+      local_day: {type: str, required: true}
+      state: {type: str, required: true}
+      sent_count: {type: int, required: true}
+      failed_count: {type: int, required: true}
+      skipped_count: {type: int, required: true}
+      created_at: {type: str, required: true}
+    returns: {type: None}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Persists one PII-safe automatic scheduler health row.
+  - name: scheduler_health
+    inputs: {}
+    returns: {type: 'dict[str, Any]'}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Reads the latest automatic scheduler health row.
+  - name: insert_filled_artifact
+    inputs: {artifact: {type: FilledArtifact, required: true}}
+    returns: {type: None}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Persists metadata for one encrypted filled artifact.
+  - name: get_filled_artifact
+    inputs: {artifact_id: {type: str, required: true}}
+    returns: {type: FilledArtifact}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Reads one filled artifact metadata row.
+  - name: list_filled_artifacts
+    inputs: {submission_id: {type: str, required: true}}
+    returns: {type: 'list[FilledArtifact]'}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Reads filled artifacts for one immutable submission revision.
+  - name: list_employee_filled_artifacts
+    inputs: {employee_id: {type: str, required: true}}
+    returns: {type: 'list[FilledArtifact]'}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Reads filled artifact metadata for one employee in newest-first order.
+  - name: update_intake_submission_status
+    inputs:
+      submission_id: {type: str, required: true}
+      status: {type: str, required: true}
+    returns: {type: IntakeSubmission}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Updates generation-review status without changing encrypted values.
+  - name: list_owner_roles
+    inputs:
+      school: {type: str, required: true}
+    returns: {type: 'list[OwnerRoleConfig]'}
+    exceptions: [VaultIntegrityError, sqlite3.DatabaseError]
+    side_effects: Resolves active school overrides over seeded global owner roles.
+  - name: upsert_owner_role
+    inputs:
+      config: {type: OwnerRoleConfig, required: true}
+    returns: {type: OwnerRoleConfig}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Encrypts owner email and inserts or updates one role configuration.
+  - name: get_owner_role
+    inputs:
+      school: {type: str, required: true}
+      role: {type: str, required: true}
+    returns: {type: 'OwnerRoleConfig | None'}
+    exceptions: [VaultIntegrityError, sqlite3.DatabaseError]
+    side_effects: Reads one exact active or inactive role configuration for sync conflict handling.
+  - name: insert_intake_field
+    inputs:
+      field: {type: IntakeField, required: true}
+    returns: {type: None}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Inserts one immutable-version intake field definition.
+  - name: get_intake_field
+    inputs:
+      field_id: {type: str, required: true}
+    returns: {type: IntakeField}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Reads one intake field.
+  - name: list_intake_fields
+    inputs: {}
+    returns: {type: 'list[IntakeField]'}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Reads field definitions ordered for search/display.
+  - name: deprecate_intake_field
+    inputs:
+      field_id: {type: str, required: true}
+    returns: {type: IntakeField}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Marks one field deprecated while preserving references.
+  - name: insert_pdf_mapping
+    inputs:
+      mapping: {type: PdfFieldMapping, required: true}
+    returns: {type: None}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Inserts one coordinate mapping referencing an existing field.
+  - name: list_pdf_mappings
+    inputs:
+      document_key: {type: str, required: false, default: ''}
+    returns: {type: 'list[PdfFieldMapping]'}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Reads ordered PDF mappings, optionally for one document key.
+  - name: insert_intake_submission
+    inputs:
+      submission: {type: IntakeSubmission, required: true}
+    returns: {type: None}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: AES-GCM encrypts typed intake values and inserts one immutable submission.
+  - name: get_intake_submission
+    inputs:
+      submission_id: {type: str, required: true}
+    returns: {type: 'IntakeSubmission | None'}
+    exceptions: [VaultIntegrityError, sqlite3.DatabaseError]
+    side_effects: Reads and authenticates one encrypted intake submission.
+  - name: next_package_version
+    inputs:
+      package_key: {type: str, required: true}
+      school: {type: str, required: true}
+    returns: {type: int}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Reads the next immutable package version number in one school.
+  - name: insert_document_package
+    inputs:
+      package: {type: DocumentPackageVersion, required: true}
+      document_contents: {type: 'list[bytes]', required: true}
+    returns: {type: None}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Encrypts and inserts one package draft plus ordered managed PDF contents.
+  - name: get_document_package
+    inputs:
+      package_version_id: {type: str, required: true}
+    returns: {type: DocumentPackageVersion}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Reads one package version and ordered document metadata.
+  - name: get_document_package_contents
+    inputs:
+      package_version_id: {type: str, required: true}
+    returns: {type: 'tuple[bytes, ...]'}
+    exceptions: [ValueError, VaultIntegrityError, sqlite3.DatabaseError]
+    side_effects: Reads and authenticates ordered encrypted package document contents.
+  - name: publish_document_package
+    inputs:
+      package_version_id: {type: str, required: true}
+      published_at: {type: str, required: true}
+    returns: {type: DocumentPackageVersion}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Immutably transitions one draft package to published.
+  - name: latest_published_document_package
+    inputs:
+      package_key: {type: str, required: true}
+      school: {type: str, required: true}
+    returns: {type: 'DocumentPackageVersion | None'}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Reads the latest published version for one school package key.
+  - name: list_document_package_versions
+    inputs: {}
+    returns: {type: 'list[DocumentPackageVersion]'}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Reads every immutable document-package version for the admin library.
+  - name: _ensure_employee_columns
+    inputs:
+      connection: {type: sqlite3.Connection, required: true}
+    returns: {type: None}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Additively migrates early onboarding employee tables before indexes are created.
+  - name: insert_task_template
+    inputs:
+      template: {type: TaskTemplateVersion, required: true}
+    returns: {type: None}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Inserts one immutable draft task-template version.
+  - name: insert_task_template_attachment
+    inputs:
+      attachment: {type: TaskTemplateAttachment, required: true}
+      content: {type: bytes, required: true}
+    returns: {type: None}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Encrypts and inserts one immutable draft-template attachment snapshot.
+  - name: get_task_template_attachment
+    inputs: {attachment_id: {type: str, required: true}}
+    returns: {type: 'tuple[TaskTemplateAttachment, bytes]'}
+    exceptions: [ValueError, VaultIntegrityError, sqlite3.DatabaseError]
+    side_effects: Reads and decrypts one task-template attachment.
+  - name: list_task_template_attachments
+    inputs: {template_id: {type: str, required: true}}
+    returns: {type: 'list[TaskTemplateAttachment]'}
+    exceptions: [ValueError, VaultIntegrityError, sqlite3.DatabaseError]
+    side_effects: Reads ordered task-template attachment metadata.
+  - name: next_task_template_version
+    inputs:
+      template_key: {type: str, required: true}
+      school: {type: str, required: true}
+    returns: {type: int}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Reads the next template version number.
+  - name: publish_task_template
+    inputs:
+      template_id: {type: str, required: true}
+      published_at: {type: str, required: true}
+    returns: {type: TaskTemplateVersion}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Immutably publishes one draft task template.
+  - name: deprecate_task_template
+    inputs:
+      template_id: {type: str, required: true}
+    returns: {type: TaskTemplateVersion}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Marks one published template version deprecated without changing task snapshots.
+  - name: get_task_template
+    inputs:
+      template_id: {type: str, required: true}
+    returns: {type: TaskTemplateVersion}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Reads one task-template version.
+  - name: applicable_task_templates
+    inputs:
+      school: {type: str, required: true}
+    returns: {type: 'list[TaskTemplateVersion]'}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Resolves latest published school override or global version per template key.
+  - name: list_task_template_versions
+    inputs: {}
+    returns: {type: 'list[TaskTemplateVersion]'}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Reads every immutable task-template version for the admin library.
+  - name: _ensure_task_columns
+    inputs:
+      connection: {type: sqlite3.Connection, required: true}
+    returns: {type: None}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Additively migrates task snapshot columns.
+  - name: _ensure_task_template_columns
+    inputs:
+      connection: {type: sqlite3.Connection, required: true}
+    returns: {type: None}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Additively migrates task-template package assignment columns.
+  - name: _ensure_intake_submission_columns
+    inputs:
+      connection: {type: sqlite3.Connection, required: true}
+    returns: {type: None}
+    exceptions: [sqlite3.DatabaseError]
+    side_effects: Additively migrates immutable intake correction lineage columns.
+  - name: _add_column_if_missing
+    inputs:
+      connection: {type: sqlite3.Connection, required: true}
+      table: {type: str, required: true}
+      column: {type: str, required: true}
+      definition: {type: str, required: true}
+    returns: {type: None}
+    exceptions: [sqlite3.OperationalError]
+    side_effects: Race-safely adds one internally defined SQLite column during concurrent startup.
+data_structures:
+- name: OnboardingEmployee
+  type: frozen dataclass
+- name: OnboardingTask
+  type: frozen dataclass
+- name: TaskComment
+  type: frozen dataclass
+- name: TaskCommentRevision
+  type: frozen dataclass
+- name: TaskAttachment
+  type: frozen dataclass
+- name: TaskTemplateAttachment
+  type: frozen dataclass
+- name: TaskTemplateVersion
+  type: frozen dataclass
+- name: OwnerRoleConfig
+  type: frozen dataclass
+- name: IntakeField
+  type: frozen dataclass
+- name: PdfFieldMapping
+  type: frozen dataclass
+- name: IntakeSubmission
+  type: frozen dataclass
+- name: PackageDocument
+  type: frozen dataclass
+- name: DocumentPackageVersion
+  type: frozen dataclass
+- name: FilledArtifact
+  type: frozen dataclass
+dependencies:
+- module: onboarding_vault

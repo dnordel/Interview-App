@@ -2,7 +2,7 @@ module:
   name: director_staffing_app
   language: python
   path: src/director_staffing_app.py
-  version: 1.6.1
+  version: 1.7.0
   description: Minimal PySide entrypoint for the director Staffing v2 dashboard that avoids full interview, audio, and transcription setup while supporting basic DOCX interview-note generation, preserving school-specific DB lock isolation, bidirectionally replaying immutable per-user staged staffing changes with conflict prompts, polling the source-version stamp with restart banner, applying the forced light Staffing v2 theme and shared Staffing app/taskbar icon, and delaying pending director-referral queue/history backfill until after first paint.
 functions:
 - name: parse_args
@@ -292,6 +292,17 @@ functions:
     type: void
   exceptions: []
   side_effects: Reads QScreen available geometry when available, updates QMainWindow geometry, and displays the QMainWindow maximized.
+- name: install_director_window_close_guard
+  description: Install retained Qt close-event filtering for Onboarding Save/Discard/Stay and final sensitive cleanup.
+  locked: false
+  inputs:
+    QtCore: {type: Any, required: true}
+    window: {type: Any, required: true}
+    request_close: {type: 'Callable[[], bool]', required: true}
+    cleanup: {type: 'Callable[[], None]', required: true}
+  returns: {type: Any}
+  exceptions: []
+  side_effects: Blocks rejected Director window closes and runs cleanup exactly once after accepted close or guarded restart.
 - name: launch_director_staffing_app
   description: Launch the standalone director Staffing v2 PySide window with the shared Staffing app/taskbar icon, maximized to the current taskbar-safe screen work area with an optional school filter.
   locked: false

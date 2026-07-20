@@ -1245,6 +1245,9 @@ class HiringWorkflowService:
         *,
         send_offer: Callable[[CandidateProfile, OfferVersion, Path, str], list[Any]] | None = None,
         notify_offer_accepted: Callable[[CandidateProfile, OfferVersion, str], list[Any]] | None = None,
+        onboarding_accept_offer: Callable[
+            [HiringApplication, CandidateProfile, OfferVersion, str, str], Any
+        ] | None = None,
         prepare_offer_artifacts: Callable[
             [HiringApplication, CandidateProfile, OfferVersion], tuple[Path, Path]
         ] | None = None,
@@ -1252,6 +1255,7 @@ class HiringWorkflowService:
         self.store = store
         self._send_offer = send_offer
         self._notify_offer_accepted = notify_offer_accepted
+        self._onboarding_accept_offer = onboarding_accept_offer
         self._prepare_offer_artifacts = prepare_offer_artifacts
 
     def record_initial_interview(self, **values: Any) -> HiringApplication:
@@ -1364,6 +1368,7 @@ class HiringWorkflowService:
         *,
         decision: str,
         actor: str,
+        actor_id: str = "",
     ) -> HiringApplication:
         application = self.store.get_application(application_id)
         if application.stage is not HiringStage.DIRECTOR_REVIEW:
@@ -1377,7 +1382,7 @@ class HiringWorkflowService:
             application_id,
             "director_interview_completed",
             actor=actor,
-            payload={"decision": normalized, "stage": stage.value},
+            payload={"decision": normalized, "stage": stage.value, "director_id": str(actor_id or actor).strip()},
         )
         return updated
 
@@ -1387,6 +1392,7 @@ class HiringWorkflowService:
         *,
         decision: str,
         actor: str = "Staffing v2",
+        actor_id: str = "",
     ) -> HiringApplication:
         application = self.store.application_for_history(history_id)
         if application is None:
@@ -1397,6 +1403,7 @@ class HiringWorkflowService:
             application.application_id,
             decision=decision,
             actor=actor,
+            actor_id=actor_id,
         )
 
     def create_offer_draft(
@@ -1598,6 +1605,44 @@ class HiringWorkflowService:
                 "onboarding_ready": True,
             },
         )
+        if self._onboarding_accept_offer is not None:
+            candidate = self.store.get_candidate(application.candidate_id)
+            decisions = [
+                event
+                for event in self.store.list_events(application_id)
+                if event.event_type == "director_interview_completed"
+            ]
+            decision = decisions[-1] if decisions else None
+            director_name = str(decision.actor if decision is not None else actor).strip()
+            director_id = str(
+                decision.payload.get("director_id") if decision is not None else actor
+            ).strip() or director_name
+            try:
+                self._onboarding_accept_offer(
+                    accepted,
+                    candidate,
+                    latest,
+                    director_id,
+                    director_name,
+                )
+                self.store.append_event(
+                    application_id,
+                    "onboarding_handoff_completed",
+                    actor=actor,
+                    payload={"version_id": version_id},
+                )
+            except Exception as exc:
+                self.store.update_application_stage(
+                    application_id,
+                    HiringStage.ACCEPTED,
+                    attention_code="onboarding_handoff_pending",
+                )
+                self.store.append_event(
+                    application_id,
+                    "onboarding_handoff_failed",
+                    actor=actor,
+                    payload={"version_id": version_id, "error_category": type(exc).__name__},
+                )
         if self._notify_offer_accepted is not None:
             self.retry_accepted_notification(application_id, version_id)
         return self.store.get_application(accepted.application_id)
@@ -1619,12 +1664,67 @@ class HiringWorkflowService:
             str(getattr(result, "status", "")) in {"sent", "duplicate"}
             for result in results
         )
+        existing_attention = self.store.get_application(application_id).attention_code
+        attention_code = (
+            "onboarding_handoff_pending"
+            if existing_attention == "onboarding_handoff_pending"
+            else ("" if successful else "accepted_notification_pending")
+        )
         self.store.update_application_stage(
             application_id,
             HiringStage.ACCEPTED,
-            attention_code="" if successful else "accepted_notification_pending",
+            attention_code=attention_code,
         )
         return successful
+
+    def retry_onboarding_handoff(self, application_id: str, *, actor: str) -> bool:
+        application = self.store.get_application(application_id)
+        if (
+            application.stage is not HiringStage.ACCEPTED
+            or application.attention_code != "onboarding_handoff_pending"
+        ):
+            raise ValueError("Only a pending accepted-offer onboarding handoff may be retried.")
+        if self._onboarding_accept_offer is None:
+            raise ValueError("Onboarding handoff is unavailable.")
+        accepted_versions = [
+            version for version in self.store.list_offer_versions(application_id)
+            if version.status == "accepted"
+        ]
+        if not accepted_versions:
+            raise ValueError("Accepted offer version is unavailable for onboarding handoff.")
+        latest = max(accepted_versions, key=lambda version: version.version_number)
+        candidate = self.store.get_candidate(application.candidate_id)
+        decisions = [
+            event for event in self.store.list_events(application_id)
+            if event.event_type == "director_interview_completed"
+        ]
+        decision = decisions[-1] if decisions else None
+        director_name = str(decision.actor if decision is not None else actor).strip()
+        director_id = str(
+            decision.payload.get("director_id") if decision is not None else actor
+        ).strip() or director_name
+        try:
+            self._onboarding_accept_offer(
+                application, candidate, latest, director_id, director_name
+            )
+        except Exception as exc:
+            self.store.append_event(
+                application_id,
+                "onboarding_handoff_failed",
+                actor=actor,
+                payload={"version_id": latest.version_id, "error_category": type(exc).__name__, "retry": True},
+            )
+            return False
+        self.store.append_event(
+            application_id,
+            "onboarding_handoff_completed",
+            actor=actor,
+            payload={"version_id": latest.version_id, "retry": True},
+        )
+        self.store.update_application_stage(
+            application_id, HiringStage.ACCEPTED, attention_code=""
+        )
+        return True
 
     def retry_pending_accepted_notifications(self) -> int:
         completed = 0

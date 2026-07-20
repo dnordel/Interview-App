@@ -1,0 +1,33 @@
+module:
+  name: onboarding_staffing_bridge
+  language: python
+  path: src/onboarding_staffing_bridge.py
+  version: 1.0.0
+  description: Dynamic, fail-closed Staffing Director identity resolution for onboarding attribution.
+functions: []
+classes:
+- name: DirectorIdentity
+  description: Unique active Director person snapshot for one school.
+  locked: false
+  methods: []
+- name: StaffingDirectorResolver
+  description: Resolves exactly one active person filling a school Director position.
+  locked: false
+  methods:
+  - name: __init__
+    inputs:
+      store: {type: StaffingStore, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: none
+  - name: __call__
+    inputs:
+      school: {type: str, required: true}
+    returns: {type: DirectorIdentity}
+    exceptions: [ValueError, sqlite3.DatabaseError]
+    side_effects: Reads Staffing positions and assignments.
+dependencies:
+- module: staffing_store
+data_structures:
+- name: DirectorIdentity
+  type: frozen dataclass

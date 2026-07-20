@@ -1,0 +1,92 @@
+module:
+  name: onboarding_pdf_fill
+  language: python
+  path: src/onboarding_pdf_fill.py
+  version: 1.2.0
+  description: Static-PDF overlay fill engine with field formatting, bounded auto-shrink, flattening, signature manifest, and SHA-256 artifact manifest.
+functions:
+- name: detect_acroform_fields
+  locked: false
+  inputs:
+    source_path: {type: Path, required: true}
+  returns: {type: 'tuple[AcroFormField, ...]'}
+  exceptions: [ValueError, OSError]
+  side_effects: Reads one PDF and reports its AcroForm field definitions.
+- name: _formatted_value
+  locked: false
+  inputs:
+    value: {type: object, required: true}
+    formatting_json: {type: str, required: true}
+  returns: {type: str}
+  exceptions: [ValueError, json.JSONDecodeError]
+  side_effects: none
+- name: format_pdf_value
+  locked: false
+  inputs:
+    value: {type: object, required: true}
+    formatting: {type: 'dict[str, object]', required: true}
+  returns: {type: str}
+  exceptions: [ValueError]
+  side_effects: Applies choice values, yes/no values, date patterns, phone/SSN masks, and casing.
+- name: _sha256_file
+  locked: false
+  inputs:
+    path: {type: Path, required: true}
+  returns: {type: str}
+  exceptions: [OSError]
+  side_effects: Reads one file.
+- name: _write_json_atomic
+  locked: false
+  inputs:
+    path: {type: Path, required: true}
+    payload: {type: 'dict[str, object]', required: true}
+  returns: {type: None}
+  exceptions: [OSError]
+  side_effects: Atomically writes one JSON manifest.
+classes:
+- name: PdfFillResult
+  description: Filled output and manifest paths, output digest, and required signature field IDs.
+  locked: false
+  methods: []
+- name: AcroFormField
+  description: Detected source PDF form field name, type, page, and rectangle.
+  locked: false
+  methods: []
+- name: PdfFillEngine
+  description: Flattens visual mappings into PDF content streams and blocks unresolvable overflow.
+  locked: false
+  methods:
+  - name: __init__
+    inputs:
+      minimum_font_size: {type: float, required: false, default: 6.0}
+    returns: {type: None}
+    exceptions: [ValueError]
+    side_effects: none
+  - name: fill_document
+    inputs:
+      source_path: {type: Path, required: true}
+      output_path: {type: Path, required: true}
+      mappings: {type: 'list[PdfFieldMapping]', required: true}
+      fields: {type: 'dict[str, IntakeField]', required: true}
+      values: {type: 'dict[str, object]', required: true}
+      manifest_path: {type: Path, required: true}
+    returns: {type: PdfFillResult}
+    exceptions: [ValueError, OSError]
+    side_effects: Reads a source PDF, renders/merges flattened overlays, atomically writes output PDF and hashed manifest.
+  - name: merge_documents
+    inputs:
+      document_paths: {type: 'list[Path]', required: true}
+      output_path: {type: Path, required: true}
+      manifest_path: {type: Path, required: true}
+    returns: {type: PdfFillResult}
+    exceptions: [ValueError, OSError]
+    side_effects: Writes one ordered merged PDF and hashed manifest.
+dependencies:
+- module: onboarding_store
+- module: pypdf
+- module: reportlab
+data_structures:
+- name: PdfFillResult
+  type: frozen dataclass
+- name: AcroFormField
+  type: frozen dataclass

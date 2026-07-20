@@ -356,6 +356,50 @@ class NotificationStore:
                 active=False,
             ),
             NotificationRule(
+                event_type="onboarding.task.created",
+                label="Onboarding: task assigned",
+                subject_template="Onboarding task assigned: {task_title}",
+                body_template=(
+                    "A new onboarding task is assigned to {owner_role} for {school}. "
+                    "Due date: {due_date}. Open the Onboarding Tasks page for details."
+                ),
+                recipients=_roles("director"),
+                active=False,
+            ),
+            NotificationRule(
+                event_type="onboarding.task.completed",
+                label="Onboarding: task completed",
+                subject_template="Onboarding task completed: {task_title}",
+                body_template=(
+                    "An onboarding task was completed for {school}. "
+                    "Open the Onboarding Tasks page for current status."
+                ),
+                recipients=_roles("director"),
+                active=False,
+            ),
+            NotificationRule(
+                event_type="onboarding.task.overdue",
+                label="Onboarding: task overdue",
+                subject_template="Onboarding task overdue: {task_title}",
+                body_template=(
+                    "An actionable onboarding task is overdue for {school}. "
+                    "Open the Onboarding Tasks page for details."
+                ),
+                recipients=_roles("director"),
+                active=False,
+            ),
+            NotificationRule(
+                event_type="onboarding.digest.due",
+                label="Onboarding: due and overdue digest",
+                subject_template="{school} onboarding tasks due — {owner_role}",
+                body_template=(
+                    "{task_count} onboarding tasks require attention. "
+                    "Open the Onboarding Tasks page for authorized details."
+                ),
+                recipients=_roles("director"),
+                active=False,
+            ),
+            NotificationRule(
                 event_type="custom.reminder",
                 label="Custom reminder",
                 subject_template="Reminder: {position_name}",
