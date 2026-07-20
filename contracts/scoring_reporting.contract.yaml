@@ -2,7 +2,7 @@ module:
   name: scoring_reporting
   language: python
   path: src/scoring_reporting.py
-  version: 1.2.2
+  version: 2.0.0
   description: Flattened public interface for human scoring, reporting, trait signals,
     exports, referrals, email safety, offers, and templates; only active legacy adapters remain in the compatibility module
     inventory.

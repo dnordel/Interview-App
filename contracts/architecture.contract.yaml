@@ -21,25 +21,10 @@ services:
     modules:
     - interview_runtime
     - interview_app___init__
-    - interview_app_audio_runtime
-    - interview_app_dashboard_controller
-    - interview_app_finalize_context
-    - interview_app_finalize_gateways
     - interview_app_finalize_pipeline
-    - interview_app_flow_controller
     - interview_app_history_actions
-    - interview_app_history_controller
-    - interview_app_state
-    - interview_app_transcript_writer
-    - interview_app_transcript_processor
-    - interview_app_transcription_executor
-    - interview_app_transcription_queue
-    - interview_app_types
-    - interview_app_whisper_runtime_policy
     - interview_audio_recorder
     - runtime_wrapper
-    - interview_app_session_context
-    - interview_app_session_manager
   onboarding_operations_service:
     description: Role-authorized encrypted onboarding workflows, portable Windows replicas, immutable cross-device sync, digest-bound legacy migration, shared reminders, guarded close/restart, and evidence-gated Director-school rollout in the Staffing v2 shell.
     modules:
@@ -139,15 +124,12 @@ services:
     - platform_services
     - app_logging
     - data_store
-    - docx_compat
     - runtime_wrapper
-    - storage_utils
     - check_contract_review
     - gui_action_behavior_coverage
     - split_pytest_runner
     - full_pytest_runner
     - pytest_duration_catalog
-    - interview_app_session_context
     - ui_mode_switch
     - source_update_monitor
     - update_source_version
@@ -156,7 +138,6 @@ services:
     modules:
     - scoring_reporting
     - app_logging
-    - storage_utils
     - notification_store
 datastores:
   onboarding_pilot_evidence:

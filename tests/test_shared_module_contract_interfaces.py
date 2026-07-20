@@ -12,11 +12,10 @@ import yaml
 
 from app_logging import RedactionFilter
 from scoring_reporting import sanitize_email_subject, sender_email_error_reason, serialize_integration_payload
-from storage_utils import atomic_write_json, safe_read_json
+from platform_services import atomic_write_json, safe_read_json
 from interview_runtime import probe_audio_file, write_transcription_diagnostic
 
 SHARED_CONTRACTS = [
-    Path("contracts/storage_utils.contract.yaml"),
     Path("contracts/app_logging.contract.yaml"),
     Path("contracts/scoring_reporting.contract.yaml"),
     Path("contracts/interview_runtime.contract.yaml"),

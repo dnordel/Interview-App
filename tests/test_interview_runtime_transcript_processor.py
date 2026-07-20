@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from interview_app.transcript_processor import (
+from interview_runtime import (
     build_flow_time_windows,
     extract_candidate_text_from_jsonl,
     load_candidate_segments,

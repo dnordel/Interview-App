@@ -7,7 +7,7 @@ import pytest
 
 from candidate_report import CandidateReportRepository
 from data_store import InterviewHistoryStore
-from interview_app.finalize_gateways import FinalizeGateways
+from interview_runtime import FinalizeGateways
 from interview_app.finalize_pipeline import FinalizePipelineController, PENDING_TRANSCRIPTION_WARNING
 
 
@@ -98,22 +98,22 @@ def test_finalize_pipeline_retry_safe_does_not_resend_after_first_failure(monkey
             raise RuntimeError("disk full")
         return Path("/tmp/comm-log.json")
 
-    monkeypatch.setattr("interview_app.finalize_gateways.send_director_packet", _send_packet)
-    monkeypatch.setattr("interview_app.finalize_gateways.append_communication_log", _append_log)
+    monkeypatch.setattr("interview_runtime.send_director_packet", _send_packet)
+    monkeypatch.setattr("interview_runtime.append_communication_log", _append_log)
     monkeypatch.setattr(
-        "interview_app.finalize_gateways.build_director_packet",
+        "interview_runtime.build_director_packet",
         lambda **_kwargs: {"documents": {"final_report_path": "/tmp/final-notes.docx"}},
     )
     monkeypatch.setattr(
-        "interview_app.finalize_gateways.build_integration_payload",
+        "interview_runtime.build_integration_payload",
         lambda *_args, **_kwargs: {"candidate": "Ada"},
     )
     monkeypatch.setattr(
-        "interview_app.finalize_gateways.serialize_integration_payload",
+        "interview_runtime.serialize_integration_payload",
         lambda *_args, **_kwargs: Path("/tmp/integration.json"),
     )
     monkeypatch.setattr(
-        "interview_app.finalize_gateways.DocxExporter",
+        "interview_runtime.DocxExporter",
         lambda *_args, **_kwargs: SimpleNamespace(export=lambda *_a, **_k: "/tmp/final-notes.docx"),
     )
 

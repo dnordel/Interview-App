@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from path_validation import validate_existing_file_path
+from platform_services import validate_existing_file_path
 
 
 def test_validate_existing_file_path_returns_file_for_valid_pdf(tmp_path: Path) -> None:

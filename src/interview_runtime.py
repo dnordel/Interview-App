@@ -1659,16 +1659,10 @@ def resolve_default_windows_microphone_device() -> str:
 
 
 def _resolve_audio_runtime_symbol(symbol_name: str, fallback: Any) -> Any:
-    module = sys.modules.get("interview_app.audio_runtime")
-    if module is not None and hasattr(module, symbol_name):
-        return getattr(module, symbol_name)
     return fallback
 
 
 def _resolve_audio_devices_symbol(symbol_name: str, fallback: Any) -> Any:
-    module = sys.modules.get("interview_app.audio_devices")
-    if module is not None and hasattr(module, symbol_name):
-        return getattr(module, symbol_name)
     return fallback
 
 
@@ -2128,9 +2122,6 @@ def format_finalize_progress_tasks(tasks: Any, *, fallback: str = "") -> str:
 
 
 def _resolve_finalize_gateway_symbol(symbol_name: str, fallback: Any) -> Any:
-    module = sys.modules.get("interview_app.finalize_gateways")
-    if module is not None and hasattr(module, symbol_name):
-        return getattr(module, symbol_name)
     return fallback
 
 
@@ -2529,24 +2520,8 @@ def validate_before_finalize(app: Any) -> None:
 
 _COMPAT_MODULES: tuple[str, ...] = (
     "interview_audio_recorder",
-    "interview_app.audio_devices",
-    "interview_app.audio_runtime",
-    "interview_app.dashboard_controller",
-    "interview_app.finalize_context",
-    "interview_app.finalize_gateways",
     "interview_app.finalize_pipeline",
-    "interview_app.flow_controller",
     "interview_app.history_actions",
-    "interview_app.history_controller",
-    "interview_app.session_context",
-    "interview_app.session_manager",
-    "interview_app.state",
-    "interview_app.transcript_processor",
-    "interview_app.transcript_writer",
-    "interview_app.transcription_executor",
-    "interview_app.transcription_queue",
-    "interview_app.types",
-    "interview_app.whisper_runtime_policy",
 )
 
 _WRAPPER_POLICY = (

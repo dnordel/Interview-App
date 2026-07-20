@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from interview_app.session_context import InterviewSessionContext
+from interview_runtime import InterviewSessionContext
 
 
 class _FrozenDate:

@@ -4,13 +4,13 @@ import threading
 import time
 from pathlib import Path
 
-from interview_app.transcription_executor import (
+from interview_runtime import (
     BoundedTranscriptionExecutor,
     TranscriptionJobStatusEvent,
     recommended_max_workers,
     resolve_transcription_max_workers,
 )
-from interview_app.transcription_queue import TranscriptionQueueState
+from interview_runtime import TranscriptionQueueState
 
 
 def _payload(flow_idx: int) -> dict:

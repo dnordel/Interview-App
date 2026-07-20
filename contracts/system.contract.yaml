@@ -394,94 +394,19 @@ modules:
     - platform_services
     - interview_history_db
     - legacy_interview_history_json
-  docx_compat:
-    path: src/docx_compat.py
-    depends_on: []
   interview_app___init__:
     path: src/interview_app/__init__.py
     depends_on:
-    - interview_app_audio_runtime
-    - interview_app_dashboard_controller
-    - interview_app_finalize_context
-    - interview_app_finalize_gateways
     - interview_app_finalize_pipeline
-    - interview_app_flow_controller
     - interview_app_history_actions
-    - interview_app_history_controller
     - interview_runtime
-    - interview_app_transcript_writer
-    - interview_app_transcription_executor
-    - interview_app_transcription_queue
-    - interview_app_whisper_runtime_policy
-    - interview_app_session_manager
-  interview_app_audio_devices:
-    path: src/interview_app/audio_devices.py
-    depends_on:
-    - interview_runtime
-  interview_app_audio_runtime:
-    path: src/interview_app/audio_runtime.py
-    depends_on:
-    - interview_runtime
-  interview_app_dashboard_controller:
-    path: src/interview_app/dashboard_controller.py
-    depends_on:
-    - interview_runtime
-  interview_app_finalize_context:
-    path: src/interview_app/finalize_context.py
-    depends_on:
-    - interview_runtime
-  interview_app_finalize_gateways:
-    path: src/interview_app/finalize_gateways.py
-    depends_on:
-    - interview_runtime
-    - scoring_reporting
   interview_app_finalize_pipeline:
     path: src/interview_app/finalize_pipeline.py
     depends_on:
     - interview_runtime
     - scoring_reporting
-  interview_app_flow_controller:
-    path: src/interview_app/flow_controller.py
-    depends_on:
-    - interview_runtime
   interview_app_history_actions:
     path: src/interview_app/history_actions.py
-    depends_on:
-    - interview_runtime
-  interview_app_history_controller:
-    path: src/interview_app/history_controller.py
-    depends_on:
-    - interview_runtime
-  interview_app_session_context:
-    path: src/interview_app/session_context.py
-    depends_on:
-    - interview_runtime
-  interview_app_state:
-    path: src/interview_app/state.py
-    depends_on:
-    - interview_runtime
-  interview_app_transcript_processor:
-    path: src/interview_app/transcript_processor.py
-    depends_on:
-    - interview_runtime
-  interview_app_transcript_writer:
-    path: src/interview_app/transcript_writer.py
-    depends_on:
-    - interview_runtime
-  interview_app_transcription_executor:
-    path: src/interview_app/transcription_executor.py
-    depends_on:
-    - interview_runtime
-  interview_app_transcription_queue:
-    path: src/interview_app/transcription_queue.py
-    depends_on:
-    - interview_runtime
-  interview_app_types:
-    path: src/interview_app/types.py
-    depends_on:
-    - interview_runtime
-  interview_app_whisper_runtime_policy:
-    path: src/interview_app/whisper_runtime_policy.py
     depends_on:
     - interview_runtime
   interview_audio_recorder:
@@ -492,13 +417,6 @@ modules:
     path: src/runtime_wrapper.py
     depends_on:
     - platform_services
-  storage_utils:
-    path: src/storage_utils.py
-    depends_on: []
-  interview_app_session_manager:
-    path: src/interview_app/session_manager.py
-    depends_on:
-    - interview_runtime
 module_metadata:
   interview_question_flow:
     constraints:
@@ -509,15 +427,13 @@ module_metadata:
     canonical_field_name: interview_notes_document_path
     merged_interview_notes_contract: true
     description: Finalize, referral, and integration modules must exchange one merged interview-notes artifact that already includes transcription content.
-  interview_app_finalize_context:
+  interview_runtime:
     constraints:
     - Requires interview_notes_document_path as the only canonical document artifact field.
+    - Referral/integration dispatches must read interview_notes_document_path from finalize context payloads.
   interview_app_finalize_pipeline:
     constraints:
     - Finalize processing produces one basic merged interview-notes artifact referenced by interview_notes_document_path.
-  interview_app_finalize_gateways:
-    constraints:
-    - Referral/integration dispatches must read interview_notes_document_path from finalize context payloads.
   pyside_interview_app:
     constraints:
     - Acts as the single PySide desktop parity surface for desktop GUI responsibilities.

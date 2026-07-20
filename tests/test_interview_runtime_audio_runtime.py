@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from interview_app.audio_runtime import AudioRuntimeController, RuntimeConfig
+from interview_runtime import AudioRuntimeController, RuntimeConfig
 
 
 class _AppStub:
@@ -16,11 +16,11 @@ def test_start_recording_session_uses_resolved_windows_system_device(monkeypatch
         return object()
 
     monkeypatch.setattr(
-        "interview_app.audio_runtime.resolve_default_windows_system_device",
+        "interview_runtime.resolve_default_windows_system_device",
         lambda: "VB-Audio Virtual Cable (CABLE Input)",
     )
     monkeypatch.setattr(
-        "interview_app.audio_runtime.resolve_default_windows_microphone_device",
+        "interview_runtime.resolve_default_windows_microphone_device",
         lambda: "Microphone (Realtek USB Audio)",
     )
 

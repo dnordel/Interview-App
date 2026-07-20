@@ -3130,9 +3130,7 @@ def _percent_label(percent_of_max: float, included_max_weighted_total: int) -> s
     if included_max_weighted_total <= 0:
         return "N/A (all questions skipped)"
     return f"{percent_of_max}%"
-_COMPAT_MODULES: tuple[str, ...] = (
-    "trait_scoring_adapter",
-)
+_COMPAT_MODULES: tuple[str, ...] = ()
 
 _WRAPPER_POLICY = (
     "Legacy scoring/reporting modules are compatibility wrappers during flattening. "

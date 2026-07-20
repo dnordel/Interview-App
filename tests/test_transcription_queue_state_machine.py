@@ -3,7 +3,7 @@ from __future__ import annotations
 import threading
 from pathlib import Path
 
-from interview_app.transcription_queue import TranscriptionQueueState
+from interview_runtime import TranscriptionQueueState
 
 
 def _payload(flow_idx: int) -> dict[str, object]:

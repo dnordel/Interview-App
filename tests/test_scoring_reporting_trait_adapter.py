@@ -5,7 +5,7 @@ from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 from scoring_reporting import ReportingValidationError, build_integration_payload
-from trait_scoring_adapter import (
+from scoring_reporting import (
     DEFAULT_ENGINE_MODULE_CONTRACT,
     DEFAULT_ENGINE_RUNTIME_CONTRACT,
     _contract_resolution_base_dir,

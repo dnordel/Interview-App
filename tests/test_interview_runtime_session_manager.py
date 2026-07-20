@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from interview_app.session_manager import (
+from interview_runtime import (
     InterviewSessionManager,
     ResumeInstruction,
     SessionPayloadValidationError,

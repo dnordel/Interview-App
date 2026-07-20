@@ -1780,10 +1780,7 @@ except Exception:  # pragma: no cover - fallback used in constrained environment
 _COMPAT_MODULES: tuple[str, ...] = (
     "app_logging",
     "data_store",
-    "docx_compat",
-    "path_validation",
     "runtime_wrapper",
-    "storage_utils",
 )
 
 _WRAPPER_POLICY = (

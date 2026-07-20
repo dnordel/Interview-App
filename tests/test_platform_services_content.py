@@ -5,7 +5,7 @@ import re
 import platform_services
 
 
-def test_app_content_helpers_preserve_behavior():
+def test_platform_content_helpers_preserve_behavior():
     assert platform_services.sanitize_filename(' A/B:*?"<>|  Name ') == "A_B_ Name"
     assert platform_services.sanitize_filename("   ") == "Unknown"
     assert platform_services.is_valid_date_yyyy_mm_dd("2026-06-16")

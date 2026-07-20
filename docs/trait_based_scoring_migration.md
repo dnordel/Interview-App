@@ -53,5 +53,5 @@ Supported migrated selection fields are:
 
 - Finalize paths fail closed if a non-skipped, non-disqualified trait has no selected signal/reference state.
 - The app-level legacy finalize fallback is disabled and raises a validation error if called.
-- `trait_scoring_adapter.invoke_scoring_engine` now fails closed with explicit `ReportingValidationError` messages when finalized trait inputs do not overlap the runtime bundle or when rubric/runtime trait definitions drift.
+- `scoring_reporting.invoke_scoring_engine` fails closed with explicit `ReportingValidationError` messages when finalized trait inputs do not overlap the runtime bundle or when rubric/runtime trait definitions drift.
 - `scoring_reporting.ScoringEngine.evaluate` remains outside finalize and must not be reintroduced into finalize entrypoints or adapter runtime routing.

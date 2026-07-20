@@ -5,11 +5,9 @@ import threading
 from pathlib import Path
 from types import SimpleNamespace
 
-from interview_app.audio_runtime import AudioRuntimeController
+from interview_runtime import AudioRuntimeController
 from interview_app.finalize_pipeline import FinalizePipelineController
-from interview_app.history_controller import HistoryController
-from interview_app.state import AppSharedState
-from interview_app.transcription_queue import TranscriptionQueueState
+from interview_runtime import AppSharedState, HistoryController, TranscriptionQueueState
 import interview_runtime
 
 

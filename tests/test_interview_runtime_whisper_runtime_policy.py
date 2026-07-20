@@ -1,4 +1,4 @@
-from interview_app.whisper_runtime_policy import (
+from interview_runtime import (
     RuntimeConfig,
     fallback_from_exception,
     persist_runtime_choice,

@@ -5,9 +5,7 @@ import threading
 from pathlib import Path
 from types import SimpleNamespace
 
-from interview_app.audio_runtime import AudioRuntimeController
-from interview_app.transcription_executor import BoundedTranscriptionExecutor
-from interview_app.transcription_queue import TranscriptionQueueState
+from interview_runtime import AudioRuntimeController, BoundedTranscriptionExecutor, TranscriptionQueueState
 
 
 class _Result:

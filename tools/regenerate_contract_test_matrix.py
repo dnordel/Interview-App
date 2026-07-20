@@ -117,7 +117,6 @@ def _mapping_rules() -> list[Rule]:
         Rule(
             predicate=lambda symbol, contract: contract
             in {
-                "contracts/storage_utils.contract.yaml",
                 "contracts/app_logging.contract.yaml",
                 "contracts/scoring_reporting.contract.yaml",
                 "contracts/scoring_reporting.contract.yaml",

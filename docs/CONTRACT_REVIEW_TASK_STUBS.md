@@ -209,6 +209,6 @@ Use this naming pattern for issue tracking:
 - `contracts:<section>:<module-or-scope>:drift-review`
 
 Examples:
-- `contracts:interview_app:flow_controller:drift-review`
-- `contracts:onboarding:onboarding_scheduler:drift-review`
-- `contracts:shared:storage_utils:drift-review`
+- `contracts:interview_runtime:flow_controller:drift-review`
+- `contracts:onboarding:onboarding_operations:drift-review`
+- `contracts:shared:platform_services:drift-review`

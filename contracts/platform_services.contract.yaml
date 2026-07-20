@@ -2,7 +2,7 @@ module:
   name: platform_services
   language: python
   path: src/platform_services.py
-  version: 0.10.3
+  version: 1.0.0
   description: Flattened public interface for shared content, logging, config, persistence,
     path, runtime, document, cleanup, and UX metrics helpers; only active legacy adapters
     remain in the compatibility module inventory.

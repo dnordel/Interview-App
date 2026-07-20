@@ -8,10 +8,10 @@ cleanup after production imports move to the five public modules.
 
 | Target module | Legacy modules initially exposed |
 |---|---|
-| `platform_services` | `app_logging`, `data_store`, `docx_compat`, `path_validation`, `runtime_wrapper`, `storage_utils` |
+| `platform_services` | `app_logging`, `data_store`, `runtime_wrapper` |
 | `ui_composition` | `ui_windows`, interview router/shell/view modules |
 | `interview_runtime` | interview state/session modules, audio recorder, transcription diagnostics/queue/executor/processor/writer/summary, interview controllers, history actions/controllers, finalize context/gateways/pipeline |
-| `scoring_reporting` | `trait_scoring_adapter` |
+| `scoring_reporting` | none |
 | `onboarding_operations` | onboarding models/storage/migrations, scheduling, reminders, notifier, guardrails, dashboard/actions, launch, task filters, template reference, scroll helpers, UI helpers |
 
 ## Wrapper Order
@@ -36,10 +36,10 @@ cleanup after production imports move to the five public modules.
 - `onboarding_migrations` remains a live behavior module, not a compatibility wrapper.
 - Remaining legacy import paths stay valid where wrappers still exist.
 - Physical moves completed:
-  - `platform_services`: `app_content`, `app_logging`, `data_store` config dependencies, `docx_compat`, `path_validation`, `runtime_wrapper`, `storage_utils`
+  - `platform_services`: `app_logging`, `data_store` config dependencies, `runtime_wrapper`
   - `ui_composition`: `interview_app.ui_router`, `interview_app.ui_shell`, `interview_app.view_protocols`, `ui_windows` shared imports
-  - `interview_runtime`: `interview_app.session_context`, `interview_app.session_manager`, `interview_app.state`, `interview_app.types`, `interview_app.audio_devices`, `interview_app.audio_runtime`, `interview_app.whisper_runtime_policy`, `interview_app.transcript_processor`, `interview_app.transcript_summary`, `interview_app.transcription_queue`, `interview_app.transcription_executor`, `interview_app.transcript_writer`, `interview_app.flow_controller`, `interview_app.dashboard_controller`, `interview_app.history_controller`, `interview_app.finalize_context`, `interview_app.finalize_gateways`, `interview_app.finalize_pipeline`
-  - `scoring_reporting`: `trait_scoring_adapter` remains pending final cleanup
+  - `interview_runtime`: only `interview_app.finalize_pipeline` and `interview_app.history_actions` remain pending special compatibility cleanup
+  - `scoring_reporting`: no compatibility wrappers remain
   - `onboarding_operations`: all listed onboarding helpers now live directly in `onboarding_operations`; no legacy onboarding wrappers remain
 - Contract review and full pytest passed after the production import audit.
 - Manual hardware/live-GUI smoke checks were tested and verified by the user; see `docs/flattening_baseline.md`.

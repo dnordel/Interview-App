@@ -20,7 +20,7 @@ from onboarding_operations import scheduler_expected_interval_hours, scheduler_o
 import onboarding_operations
 from onboarding_operations import JsonStore
 from onboarding_operations import build_onboarding_overview
-from storage_utils import safe_read_json
+from platform_services import safe_read_json
 
 
 def test_question_overrides_store_save_persists_same_shape(tmp_path: Path):

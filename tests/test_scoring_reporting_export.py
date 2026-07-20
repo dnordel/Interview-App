@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from docx_compat import Document
+from platform_services import Document
 from scoring_reporting import DocxExporter, ReportingValidationError
 
 

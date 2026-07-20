@@ -9,10 +9,8 @@ from typing import Any
 import pytest
 import yaml
 
-from interview_app.audio_runtime import AudioRuntimeController
 from interview_app.history_actions import HistoryActionsService
-from interview_app.transcription_queue import TranscriptionQueueState
-from interview_app.whisper_runtime_policy import _value_or_default
+from interview_runtime import AudioRuntimeController, TranscriptionQueueState, _value_or_default
 
 
 _CONTRACT_ROOT = Path("contracts")
