@@ -1,0 +1,151 @@
+module:
+  name: starting_pay_calculator
+  language: python
+  path: src/starting_pay_calculator.py
+  version: 1.0.0
+  description: Validated, configuration-driven Career Lattice qualification and starting-hourly-pay calculation for supported teacher positions.
+functions:
+- name: validate_qualification_input
+  description: Fail closed when position, education, unit, or whole-year experience inputs violate the starting-pay policy.
+  locked: false
+  inputs:
+    data: {type: QualificationInput, required: true}
+  returns: {type: None}
+  exceptions: [ValueError]
+  side_effects: none
+- name: qualification_input_from_mapping
+  description: Normalize persisted candidate qualification data and an exact teacher position into calculator input.
+  locked: false
+  inputs:
+    position_id: {type: str, required: true}
+    qualification: {type: 'Mapping[str, Any]', required: true}
+  returns: {type: QualificationInput}
+  exceptions: [ValueError]
+  side_effects: none
+- name: default_starting_pay_settings
+  description: Return built-in policy defaults used when no alternate settings path is supplied.
+  locked: false
+  inputs: {}
+  returns: {type: StartingPaySettings}
+  exceptions: []
+  side_effects: none
+- name: load_starting_pay_settings
+  description: Load and validate starting-pay policy from JSON configuration.
+  locked: false
+  inputs:
+    path: {type: Path, required: false, default: DEFAULT_STARTING_PAY_SETTINGS_PATH}
+  returns: {type: StartingPaySettings}
+  exceptions: [ValueError, OSError]
+  side_effects: Reads JSON configuration.
+- name: validate_starting_pay_settings
+  description: Validate policy version, percentage, quarter-dollar increment, cap, and complete Level 3-7 pay mapping.
+  locked: false
+  inputs:
+    settings: {type: StartingPaySettings, required: true}
+  returns: {type: None}
+  exceptions: [ValueError]
+  side_effects: none
+- name: determine_highest_level
+  description: Return the highest qualifying included Career Lattice level from 7 through 3.
+  locked: false
+  inputs:
+    data: {type: QualificationInput, required: true}
+  returns: {type: 'int | None'}
+  exceptions: []
+  side_effects: none
+- name: calculate_offer_pay
+  description: Validate qualification, select the highest level, apply a linear experience increase, round half-up to the configured increment, and then apply the configured cap.
+  locked: false
+  inputs:
+    data: {type: QualificationInput, required: true}
+    settings: {type: StartingPaySettings, required: true}
+  returns: {type: PayCalculationResult}
+  exceptions: [ValueError]
+  side_effects: Reads default JSON configuration when settings are omitted.
+classes:
+- name: DegreeLevel
+  description: Canonical highest completed degree levels used by the calculator.
+  locked: false
+  attributes: {}
+  methods: []
+- name: QualificationInput
+  description: Exact teacher position plus normalized degree, optional units, and completed whole experience years.
+  locked: false
+  attributes:
+    position_id: {type: str}
+    highest_degree: {type: DegreeLevel}
+    associate_degree_in_ece_cd: {type: bool}
+    ece_cd_units: {type: 'Decimal | None'}
+    total_college_units: {type: 'Decimal | None'}
+    completed_experience_years: {type: int}
+  methods: []
+- name: PayLevel
+  description: Configured permit label and base hourly rate for one included lattice level.
+  locked: false
+  attributes:
+    permit_level: {type: str}
+    base_hourly_rate: {type: Decimal}
+  methods: []
+- name: StartingPaySettings
+  description: Versioned, editable starting-pay policy values and Level 3-7 mapping.
+  locked: false
+  attributes:
+    calculation_version: {type: str}
+    experience_increase_rate: {type: Decimal}
+    rounding_increment: {type: Decimal}
+    starting_pay_cap: {type: Decimal}
+    pay_levels: {type: 'dict[int, PayLevel]'}
+  methods: []
+- name: PayCalculationResult
+  description: Auditable qualification and starting-pay result snapshot.
+  locked: false
+  attributes:
+    status: {type: str}
+    position_id: {type: str}
+    career_lattice_level: {type: 'int | None'}
+    permit_level: {type: 'str | None'}
+    highest_degree: {type: DegreeLevel}
+    ece_cd_units: {type: 'Decimal | None'}
+    total_college_units: {type: 'Decimal | None'}
+    base_hourly_rate: {type: 'Decimal | None'}
+    completed_experience_years: {type: int}
+    experience_increase_rate: {type: Decimal}
+    experience_adjustment: {type: 'Decimal | None'}
+    starting_hourly_pay: {type: 'Decimal | None'}
+    qualification_explanation: {type: str}
+    manual_review_required: {type: bool}
+    calculation_version: {type: str}
+  methods:
+  - name: to_dict
+    inputs: {}
+    returns: {type: 'dict[str, Any]'}
+    exceptions: []
+    side_effects: none
+- name: StartingPaySettingsStore
+  description: Atomic JSON persistence for versioned editable starting-pay policy.
+  locked: false
+  attributes:
+    path: {type: Path}
+  methods:
+  - name: load
+    inputs: {}
+    returns: {type: StartingPaySettings}
+    exceptions: [ValueError, OSError]
+    side_effects: Reads JSON configuration.
+  - name: save
+    inputs:
+      settings: {type: StartingPaySettings, required: true}
+    returns: {type: None}
+    exceptions: [ValueError, OSError]
+    side_effects: Atomically replaces JSON configuration and requires a new calculation version for policy changes.
+data_structures:
+- name: SUPPORTED_POSITION_IDS
+  type: frozenset[str]
+  description: Exact position IDs supported by this offer calculator.
+- name: POSITION_LABELS
+  type: dict[str, str]
+  description: User-facing labels for supported teacher position IDs.
+- name: CAREER_LATTICE_LEVELS
+  type: frozenset[int]
+  description: Included Career Lattice levels in descending qualification order.
+dependencies: []

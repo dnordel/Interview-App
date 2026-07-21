@@ -106,7 +106,6 @@ from scoring_reporting import (
     build_school_offer_filename,
     next_available_offer_path,
     derive_offer_schedule,
-    parse_requested_hourly_pay,
 )
 from scoring_reporting import build_integration_payload, serialize_integration_payload
 from scoring_reporting import CANONICAL_DEGREE_TYPES, CandidateQualification, validate_candidate_qualification
@@ -118,6 +117,12 @@ from staffing_change_stage import StaffingChangeStage
 from staffing_service import StaffingChangeConflict, StaffingService, staffing_change_conflict_message
 from staffing_store import StaffingEditLock, StaffingStore
 from source_update_monitor import SourceUpdateDetector, build_source_update_banner, relaunch_application
+from starting_pay_calculator import (
+    POSITION_LABELS,
+    calculate_offer_pay,
+    load_starting_pay_settings,
+    qualification_input_from_mapping,
+)
 
 
 APP_TITLE = "Interview Assistant"
@@ -2666,12 +2671,17 @@ class PySideInterviewWindow:
         )
         output_dir = resolve_offer_output_dir(DEFAULT_BASE_DIR, application.school, settings)
         requested_pay = self._requested_pay_answer(application.history_id)
-        hourly_pay = parse_requested_hourly_pay(requested_pay)
+        qualification = self._offer_qualification(application.history_id)
+        pay_input = qualification_input_from_mapping(interview.offer_position_id, qualification)
+        pay_result = calculate_offer_pay(pay_input, load_starting_pay_settings())
+        if pay_result.status != "calculated" or pay_result.starting_hourly_pay is None:
+            raise ValueError(pay_result.qualification_explanation)
         return {
             "honorific": candidate.honorific,
             "candidate_name": candidate.legal_name,
             "candidate_email": candidate.email,
-            "position": application.position,
+            "position_id": interview.offer_position_id,
+            "position": POSITION_LABELS[interview.offer_position_id],
             "school": application.school,
             "start_time": interview.proposed_shift_start,
             "end_time": interview.proposed_shift_end,
@@ -2681,13 +2691,28 @@ class PySideInterviewWindow:
             "employment_type": schedule.employment_type,
             "proposed_classroom": interview.proposed_classroom,
             "requested_pay_raw": requested_pay,
-            "hourly_pay": "" if hourly_pay is None else _format_offer_number(hourly_pay),
-            "compensation_review_required": hourly_pay is None,
+            "hourly_pay": format(pay_result.starting_hourly_pay, ".2f"),
+            "compensation_review_required": False,
+            "pay_calculation": pay_result.to_dict(),
             "pto": _format_offer_number(schedule.weekly_hours * 2),
             "pto2": _format_offer_number(schedule.weekly_hours * 4),
             "template_path": str(template_path),
             "output_dir": str(output_dir),
         }
+
+    def _offer_qualification(self, history_id: str) -> dict[str, Any]:
+        store = InterviewHistoryStore(self.model.history_path)
+        row = next((item for item in store.load() if store.build_row_key(item) == history_id), {})
+        qualification = row.get("qualification")
+        report_repository = CandidateReportRepository(self.model.history_path)
+        if report_repository.exists(history_id):
+            report = report_repository.load_visible_version(history_id, role="admin")
+            candidate = report.snapshot.get("candidate")
+            if isinstance(candidate, dict):
+                qualification = candidate.get("qualification", qualification)
+        if not isinstance(qualification, dict):
+            raise ValueError("Candidate qualification details are required before generating an offer.")
+        return qualification
 
     def _requested_pay_answer(self, history_id: str) -> str:
         store = InterviewHistoryStore(self.model.history_path)

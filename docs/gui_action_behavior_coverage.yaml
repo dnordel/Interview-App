@@ -40,6 +40,8 @@ grandfathered_files:
 #     behavioral_tests:
 #     - tests/test_example_gui.py::test_save_button_persists_visible_change
 covered_actions:
+  54ba68f9edf189cc84b5:
+    behavioral_tests: [tests/test_staffing_settings_v2.py::test_starting_pay_settings_require_new_version_and_save_valid_policy]
   262eb1603754e40b22ff:
     behavioral_tests: [tests/test_hiring_workspace_v2.py::test_offer_approval_dialog_embeds_pdf_and_gates_approval]
   c7744ce5c47cde7b3f09:

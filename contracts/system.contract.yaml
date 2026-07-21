@@ -10,6 +10,7 @@ modules:
     path: src/hiring_pipeline.py
     depends_on:
     - data_store
+    - starting_pay_calculator
   hiring_migration:
     path: src/hiring_migration.py
     depends_on:
@@ -19,6 +20,11 @@ modules:
     depends_on:
     - dashboard_v2_ui
     - hiring_pipeline
+    - starting_pay_calculator
+  starting_pay_calculator:
+    path: src/starting_pay_calculator.py
+    depends_on:
+    - config_starting_pay_json
   interview_runtime:
     path: src/interview_runtime.py
     depends_on:
@@ -277,6 +283,7 @@ modules:
     - staffing_change_stage
     - staffing_service
     - staffing_store
+    - starting_pay_calculator
     - source_update_monitor
     - PySide6
     - pywin32
@@ -313,6 +320,7 @@ modules:
     - notification_service
     - notification_templates
     - onboarding_operations
+    - starting_pay_calculator
     - PySide6
   config_rubric_json:
     path: config/rubric.json
@@ -322,6 +330,9 @@ modules:
     depends_on: []
   config_staffing_seed_json:
     path: config/staffing_seed.json
+    depends_on: []
+  config_starting_pay_json:
+    path: config/starting_pay.json
     depends_on: []
   config_source_version_txt:
     path: config/source_version.txt

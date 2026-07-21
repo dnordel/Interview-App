@@ -2,7 +2,7 @@ module:
   name: scoring_reporting
   language: python
   path: src/scoring_reporting.py
-  version: 3.0.0
+  version: 3.1.0
   description: Flattened public interface for human scoring, reporting, trait signals,
     exports, referrals, email safety, offers, and templates; only active legacy adapters remain in the compatibility module
     inventory.
@@ -41,8 +41,19 @@ functions:
     type: int | None
   exceptions: []
   side_effects: none
+- name: coerce_non_negative_decimal
+  description: Coerce values to finite non-negative Decimal unit counts with at most two decimal places.
+  locked: false
+  inputs:
+    value:
+      type: Any
+      required: true
+  returns:
+    type: Decimal | None
+  exceptions: []
+  side_effects: none
 - name: validate_candidate_qualification
-  description: Validate and normalize candidate education and experience details.
+  description: Validate and normalize candidate education and experience; a reported degree waives total-unit entry, and a degree in ECE/CD also waives ECE/CD-unit entry.
   locked: false
   inputs:
     has_degree_raw:
@@ -1175,11 +1186,11 @@ classes:
     degree_in_ece:
       type: bool
     ece_units_completed:
-      type: int | None
+      type: Decimal | None
     infant_toddler_class_completed:
       type: bool
     total_units_completed:
-      type: int | None
+      type: Decimal | None
     years_experience:
       type: int | None
   methods:

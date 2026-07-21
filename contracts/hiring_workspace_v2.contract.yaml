@@ -2,8 +2,8 @@ module:
   name: hiring_workspace_v2
   language: python
   path: src/hiring_workspace_v2.py
-  version: 3.5.0
-  description: Native Staffing v2 Candidates pipeline/history and Offers surfaces for the seven-stage application pipeline, with separate auto-height pending and approved offer tables, approval-time pay editing, delayed email send actions, and selected-offer deletion alongside shared overlays and contextual lifecycle actions.
+  version: 3.6.0
+  description: Native Staffing v2 Candidates pipeline/history and Offers surfaces with qualification-driven teacher offer creation, separate auto-height pending and approved offer tables, increment-enforced approval-time pay editing, delayed email send actions, and selected-offer deletion alongside shared overlays and contextual lifecycle actions.
 functions: []
 classes:
 - name: HiringOfferApprovalDialog
@@ -95,18 +95,19 @@ classes:
       values: {type: 'dict[str, Any] | None', required: false, default: null}
     returns: {type: Any}
     exceptions: [ValueError]
-    side_effects: Runs create, manual external-create, retry, revision, extension, acceptance, or archive workflow action and refreshes workspace.
+    side_effects: Runs calculated teacher-offer creation, external-create, retry, increment-enforced revision, extension, acceptance, or archive workflow action and refreshes workspace.
   - name: _open_external_offer_dialog
     inputs: {}
     returns: {type: None}
     exceptions: []
-    side_effects: Opens the manual external-candidate offer dialog, creates a candidate/application record, submits offer v1 for approval, refreshes the workspace, and reports sanitized validation failures.
+    side_effects: Opens the external-candidate qualification and offer dialog, calculates starting pay, creates a candidate/application record, submits offer v1 for approval, refreshes the workspace, and reports sanitized validation failures.
   - name: _external_offer_editor_values
     inputs: {}
     returns: {type: 'dict[str, Any] | None'}
     exceptions: []
-    side_effects: Opens a three-step candidate, compensation, and destination editor with required-field gating for manual external offers.
+    side_effects: Opens a candidate, teacher-position, qualification, experience, and destination editor with fail-closed required-field gating; initial hourly pay is calculated rather than entered manually.
 data_structures: []
 dependencies:
 - dashboard_v2_ui
 - hiring_pipeline
+- starting_pay_calculator

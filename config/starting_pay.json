@@ -1,0 +1,28 @@
+{
+  "calculation_version": "2026.1",
+  "experience_increase_rate": "0.02",
+  "rounding_increment": "0.25",
+  "starting_pay_cap": "24.00",
+  "pay_levels": {
+    "3": {
+      "permit_level": "Aide",
+      "base_hourly_rate": "16.50"
+    },
+    "4": {
+      "permit_level": "Associate Teacher",
+      "base_hourly_rate": "17.50"
+    },
+    "5": {
+      "permit_level": "Teacher",
+      "base_hourly_rate": "18.00"
+    },
+    "6": {
+      "permit_level": "Master Teacher",
+      "base_hourly_rate": "19.00"
+    },
+    "7": {
+      "permit_level": "Site Supervisor",
+      "base_hourly_rate": "20.00"
+    }
+  }
+}

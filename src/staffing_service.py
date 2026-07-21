@@ -14,6 +14,7 @@ from staffing_models import (
     DIRECTOR_INTERVIEW_DECISIONS,
     DIRECTOR_REFERRAL_OUTCOMES,
     PERMIT_STATUSES,
+    TEACHER_OFFER_POSITION_IDS,
     StaffingAssignment,
     StaffingClassroom,
     StaffingDirectorCandidate,
@@ -764,6 +765,7 @@ class StaffingService:
         proposed_shift_start: str = "",
         proposed_shift_end: str = "",
         proposed_classroom: str = "",
+        offer_position_id: str = "",
         follow_up_needed: bool = False,
         candidate_email: str = "",
         candidate_phone: str = "",
@@ -779,12 +781,18 @@ class StaffingService:
         shift_start = ""
         shift_end = ""
         classroom = ""
+        clean_offer_position_id = ""
         if clean_decision == "hire":
             shift_start = _valid_shift_time(proposed_shift_start, "Shift start")
             shift_end = _valid_shift_time(proposed_shift_end, "Shift end")
             classroom = str(proposed_classroom or "").strip()
             if not classroom:
                 raise ValueError("Proposed classroom is required for hire decisions.")
+            clean_offer_position_id = str(offer_position_id or "").strip()
+            if not clean_offer_position_id:
+                raise ValueError("Offer position is required for hire decisions.")
+            if clean_offer_position_id not in TEACHER_OFFER_POSITION_IDS:
+                raise ValueError("Offer position must be Lead Teacher, Teacher, or Teacher/Floater.")
         with self.store.connect() as conn:
             referral = self.store.director_candidate_context(conn, int(referral_id))
         email = str(candidate_email or referral.candidate_email or "").strip()
@@ -811,6 +819,7 @@ class StaffingService:
             proposed_shift_start=shift_start,
             proposed_shift_end=shift_end,
             proposed_classroom=classroom,
+            offer_position_id=clean_offer_position_id,
             candidate_email=email,
             candidate_phone=phone,
             follow_up_needed=follow_up_needed,
@@ -838,6 +847,7 @@ class StaffingService:
                 "proposed_shift_start": shift_start,
                 "proposed_shift_end": shift_end,
                 "proposed_classroom": classroom,
+                "offer_position_id": clean_offer_position_id,
                 "follow_up_needed": bool(follow_up_needed),
             },
         )
@@ -2054,6 +2064,7 @@ class StaffingService:
                 proposed_shift_start=str(payload.get("proposed_shift_start", "")),
                 proposed_shift_end=str(payload.get("proposed_shift_end", "")),
                 proposed_classroom=str(payload.get("proposed_classroom", "")),
+                offer_position_id=str(payload.get("offer_position_id", "")),
                 follow_up_needed=bool(payload.get("follow_up_needed", False)),
                 candidate_email=str(payload.get("candidate_email", "")),
                 candidate_phone=str(payload.get("candidate_phone", "")),

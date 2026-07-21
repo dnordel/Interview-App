@@ -165,6 +165,7 @@ class StaffingStore:
                     proposed_shift_start TEXT NOT NULL DEFAULT '',
                     proposed_shift_end TEXT NOT NULL DEFAULT '',
                     proposed_classroom TEXT NOT NULL DEFAULT '',
+                    offer_position_id TEXT NOT NULL DEFAULT '',
                     follow_up_needed INTEGER NOT NULL DEFAULT 0,
                     owner_approval_status TEXT NOT NULL DEFAULT 'pending_owner_approval',
                     state TEXT NOT NULL DEFAULT 'finalized',
@@ -238,6 +239,7 @@ class StaffingStore:
                 "owner_approval_status",
                 "TEXT NOT NULL DEFAULT 'pending_owner_approval'",
             )
+            self._ensure_column(conn, "director_interviews", "offer_position_id", "TEXT NOT NULL DEFAULT ''")
             self._ensure_column(conn, "director_interviews", "state", "TEXT NOT NULL DEFAULT 'finalized'")
             self._ensure_column(conn, "director_interviews", "row_version", "INTEGER NOT NULL DEFAULT 1")
             self._ensure_column(conn, "director_interviews", "version_number", "INTEGER NOT NULL DEFAULT 1")
@@ -968,6 +970,7 @@ class StaffingStore:
         proposed_shift_start: str = "",
         proposed_shift_end: str = "",
         proposed_classroom: str = "",
+        offer_position_id: str = "",
         candidate_email: str = "",
         candidate_phone: str = "",
         follow_up_needed: bool = False,
@@ -991,11 +994,11 @@ class StaffingStore:
                 """
                 INSERT INTO director_interviews (
                     referral_id, director_name, completed_date, rating, decision, decision_notes,
-                    proposed_shift_start, proposed_shift_end, proposed_classroom, follow_up_needed,
+                    proposed_shift_start, proposed_shift_end, proposed_classroom, offer_position_id, follow_up_needed,
                     owner_approval_status, state, row_version, version_number,
                     interviewer_rating_at_completion, interviewer_outcome_at_completion,
                     created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'finalized', 1, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'finalized', 1, ?, ?, ?, ?, ?)
                 ON CONFLICT(referral_id) DO UPDATE SET
                     director_name = excluded.director_name,
                     completed_date = excluded.completed_date,
@@ -1005,6 +1008,7 @@ class StaffingStore:
                     proposed_shift_start = excluded.proposed_shift_start,
                     proposed_shift_end = excluded.proposed_shift_end,
                     proposed_classroom = excluded.proposed_classroom,
+                    offer_position_id = excluded.offer_position_id,
                     follow_up_needed = excluded.follow_up_needed,
                     owner_approval_status = excluded.owner_approval_status,
                     state = 'finalized',
@@ -1022,6 +1026,7 @@ class StaffingStore:
                     proposed_shift_start,
                     proposed_shift_end,
                     proposed_classroom,
+                    offer_position_id,
                     1 if follow_up_needed else 0,
                     owner_approval_status,
                     version_number,
@@ -1413,6 +1418,7 @@ class StaffingStore:
             proposed_shift_start=str(row["proposed_shift_start"] or ""),
             proposed_shift_end=str(row["proposed_shift_end"] or ""),
             proposed_classroom=str(row["proposed_classroom"] or ""),
+            offer_position_id=str(row["offer_position_id"] or ""),
             follow_up_needed=bool(row["follow_up_needed"]),
             owner_approval_status=str(row["owner_approval_status"] or ""),
             state=str(row["state"] or "finalized"),

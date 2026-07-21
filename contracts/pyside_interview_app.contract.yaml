@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 9.1.0
+  version: 9.2.0
   description: PySide6 operations shell and headless view-model builder for a mockup-driven
     New Interview setup/live flow, Candidates-owned pipeline/history, candidate reports,
     onboarding, staffing, notifications, and admin-only
@@ -1907,7 +1907,7 @@ classes:
     exceptions: []
     side_effects: Reads staffing/history/settings stores; initializes/migrates existing staffing databases before director-decision reads; may update canonical candidate contact, hiring stage/attention, and create one pending-approval offer version.
   - name: _director_offer_terms
-    description: Build normalized offer terms from candidate, application, finalized director shift/classroom, requested pay, and configured school template/output paths.
+    description: Build normalized offer terms from candidate qualification, exact finalized teacher position and shift/classroom, calculated starting pay, and configured school template/output paths; requested pay remains notification context only.
     locked: false
     inputs:
       application: {type: Any, required: true}
@@ -1915,7 +1915,15 @@ classes:
       interview: {type: Any, required: true}
     returns: {type: 'dict[str, Any]'}
     exceptions: [ValueError]
-    side_effects: Reads school offer settings and interview history.
+    side_effects: Reads school offer settings, interview history, candidate report, and versioned starting-pay settings.
+  - name: _offer_qualification
+    description: Load the authoritative structured candidate qualification snapshot for offer calculation, preferring a visible candidate report when present.
+    locked: false
+    inputs:
+      history_id: {type: str, required: true}
+    returns: {type: 'dict[str, Any]'}
+    exceptions: [ValueError]
+    side_effects: Reads InterviewHistoryStore and CandidateReportRepository.
   - name: _requested_pay_answer
     description: Return interviewer-entered requested pay from the structured candidate report Pay notes, falling back to legacy canonical answers or custom_answers only when no structured report exists; candidate transcript text is never substituted for structured manual pay.
     locked: false
@@ -1992,6 +2000,7 @@ dependencies:
 - module: staffing_change_stage
 - module: staffing_service
 - module: staffing_store
+- module: starting_pay_calculator
 - module: source_update_monitor
 - module: PySide6
 - module: pywin32

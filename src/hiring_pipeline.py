@@ -15,6 +15,12 @@ from pathlib import Path
 from typing import Any, Callable
 
 from data_store import InterviewHistoryStore
+from starting_pay_calculator import (
+    POSITION_LABELS,
+    calculate_offer_pay,
+    load_starting_pay_settings,
+    qualification_input_from_mapping,
+)
 
 
 class HiringStage(StrEnum):
@@ -1463,6 +1469,36 @@ class HiringWorkflowService:
             application_id, terms=terms, actor=actor, source_key=source_key
         )
 
+    def create_calculated_offer_draft(
+        self,
+        application_id: str,
+        *,
+        position_id: str,
+        qualification: dict[str, Any],
+        terms: dict[str, Any],
+        actor: str,
+    ) -> OfferVersion:
+        pay_input = qualification_input_from_mapping(position_id, qualification)
+        pay_result = calculate_offer_pay(pay_input, load_starting_pay_settings())
+        if pay_result.status != "calculated" or pay_result.starting_hourly_pay is None:
+            raise ValueError(pay_result.qualification_explanation)
+        calculated_terms = dict(terms)
+        calculated_terms.update(
+            {
+                "position_id": position_id,
+                "position": POSITION_LABELS[position_id],
+                "hourly_pay": format(pay_result.starting_hourly_pay, ".2f"),
+                "qualification_snapshot": dict(qualification),
+                "pay_calculation": pay_result.to_dict(),
+                "compensation_review_required": False,
+            }
+        )
+        return self.create_offer_draft(
+            application_id,
+            terms=calculated_terms,
+            actor=actor,
+        )
+
     def create_external_offer(
         self,
         *,
@@ -1493,6 +1529,45 @@ class HiringWorkflowService:
             application.application_id,
             draft.version_id,
             actor=actor,
+        )
+
+    def create_calculated_external_offer(
+        self,
+        *,
+        legal_name: str,
+        email: str,
+        phone: str,
+        school: str,
+        position_id: str,
+        qualification: dict[str, Any],
+        terms: dict[str, Any],
+        actor: str,
+        honorific: str = "Ms.",
+    ) -> OfferVersion:
+        pay_input = qualification_input_from_mapping(position_id, qualification)
+        pay_result = calculate_offer_pay(pay_input, load_starting_pay_settings())
+        if pay_result.status != "calculated" or pay_result.starting_hourly_pay is None:
+            raise ValueError(pay_result.qualification_explanation)
+        calculated_terms = dict(terms)
+        calculated_terms.update(
+            {
+                "position_id": position_id,
+                "position": POSITION_LABELS[position_id],
+                "hourly_pay": format(pay_result.starting_hourly_pay, ".2f"),
+                "qualification_snapshot": dict(qualification),
+                "pay_calculation": pay_result.to_dict(),
+                "compensation_review_required": False,
+            }
+        )
+        return self.create_external_offer(
+            legal_name=legal_name,
+            email=email,
+            phone=phone,
+            school=school,
+            position=POSITION_LABELS[position_id],
+            terms=calculated_terms,
+            actor=actor,
+            honorific=honorific,
         )
 
     def ensure_director_offer_submitted(
@@ -1575,6 +1650,7 @@ class HiringWorkflowService:
             raise ValueError("A sent offer version is required.")
         prior = max(sent_versions, key=lambda version: version.version_number)
         pay = self._positive_decimal(hourly_pay, "Hourly pay")
+        self._validate_pay_increment(pay)
         hours = self._positive_decimal(weekly_hours, "Weekly hours")
         if hours > Decimal("168"):
             raise ValueError("Weekly hours cannot exceed 168.")
@@ -1610,6 +1686,7 @@ class HiringWorkflowService:
         if prior.application_id != application_id or prior.status != "pending_approval":
             raise ValueError("Only the selected pending offer may be revised.")
         pay = self._positive_decimal(hourly_pay, "Hourly pay")
+        self._validate_pay_increment(pay)
         normalized_pay = format(pay, "f")
         if normalized_pay == str(prior.terms.get("hourly_pay") or ""):
             return prior
@@ -2108,6 +2185,12 @@ class HiringWorkflowService:
         if not number.is_finite() or number <= 0:
             raise ValueError(f"{label} must be greater than zero.")
         return number
+
+    @staticmethod
+    def _validate_pay_increment(pay: Decimal) -> None:
+        increment = load_starting_pay_settings().rounding_increment
+        if pay % increment != 0:
+            raise ValueError(f"Hourly pay must use increments of {format(increment, 'f')}.")
 
     @classmethod
     def _safe_delivery_error(cls, results: list[Any]) -> str:

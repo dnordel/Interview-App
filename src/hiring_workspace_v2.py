@@ -7,6 +7,13 @@ from pathlib import Path
 from typing import Any
 
 from dashboard_v2_ui import DashboardV2OverlayPanel, display_role, role_badge_key
+from candidate_report import CandidateReportRepository
+from starting_pay_calculator import (
+    POSITION_LABELS,
+    calculate_offer_pay,
+    load_starting_pay_settings,
+    qualification_input_from_mapping,
+)
 from hiring_pipeline import HiringApplication, HiringStage, HiringWorkflowService
 
 
@@ -125,7 +132,9 @@ class HiringOfferApprovalDialog:
 
     def _valid_hourly_pay(self) -> bool:
         try:
-            return Decimal(self.hourly_pay()) > 0
+            pay = Decimal(self.hourly_pay())
+            increment = load_starting_pay_settings().rounding_increment
+            return pay > 0 and pay % increment == 0
         except (InvalidOperation, ValueError):
             return False
 
@@ -880,8 +889,10 @@ class HiringWorkspaceV2Page:
             latest = max(failed, key=lambda version: version.version_number)
             result = self.service.retry_offer_send(application.application_id, latest.version_id, actor=actor)
         elif name == "create_offer":
-            draft = self.service.create_offer_draft(
+            draft = self.service.create_calculated_offer_draft(
                 application.application_id,
+                position_id=str(payload["position_id"]),
+                qualification=dict(payload["qualification"]),
                 terms=dict(payload),
                 actor=actor,
             )
@@ -899,13 +910,14 @@ class HiringWorkspaceV2Page:
                 actor_role="Admin",
             )
         elif name == "create_external_offer":
-            result = self.service.create_external_offer(
+            result = self.service.create_calculated_external_offer(
                 legal_name=str(payload["candidate_name"]),
                 email=str(payload.get("candidate_email", "")),
                 phone=str(payload.get("candidate_phone", "")),
                 honorific=str(payload.get("honorific", "Ms.")),
                 school=str(payload["school"]),
-                position=str(payload["position"]),
+                position_id=str(payload["position_id"]),
+                qualification=dict(payload["qualification"]),
                 terms=dict(payload),
                 actor=actor,
             )
@@ -966,7 +978,7 @@ class HiringWorkspaceV2Page:
                     candidate_id="",
                     history_id="",
                     school=str(values["school"]),
-                    position=str(values["position"]),
+                    position=POSITION_LABELS[str(values["position_id"])],
                     cycle_number=0,
                     stage=HiringStage.OFFER_DRAFT,
                 ),
@@ -993,28 +1005,44 @@ class HiringWorkspaceV2Page:
         honorific = self.QtWidgets.QComboBox()
         honorific.addItems(["Ms.", "Mr."])
         school = self.QtWidgets.QLineEdit()
-        position = self.QtWidgets.QLineEdit()
+        position = self.QtWidgets.QComboBox()
+        position.addItem("Select offer position", None)
+        for position_id, label in POSITION_LABELS.items():
+            position.addItem(label, position_id)
         identity_form.addRow("Candidate name", candidate_name)
         identity_form.addRow("Email", candidate_email)
         identity_form.addRow("Phone", candidate_phone)
         identity_form.addRow("Honorific", honorific)
         identity_form.addRow("School", school)
-        identity_form.addRow("Role", position)
+        identity_form.addRow("Offer position", position)
         stack.addWidget(identity)
 
         compensation = self.QtWidgets.QWidget()
         compensation_form = self.QtWidgets.QFormLayout(compensation)
         start_time = self.QtWidgets.QLineEdit("08:00 AM")
         end_time = self.QtWidgets.QLineEdit("05:00 PM")
-        hourly_pay = self.QtWidgets.QDoubleSpinBox()
-        hourly_pay.setRange(0.01, 500.0)
-        hourly_pay.setValue(20.0)
+        has_degree = self.QtWidgets.QComboBox()
+        has_degree.addItems(["", "Yes", "No"])
+        degree_type = self.QtWidgets.QComboBox()
+        degree_type.addItems(["", "AA", "AS", "BA", "BS", "MA", "MS", "MBA", "PhD", "EdD"])
+        degree_in_ece = self.QtWidgets.QCheckBox("Degree is in ECE/CD")
+        ece_units = self.QtWidgets.QLineEdit()
+        ece_units.setPlaceholderText("Semester units; optional for ECE/CD degree")
+        total_units = self.QtWidgets.QLineEdit()
+        total_units.setPlaceholderText("Required only when no degree")
+        experience_years = self.QtWidgets.QSpinBox()
+        experience_years.setRange(0, 99)
         weekly_hours = self.QtWidgets.QSpinBox()
         weekly_hours.setRange(1, 168)
         weekly_hours.setValue(40)
         compensation_form.addRow("Start time", start_time)
         compensation_form.addRow("End time", end_time)
-        compensation_form.addRow("Hourly pay", hourly_pay)
+        compensation_form.addRow("Has degree", has_degree)
+        compensation_form.addRow("Degree type", degree_type)
+        compensation_form.addRow("", degree_in_ece)
+        compensation_form.addRow("ECE/CD units", ece_units)
+        compensation_form.addRow("Total college units", total_units)
+        compensation_form.addRow("Completed experience years", experience_years)
         compensation_form.addRow("Weekly hours", weekly_hours)
         stack.addWidget(compensation)
 
@@ -1055,13 +1083,29 @@ class HiringWorkspaceV2Page:
             required = {
                 "Candidate name": candidate_name.text(),
                 "School": school.text(),
-                "Role": position.text(),
+                "Offer position": str(position.currentData() or ""),
                 "Template": template_path.text(),
                 "Destination": output_dir.text(),
             }
             missing = [label for label, value in required.items() if not value.strip()]
             if missing:
                 error.setText("Required: " + ", ".join(missing))
+                return
+            qualification = {
+                "has_degree": has_degree.currentText() == "Yes" if has_degree.currentText() else None,
+                "degree_type": degree_type.currentText(),
+                "degree_in_ece": degree_in_ece.isChecked(),
+                "ece_units_completed": ece_units.text(),
+                "total_units_completed": total_units.text(),
+                "years_experience": experience_years.value(),
+            }
+            try:
+                pay_input = qualification_input_from_mapping(str(position.currentData() or ""), qualification)
+                pay_result = calculate_offer_pay(pay_input, load_starting_pay_settings())
+                if pay_result.status != "calculated":
+                    raise ValueError(pay_result.qualification_explanation)
+            except (ArithmeticError, KeyError, TypeError, ValueError) as exc:
+                error.setText(str(exc))
                 return
             dialog.accept()
 
@@ -1074,10 +1118,17 @@ class HiringWorkspaceV2Page:
             "candidate_phone": candidate_phone.text().strip(),
             "honorific": honorific.currentText(),
             "school": school.text().strip(),
-            "position": position.text().strip(),
+            "position_id": str(position.currentData() or ""),
             "start_time": start_time.text().strip(),
             "end_time": end_time.text().strip(),
-            "hourly_pay": f"{hourly_pay.value():.2f}",
+            "qualification": {
+                "has_degree": has_degree.currentText() == "Yes",
+                "degree_type": degree_type.currentText(),
+                "degree_in_ece": degree_in_ece.isChecked(),
+                "ece_units_completed": ece_units.text().strip() or None,
+                "total_units_completed": total_units.text().strip() or None,
+                "years_experience": experience_years.value(),
+            },
             "weekly_hours": str(weekly_hours.value()),
             "template_path": template_path.text().strip(),
             "output_dir": output_dir.text().strip(),
@@ -1098,6 +1149,7 @@ class HiringWorkspaceV2Page:
         candidate = self.service.store.get_candidate(application.candidate_id)
         prior_versions = self.service.store.list_offer_versions(application.application_id)
         prior_terms = dict(prior_versions[-1].terms) if prior_versions else {}
+        qualification = self._saved_offer_qualification(application, prior_terms)
         dialog = self.QtWidgets.QDialog(self.widget)
         dialog.setWindowTitle("Revise compensation" if revision else "Create offer")
         dialog.resize(680, 430)
@@ -1125,7 +1177,37 @@ class HiringWorkspaceV2Page:
         weekly_hours.setValue(int(float(prior_terms.get("weekly_hours", prior_terms.get("hours_week", 40)))))
         compensation_form.addRow("Start time", start_time)
         compensation_form.addRow("End time", end_time)
-        compensation_form.addRow("Hourly pay", hourly_pay)
+        position_id = self.QtWidgets.QComboBox()
+        position_id.addItem("Select offer position", None)
+        for value, label in POSITION_LABELS.items():
+            position_id.addItem(label, value)
+        selected_position = str(prior_terms.get("position_id") or "")
+        if selected_position:
+            position_id.setCurrentIndex(position_id.findData(selected_position))
+        has_degree = self.QtWidgets.QComboBox()
+        has_degree.addItems(["", "Yes", "No"])
+        stored_has_degree = qualification.get("has_degree")
+        has_degree.setCurrentText("Yes" if stored_has_degree is True else "No" if stored_has_degree is False else "")
+        degree_type = self.QtWidgets.QComboBox()
+        degree_type.addItems(["", "AA", "AS", "BA", "BS", "MA", "MS", "MBA", "PhD", "EdD"])
+        degree_type.setCurrentText(str(qualification.get("degree_type") or ""))
+        degree_in_ece = self.QtWidgets.QCheckBox("Degree is in ECE/CD")
+        degree_in_ece.setChecked(bool(qualification.get("degree_in_ece")))
+        ece_units = self.QtWidgets.QLineEdit(str(qualification.get("ece_units_completed") or ""))
+        total_units = self.QtWidgets.QLineEdit(str(qualification.get("total_units_completed") or ""))
+        experience_years = self.QtWidgets.QSpinBox()
+        experience_years.setRange(0, 99)
+        experience_years.setValue(int(qualification.get("years_experience") or 0))
+        if revision:
+            compensation_form.addRow("Hourly pay", hourly_pay)
+        else:
+            compensation_form.addRow("Offer position", position_id)
+            compensation_form.addRow("Has degree", has_degree)
+            compensation_form.addRow("Degree type", degree_type)
+            compensation_form.addRow("", degree_in_ece)
+            compensation_form.addRow("ECE/CD units", ece_units)
+            compensation_form.addRow("Total college units", total_units)
+            compensation_form.addRow("Completed experience years", experience_years)
         compensation_form.addRow("Weekly hours", weekly_hours)
         stack.addWidget(compensation)
 
@@ -1158,7 +1240,7 @@ class HiringWorkspaceV2Page:
         submit.clicked.connect(dialog.accept)
         if dialog.exec() != self.QtWidgets.QDialog.DialogCode.Accepted:
             return None
-        return {
+        values = {
             **prior_terms,
             "candidate_name": candidate.legal_name,
             "candidate_email": candidate.email,
@@ -1171,6 +1253,37 @@ class HiringWorkspaceV2Page:
             "template_path": template_path.text().strip(),
             "output_dir": output_dir.text().strip(),
         }
+        if not revision:
+            values["position_id"] = str(position_id.currentData() or "")
+            values["qualification"] = {
+                "has_degree": has_degree.currentText() == "Yes" if has_degree.currentText() else None,
+                "degree_type": degree_type.currentText(),
+                "degree_in_ece": degree_in_ece.isChecked(),
+                "ece_units_completed": ece_units.text().strip() or None,
+                "total_units_completed": total_units.text().strip() or None,
+                "years_experience": experience_years.value(),
+            }
+        return values
+
+    def _saved_offer_qualification(
+        self,
+        application: HiringApplication,
+        prior_terms: dict[str, Any],
+    ) -> dict[str, Any]:
+        stored = prior_terms.get("qualification_snapshot")
+        if isinstance(stored, dict):
+            return dict(stored)
+        if not application.history_id:
+            return {}
+        repository = CandidateReportRepository(self.service.store.history_path)
+        if not repository.exists(application.history_id):
+            return {}
+        report = repository.load_visible_version(application.history_id, role="admin")
+        candidate = report.snapshot.get("candidate")
+        if not isinstance(candidate, dict):
+            return {}
+        qualification = candidate.get("qualification")
+        return dict(qualification) if isinstance(qualification, dict) else {}
 
     def _clear_detail(self) -> None:
         self.selected_application_id = ""

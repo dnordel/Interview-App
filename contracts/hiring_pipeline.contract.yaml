@@ -2,8 +2,8 @@ module:
   name: hiring_pipeline
   language: python
   path: src/hiring_pipeline.py
-  version: 1.10.0
-  description: Candidate-profile, application-pipeline, event-audit, editable pending-offer approval, delayed candidate-email delivery, offer-only deletion, and PDF-only candidate offer-delivery lifecycle persistence in the canonical interview history SQLite database.
+  version: 1.11.0
+  description: Candidate-profile, application-pipeline, event-audit, calculated teacher starting pay, editable increment-enforced pending-offer approval, delayed candidate-email delivery, offer-only deletion, and PDF-only candidate offer-delivery lifecycle persistence in the canonical interview history SQLite database.
 functions:
 - name: build_offer_notification_payload
   description: Build shared offer-approved notification values used by both approval preview and candidate delivery, including canonical school code and location.
@@ -465,6 +465,17 @@ classes:
     returns: {type: OfferVersion}
     exceptions: [ValueError]
     side_effects: Creates a numbered draft for an offer-ready or negotiated application.
+  - name: create_calculated_offer_draft
+    inputs:
+      application_id: {type: str, required: true}
+      position_id: {type: str, required: true}
+      qualification: {type: 'dict[str, Any]', required: true}
+      terms: {type: 'dict[str, Any]', required: true}
+      actor: {type: str, required: true}
+      source_key: {type: str, required: false, default: ''}
+    returns: {type: OfferVersion}
+    exceptions: [ValueError]
+    side_effects: Calculates and locks initial teacher pay, persists the qualification and calculation snapshot, and creates a numbered draft.
   - name: create_external_offer
     inputs:
       legal_name: {type: str, required: true}
@@ -478,6 +489,20 @@ classes:
     returns: {type: OfferVersion}
     exceptions: [ValueError]
     side_effects: Creates an external offer application, creates offer version 1, submits it for approval, and refreshes application stage.
+  - name: create_calculated_external_offer
+    inputs:
+      legal_name: {type: str, required: true}
+      email: {type: str, required: true}
+      phone: {type: str, required: true}
+      school: {type: str, required: true}
+      position_id: {type: str, required: true}
+      qualification: {type: 'dict[str, Any]', required: true}
+      terms: {type: 'dict[str, Any]', required: true}
+      actor: {type: str, required: true}
+      honorific: {type: str, required: false, default: 'Ms.'}
+    returns: {type: OfferVersion}
+    exceptions: [ValueError]
+    side_effects: Calculates initial teacher pay, creates the external candidate/application and version 1 audit snapshot, and submits it for approval.
   - name: ensure_director_offer_submitted
     inputs:
       application_id: {type: str, required: true}
@@ -504,7 +529,7 @@ classes:
       actor_role: {type: str, required: true}
     returns: {type: OfferVersion}
     exceptions: [ValueError]
-    side_effects: Creates an Admin-only numbered pending revision with only compensation fields changed.
+    side_effects: Creates an Admin-only numbered pending revision with only compensation fields changed after enforcing the configured pay increment; the configured initial-pay cap is not applied to Admin overrides.
   - name: revise_pending_offer_pay
     inputs:
       application_id: {type: str, required: true}
@@ -513,7 +538,7 @@ classes:
       actor: {type: str, required: true}
     returns: {type: OfferVersion}
     exceptions: [ValueError, OSError]
-    side_effects: Creates and previews a new numbered pending version with changed hourly pay, then supersedes the prior pending version only after artifact generation succeeds.
+    side_effects: Enforces the configured pay increment, creates and previews a new numbered pending version with changed hourly pay, then supersedes the prior pending version only after artifact generation succeeds; the configured initial-pay cap is not applied to Admin overrides.
   - name: approve_offer
     inputs:
       application_id: {type: str, required: true}
@@ -629,4 +654,5 @@ data_structures:
 - name: MigrationParityReport
   type: dataclass
 dependencies:
+- starting_pay_calculator
 - data_store

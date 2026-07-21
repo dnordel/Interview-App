@@ -209,7 +209,15 @@ def test_hiring_workspace_create_offer_action_submits_selected_version(tmp_path:
         "create_offer",
         service.store.get_application(application.application_id),
         values={
-            "hourly_pay": "24.00",
+            "position_id": "teacher",
+            "qualification": {
+                "has_degree": False,
+                "degree_type": "",
+                "degree_in_ece": False,
+                "ece_units_completed": "12",
+                "total_units_completed": "12",
+                "years_experience": 7,
+            },
             "weekly_hours": "40",
             "template_path": "offer.docx",
             "output_dir": "offers",
@@ -217,6 +225,7 @@ def test_hiring_workspace_create_offer_action_submits_selected_version(tmp_path:
     )
 
     assert submitted.status == "pending_approval"
+    assert submitted.terms["hourly_pay"] == "20.00"
     assert service.store.get_application(application.application_id).stage is HiringStage.EXECUTIVE_APPROVAL
     page.widget.close()
     app.processEvents()
@@ -252,8 +261,15 @@ def test_hiring_workspace_generate_offer_button_creates_external_offer(tmp_path:
             "candidate_phone": "555-0100",
             "honorific": "Ms.",
             "school": "Palmdale",
-            "position": "Preschool",
-            "hourly_pay": "24.00",
+            "position_id": "teacher",
+            "qualification": {
+                "has_degree": False,
+                "degree_type": "",
+                "degree_in_ece": False,
+                "ece_units_completed": "24",
+                "total_units_completed": "40",
+                "years_experience": 3,
+            },
             "weekly_hours": "40",
             "template_path": "offer.docx",
             "output_dir": "offers",
@@ -263,6 +279,7 @@ def test_hiring_workspace_generate_offer_button_creates_external_offer(tmp_path:
     assert button is not None
     assert button.text() == "+ Generate offer"
     assert submitted.status == "pending_approval"
+    assert submitted.terms["hourly_pay"] == "19.00"
     assert page.offers_table.rowCount() == 1
     assert page.offers_table.item(0, 0).text() == "External Candidate"
     assert page.offers_table.item(0, 5).text() == "Pending Approval"
@@ -683,7 +700,20 @@ def test_hiring_workspace_contextual_actions_complete_offer_lifecycle(tmp_path: 
     pending = page.perform_action(
         "create_offer",
         service.store.get_application(application.application_id),
-        values={"hourly_pay": "24", "weekly_hours": "40", "template_path": "offer.docx", "output_dir": "offers"},
+        values={
+            "position_id": "teacher",
+            "qualification": {
+                "has_degree": True,
+                "degree_type": "BA",
+                "degree_in_ece": True,
+                "ece_units_completed": None,
+                "total_units_completed": None,
+                "years_experience": 10,
+            },
+            "weekly_hours": "40",
+            "template_path": "offer.docx",
+            "output_dir": "offers",
+        },
     )
     docx = tmp_path / "approved-v1.docx"
     pdf = tmp_path / "approved-v1.pdf"

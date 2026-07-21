@@ -12,7 +12,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-21T17:30:46.426312+00:00'
+generated_at_utc: '2026-07-21T18:44:34.766957+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -1704,6 +1704,24 @@ entries:
     - return_type
 - contract: contracts/hiring_pipeline.contract.yaml
   symbol: hiring_pipeline.HiringWorkflowService.backfill_history
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/hiring_pipeline.contract.yaml
+  symbol: hiring_pipeline.HiringWorkflowService.create_calculated_external_offer
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/hiring_pipeline.contract.yaml
+  symbol: hiring_pipeline.HiringWorkflowService.create_calculated_offer_draft
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -8711,6 +8729,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._offer_qualification
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._open_history_notes
   kind: method
   tests:
@@ -10697,6 +10724,16 @@ entries:
     - security_controls
 - contract: contracts/scoring_reporting.contract.yaml
   symbol: scoring_reporting.canonical_trait_id
+  kind: function
+  tests:
+  - path: tests/test_shared_module_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_controls
+- contract: contracts/scoring_reporting.contract.yaml
+  symbol: scoring_reporting.coerce_non_negative_decimal
   kind: function
   tests:
   - path: tests/test_shared_module_contract_interfaces.py
@@ -14873,6 +14910,96 @@ entries:
 - contract: contracts/staffing_store.contract.yaml
   symbol: staffing_store.StaffingStore.write_connection
   kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/starting_pay_calculator.contract.yaml
+  symbol: starting_pay_calculator.PayCalculationResult.to_dict
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/starting_pay_calculator.contract.yaml
+  symbol: starting_pay_calculator.StartingPaySettingsStore.load
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/starting_pay_calculator.contract.yaml
+  symbol: starting_pay_calculator.StartingPaySettingsStore.save
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/starting_pay_calculator.contract.yaml
+  symbol: starting_pay_calculator.calculate_offer_pay
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/starting_pay_calculator.contract.yaml
+  symbol: starting_pay_calculator.default_starting_pay_settings
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/starting_pay_calculator.contract.yaml
+  symbol: starting_pay_calculator.determine_highest_level
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/starting_pay_calculator.contract.yaml
+  symbol: starting_pay_calculator.load_starting_pay_settings
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/starting_pay_calculator.contract.yaml
+  symbol: starting_pay_calculator.qualification_input_from_mapping
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/starting_pay_calculator.contract.yaml
+  symbol: starting_pay_calculator.validate_qualification_input
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/starting_pay_calculator.contract.yaml
+  symbol: starting_pay_calculator.validate_starting_pay_settings
+  kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
     focus:

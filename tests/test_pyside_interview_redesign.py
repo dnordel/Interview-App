@@ -3816,6 +3816,7 @@ def test_director_hire_sync_creates_one_pending_offer_with_derived_terms(tmp_pat
         proposed_shift_start="8:00 AM",
         proposed_shift_end="5:00 PM",
         proposed_classroom="Chef",
+        offer_position_id="teacher_floater",
     )
     offer_settings = SchoolOfferSettingsStore(tmp_path / "offer-settings.json")
     offer_settings.save(
@@ -3848,7 +3849,11 @@ def test_director_hire_sync_creates_one_pending_offer_with_derived_terms(tmp_pat
     assert offers[0].terms["weekly_hours"] == "40"
     assert offers[0].terms["employment_type"] == "full_time"
     assert offers[0].terms["proposed_classroom"] == "Chef"
-    assert offers[0].terms["hourly_pay"] == "24.5"
+    assert offers[0].terms["position_id"] == "teacher_floater"
+    assert offers[0].terms["position"] == "Teacher/Floater"
+    assert offers[0].terms["hourly_pay"] == "22.50"
+    assert offers[0].terms["pay_calculation"]["career_lattice_level"] == 7
+    assert offers[0].terms["pay_calculation"]["calculation_version"] == "2026.1"
     assert offers[0].terms["honorific"] == "Mr."
     hire_payload = notifications[0][1]
     assert hire_payload["interview_score"] == "88"
@@ -3856,7 +3861,7 @@ def test_director_hire_sync_creates_one_pending_offer_with_derived_terms(tmp_pat
     assert hire_payload["degree_in_ece_display"] == "\nDegree in ECE: Yes"
     assert hire_payload["experience"] == "6"
     assert hire_payload["requested_pay"] == "$24.50 per hour"
-    assert hire_payload["offer_amount"] == "24.5"
+    assert hire_payload["offer_amount"] == "22.50"
 
 
 def test_director_hire_sync_migrates_existing_staffing_db_before_contact_read(
@@ -3874,6 +3879,14 @@ def test_director_hire_sync_migrates_existing_staffing_db_before_contact_read(
             "score": 86,
             "outcome": "Hire",
             "answers": {"Pay": {"notes": "$23.00 per hour"}},
+            "qualification": {
+                "has_degree": False,
+                "degree_type": "",
+                "degree_in_ece": False,
+                "ece_units_completed": 24,
+                "total_units_completed": 40,
+                "years_experience": 0,
+            },
         }
     )
     hiring = pyside_interview_app.HiringWorkflowService(
@@ -3912,6 +3925,7 @@ def test_director_hire_sync_migrates_existing_staffing_db_before_contact_read(
         proposed_shift_start="8:00 AM",
         proposed_shift_end="5:00 PM",
         proposed_classroom="Chef",
+        offer_position_id="teacher",
     )
     with sqlite3.connect(staffing_path) as conn:
         conn.execute("ALTER TABLE director_candidate_referrals DROP COLUMN candidate_phone")
@@ -9291,15 +9305,19 @@ def test_staffing_v2_director_interviews_sync_pending_history_and_record_complet
     shift_start = dialog.findChild(qt_widgets.QLineEdit, "StaffingV2DirectorInterviewShiftStartText")
     shift_end = dialog.findChild(qt_widgets.QLineEdit, "StaffingV2DirectorInterviewShiftEndText")
     classroom = dialog.findChild(qt_widgets.QComboBox, "StaffingV2DirectorInterviewClassroom")
+    offer_position = dialog.findChild(qt_widgets.QComboBox, "StaffingV2DirectorInterviewOfferPosition")
     candidate_email = dialog.findChild(qt_widgets.QLineEdit, "StaffingV2DirectorInterviewCandidateEmail")
     candidate_phone = dialog.findChild(qt_widgets.QLineEdit, "StaffingV2DirectorInterviewCandidatePhone")
     assert candidate_email is not None
     assert candidate_phone is not None
+    assert offer_position is not None
+    assert offer_position.currentData() is None
     decision.setCurrentText("No-Hire")
     app.processEvents()
     assert not shift_start.isVisible()
     assert not shift_end.isVisible()
     assert not classroom.isVisible()
+    assert not offer_position.isVisible()
     assert not candidate_email.isVisible()
     assert not candidate_phone.isVisible()
     decision.setCurrentText("Hire")
@@ -9307,11 +9325,13 @@ def test_staffing_v2_director_interviews_sync_pending_history_and_record_complet
     assert shift_start.isVisible()
     assert shift_end.isVisible()
     assert classroom.isVisible()
+    assert offer_position.isVisible()
     assert candidate_email.isVisible()
     assert candidate_phone.isVisible()
     shift_start.setText("8:00 AM")
     shift_end.setText("5:00 PM")
     classroom.setCurrentText("Harmony 1")
+    offer_position.setCurrentIndex(offer_position.findData("teacher_floater"))
     candidate_email.setText("jordan@example.org")
     dialog.findChild(qt_widgets.QTextEdit, "StaffingV2DirectorInterviewNotes").setPlainText("Strong classroom presence.")
     dialog.findChild(qt_widgets.QPushButton, "StaffingV2DirectorInterviewSave").click()
@@ -9325,6 +9345,10 @@ def test_staffing_v2_director_interviews_sync_pending_history_and_record_complet
     assignment = next(row for row in window.staffing_store.list_assignments() if row.school == "Hawthorne")
     assert assignment.status == "need_now"
     assert assignment.person_name == ""
+    completed = pyside_interview_app.StaffingService(window.staffing_store).list_completed_director_interviews(
+        school="Hawthorne"
+    )[0]
+    assert completed.offer_position_id == "teacher_floater"
     window.window.close()
     app.processEvents()
 

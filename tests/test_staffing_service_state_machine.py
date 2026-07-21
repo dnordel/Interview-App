@@ -695,6 +695,7 @@ def test_director_interview_completion_is_school_scoped_and_does_not_fill_positi
         proposed_shift_start="8:00 AM",
         proposed_shift_end="5:00 PM",
         proposed_classroom="Harmony 1",
+        offer_position_id="teacher_floater",
         follow_up_needed=True,
     )
 
@@ -707,6 +708,7 @@ def test_director_interview_completion_is_school_scoped_and_does_not_fill_positi
     assert result.decision == "hire"
     assert result.owner_approval_status == "pending_owner_approval"
     assert result.proposed_shift_start == "8:00 AM"
+    assert result.offer_position_id == "teacher_floater"
     assert service.find_completed_director_interview(
         history_id="hist-1",
         school="Hawthorne",
@@ -765,6 +767,20 @@ def test_director_interview_validation_requires_notes_and_hire_shift_details(tmp
             decision="hire",
             decision_notes="Hire if schedule works.",
             proposed_classroom="Harmony 1",
+            offer_position_id="teacher",
+        )
+    with pytest.raises(ValueError, match="Offer position is required"):
+        service.record_director_interview(
+            referral.id,
+            director_name="Avery Director",
+            completed_date="2026-07-06",
+            rating=8,
+            decision="hire",
+            decision_notes="Hire.",
+            proposed_shift_start="8:00 AM",
+            proposed_shift_end="5:00 PM",
+            proposed_classroom="Harmony 1",
+            candidate_email="candidate@example.org",
         )
     assert service.list_pending_director_interviews(school="Hawthorne") == [referral]
 
@@ -791,6 +807,7 @@ def test_director_hire_requires_email_but_phone_is_optional(tmp_path: Path) -> N
             proposed_shift_start="8:00 AM",
             proposed_shift_end="5:00 PM",
             proposed_classroom="Harmony 1",
+            offer_position_id="teacher",
         )
 
     result = service.record_director_interview(
@@ -803,6 +820,7 @@ def test_director_hire_requires_email_but_phone_is_optional(tmp_path: Path) -> N
         proposed_shift_start="8:00 AM",
         proposed_shift_end="5:00 PM",
         proposed_classroom="Harmony 1",
+        offer_position_id="teacher",
         candidate_email="jordan@example.org",
     )
 

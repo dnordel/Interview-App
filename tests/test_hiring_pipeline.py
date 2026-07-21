@@ -279,6 +279,32 @@ def test_external_offer_creates_offer_ready_application_and_submits(tmp_path: Pa
     ]
 
 
+def test_external_offer_calculates_pay_from_qualification_snapshot(tmp_path: Path) -> None:
+    service = HiringWorkflowService(HiringPipelineStore(tmp_path / "history.sqlite3"))
+
+    created = service.create_calculated_external_offer(
+        legal_name="Jordan Lee",
+        email="jordan@example.org",
+        phone="",
+        school="Palmdale",
+        position_id="teacher",
+        qualification={
+            "has_degree": False,
+            "degree_type": "",
+            "degree_in_ece": False,
+            "ece_units_completed": "24",
+            "total_units_completed": "40",
+            "years_experience": 3,
+        },
+        terms={"weekly_hours": "40"},
+        actor="Admin",
+    )
+
+    assert created.terms["position"] == "Teacher"
+    assert created.terms["hourly_pay"] == "19.00"
+    assert created.terms["pay_calculation"]["career_lattice_level"] == 5
+
+
 def test_approved_offer_advances_only_after_pdf_delivery(tmp_path: Path) -> None:
     history_path = tmp_path / "interview_history.sqlite3"
     history = InterviewHistoryStore(history_path)
@@ -633,6 +659,14 @@ def test_pending_offer_pay_edit_creates_new_previewed_version(tmp_path: Path) ->
         actor="Admin",
     )
     service.submit_offer_for_approval(application.application_id, original.version_id, actor="Admin")
+
+    with pytest.raises(ValueError, match="increment"):
+        service.revise_pending_offer_pay(
+            application.application_id,
+            original.version_id,
+            hourly_pay="24.10",
+            actor="Executive",
+        )
 
     revised = service.revise_pending_offer_pay(
         application.application_id,
