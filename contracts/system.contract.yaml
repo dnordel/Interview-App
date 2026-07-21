@@ -10,6 +10,7 @@ modules:
     path: src/hiring_pipeline.py
     depends_on:
     - data_store
+    - starting_pay_calculator
   hiring_migration:
     path: src/hiring_migration.py
     depends_on:
@@ -17,8 +18,17 @@ modules:
   hiring_workspace_v2:
     path: src/hiring_workspace_v2.py
     depends_on:
+    - data_store
     - dashboard_v2_ui
     - hiring_pipeline
+    - platform_services
+    - pyside_interview_components
+    - scoring_reporting
+    - starting_pay_calculator
+  starting_pay_calculator:
+    path: src/starting_pay_calculator.py
+    depends_on:
+    - config_starting_pay_json
   interview_runtime:
     path: src/interview_runtime.py
     depends_on:
@@ -40,6 +50,8 @@ modules:
   pyside_interview_components:
     path: src/pyside_interview_components.py
     depends_on:
+    - hiring_pipeline
+    - scoring_reporting
     - PySide6
   pyside_completed_interview:
     path: src/pyside_completed_interview.py
@@ -277,6 +289,7 @@ modules:
     - staffing_change_stage
     - staffing_service
     - staffing_store
+    - starting_pay_calculator
     - source_update_monitor
     - PySide6
     - pywin32
@@ -313,6 +326,7 @@ modules:
     - notification_service
     - notification_templates
     - onboarding_operations
+    - starting_pay_calculator
     - PySide6
   config_rubric_json:
     path: config/rubric.json
@@ -322,6 +336,9 @@ modules:
     depends_on: []
   config_staffing_seed_json:
     path: config/staffing_seed.json
+    depends_on: []
+  config_starting_pay_json:
+    path: config/starting_pay.json
     depends_on: []
   config_source_version_txt:
     path: config/source_version.txt
@@ -395,7 +412,8 @@ module_metadata:
     - Acts as the single PySide desktop parity surface for desktop GUI responsibilities.
     - Hosts admin-only Settings inside the shared Staffing v2 shell and delegates draft validation, backups, and confirmed JSON persistence to admin_studio.
     - Offer generation resolves school-specific full-time or part-time templates and output folders from school_offer_settings_json, requires Mr. or Ms. title selection, preserves existing offers with revision suffixes, and prefills editable shift times from the exact school-scoped completed Director Staffing v2 hire decision.
-    - Pending offers expose a direct Review offer action beside the overflow menu; submission generates and persists same-stem DOCX and PDF artifacts together so review reuses the saved PDF, approval review renders the active candidate offer template from Notification Settings, and every initial, edited, or retried candidate delivery attaches only the approved PDF and never the retained Word artifact.
+    - Director Hire approval notifications source qualification and experience from the structured candidate report, use interviewer-entered Pay notes rather than candidate transcript text for Requested Pay, and derive Offer Amount from that manual pay value.
+    - Offers uses separate auto-height pending and approved tables. Pending offers expose direct Review actions, approval allows a new hourly pay through Change Pay & Approve and does not require candidate email, approved-unsent offers prompt for and save email before sending, and selected-offer deletion removes only safely constrained generated DOCX/PDF artifacts while retaining application/interview records. Every delivery attaches only the approved PDF.
     - Finalize progress is user-closable and does not cancel background transcription or finalize work.
     - Finalize progress renders sanitized task rows with right-side statuses limited to Processing, Finished, Timed-out, or Queued.
     - Completed overview uses existing ScoringEngine totals, marks only ratings of 5 as strengths, marks ratings of 3 or below as review items, treats ratings of 4 as neutral, and shows an explicit empty state when either summary has no score-derived items.

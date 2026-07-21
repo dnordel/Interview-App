@@ -15,6 +15,12 @@ from pathlib import Path
 from typing import Any, Callable
 
 from data_store import InterviewHistoryStore
+from starting_pay_calculator import (
+    POSITION_LABELS,
+    calculate_offer_pay,
+    load_starting_pay_settings,
+    qualification_input_from_mapping,
+)
 
 
 class HiringStage(StrEnum):
@@ -342,6 +348,7 @@ class HiringPipelineStore:
         preferred_name: str,
         email: str,
         phone: str,
+        honorific: str | None = None,
     ) -> CandidateProfile:
         current = self.get_candidate(candidate_id)
         clean_name = _normalized_text(legal_name)
@@ -350,6 +357,7 @@ class HiringPipelineStore:
             raise ValueError("Legal name is required.")
         if clean_email and not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", clean_email):
             raise ValueError("Candidate email is invalid.")
+        clean_honorific = current.honorific if honorific is None else _validated_honorific(honorific)
         with sqlite3.connect(self.db_path) as conn:
             school_row = conn.execute(
                 "SELECT normalized_school FROM candidate_profiles WHERE candidate_id = ?",
@@ -359,7 +367,7 @@ class HiringPipelineStore:
                 cursor = conn.execute(
                     """
                     UPDATE candidate_profiles
-                    SET legal_name = ?, preferred_name = ?, email = ?, phone = ?,
+                    SET legal_name = ?, preferred_name = ?, email = ?, phone = ?, honorific = ?,
                         normalized_name = ?, updated_at = ?
                     WHERE candidate_id = ?
                     """,
@@ -368,6 +376,7 @@ class HiringPipelineStore:
                         _normalized_text(preferred_name),
                         clean_email,
                         _normalized_text(phone),
+                        clean_honorific,
                         _match_text(clean_name),
                         _now_utc(),
                         current.candidate_id,
@@ -618,6 +627,48 @@ class HiringPipelineStore:
         if cursor.rowcount != 1:
             raise ValueError("Offer version was not found.")
         return self.get_offer_version(version_id)
+
+    def delete_offer_version(self, application_id: str, version_id: str) -> None:
+        version = self.get_offer_version(version_id)
+        if version.application_id != str(application_id).strip():
+            raise ValueError("Offer version does not belong to this application.")
+        output_text = str(version.terms.get("output_dir") or "").strip()
+        artifact_paths = [
+            (Path(value).expanduser().resolve(), suffix)
+            for value, suffix in ((version.docx_path, ".docx"), (version.pdf_path, ".pdf"))
+            if str(value).strip()
+        ]
+        if artifact_paths and not output_text:
+            raise ValueError("Offer output directory is required to delete generated files safely.")
+        output_dir = Path(output_text).expanduser().resolve() if output_text else None
+        for path, suffix in artifact_paths:
+            if path.suffix.casefold() != suffix or output_dir is None or not path.is_relative_to(output_dir):
+                raise ValueError("Offer artifact path is outside the configured output directory.")
+            if path.exists() and not path.is_file():
+                raise ValueError("Offer artifact path is not a file.")
+        with sqlite3.connect(self.db_path) as conn:
+            for path, _suffix in artifact_paths:
+                shared = int(
+                    conn.execute(
+                        """
+                        SELECT COUNT(*) FROM hiring_offer_versions
+                        WHERE version_id != ? AND (docx_path = ? OR pdf_path = ?)
+                        """,
+                        (str(version_id).strip(), str(path), str(path)),
+                    ).fetchone()[0]
+                )
+                if shared:
+                    raise ValueError("Offer artifact is shared by another offer and cannot be deleted.")
+            cursor = conn.execute(
+                "DELETE FROM hiring_offer_versions WHERE version_id = ? AND application_id = ?",
+                (str(version_id).strip(), str(application_id).strip()),
+            )
+            if cursor.rowcount != 1:
+                raise ValueError("Offer version was not found.")
+            for path, _suffix in artifact_paths:
+                if path.exists():
+                    path.unlink()
+            conn.commit()
 
     def record_offer_artifacts(
         self,
@@ -977,6 +1028,64 @@ class HiringPipelineStore:
         )
         return self.get_application(application_id)
 
+    def start_external_offer_application_for_candidate(
+        self,
+        *,
+        candidate_id: str,
+        school: str,
+        position: str,
+        actor: str,
+    ) -> HiringApplication:
+        clean_candidate_id = _normalized_text(candidate_id)
+        clean_school = _normalized_text(school)
+        clean_position = _normalized_text(position)
+        clean_actor = _normalized_text(actor)
+        if not all((clean_candidate_id, clean_school, clean_position, clean_actor)):
+            raise ValueError("Candidate, school, position, and actor are required.")
+        self.get_candidate(clean_candidate_id)
+        now = _now_utc()
+        application_id = str(uuid.uuid4())
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            cycle_number = int(
+                conn.execute(
+                    """
+                    SELECT COUNT(*) + 1 FROM hiring_applications
+                    WHERE candidate_id = ? AND normalized_school = ? AND normalized_position = ?
+                    """,
+                    (clean_candidate_id, _match_text(clean_school), _match_text(clean_position)),
+                ).fetchone()[0]
+            )
+            conn.execute(
+                """
+                INSERT INTO hiring_applications (
+                    application_id, candidate_id, history_id, school, normalized_school,
+                    position, normalized_position, cycle_number, stage, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    application_id,
+                    clean_candidate_id,
+                    f"external_offer:{application_id}",
+                    clean_school,
+                    _match_text(clean_school),
+                    clean_position,
+                    _match_text(clean_position),
+                    cycle_number,
+                    HiringStage.OFFER_DRAFT.value,
+                    now,
+                    now,
+                ),
+            )
+            conn.commit()
+        self.append_event(
+            application_id,
+            "external_offer_application_created",
+            actor=clean_actor,
+            payload={"existing_candidate": True},
+        )
+        return self.get_application(application_id)
+
     def finalize_initial_interview(
         self,
         application_id: str,
@@ -1273,6 +1382,9 @@ class HiringWorkflowService:
     def start_external_offer_application(self, **values: Any) -> HiringApplication:
         return self.store.start_external_offer_application(**values)
 
+    def start_external_offer_application_for_candidate(self, **values: Any) -> HiringApplication:
+        return self.store.start_external_offer_application_for_candidate(**values)
+
     def finalize_initial_interview(
         self,
         application_id: str,
@@ -1421,6 +1533,36 @@ class HiringWorkflowService:
             application_id, terms=terms, actor=actor, source_key=source_key
         )
 
+    def create_calculated_offer_draft(
+        self,
+        application_id: str,
+        *,
+        position_id: str,
+        qualification: dict[str, Any],
+        terms: dict[str, Any],
+        actor: str,
+    ) -> OfferVersion:
+        pay_input = qualification_input_from_mapping(position_id, qualification)
+        pay_result = calculate_offer_pay(pay_input, load_starting_pay_settings())
+        if pay_result.status != "calculated" or pay_result.starting_hourly_pay is None:
+            raise ValueError(pay_result.qualification_explanation)
+        calculated_terms = dict(terms)
+        calculated_terms.update(
+            {
+                "position_id": position_id,
+                "position": POSITION_LABELS[position_id],
+                "hourly_pay": format(pay_result.starting_hourly_pay, ".2f"),
+                "qualification_snapshot": dict(qualification),
+                "pay_calculation": pay_result.to_dict(),
+                "compensation_review_required": False,
+            }
+        )
+        return self.create_offer_draft(
+            application_id,
+            terms=calculated_terms,
+            actor=actor,
+        )
+
     def create_external_offer(
         self,
         *,
@@ -1445,6 +1587,87 @@ class HiringWorkflowService:
         draft = self.create_offer_draft(
             application.application_id,
             terms=terms,
+            actor=actor,
+        )
+        return self.submit_offer_for_approval(
+            application.application_id,
+            draft.version_id,
+            actor=actor,
+        )
+
+    def create_calculated_external_offer(
+        self,
+        *,
+        legal_name: str,
+        email: str,
+        phone: str,
+        school: str,
+        position_id: str,
+        qualification: dict[str, Any],
+        terms: dict[str, Any],
+        actor: str,
+        honorific: str = "Ms.",
+    ) -> OfferVersion:
+        pay_input = qualification_input_from_mapping(position_id, qualification)
+        pay_result = calculate_offer_pay(pay_input, load_starting_pay_settings())
+        if pay_result.status != "calculated" or pay_result.starting_hourly_pay is None:
+            raise ValueError(pay_result.qualification_explanation)
+        calculated_terms = dict(terms)
+        calculated_terms.update(
+            {
+                "position_id": position_id,
+                "position": POSITION_LABELS[position_id],
+                "hourly_pay": format(pay_result.starting_hourly_pay, ".2f"),
+                "qualification_snapshot": dict(qualification),
+                "pay_calculation": pay_result.to_dict(),
+                "compensation_review_required": False,
+            }
+        )
+        return self.create_external_offer(
+            legal_name=legal_name,
+            email=email,
+            phone=phone,
+            school=school,
+            position=POSITION_LABELS[position_id],
+            terms=calculated_terms,
+            actor=actor,
+            honorific=honorific,
+        )
+
+    def create_calculated_external_offer_for_candidate(
+        self,
+        *,
+        candidate_id: str,
+        school: str,
+        position_id: str,
+        qualification: dict[str, Any],
+        terms: dict[str, Any],
+        actor: str,
+    ) -> OfferVersion:
+        pay_input = qualification_input_from_mapping(position_id, qualification)
+        pay_result = calculate_offer_pay(pay_input, load_starting_pay_settings())
+        if pay_result.status != "calculated" or pay_result.starting_hourly_pay is None:
+            raise ValueError(pay_result.qualification_explanation)
+        calculated_terms = dict(terms)
+        calculated_terms.update(
+            {
+                "position_id": position_id,
+                "position": POSITION_LABELS[position_id],
+                "hourly_pay": format(pay_result.starting_hourly_pay, ".2f"),
+                "qualification_snapshot": dict(qualification),
+                "pay_calculation": pay_result.to_dict(),
+                "compensation_review_required": False,
+            }
+        )
+        application = self.start_external_offer_application_for_candidate(
+            candidate_id=candidate_id,
+            school=school,
+            position=POSITION_LABELS[position_id],
+            actor=actor,
+        )
+        draft = self.create_offer_draft(
+            application.application_id,
+            terms=calculated_terms,
             actor=actor,
         )
         return self.submit_offer_for_approval(
@@ -1533,6 +1756,7 @@ class HiringWorkflowService:
             raise ValueError("A sent offer version is required.")
         prior = max(sent_versions, key=lambda version: version.version_number)
         pay = self._positive_decimal(hourly_pay, "Hourly pay")
+        self._validate_pay_increment(pay)
         hours = self._positive_decimal(weekly_hours, "Weekly hours")
         if hours > Decimal("168"):
             raise ValueError("Weekly hours cannot exceed 168.")
@@ -1552,6 +1776,47 @@ class HiringWorkflowService:
             },
         )
         return self._prepare_pending_offer_artifacts(submitted)
+
+    def revise_pending_offer_pay(
+        self,
+        application_id: str,
+        version_id: str,
+        *,
+        hourly_pay: str,
+        actor: str,
+    ) -> OfferVersion:
+        application = self.store.get_application(application_id)
+        prior = self.store.get_offer_version(version_id)
+        if application.stage is not HiringStage.EXECUTIVE_APPROVAL:
+            raise ValueError("Application is not awaiting executive approval.")
+        if prior.application_id != application_id or prior.status != "pending_approval":
+            raise ValueError("Only the selected pending offer may be revised.")
+        pay = self._positive_decimal(hourly_pay, "Hourly pay")
+        self._validate_pay_increment(pay)
+        normalized_pay = format(pay, "f")
+        if normalized_pay == str(prior.terms.get("hourly_pay") or ""):
+            return prior
+        terms = dict(prior.terms)
+        terms["hourly_pay"] = normalized_pay
+        revision = self.store.create_offer_version(application_id, terms=terms, actor=actor)
+        submitted = self.store.set_offer_status(revision.version_id, "pending_approval")
+        try:
+            previewed = self._prepare_pending_offer_artifacts(submitted)
+        except Exception:
+            self.store.set_offer_status(revision.version_id, "failed")
+            raise
+        self.store.set_offer_status(prior.version_id, "superseded")
+        self.store.append_event(
+            application_id,
+            "pending_offer_pay_revised",
+            actor=actor,
+            payload={
+                "version_id": previewed.version_id,
+                "version_number": previewed.version_number,
+                "supersedes_version_id": prior.version_id,
+            },
+        )
+        return previewed
 
     def extend_offer_deadline(
         self,
@@ -1811,8 +2076,6 @@ class HiringWorkflowService:
         safe_docx = self._validated_artifact_path(docx_path, ".docx")
         safe_pdf = self._validated_artifact_path(pdf_path, ".pdf")
         candidate = self.store.get_candidate(application.candidate_id)
-        if not self._valid_email(candidate.email):
-            raise ValueError("Candidate email is missing or invalid.")
 
         approved = self.store.record_offer_approval(
             version_id,
@@ -1829,6 +2092,8 @@ class HiringWorkflowService:
             actor=clean_name,
             payload={"version_id": version_id, "version_number": approved.version_number},
         )
+        if not self._valid_email(candidate.email):
+            return approved
         return self._deliver_approved_offer(application, approved)
 
     def approve_compensation_revision(
@@ -1890,6 +2155,69 @@ class HiringWorkflowService:
             payload={"version_id": version_id, "version_number": version.version_number},
         )
         return self._deliver_approved_offer(application, version)
+
+    def send_approved_offer(
+        self,
+        application_id: str,
+        version_id: str,
+        *,
+        candidate_email: str,
+        actor: str,
+    ) -> OfferVersion:
+        application = self.store.get_application(application_id)
+        version = self.store.get_offer_version(version_id)
+        email = _normalized_text(candidate_email)
+        if version.application_id != application_id:
+            raise ValueError("Offer version does not belong to this application.")
+        if version.status == "sent":
+            return version
+        if version.status != "approved" or version.send_status not in {"pending", "failed"}:
+            raise ValueError("Only an approved unsent offer may be sent.")
+        if not self._valid_email(email):
+            raise ValueError("Valid candidate email is required before sending.")
+        candidate = self.store.get_candidate(application.candidate_id)
+        self.store.update_candidate_profile(
+            candidate.candidate_id,
+            legal_name=candidate.legal_name,
+            preferred_name=candidate.preferred_name,
+            email=email,
+            phone=candidate.phone,
+        )
+        self.store.append_event(
+            application_id,
+            "approved_offer_send_requested",
+            actor=actor,
+            payload={"version_id": version_id, "version_number": version.version_number},
+        )
+        return self._deliver_approved_offer(application, version)
+
+    def delete_offer(
+        self,
+        application_id: str,
+        version_id: str,
+        *,
+        actor: str,
+    ) -> HiringApplication:
+        version = self.store.get_offer_version(version_id)
+        self.store.delete_offer_version(application_id, version_id)
+        remaining = self.store.list_offer_versions(application_id)
+        statuses = {item.status for item in remaining}
+        if "accepted" in statuses:
+            stage = HiringStage.ACCEPTED
+        elif "sent" in statuses:
+            stage = HiringStage.OFFER_SENT
+        elif statuses & {"pending_approval", "approved"}:
+            stage = HiringStage.EXECUTIVE_APPROVAL
+        else:
+            stage = HiringStage.OFFER_DRAFT
+        application = self.store.update_application_stage(application_id, stage, attention_code="")
+        self.store.append_event(
+            application_id,
+            "offer_deleted",
+            actor=actor,
+            payload={"version_id": version_id, "version_number": version.version_number},
+        )
+        return application
 
     def _deliver_approved_offer(
         self,
@@ -1963,6 +2291,12 @@ class HiringWorkflowService:
         if not number.is_finite() or number <= 0:
             raise ValueError(f"{label} must be greater than zero.")
         return number
+
+    @staticmethod
+    def _validate_pay_increment(pay: Decimal) -> None:
+        increment = load_starting_pay_settings().rounding_increment
+        if pay % increment != 0:
+            raise ValueError(f"Hourly pay must use increments of {format(increment, 'f')}.")
 
     @classmethod
     def _safe_delivery_error(cls, results: list[Any]) -> str:

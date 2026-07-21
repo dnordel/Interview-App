@@ -17,7 +17,7 @@ permissions:
 jobs:
   contract-review-checks:
     name: Contract drift checks
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -34,8 +34,8 @@ jobs:
         run: bash scripts/contract_review/run_section_checks.sh
 
       - name: Run contract interface tests
-        run: |
-          pytest \
-            tests/test_onboarding_contract_interfaces.py \
-            tests/test_interview_app_contract_interfaces.py \
-            tests/test_interview_root_contracts.py
+        run: >-
+          python -m pytest
+          tests/test_onboarding_contract_interfaces.py
+          tests/test_interview_runtime_contract_interfaces.py
+          tests/test_interview_root_contracts.py

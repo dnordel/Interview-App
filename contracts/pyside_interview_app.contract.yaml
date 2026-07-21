@@ -2,9 +2,9 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 9.0.0
+  version: 9.3.1
   description: PySide6 operations shell and headless view-model builder for a mockup-driven
-    New Interview setup/live flow, Candidates-owned pipeline/history, candidate reports,
+    New Interview setup/live flow using shared candidate and qualification capture, Candidates-owned pipeline/history, candidate reports,
     onboarding, staffing, notifications, and admin-only
     Staffing v2 Settings. Settings is lazily hosted inside the Staffing v2 shell, delegates
     draft validation, backup, and confirmed persistence to admin_studio, hides global
@@ -748,7 +748,7 @@ classes:
     exceptions: [ValueError, OSError]
     side_effects: Writes a versioned DOCX and PDF to the configured school offer folder; preserves the DOCX and fails closed if PDF conversion fails.
   - name: _review_hiring_offer_approval
-    description: Preview and approve the exact persisted pending Hiring v2 PDF and configured candidate offer-notification template after validating candidate email, artifacts, template values, terms, and typed approver identity; compensation revisions use the admin-only revision approval path.
+    description: Preview and approve a persisted pending Hiring v2 PDF without requiring candidate email, showing nine candidate and offer facts in a compact review grid, with typed approver identity and an optional Change Pay & Approve path that regenerates a numbered offer version before approval.
     locked: false
     inputs:
       service:
@@ -760,7 +760,17 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Reuses pre-generated DOCX/PDF artifacts, generates and persists both once for legacy pending offers when absent, renders the active candidate notification-settings template, presents approval review, persists approval, attempts candidate-only delivery, and refreshes Hiring v2.
+    side_effects: Reuses or generates DOCX/PDF artifacts, renders notification preview, optionally regenerates a numbered offer at edited pay, persists approval, sends only when candidate email exists, and refreshes Hiring v2.
+  - name: _send_hiring_offer_with_email
+    description: Prompt for missing candidate email and send one selected approved offer.
+    locked: false
+    inputs:
+      service: {type: HiringWorkflowService, required: true}
+      application: {type: HiringApplication, required: true}
+      version: {type: OfferVersion, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Validates and saves candidate email, sends only the selected approved PDF, refreshes Hiring v2, and reports sanitized delivery status.
   - name: _hiring_candidates_workspace
     description: Build temporary Candidates tabs that own Candidate Roster and Pipeline / History plus transcript-import and saved-draft actions.
     locked: false
@@ -1889,7 +1899,7 @@ classes:
       and interview-session snapshots, updates InterviewHistoryStore, refreshes
       history tables, and re-renders live/review/offer panes.
   - name: _sync_hiring_v2_director_decisions
-    description: Reconcile finalized Staffing director decisions into hiring; each Hire derives contact, shift, template, classroom, and pay terms and idempotently submits one immutable offer version for executive approval, while dependency failures remain retryable as offer_draft_pending.
+    description: Reconcile finalized Staffing director decisions into hiring; each Hire derives contact, shift, template, classroom, and pay terms, enriches the executive-approval notification from the structured candidate report, and idempotently submits one immutable offer version, while dependency failures remain retryable as offer_draft_pending.
     locked: false
     inputs:
       service: {type: HiringWorkflowService, required: true}
@@ -1897,7 +1907,7 @@ classes:
     exceptions: []
     side_effects: Reads staffing/history/settings stores; initializes/migrates existing staffing databases before director-decision reads; may update canonical candidate contact, hiring stage/attention, and create one pending-approval offer version.
   - name: _director_offer_terms
-    description: Build normalized offer terms from candidate, application, finalized director shift/classroom, requested pay, and configured school template/output paths.
+    description: Build normalized offer terms from candidate qualification, exact finalized teacher position and shift/classroom, calculated starting pay, and configured school template/output paths; preserve director rating, qualification, and requested-pay snapshots for approval review.
     locked: false
     inputs:
       application: {type: Any, required: true}
@@ -1905,15 +1915,23 @@ classes:
       interview: {type: Any, required: true}
     returns: {type: 'dict[str, Any]'}
     exceptions: [ValueError]
-    side_effects: Reads school offer settings and interview history.
+    side_effects: Reads school offer settings, interview history, candidate report, and versioned starting-pay settings.
+  - name: _offer_qualification
+    description: Load the authoritative structured candidate qualification snapshot for offer calculation, preferring a visible candidate report when present.
+    locked: false
+    inputs:
+      history_id: {type: str, required: true}
+    returns: {type: 'dict[str, Any]'}
+    exceptions: [ValueError]
+    side_effects: Reads InterviewHistoryStore and CandidateReportRepository.
   - name: _requested_pay_answer
-    description: Return raw initial-interview Pay answer from canonical answers or custom_answers history payload.
+    description: Return interviewer-entered requested pay from the structured candidate report Pay notes, falling back to legacy canonical answers or custom_answers only when no structured report exists; candidate transcript text is never substituted for structured manual pay.
     locked: false
     inputs:
       history_id: {type: str, required: true}
     returns: {type: str}
     exceptions: []
-    side_effects: Reads InterviewHistoryStore.
+    side_effects: Reads InterviewHistoryStore and CandidateReportRepository.
 data_structures:
 - name: InterviewRedesignModel
   type: dataclass
@@ -1982,6 +2000,7 @@ dependencies:
 - module: staffing_change_stage
 - module: staffing_service
 - module: staffing_store
+- module: starting_pay_calculator
 - module: source_update_monitor
 - module: PySide6
 - module: pywin32

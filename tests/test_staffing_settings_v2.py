@@ -66,19 +66,49 @@ def _page(tmp_path: Path):
     qt_gui = pytest.importorskip("PySide6.QtGui")
     qt_widgets = pytest.importorskip("PySide6.QtWidgets")
     from staffing_settings_v2 import StaffingSettingsV2Page
+    from starting_pay_calculator import StartingPaySettingsStore, default_starting_pay_settings
 
     app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
     paths = _settings_paths(tmp_path)
+    starting_pay_path = tmp_path / "starting_pay.json"
+    StartingPaySettingsStore(starting_pay_path).save(default_starting_pay_settings())
     page = StaffingSettingsV2Page(
         QtCore=qt_core,
         QtGui=qt_gui,
         QtWidgets=qt_widgets,
         studio=_load_studio(paths),
         email_settings_path=tmp_path / "email_account_settings.json",
+        starting_pay_settings_path=starting_pay_path,
     )
     page.widget.show()
     app.processEvents()
     return app, qt_widgets, page, paths
+
+
+@pytest.mark.pyside_gui
+@pytest.mark.pyside_gui
+def test_starting_pay_settings_require_new_version_and_save_valid_policy(tmp_path: Path) -> None:
+    app, qt_widgets, page, _paths = _page(tmp_path)
+    from starting_pay_calculator import StartingPaySettingsStore
+
+    version = page.widget.findChild(qt_widgets.QLineEdit, "StaffingSettingsV2StartingPayVersion")
+    cap = page.widget.findChild(qt_widgets.QLineEdit, "StaffingSettingsV2StartingPayCap")
+    save = page.widget.findChild(qt_widgets.QPushButton, "StaffingSettingsV2SaveStartingPay")
+    status = page.widget.findChild(qt_widgets.QLabel, "StaffingSettingsV2StartingPayStatus")
+
+    assert version.text() == "2026.1"
+    cap.setText("25.00")
+    save.click()
+    app.processEvents()
+    assert "version" in status.text().lower()
+
+    version.setText("2026.2")
+    save.click()
+    app.processEvents()
+    assert status.text() == "Starting pay settings saved."
+    assert StartingPaySettingsStore(tmp_path / "starting_pay.json").load().starting_pay_cap == 25
+
+    page.widget.close()
 
 
 @pytest.mark.pyside_gui
@@ -124,8 +154,9 @@ def test_settings_page_uses_notification_sections_and_responsive_navigation(tmp_
         "School Settings",
         "Shared Email Account",
         "Notification Recipients",
-        "Hiring Manager Email Account",
-    ]
+            "Hiring Manager Email Account",
+            "Starting Pay",
+        ]
     assert page.widget.findChild(qt_widgets.QLineEdit, "StaffingSettingsV2SchoolDirectorName") is None
     assert page.widget.findChild(qt_widgets.QLineEdit, "StaffingSettingsV2RecipientDirectorNameHaw") is None
     assert page.widget.findChild(qt_widgets.QLineEdit, "StaffingSettingsV2RecipientDirectorNamePmd") is None

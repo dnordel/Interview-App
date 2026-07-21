@@ -13,6 +13,7 @@ PERMIT_STATUSES = (
 )
 DIRECTOR_REFERRAL_OUTCOMES = ("hire", "borderline")
 DIRECTOR_INTERVIEW_DECISIONS = ("hire", "no_hire")
+TEACHER_OFFER_POSITION_IDS = ("lead_teacher", "teacher", "teacher_floater")
 
 
 @dataclass(frozen=True)
@@ -165,6 +166,7 @@ class StaffingDirectorInterview:
     proposed_shift_start: str = ""
     proposed_shift_end: str = ""
     proposed_classroom: str = ""
+    offer_position_id: str = ""
     follow_up_needed: bool = False
     owner_approval_status: str = "pending_owner_approval"
     state: str = "finalized"

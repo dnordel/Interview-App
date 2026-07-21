@@ -13,11 +13,16 @@ if str(ROOT) not in sys.path:
 
 GUI_TIMING_PREFLIGHT_PATH = "tests/test_pytest_duration_catalog.py"
 GUI_ACTION_PREFLIGHT_PATH = "tests/test_gui_action_behavior_coverage.py"
-METADATA_PREFLIGHT_PATHS = (GUI_TIMING_PREFLIGHT_PATH, GUI_ACTION_PREFLIGHT_PATH)
+CONTRACT_COVERAGE_PREFLIGHT_PATH = "tests/test_contract_coverage_matrix.py"
+METADATA_PREFLIGHT_PATHS = (
+    GUI_TIMING_PREFLIGHT_PATH,
+    GUI_ACTION_PREFLIGHT_PATH,
+    CONTRACT_COVERAGE_PREFLIGHT_PATH,
+)
 SOURCE_VERSION_PATH = ROOT / "config" / "source_version.txt"
 
 
-def build_gui_test_batches(*, entries: list[dict[str, Any]], gui_workers: int = 2) -> list[list[str]]:
+def build_gui_test_batches(*, entries: list[dict[str, Any]], gui_workers: int = 8) -> list[list[str]]:
     if gui_workers < 1:
         raise ValueError("GUI worker count must be positive.")
     ordered = sorted(
@@ -34,7 +39,7 @@ def build_full_suite_commands(
     python_executable: str = sys.executable,
     metadata_workers: int = 8,
     full_workers: int = 24,
-    gui_workers: int = 2,
+    gui_workers: int = 8,
     catalog_entries: list[dict[str, Any]] | None = None,
 ) -> tuple[list[str], list[str], list[list[str]]]:
     common = ["--dist=load", "--maxschedchunk=1"]
@@ -79,7 +84,7 @@ def run_full_suite(
     python_executable: str = sys.executable,
     metadata_workers: int = 8,
     full_workers: int = 24,
-    gui_workers: int = 2,
+    gui_workers: int = 8,
     call: Callable[[list[str]], int] = subprocess.call,
     source_version_path: Path = SOURCE_VERSION_PATH,
 ) -> int:
@@ -89,12 +94,12 @@ def run_full_suite(
         full_workers=full_workers,
         gui_workers=gui_workers,
     )
-    print("[gui timing preflight] running duration/scenario metadata checks", flush=True)
+    print("[metadata preflight] running timing and behavior-coverage checks", flush=True)
     quick_exit_code = call(quick_metadata_command)
     if quick_exit_code:
-        print("[gui timing preflight] FAILED; full suite not started", flush=True)
+        print("[metadata preflight] FAILED; full suite not started", flush=True)
         return quick_exit_code
-    print("[gui timing preflight] passed", flush=True)
+    print("[metadata preflight] passed", flush=True)
     version_path = Path(source_version_path)
     prior_stamp = version_path.read_bytes() if version_path.is_file() else None
 
@@ -129,11 +134,11 @@ def run_full_suite(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Run metadata preflight, parallel non-GUI tests, then one isolated two-worker GUI phase."
+        description="Run metadata preflight, parallel non-GUI tests, then one isolated eight-worker GUI phase."
     )
     parser.add_argument("--metadata-workers", type=int, default=8)
     parser.add_argument("--full-workers", type=int, default=24)
-    parser.add_argument("--gui-workers", type=int, default=2)
+    parser.add_argument("--gui-workers", type=int, default=8)
     args = parser.parse_args()
     raise SystemExit(
         run_full_suite(

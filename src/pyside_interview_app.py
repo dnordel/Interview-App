@@ -68,6 +68,7 @@ from pyside_completed_interview import (
     build_completed_interview_view_model,
     build_completed_transcript_export,
 )
+from pyside_interview_components import CandidateIdentityEditor, CandidateQualificationEditor
 from hiring_pipeline import (
     HiringOfferNotificationAdapter,
     HiringPipelineStore,
@@ -106,10 +107,9 @@ from scoring_reporting import (
     build_school_offer_filename,
     next_available_offer_path,
     derive_offer_schedule,
-    parse_requested_hourly_pay,
 )
 from scoring_reporting import build_integration_payload, serialize_integration_payload
-from scoring_reporting import CANONICAL_DEGREE_TYPES, CandidateQualification, validate_candidate_qualification
+from scoring_reporting import CandidateQualification
 from staffing_dashboard_host import StaffingDashboardAccess, StaffingDashboardHost
 from staffing_dashboard_v2 import apply_staffing_v2_light_theme
 from staffing_settings_v2 import StaffingSettingsV2Page
@@ -118,6 +118,12 @@ from staffing_change_stage import StaffingChangeStage
 from staffing_service import StaffingChangeConflict, StaffingService, staffing_change_conflict_message
 from staffing_store import StaffingEditLock, StaffingStore
 from source_update_monitor import SourceUpdateDetector, build_source_update_banner, relaunch_application
+from starting_pay_calculator import (
+    POSITION_LABELS,
+    calculate_offer_pay,
+    load_starting_pay_settings,
+    qualification_input_from_mapping,
+)
 
 
 APP_TITLE = "Interview Assistant"
@@ -1545,10 +1551,6 @@ def _normalize_qualification_payload(payload: dict[str, Any]) -> dict[str, Any]:
     return CandidateQualification.from_dict(payload).to_dict()
 
 
-def _optional_int_text(value: Any) -> str:
-    return "" if value is None else str(value)
-
-
 def _build_track_flow(
     *,
     loader: RubricLoader,
@@ -2208,11 +2210,15 @@ class PySideInterviewWindow:
             QtCore=self.QtCore,
             QtWidgets=self.QtWidgets,
             service=service,
+            school_options=self.model.school_options,
             actions={
                 "new_interview": new_interview,
                 "resume_interview": resume_interview,
                 "review_approval": review_approval,
                 "approve_revision": review_approval,
+                "send_offer": lambda application, version: self._send_hiring_offer_with_email(
+                    service, application, version
+                ),
                 "director_review": director_review,
                 "view_closeout": view_closeout,
                 "view_acceptance": lambda _application: None,
@@ -2346,8 +2352,6 @@ class PySideInterviewWindow:
         candidate = service.store.get_candidate(application.candidate_id)
         terms = version.terms
         try:
-            if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", candidate.email):
-                raise ValueError("Valid candidate email is required before approval.")
             approval_date = date.today()
             docx_path = Path(str(getattr(version, "docx_path", "") or "")).expanduser().resolve()
             pdf_path = Path(str(getattr(version, "pdf_path", "") or "")).expanduser().resolve()
@@ -2384,6 +2388,29 @@ class PySideInterviewWindow:
                 self.hiring_v2_page._set_action_state("error", f"Approval review failed: {exc}")
             self.QtWidgets.QMessageBox.warning(self.window, "Executive approval", str(exc))
             return
+        interview_score = "—"
+        for event in reversed(service.store.list_events(application.application_id)):
+            if event.event_type != "initial_interview_completed":
+                continue
+            score = float(event.payload.get("score", 0))
+            interview_score = f"{score:g}%"
+            break
+        qualification = terms.get("qualification_snapshot", {})
+        if not isinstance(qualification, dict):
+            qualification = {}
+        has_degree = bool(qualification.get("has_degree"))
+        degree = str(qualification.get("degree_type") or ("Yes" if has_degree else "No"))
+        review_details = {
+            "Name": candidate.legal_name or "—",
+            "Initial Interview Score": interview_score,
+            "Director Rating": str(terms.get("director_rating") or "—"),
+            "Degree": degree,
+            "Years of Experience": str(qualification.get("years_experience", "—")),
+            "Requested Pay": str(terms.get("requested_pay_raw") or "—"),
+            "Offer Amount": f"${float(terms.get('hourly_pay') or 0):.2f} per hour",
+            "Classroom": str(terms.get("proposed_classroom") or "—"),
+            "Hours": f"{terms.get('weekly_hours') or terms.get('hours_week') or '—'} weekly",
+        }
         approval_dialog = HiringOfferApprovalDialog(
             QtCore=self.QtCore,
             QtPdf=self.QtPdf,
@@ -2391,15 +2418,16 @@ class PySideInterviewWindow:
             QtWidgets=self.QtWidgets,
             parent=self.window,
             title=f"Approve offer v{version.version_number}",
-            summary=(
-                f"Candidate: {candidate.legal_name}\nEmail: {candidate.email}\n"
-                f"Position: {application.position}\n"
-                f"Pay: ${float(terms.get('hourly_pay') or 0):.2f}/hour\n"
-                f"Hours: {terms.get('weekly_hours') or terms.get('hours_week')} weekly\n"
-                f"Destination DOCX: {docx_path}\nDestination PDF: {pdf_path}"
-            ),
+            summary="",
+            review_details=review_details,
             rendered_email=rendered_email,
             pdf_path=pdf_path,
+            hourly_pay=str(terms.get("hourly_pay") or ""),
+            approve_label=(
+                "Approve and send"
+                if re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", candidate.email)
+                else "Approve"
+            ),
         )
         if not approval_dialog.exec():
             approval_dialog.close()
@@ -2407,8 +2435,31 @@ class PySideInterviewWindow:
                 self.hiring_v2_page._set_action_state("ready", "Approval review cancelled.")
             return
         approver_name = approval_dialog.approver_name()
+        changed_pay = approval_dialog.hourly_pay()
+        change_pay_requested = approval_dialog.change_pay_requested()
         approval_dialog.close()
         try:
+            if change_pay_requested:
+                version = service.revise_pending_offer_pay(
+                    application.application_id,
+                    version.version_id,
+                    hourly_pay=changed_pay,
+                    actor=approver_name,
+                )
+                terms = version.terms
+                docx_path = Path(version.docx_path).expanduser().resolve()
+                pdf_path = Path(version.pdf_path).expanduser().resolve()
+                payload = HiringOfferNotificationAdapter.payload(candidate, version, pdf_path)
+                payload.update(
+                    {
+                        "offer_date": approval_dates.offer_date.isoformat(),
+                        "reply_by_date": approval_dates.reply_by_date.isoformat(),
+                        "start_date": approval_dates.start_date.isoformat(),
+                    }
+                )
+                rendered_email = self._notification_service().render_candidate_event_preview(
+                    "offer.approved", payload
+                )
             if application.stage.value == "offer_sent":
                 service.approve_compensation_revision(
                     application.application_id,
@@ -2432,11 +2483,47 @@ class PySideInterviewWindow:
                 )
             self.hiring_v2_page.refresh()
             if getattr(self, "hiring_v2_page", None) is not None:
-                self.hiring_v2_page._set_action_state("success", "Offer approved and send attempted.")
+                message = (
+                    "Offer approved and send attempted."
+                    if re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", candidate.email)
+                    else "Offer approved. Candidate email required before sending."
+                )
+                self.hiring_v2_page._set_action_state("success", message)
         except ValueError as exc:
             if getattr(self, "hiring_v2_page", None) is not None:
                 self.hiring_v2_page._set_action_state("error", f"Approval failed: {exc}")
             self.QtWidgets.QMessageBox.warning(self.window, "Executive approval", str(exc))
+
+    def _send_hiring_offer_with_email(
+        self,
+        service: HiringWorkflowService,
+        application: Any,
+        version: Any,
+    ) -> None:
+        email, accepted = self.QtWidgets.QInputDialog.getText(
+            self.window,
+            "Send offer",
+            "Candidate email:",
+        )
+        if not accepted:
+            return
+        try:
+            delivered = service.send_approved_offer(
+                application.application_id,
+                version.version_id,
+                candidate_email=email,
+                actor="Admin User",
+            )
+        except ValueError as exc:
+            self.QtWidgets.QMessageBox.warning(self.window, "Send offer", str(exc))
+            return
+        self.hiring_v2_page.refresh()
+        if delivered.status == "sent":
+            self.hiring_v2_page._set_action_state("success", "Offer sent.")
+            return
+        self.hiring_v2_page._set_action_state(
+            "error", "Offer remains approved, but delivery failed."
+        )
 
     def _resume_hiring_application(self, application_id: str) -> None:
         clean_id = str(application_id or "").strip()
@@ -2517,7 +2604,15 @@ class PySideInterviewWindow:
                                 ),
                                 {},
                             )
-                            interview_payload = notification_payload_from_mapping(history_row)
+                            notification_source = dict(history_row)
+                            report_repository = CandidateReportRepository(self.model.history_path)
+                            if report_repository.exists(application.history_id):
+                                report = report_repository.load_visible_version(
+                                    application.history_id,
+                                    role="admin",
+                                )
+                                notification_source.update(report.snapshot)
+                            interview_payload = notification_payload_from_mapping(notification_source)
                             payload = {
                                 "candidate_name": candidate.legal_name,
                                 "candidate_email": candidate.email,
@@ -2592,12 +2687,17 @@ class PySideInterviewWindow:
         )
         output_dir = resolve_offer_output_dir(DEFAULT_BASE_DIR, application.school, settings)
         requested_pay = self._requested_pay_answer(application.history_id)
-        hourly_pay = parse_requested_hourly_pay(requested_pay)
+        qualification = self._offer_qualification(application.history_id)
+        pay_input = qualification_input_from_mapping(interview.offer_position_id, qualification)
+        pay_result = calculate_offer_pay(pay_input, load_starting_pay_settings())
+        if pay_result.status != "calculated" or pay_result.starting_hourly_pay is None:
+            raise ValueError(pay_result.qualification_explanation)
         return {
             "honorific": candidate.honorific,
             "candidate_name": candidate.legal_name,
             "candidate_email": candidate.email,
-            "position": application.position,
+            "position_id": interview.offer_position_id,
+            "position": POSITION_LABELS[interview.offer_position_id],
             "school": application.school,
             "start_time": interview.proposed_shift_start,
             "end_time": interview.proposed_shift_end,
@@ -2607,17 +2707,45 @@ class PySideInterviewWindow:
             "employment_type": schedule.employment_type,
             "proposed_classroom": interview.proposed_classroom,
             "requested_pay_raw": requested_pay,
-            "hourly_pay": "" if hourly_pay is None else _format_offer_number(hourly_pay),
-            "compensation_review_required": hourly_pay is None,
+            "director_rating": f"{interview.rating:g}",
+            "qualification_snapshot": dict(qualification),
+            "hourly_pay": format(pay_result.starting_hourly_pay, ".2f"),
+            "compensation_review_required": False,
+            "pay_calculation": pay_result.to_dict(),
             "pto": _format_offer_number(schedule.weekly_hours * 2),
             "pto2": _format_offer_number(schedule.weekly_hours * 4),
             "template_path": str(template_path),
             "output_dir": str(output_dir),
         }
 
+    def _offer_qualification(self, history_id: str) -> dict[str, Any]:
+        store = InterviewHistoryStore(self.model.history_path)
+        row = next((item for item in store.load() if store.build_row_key(item) == history_id), {})
+        qualification = row.get("qualification")
+        report_repository = CandidateReportRepository(self.model.history_path)
+        if report_repository.exists(history_id):
+            report = report_repository.load_visible_version(history_id, role="admin")
+            candidate = report.snapshot.get("candidate")
+            if isinstance(candidate, dict):
+                qualification = candidate.get("qualification", qualification)
+        if not isinstance(qualification, dict):
+            raise ValueError("Candidate qualification details are required before generating an offer.")
+        return qualification
+
     def _requested_pay_answer(self, history_id: str) -> str:
         store = InterviewHistoryStore(self.model.history_path)
         row = next((item for item in store.load() if store.build_row_key(item) == history_id), {})
+        report_repository = CandidateReportRepository(self.model.history_path)
+        if report_repository.exists(history_id):
+            report = report_repository.load_visible_version(history_id, role="admin")
+            questions = report.snapshot.get("questions", [])
+            for question in questions if isinstance(questions, list) else []:
+                if not isinstance(question, dict):
+                    continue
+                question_id = str(question.get("question_id") or question.get("id") or "").strip()
+                if question_id.casefold() != "pay":
+                    continue
+                return str(question.get("interviewer_notes") or "").strip()
         answers = row.get("answers", {}) if isinstance(row, dict) else {}
         if isinstance(answers, dict):
             pay = answers.get("Pay", {})
@@ -3354,41 +3482,27 @@ class PySideInterviewWindow:
         candidate_layout.setContentsMargins(24, 22, 24, 22)
         candidate_layout.setSpacing(14)
         candidate_layout.addWidget(self._label("1. Candidate & Interview", "SectionTitle"))
-        form = self.QtWidgets.QGridLayout()
-        form.setHorizontalSpacing(18)
-        form.setVerticalSpacing(12)
-        form.setColumnMinimumWidth(0, 150)
-        form.setColumnStretch(1, 1)
-
-        candidate = self.QtWidgets.QLineEdit()
-        candidate.setObjectName("HiringV2SetupCandidateName")
-        candidate.setPlaceholderText("Enter candidate name")
-        honorific = self.QtWidgets.QComboBox()
-        honorific.setObjectName("HiringV2SetupHonorific")
-        honorific.addItems(("Mr.", "Ms."))
-        honorific.setCurrentText("Ms.")
-        school = self.QtWidgets.QComboBox()
-        school.setObjectName("HiringV2SetupSchool")
-        school.addItems(self.model.school_options)
-        role = self.QtWidgets.QComboBox()
+        identity_editor = CandidateIdentityEditor(
+            QtWidgets=self.QtWidgets,
+            object_prefix="HiringV2Setup",
+            school_options=self.model.school_options,
+            position_options=list(self.model.track_labels.items()),
+            allow_empty_selection=False,
+        )
+        candidate = identity_editor.candidate_name
+        honorific = identity_editor.honorific
+        school = identity_editor.school
+        role = identity_editor.position
         role.setObjectName("HiringV2SetupTrack")
-        role.addItems(list(self.model.track_labels.values()))
+        candidate_layout.addWidget(identity_editor.widget)
         interview_type = self.QtWidgets.QComboBox()
         interview_type.setObjectName("HiringV2SetupInterviewType")
         interview_type.addItem("First Interview")
-        for row, (label_text, field) in enumerate(
-            (
-                ("Candidate Name", candidate),
-                ("Honorific", honorific),
-                ("School", school),
-                ("Position / Track", role),
-                ("Interview Type", interview_type),
-            )
-        ):
-            form.addWidget(self._label(label_text, "HiringV2SetupFieldLabel"), row, 0)
-            form.addWidget(field, row, 1)
+        interview_type_form = self.QtWidgets.QFormLayout()
+        interview_type_form.addRow("Interview Type", interview_type)
+        candidate_layout.addLayout(interview_type_form)
+        for field in (candidate, honorific, school, role, interview_type):
             field.setMinimumHeight(40)
-        candidate_layout.addLayout(form)
         setup_layout.addWidget(candidate_section)
 
         divider = self.QtWidgets.QFrame()
@@ -3468,6 +3582,7 @@ class PySideInterviewWindow:
         layout.addStretch(1)
 
         self.home_candidate_input = candidate
+        self.home_identity_editor = identity_editor
         self.home_honorific_combo = honorific
         self.home_school_combo = school
         self.home_role_combo = role
@@ -5187,60 +5302,32 @@ class PySideInterviewWindow:
         stored = self.session.qualification if self.session is not None else {}
         fields, fields_layout = self._surface()
         fields_layout.addWidget(self._label("Education & Experience", "SectionTitle"))
-        form = self.QtWidgets.QFormLayout()
-
-        self.qualification_has_degree = self.QtWidgets.QComboBox()
-        self.qualification_has_degree.addItems(["", "Yes", "No"])
-        has_degree = stored.get("has_degree")
-        self.qualification_has_degree.setCurrentText("Yes" if has_degree is True else "No" if has_degree is False else "")
-        form.addRow("Has degree", self.qualification_has_degree)
-
-        self.qualification_degree_type = self.QtWidgets.QComboBox()
-        self.qualification_degree_type.addItems(["", *list(CANONICAL_DEGREE_TYPES)])
-        self.qualification_degree_type.setCurrentText(str(stored.get("degree_type", "") or ""))
-        form.addRow("Degree type", self.qualification_degree_type)
-
-        self.qualification_degree_in_ece = self.QtWidgets.QCheckBox("Degree is in ECE")
-        self.qualification_degree_in_ece.setChecked(bool(stored.get("degree_in_ece", False)))
-        form.addRow("", self.qualification_degree_in_ece)
-
-        self.qualification_ece_units = self.QtWidgets.QLineEdit()
-        self.qualification_ece_units.setText(_optional_int_text(stored.get("ece_units_completed")))
-        form.addRow("ECE units", self.qualification_ece_units)
-
-        self.qualification_infant_toddler = self.QtWidgets.QCheckBox("Infant/toddler class completed")
-        self.qualification_infant_toddler.setChecked(bool(stored.get("infant_toddler_class_completed", False)))
-        form.addRow("", self.qualification_infant_toddler)
-
-        self.qualification_total_units = self.QtWidgets.QLineEdit()
-        self.qualification_total_units.setText(_optional_int_text(stored.get("total_units_completed")))
-        form.addRow("Total units if no degree", self.qualification_total_units)
-
-        self.qualification_years = self.QtWidgets.QLineEdit()
-        self.qualification_years.setText(_optional_int_text(stored.get("years_experience")))
-        form.addRow("Years experience", self.qualification_years)
-
+        editor = CandidateQualificationEditor(
+            QtWidgets=self.QtWidgets,
+            object_prefix="LiveInterview",
+            values=stored,
+        )
+        self.live_qualification_editor = editor
+        self.qualification_has_degree = editor.has_degree
+        self.qualification_degree_type = editor.degree_type
+        self.qualification_degree_in_ece = editor.degree_in_ece
+        self.qualification_ece_units = editor.ece_units
+        self.qualification_infant_toddler = editor.infant_toddler
+        self.qualification_total_units = editor.total_units
+        self.qualification_years = editor.years_experience
         self.qualification_status_label = self._label("")
-        fields_layout.addLayout(form)
+        fields_layout.addWidget(editor.widget)
         fields_layout.addWidget(self.qualification_status_label)
         layout.addWidget(fields)
 
     def _collect_qualification_from_fields(self) -> dict[str, Any] | None:
-        has_degree = self.qualification_has_degree.currentText().strip().lower()
-        ok, message, qualification = validate_candidate_qualification(
-            has_degree,
-            self.qualification_degree_type.currentText(),
-            self.qualification_degree_in_ece.isChecked(),
-            self.qualification_ece_units.text(),
-            self.qualification_total_units.text(),
-            self.qualification_infant_toddler.isChecked(),
-            self.qualification_years.text(),
-        )
-        if not ok:
-            self.qualification_status_label.setText(message)
+        try:
+            qualification = self.live_qualification_editor.validated_values()
+        except ValueError as exc:
+            self.qualification_status_label.setText(str(exc))
             return None
         self.qualification_status_label.setText("")
-        return qualification.to_dict()
+        return qualification
 
     def _render_review_page(self) -> None:
         layout = getattr(self, "review_layout", None)

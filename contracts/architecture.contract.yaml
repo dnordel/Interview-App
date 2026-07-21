@@ -6,7 +6,7 @@ layers:
 - infrastructure
 services:
   hiring_pipeline_service:
-    description: Canonical seven-stage candidate application pipeline, audit timeline, Staffing v2 decision synchronization, immutable numbered offers with pre-generated DOCX/PDF artifacts, notification-settings-backed approval previews, approval dates, delivery recovery, negotiation, acceptance, and archive controls.
+    description: Canonical seven-stage candidate application pipeline, teacher qualification and versioned starting-pay calculation, audit timeline, Staffing v2 decision synchronization, numbered offers with pre-generated DOCX/PDF artifacts, increment-enforced Admin pay revisions, approval without candidate email, delayed email delivery, safely constrained offer-only deletion, negotiation, acceptance, and archive controls.
     modules:
     - dashboard_v2_ui
     - hiring_pipeline
@@ -16,6 +16,7 @@ services:
     - scoring_reporting
     - notification_service
     - notification_templates
+    - starting_pay_calculator
   interview_runtime_service:
     description: Interview flow orchestration, state transitions, transcription, and finalization that produces one basic merged interview-notes document (interview_notes_document_path) including candidate-response transcription content while keeping the live-only introduction out of notes and completed-overview surfaces.
     modules:

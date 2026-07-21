@@ -178,6 +178,7 @@ def test_director_interview_validation_error_stays_visible_outside_scroll_body(t
     dialog = page.widget.findChild(qt_widgets.QDialog, "StaffingV2DirectorInterviewDialog")
     assert dialog is not None
     dialog.findChild(qt_widgets.QLineEdit, "StaffingV2DirectorInterviewDirectorName").setText("Director")
+    dialog.findChild(qt_widgets.QComboBox, "StaffingV2DirectorInterviewOfferPosition").setCurrentIndex(1)
     dialog.findChild(qt_widgets.QComboBox, "StaffingV2DirectorInterviewClassroom").setCurrentText("Chef")
     dialog.findChild(qt_widgets.QTextEdit, "StaffingV2DirectorInterviewNotes").setPlainText("Hire.")
     dialog.findChild(qt_widgets.QPushButton, "StaffingV2DirectorInterviewSave").click()

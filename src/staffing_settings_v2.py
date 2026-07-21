@@ -1,11 +1,18 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 import threading
 from typing import Any
 
 from admin_studio import AdminStudio
+from starting_pay_calculator import (
+    DEFAULT_STARTING_PAY_SETTINGS_PATH,
+    PayLevel,
+    StartingPaySettings,
+    StartingPaySettingsStore,
+)
 from notification_service import (
     HIRING_MANAGER_EMAIL,
     EmailSettings,
@@ -26,6 +33,7 @@ SECTION_SPECS = (
     ("email", "Shared Email Account"),
     ("recipient_directory", "Notification Recipients"),
     ("hiring_manager_email", "Hiring Manager Email Account"),
+    ("starting_pay", "Starting Pay"),
 )
 
 
@@ -40,6 +48,7 @@ class StaffingSettingsV2Page:
         email_settings_path: Path,
         hiring_manager_email_settings_path: Path | None = None,
         notification_directory_path: Path | None = None,
+        starting_pay_settings_path: Path | None = None,
         on_email_settings_saved: Callable[[], None] | None = None,
         onboarding_service: Any | None = None,
     ) -> None:
@@ -58,6 +67,9 @@ class StaffingSettingsV2Page:
             or self.email_settings_path.with_name("notification_directory.json")
         )
         self.notification_directory = load_notification_directory(self.notification_directory_path)
+        self.starting_pay_store = StartingPaySettingsStore(
+            Path(starting_pay_settings_path or DEFAULT_STARTING_PAY_SETTINGS_PATH)
+        )
         self.on_email_settings_saved = on_email_settings_saved
         self.onboarding_service = onboarding_service
         self.section_specs = SECTION_SPECS + (
@@ -174,6 +186,8 @@ class StaffingSettingsV2Page:
             return self._recipient_directory_page()
         if key == "hiring_manager_email":
             return self._hiring_manager_email_page()
+        if key == "starting_pay":
+            return self._starting_pay_page()
         if key == "onboarding_roles":
             return self._onboarding_owner_roles_page()
         page = self.QtWidgets.QWidget()
@@ -185,6 +199,76 @@ class StaffingSettingsV2Page:
         layout.addWidget(heading)
         layout.addStretch(1)
         return page
+
+    def _starting_pay_page(self) -> Any:
+        page = self.QtWidgets.QWidget()
+        layout = self.QtWidgets.QVBoxLayout(page)
+        title = self.QtWidgets.QLabel("Starting Pay")
+        title.setObjectName("StaffingSettingsV2SectionTitle")
+        layout.addWidget(title)
+        description = self.QtWidgets.QLabel(
+            "Edit versioned Career Lattice base rates, experience increase, rounding increment, and starting-pay cap."
+        )
+        description.setObjectName("StaffingSettingsV2Muted")
+        description.setWordWrap(True)
+        layout.addWidget(description)
+        form = self.QtWidgets.QFormLayout()
+        settings = self.starting_pay_store.load()
+        self.starting_pay_version = self.QtWidgets.QLineEdit(settings.calculation_version)
+        self.starting_pay_version.setObjectName("StaffingSettingsV2StartingPayVersion")
+        self.starting_pay_experience_rate = self.QtWidgets.QLineEdit(format(settings.experience_increase_rate, "f"))
+        self.starting_pay_experience_rate.setObjectName("StaffingSettingsV2StartingPayExperienceRate")
+        self.starting_pay_increment = self.QtWidgets.QLineEdit(format(settings.rounding_increment, "f"))
+        self.starting_pay_increment.setObjectName("StaffingSettingsV2StartingPayIncrement")
+        self.starting_pay_cap = self.QtWidgets.QLineEdit(format(settings.starting_pay_cap, ".2f"))
+        self.starting_pay_cap.setObjectName("StaffingSettingsV2StartingPayCap")
+        form.addRow("Calculation version", self.starting_pay_version)
+        form.addRow("Experience increase rate", self.starting_pay_experience_rate)
+        form.addRow("Rounding increment", self.starting_pay_increment)
+        form.addRow("Starting pay cap", self.starting_pay_cap)
+        self.starting_pay_level_fields: dict[int, tuple[Any, Any]] = {}
+        for level in range(3, 8):
+            label = self.QtWidgets.QLineEdit(settings.pay_levels[level].permit_level)
+            label.setObjectName(f"StaffingSettingsV2StartingPayLevel{level}Label")
+            rate = self.QtWidgets.QLineEdit(format(settings.pay_levels[level].base_hourly_rate, ".2f"))
+            rate.setObjectName(f"StaffingSettingsV2StartingPayLevel{level}Rate")
+            row = self.QtWidgets.QHBoxLayout()
+            row.addWidget(label, 2)
+            row.addWidget(rate, 1)
+            form.addRow(f"Level {level} label / base rate", row)
+            self.starting_pay_level_fields[level] = (label, rate)
+        layout.addLayout(form)
+        self.starting_pay_status = self.QtWidgets.QLabel("")
+        self.starting_pay_status.setObjectName("StaffingSettingsV2StartingPayStatus")
+        self.starting_pay_status.setWordWrap(True)
+        layout.addWidget(self.starting_pay_status)
+        save = self.QtWidgets.QPushButton("Save Starting Pay Settings")
+        save.setObjectName("StaffingSettingsV2SaveStartingPay")
+        save.clicked.connect(self._save_starting_pay_settings)
+        layout.addWidget(save)
+        layout.addStretch(1)
+        return page
+
+    def _save_starting_pay_settings(self) -> None:
+        try:
+            settings = StartingPaySettings(
+                calculation_version=self.starting_pay_version.text().strip(),
+                experience_increase_rate=Decimal(self.starting_pay_experience_rate.text().strip()),
+                rounding_increment=Decimal(self.starting_pay_increment.text().strip()),
+                starting_pay_cap=Decimal(self.starting_pay_cap.text().strip()),
+                pay_levels={
+                    level: PayLevel(
+                        label.text().strip(),
+                        Decimal(rate.text().strip()),
+                    )
+                    for level, (label, rate) in self.starting_pay_level_fields.items()
+                },
+            )
+            self.starting_pay_store.save(settings)
+        except (ArithmeticError, InvalidOperation, KeyError, TypeError, ValueError) as exc:
+            self.starting_pay_status.setText(str(exc))
+            return
+        self.starting_pay_status.setText("Starting pay settings saved.")
 
     def _email_page(self) -> Any:
         QtWidgets = self.QtWidgets

@@ -2,7 +2,7 @@ module:
   name: staffing_models
   language: python
   path: src/staffing_models.py
-  version: 0.15.0
+  version: 0.16.0
   description: Dataclasses and enum constants for local staffing dashboard transactions, classroom records, employee/person permit metadata including managed document paths, current assignment display data, assignment history dashboard records, metrics, workbook-style display metadata, and director interview referral/completion tracking.
 functions: []
 classes: []
@@ -148,6 +148,7 @@ data_structures:
   - proposed_shift_start
   - proposed_shift_end
   - proposed_classroom
+  - offer_position_id
   - follow_up_needed
   - owner_approval_status
   - state

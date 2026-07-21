@@ -2,8 +2,8 @@ module:
   name: hiring_pipeline
   language: python
   path: src/hiring_pipeline.py
-  version: 1.9.0
-  description: Candidate-profile, application-pipeline, event-audit, and PDF-only candidate offer-delivery lifecycle persistence in the canonical interview history SQLite database.
+  version: 1.12.0
+  description: Candidate-profile, application-pipeline, event-audit, calculated teacher starting pay, existing-candidate external offer cycles, editable increment-enforced pending-offer approval, delayed candidate-email delivery, offer-only deletion, and PDF-only offer lifecycle persistence.
 functions:
 - name: build_offer_notification_payload
   description: Build shared offer-approved notification values used by both approval preview and candidate delivery, including canonical school code and location.
@@ -210,6 +210,7 @@ classes:
       preferred_name: {type: str, required: true}
       email: {type: str, required: true}
       phone: {type: str, required: true}
+      honorific: {type: 'str | None', required: false, default: null}
     returns: {type: CandidateProfile}
     exceptions: [ValueError]
     side_effects: Validates and updates stable candidate identity/contact fields.
@@ -298,6 +299,13 @@ classes:
     returns: {type: OfferVersion}
     exceptions: [ValueError]
     side_effects: Updates one persisted offer version status.
+  - name: delete_offer_version
+    inputs:
+      application_id: {type: str, required: true}
+      version_id: {type: str, required: true}
+    returns: {type: None}
+    exceptions: [ValueError, OSError]
+    side_effects: Deletes one selected offer row and only its unshared DOCX/PDF artifacts after constraining stored paths to the configured offer output directory.
   - name: record_offer_approval
     inputs:
       version_id: {type: str, required: true}
@@ -371,6 +379,15 @@ classes:
     returns: {type: HiringApplication}
     exceptions: [ValueError]
     side_effects: Creates a candidate-linked application cycle at offer draft stage for externally interviewed candidates and appends an audit event.
+  - name: start_external_offer_application_for_candidate
+    inputs:
+      candidate_id: {type: str, required: true}
+      school: {type: str, required: true}
+      position: {type: str, required: true}
+      actor: {type: str, required: true}
+    returns: {type: HiringApplication}
+    exceptions: [ValueError]
+    side_effects: Creates a new offer-draft application cycle linked to an existing active candidate without inspecting prior application stages and appends an audit event.
   - name: finalize_initial_interview
     inputs:
       application_id: {type: str, required: true}
@@ -414,6 +431,11 @@ classes:
     returns: {type: HiringApplication}
     exceptions: [ValueError]
     side_effects: Starts an externally interviewed candidate at offer draft stage.
+  - name: start_external_offer_application_for_candidate
+    inputs: {values: {type: Any, required: true}}
+    returns: {type: HiringApplication}
+    exceptions: [ValueError]
+    side_effects: Starts a new external-offer cycle for an existing candidate without prior-stage gating.
   - name: finalize_initial_interview
     inputs:
       application_id: {type: str, required: true}
@@ -458,6 +480,17 @@ classes:
     returns: {type: OfferVersion}
     exceptions: [ValueError]
     side_effects: Creates a numbered draft for an offer-ready or negotiated application.
+  - name: create_calculated_offer_draft
+    inputs:
+      application_id: {type: str, required: true}
+      position_id: {type: str, required: true}
+      qualification: {type: 'dict[str, Any]', required: true}
+      terms: {type: 'dict[str, Any]', required: true}
+      actor: {type: str, required: true}
+      source_key: {type: str, required: false, default: ''}
+    returns: {type: OfferVersion}
+    exceptions: [ValueError]
+    side_effects: Calculates and locks initial teacher pay, persists the qualification and calculation snapshot, and creates a numbered draft.
   - name: create_external_offer
     inputs:
       legal_name: {type: str, required: true}
@@ -471,6 +504,31 @@ classes:
     returns: {type: OfferVersion}
     exceptions: [ValueError]
     side_effects: Creates an external offer application, creates offer version 1, submits it for approval, and refreshes application stage.
+  - name: create_calculated_external_offer
+    inputs:
+      legal_name: {type: str, required: true}
+      email: {type: str, required: true}
+      phone: {type: str, required: true}
+      school: {type: str, required: true}
+      position_id: {type: str, required: true}
+      qualification: {type: 'dict[str, Any]', required: true}
+      terms: {type: 'dict[str, Any]', required: true}
+      actor: {type: str, required: true}
+      honorific: {type: str, required: false, default: 'Ms.'}
+    returns: {type: OfferVersion}
+    exceptions: [ValueError]
+    side_effects: Calculates initial teacher pay, creates the external candidate/application and version 1 audit snapshot, and submits it for approval.
+  - name: create_calculated_external_offer_for_candidate
+    inputs:
+      candidate_id: {type: str, required: true}
+      school: {type: str, required: true}
+      position_id: {type: str, required: true}
+      qualification: {type: 'dict[str, Any]', required: true}
+      terms: {type: 'dict[str, Any]', required: true}
+      actor: {type: str, required: true}
+    returns: {type: OfferVersion}
+    exceptions: [ValueError]
+    side_effects: Calculates initial teacher pay, creates an offer-draft application linked to the selected candidate, creates version 1, and submits it for approval without prior-stage gating.
   - name: ensure_director_offer_submitted
     inputs:
       application_id: {type: str, required: true}
@@ -497,7 +555,16 @@ classes:
       actor_role: {type: str, required: true}
     returns: {type: OfferVersion}
     exceptions: [ValueError]
-    side_effects: Creates an Admin-only numbered pending revision with only compensation fields changed.
+    side_effects: Creates an Admin-only numbered pending revision with only compensation fields changed after enforcing the configured pay increment; the configured initial-pay cap is not applied to Admin overrides.
+  - name: revise_pending_offer_pay
+    inputs:
+      application_id: {type: str, required: true}
+      version_id: {type: str, required: true}
+      hourly_pay: {type: str, required: true}
+      actor: {type: str, required: true}
+    returns: {type: OfferVersion}
+    exceptions: [ValueError, OSError]
+    side_effects: Enforces the configured pay increment, creates and previews a new numbered pending version with changed hourly pay, then supersedes the prior pending version only after artifact generation succeeds; the configured initial-pay cap is not applied to Admin overrides.
   - name: approve_offer
     inputs:
       application_id: {type: str, required: true}
@@ -510,7 +577,7 @@ classes:
       rendered_email: {type: str, required: false, default: ''}
     returns: {type: OfferVersion}
     exceptions: [ValueError]
-    side_effects: Persists approval before candidate-only PDF delivery and advances only on send success.
+    side_effects: Persists approval without requiring candidate email; attempts candidate-only PDF delivery when email exists and advances only on send success.
   - name: approve_compensation_revision
     inputs:
       application_id: {type: str, required: true}
@@ -531,6 +598,23 @@ classes:
     returns: {type: OfferVersion}
     exceptions: [ValueError]
     side_effects: Idempotently retries candidate PDF delivery for an approved failed version.
+  - name: send_approved_offer
+    inputs:
+      application_id: {type: str, required: true}
+      version_id: {type: str, required: true}
+      candidate_email: {type: str, required: true}
+      actor: {type: str, required: true}
+    returns: {type: OfferVersion}
+    exceptions: [ValueError]
+    side_effects: Validates and saves candidate email, audits a send request without storing the address in event payload, and delivers the approved PDF.
+  - name: delete_offer
+    inputs:
+      application_id: {type: str, required: true}
+      version_id: {type: str, required: true}
+      actor: {type: str, required: true}
+    returns: {type: HiringApplication}
+    exceptions: [ValueError, OSError]
+    side_effects: Deletes only the selected offer and its safely constrained generated artifacts, retains application/candidate/interview records, recalculates application stage, and appends a PII-safe audit event.
   - name: extend_offer_deadline
     inputs:
       application_id: {type: str, required: true}
@@ -596,4 +680,5 @@ data_structures:
 - name: MigrationParityReport
   type: dataclass
 dependencies:
+- starting_pay_calculator
 - data_store

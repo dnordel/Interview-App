@@ -2,8 +2,8 @@ module:
   name: staffing_settings_v2
   language: python
   path: src/staffing_settings_v2.py
-  version: 1.4.0
-  description: Admin-only Staffing v2 settings for interview configuration, shared notification services, and school-scoped Onboarding owner-role recipients.
+  version: 1.5.0
+  description: Admin-only Staffing v2 settings for interview configuration, shared notification services, school-scoped Onboarding owner-role recipients, and versioned starting-pay policy.
 functions: []
 classes:
 - name: StaffingSettingsV2Page
@@ -26,9 +26,10 @@ classes:
       notification_directory_path: {type: 'Path | None', required: false, default: null}
       on_email_settings_saved: {type: "Callable[[], None] | None", required: false, default: null}
       onboarding_service: {type: 'Any | None', required: false, default: null}
+      starting_pay_settings_path: {type: 'Path | None', required: false, default: null}
     returns: {type: None}
     exceptions: []
-    side_effects: Creates an in-memory AdminStudioDraft, loads masked shared-email fields and school contacts, and builds the six-section Settings widget with consolidated School Settings plus independent save and background incoming/outgoing verification controls without writing configuration.
+    side_effects: Creates an in-memory AdminStudioDraft, loads masked shared-email fields, school contacts, and starting-pay policy, and builds Settings sections with atomic independently validated pay-policy saving.
   - name: set_editing
     inputs:
       enabled: {type: bool, required: true}
@@ -54,5 +55,6 @@ dependencies:
 - module: admin_studio
 - module: notification_service
 - module: onboarding_service
+- module: starting_pay_calculator
 - module: PySide6
 data_structures: []

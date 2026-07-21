@@ -591,12 +591,13 @@ def test_completed_director_interview_replays_by_history_id(tmp_path: Path) -> N
         proposed_shift_start="08:00",
         proposed_shift_end="16:30",
         proposed_classroom="Harmony",
+        offer_position_id="lead_teacher",
     )
 
     assert admin.replay_staged_changes() == 1
     completed = admin.list_completed_director_interviews(school="Palmdale")
-    assert [(row.history_id, row.decision, row.proposed_classroom) for row in completed] == [
-        ("hist-123", "hire", "Harmony")
+    assert [(row.history_id, row.decision, row.proposed_classroom, row.offer_position_id) for row in completed] == [
+        ("hist-123", "hire", "Harmony", "lead_teacher")
     ]
 
 
@@ -633,6 +634,7 @@ def test_completed_director_interview_replay_preserves_typed_contact_for_hire(tm
         proposed_shift_start="08:00",
         proposed_shift_end="16:30",
         proposed_classroom="Harmony",
+        offer_position_id="teacher_floater",
         candidate_email="candidate@example.org",
         candidate_phone="555-123-4567",
     )
@@ -640,7 +642,9 @@ def test_completed_director_interview_replay_preserves_typed_contact_for_hire(tm
     assert admin.replay_staged_changes() == 1
     completed = admin.list_completed_director_interviews(school="Palmdale")
     referrals = admin_store.list_director_candidate_referrals(school="Palmdale", include_completed=True)
-    assert [(row.history_id, row.decision) for row in completed] == [("hist-contact-replay", "hire")]
+    assert [(row.history_id, row.decision, row.offer_position_id) for row in completed] == [
+        ("hist-contact-replay", "hire", "teacher_floater")
+    ]
     assert [(row.candidate_email, row.candidate_phone) for row in referrals] == [
         ("candidate@example.org", "(555) 123-4567")
     ]

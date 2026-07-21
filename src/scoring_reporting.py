@@ -122,9 +122,9 @@ class CandidateQualification:
     has_degree: bool | None = None
     degree_type: str = ""
     degree_in_ece: bool = False
-    ece_units_completed: int | None = None
+    ece_units_completed: Decimal | None = None
     infant_toddler_class_completed: bool = False
-    total_units_completed: int | None = None
+    total_units_completed: Decimal | None = None
     years_experience: int | None = None
 
     def to_dict(self) -> dict[str, Any]:
@@ -132,9 +132,9 @@ class CandidateQualification:
             "has_degree": self.has_degree,
             "degree_type": self.degree_type,
             "degree_in_ece": self.degree_in_ece,
-            "ece_units_completed": self.ece_units_completed,
+            "ece_units_completed": _decimal_json_value(self.ece_units_completed),
             "infant_toddler_class_completed": self.infant_toddler_class_completed,
-            "total_units_completed": self.total_units_completed,
+            "total_units_completed": _decimal_json_value(self.total_units_completed),
             "years_experience": self.years_experience,
         }
 
@@ -144,9 +144,9 @@ class CandidateQualification:
         has_degree = has_degree_raw if isinstance(has_degree_raw, bool) else None
         degree_type = normalize_degree_type(payload.get("degree_type", ""))
         degree_in_ece = bool(payload.get("degree_in_ece", False))
-        ece_units_completed = coerce_non_negative_int(payload.get("ece_units_completed"))
+        ece_units_completed = coerce_non_negative_decimal(payload.get("ece_units_completed"))
         infant_toddler_class_completed = bool(payload.get("infant_toddler_class_completed", False))
-        total_units_completed = coerce_non_negative_int(payload.get("total_units_completed"))
+        total_units_completed = coerce_non_negative_decimal(payload.get("total_units_completed"))
         years_experience = coerce_non_negative_int(payload.get("years_experience"))
         return cls(
             has_degree=has_degree,
@@ -174,6 +174,27 @@ def coerce_non_negative_int(value: Any) -> int | None:
     return None
 
 
+def coerce_non_negative_decimal(value: Any) -> Decimal | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        result = Decimal(str(value).strip())
+    except (ArithmeticError, ValueError):
+        return None
+    if not result.is_finite() or result < 0 or result.as_tuple().exponent < -2:
+        return None
+    return result
+
+
+def _decimal_json_value(value: Decimal | None) -> int | str | None:
+    if value is None:
+        return None
+    decimal_value = Decimal(str(value))
+    if decimal_value == decimal_value.to_integral_value():
+        return int(decimal_value)
+    return format(decimal_value, "f")
+
+
 def validate_candidate_qualification(
     has_degree_raw: str,
     degree_type_raw: str,
@@ -186,23 +207,26 @@ def validate_candidate_qualification(
     has_degree = parse_yes_no(has_degree_raw)
     if has_degree is None:
         return False, "Please confirm whether the candidate has a degree.", CandidateQualification()
+    if degree_in_ece and not has_degree:
+        return False, "Degree in ECE/CD may only be selected when a degree is reported.", CandidateQualification()
 
-    ece_units_completed = coerce_non_negative_int(ece_units_raw)
+    ece_units_completed = coerce_non_negative_decimal(ece_units_raw)
     if not degree_in_ece and ece_units_completed is None:
-        return False, "ECE units completed is required and must be a non-negative whole number unless the degree is in ECE.", CandidateQualification()
+        return False, "ECE units completed is required and must be a non-negative number with at most two decimal places.", CandidateQualification()
 
     degree_type = ""
-    total_units_completed: int | None = None
-
     if has_degree:
         degree_type = normalize_degree_type(degree_type_raw)
         if not degree_type:
             allowed = ", ".join(CANONICAL_DEGREE_TYPES)
             return False, f"Degree type is required and must be one of: {allowed}.", CandidateQualification()
-    else:
-        total_units_completed = coerce_non_negative_int(total_units_raw)
-        if total_units_completed is None:
-            return False, "Total units completed is required when no degree is reported.", CandidateQualification()
+    total_units_completed = coerce_non_negative_decimal(total_units_raw)
+    if not has_degree and total_units_completed is None:
+        return False, "Total units completed is required and must be a non-negative number with at most two decimal places.", CandidateQualification()
+    if total_units_completed is not None and ece_units_completed is not None and ece_units_completed > total_units_completed:
+        return False, "ECE units completed cannot exceed total units completed.", CandidateQualification()
+    if degree_type in {"AA", "AS"} and total_units_completed is not None and total_units_completed < Decimal("60"):
+        return False, "An AA or AS degree requires at least 60 total units.", CandidateQualification()
 
     years_experience = coerce_non_negative_int(years_experience_raw)
     if years_experience is None:

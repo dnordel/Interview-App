@@ -24,6 +24,7 @@ from notification_templates import (
     validate_notification_rule,
 )
 from staffing_models import (
+    TEACHER_OFFER_POSITION_IDS,
     StaffingClassroom,
     StaffingDirectorCandidate,
     StaffingDirectorInterview,
@@ -6476,6 +6477,16 @@ class StaffingDashboardV2Page:
         classroom.setEditable(True)
         classroom_names = sorted({row.classroom for row in self.rows if row.school == candidate.school and row.classroom})
         classroom.addItems(classroom_names or [""])
+        offer_position = self.QtWidgets.QComboBox()
+        offer_position.setObjectName("StaffingV2DirectorInterviewOfferPosition")
+        offer_position.addItem("Select offer position", None)
+        offer_position_labels = {
+            "lead_teacher": "Lead Teacher",
+            "teacher": "Teacher",
+            "teacher_floater": "Teacher/Floater",
+        }
+        for position_id in TEACHER_OFFER_POSITION_IDS:
+            offer_position.addItem(offer_position_labels[position_id], position_id)
         candidate_email = self.QtWidgets.QLineEdit(candidate.candidate_email)
         candidate_email.setObjectName("StaffingV2DirectorInterviewCandidateEmail")
         candidate_phone = self.QtWidgets.QLineEdit(candidate.candidate_phone)
@@ -6505,6 +6516,7 @@ class StaffingDashboardV2Page:
                 ("StaffingV2DirectorInterviewShiftStartRow", "Proposed Shift Start", shift_start),
                 ("StaffingV2DirectorInterviewShiftEndRow", "Proposed Shift End", shift_end),
                 ("StaffingV2DirectorInterviewClassroomRow", "Proposed Classroom", classroom),
+                ("StaffingV2DirectorInterviewOfferPositionRow", "Offer Position", offer_position),
             )
         ):
             row = field_row(label, control, object_name)
@@ -6541,7 +6553,7 @@ class StaffingDashboardV2Page:
         sync_hire_only_fields()
 
         info, info_layout = self._dialog_section("StaffingV2DialogInfo")
-        info_layout.addWidget(self._label("Hire decisions store proposed classroom and shift only."))
+        info_layout.addWidget(self._label("Hire decisions store proposed classroom, shift, and offer position."))
         info_layout.addWidget(self._label("Position status and classroom assignment stay unchanged until offer approval/acceptance."))
         scroll_layout.addWidget(info)
 
@@ -6595,6 +6607,7 @@ class StaffingDashboardV2Page:
                     proposed_shift_start=shift_start.text() if decision.currentText() == "Hire" else "",
                     proposed_shift_end=shift_end.text() if decision.currentText() == "Hire" else "",
                     proposed_classroom=classroom.currentText() if decision.currentText() == "Hire" else "",
+                    offer_position_id=str(offer_position.currentData() or "") if decision.currentText() == "Hire" else "",
                     candidate_email=candidate_email.text() if decision.currentText() == "Hire" else "",
                     candidate_phone=candidate_phone.text() if decision.currentText() == "Hire" else "",
                     follow_up_needed=follow_up.isChecked(),

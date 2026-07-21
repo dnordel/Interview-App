@@ -24,9 +24,9 @@ def test_legacy_gui_timing_batches_sort_longest_first() -> None:
         {"nodeid": "gui-medium", "duration_seconds_n2": 4.0, "gui_heavy": True},
     ]
 
-    batches = full_pytest_runner.build_gui_test_batches(entries=entries, gui_workers=2)
+    batches = full_pytest_runner.build_gui_test_batches(entries=entries)
 
-    assert batches == [["gui-long", "gui-medium"], ["gui-short"]]
+    assert batches == [["gui-long", "gui-medium", "gui-short"]]
 
 
 def test_full_suite_runs_gui_timing_preflight_before_combined_full_suite() -> None:
@@ -34,7 +34,6 @@ def test_full_suite_runs_gui_timing_preflight_before_combined_full_suite() -> No
         python_executable="python.exe",
         metadata_workers=8,
         full_workers=24,
-        gui_workers=2,
         catalog_entries=[
             {"nodeid": "tests/gui_slow.py::test_slow", "duration_seconds_n2": 5.0, "gui_heavy": True},
             {"nodeid": "tests/gui_fast.py::test_fast", "duration_seconds_n2": 1.0, "gui_heavy": True},
@@ -48,6 +47,7 @@ def test_full_suite_runs_gui_timing_preflight_before_combined_full_suite() -> No
         "-q",
         "tests/test_pytest_duration_catalog.py",
         "tests/test_gui_action_behavior_coverage.py",
+        "tests/test_contract_coverage_matrix.py",
     ]
     assert non_gui_command[:8] == [
         "python.exe",
@@ -62,6 +62,7 @@ def test_full_suite_runs_gui_timing_preflight_before_combined_full_suite() -> No
     assert ["-m", "not pyside_gui and not slow_pyside"] == non_gui_command[8:10]
     assert "--ignore=tests/test_pytest_duration_catalog.py" in non_gui_command
     assert "--ignore=tests/test_gui_action_behavior_coverage.py" in non_gui_command
+    assert "--ignore=tests/test_contract_coverage_matrix.py" in non_gui_command
     assert len(gui_commands) == 1
     assert gui_commands[0][:8] == [
         "python.exe",
@@ -69,7 +70,7 @@ def test_full_suite_runs_gui_timing_preflight_before_combined_full_suite() -> No
         "pytest",
         "-q",
         "-n",
-        "2",
+        "8",
         "--dist=load",
         "--maxschedchunk=1",
     ]
@@ -131,7 +132,7 @@ def test_full_suite_starts_combined_full_phase_after_preflight_passes() -> None:
     assert exit_code == 5
     assert len(launched) == 4
     assert launched[2][launched[2].index("-n") + 1] == "24"
-    assert launched[3][launched[3].index("-n") + 1] == "2"
+    assert launched[3][launched[3].index("-n") + 1] == "8"
     assert launched[3][-2:] == ["-m", "pyside_gui"]
 
 

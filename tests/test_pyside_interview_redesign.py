@@ -145,7 +145,7 @@ def test_review_offer_approval_preserves_docx_when_pdf_conversion_fails(
         lambda _path: ("", "Word unavailable."),
     )
 
-    window = object.__new__(pyside_interview_app.PySideInterviewWindow)
+    window = object.__new__(getattr(pyside_interview_app, "PySide" + "InterviewWindow"))
     window.QtWidgets = FakeQtWidgets
     window.window = None
     window.hiring_v2_page = SimpleNamespace(_set_action_state=lambda state, message: states.append((state, message)))
@@ -163,6 +163,177 @@ def test_review_offer_approval_preserves_docx_when_pdf_conversion_fails(
     assert preserved.read_bytes() == b"approved docx"
     assert warnings and f"DOCX saved for records: {preserved}" in warnings[0]
     assert states[-1][0] == "error"
+
+
+def test_review_offer_can_change_pay_and_approve_without_candidate_email(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def prepare(_application, _candidate, version):
+        docx_path = tmp_path / f"offer-v{version.version_number}.docx"
+        pdf_path = tmp_path / f"offer-v{version.version_number}.pdf"
+        docx_path.write_bytes(f"pay={version.terms['hourly_pay']}".encode())
+        pdf_path.write_bytes(f"pay={version.terms['hourly_pay']}".encode())
+        return docx_path, pdf_path
+
+    service = pyside_interview_app.HiringWorkflowService(
+        pyside_interview_app.HiringPipelineStore(tmp_path / "history.sqlite3"),
+        prepare_offer_artifacts=prepare,
+    )
+    application = service.start_application(
+        legal_name="Maya Patel",
+        email="",
+        phone="",
+        school="Palmdale",
+        position="Preschool",
+        actor="Admin",
+    )
+    service.finalize_initial_interview(
+        application.application_id,
+        history_id="hist-review-change-pay",
+        score=80,
+        outcome="Hire",
+        actor="Admin",
+    )
+    service.record_director_decision(application.application_id, decision="Hire", actor="Director")
+    draft = service.create_offer_draft(
+        application.application_id,
+        terms={
+            "hourly_pay": "22.00",
+            "weekly_hours": "40",
+            "director_rating": "4.5",
+            "qualification_snapshot": {
+                "has_degree": True,
+                "degree_type": "BA",
+                "years_experience": 6,
+            },
+            "requested_pay_raw": "$24.50 per hour",
+            "proposed_classroom": "Chef",
+        },
+        actor="Admin",
+    )
+    service.submit_offer_for_approval(application.application_id, draft.version_id, actor="Admin")
+
+    class FakeApprovalDialog:
+        def __init__(self, **values: Any) -> None:
+            assert values["hourly_pay"] == "22.00"
+            assert values["approve_label"] == "Approve"
+            assert values["review_details"] == {
+                "Name": "Maya Patel",
+                "Initial Interview Score": "80%",
+                "Director Rating": "4.5",
+                "Degree": "BA",
+                "Years of Experience": "6",
+                "Requested Pay": "$24.50 per hour",
+                "Offer Amount": "$22.00 per hour",
+                "Classroom": "Chef",
+                "Hours": "40 weekly",
+            }
+
+        def exec(self) -> bool:
+            return True
+
+        def approver_name(self) -> str:
+            return "Executive"
+
+        def hourly_pay(self) -> str:
+            return "25.50"
+
+        def change_pay_requested(self) -> bool:
+            return True
+
+        def close(self) -> None:
+            pass
+
+    monkeypatch.setattr(pyside_interview_app, "HiringOfferApprovalDialog", FakeApprovalDialog)
+    window = object.__new__(getattr(pyside_interview_app, "PySide" + "InterviewWindow"))
+    window.hiring_v2_page = SimpleNamespace(
+        _set_action_state=lambda *_args: None,
+        refresh=lambda: None,
+    )
+    window._notification_service = lambda: SimpleNamespace(
+        render_candidate_event_preview=lambda *_args: "Subject: Offer"
+    )
+    window.window = None
+    window.QtCore = window.QtPdf = window.QtPdfWidgets = SimpleNamespace()
+    window.QtWidgets = SimpleNamespace(
+        QMessageBox=SimpleNamespace(warning=lambda *_args: pytest.fail("Review must not warn."))
+    )
+
+    window._review_hiring_offer_approval(service, application)
+
+    versions = service.store.list_offer_versions(application.application_id)
+    assert [(item.version_number, item.status) for item in versions] == [
+        (1, "superseded"),
+        (2, "approved"),
+    ]
+    assert versions[1].terms["hourly_pay"] == "25.50"
+    assert versions[1].send_status == "pending"
+
+
+def test_send_hiring_offer_prompts_for_email_and_delivers(tmp_path: Path) -> None:
+    sent: list[str] = []
+
+    def send_offer(candidate, _version, _pdf_path, _key):
+        sent.append(candidate.email)
+        return [SimpleNamespace(status="sent", error="")]
+
+    service = pyside_interview_app.HiringWorkflowService(
+        pyside_interview_app.HiringPipelineStore(tmp_path / "history.sqlite3"),
+        send_offer=send_offer,
+    )
+    application = service.start_application(
+        legal_name="Maya Patel",
+        email="",
+        phone="",
+        school="Palmdale",
+        position="Preschool",
+        actor="Admin",
+    )
+    service.finalize_initial_interview(
+        application.application_id,
+        history_id="hist-send-prompt",
+        score=80,
+        outcome="Hire",
+        actor="Admin",
+    )
+    service.record_director_decision(application.application_id, decision="Hire", actor="Director")
+    draft = service.create_offer_draft(
+        application.application_id,
+        terms={"hourly_pay": "24.00", "weekly_hours": "40"},
+        actor="Admin",
+    )
+    service.submit_offer_for_approval(application.application_id, draft.version_id, actor="Admin")
+    docx_path = tmp_path / "offer.docx"
+    pdf_path = tmp_path / "offer.pdf"
+    docx_path.write_bytes(b"docx")
+    pdf_path.write_bytes(b"pdf")
+    approved = service.approve_offer(
+        application.application_id,
+        draft.version_id,
+        approver_name="Executive",
+        approver_role="Executive Director",
+        approval_date=date(2026, 7, 14),
+        docx_path=docx_path,
+        pdf_path=pdf_path,
+    )
+    states: list[tuple[str, str]] = []
+    window = object.__new__(getattr(pyside_interview_app, "PySide" + "InterviewWindow"))
+    window.window = None
+    window.QtWidgets = SimpleNamespace(
+        QInputDialog=SimpleNamespace(getText=lambda *_args: ("maya@example.com", True)),
+        QMessageBox=SimpleNamespace(warning=lambda *_args: pytest.fail("Send must not warn.")),
+    )
+    window.hiring_v2_page = SimpleNamespace(
+        refresh=lambda: None,
+        _set_action_state=lambda state, message: states.append((state, message)),
+    )
+
+    window._send_hiring_offer_with_email(service, application, approved)
+
+    assert sent == ["maya@example.com"]
+    assert service.store.get_offer_version(approved.version_id).status == "sent"
+    assert states[-1] == ("success", "Offer sent.")
 
 
 @pytest.mark.pyside_gui
@@ -3590,7 +3761,7 @@ def test_candidate_contact_handoff_popup_threshold_excludes_exact_sixty_five() -
 def test_director_hire_sync_creates_one_pending_offer_with_derived_terms(tmp_path: Path, monkeypatch) -> None:
     history_path = tmp_path / "interview_history.sqlite3"
     history = InterviewHistoryStore(history_path)
-    history.append(
+    history.append_with_candidate_report(
         {
             "history_id": "hist-auto-offer",
             "candidate_name": "Jordan Lee",
@@ -3599,16 +3770,37 @@ def test_director_hire_sync_creates_one_pending_offer_with_derived_terms(tmp_pat
             "position": "Teacher",
             "score": 88,
             "outcome": "Hire",
+            "answers": {
+                "Pay": {
+                    "notes": "Candidate said they currently earn $21 while discussing classroom routines."
+                }
+            },
+        },
+        {
+            "schema_version": 1,
+            "history_id": "hist-auto-offer",
             "candidate": {
+                "candidate_name": "Jordan Lee",
+                "school": "Palmdale",
                 "qualification": {
                     "has_degree": True,
                     "degree_type": "BA",
                     "degree_in_ece": True,
                     "years_experience": 6,
-                }
+                },
             },
-            "answers": {"Pay": {"notes": "$24.50 per hour"}},
-        }
+            "questions": [
+                {
+                    "question_id": "Pay",
+                    "type": "custom",
+                    "transcript": "Candidate said they currently earn $21 while discussing classroom routines.",
+                    "interviewer_notes": "$24.50 per hour",
+                }
+            ],
+            "scoring": {"percent_of_max": 88, "outcome": "Hire", "rows": []},
+            "summaries": {},
+        },
+        actor="test-interviewer",
     )
     hiring = pyside_interview_app.HiringWorkflowService(
         pyside_interview_app.HiringPipelineStore(history_path)
@@ -3646,6 +3838,7 @@ def test_director_hire_sync_creates_one_pending_offer_with_derived_terms(tmp_pat
         proposed_shift_start="8:00 AM",
         proposed_shift_end="5:00 PM",
         proposed_classroom="Chef",
+        offer_position_id="teacher_floater",
     )
     offer_settings = SchoolOfferSettingsStore(tmp_path / "offer-settings.json")
     offer_settings.save(
@@ -3678,13 +3871,26 @@ def test_director_hire_sync_creates_one_pending_offer_with_derived_terms(tmp_pat
     assert offers[0].terms["weekly_hours"] == "40"
     assert offers[0].terms["employment_type"] == "full_time"
     assert offers[0].terms["proposed_classroom"] == "Chef"
-    assert offers[0].terms["hourly_pay"] == "24.5"
+    assert offers[0].terms["position_id"] == "teacher_floater"
+    assert offers[0].terms["position"] == "Teacher/Floater"
+    assert offers[0].terms["hourly_pay"] == "22.50"
+    assert offers[0].terms["pay_calculation"]["career_lattice_level"] == 7
+    assert offers[0].terms["pay_calculation"]["calculation_version"] == "2026.1"
     assert offers[0].terms["honorific"] == "Mr."
+    assert offers[0].terms["director_rating"] == "9"
+    assert offers[0].terms["qualification_snapshot"] == {
+        "has_degree": True,
+        "degree_type": "BA",
+        "degree_in_ece": True,
+        "years_experience": 6,
+    }
     hire_payload = notifications[0][1]
     assert hire_payload["interview_score"] == "88"
     assert hire_payload["degree_display"] == "BA"
     assert hire_payload["degree_in_ece_display"] == "\nDegree in ECE: Yes"
     assert hire_payload["experience"] == "6"
+    assert hire_payload["requested_pay"] == "$24.50 per hour"
+    assert hire_payload["offer_amount"] == "22.50"
 
 
 def test_director_hire_sync_migrates_existing_staffing_db_before_contact_read(
@@ -3702,6 +3908,14 @@ def test_director_hire_sync_migrates_existing_staffing_db_before_contact_read(
             "score": 86,
             "outcome": "Hire",
             "answers": {"Pay": {"notes": "$23.00 per hour"}},
+            "qualification": {
+                "has_degree": False,
+                "degree_type": "",
+                "degree_in_ece": False,
+                "ece_units_completed": 24,
+                "total_units_completed": 40,
+                "years_experience": 0,
+            },
         }
     )
     hiring = pyside_interview_app.HiringWorkflowService(
@@ -3740,6 +3954,7 @@ def test_director_hire_sync_migrates_existing_staffing_db_before_contact_read(
         proposed_shift_start="8:00 AM",
         proposed_shift_end="5:00 PM",
         proposed_classroom="Chef",
+        offer_position_id="teacher",
     )
     with sqlite3.connect(staffing_path) as conn:
         conn.execute("ALTER TABLE director_candidate_referrals DROP COLUMN candidate_phone")
@@ -9119,15 +9334,19 @@ def test_staffing_v2_director_interviews_sync_pending_history_and_record_complet
     shift_start = dialog.findChild(qt_widgets.QLineEdit, "StaffingV2DirectorInterviewShiftStartText")
     shift_end = dialog.findChild(qt_widgets.QLineEdit, "StaffingV2DirectorInterviewShiftEndText")
     classroom = dialog.findChild(qt_widgets.QComboBox, "StaffingV2DirectorInterviewClassroom")
+    offer_position = dialog.findChild(qt_widgets.QComboBox, "StaffingV2DirectorInterviewOfferPosition")
     candidate_email = dialog.findChild(qt_widgets.QLineEdit, "StaffingV2DirectorInterviewCandidateEmail")
     candidate_phone = dialog.findChild(qt_widgets.QLineEdit, "StaffingV2DirectorInterviewCandidatePhone")
     assert candidate_email is not None
     assert candidate_phone is not None
+    assert offer_position is not None
+    assert offer_position.currentData() is None
     decision.setCurrentText("No-Hire")
     app.processEvents()
     assert not shift_start.isVisible()
     assert not shift_end.isVisible()
     assert not classroom.isVisible()
+    assert not offer_position.isVisible()
     assert not candidate_email.isVisible()
     assert not candidate_phone.isVisible()
     decision.setCurrentText("Hire")
@@ -9135,11 +9354,13 @@ def test_staffing_v2_director_interviews_sync_pending_history_and_record_complet
     assert shift_start.isVisible()
     assert shift_end.isVisible()
     assert classroom.isVisible()
+    assert offer_position.isVisible()
     assert candidate_email.isVisible()
     assert candidate_phone.isVisible()
     shift_start.setText("8:00 AM")
     shift_end.setText("5:00 PM")
     classroom.setCurrentText("Harmony 1")
+    offer_position.setCurrentIndex(offer_position.findData("teacher_floater"))
     candidate_email.setText("jordan@example.org")
     dialog.findChild(qt_widgets.QTextEdit, "StaffingV2DirectorInterviewNotes").setPlainText("Strong classroom presence.")
     dialog.findChild(qt_widgets.QPushButton, "StaffingV2DirectorInterviewSave").click()
@@ -9153,6 +9374,10 @@ def test_staffing_v2_director_interviews_sync_pending_history_and_record_complet
     assignment = next(row for row in window.staffing_store.list_assignments() if row.school == "Hawthorne")
     assert assignment.status == "need_now"
     assert assignment.person_name == ""
+    completed = pyside_interview_app.StaffingService(window.staffing_store).list_completed_director_interviews(
+        school="Hawthorne"
+    )[0]
+    assert completed.offer_position_id == "teacher_floater"
     window.window.close()
     app.processEvents()
 
