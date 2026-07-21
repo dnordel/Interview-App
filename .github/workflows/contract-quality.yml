@@ -37,5 +37,5 @@ jobs:
         run: |
           pytest \
             tests/test_onboarding_contract_interfaces.py \
-            tests/test_interview_app_contract_interfaces.py \
+            tests/test_interview_runtime_contract_interfaces.py \
             tests/test_interview_root_contracts.py

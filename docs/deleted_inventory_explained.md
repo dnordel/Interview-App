@@ -1,5 +1,7 @@
 # Deleted Inventory: Purpose and Replacement
 
+<!-- markdownlint-disable MD007 MD029 MD032 -->
+
 Scope: cleanup commits after checkpoint `d2e2d890` through `28aac68d3ead7c105fc2012c61df34fe620f0767`. Source: July 20 reviewed audit, resolution ledger, current Git history. �Supposed purpose� is inferred from old names, contracts, tests, and call evidence.
 
 ## List 1 � Deleted files and renamed-away paths

@@ -10,6 +10,6 @@ exclude = [
 ]
 
 exclude_path = [
-  "**/node_modules/**",
-  "**/.venv/**"
+  "(^|/)node_modules(/|$)",
+  "(^|/)\\.venv(/|$)"
 ]

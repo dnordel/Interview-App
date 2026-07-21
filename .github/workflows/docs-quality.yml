@@ -21,6 +21,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -28,8 +30,19 @@ jobs:
           node-version: '20'
 
       - name: Run markdownlint-cli2
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          npx --yes markdownlint-cli2 "**/*.md" "#node_modules"
+          mapfile -d '' markdown_files < <(
+            git diff --name-only --diff-filter=ACMR -z \
+              "$BASE_SHA" "$HEAD_SHA" -- '*.md'
+          )
+          if (( ${#markdown_files[@]} == 0 )); then
+            echo "No changed Markdown files to lint."
+            exit 0
+          fi
+          npx --yes markdownlint-cli2 "${markdown_files[@]}"
 
   markdown-links:
     name: Markdown link check (internal)
