@@ -332,6 +332,197 @@ def test_pending_offer_row_has_direct_review_offer_button_beside_menu(tmp_path: 
 
 
 @pytest.mark.pyside_gui
+def test_offers_page_splits_pending_and_approved_tables_and_sizes_pending_rows(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6 import QtCore, QtWidgets
+    from hiring_workspace_v2 import HiringWorkspaceV2Page
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    service = HiringWorkflowService(HiringPipelineStore(tmp_path / "split-offers.sqlite3"))
+
+    def submitted_offer(name: str, email: str):
+        application = service.start_external_offer_application(
+            legal_name=name,
+            email=email,
+            phone="",
+            school="Palmdale",
+            position="Preschool",
+            actor="Admin",
+        )
+        draft = service.create_offer_draft(
+            application.application_id,
+            terms={"hourly_pay": "24.00", "weekly_hours": "40"},
+            actor="Admin",
+        )
+        submitted = service.submit_offer_for_approval(
+            application.application_id, draft.version_id, actor="Admin"
+        )
+        return application, submitted
+
+    submitted_offer("Pending Candidate", "pending@example.com")
+    approved_application, approved_version = submitted_offer("Approved Candidate", "")
+    docx_path = tmp_path / "approved.docx"
+    pdf_path = tmp_path / "approved.pdf"
+    docx_path.write_bytes(b"docx")
+    pdf_path.write_bytes(b"pdf")
+    service.approve_offer(
+        approved_application.application_id,
+        approved_version.version_id,
+        approver_name="Executive",
+        approver_role="Executive Director",
+        approval_date=date(2026, 7, 14),
+        docx_path=docx_path,
+        pdf_path=pdf_path,
+    )
+
+    page = HiringWorkspaceV2Page(QtCore=QtCore, QtWidgets=QtWidgets, service=service)
+    page.offers_widget.show()
+    app.processEvents()
+
+    assert page.pending_offers_table is page.offers_table
+    assert page.pending_offers_table.rowCount() == 1
+    assert page.pending_offers_table.item(0, 0).text() == "Pending Candidate"
+    assert page.approved_offers_table.rowCount() == 1
+    assert page.approved_offers_table.item(0, 0).text() == "Approved Candidate"
+    assert (
+        page.pending_offers_table.verticalScrollBarPolicy()
+        == QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+    )
+    expected_height = (
+        page.pending_offers_table.horizontalHeader().height()
+        + page.pending_offers_table.rowHeight(0)
+        + 2 * page.pending_offers_table.frameWidth()
+    )
+    assert page.pending_offers_table.height() == expected_height
+
+    page.offers_widget.close()
+    app.processEvents()
+
+
+@pytest.mark.pyside_gui
+def test_approved_offer_without_email_has_send_offer_button(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6 import QtCore, QtTest, QtWidgets
+    from hiring_workspace_v2 import HiringWorkspaceV2Page
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    service = HiringWorkflowService(HiringPipelineStore(tmp_path / "send-button.sqlite3"))
+    application = service.start_external_offer_application(
+        legal_name="Approved Candidate",
+        email="",
+        phone="",
+        school="Palmdale",
+        position="Preschool",
+        actor="Admin",
+    )
+    draft = service.create_offer_draft(
+        application.application_id,
+        terms={"hourly_pay": "24.00", "weekly_hours": "40"},
+        actor="Admin",
+    )
+    submitted = service.submit_offer_for_approval(
+        application.application_id, draft.version_id, actor="Admin"
+    )
+    docx_path = tmp_path / "approved.docx"
+    pdf_path = tmp_path / "approved.pdf"
+    docx_path.write_bytes(b"docx")
+    pdf_path.write_bytes(b"pdf")
+    approved = service.approve_offer(
+        application.application_id,
+        submitted.version_id,
+        approver_name="Executive",
+        approver_role="Executive Director",
+        approval_date=date(2026, 7, 14),
+        docx_path=docx_path,
+        pdf_path=pdf_path,
+    )
+    requested: list[tuple[str, str]] = []
+    page = HiringWorkspaceV2Page(
+        QtCore=QtCore,
+        QtWidgets=QtWidgets,
+        service=service,
+        actions={
+            "send_offer": lambda selected_application, version: requested.append(
+                (selected_application.application_id, version.version_id)
+            )
+        },
+    )
+    page.offers_widget.show()
+    app.processEvents()
+
+    actions = page.approved_offers_table.cellWidget(0, 6)
+    send_button = actions.findChild(QtWidgets.QPushButton, "HiringV2SendOfferAction")
+    assert send_button is not None
+    assert send_button.text() == "Send offer"
+    QtTest.QTest.mouseClick(send_button, QtCore.Qt.MouseButton.LeftButton)
+    app.processEvents()
+    assert requested == [(application.application_id, approved.version_id)]
+
+    page.offers_widget.close()
+    app.processEvents()
+
+
+@pytest.mark.pyside_gui
+def test_offer_overflow_menu_can_delete_selected_offer_version(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6 import QtCore, QtWidgets
+    from hiring_workspace_v2 import HiringWorkspaceV2Page
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    service = HiringWorkflowService(HiringPipelineStore(tmp_path / "delete-menu.sqlite3"))
+    application = service.start_external_offer_application(
+        legal_name="Pending Candidate",
+        email="pending@example.com",
+        phone="",
+        school="Palmdale",
+        position="Preschool",
+        actor="Admin",
+    )
+    draft = service.create_offer_draft(
+        application.application_id,
+        terms={"hourly_pay": "24.00", "weekly_hours": "40"},
+        actor="Admin",
+    )
+    submitted = service.submit_offer_for_approval(
+        application.application_id, draft.version_id, actor="Admin"
+    )
+    invoked: list[tuple[str, str, str]] = []
+    page = HiringWorkspaceV2Page(
+        QtCore=QtCore,
+        QtWidgets=QtWidgets,
+        service=service,
+        actions={
+            "review_approval": lambda selected_application: invoked.append(
+                ("review", selected_application.application_id, submitted.version_id)
+            ),
+            "delete_offer": lambda selected_application, version: invoked.append(
+                ("delete", selected_application.application_id, version.version_id)
+            ),
+            "archive": lambda selected_application: invoked.append(
+                ("archive", selected_application.application_id, submitted.version_id)
+            ),
+        },
+    )
+    menu_button = page.pending_offers_table.cellWidget(0, 6).findChild(
+        QtWidgets.QToolButton, "HiringV2OfferOverflowAction"
+    )
+    menu = menu_button.menu()
+    review_action = next(action for action in menu.actions() if action.text() == "Review offer")
+    delete_action = next(action for action in menu.actions() if action.text() == "Delete offer")
+    archive_action = next(action for action in menu.actions() if action.text() == "Archive application")
+
+    review_action.trigger()
+    delete_action.trigger()
+    archive_action.trigger()
+
+    assert invoked == [
+        ("review", application.application_id, submitted.version_id),
+        ("delete", application.application_id, submitted.version_id),
+        ("archive", application.application_id, submitted.version_id),
+    ]
+
+
+@pytest.mark.pyside_gui
 @pytest.mark.visual_inspection
 def test_hiring_workspace_visual_sizes_have_no_page_horizontal_scroll(
     tmp_path: Path,
@@ -399,6 +590,8 @@ def test_offer_approval_dialog_embeds_pdf_and_gates_approval(tmp_path: Path) -> 
         summary="Candidate and terms",
         rendered_email="Rendered candidate email",
         pdf_path=pdf_path,
+        hourly_pay="24.00",
+        approve_label="Approve",
     )
     approval.dialog.show()
     for _ in range(10):
@@ -413,6 +606,16 @@ def test_offer_approval_dialog_embeds_pdf_and_gates_approval(tmp_path: Path) -> 
     app.processEvents()
     assert approval.approve_button.isEnabled() is True
     assert approval.approver_name() == "Executive Approver"
+    assert approval.hourly_pay() == "24.00"
+    assert approval.change_pay_button.isEnabled() is False
+    approval.pay_input.setText("25.50")
+    app.processEvents()
+    assert approval.approve_button.text() == "Approve"
+    assert approval.change_pay_button.text() == "Change Pay & Approve"
+    assert approval.change_pay_button.isEnabled() is True
+    assert approval.hourly_pay() == "25.50"
+    approval.change_pay_button.click()
+    assert approval.change_pay_requested() is True
     approval.close()
 
 

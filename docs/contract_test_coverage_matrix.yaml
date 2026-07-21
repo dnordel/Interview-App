@@ -1,4 +1,4 @@
-last_updated: '2026-07-20'
+last_updated: '2026-07-21'
 sections:
 - name: interview_runtime
   tests:
@@ -12,7 +12,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-20T21:58:34.350170+00:00'
+generated_at_utc: '2026-07-21T17:30:46.426312+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -1478,6 +1478,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/hiring_pipeline.contract.yaml
+  symbol: hiring_pipeline.HiringPipelineStore.delete_offer_version
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/hiring_pipeline.contract.yaml
   symbol: hiring_pipeline.HiringPipelineStore.finalize_initial_interview
   kind: method
   tests:
@@ -1730,6 +1739,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/hiring_pipeline.contract.yaml
+  symbol: hiring_pipeline.HiringWorkflowService.delete_offer
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/hiring_pipeline.contract.yaml
   symbol: hiring_pipeline.HiringWorkflowService.ensure_director_offer_submitted
   kind: method
   tests:
@@ -1829,7 +1847,25 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/hiring_pipeline.contract.yaml
+  symbol: hiring_pipeline.HiringWorkflowService.revise_pending_offer_pay
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/hiring_pipeline.contract.yaml
   symbol: hiring_pipeline.HiringWorkflowService.search_candidate_profiles
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/hiring_pipeline.contract.yaml
+  symbol: hiring_pipeline.HiringWorkflowService.send_approved_offer
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -1973,6 +2009,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/hiring_workspace_v2.contract.yaml
+  symbol: hiring_workspace_v2.HiringOfferApprovalDialog.change_pay_requested
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/hiring_workspace_v2.contract.yaml
   symbol: hiring_workspace_v2.HiringOfferApprovalDialog.close
   kind: method
   tests:
@@ -1983,6 +2028,15 @@ entries:
     - return_type
 - contract: contracts/hiring_workspace_v2.contract.yaml
   symbol: hiring_workspace_v2.HiringOfferApprovalDialog.exec
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/hiring_workspace_v2.contract.yaml
+  symbol: hiring_workspace_v2.HiringOfferApprovalDialog.hourly_pay
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -9054,6 +9108,15 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._selected_setup_audio_source
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._send_hiring_offer_with_email
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py

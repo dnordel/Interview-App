@@ -2,8 +2,8 @@ module:
   name: hiring_pipeline
   language: python
   path: src/hiring_pipeline.py
-  version: 1.9.0
-  description: Candidate-profile, application-pipeline, event-audit, and PDF-only candidate offer-delivery lifecycle persistence in the canonical interview history SQLite database.
+  version: 1.10.0
+  description: Candidate-profile, application-pipeline, event-audit, editable pending-offer approval, delayed candidate-email delivery, offer-only deletion, and PDF-only candidate offer-delivery lifecycle persistence in the canonical interview history SQLite database.
 functions:
 - name: build_offer_notification_payload
   description: Build shared offer-approved notification values used by both approval preview and candidate delivery, including canonical school code and location.
@@ -298,6 +298,13 @@ classes:
     returns: {type: OfferVersion}
     exceptions: [ValueError]
     side_effects: Updates one persisted offer version status.
+  - name: delete_offer_version
+    inputs:
+      application_id: {type: str, required: true}
+      version_id: {type: str, required: true}
+    returns: {type: None}
+    exceptions: [ValueError, OSError]
+    side_effects: Deletes one selected offer row and only its unshared DOCX/PDF artifacts after constraining stored paths to the configured offer output directory.
   - name: record_offer_approval
     inputs:
       version_id: {type: str, required: true}
@@ -498,6 +505,15 @@ classes:
     returns: {type: OfferVersion}
     exceptions: [ValueError]
     side_effects: Creates an Admin-only numbered pending revision with only compensation fields changed.
+  - name: revise_pending_offer_pay
+    inputs:
+      application_id: {type: str, required: true}
+      version_id: {type: str, required: true}
+      hourly_pay: {type: str, required: true}
+      actor: {type: str, required: true}
+    returns: {type: OfferVersion}
+    exceptions: [ValueError, OSError]
+    side_effects: Creates and previews a new numbered pending version with changed hourly pay, then supersedes the prior pending version only after artifact generation succeeds.
   - name: approve_offer
     inputs:
       application_id: {type: str, required: true}
@@ -510,7 +526,7 @@ classes:
       rendered_email: {type: str, required: false, default: ''}
     returns: {type: OfferVersion}
     exceptions: [ValueError]
-    side_effects: Persists approval before candidate-only PDF delivery and advances only on send success.
+    side_effects: Persists approval without requiring candidate email; attempts candidate-only PDF delivery when email exists and advances only on send success.
   - name: approve_compensation_revision
     inputs:
       application_id: {type: str, required: true}
@@ -531,6 +547,23 @@ classes:
     returns: {type: OfferVersion}
     exceptions: [ValueError]
     side_effects: Idempotently retries candidate PDF delivery for an approved failed version.
+  - name: send_approved_offer
+    inputs:
+      application_id: {type: str, required: true}
+      version_id: {type: str, required: true}
+      candidate_email: {type: str, required: true}
+      actor: {type: str, required: true}
+    returns: {type: OfferVersion}
+    exceptions: [ValueError]
+    side_effects: Validates and saves candidate email, audits a send request without storing the address in event payload, and delivers the approved PDF.
+  - name: delete_offer
+    inputs:
+      application_id: {type: str, required: true}
+      version_id: {type: str, required: true}
+      actor: {type: str, required: true}
+    returns: {type: HiringApplication}
+    exceptions: [ValueError, OSError]
+    side_effects: Deletes only the selected offer and its safely constrained generated artifacts, retains application/candidate/interview records, recalculates application stage, and appends a PII-safe audit event.
   - name: extend_offer_deadline
     inputs:
       application_id: {type: str, required: true}

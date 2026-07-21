@@ -348,6 +348,114 @@ def test_approved_offer_advances_only_after_pdf_delivery(tmp_path: Path) -> None
     assert service.store.get_application(application.application_id).stage is HiringStage.OFFER_SENT
 
 
+def test_offer_can_be_approved_without_candidate_email_and_waits_for_send(tmp_path: Path) -> None:
+    history_path = tmp_path / "interview_history.sqlite3"
+    service = HiringWorkflowService(
+        HiringPipelineStore(history_path),
+        send_offer=lambda *_args: pytest.fail("Offer must not send without candidate email."),
+    )
+    application = service.start_application(
+        legal_name="Maya Patel",
+        email="",
+        phone="",
+        school="Palmdale",
+        position="Preschool",
+        actor="Admin",
+    )
+    service.finalize_initial_interview(
+        application.application_id,
+        history_id="hist-approve-no-email",
+        score=80,
+        outcome="Hire",
+        actor="Admin",
+    )
+    service.record_director_decision(application.application_id, decision="Hire", actor="Director")
+    draft = service.create_offer_draft(
+        application.application_id,
+        terms={"hourly_pay": "24.00", "weekly_hours": "40"},
+        actor="Admin",
+    )
+    service.submit_offer_for_approval(application.application_id, draft.version_id, actor="Admin")
+    docx_path = tmp_path / "offer.docx"
+    pdf_path = tmp_path / "offer.pdf"
+    docx_path.write_bytes(b"docx")
+    pdf_path.write_bytes(b"pdf")
+
+    approved = service.approve_offer(
+        application.application_id,
+        draft.version_id,
+        approver_name="Executive",
+        approver_role="Executive Director",
+        approval_date=date(2026, 7, 14),
+        docx_path=docx_path,
+        pdf_path=pdf_path,
+    )
+
+    assert approved.status == "approved"
+    assert approved.send_status == "pending"
+    assert service.store.get_application(application.application_id).stage is HiringStage.EXECUTIVE_APPROVAL
+
+
+def test_approved_unsent_offer_saves_candidate_email_then_sends(tmp_path: Path) -> None:
+    sent: list[tuple[str, str]] = []
+
+    def send_offer(candidate, _version, pdf_path, _idempotency_key):
+        sent.append((candidate.email, Path(pdf_path).name))
+        return [SimpleNamespace(status="sent", error="")]
+
+    service = HiringWorkflowService(
+        HiringPipelineStore(tmp_path / "history.sqlite3"),
+        send_offer=send_offer,
+    )
+    application = service.start_application(
+        legal_name="Maya Patel",
+        email="",
+        phone="555-0100",
+        school="Palmdale",
+        position="Preschool",
+        actor="Admin",
+    )
+    service.finalize_initial_interview(
+        application.application_id,
+        history_id="hist-send-after-approval",
+        score=80,
+        outcome="Hire",
+        actor="Admin",
+    )
+    service.record_director_decision(application.application_id, decision="Hire", actor="Director")
+    draft = service.create_offer_draft(
+        application.application_id,
+        terms={"hourly_pay": "24.00", "weekly_hours": "40"},
+        actor="Admin",
+    )
+    service.submit_offer_for_approval(application.application_id, draft.version_id, actor="Admin")
+    docx_path = tmp_path / "offer.docx"
+    pdf_path = tmp_path / "offer.pdf"
+    docx_path.write_bytes(b"docx")
+    pdf_path.write_bytes(b"pdf")
+    service.approve_offer(
+        application.application_id,
+        draft.version_id,
+        approver_name="Executive",
+        approver_role="Executive Director",
+        approval_date=date(2026, 7, 14),
+        docx_path=docx_path,
+        pdf_path=pdf_path,
+    )
+
+    delivered = service.send_approved_offer(
+        application.application_id,
+        draft.version_id,
+        candidate_email="maya@example.com",
+        actor="Admin",
+    )
+
+    assert delivered.status == "sent"
+    assert service.store.get_candidate(application.candidate_id).email == "maya@example.com"
+    assert sent == [("maya@example.com", "offer.pdf")]
+    assert service.store.get_application(application.application_id).stage is HiringStage.OFFER_SENT
+
+
 def test_failed_offer_send_preserves_approval_and_retry_is_idempotent(tmp_path: Path) -> None:
     history_path = tmp_path / "interview_history.sqlite3"
     InterviewHistoryStore(history_path).append(
@@ -486,6 +594,148 @@ def test_admin_compensation_revision_only_changes_pay_and_hours(tmp_path: Path) 
     assert sent_attachments == [(revision.version_id, edited_pdf.resolve())]
     assert sent_attachments[0][1].suffix.casefold() == ".pdf"
     assert sent_attachments[0][1] != edited_docx.resolve()
+
+
+def test_pending_offer_pay_edit_creates_new_previewed_version(tmp_path: Path) -> None:
+    generated: list[tuple[int, str]] = []
+
+    def prepare(_application, _candidate, version):
+        docx_path = tmp_path / f"offer-v{version.version_number}.docx"
+        pdf_path = tmp_path / f"offer-v{version.version_number}.pdf"
+        docx_path.write_bytes(f"pay={version.terms['hourly_pay']}".encode())
+        pdf_path.write_bytes(f"pay={version.terms['hourly_pay']}".encode())
+        generated.append((version.version_number, version.terms["hourly_pay"]))
+        return docx_path, pdf_path
+
+    service = HiringWorkflowService(
+        HiringPipelineStore(tmp_path / "history.sqlite3"),
+        prepare_offer_artifacts=prepare,
+    )
+    application = service.start_application(
+        legal_name="Maya Patel",
+        email="",
+        phone="",
+        school="Palmdale",
+        position="Preschool",
+        actor="Admin",
+    )
+    service.finalize_initial_interview(
+        application.application_id,
+        history_id="hist-edit-pending-pay",
+        score=80,
+        outcome="Hire",
+        actor="Admin",
+    )
+    service.record_director_decision(application.application_id, decision="Hire", actor="Director")
+    original = service.create_offer_draft(
+        application.application_id,
+        terms={"hourly_pay": "22.00", "weekly_hours": "40", "position": "Preschool"},
+        actor="Admin",
+    )
+    service.submit_offer_for_approval(application.application_id, original.version_id, actor="Admin")
+
+    revised = service.revise_pending_offer_pay(
+        application.application_id,
+        original.version_id,
+        hourly_pay="24.50",
+        actor="Executive",
+    )
+
+    assert service.store.get_offer_version(original.version_id).status == "superseded"
+    assert revised.status == "pending_approval"
+    assert revised.version_number == 2
+    assert revised.terms == {
+        "hourly_pay": "24.50",
+        "weekly_hours": "40",
+        "position": "Preschool",
+    }
+    assert Path(revised.pdf_path).read_bytes() == b"pay=24.50"
+    assert generated == [(1, "22.00"), (2, "24.50")]
+
+
+def test_delete_offer_removes_only_offer_and_generated_files(tmp_path: Path) -> None:
+    output_dir = tmp_path / "offers"
+    output_dir.mkdir()
+    service = HiringWorkflowService(HiringPipelineStore(tmp_path / "history.sqlite3"))
+    application = service.start_external_offer_application(
+        legal_name="Maya Patel",
+        email="",
+        phone="",
+        school="Palmdale",
+        position="Preschool",
+        actor="Admin",
+    )
+    draft = service.create_offer_draft(
+        application.application_id,
+        terms={
+            "hourly_pay": "24.00",
+            "weekly_hours": "40",
+            "output_dir": str(output_dir),
+        },
+        actor="Admin",
+    )
+    service.submit_offer_for_approval(application.application_id, draft.version_id, actor="Admin")
+    docx_path = output_dir / "offer.docx"
+    pdf_path = output_dir / "offer.pdf"
+    unrelated_path = output_dir / "keep.docx"
+    docx_path.write_bytes(b"docx")
+    pdf_path.write_bytes(b"pdf")
+    unrelated_path.write_bytes(b"keep")
+    service.store.record_offer_artifacts(
+        draft.version_id,
+        docx_path=docx_path,
+        pdf_path=pdf_path,
+    )
+
+    remaining_application = service.delete_offer(
+        application.application_id,
+        draft.version_id,
+        actor="Admin",
+    )
+
+    assert service.store.list_offer_versions(application.application_id) == []
+    assert docx_path.exists() is False
+    assert pdf_path.exists() is False
+    assert unrelated_path.read_bytes() == b"keep"
+    assert remaining_application.archived_at == ""
+    assert remaining_application.stage is HiringStage.OFFER_DRAFT
+    assert service.store.get_candidate(application.candidate_id).legal_name == "Maya Patel"
+
+
+def test_delete_offer_rejects_artifact_outside_configured_output_directory(tmp_path: Path) -> None:
+    output_dir = tmp_path / "offers"
+    output_dir.mkdir()
+    outside_docx = tmp_path / "outside.docx"
+    outside_pdf = tmp_path / "outside.pdf"
+    outside_docx.write_bytes(b"docx")
+    outside_pdf.write_bytes(b"pdf")
+    service = HiringWorkflowService(HiringPipelineStore(tmp_path / "history.sqlite3"))
+    application = service.start_external_offer_application(
+        legal_name="Maya Patel",
+        email="",
+        phone="",
+        school="Palmdale",
+        position="Preschool",
+        actor="Admin",
+    )
+    draft = service.create_offer_draft(
+        application.application_id,
+        terms={"hourly_pay": "24.00", "weekly_hours": "40", "output_dir": str(output_dir)},
+        actor="Admin",
+    )
+    service.submit_offer_for_approval(application.application_id, draft.version_id, actor="Admin")
+    service.store.record_offer_artifacts(
+        draft.version_id,
+        docx_path=outside_docx,
+        pdf_path=outside_pdf,
+    )
+
+    with pytest.raises(ValueError, match="outside"):
+        service.delete_offer(application.application_id, draft.version_id, actor="Admin")
+
+    assert outside_docx.exists()
+    assert outside_pdf.exists()
+    assert service.store.get_offer_version(draft.version_id).status == "pending_approval"
 
 
 def test_deadline_extension_does_not_change_document_and_only_latest_sent_can_be_accepted(tmp_path: Path) -> None:

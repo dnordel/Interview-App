@@ -2,14 +2,14 @@ module:
   name: full_pytest_runner
   language: python
   path: tools/full_pytest_runner.py
-  version: 2.2.0
+  version: 2.2.1
   description: Metadata-first full-suite runner that isolates GUI tests, exposes a reversible current-source stamp during validation, and retains an authoritative deployment stamp only after every phase passes.
 functions:
 - name: build_gui_test_batches
   locked: false
   inputs:
     entries: {type: 'list[dict[str, Any]]', required: true}
-    gui_workers: {type: int, required: false, default: 2}
+    gui_workers: {type: int, required: false, default: 8}
   returns: {type: 'list[list[str]]'}
   exceptions: [ValueError]
   side_effects: none
@@ -19,7 +19,7 @@ functions:
     python_executable: {type: str, required: false}
     metadata_workers: {type: int, required: false}
     full_workers: {type: int, required: false}
-    gui_workers: {type: int, required: false, default: 2}
+    gui_workers: {type: int, required: false, default: 8}
     catalog_entries: {type: 'list[dict[str, Any]] | None', required: false}
   returns: {type: 'tuple[list[str], list[str], list[list[str]]]'}
   exceptions: []
@@ -30,7 +30,7 @@ functions:
     python_executable: {type: str, required: false}
     metadata_workers: {type: int, required: false}
     full_workers: {type: int, required: false}
-    gui_workers: {type: int, required: false, default: 2}
+    gui_workers: {type: int, required: false, default: 8}
     call: {type: 'Callable[[list[str]], int]', required: false}
     source_version_path: {type: Path, required: false, default: SOURCE_VERSION_PATH}
   returns: {type: int}

@@ -2,8 +2,8 @@ module:
   name: hiring_workspace_v2
   language: python
   path: src/hiring_workspace_v2.py
-  version: 3.4.0
-  description: Native Staffing v2 Candidates pipeline/history and Offers surfaces for the seven-stage application pipeline, with shared overlays, semantic metrics, contextual lifecycle actions, prior cycles, documents, compressible stage/filter controls that avoid page-width overflow, an initially closed and explicitly closable application detail overlay, a readable icon-and-color Role column replacing Active cycles in Candidate History, three-step offer editing, manual external-candidate offer generation, and a direct Review offer button beside each pending offer row's overflow menu.
+  version: 3.5.0
+  description: Native Staffing v2 Candidates pipeline/history and Offers surfaces for the seven-stage application pipeline, with separate auto-height pending and approved offer tables, approval-time pay editing, delayed email send actions, and selected-offer deletion alongside shared overlays and contextual lifecycle actions.
 functions: []
 classes:
 - name: HiringOfferApprovalDialog
@@ -13,12 +13,24 @@ classes:
     dialog: {type: QDialog}
     pdf_document: {type: QPdfDocument}
     pdf_view: {type: QPdfView}
+    pay_input: {type: QLineEdit}
     approver_input: {type: QLineEdit}
+    change_pay_button: {type: QPushButton}
     approve_button: {type: QPushButton}
   methods:
   - name: approver_name
     inputs: {}
     returns: {type: str}
+    exceptions: []
+    side_effects: none
+  - name: hourly_pay
+    inputs: {}
+    returns: {type: str}
+    exceptions: []
+    side_effects: none
+  - name: change_pay_requested
+    inputs: {}
+    returns: {type: bool}
     exceptions: []
     side_effects: none
   - name: exec
@@ -59,12 +71,14 @@ classes:
     exceptions: []
     side_effects: Shows closeout route.
 - name: HiringWorkspaceV2Page
-  description: PySide workspace with stage counters, filters, compact application list, Candidate History role badges, contextual actions, click-open and explicitly closable selected-application detail timeline, documents, prior cycles, attention explanations, three-step offer editing, an Offers-page Generate offer workflow for candidates interviewed outside the app, and a direct Review offer action beside the overflow menu for pending approvals.
+  description: PySide workspace with stage counters, filters, candidate history, offer editing, and an Offers page with separate pending/approved tables, direct Review/Send actions, auto-height pending rows, and version-targeted deletion menus.
   locked: false
   attributes:
     widget: {type: QWidget}
     stage_buttons: {type: 'dict[HiringStage, QPushButton]'}
     application_table: {type: QTableWidget}
+    pending_offers_table: {type: QTableWidget}
+    approved_offers_table: {type: QTableWidget}
     detail_next_action: {type: QLabel}
     timeline_list: {type: QListWidget}
   methods:

@@ -11,8 +11,8 @@ grandfathered_files:
     count: 1
     sha256: 189e559c792066853650015647c559d32600d685c1f1125fd1117ed56d217caa
   src/hiring_workspace_v2.py:
-    count: 21
-    sha256: eb0942d643b9d3db2301303ab8adbd5e6d5af7f1ae3d1071e48f2309baf814f8
+    count: 18
+    sha256: 2bbd7e2efc8e0afb19bd90b2c49d84114315b41c88e3f13ba525929aec8a7cbb
   src/onboarding_workspace_v2.py:
     count: 0
     sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
@@ -40,6 +40,22 @@ grandfathered_files:
 #     behavioral_tests:
 #     - tests/test_example_gui.py::test_save_button_persists_visible_change
 covered_actions:
+  262eb1603754e40b22ff:
+    behavioral_tests: [tests/test_hiring_workspace_v2.py::test_offer_approval_dialog_embeds_pdf_and_gates_approval]
+  c7744ce5c47cde7b3f09:
+    behavioral_tests: [tests/test_hiring_workspace_v2.py::test_offer_approval_dialog_embeds_pdf_and_gates_approval]
+  6711e0ff84912afa922a:
+    behavioral_tests: [tests/test_hiring_workspace_v2.py::test_pending_offer_row_has_direct_review_offer_button_beside_menu]
+  785be72a2009d4d324d8:
+    behavioral_tests: [tests/test_hiring_workspace_v2.py::test_approved_offer_without_email_has_send_offer_button]
+  406cd4e8e8273e2cff29:
+    behavioral_tests: [tests/test_hiring_workspace_v2.py::test_offer_overflow_menu_can_delete_selected_offer_version]
+  1b3f27cfa22ee479675e:
+    behavioral_tests: [tests/test_hiring_workspace_v2.py::test_offer_overflow_menu_can_delete_selected_offer_version]
+  07961db3b084d0478569:
+    behavioral_tests: [tests/test_hiring_workspace_v2.py::test_offer_overflow_menu_can_delete_selected_offer_version]
+  aca8e0d355c0bae2e3d6:
+    behavioral_tests: [tests/test_hiring_workspace_v2.py::test_offer_overflow_menu_can_delete_selected_offer_version]
   f91ceac5a06eb25160a3:
     behavioral_tests: [tests/test_onboarding_workspace_v2.py::test_templates_workflow_publishes_template_package_and_visual_mapping]
   bb83ef7ac7df8e7a06ed:

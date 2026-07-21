@@ -17,7 +17,7 @@ METADATA_PREFLIGHT_PATHS = (GUI_TIMING_PREFLIGHT_PATH, GUI_ACTION_PREFLIGHT_PATH
 SOURCE_VERSION_PATH = ROOT / "config" / "source_version.txt"
 
 
-def build_gui_test_batches(*, entries: list[dict[str, Any]], gui_workers: int = 2) -> list[list[str]]:
+def build_gui_test_batches(*, entries: list[dict[str, Any]], gui_workers: int = 8) -> list[list[str]]:
     if gui_workers < 1:
         raise ValueError("GUI worker count must be positive.")
     ordered = sorted(
@@ -34,7 +34,7 @@ def build_full_suite_commands(
     python_executable: str = sys.executable,
     metadata_workers: int = 8,
     full_workers: int = 24,
-    gui_workers: int = 2,
+    gui_workers: int = 8,
     catalog_entries: list[dict[str, Any]] | None = None,
 ) -> tuple[list[str], list[str], list[list[str]]]:
     common = ["--dist=load", "--maxschedchunk=1"]
@@ -79,7 +79,7 @@ def run_full_suite(
     python_executable: str = sys.executable,
     metadata_workers: int = 8,
     full_workers: int = 24,
-    gui_workers: int = 2,
+    gui_workers: int = 8,
     call: Callable[[list[str]], int] = subprocess.call,
     source_version_path: Path = SOURCE_VERSION_PATH,
 ) -> int:
@@ -129,11 +129,11 @@ def run_full_suite(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Run metadata preflight, parallel non-GUI tests, then one isolated two-worker GUI phase."
+        description="Run metadata preflight, parallel non-GUI tests, then one isolated eight-worker GUI phase."
     )
     parser.add_argument("--metadata-workers", type=int, default=8)
     parser.add_argument("--full-workers", type=int, default=24)
-    parser.add_argument("--gui-workers", type=int, default=2)
+    parser.add_argument("--gui-workers", type=int, default=8)
     args = parser.parse_args()
     raise SystemExit(
         run_full_suite(

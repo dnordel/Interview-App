@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import Counter
 from datetime import date
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
@@ -45,6 +46,8 @@ class HiringOfferApprovalDialog:
         summary: str,
         rendered_email: str,
         pdf_path: Path,
+        hourly_pay: str = "",
+        approve_label: str = "Approve and send",
     ) -> None:
         self.QtPdf = QtPdf
         self.dialog = QtWidgets.QDialog(parent)
@@ -68,6 +71,12 @@ class HiringOfferApprovalDialog:
         self.email_preview.setReadOnly(True)
         self.email_preview.setMaximumHeight(110)
         layout.addWidget(self.email_preview)
+        layout.addWidget(QtWidgets.QLabel("Hourly pay"))
+        self.pay_input = QtWidgets.QLineEdit(str(hourly_pay))
+        self.pay_input.setPlaceholderText("Required hourly pay")
+        layout.addWidget(self.pay_input)
+        self._initial_hourly_pay = self.hourly_pay()
+        self._change_pay_requested = False
         layout.addWidget(QtWidgets.QLabel("Approver name"))
         self.approver_input = QtWidgets.QLineEdit()
         self.approver_input.setPlaceholderText("Required approver name")
@@ -75,15 +84,20 @@ class HiringOfferApprovalDialog:
         controls = QtWidgets.QHBoxLayout()
         controls.addStretch(1)
         cancel_button = QtWidgets.QPushButton("Cancel")
-        self.approve_button = QtWidgets.QPushButton("Approve and send")
+        self.change_pay_button = QtWidgets.QPushButton("Change Pay & Approve")
+        self.change_pay_button.setEnabled(False)
+        self.approve_button = QtWidgets.QPushButton(approve_label)
         self.approve_button.setDefault(True)
         self.approve_button.setEnabled(False)
         controls.addWidget(cancel_button)
+        controls.addWidget(self.change_pay_button)
         controls.addWidget(self.approve_button)
         layout.addLayout(controls)
         cancel_button.clicked.connect(self.dialog.reject)
         self.approve_button.clicked.connect(self.dialog.accept)
+        self.change_pay_button.clicked.connect(self._accept_pay_change)
         self.approver_input.textChanged.connect(self._sync_readiness)
+        self.pay_input.textChanged.connect(self._sync_readiness)
         self.pdf_document.statusChanged.connect(self._sync_readiness)
         self.pdf_document.load(str(Path(pdf_path).resolve()))
         self._sync_readiness()
@@ -101,10 +115,32 @@ class HiringOfferApprovalDialog:
         else:
             text = "Loading approved PDF…"
         self.status_label.setText(text)
-        self.approve_button.setEnabled(ready and bool(self.approver_name()))
+        approver_ready = ready and bool(self.approver_name())
+        self.approve_button.setEnabled(approver_ready)
+        self.change_pay_button.setEnabled(
+            approver_ready
+            and self._valid_hourly_pay()
+            and self.hourly_pay() != self._initial_hourly_pay
+        )
+
+    def _valid_hourly_pay(self) -> bool:
+        try:
+            return Decimal(self.hourly_pay()) > 0
+        except (InvalidOperation, ValueError):
+            return False
+
+    def _accept_pay_change(self) -> None:
+        self._change_pay_requested = True
+        self.dialog.accept()
 
     def approver_name(self) -> str:
         return self.approver_input.text().strip()
+
+    def hourly_pay(self) -> str:
+        return self.pay_input.text().strip()
+
+    def change_pay_requested(self) -> bool:
+        return self._change_pay_requested
 
     def exec(self) -> bool:
         return self.dialog.exec() == self.dialog.DialogCode.Accepted
@@ -349,12 +385,28 @@ class HiringWorkspaceV2Page:
         self.offers_status = self.QtWidgets.QLabel("Draft 0  ·  Approval 0  ·  Sent 0  ·  Accepted 0  ·  Attention 0")
         self.offers_status.setObjectName("HiringV2ActionStatus")
         root.addWidget(self.offers_status)
-        self.offers_table = self.QtWidgets.QTableWidget(0, 7)
-        self.offers_table.setHorizontalHeaderLabels(
+        pending_title = self.QtWidgets.QLabel("Offers pending approval")
+        pending_title.setObjectName("HiringV2SectionTitle")
+        root.addWidget(pending_title)
+        self.pending_offers_table = self.QtWidgets.QTableWidget(0, 7)
+        self.pending_offers_table.setHorizontalHeaderLabels(
             ["Candidate", "School / Role", "Version", "Compensation", "Reply deadline", "State", "Actions"]
         )
-        self._configure_native_table(self.offers_table)
-        root.addWidget(self.offers_table, 1)
+        self._configure_native_table(self.pending_offers_table)
+        self.pending_offers_table.setVerticalScrollBarPolicy(
+            self.QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        root.addWidget(self.pending_offers_table)
+        self.offers_table = self.pending_offers_table
+        approved_title = self.QtWidgets.QLabel("Approved offers")
+        approved_title.setObjectName("HiringV2SectionTitle")
+        root.addWidget(approved_title)
+        self.approved_offers_table = self.QtWidgets.QTableWidget(0, 7)
+        self.approved_offers_table.setHorizontalHeaderLabels(
+            ["Candidate", "School / Role", "Version", "Compensation", "Reply deadline", "State", "Actions"]
+        )
+        self._configure_native_table(self.approved_offers_table)
+        root.addWidget(self.approved_offers_table, 1)
         page.setStyleSheet(self.widget.styleSheet())
         return page
 
@@ -601,14 +653,28 @@ class HiringWorkspaceV2Page:
     def _refresh_offers_table(self) -> None:
         if not hasattr(self, "offers_table"):
             return
-        rows = []
+        pending_rows = []
+        approved_rows = []
         counts: Counter[str] = Counter()
         for application in self.applications:
             candidate = self.service.store.get_candidate(application.candidate_id)
             for version in self.service.store.list_offer_versions(application.application_id):
-                rows.append((application, candidate, version))
                 counts[version.status] += 1
-        self.offers_table.setRowCount(len(rows))
+                if version.status == "pending_approval":
+                    pending_rows.append((application, candidate, version))
+                elif version.status in {"approved", "sent", "accepted"}:
+                    approved_rows.append((application, candidate, version))
+        self._populate_offers_table(self.pending_offers_table, pending_rows)
+        self._resize_pending_offers_table()
+        self._populate_offers_table(self.approved_offers_table, approved_rows)
+        attention = sum(bool(item.attention_code) for item in self.applications)
+        self.offers_status.setText(
+            f"Draft {counts['draft']}  ·  Approval {counts['pending_approval']}  ·  "
+            f"Sent {counts['sent']}  ·  Accepted {counts['accepted']}  ·  Attention {attention}"
+        )
+
+    def _populate_offers_table(self, table: Any, rows: list[tuple[Any, Any, Any]]) -> None:
+        table.setRowCount(len(rows))
         for row, (application, candidate, version) in enumerate(rows):
             terms = version.terms
             pay = terms.get("hourly_pay", "")
@@ -622,7 +688,7 @@ class HiringWorkspaceV2Page:
                 version.status.replace("_", " ").title(),
             )
             for column, value in enumerate(values):
-                self.offers_table.setItem(row, column, self.QtWidgets.QTableWidgetItem(str(value)))
+                table.setItem(row, column, self.QtWidgets.QTableWidgetItem(str(value)))
             actions = self.QtWidgets.QWidget()
             actions_layout = self.QtWidgets.QHBoxLayout(actions)
             actions_layout.setContentsMargins(4, 2, 4, 2)
@@ -634,17 +700,60 @@ class HiringWorkspaceV2Page:
                     lambda _checked=False, item=application: self._invoke("review_approval", item)
                 )
                 actions_layout.addWidget(review, 1)
+            elif version.status == "approved" and not candidate.email.strip():
+                send = self.QtWidgets.QPushButton("Send offer")
+                send.setObjectName("HiringV2SendOfferAction")
+                send.clicked.connect(
+                    lambda _checked=False, item=application, offer=version: self._invoke(
+                        "send_offer", item, offer
+                    )
+                )
+                actions_layout.addWidget(send, 1)
             action = self.QtWidgets.QToolButton()
             action.setObjectName("HiringV2OfferOverflowAction")
             action.setText("•••")
-            action.clicked.connect(lambda _checked=False, item=application: self._open_actions(item))
+            action.setPopupMode(self.QtWidgets.QToolButton.ToolButtonPopupMode.InstantPopup)
+            action.setMenu(self._build_offer_menu(application, version, action))
             actions_layout.addWidget(action)
-            self.offers_table.setCellWidget(row, 6, actions)
-        attention = sum(bool(item.attention_code) for item in self.applications)
-        self.offers_status.setText(
-            f"Draft {counts['draft']}  ·  Approval {counts['pending_approval']}  ·  "
-            f"Sent {counts['sent']}  ·  Accepted {counts['accepted']}  ·  Attention {attention}"
+            table.setCellWidget(row, 6, actions)
+
+    def _resize_pending_offers_table(self) -> None:
+        table = self.pending_offers_table
+        table.resizeRowsToContents()
+        height = table.horizontalHeader().height() + 2 * table.frameWidth()
+        height += sum(table.rowHeight(row) for row in range(table.rowCount()))
+        table.setFixedHeight(height)
+
+    def _build_offer_menu(self, application: Any, version: Any, parent: Any) -> Any:
+        menu = self.QtWidgets.QMenu(parent)
+        action_names: list[tuple[str, str]] = []
+        if version.status == "pending_approval":
+            action_names.append(("Review offer", "review_approval"))
+        elif version.status == "approved" and version.send_status == "failed":
+            action_names.append(("Retry send", "retry_send"))
+        elif version.status == "sent":
+            action_names.extend(
+                (
+                    ("Revise compensation", "revise_compensation"),
+                    ("Extend deadline", "extend_deadline"),
+                    ("Mark accepted", "accept_offer"),
+                )
+            )
+        for label, action_name in action_names:
+            action = menu.addAction(label)
+            action.triggered.connect(
+                lambda _checked=False, name=action_name: self._invoke(name, application)
+            )
+        if action_names:
+            menu.addSeparator()
+        delete = menu.addAction("Delete offer")
+        delete.triggered.connect(
+            lambda _checked=False: self._invoke("delete_offer", application, version)
         )
+        menu.addSeparator()
+        archive = menu.addAction("Archive application")
+        archive.triggered.connect(lambda _checked=False: self._invoke("archive", application))
+        return menu
 
     def _select_stage(self, stage: HiringStage, checked: bool) -> None:
         self.active_stage = stage if checked else None
@@ -700,8 +809,32 @@ class HiringWorkspaceV2Page:
             callback(*args)
             return
         application = args[0] if args else None
+        if name == "delete_offer" and application is not None and len(args) > 1:
+            self._run_default_offer_delete(application, args[1])
+            return
         if application is not None:
             self._run_default_action(name, application)
+
+    def _run_default_offer_delete(self, application: Any, version: Any) -> None:
+        answer = self.QtWidgets.QMessageBox.question(
+            self.widget,
+            "Delete offer",
+            f"Permanently delete offer v{version.version_number} and its generated DOCX/PDF files?",
+        )
+        if answer != self.QtWidgets.QMessageBox.StandardButton.Yes:
+            return
+        self._set_action_state("working", "Deleting offer…")
+        try:
+            self.service.delete_offer(
+                application.application_id,
+                version.version_id,
+                actor="Admin User",
+            )
+            self.refresh()
+            self._set_action_state("success", "Offer and generated files deleted.")
+        except (OSError, ValueError) as exc:
+            self._set_action_state("error", f"Delete offer failed: {exc}")
+            self.QtWidgets.QMessageBox.warning(self.widget, "Delete offer failed", str(exc))
 
     def perform_action(
         self,

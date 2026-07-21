@@ -2213,6 +2213,9 @@ class PySideInterviewWindow:
                 "resume_interview": resume_interview,
                 "review_approval": review_approval,
                 "approve_revision": review_approval,
+                "send_offer": lambda application, version: self._send_hiring_offer_with_email(
+                    service, application, version
+                ),
                 "director_review": director_review,
                 "view_closeout": view_closeout,
                 "view_acceptance": lambda _application: None,
@@ -2346,8 +2349,6 @@ class PySideInterviewWindow:
         candidate = service.store.get_candidate(application.candidate_id)
         terms = version.terms
         try:
-            if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", candidate.email):
-                raise ValueError("Valid candidate email is required before approval.")
             approval_date = date.today()
             docx_path = Path(str(getattr(version, "docx_path", "") or "")).expanduser().resolve()
             pdf_path = Path(str(getattr(version, "pdf_path", "") or "")).expanduser().resolve()
@@ -2400,6 +2401,12 @@ class PySideInterviewWindow:
             ),
             rendered_email=rendered_email,
             pdf_path=pdf_path,
+            hourly_pay=str(terms.get("hourly_pay") or ""),
+            approve_label=(
+                "Approve and send"
+                if re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", candidate.email)
+                else "Approve"
+            ),
         )
         if not approval_dialog.exec():
             approval_dialog.close()
@@ -2407,8 +2414,31 @@ class PySideInterviewWindow:
                 self.hiring_v2_page._set_action_state("ready", "Approval review cancelled.")
             return
         approver_name = approval_dialog.approver_name()
+        changed_pay = approval_dialog.hourly_pay()
+        change_pay_requested = approval_dialog.change_pay_requested()
         approval_dialog.close()
         try:
+            if change_pay_requested:
+                version = service.revise_pending_offer_pay(
+                    application.application_id,
+                    version.version_id,
+                    hourly_pay=changed_pay,
+                    actor=approver_name,
+                )
+                terms = version.terms
+                docx_path = Path(version.docx_path).expanduser().resolve()
+                pdf_path = Path(version.pdf_path).expanduser().resolve()
+                payload = HiringOfferNotificationAdapter.payload(candidate, version, pdf_path)
+                payload.update(
+                    {
+                        "offer_date": approval_dates.offer_date.isoformat(),
+                        "reply_by_date": approval_dates.reply_by_date.isoformat(),
+                        "start_date": approval_dates.start_date.isoformat(),
+                    }
+                )
+                rendered_email = self._notification_service().render_candidate_event_preview(
+                    "offer.approved", payload
+                )
             if application.stage.value == "offer_sent":
                 service.approve_compensation_revision(
                     application.application_id,
@@ -2432,11 +2462,47 @@ class PySideInterviewWindow:
                 )
             self.hiring_v2_page.refresh()
             if getattr(self, "hiring_v2_page", None) is not None:
-                self.hiring_v2_page._set_action_state("success", "Offer approved and send attempted.")
+                message = (
+                    "Offer approved and send attempted."
+                    if re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", candidate.email)
+                    else "Offer approved. Candidate email required before sending."
+                )
+                self.hiring_v2_page._set_action_state("success", message)
         except ValueError as exc:
             if getattr(self, "hiring_v2_page", None) is not None:
                 self.hiring_v2_page._set_action_state("error", f"Approval failed: {exc}")
             self.QtWidgets.QMessageBox.warning(self.window, "Executive approval", str(exc))
+
+    def _send_hiring_offer_with_email(
+        self,
+        service: HiringWorkflowService,
+        application: Any,
+        version: Any,
+    ) -> None:
+        email, accepted = self.QtWidgets.QInputDialog.getText(
+            self.window,
+            "Send offer",
+            "Candidate email:",
+        )
+        if not accepted:
+            return
+        try:
+            delivered = service.send_approved_offer(
+                application.application_id,
+                version.version_id,
+                candidate_email=email,
+                actor="Admin User",
+            )
+        except ValueError as exc:
+            self.QtWidgets.QMessageBox.warning(self.window, "Send offer", str(exc))
+            return
+        self.hiring_v2_page.refresh()
+        if delivered.status == "sent":
+            self.hiring_v2_page._set_action_state("success", "Offer sent.")
+            return
+        self.hiring_v2_page._set_action_state(
+            "error", "Offer remains approved, but delivery failed."
+        )
 
     def _resume_hiring_application(self, application_id: str) -> None:
         clean_id = str(application_id or "").strip()
@@ -2517,7 +2583,15 @@ class PySideInterviewWindow:
                                 ),
                                 {},
                             )
-                            interview_payload = notification_payload_from_mapping(history_row)
+                            notification_source = dict(history_row)
+                            report_repository = CandidateReportRepository(self.model.history_path)
+                            if report_repository.exists(application.history_id):
+                                report = report_repository.load_visible_version(
+                                    application.history_id,
+                                    role="admin",
+                                )
+                                notification_source.update(report.snapshot)
+                            interview_payload = notification_payload_from_mapping(notification_source)
                             payload = {
                                 "candidate_name": candidate.legal_name,
                                 "candidate_email": candidate.email,
@@ -2618,6 +2692,17 @@ class PySideInterviewWindow:
     def _requested_pay_answer(self, history_id: str) -> str:
         store = InterviewHistoryStore(self.model.history_path)
         row = next((item for item in store.load() if store.build_row_key(item) == history_id), {})
+        report_repository = CandidateReportRepository(self.model.history_path)
+        if report_repository.exists(history_id):
+            report = report_repository.load_visible_version(history_id, role="admin")
+            questions = report.snapshot.get("questions", [])
+            for question in questions if isinstance(questions, list) else []:
+                if not isinstance(question, dict):
+                    continue
+                question_id = str(question.get("question_id") or question.get("id") or "").strip()
+                if question_id.casefold() != "pay":
+                    continue
+                return str(question.get("interviewer_notes") or "").strip()
         answers = row.get("answers", {}) if isinstance(row, dict) else {}
         if isinstance(answers, dict):
             pay = answers.get("Pay", {})
