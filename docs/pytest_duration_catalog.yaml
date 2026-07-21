@@ -686,6 +686,11 @@ entries:
   duration_source: measured
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_hiring_pipeline.py::test_calculated_external_offer_for_existing_candidate_ignores_prior_application_stage
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_hiring_pipeline.py::test_offer_drafts_are_versioned_and_selected_version_is_submitted
   duration_seconds_n2: 0.4
   duration_source: measured
@@ -811,6 +816,16 @@ entries:
   duration_source: measured
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_hiring_workspace_v2.py::test_shared_candidate_editors_capture_offer_ready_identity_and_qualification
+  duration_seconds_n2: 0.151
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_hiring_workspace_v2.py::test_shared_candidate_editors_fail_closed_on_invalid_offer_data
+  duration_seconds_n2: 0.015
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
 - nodeid: tests/test_hiring_workspace_v2.py::test_hiring_workspace_uses_unified_pipeline_without_horizontal_page_scroll
   duration_seconds_n2: 0.322
   duration_source: measured
@@ -841,6 +856,21 @@ entries:
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
+- nodeid: tests/test_hiring_workspace_v2.py::test_generate_offer_dialog_uses_shared_capture_and_automatic_offer_terms
+  duration_seconds_n2: 0.285
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_hiring_workspace_v2.py::test_generate_offer_reuses_existing_candidate_and_updates_profile
+  duration_seconds_n2: 0.192
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_hiring_workspace_v2.py::test_existing_candidate_offer_prefers_visible_report_qualification
+  duration_seconds_n2: 0.204
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
 - nodeid: tests/test_hiring_workspace_v2.py::test_pending_offer_row_has_direct_review_offer_button_beside_menu
   duration_seconds_n2: 0.395
   duration_source: measured
@@ -868,6 +898,11 @@ entries:
   placement: gui_wave_3
 - nodeid: tests/test_hiring_workspace_v2.py::test_offer_approval_dialog_embeds_pdf_and_gates_approval
   duration_seconds_n2: 0.105
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_hiring_workspace_v2.py::test_offer_approval_dialog_shows_nine_review_details_in_three_columns
+  duration_seconds_n2: 0.12
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3

@@ -2,9 +2,9 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 9.2.0
+  version: 9.3.1
   description: PySide6 operations shell and headless view-model builder for a mockup-driven
-    New Interview setup/live flow, Candidates-owned pipeline/history, candidate reports,
+    New Interview setup/live flow using shared candidate and qualification capture, Candidates-owned pipeline/history, candidate reports,
     onboarding, staffing, notifications, and admin-only
     Staffing v2 Settings. Settings is lazily hosted inside the Staffing v2 shell, delegates
     draft validation, backup, and confirmed persistence to admin_studio, hides global
@@ -748,7 +748,7 @@ classes:
     exceptions: [ValueError, OSError]
     side_effects: Writes a versioned DOCX and PDF to the configured school offer folder; preserves the DOCX and fails closed if PDF conversion fails.
   - name: _review_hiring_offer_approval
-    description: Preview and approve a persisted pending Hiring v2 PDF without requiring candidate email, with typed approver identity and an optional Change Pay & Approve path that regenerates a numbered offer version before approval.
+    description: Preview and approve a persisted pending Hiring v2 PDF without requiring candidate email, showing nine candidate and offer facts in a compact review grid, with typed approver identity and an optional Change Pay & Approve path that regenerates a numbered offer version before approval.
     locked: false
     inputs:
       service:
@@ -1907,7 +1907,7 @@ classes:
     exceptions: []
     side_effects: Reads staffing/history/settings stores; initializes/migrates existing staffing databases before director-decision reads; may update canonical candidate contact, hiring stage/attention, and create one pending-approval offer version.
   - name: _director_offer_terms
-    description: Build normalized offer terms from candidate qualification, exact finalized teacher position and shift/classroom, calculated starting pay, and configured school template/output paths; requested pay remains notification context only.
+    description: Build normalized offer terms from candidate qualification, exact finalized teacher position and shift/classroom, calculated starting pay, and configured school template/output paths; preserve director rating, qualification, and requested-pay snapshots for approval review.
     locked: false
     inputs:
       application: {type: Any, required: true}

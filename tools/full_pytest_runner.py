@@ -13,7 +13,12 @@ if str(ROOT) not in sys.path:
 
 GUI_TIMING_PREFLIGHT_PATH = "tests/test_pytest_duration_catalog.py"
 GUI_ACTION_PREFLIGHT_PATH = "tests/test_gui_action_behavior_coverage.py"
-METADATA_PREFLIGHT_PATHS = (GUI_TIMING_PREFLIGHT_PATH, GUI_ACTION_PREFLIGHT_PATH)
+CONTRACT_COVERAGE_PREFLIGHT_PATH = "tests/test_contract_coverage_matrix.py"
+METADATA_PREFLIGHT_PATHS = (
+    GUI_TIMING_PREFLIGHT_PATH,
+    GUI_ACTION_PREFLIGHT_PATH,
+    CONTRACT_COVERAGE_PREFLIGHT_PATH,
+)
 SOURCE_VERSION_PATH = ROOT / "config" / "source_version.txt"
 
 
@@ -89,12 +94,12 @@ def run_full_suite(
         full_workers=full_workers,
         gui_workers=gui_workers,
     )
-    print("[gui timing preflight] running duration/scenario metadata checks", flush=True)
+    print("[metadata preflight] running timing and behavior-coverage checks", flush=True)
     quick_exit_code = call(quick_metadata_command)
     if quick_exit_code:
-        print("[gui timing preflight] FAILED; full suite not started", flush=True)
+        print("[metadata preflight] FAILED; full suite not started", flush=True)
         return quick_exit_code
-    print("[gui timing preflight] passed", flush=True)
+    print("[metadata preflight] passed", flush=True)
     version_path = Path(source_version_path)
     prior_stamp = version_path.read_bytes() if version_path.is_file() else None
 

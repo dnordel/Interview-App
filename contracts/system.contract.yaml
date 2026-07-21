@@ -18,8 +18,12 @@ modules:
   hiring_workspace_v2:
     path: src/hiring_workspace_v2.py
     depends_on:
+    - data_store
     - dashboard_v2_ui
     - hiring_pipeline
+    - platform_services
+    - pyside_interview_components
+    - scoring_reporting
     - starting_pay_calculator
   starting_pay_calculator:
     path: src/starting_pay_calculator.py
@@ -46,6 +50,8 @@ modules:
   pyside_interview_components:
     path: src/pyside_interview_components.py
     depends_on:
+    - hiring_pipeline
+    - scoring_reporting
     - PySide6
   pyside_completed_interview:
     path: src/pyside_completed_interview.py

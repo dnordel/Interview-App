@@ -348,6 +348,7 @@ class HiringPipelineStore:
         preferred_name: str,
         email: str,
         phone: str,
+        honorific: str | None = None,
     ) -> CandidateProfile:
         current = self.get_candidate(candidate_id)
         clean_name = _normalized_text(legal_name)
@@ -356,6 +357,7 @@ class HiringPipelineStore:
             raise ValueError("Legal name is required.")
         if clean_email and not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", clean_email):
             raise ValueError("Candidate email is invalid.")
+        clean_honorific = current.honorific if honorific is None else _validated_honorific(honorific)
         with sqlite3.connect(self.db_path) as conn:
             school_row = conn.execute(
                 "SELECT normalized_school FROM candidate_profiles WHERE candidate_id = ?",
@@ -365,7 +367,7 @@ class HiringPipelineStore:
                 cursor = conn.execute(
                     """
                     UPDATE candidate_profiles
-                    SET legal_name = ?, preferred_name = ?, email = ?, phone = ?,
+                    SET legal_name = ?, preferred_name = ?, email = ?, phone = ?, honorific = ?,
                         normalized_name = ?, updated_at = ?
                     WHERE candidate_id = ?
                     """,
@@ -374,6 +376,7 @@ class HiringPipelineStore:
                         _normalized_text(preferred_name),
                         clean_email,
                         _normalized_text(phone),
+                        clean_honorific,
                         _match_text(clean_name),
                         _now_utc(),
                         current.candidate_id,
@@ -1025,6 +1028,64 @@ class HiringPipelineStore:
         )
         return self.get_application(application_id)
 
+    def start_external_offer_application_for_candidate(
+        self,
+        *,
+        candidate_id: str,
+        school: str,
+        position: str,
+        actor: str,
+    ) -> HiringApplication:
+        clean_candidate_id = _normalized_text(candidate_id)
+        clean_school = _normalized_text(school)
+        clean_position = _normalized_text(position)
+        clean_actor = _normalized_text(actor)
+        if not all((clean_candidate_id, clean_school, clean_position, clean_actor)):
+            raise ValueError("Candidate, school, position, and actor are required.")
+        self.get_candidate(clean_candidate_id)
+        now = _now_utc()
+        application_id = str(uuid.uuid4())
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            cycle_number = int(
+                conn.execute(
+                    """
+                    SELECT COUNT(*) + 1 FROM hiring_applications
+                    WHERE candidate_id = ? AND normalized_school = ? AND normalized_position = ?
+                    """,
+                    (clean_candidate_id, _match_text(clean_school), _match_text(clean_position)),
+                ).fetchone()[0]
+            )
+            conn.execute(
+                """
+                INSERT INTO hiring_applications (
+                    application_id, candidate_id, history_id, school, normalized_school,
+                    position, normalized_position, cycle_number, stage, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    application_id,
+                    clean_candidate_id,
+                    f"external_offer:{application_id}",
+                    clean_school,
+                    _match_text(clean_school),
+                    clean_position,
+                    _match_text(clean_position),
+                    cycle_number,
+                    HiringStage.OFFER_DRAFT.value,
+                    now,
+                    now,
+                ),
+            )
+            conn.commit()
+        self.append_event(
+            application_id,
+            "external_offer_application_created",
+            actor=clean_actor,
+            payload={"existing_candidate": True},
+        )
+        return self.get_application(application_id)
+
     def finalize_initial_interview(
         self,
         application_id: str,
@@ -1321,6 +1382,9 @@ class HiringWorkflowService:
     def start_external_offer_application(self, **values: Any) -> HiringApplication:
         return self.store.start_external_offer_application(**values)
 
+    def start_external_offer_application_for_candidate(self, **values: Any) -> HiringApplication:
+        return self.store.start_external_offer_application_for_candidate(**values)
+
     def finalize_initial_interview(
         self,
         application_id: str,
@@ -1568,6 +1632,48 @@ class HiringWorkflowService:
             terms=calculated_terms,
             actor=actor,
             honorific=honorific,
+        )
+
+    def create_calculated_external_offer_for_candidate(
+        self,
+        *,
+        candidate_id: str,
+        school: str,
+        position_id: str,
+        qualification: dict[str, Any],
+        terms: dict[str, Any],
+        actor: str,
+    ) -> OfferVersion:
+        pay_input = qualification_input_from_mapping(position_id, qualification)
+        pay_result = calculate_offer_pay(pay_input, load_starting_pay_settings())
+        if pay_result.status != "calculated" or pay_result.starting_hourly_pay is None:
+            raise ValueError(pay_result.qualification_explanation)
+        calculated_terms = dict(terms)
+        calculated_terms.update(
+            {
+                "position_id": position_id,
+                "position": POSITION_LABELS[position_id],
+                "hourly_pay": format(pay_result.starting_hourly_pay, ".2f"),
+                "qualification_snapshot": dict(qualification),
+                "pay_calculation": pay_result.to_dict(),
+                "compensation_review_required": False,
+            }
+        )
+        application = self.start_external_offer_application_for_candidate(
+            candidate_id=candidate_id,
+            school=school,
+            position=POSITION_LABELS[position_id],
+            actor=actor,
+        )
+        draft = self.create_offer_draft(
+            application.application_id,
+            terms=calculated_terms,
+            actor=actor,
+        )
+        return self.submit_offer_for_approval(
+            application.application_id,
+            draft.version_id,
+            actor=actor,
         )
 
     def ensure_director_offer_submitted(

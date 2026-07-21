@@ -198,7 +198,18 @@ def test_review_offer_can_change_pay_and_approve_without_candidate_email(
     service.record_director_decision(application.application_id, decision="Hire", actor="Director")
     draft = service.create_offer_draft(
         application.application_id,
-        terms={"hourly_pay": "22.00", "weekly_hours": "40"},
+        terms={
+            "hourly_pay": "22.00",
+            "weekly_hours": "40",
+            "director_rating": "4.5",
+            "qualification_snapshot": {
+                "has_degree": True,
+                "degree_type": "BA",
+                "years_experience": 6,
+            },
+            "requested_pay_raw": "$24.50 per hour",
+            "proposed_classroom": "Chef",
+        },
         actor="Admin",
     )
     service.submit_offer_for_approval(application.application_id, draft.version_id, actor="Admin")
@@ -207,6 +218,17 @@ def test_review_offer_can_change_pay_and_approve_without_candidate_email(
         def __init__(self, **values: Any) -> None:
             assert values["hourly_pay"] == "22.00"
             assert values["approve_label"] == "Approve"
+            assert values["review_details"] == {
+                "Name": "Maya Patel",
+                "Initial Interview Score": "80%",
+                "Director Rating": "4.5",
+                "Degree": "BA",
+                "Years of Experience": "6",
+                "Requested Pay": "$24.50 per hour",
+                "Offer Amount": "$22.00 per hour",
+                "Classroom": "Chef",
+                "Hours": "40 weekly",
+            }
 
         def exec(self) -> bool:
             return True
@@ -3855,6 +3877,13 @@ def test_director_hire_sync_creates_one_pending_offer_with_derived_terms(tmp_pat
     assert offers[0].terms["pay_calculation"]["career_lattice_level"] == 7
     assert offers[0].terms["pay_calculation"]["calculation_version"] == "2026.1"
     assert offers[0].terms["honorific"] == "Mr."
+    assert offers[0].terms["director_rating"] == "9"
+    assert offers[0].terms["qualification_snapshot"] == {
+        "has_degree": True,
+        "degree_type": "BA",
+        "degree_in_ece": True,
+        "years_experience": 6,
+    }
     hire_payload = notifications[0][1]
     assert hire_payload["interview_score"] == "88"
     assert hire_payload["degree_display"] == "BA"

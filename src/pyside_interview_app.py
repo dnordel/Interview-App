@@ -68,6 +68,7 @@ from pyside_completed_interview import (
     build_completed_interview_view_model,
     build_completed_transcript_export,
 )
+from pyside_interview_components import CandidateIdentityEditor, CandidateQualificationEditor
 from hiring_pipeline import (
     HiringOfferNotificationAdapter,
     HiringPipelineStore,
@@ -108,7 +109,7 @@ from scoring_reporting import (
     derive_offer_schedule,
 )
 from scoring_reporting import build_integration_payload, serialize_integration_payload
-from scoring_reporting import CANONICAL_DEGREE_TYPES, CandidateQualification, validate_candidate_qualification
+from scoring_reporting import CandidateQualification
 from staffing_dashboard_host import StaffingDashboardAccess, StaffingDashboardHost
 from staffing_dashboard_v2 import apply_staffing_v2_light_theme
 from staffing_settings_v2 import StaffingSettingsV2Page
@@ -1550,10 +1551,6 @@ def _normalize_qualification_payload(payload: dict[str, Any]) -> dict[str, Any]:
     return CandidateQualification.from_dict(payload).to_dict()
 
 
-def _optional_int_text(value: Any) -> str:
-    return "" if value is None else str(value)
-
-
 def _build_track_flow(
     *,
     loader: RubricLoader,
@@ -2213,6 +2210,7 @@ class PySideInterviewWindow:
             QtCore=self.QtCore,
             QtWidgets=self.QtWidgets,
             service=service,
+            school_options=self.model.school_options,
             actions={
                 "new_interview": new_interview,
                 "resume_interview": resume_interview,
@@ -2390,6 +2388,29 @@ class PySideInterviewWindow:
                 self.hiring_v2_page._set_action_state("error", f"Approval review failed: {exc}")
             self.QtWidgets.QMessageBox.warning(self.window, "Executive approval", str(exc))
             return
+        interview_score = "—"
+        for event in reversed(service.store.list_events(application.application_id)):
+            if event.event_type != "initial_interview_completed":
+                continue
+            score = float(event.payload.get("score", 0))
+            interview_score = f"{score:g}%"
+            break
+        qualification = terms.get("qualification_snapshot", {})
+        if not isinstance(qualification, dict):
+            qualification = {}
+        has_degree = bool(qualification.get("has_degree"))
+        degree = str(qualification.get("degree_type") or ("Yes" if has_degree else "No"))
+        review_details = {
+            "Name": candidate.legal_name or "—",
+            "Initial Interview Score": interview_score,
+            "Director Rating": str(terms.get("director_rating") or "—"),
+            "Degree": degree,
+            "Years of Experience": str(qualification.get("years_experience", "—")),
+            "Requested Pay": str(terms.get("requested_pay_raw") or "—"),
+            "Offer Amount": f"${float(terms.get('hourly_pay') or 0):.2f} per hour",
+            "Classroom": str(terms.get("proposed_classroom") or "—"),
+            "Hours": f"{terms.get('weekly_hours') or terms.get('hours_week') or '—'} weekly",
+        }
         approval_dialog = HiringOfferApprovalDialog(
             QtCore=self.QtCore,
             QtPdf=self.QtPdf,
@@ -2397,13 +2418,8 @@ class PySideInterviewWindow:
             QtWidgets=self.QtWidgets,
             parent=self.window,
             title=f"Approve offer v{version.version_number}",
-            summary=(
-                f"Candidate: {candidate.legal_name}\nEmail: {candidate.email}\n"
-                f"Position: {application.position}\n"
-                f"Pay: ${float(terms.get('hourly_pay') or 0):.2f}/hour\n"
-                f"Hours: {terms.get('weekly_hours') or terms.get('hours_week')} weekly\n"
-                f"Destination DOCX: {docx_path}\nDestination PDF: {pdf_path}"
-            ),
+            summary="",
+            review_details=review_details,
             rendered_email=rendered_email,
             pdf_path=pdf_path,
             hourly_pay=str(terms.get("hourly_pay") or ""),
@@ -2691,6 +2707,8 @@ class PySideInterviewWindow:
             "employment_type": schedule.employment_type,
             "proposed_classroom": interview.proposed_classroom,
             "requested_pay_raw": requested_pay,
+            "director_rating": f"{interview.rating:g}",
+            "qualification_snapshot": dict(qualification),
             "hourly_pay": format(pay_result.starting_hourly_pay, ".2f"),
             "compensation_review_required": False,
             "pay_calculation": pay_result.to_dict(),
@@ -3464,41 +3482,27 @@ class PySideInterviewWindow:
         candidate_layout.setContentsMargins(24, 22, 24, 22)
         candidate_layout.setSpacing(14)
         candidate_layout.addWidget(self._label("1. Candidate & Interview", "SectionTitle"))
-        form = self.QtWidgets.QGridLayout()
-        form.setHorizontalSpacing(18)
-        form.setVerticalSpacing(12)
-        form.setColumnMinimumWidth(0, 150)
-        form.setColumnStretch(1, 1)
-
-        candidate = self.QtWidgets.QLineEdit()
-        candidate.setObjectName("HiringV2SetupCandidateName")
-        candidate.setPlaceholderText("Enter candidate name")
-        honorific = self.QtWidgets.QComboBox()
-        honorific.setObjectName("HiringV2SetupHonorific")
-        honorific.addItems(("Mr.", "Ms."))
-        honorific.setCurrentText("Ms.")
-        school = self.QtWidgets.QComboBox()
-        school.setObjectName("HiringV2SetupSchool")
-        school.addItems(self.model.school_options)
-        role = self.QtWidgets.QComboBox()
+        identity_editor = CandidateIdentityEditor(
+            QtWidgets=self.QtWidgets,
+            object_prefix="HiringV2Setup",
+            school_options=self.model.school_options,
+            position_options=list(self.model.track_labels.items()),
+            allow_empty_selection=False,
+        )
+        candidate = identity_editor.candidate_name
+        honorific = identity_editor.honorific
+        school = identity_editor.school
+        role = identity_editor.position
         role.setObjectName("HiringV2SetupTrack")
-        role.addItems(list(self.model.track_labels.values()))
+        candidate_layout.addWidget(identity_editor.widget)
         interview_type = self.QtWidgets.QComboBox()
         interview_type.setObjectName("HiringV2SetupInterviewType")
         interview_type.addItem("First Interview")
-        for row, (label_text, field) in enumerate(
-            (
-                ("Candidate Name", candidate),
-                ("Honorific", honorific),
-                ("School", school),
-                ("Position / Track", role),
-                ("Interview Type", interview_type),
-            )
-        ):
-            form.addWidget(self._label(label_text, "HiringV2SetupFieldLabel"), row, 0)
-            form.addWidget(field, row, 1)
+        interview_type_form = self.QtWidgets.QFormLayout()
+        interview_type_form.addRow("Interview Type", interview_type)
+        candidate_layout.addLayout(interview_type_form)
+        for field in (candidate, honorific, school, role, interview_type):
             field.setMinimumHeight(40)
-        candidate_layout.addLayout(form)
         setup_layout.addWidget(candidate_section)
 
         divider = self.QtWidgets.QFrame()
@@ -3578,6 +3582,7 @@ class PySideInterviewWindow:
         layout.addStretch(1)
 
         self.home_candidate_input = candidate
+        self.home_identity_editor = identity_editor
         self.home_honorific_combo = honorific
         self.home_school_combo = school
         self.home_role_combo = role
@@ -5297,60 +5302,32 @@ class PySideInterviewWindow:
         stored = self.session.qualification if self.session is not None else {}
         fields, fields_layout = self._surface()
         fields_layout.addWidget(self._label("Education & Experience", "SectionTitle"))
-        form = self.QtWidgets.QFormLayout()
-
-        self.qualification_has_degree = self.QtWidgets.QComboBox()
-        self.qualification_has_degree.addItems(["", "Yes", "No"])
-        has_degree = stored.get("has_degree")
-        self.qualification_has_degree.setCurrentText("Yes" if has_degree is True else "No" if has_degree is False else "")
-        form.addRow("Has degree", self.qualification_has_degree)
-
-        self.qualification_degree_type = self.QtWidgets.QComboBox()
-        self.qualification_degree_type.addItems(["", *list(CANONICAL_DEGREE_TYPES)])
-        self.qualification_degree_type.setCurrentText(str(stored.get("degree_type", "") or ""))
-        form.addRow("Degree type", self.qualification_degree_type)
-
-        self.qualification_degree_in_ece = self.QtWidgets.QCheckBox("Degree is in ECE")
-        self.qualification_degree_in_ece.setChecked(bool(stored.get("degree_in_ece", False)))
-        form.addRow("", self.qualification_degree_in_ece)
-
-        self.qualification_ece_units = self.QtWidgets.QLineEdit()
-        self.qualification_ece_units.setText(_optional_int_text(stored.get("ece_units_completed")))
-        form.addRow("ECE units", self.qualification_ece_units)
-
-        self.qualification_infant_toddler = self.QtWidgets.QCheckBox("Infant/toddler class completed")
-        self.qualification_infant_toddler.setChecked(bool(stored.get("infant_toddler_class_completed", False)))
-        form.addRow("", self.qualification_infant_toddler)
-
-        self.qualification_total_units = self.QtWidgets.QLineEdit()
-        self.qualification_total_units.setText(_optional_int_text(stored.get("total_units_completed")))
-        form.addRow("Total units if no degree", self.qualification_total_units)
-
-        self.qualification_years = self.QtWidgets.QLineEdit()
-        self.qualification_years.setText(_optional_int_text(stored.get("years_experience")))
-        form.addRow("Years experience", self.qualification_years)
-
+        editor = CandidateQualificationEditor(
+            QtWidgets=self.QtWidgets,
+            object_prefix="LiveInterview",
+            values=stored,
+        )
+        self.live_qualification_editor = editor
+        self.qualification_has_degree = editor.has_degree
+        self.qualification_degree_type = editor.degree_type
+        self.qualification_degree_in_ece = editor.degree_in_ece
+        self.qualification_ece_units = editor.ece_units
+        self.qualification_infant_toddler = editor.infant_toddler
+        self.qualification_total_units = editor.total_units
+        self.qualification_years = editor.years_experience
         self.qualification_status_label = self._label("")
-        fields_layout.addLayout(form)
+        fields_layout.addWidget(editor.widget)
         fields_layout.addWidget(self.qualification_status_label)
         layout.addWidget(fields)
 
     def _collect_qualification_from_fields(self) -> dict[str, Any] | None:
-        has_degree = self.qualification_has_degree.currentText().strip().lower()
-        ok, message, qualification = validate_candidate_qualification(
-            has_degree,
-            self.qualification_degree_type.currentText(),
-            self.qualification_degree_in_ece.isChecked(),
-            self.qualification_ece_units.text(),
-            self.qualification_total_units.text(),
-            self.qualification_infant_toddler.isChecked(),
-            self.qualification_years.text(),
-        )
-        if not ok:
-            self.qualification_status_label.setText(message)
+        try:
+            qualification = self.live_qualification_editor.validated_values()
+        except ValueError as exc:
+            self.qualification_status_label.setText(str(exc))
             return None
         self.qualification_status_label.setText("")
-        return qualification.to_dict()
+        return qualification
 
     def _render_review_page(self) -> None:
         layout = getattr(self, "review_layout", None)

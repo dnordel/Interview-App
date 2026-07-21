@@ -2,12 +2,12 @@ module:
   name: hiring_workspace_v2
   language: python
   path: src/hiring_workspace_v2.py
-  version: 3.6.0
-  description: Native Staffing v2 Candidates pipeline/history and Offers surfaces with qualification-driven teacher offer creation, separate auto-height pending and approved offer tables, increment-enforced approval-time pay editing, delayed email send actions, and selected-offer deletion alongside shared overlays and contextual lifecycle actions.
+  version: 3.8.0
+  description: Native Staffing v2 Candidates pipeline/history and Offers surfaces with shared candidate capture, searchable existing-candidate reuse, qualification-driven teacher offer creation, automatic school paths and shift-derived schedule terms, compact three-column approval facts, and versioned approval lifecycle actions.
 functions: []
 classes:
 - name: HiringOfferApprovalDialog
-  description: Embedded exact-PDF approval review with multi-page fit-width display and fail-closed approver/readiness gating.
+  description: Embedded exact-PDF approval review with a compact optional three-column details grid, multi-page fit-width display, and fail-closed approver/readiness gating.
   locked: false
   attributes:
     dialog: {type: QDialog}
@@ -71,7 +71,7 @@ classes:
     exceptions: []
     side_effects: Shows closeout route.
 - name: HiringWorkspaceV2Page
-  description: PySide workspace with stage counters, filters, candidate history, offer editing, and an Offers page with separate pending/approved tables, direct Review/Send actions, auto-height pending rows, and version-targeted deletion menus.
+  description: PySide workspace with stage counters, filters, candidate history, offer editing, and an Offers page with shared candidate/qualification capture, searchable roster reuse, configured school paths, separate pending/approved tables, and contextual lifecycle actions.
   locked: false
   attributes:
     widget: {type: QWidget}
@@ -100,14 +100,24 @@ classes:
     inputs: {}
     returns: {type: None}
     exceptions: []
-    side_effects: Opens the external-candidate qualification and offer dialog, calculates starting pay, creates a candidate/application record, submits offer v1 for approval, refreshes the workspace, and reports sanitized validation failures.
+    side_effects: Opens shared candidate and qualification capture, calculates schedule and starting pay, creates or reuses a candidate, submits offer v1 for approval, refreshes the workspace, and reports sanitized validation failures.
   - name: _external_offer_editor_values
     inputs: {}
     returns: {type: 'dict[str, Any] | None'}
     exceptions: []
-    side_effects: Opens a candidate, teacher-position, qualification, experience, and destination editor with fail-closed required-field gating; initial hourly pay is calculated rather than entered manually.
+    side_effects: Opens a searchable new/existing candidate wizard using shared identity and qualification editors; validates required email, derives schedule, resolves school template/output settings, and returns no manual start-date field.
+  - name: _external_offer_candidate_prefill
+    inputs:
+      candidate_id: {type: str, required: true}
+    returns: {type: 'dict[str, Any]'}
+    exceptions: []
+    side_effects: Reads candidate applications, visible candidate reports, and prior offer versions to resolve latest school, position, and authoritative qualification defaults.
 data_structures: []
 dependencies:
 - dashboard_v2_ui
+- data_store
 - hiring_pipeline
+- platform_services
+- pyside_interview_components
+- scoring_reporting
 - starting_pay_calculator

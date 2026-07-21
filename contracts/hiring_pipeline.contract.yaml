@@ -2,8 +2,8 @@ module:
   name: hiring_pipeline
   language: python
   path: src/hiring_pipeline.py
-  version: 1.11.0
-  description: Candidate-profile, application-pipeline, event-audit, calculated teacher starting pay, editable increment-enforced pending-offer approval, delayed candidate-email delivery, offer-only deletion, and PDF-only candidate offer-delivery lifecycle persistence in the canonical interview history SQLite database.
+  version: 1.12.0
+  description: Candidate-profile, application-pipeline, event-audit, calculated teacher starting pay, existing-candidate external offer cycles, editable increment-enforced pending-offer approval, delayed candidate-email delivery, offer-only deletion, and PDF-only offer lifecycle persistence.
 functions:
 - name: build_offer_notification_payload
   description: Build shared offer-approved notification values used by both approval preview and candidate delivery, including canonical school code and location.
@@ -210,6 +210,7 @@ classes:
       preferred_name: {type: str, required: true}
       email: {type: str, required: true}
       phone: {type: str, required: true}
+      honorific: {type: 'str | None', required: false, default: null}
     returns: {type: CandidateProfile}
     exceptions: [ValueError]
     side_effects: Validates and updates stable candidate identity/contact fields.
@@ -378,6 +379,15 @@ classes:
     returns: {type: HiringApplication}
     exceptions: [ValueError]
     side_effects: Creates a candidate-linked application cycle at offer draft stage for externally interviewed candidates and appends an audit event.
+  - name: start_external_offer_application_for_candidate
+    inputs:
+      candidate_id: {type: str, required: true}
+      school: {type: str, required: true}
+      position: {type: str, required: true}
+      actor: {type: str, required: true}
+    returns: {type: HiringApplication}
+    exceptions: [ValueError]
+    side_effects: Creates a new offer-draft application cycle linked to an existing active candidate without inspecting prior application stages and appends an audit event.
   - name: finalize_initial_interview
     inputs:
       application_id: {type: str, required: true}
@@ -421,6 +431,11 @@ classes:
     returns: {type: HiringApplication}
     exceptions: [ValueError]
     side_effects: Starts an externally interviewed candidate at offer draft stage.
+  - name: start_external_offer_application_for_candidate
+    inputs: {values: {type: Any, required: true}}
+    returns: {type: HiringApplication}
+    exceptions: [ValueError]
+    side_effects: Starts a new external-offer cycle for an existing candidate without prior-stage gating.
   - name: finalize_initial_interview
     inputs:
       application_id: {type: str, required: true}
@@ -503,6 +518,17 @@ classes:
     returns: {type: OfferVersion}
     exceptions: [ValueError]
     side_effects: Calculates initial teacher pay, creates the external candidate/application and version 1 audit snapshot, and submits it for approval.
+  - name: create_calculated_external_offer_for_candidate
+    inputs:
+      candidate_id: {type: str, required: true}
+      school: {type: str, required: true}
+      position_id: {type: str, required: true}
+      qualification: {type: 'dict[str, Any]', required: true}
+      terms: {type: 'dict[str, Any]', required: true}
+      actor: {type: str, required: true}
+    returns: {type: OfferVersion}
+    exceptions: [ValueError]
+    side_effects: Calculates initial teacher pay, creates an offer-draft application linked to the selected candidate, creates version 1, and submits it for approval without prior-stage gating.
   - name: ensure_director_offer_submitted
     inputs:
       application_id: {type: str, required: true}

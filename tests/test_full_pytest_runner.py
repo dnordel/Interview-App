@@ -47,6 +47,7 @@ def test_full_suite_runs_gui_timing_preflight_before_combined_full_suite() -> No
         "-q",
         "tests/test_pytest_duration_catalog.py",
         "tests/test_gui_action_behavior_coverage.py",
+        "tests/test_contract_coverage_matrix.py",
     ]
     assert non_gui_command[:8] == [
         "python.exe",
@@ -61,6 +62,7 @@ def test_full_suite_runs_gui_timing_preflight_before_combined_full_suite() -> No
     assert ["-m", "not pyside_gui and not slow_pyside"] == non_gui_command[8:10]
     assert "--ignore=tests/test_pytest_duration_catalog.py" in non_gui_command
     assert "--ignore=tests/test_gui_action_behavior_coverage.py" in non_gui_command
+    assert "--ignore=tests/test_contract_coverage_matrix.py" in non_gui_command
     assert len(gui_commands) == 1
     assert gui_commands[0][:8] == [
         "python.exe",

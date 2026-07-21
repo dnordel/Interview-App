@@ -8,6 +8,11 @@ from typing import Any
 
 from dashboard_v2_ui import DashboardV2OverlayPanel, display_role, role_badge_key
 from candidate_report import CandidateReportRepository
+from data_store import SchoolOfferSettingsStore, resolve_offer_output_dir, resolve_offer_template_path
+from hiring_pipeline import normalize_candidate_phone
+from platform_services import DEFAULT_BASE_DIR, DEFAULT_SCHOOL_OPTIONS, SCHOOL_OFFER_SETTINGS_PATH
+from pyside_interview_components import CandidateIdentityEditor, CandidateQualificationEditor
+from scoring_reporting import derive_offer_schedule, is_valid_email_address
 from starting_pay_calculator import (
     POSITION_LABELS,
     calculate_offer_pay,
@@ -53,6 +58,7 @@ class HiringOfferApprovalDialog:
         summary: str,
         rendered_email: str,
         pdf_path: Path,
+        review_details: dict[str, str] | None = None,
         hourly_pay: str = "",
         approve_label: str = "Approve and send",
     ) -> None:
@@ -61,9 +67,31 @@ class HiringOfferApprovalDialog:
         self.dialog.setWindowTitle(title)
         self.dialog.resize(920, 720)
         layout = QtWidgets.QVBoxLayout(self.dialog)
-        summary_label = QtWidgets.QLabel(summary)
-        summary_label.setWordWrap(True)
-        layout.addWidget(summary_label)
+        if summary:
+            summary_label = QtWidgets.QLabel(summary)
+            summary_label.setWordWrap(True)
+            layout.addWidget(summary_label)
+        if review_details:
+            details = QtWidgets.QWidget()
+            details.setObjectName("HiringOfferReviewDetails")
+            details_layout = QtWidgets.QGridLayout(details)
+            details_layout.setContentsMargins(0, 0, 0, 0)
+            details_layout.setHorizontalSpacing(18)
+            details_layout.setVerticalSpacing(8)
+            for index, (label_text, value_text) in enumerate(review_details.items()):
+                cell = QtWidgets.QWidget()
+                cell_layout = QtWidgets.QVBoxLayout(cell)
+                cell_layout.setContentsMargins(0, 0, 0, 0)
+                cell_layout.setSpacing(1)
+                label = QtWidgets.QLabel(label_text)
+                label.setObjectName("HiringOfferReviewDetailLabel")
+                value = QtWidgets.QLabel(str(value_text))
+                value.setObjectName("HiringOfferReviewDetailValue")
+                value.setWordWrap(True)
+                cell_layout.addWidget(label)
+                cell_layout.addWidget(value)
+                details_layout.addWidget(cell, index // 3, index % 3)
+            layout.addWidget(details)
         self.status_label = QtWidgets.QLabel("Loading approved PDF…")
         self.status_label.setObjectName("HiringOfferPdfStatus")
         layout.addWidget(self.status_label)
@@ -214,11 +242,13 @@ class HiringWorkspaceV2Page:
         QtWidgets: Any,
         service: HiringWorkflowService,
         actions: dict[str, Any] | None = None,
+        school_options: list[str] | None = None,
     ) -> None:
         self.QtCore = QtCore
         self.QtWidgets = QtWidgets
         self.service = service
         self.actions = actions or {}
+        self.school_options = list(school_options or DEFAULT_SCHOOL_OPTIONS)
         self.applications: list[HiringApplication] = []
         self.visible_applications: list[HiringApplication] = []
         self.selected_application_id = ""
@@ -910,17 +940,41 @@ class HiringWorkspaceV2Page:
                 actor_role="Admin",
             )
         elif name == "create_external_offer":
-            result = self.service.create_calculated_external_offer(
-                legal_name=str(payload["candidate_name"]),
-                email=str(payload.get("candidate_email", "")),
-                phone=str(payload.get("candidate_phone", "")),
-                honorific=str(payload.get("honorific", "Ms.")),
-                school=str(payload["school"]),
-                position_id=str(payload["position_id"]),
-                qualification=dict(payload["qualification"]),
-                terms=dict(payload),
-                actor=actor,
-            )
+            email = str(payload.get("candidate_email", "")).strip()
+            if not email or not is_valid_email_address(email):
+                raise ValueError("A valid candidate email address is required.")
+            raw_phone = str(payload.get("candidate_phone", "")).strip()
+            phone = normalize_candidate_phone(raw_phone) if raw_phone else ""
+            candidate_id = str(payload.get("candidate_id", "")).strip()
+            if candidate_id:
+                self.service.update_candidate_profile(
+                    candidate_id,
+                    legal_name=str(payload["candidate_name"]),
+                    preferred_name=str(payload.get("preferred_name", "")),
+                    email=email,
+                    phone=phone,
+                    honorific=str(payload.get("honorific", "Ms.")),
+                )
+                result = self.service.create_calculated_external_offer_for_candidate(
+                    candidate_id=candidate_id,
+                    school=str(payload["school"]),
+                    position_id=str(payload["position_id"]),
+                    qualification=dict(payload["qualification"]),
+                    terms=dict(payload),
+                    actor=actor,
+                )
+            else:
+                result = self.service.create_calculated_external_offer(
+                    legal_name=str(payload["candidate_name"]),
+                    email=email,
+                    phone=phone,
+                    honorific=str(payload.get("honorific", "Ms.")),
+                    school=str(payload["school"]),
+                    position_id=str(payload["position_id"]),
+                    qualification=dict(payload["qualification"]),
+                    terms=dict(payload),
+                    actor=actor,
+                )
         else:
             raise ValueError(f"Unsupported hiring action: {name}")
         self.refresh()
@@ -998,63 +1052,59 @@ class HiringWorkspaceV2Page:
         root.addWidget(stack, 1)
 
         identity = self.QtWidgets.QWidget()
-        identity_form = self.QtWidgets.QFormLayout(identity)
-        candidate_name = self.QtWidgets.QLineEdit()
-        candidate_email = self.QtWidgets.QLineEdit()
-        candidate_phone = self.QtWidgets.QLineEdit()
-        honorific = self.QtWidgets.QComboBox()
-        honorific.addItems(["Ms.", "Mr."])
-        school = self.QtWidgets.QLineEdit()
-        position = self.QtWidgets.QComboBox()
-        position.addItem("Select offer position", None)
-        for position_id, label in POSITION_LABELS.items():
-            position.addItem(label, position_id)
-        identity_form.addRow("Candidate name", candidate_name)
-        identity_form.addRow("Email", candidate_email)
-        identity_form.addRow("Phone", candidate_phone)
-        identity_form.addRow("Honorific", honorific)
-        identity_form.addRow("School", school)
-        identity_form.addRow("Offer position", position)
+        identity_layout = self.QtWidgets.QVBoxLayout(identity)
+        candidate_picker = self.QtWidgets.QComboBox()
+        candidate_picker.setObjectName("HiringV2OfferCandidatePicker")
+        candidate_picker.setEditable(True)
+        candidate_picker.setInsertPolicy(self.QtWidgets.QComboBox.InsertPolicy.NoInsert)
+        candidate_picker.addItem("New candidate", "")
+        candidates = self.service.search_candidate_profiles()
+        for candidate in candidates:
+            contact = candidate.email or candidate.phone
+            label = candidate.legal_name if not contact else f"{candidate.legal_name} — {contact}"
+            candidate_picker.addItem(label, candidate.candidate_id)
+        completer = candidate_picker.completer()
+        if completer is not None:
+            completer.setCaseSensitivity(self.QtCore.Qt.CaseSensitivity.CaseInsensitive)
+            completer.setFilterMode(self.QtCore.Qt.MatchFlag.MatchContains)
+        picker_form = self.QtWidgets.QFormLayout()
+        picker_form.addRow("Candidate", candidate_picker)
+        identity_layout.addLayout(picker_form)
+        identity_editor = CandidateIdentityEditor(
+            QtWidgets=self.QtWidgets,
+            object_prefix="HiringV2Offer",
+            school_options=self.school_options,
+            position_options=list(POSITION_LABELS.items()),
+            include_contact=True,
+            email_required=True,
+        )
+        identity_layout.addWidget(identity_editor.widget)
         stack.addWidget(identity)
 
         compensation = self.QtWidgets.QWidget()
         compensation_form = self.QtWidgets.QFormLayout(compensation)
         start_time = self.QtWidgets.QLineEdit("08:00 AM")
+        start_time.setObjectName("HiringV2OfferStartTime")
         end_time = self.QtWidgets.QLineEdit("05:00 PM")
-        has_degree = self.QtWidgets.QComboBox()
-        has_degree.addItems(["", "Yes", "No"])
-        degree_type = self.QtWidgets.QComboBox()
-        degree_type.addItems(["", "AA", "AS", "BA", "BS", "MA", "MS", "MBA", "PhD", "EdD"])
-        degree_in_ece = self.QtWidgets.QCheckBox("Degree is in ECE/CD")
-        ece_units = self.QtWidgets.QLineEdit()
-        ece_units.setPlaceholderText("Semester units; optional for ECE/CD degree")
-        total_units = self.QtWidgets.QLineEdit()
-        total_units.setPlaceholderText("Required only when no degree")
-        experience_years = self.QtWidgets.QSpinBox()
-        experience_years.setRange(0, 99)
-        weekly_hours = self.QtWidgets.QSpinBox()
-        weekly_hours.setRange(1, 168)
-        weekly_hours.setValue(40)
+        end_time.setObjectName("HiringV2OfferEndTime")
         compensation_form.addRow("Start time", start_time)
         compensation_form.addRow("End time", end_time)
-        compensation_form.addRow("Has degree", has_degree)
-        compensation_form.addRow("Degree type", degree_type)
-        compensation_form.addRow("", degree_in_ece)
-        compensation_form.addRow("ECE/CD units", ece_units)
-        compensation_form.addRow("Total college units", total_units)
-        compensation_form.addRow("Completed experience years", experience_years)
-        compensation_form.addRow("Weekly hours", weekly_hours)
+        qualification_editor = CandidateQualificationEditor(
+            QtWidgets=self.QtWidgets,
+            object_prefix="HiringV2Offer",
+        )
+        compensation_form.addRow(qualification_editor.widget)
         stack.addWidget(compensation)
 
         destination = self.QtWidgets.QWidget()
         destination_form = self.QtWidgets.QFormLayout(destination)
-        template_path = self.QtWidgets.QLineEdit()
-        output_dir = self.QtWidgets.QLineEdit()
-        destination_form.addRow("Template", template_path)
-        destination_form.addRow("Destination", output_dir)
+        review = self.QtWidgets.QLabel(
+            "Schedule, starting pay, school template, and destination will be calculated from the captured values."
+        )
+        review.setWordWrap(True)
         destination_form.addRow(
             "Review",
-            self.QtWidgets.QLabel("Creates a candidate record and submits offer v1 for approval."),
+            review,
         )
         stack.addWidget(destination)
 
@@ -1079,60 +1129,106 @@ class HiringWorkspaceV2Page:
         next_button.clicked.connect(lambda: stack.setCurrentIndex(min(2, stack.currentIndex() + 1)))
         cancel.clicked.connect(dialog.reject)
 
-        def accept_if_valid() -> None:
-            required = {
-                "Candidate name": candidate_name.text(),
-                "School": school.text(),
-                "Offer position": str(position.currentData() or ""),
-                "Template": template_path.text(),
-                "Destination": output_dir.text(),
-            }
-            missing = [label for label, value in required.items() if not value.strip()]
-            if missing:
-                error.setText("Required: " + ", ".join(missing))
+        candidate_by_id = {candidate.candidate_id: candidate for candidate in candidates}
+
+        def load_candidate(index: int) -> None:
+            candidate_id = str(candidate_picker.itemData(index) or "").strip()
+            if not candidate_id:
+                identity_editor.set_values({})
+                qualification_editor.set_values({})
                 return
-            qualification = {
-                "has_degree": has_degree.currentText() == "Yes" if has_degree.currentText() else None,
-                "degree_type": degree_type.currentText(),
-                "degree_in_ece": degree_in_ece.isChecked(),
-                "ece_units_completed": ece_units.text(),
-                "total_units_completed": total_units.text(),
-                "years_experience": experience_years.value(),
-            }
+            candidate = candidate_by_id[candidate_id]
+            prefill = self._external_offer_candidate_prefill(candidate_id)
+            identity_editor.set_values(
+                {
+                    **prefill,
+                    "candidate_name": candidate.legal_name,
+                    "honorific": candidate.honorific,
+                    "candidate_email": candidate.email,
+                    "candidate_phone": candidate.phone,
+                }
+            )
+            qualification_editor.set_values(dict(prefill.get("qualification", {})))
+
+        candidate_picker.currentIndexChanged.connect(load_candidate)
+        accepted_values: dict[str, Any] = {}
+
+        def accept_if_valid() -> None:
             try:
-                pay_input = qualification_input_from_mapping(str(position.currentData() or ""), qualification)
+                identity_values = identity_editor.validated_values()
+                qualification = qualification_editor.validated_values()
+                schedule = derive_offer_schedule(start_time.text().strip(), end_time.text().strip())
+                settings = SchoolOfferSettingsStore(SCHOOL_OFFER_SETTINGS_PATH).load()
+                template_path = resolve_offer_template_path(
+                    DEFAULT_BASE_DIR,
+                    identity_values["school"],
+                    int(schedule.weekly_hours),
+                    settings,
+                )
+                output_dir = resolve_offer_output_dir(DEFAULT_BASE_DIR, identity_values["school"], settings)
+                pay_input = qualification_input_from_mapping(identity_values["position_id"], qualification)
                 pay_result = calculate_offer_pay(pay_input, load_starting_pay_settings())
                 if pay_result.status != "calculated":
                     raise ValueError(pay_result.qualification_explanation)
             except (ArithmeticError, KeyError, TypeError, ValueError) as exc:
                 error.setText(str(exc))
                 return
+            accepted_values.update(
+                {
+                    **identity_values,
+                    "candidate_id": str(candidate_picker.currentData() or "").strip(),
+                    "start_time": start_time.text().strip(),
+                    "end_time": end_time.text().strip(),
+                    "gross_daily_hours": format(schedule.gross_daily_hours, "f"),
+                    "net_daily_hours": format(schedule.net_daily_hours, "f"),
+                    "weekly_hours": format(schedule.weekly_hours, "f"),
+                    "employment_type": schedule.employment_type,
+                    "qualification": qualification,
+                    "pto": format(schedule.weekly_hours * 2, "f"),
+                    "pto2": format(schedule.weekly_hours * 4, "f"),
+                    "template_path": str(template_path),
+                    "output_dir": str(output_dir),
+                }
+            )
             dialog.accept()
 
         submit.clicked.connect(accept_if_valid)
         if dialog.exec() != self.QtWidgets.QDialog.DialogCode.Accepted:
             return None
-        return {
-            "candidate_name": candidate_name.text().strip(),
-            "candidate_email": candidate_email.text().strip(),
-            "candidate_phone": candidate_phone.text().strip(),
-            "honorific": honorific.currentText(),
-            "school": school.text().strip(),
-            "position_id": str(position.currentData() or ""),
-            "start_time": start_time.text().strip(),
-            "end_time": end_time.text().strip(),
-            "qualification": {
-                "has_degree": has_degree.currentText() == "Yes",
-                "degree_type": degree_type.currentText(),
-                "degree_in_ece": degree_in_ece.isChecked(),
-                "ece_units_completed": ece_units.text().strip() or None,
-                "total_units_completed": total_units.text().strip() or None,
-                "years_experience": experience_years.value(),
-            },
-            "weekly_hours": str(weekly_hours.value()),
-            "template_path": template_path.text().strip(),
-            "output_dir": output_dir.text().strip(),
-        }
+        return accepted_values
+
+    def _external_offer_candidate_prefill(self, candidate_id: str) -> dict[str, Any]:
+        applications = [
+            application
+            for application in self.service.store.list_applications(include_archived=True)
+            if application.candidate_id == str(candidate_id).strip()
+        ]
+        prefill: dict[str, Any] = {}
+        if applications:
+            latest = applications[-1]
+            prefill["school"] = latest.school
+            for position_id, label in POSITION_LABELS.items():
+                if latest.position.casefold() == label.casefold():
+                    prefill["position_id"] = position_id
+                    break
+        for application in reversed(applications):
+            history_id = str(application.history_id or "").strip()
+            repository = CandidateReportRepository(self.service.store.history_path)
+            if not history_id or not repository.exists(history_id):
+                continue
+            report = repository.load_visible_version(history_id, role="admin")
+            candidate = report.snapshot.get("candidate")
+            qualification = candidate.get("qualification") if isinstance(candidate, dict) else None
+            if isinstance(qualification, dict):
+                prefill["qualification"] = dict(qualification)
+                return prefill
+        for application in reversed(applications):
+            for version in reversed(self.service.store.list_offer_versions(application.application_id)):
+                qualification = version.terms.get("qualification_snapshot")
+                if isinstance(qualification, dict):
+                    prefill["qualification"] = dict(qualification)
+                    return prefill
+        return prefill
 
     def _set_action_state(self, state: str, message: str) -> None:
         self.action_status.setProperty("state", state)

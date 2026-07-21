@@ -10,6 +10,103 @@ from hiring_pipeline import HiringPipelineStore, HiringWorkflowService
 from visual_test_support import VisualTestDatabaseRegistry, configure_visual_test_app
 
 
+@pytest.mark.pyside_gui
+def test_shared_candidate_editors_capture_offer_ready_identity_and_qualification() -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6 import QtWidgets
+    from pyside_interview_components import CandidateIdentityEditor, CandidateQualificationEditor
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    identity = CandidateIdentityEditor(
+        QtWidgets=QtWidgets,
+        object_prefix="TestOffer",
+        school_options=["Palmdale"],
+        position_options=[("teacher", "Teacher")],
+        include_contact=True,
+        email_required=True,
+    )
+    identity.set_values(
+        {
+            "candidate_name": "Maya Patel",
+            "honorific": "Ms.",
+            "candidate_email": "maya@example.com",
+            "candidate_phone": "310.555.0199",
+            "school": "Palmdale",
+            "position_id": "teacher",
+        }
+    )
+    qualification = CandidateQualificationEditor(
+        QtWidgets=QtWidgets,
+        object_prefix="TestOffer",
+        values={
+            "has_degree": False,
+            "ece_units_completed": "24.5",
+            "infant_toddler_class_completed": True,
+            "total_units_completed": "40",
+            "years_experience": 3,
+        },
+    )
+
+    assert identity.validated_values() == {
+        "candidate_name": "Maya Patel",
+        "honorific": "Ms.",
+        "candidate_email": "maya@example.com",
+        "candidate_phone": "(310) 555-0199",
+        "school": "Palmdale",
+        "position_id": "teacher",
+    }
+    assert qualification.validated_values() == {
+        "has_degree": False,
+        "degree_type": "",
+        "degree_in_ece": False,
+        "ece_units_completed": "24.5",
+        "infant_toddler_class_completed": True,
+        "total_units_completed": 40,
+        "years_experience": 3,
+    }
+    identity.widget.close()
+    qualification.widget.close()
+    app.processEvents()
+
+
+@pytest.mark.pyside_gui
+def test_shared_candidate_editors_fail_closed_on_invalid_offer_data() -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6 import QtWidgets
+    from pyside_interview_components import CandidateIdentityEditor, CandidateQualificationEditor
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    identity = CandidateIdentityEditor(
+        QtWidgets=QtWidgets,
+        object_prefix="InvalidOffer",
+        school_options=["Palmdale"],
+        position_options=[("teacher", "Teacher")],
+        include_contact=True,
+        email_required=True,
+    )
+    identity.set_values(
+        {
+            "candidate_name": "Maya Patel",
+            "candidate_email": "not-an-email",
+            "school": "Palmdale",
+            "position_id": "teacher",
+        }
+    )
+    qualification = CandidateQualificationEditor(
+        QtWidgets=QtWidgets,
+        object_prefix="InvalidOffer",
+        values={"has_degree": False, "ece_units_completed": "bad", "years_experience": 3},
+    )
+
+    with pytest.raises(ValueError, match="valid candidate email"):
+        identity.validated_values()
+    with pytest.raises(ValueError, match="ECE units completed"):
+        qualification.validated_values()
+    identity.widget.close()
+    qualification.widget.close()
+    app.processEvents()
+
+
 def test_hiring_workspace_uses_unified_pipeline_without_horizontal_page_scroll(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     from PySide6 import QtCore, QtTest, QtWidgets
@@ -58,6 +155,7 @@ def test_hiring_workspace_uses_unified_pipeline_without_horizontal_page_scroll(t
 def test_hiring_workspace_opens_with_application_detail_closed(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     from PySide6 import QtCore, QtWidgets
+    from hiring_pipeline import HiringApplication, HiringStage
     from hiring_workspace_v2 import HiringWorkspaceV2Page
 
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
@@ -258,7 +356,7 @@ def test_hiring_workspace_generate_offer_button_creates_external_offer(tmp_path:
         values={
             "candidate_name": "External Candidate",
             "candidate_email": "external@example.com",
-            "candidate_phone": "555-0100",
+            "candidate_phone": "310-555-0100",
             "honorific": "Ms.",
             "school": "Palmdale",
             "position_id": "teacher",
@@ -285,6 +383,195 @@ def test_hiring_workspace_generate_offer_button_creates_external_offer(tmp_path:
     assert page.offers_table.item(0, 5).text() == "Pending Approval"
     assert "Approval 1" in page.offers_status.text()
     page.offers_widget.close()
+    app.processEvents()
+
+
+@pytest.mark.pyside_gui
+def test_generate_offer_dialog_uses_shared_capture_and_automatic_offer_terms(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6 import QtCore, QtWidgets
+    import hiring_workspace_v2
+    from data_store import SchoolOfferSettingsStore
+    from hiring_workspace_v2 import HiringWorkspaceV2Page
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    template = tmp_path / "full-time-offer.docx"
+    template.write_bytes(b"template")
+    output_dir = tmp_path / "offers"
+    settings_path = tmp_path / "school-offer-settings.json"
+    SchoolOfferSettingsStore(settings_path).save(
+        {
+            "Palmdale": {
+                "full_time_template": str(template),
+                "part_time_template": str(tmp_path / "part-time-offer.docx"),
+                "offer_output_dir": str(output_dir),
+            }
+        }
+    )
+    monkeypatch.setattr(hiring_workspace_v2, "SCHOOL_OFFER_SETTINGS_PATH", settings_path)
+    monkeypatch.setattr(hiring_workspace_v2, "DEFAULT_BASE_DIR", tmp_path)
+    service = HiringWorkflowService(HiringPipelineStore(tmp_path / "offer-dialog.sqlite3"))
+    page = HiringWorkspaceV2Page(
+        QtCore=QtCore,
+        QtWidgets=QtWidgets,
+        service=service,
+        school_options=["Palmdale"],
+    )
+
+    original_exec = QtWidgets.QDialog.exec
+
+    def complete_dialog(dialog):
+        dialog.findChild(QtWidgets.QLineEdit, "HiringV2OfferCandidateName").setText("New Candidate")
+        dialog.findChild(QtWidgets.QLineEdit, "HiringV2OfferEmail").setText("new@example.com")
+        school = dialog.findChild(QtWidgets.QComboBox, "HiringV2OfferSchool")
+        school.setCurrentIndex(school.findData("Palmdale"))
+        position = dialog.findChild(QtWidgets.QComboBox, "HiringV2OfferPosition")
+        position.setCurrentIndex(position.findData("teacher"))
+        has_degree = dialog.findChild(QtWidgets.QComboBox, "HiringV2OfferHasDegree")
+        has_degree.setCurrentText("No")
+        dialog.findChild(QtWidgets.QLineEdit, "HiringV2OfferEceUnits").setText("24")
+        dialog.findChild(QtWidgets.QLineEdit, "HiringV2OfferTotalUnits").setText("40")
+        dialog.findChild(QtWidgets.QLineEdit, "HiringV2OfferYearsExperience").setText("3")
+        submit = next(
+            button
+            for button in dialog.findChildren(QtWidgets.QPushButton)
+            if button.text() == "Submit for approval"
+        )
+        submit.click()
+        return dialog.result()
+
+    monkeypatch.setattr(QtWidgets.QDialog, "exec", complete_dialog)
+    values = page._external_offer_editor_values()
+    monkeypatch.setattr(QtWidgets.QDialog, "exec", original_exec)
+
+    assert values is not None
+    assert values["weekly_hours"] == "40"
+    assert values["gross_daily_hours"] == "9"
+    assert values["net_daily_hours"] == "8"
+    assert values["employment_type"] == "full_time"
+    assert values["template_path"] == str(template)
+    assert values["output_dir"] == str(output_dir)
+    assert values["qualification"]["infant_toddler_class_completed"] is False
+    assert "start_date" not in values
+    page.widget.close()
+    app.processEvents()
+
+
+@pytest.mark.pyside_gui
+def test_generate_offer_reuses_existing_candidate_and_updates_profile(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6 import QtCore, QtWidgets
+    from hiring_pipeline import HiringApplication, HiringStage
+    from hiring_workspace_v2 import HiringWorkspaceV2Page
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    service = HiringWorkflowService(HiringPipelineStore(tmp_path / "existing-offer-ui.sqlite3"))
+    prior = service.start_application(
+        legal_name="Maya Patel",
+        email="old@example.com",
+        phone="",
+        school="Palmdale",
+        position="Preschool",
+        actor="Admin",
+    )
+    page = HiringWorkspaceV2Page(QtCore=QtCore, QtWidgets=QtWidgets, service=service)
+
+    offer = page.perform_action(
+        "create_external_offer",
+        HiringApplication(
+            application_id="",
+            candidate_id="",
+            history_id="",
+            school="Hawthorne",
+            position="Teacher",
+            cycle_number=0,
+            stage=HiringStage.OFFER_DRAFT,
+        ),
+        values={
+            "candidate_id": prior.candidate_id,
+            "candidate_name": "Maya Patel-Smith",
+            "candidate_email": "maya@example.com",
+            "candidate_phone": "310.555.0199",
+            "honorific": "Mr.",
+            "school": "Hawthorne",
+            "position_id": "teacher",
+            "qualification": {
+                "has_degree": False,
+                "degree_type": "",
+                "degree_in_ece": False,
+                "ece_units_completed": "24",
+                "infant_toddler_class_completed": True,
+                "total_units_completed": "40",
+                "years_experience": 3,
+            },
+            "weekly_hours": "40",
+            "template_path": "offer.docx",
+            "output_dir": "offers",
+        },
+    )
+
+    created = service.store.get_application(offer.application_id)
+    candidate = service.store.get_candidate(prior.candidate_id)
+    assert created.candidate_id == prior.candidate_id
+    assert created.school == "Hawthorne"
+    assert candidate.legal_name == "Maya Patel-Smith"
+    assert candidate.email == "maya@example.com"
+    assert candidate.phone == "(310) 555-0199"
+    assert candidate.honorific == "Mr."
+    assert service.store.get_application(prior.application_id).stage is HiringStage.INITIAL_INTERVIEW
+    page.widget.close()
+    app.processEvents()
+
+
+@pytest.mark.pyside_gui
+def test_existing_candidate_offer_prefers_visible_report_qualification(tmp_path: Path) -> None:
+    import sqlite3
+
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6 import QtCore, QtWidgets
+    from candidate_report import CandidateReportRepository
+    from hiring_workspace_v2 import HiringWorkspaceV2Page
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    history_path = tmp_path / "qualification-prefill.sqlite3"
+    service = HiringWorkflowService(HiringPipelineStore(history_path))
+    application = service.start_application(
+        legal_name="Maya Patel",
+        email="maya@example.com",
+        phone="",
+        school="Palmdale",
+        position="Teacher",
+        actor="Admin",
+    )
+    repository = CandidateReportRepository(history_path)
+    repository.initialize()
+    expected = {
+        "has_degree": True,
+        "degree_type": "BA",
+        "degree_in_ece": True,
+        "ece_units_completed": None,
+        "infant_toddler_class_completed": True,
+        "total_units_completed": None,
+        "years_experience": 6,
+    }
+    with sqlite3.connect(repository.db_path) as conn:
+        CandidateReportRepository.insert_initial_on_connection(
+            conn,
+            application.history_id,
+            {"candidate": {"qualification": expected}},
+            actor="Admin",
+        )
+        conn.commit()
+    page = HiringWorkspaceV2Page(QtCore=QtCore, QtWidgets=QtWidgets, service=service)
+
+    prefill = page._external_offer_candidate_prefill(application.candidate_id)
+
+    assert prefill["qualification"] == expected
+    assert prefill["school"] == "Palmdale"
+    assert prefill["position_id"] == "teacher"
+    page.widget.close()
     app.processEvents()
 
 
@@ -634,6 +921,56 @@ def test_offer_approval_dialog_embeds_pdf_and_gates_approval(tmp_path: Path) -> 
     approval.change_pay_button.click()
     assert approval.change_pay_requested() is True
     approval.close()
+
+
+@pytest.mark.pyside_gui
+def test_offer_approval_dialog_shows_nine_review_details_in_three_columns(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6 import QtCore, QtGui, QtPdf, QtPdfWidgets, QtWidgets
+    from hiring_workspace_v2 import HiringOfferApprovalDialog
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    pdf_path = tmp_path / "approved-offer.pdf"
+    writer = QtGui.QPdfWriter(str(pdf_path))
+    painter = QtGui.QPainter(writer)
+    painter.drawText(100, 100, "Exact approved offer")
+    painter.end()
+    expected = {
+        "Name": "Maya Patel",
+        "Initial Interview Score": "88%",
+        "Director Rating": "4.5",
+        "Degree": "BA",
+        "Years of Experience": "6",
+        "Requested Pay": "$24.50 per hour",
+        "Offer Amount": "$22.50 per hour",
+        "Classroom": "Chef",
+        "Hours": "40 weekly",
+    }
+
+    approval = HiringOfferApprovalDialog(
+        QtCore=QtCore,
+        QtPdf=QtPdf,
+        QtPdfWidgets=QtPdfWidgets,
+        QtWidgets=QtWidgets,
+        parent=None,
+        title="Approve offer v1",
+        summary="",
+        review_details=expected,
+        rendered_email="Rendered candidate email",
+        pdf_path=pdf_path,
+        hourly_pay="22.50",
+        approve_label="Approve",
+    )
+
+    details = approval.dialog.findChild(QtWidgets.QWidget, "HiringOfferReviewDetails")
+    assert details is not None
+    grid = details.layout()
+    assert isinstance(grid, QtWidgets.QGridLayout)
+    assert grid.columnCount() == 3
+    visible_text = {label.text() for label in details.findChildren(QtWidgets.QLabel)}
+    assert visible_text == {*expected.keys(), *expected.values()}
+    approval.close()
+    app.processEvents()
 
 
 def test_hiring_interview_guide_routes_inside_hiring_workspace() -> None:

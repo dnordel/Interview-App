@@ -121,6 +121,43 @@ def test_normalize_candidate_phone_accepts_common_us_format() -> None:
     assert normalize_candidate_phone("310.555.0199") == "(310) 555-0199"
 
 
+def test_calculated_external_offer_for_existing_candidate_ignores_prior_application_stage(tmp_path: Path) -> None:
+    service = HiringWorkflowService(HiringPipelineStore(tmp_path / "existing-candidate-offer.sqlite3"))
+    prior = service.start_application(
+        legal_name="Maya Patel",
+        email="maya@example.com",
+        phone="(310) 555-0199",
+        school="Palmdale",
+        position="Preschool",
+        actor="Admin",
+    )
+
+    offer = service.create_calculated_external_offer_for_candidate(
+        candidate_id=prior.candidate_id,
+        school="Hawthorne",
+        position_id="teacher",
+        qualification={
+            "has_degree": False,
+            "degree_type": "",
+            "degree_in_ece": False,
+            "ece_units_completed": "24",
+            "infant_toddler_class_completed": True,
+            "total_units_completed": "40",
+            "years_experience": 3,
+        },
+        terms={"weekly_hours": "40", "template_path": "offer.docx", "output_dir": "offers"},
+        actor="Admin",
+    )
+
+    created = service.store.get_application(offer.application_id)
+    assert created.candidate_id == prior.candidate_id
+    assert created.school == "Hawthorne"
+    assert created.stage is HiringStage.EXECUTIVE_APPROVAL
+    assert service.store.get_application(prior.application_id).stage is HiringStage.INITIAL_INTERVIEW
+    assert offer.status == "pending_approval"
+    assert offer.terms["qualification_snapshot"]["infant_toddler_class_completed"] is True
+
+
 def test_offer_drafts_are_versioned_and_selected_version_is_submitted(tmp_path: Path) -> None:
     history_path = tmp_path / "interview_history.sqlite3"
     history = InterviewHistoryStore(history_path)

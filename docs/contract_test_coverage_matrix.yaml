@@ -12,7 +12,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-21T18:44:34.766957+00:00'
+generated_at_utc: '2026-07-21T20:21:42.962729+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -1640,6 +1640,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/hiring_pipeline.contract.yaml
+  symbol: hiring_pipeline.HiringPipelineStore.start_external_offer_application_for_candidate
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/hiring_pipeline.contract.yaml
   symbol: hiring_pipeline.HiringPipelineStore.update_application_stage
   kind: method
   tests:
@@ -1713,6 +1722,15 @@ entries:
     - return_type
 - contract: contracts/hiring_pipeline.contract.yaml
   symbol: hiring_pipeline.HiringWorkflowService.create_calculated_external_offer
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/hiring_pipeline.contract.yaml
+  symbol: hiring_pipeline.HiringWorkflowService.create_calculated_external_offer_for_candidate
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -1910,6 +1928,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/hiring_pipeline.contract.yaml
+  symbol: hiring_pipeline.HiringWorkflowService.start_external_offer_application_for_candidate
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/hiring_pipeline.contract.yaml
   symbol: hiring_pipeline.HiringWorkflowService.submit_offer_for_approval
   kind: method
   tests:
@@ -2055,6 +2082,15 @@ entries:
     - return_type
 - contract: contracts/hiring_workspace_v2.contract.yaml
   symbol: hiring_workspace_v2.HiringOfferApprovalDialog.hourly_pay
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/hiring_workspace_v2.contract.yaml
+  symbol: hiring_workspace_v2.HiringWorkspaceV2Page._external_offer_candidate_prefill
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -9594,6 +9630,42 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_components.contract.yaml
   symbol: pyside_interview_components.AdaptiveTwoColumn.set_narrow
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_components.contract.yaml
+  symbol: pyside_interview_components.CandidateIdentityEditor.set_values
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_components.contract.yaml
+  symbol: pyside_interview_components.CandidateIdentityEditor.validated_values
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_components.contract.yaml
+  symbol: pyside_interview_components.CandidateQualificationEditor.set_values
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_components.contract.yaml
+  symbol: pyside_interview_components.CandidateQualificationEditor.validated_values
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
