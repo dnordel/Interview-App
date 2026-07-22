@@ -66,7 +66,7 @@ The tool is optimized for local/offline usage and can run without optional audio
 - Staffing v2-native Tasks, Overview, Employees, Templates, and Communications pages with launcher-enforced school scope.
 - Encrypted employee/task/template attachments and filled-package open/export through short-lived audited temp files.
 - Shared Notifications rules drive immediate task events and reminder digests; owner recipients are configured in Staffing Settings.
-- Cross-computer Windows replicas replay before/after mutations and surface damaged artifacts, Dropbox conflict copies, delayed predecessors, and masked field conflicts without blocking unrelated work.
+- Cross-computer Windows replicas silently merge different-field Staffing edits, prompt only for contradictory same-field or destructive edits, publish the chosen resolution so DBs converge, and surface damaged artifacts, Dropbox conflict copies, or delayed predecessors without blocking unrelated work.
 - Employee start/acceptance date-based task scheduling.
 - Per-task reminder cadence options.
 - Reminder and escalation email settings.

@@ -222,6 +222,11 @@ class StaffingStore:
                     verification_status TEXT NOT NULL,
                     verified_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS staffing_sync_resolutions (
+                    entity_field TEXT PRIMARY KEY,
+                    resolved_at TEXT NOT NULL,
+                    event_id TEXT NOT NULL
+                );
                 CREATE INDEX IF NOT EXISTS idx_director_referrals_school ON director_candidate_referrals(school);
                 CREATE INDEX IF NOT EXISTS idx_director_interviews_referral_id ON director_interviews(referral_id);
                 CREATE INDEX IF NOT EXISTS idx_director_referral_removal_audit_history_id
@@ -651,6 +656,16 @@ class StaffingStore:
                 (now, int(assignment_id)),
             )
             return replace(assignment, updated_at=now)
+
+    def set_assignment_active(self, assignment_id: int, *, active: bool, now: str) -> None:
+        with self.write_connection("set_assignment_active") as conn:
+            row = conn.execute("SELECT id FROM assignments WHERE id = ?", (int(assignment_id),)).fetchone()
+            if row is None:
+                raise ValueError("Assignment not found.")
+            conn.execute(
+                "UPDATE assignments SET active = ?, updated_at = ? WHERE id = ?",
+                (1 if active else 0, _required_text(now, "Updated at"), int(assignment_id)),
+            )
 
     def import_seed_file(self, seed_path: Path) -> dict[str, int]:
         data = json.loads(Path(seed_path).read_text(encoding="utf-8"))
@@ -1151,6 +1166,47 @@ class StaffingStore:
                 (clean_operation,),
             ).fetchall()
         return {str(row["event_id"]) for row in rows}
+
+    def sync_resolution_is_newer(self, *, entity_field: str, resolved_at: str, event_id: str) -> bool:
+        clean_field = _required_text(entity_field, "Entity field")
+        clean_time = _required_text(resolved_at, "Resolved at")
+        clean_event = _required_text(event_id, "Event ID")
+        self.initialize()
+        with self.connect() as conn:
+            current = conn.execute(
+                "SELECT resolved_at, event_id FROM staffing_sync_resolutions WHERE entity_field = ?",
+                (clean_field,),
+            ).fetchone()
+        return current is None or (str(current["resolved_at"]), str(current["event_id"])) < (
+            clean_time,
+            clean_event,
+        )
+
+    def record_sync_resolution(self, *, entity_field: str, resolved_at: str, event_id: str) -> bool:
+        clean_field = _required_text(entity_field, "Entity field")
+        clean_time = _required_text(resolved_at, "Resolved at")
+        clean_event = _required_text(event_id, "Event ID")
+        with self.write_connection("staffing_sync_resolution") as conn:
+            current = conn.execute(
+                "SELECT resolved_at, event_id FROM staffing_sync_resolutions WHERE entity_field = ?",
+                (clean_field,),
+            ).fetchone()
+            if current is not None and (str(current["resolved_at"]), str(current["event_id"])) >= (
+                clean_time,
+                clean_event,
+            ):
+                return False
+            conn.execute(
+                """
+                INSERT INTO staffing_sync_resolutions (entity_field, resolved_at, event_id)
+                VALUES (?, ?, ?)
+                ON CONFLICT(entity_field) DO UPDATE SET
+                    resolved_at = excluded.resolved_at,
+                    event_id = excluded.event_id
+                """,
+                (clean_field, clean_time, clean_event),
+            )
+            return True
 
     def verify_and_record_director_interview_delivery(
         self,

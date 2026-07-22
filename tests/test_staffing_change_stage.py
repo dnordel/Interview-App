@@ -2,8 +2,10 @@ from pathlib import Path
 import json
 import shutil
 
+import pytest
+
 from staffing_change_stage import StaffingChangeStage
-from staffing_service import StaffingService
+from staffing_service import StaffingChangeConflict, StaffingService, staffing_change_conflict_message
 from staffing_store import StaffingStore
 
 
@@ -13,6 +15,26 @@ def _merge_dropbox_artifacts(source: Path, target: Path) -> None:
         destination = target / artifact.relative_to(source)
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(artifact, destination)
+
+
+def test_conflict_message_shows_only_conflicting_local_and_incoming_values() -> None:
+    conflict = StaffingChangeConflict(
+        event_id="event-1",
+        source_replica="director:palmdale:pmd",
+        school="Palmdale",
+        operation="update_assignment_details",
+        base_snapshot={},
+        local_snapshot={},
+        remote_payload={"notes": "Director note", "shift_start": "08:00"},
+        conflicting_fields=("assignment:12.notes",),
+        local_values=(("Notes", "Admin note"),),
+        incoming_values=(("Notes", "Director note"),),
+    )
+
+    message = staffing_change_conflict_message(conflict)
+
+    assert "Notes: Admin note → Director note" in message
+    assert "Shift Start" not in message
 
 
 def _seed_offer_slot(store: StaffingStore) -> int:
@@ -211,6 +233,193 @@ def test_simultaneous_same_position_edits_converge_to_newer_change(tmp_path: Pat
     assert director_store.get_assignment(assignment_id).notes == "Director note"
 
 
+def test_simultaneous_different_fields_on_same_position_merge_without_prompt(tmp_path: Path) -> None:
+    admin_db = tmp_path / "admin" / "staffing_dashboard.sqlite3"
+    director_db = tmp_path / "director" / "staffing_dashboard_palmdale.sqlite3"
+    admin_store = StaffingStore(admin_db)
+    admin_store.initialize()
+    assignment_id = admin_store.seed_assignment(
+        school="Palmdale",
+        classroom="Tranquility",
+        position_name="Teacher 1",
+        position_type="Teacher",
+    )
+    director_db.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(admin_db, director_db)
+    admin_dir = tmp_path / "admin" / "staffing_change_events"
+    director_dir = tmp_path / "director" / "staffing_change_events"
+    admin = StaffingService(
+        admin_store,
+        change_stage=StaffingChangeStage(admin_dir),
+        replica="admin",
+        publisher="admin:owner",
+        conflict_resolver=lambda _conflict: pytest.fail("different fields must not prompt"),
+    )
+    director_store = StaffingStore(director_db)
+    director = StaffingService(
+        director_store,
+        change_stage=StaffingChangeStage(director_dir),
+        replica="director:palmdale",
+        publisher="director:palmdale:pmd",
+        school_scope="Palmdale",
+        conflict_resolver=lambda _conflict: pytest.fail("different fields must not prompt"),
+    )
+
+    admin.update_assignment_details(assignment_id, classroom="Tranquility", notes="Admin note")
+    director.update_assignment_details(
+        assignment_id,
+        classroom="Tranquility",
+        shift_start="08:00",
+        shift_end="16:30",
+    )
+    _merge_dropbox_artifacts(admin_dir, director_dir)
+    _merge_dropbox_artifacts(director_dir, admin_dir)
+
+    assert admin.replay_staged_changes() == 1
+    assert director.replay_staged_changes() == 1
+    assert (admin_store.get_assignment(assignment_id).notes, admin_store.get_assignment(assignment_id).shift_start) == (
+        "Admin note",
+        "08:00",
+    )
+    assert (director_store.get_assignment(assignment_id).notes, director_store.get_assignment(assignment_id).shift_start) == (
+        "Admin note",
+        "08:00",
+    )
+
+
+def test_rejected_same_field_conflict_still_applies_non_conflicting_fields(tmp_path: Path) -> None:
+    admin_db = tmp_path / "admin" / "staffing_dashboard.sqlite3"
+    director_db = tmp_path / "director" / "staffing_dashboard_palmdale.sqlite3"
+    admin_store = StaffingStore(admin_db)
+    admin_store.initialize()
+    assignment_id = admin_store.seed_assignment(
+        school="Palmdale",
+        classroom="Tranquility",
+        position_name="Teacher 1",
+        position_type="Teacher",
+    )
+    director_db.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(admin_db, director_db)
+    admin_dir = tmp_path / "admin" / "staffing_change_events"
+    director_dir = tmp_path / "director" / "staffing_change_events"
+    conflicts = []
+    admin = StaffingService(
+        admin_store,
+        change_stage=StaffingChangeStage(admin_dir),
+        replica="admin",
+        publisher="admin:owner",
+        conflict_resolver=lambda conflict: not (conflicts.append(conflict) is None),
+    )
+    director_store = StaffingStore(director_db)
+    director = StaffingService(
+        director_store,
+        change_stage=StaffingChangeStage(director_dir),
+        replica="director:palmdale",
+        publisher="director:palmdale:pmd",
+        school_scope="Palmdale",
+    )
+
+    admin.update_assignment_details(assignment_id, classroom="Tranquility", notes="Admin note")
+    director.update_assignment_details(
+        assignment_id,
+        classroom="Tranquility",
+        notes="Director note",
+        shift_start="08:00",
+        shift_end="16:30",
+    )
+    _merge_dropbox_artifacts(director_dir, admin_dir)
+
+    assert admin.replay_staged_changes() == 1
+    assert len(conflicts) == 1
+    assert conflicts[0].conflicting_fields == (f"assignment:{assignment_id}.notes",)
+    saved = admin_store.get_assignment(assignment_id)
+    assert (saved.notes, saved.shift_start, saved.shift_end) == ("Admin note", "08:00", "16:30")
+
+
+def test_conflict_choices_publish_resolution_and_replicas_converge(tmp_path: Path) -> None:
+    admin_db = tmp_path / "admin" / "staffing_dashboard.sqlite3"
+    director_db = tmp_path / "director" / "staffing_dashboard_palmdale.sqlite3"
+    admin_store = StaffingStore(admin_db)
+    admin_store.initialize()
+    assignment_id = admin_store.seed_assignment(
+        school="Palmdale", classroom="Tranquility",
+        position_name="Teacher 1", position_type="Teacher",
+    )
+    director_db.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(admin_db, director_db)
+    admin_dir = tmp_path / "admin" / "staffing_change_events"
+    director_dir = tmp_path / "director" / "staffing_change_events"
+    admin_prompts = []
+    director_prompts = []
+    admin = StaffingService(
+        admin_store, change_stage=StaffingChangeStage(admin_dir),
+        replica="admin", publisher="admin:owner",
+        clock=lambda: "2026-07-16T09:00:01Z",
+        conflict_resolver=lambda conflict: not (admin_prompts.append(conflict) is None),
+    )
+    director_store = StaffingStore(director_db)
+    director = StaffingService(
+        director_store, change_stage=StaffingChangeStage(director_dir),
+        replica="director:palmdale", publisher="director:palmdale:pmd", school_scope="Palmdale",
+        clock=lambda: "2026-07-16T09:00:02Z",
+        conflict_resolver=lambda conflict: not (director_prompts.append(conflict) is None),
+    )
+    admin.update_assignment_details(assignment_id, classroom="Tranquility", notes="Admin note")
+    director.update_assignment_details(assignment_id, classroom="Tranquility", notes="Director note")
+    _merge_dropbox_artifacts(admin_dir, director_dir)
+    _merge_dropbox_artifacts(director_dir, admin_dir)
+
+    assert admin.replay_staged_changes() == 1
+    assert director.replay_staged_changes() == 1
+    assert len(admin_prompts) == len(director_prompts) == 1
+    _merge_dropbox_artifacts(admin_dir, director_dir)
+    _merge_dropbox_artifacts(director_dir, admin_dir)
+
+    assert admin.replay_staged_changes() == 1
+    assert director.replay_staged_changes() == 1
+    assert len(admin_prompts) == len(director_prompts) == 1
+    assert admin_store.get_assignment(assignment_id).notes == "Director note"
+    assert director_store.get_assignment(assignment_id).notes == "Director note"
+
+
+def test_incoming_delete_prompts_when_receiver_changed_record(tmp_path: Path) -> None:
+    admin_db = tmp_path / "admin.sqlite3"
+    director_db = tmp_path / "director.sqlite3"
+    admin_store = StaffingStore(admin_db)
+    admin_store.initialize()
+    assignment_id = admin_store.seed_assignment(
+        school="Palmdale", classroom="Tranquility",
+        position_name="Teacher 1", position_type="Teacher",
+    )
+    shutil.copy2(admin_db, director_db)
+    director_store = StaffingStore(director_db)
+    admin_dir = tmp_path / "admin_events"
+    director_dir = tmp_path / "director_events"
+    conflicts = []
+    admin = StaffingService(
+        admin_store, change_stage=StaffingChangeStage(admin_dir), replica="admin",
+        conflict_resolver=lambda conflict: not (conflicts.append(conflict) is None),
+    )
+    director = StaffingService(
+        director_store, change_stage=StaffingChangeStage(director_dir),
+        replica="director:palmdale", school_scope="Palmdale",
+    )
+    admin.update_assignment_details(assignment_id, classroom="Tranquility", notes="Keep me")
+    director.delete_position(assignment_id, confirmed=True)
+    _merge_dropbox_artifacts(director_dir, admin_dir)
+
+    assert admin.replay_staged_changes() == 1
+    assert len(conflicts) == 1
+    saved = admin_store.get_assignment(assignment_id)
+    assert saved.notes == "Keep me"
+    with admin_store.connect() as conn:
+        assert conn.execute("SELECT active FROM assignments WHERE id = ?", (assignment_id,)).fetchone()[0] == 1
+    _merge_dropbox_artifacts(admin_dir, director_dir)
+    assert director.replay_staged_changes() == 2
+    with director_store.connect() as conn:
+        assert conn.execute("SELECT active FROM assignments WHERE id = ?", (assignment_id,)).fetchone()[0] == 1
+
+
 def test_sequential_peer_edits_on_same_position_do_not_prompt(tmp_path: Path) -> None:
     admin_db = tmp_path / "admin" / "staffing_dashboard.sqlite3"
     director_db = tmp_path / "director" / "staffing_dashboard_palmdale.sqlite3"
@@ -328,6 +537,77 @@ def test_person_edit_replays_by_stable_name(tmp_path: Path) -> None:
     assert next(item for item in director_store.list_people() if item.name == "Renamed Teacher").active is False
 
 
+def test_simultaneous_different_person_fields_merge_without_prompt(tmp_path: Path) -> None:
+    admin_store = StaffingStore(tmp_path / "admin.sqlite3")
+    admin_store.initialize()
+    person = StaffingService(admin_store).add_person(name="Existing Teacher", role="Teacher")
+    director_db = tmp_path / "director.sqlite3"
+    shutil.copy2(admin_store.path, director_db)
+    director_store = StaffingStore(director_db)
+    admin_dir = tmp_path / "admin_events"
+    director_dir = tmp_path / "director_events"
+    admin = StaffingService(
+        admin_store, change_stage=StaffingChangeStage(admin_dir), replica="admin",
+        conflict_resolver=lambda _conflict: pytest.fail("different person fields must not prompt"),
+    )
+    director = StaffingService(
+        director_store, change_stage=StaffingChangeStage(director_dir),
+        replica="director:palmdale", school_scope="Palmdale",
+        conflict_resolver=lambda _conflict: pytest.fail("different person fields must not prompt"),
+    )
+    admin.update_person(person.id, name=person.name, role="Lead Teacher")
+    director.update_person(
+        person.id, name=person.name, role="Teacher", permit_status="teacher_permit_approved"
+    )
+    _merge_dropbox_artifacts(admin_dir, director_dir)
+    _merge_dropbox_artifacts(director_dir, admin_dir)
+
+    assert admin.replay_staged_changes() == 1
+    assert director.replay_staged_changes() == 1
+    admin_person = next(item for item in admin_store.list_people() if item.name == person.name)
+    director_person = next(item for item in director_store.list_people() if item.name == person.name)
+    assert (admin_person.role, admin_person.permit_status) == ("Lead Teacher", "teacher_permit_approved")
+    assert (director_person.role, director_person.permit_status) == ("Lead Teacher", "teacher_permit_approved")
+
+
+def test_person_conflict_resolution_converges_without_repeat_prompt(tmp_path: Path) -> None:
+    admin_store = StaffingStore(tmp_path / "admin.sqlite3")
+    admin_store.initialize()
+    person = StaffingService(admin_store).add_person(name="Existing Teacher", role="Teacher")
+    director_db = tmp_path / "director.sqlite3"
+    shutil.copy2(admin_store.path, director_db)
+    director_store = StaffingStore(director_db)
+    admin_dir = tmp_path / "admin_events"
+    director_dir = tmp_path / "director_events"
+    admin_prompts = []
+    director_prompts = []
+    admin = StaffingService(
+        admin_store, change_stage=StaffingChangeStage(admin_dir), replica="admin",
+        clock=lambda: "2026-07-16T09:00:01Z",
+        conflict_resolver=lambda conflict: not (admin_prompts.append(conflict) is None),
+    )
+    director = StaffingService(
+        director_store, change_stage=StaffingChangeStage(director_dir),
+        replica="director:palmdale", school_scope="Palmdale",
+        clock=lambda: "2026-07-16T09:00:02Z",
+        conflict_resolver=lambda conflict: not (director_prompts.append(conflict) is None),
+    )
+    admin.update_person(person.id, name=person.name, role="Lead Teacher")
+    director.update_person(person.id, name=person.name, role="Assistant Teacher")
+    _merge_dropbox_artifacts(admin_dir, director_dir)
+    _merge_dropbox_artifacts(director_dir, admin_dir)
+    assert admin.replay_staged_changes() == 1
+    assert director.replay_staged_changes() == 1
+    _merge_dropbox_artifacts(admin_dir, director_dir)
+    _merge_dropbox_artifacts(director_dir, admin_dir)
+
+    assert admin.replay_staged_changes() == 1
+    assert director.replay_staged_changes() == 1
+    assert len(admin_prompts) == len(director_prompts) == 1
+    assert next(item for item in admin_store.list_people() if item.id == person.id).role == "Assistant Teacher"
+    assert next(item for item in director_store.list_people() if item.id == person.id).role == "Assistant Teacher"
+
+
 def test_classroom_edit_replays_to_peer_database(tmp_path: Path) -> None:
     admin_store = StaffingStore(tmp_path / "admin.sqlite3")
     admin_store.initialize()
@@ -364,6 +644,41 @@ def test_classroom_edit_replays_to_peer_database(tmp_path: Path) -> None:
     assert director.replay_staged_changes() == 1
     classroom = next(item for item in director_store.list_classrooms() if item.name == "Tranquility")
     assert (classroom.program, classroom.licensed_capacity, classroom.display_order) == ("Infant Toddler", 18, 3)
+
+
+def test_simultaneous_different_classroom_fields_merge_without_prompt(tmp_path: Path) -> None:
+    admin_store = StaffingStore(tmp_path / "admin.sqlite3")
+    admin_store.initialize()
+    classroom_id = admin_store.create_classroom(school="Palmdale", name="Tranquility")
+    director_db = tmp_path / "director.sqlite3"
+    shutil.copy2(admin_store.path, director_db)
+    director_store = StaffingStore(director_db)
+    admin_dir = tmp_path / "admin_events"
+    director_dir = tmp_path / "director_events"
+    admin = StaffingService(
+        admin_store, change_stage=StaffingChangeStage(admin_dir), replica="admin",
+        conflict_resolver=lambda _conflict: pytest.fail("different classroom fields must not prompt"),
+    )
+    director = StaffingService(
+        director_store, change_stage=StaffingChangeStage(director_dir),
+        replica="director:palmdale", school_scope="Palmdale",
+        conflict_resolver=lambda _conflict: pytest.fail("different classroom fields must not prompt"),
+    )
+    admin.update_classroom(
+        classroom_id=classroom_id, school="Palmdale", name="Tranquility", program="Preschool"
+    )
+    director.update_classroom(
+        classroom_id=classroom_id, school="Palmdale", name="Tranquility", licensed_capacity=18
+    )
+    _merge_dropbox_artifacts(admin_dir, director_dir)
+    _merge_dropbox_artifacts(director_dir, admin_dir)
+
+    assert admin.replay_staged_changes() == 1
+    assert director.replay_staged_changes() == 1
+    admin_room = next(item for item in admin_store.list_classrooms() if item.id == classroom_id)
+    director_room = next(item for item in director_store.list_classrooms() if item.id == classroom_id)
+    assert (admin_room.program, admin_room.licensed_capacity) == ("Preschool", 18)
+    assert (director_room.program, director_room.licensed_capacity) == ("Preschool", 18)
 
 
 def test_classroom_add_and_deactivate_replay_to_peer_database(tmp_path: Path) -> None:

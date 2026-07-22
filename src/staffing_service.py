@@ -54,6 +54,9 @@ class StaffingChangeConflict:
     base_snapshot: dict[str, Any]
     local_snapshot: dict[str, Any]
     remote_payload: dict[str, Any]
+    conflicting_fields: tuple[str, ...] = ()
+    local_values: tuple[tuple[str, str], ...] = ()
+    incoming_values: tuple[tuple[str, str], ...] = ()
 
 
 def staffing_change_conflict_message(conflict: StaffingChangeConflict) -> str:
@@ -64,18 +67,49 @@ def staffing_change_conflict_message(conflict: StaffingChangeConflict) -> str:
         "target_assignment_id": "Target position ID",
         "person_name": "Person",
     }
-    changes = [
-        f"{labels.get(key, key.replace('_', ' ').title())}: {value if value not in (None, '') else '(blank)'}"
-        for key, value in conflict.remote_payload.items()
-        if not key.startswith("_")
-    ]
+    if conflict.local_values and conflict.incoming_values:
+        incoming = dict(conflict.incoming_values)
+        changes = [
+            f"{label}: {local or '(blank)'} → {incoming.get(label) or '(blank)'}"
+            for label, local in conflict.local_values
+        ]
+    else:
+        changes = [
+            f"{labels.get(key, key.replace('_', ' ').title())}: {value if value not in (None, '') else '(blank)'}"
+            for key, value in conflict.remote_payload.items()
+            if not key.startswith("_")
+        ]
     detail = "\n".join(f"• {line}" for line in changes) or "• No field details provided"
     return (
         "Another user's staffing change conflicts with your own.\n\n"
         f"User: {actor}\nSchool: {conflict.school}\nChange: {conflict.operation.replace('_', ' ').title()}\n\n"
-        f"Other user's changes:\n{detail}\n\nWould you like to accept these changes?\n"
+        f"Conflicting changes:\n{detail}\n\nWould you like to accept these changes?\n"
         "Choose No to keep your version."
     )
+
+
+def _snapshot_changes(
+    base: dict[str, Any], current: dict[str, Any], prefix: tuple[str, ...] = ()
+) -> dict[tuple[str, ...], Any]:
+    changes: dict[tuple[str, ...], Any] = {}
+    for key in set(base) | set(current):
+        before = base.get(key)
+        after = current.get(key)
+        path = (*prefix, str(key))
+        if isinstance(before, dict) and isinstance(after, dict):
+            changes.update(_snapshot_changes(before, after, path))
+        elif before != after:
+            changes[path] = after
+    return changes
+
+
+def _snapshot_value(snapshot: dict[str, Any], path: tuple[str, ...]) -> Any:
+    value: Any = snapshot
+    for key in path:
+        if not isinstance(value, dict):
+            return None
+        value = value.get(key)
+    return value
 
 
 class StaffingService:
@@ -1802,6 +1836,16 @@ class StaffingService:
         try:
             for event in events:
                 destination_verified = False
+                if event.operation == "resolve_change_conflict":
+                    try:
+                        self._apply_conflict_resolution(event)
+                    except StaffingEditLock:
+                        break
+                    except (TypeError, ValueError, KeyError):
+                        break
+                    self.change_stage.acknowledge(event.id, replica=self.replica)
+                    applied += 1
+                    continue
                 if event.operation == "record_director_interview":
                     try:
                         destination_verified = self.store.verify_and_record_director_interview_delivery(
@@ -1816,15 +1860,24 @@ class StaffingService:
                     applied += 1
                     continue
                 conflict = self._conflict_for_event(event)
+                keep_local_fields: tuple[str, ...] = ()
                 if conflict is not None:
                     if self.conflict_resolver is None:
                         break
                     if not bool(self.conflict_resolver(conflict)):
-                        self.change_stage.acknowledge(event.id, replica=self.replica)
-                        applied += 1
-                        continue
+                        if event.operation not in {"update_assignment_details", "update_person", "update_classroom"}:
+                            self.change_stage.acknowledge(event.id, replica=self.replica)
+                            self._publish_conflict_resolution(conflict)
+                            applied += 1
+                            continue
+                        keep_local_fields = conflict.conflicting_fields
                 try:
-                    self._apply_pending_operation({"operation": event.operation, "payload": event.payload})
+                    self._apply_pending_operation(
+                        {
+                            "operation": event.operation,
+                            "payload": self._replay_payload(event, keep_local_fields=keep_local_fields),
+                        }
+                    )
                 except StaffingEditLock:
                     break
                 except (TypeError, ValueError, KeyError):
@@ -1841,6 +1894,8 @@ class StaffingService:
                     if not destination_verified:
                         break
                 self.change_stage.acknowledge(event.id, replica=self.replica)
+                if conflict is not None:
+                    self._publish_conflict_resolution(conflict)
                 applied += 1
         finally:
             self._replaying_staged_changes = False
@@ -1857,13 +1912,35 @@ class StaffingService:
             return
         if not isinstance(payload, dict):
             raise ValueError("Invalid staffing change payload.")
-        school = self._school_for_change(payload, assignment_id=assignment_id)
+        staged_payload = dict(payload)
+        result_payload = dict(staged_payload)
+        old_key = ""
+        new_key = ""
+        if operation == "update_person":
+            old_name = str(result_payload.get("_person_lookup_name", "")).strip().casefold()
+            new_name = str(result_payload.get("name", "")).strip().casefold()
+            result_payload["_person_lookup_name"] = str(result_payload.get("name", ""))
+            old_key, new_key = f"person:{old_name}", f"person:{new_name}"
+        elif operation == "update_classroom":
+            old_school = str(result_payload.get("_classroom_lookup_school", "")).strip().casefold()
+            old_name = str(result_payload.get("_classroom_lookup_name", "")).strip().casefold()
+            new_school = str(result_payload.get("school", "")).strip().casefold()
+            new_name = str(result_payload.get("name", "")).strip().casefold()
+            result_payload["_classroom_lookup_school"] = str(result_payload.get("school", ""))
+            result_payload["_classroom_lookup_name"] = str(result_payload.get("name", ""))
+            old_key = f"classroom:{old_school}:{old_name}"
+            new_key = f"classroom:{new_school}:{new_name}"
+        result_snapshot = self._change_snapshot(result_payload, assignment_id=assignment_id)
+        if old_key and new_key != old_key and new_key in result_snapshot:
+            result_snapshot[old_key] = result_snapshot.pop(new_key)
+        staged_payload["_result_snapshot"] = result_snapshot
+        school = self._school_for_change(staged_payload, assignment_id=assignment_id)
         self.change_stage.publish(
             source_replica=self.publisher,
             source_database=self.replica,
             school=school,
             operation=operation,
-            payload=payload,
+            payload=staged_payload,
         )
 
     def _school_for_change(self, payload: dict[str, Any], *, assignment_id: int | None) -> str:
@@ -1895,8 +1972,32 @@ class StaffingService:
         if not isinstance(base, dict) or not base:
             return None
         local = self._change_snapshot(event.payload, assignment_id=None)
+        remote = event.payload.get("_result_snapshot")
+        if not isinstance(remote, dict):
+            remote = None
         if local == base:
             return None
+        conflicting_fields: tuple[str, ...] = ()
+        if remote is not None:
+            remote_changes = _snapshot_changes(base, remote)
+            local_changes = _snapshot_changes(base, local)
+            conflict_paths = sorted(
+                path
+                for path in set(remote_changes) & set(local_changes)
+                if remote_changes[path] != local_changes[path]
+            )
+            if (
+                not conflict_paths
+                and event.operation in {"delete_position", "deactivate_person", "deactivate_classroom"}
+                and remote_changes
+                and local_changes
+            ):
+                conflict_paths = sorted(remote_changes)
+            conflicting_fields = tuple(".".join(path) for path in conflict_paths)
+            if not conflicting_fields:
+                return None
+        else:
+            conflict_paths = []
         remote_payload = {key: value for key, value in event.payload.items() if not key.startswith("_")}
         return StaffingChangeConflict(
             event_id=event.id,
@@ -1906,7 +2007,316 @@ class StaffingService:
             base_snapshot=base,
             local_snapshot=local,
             remote_payload=remote_payload,
+            conflicting_fields=conflicting_fields,
+            local_values=tuple(
+                (path[-1].replace("_", " ").title(), str(_snapshot_value(local, path) or ""))
+                for path in conflict_paths
+            ),
+            incoming_values=tuple(
+                (path[-1].replace("_", " ").title(), str(_snapshot_value(remote, path) or ""))
+                for path in conflict_paths
+            ),
         )
+
+    def _replay_payload(
+        self,
+        event: StaffingChangeEvent,
+        *,
+        keep_local_fields: tuple[str, ...] = (),
+    ) -> dict[str, Any]:
+        payload = dict(event.payload)
+        if event.operation == "update_person":
+            return self._replay_person_payload(payload, keep_local_fields=keep_local_fields)
+        if event.operation == "update_classroom":
+            return self._replay_classroom_payload(payload, keep_local_fields=keep_local_fields)
+        if event.operation != "update_assignment_details":
+            return payload
+        base = payload.get("_base_snapshot")
+        remote = payload.get("_result_snapshot")
+        if not isinstance(base, dict) or not isinstance(remote, dict):
+            return payload
+        assignment_id = int(payload.get("assignment_id", 0) or 0)
+        key = f"assignment:{assignment_id}"
+        base_assignment = base.get(key)
+        remote_assignment = remote.get(key)
+        if not isinstance(base_assignment, dict) or not isinstance(remote_assignment, dict):
+            return payload
+        local = self.store.get_assignment(assignment_id)
+        if remote_assignment.get("classroom") == base_assignment.get("classroom"):
+            payload["classroom"] = local.classroom
+        for field_name in ("shift_start", "shift_end"):
+            if remote_assignment.get(field_name) == base_assignment.get(field_name):
+                payload[field_name] = getattr(local, field_name)
+        for path in keep_local_fields:
+            field_name = path.rsplit(".", 1)[-1]
+            if field_name == "classroom":
+                payload["classroom"] = local.classroom
+            elif field_name in {
+                "classroom_program", "position_name", "position_type", "status",
+                "person_name", "start_date", "shift_start", "shift_end", "permit_status", "notes",
+            }:
+                payload[field_name] = getattr(local, field_name)
+        return payload
+
+    def _replay_person_payload(
+        self, payload: dict[str, Any], *, keep_local_fields: tuple[str, ...]
+    ) -> dict[str, Any]:
+        base = payload.get("_base_snapshot")
+        remote = payload.get("_result_snapshot")
+        if not isinstance(base, dict) or not isinstance(remote, dict):
+            return payload
+        key = next((name for name in base if name.startswith("person:")), "")
+        base_person = base.get(key)
+        remote_person = remote.get(key)
+        if not isinstance(base_person, dict) or not isinstance(remote_person, dict):
+            return payload
+        local_person = next(
+            (
+                person for person in self.store.list_people()
+                if person.id == int(base_person.get("id", 0) or 0)
+            ),
+            None,
+        )
+        if local_person is None:
+            return payload
+        for field_name in ("name", "role", "permit_status", "units"):
+            path = f"{key}.{field_name}"
+            if remote_person.get(field_name) == base_person.get(field_name) or path in keep_local_fields:
+                payload[field_name] = getattr(local_person, field_name)
+        return payload
+
+    def _replay_classroom_payload(
+        self, payload: dict[str, Any], *, keep_local_fields: tuple[str, ...]
+    ) -> dict[str, Any]:
+        base = payload.get("_base_snapshot")
+        remote = payload.get("_result_snapshot")
+        if not isinstance(base, dict) or not isinstance(remote, dict):
+            return payload
+        key = next((name for name in base if name.startswith("classroom:")), "")
+        base_room = base.get(key)
+        remote_room = remote.get(key)
+        if not isinstance(base_room, dict) or not isinstance(remote_room, dict):
+            return payload
+        local_room = next(
+            (
+                room for room in self.store.list_classrooms()
+                if room.id == int(base_room.get("id", 0) or 0)
+            ),
+            None,
+        )
+        if local_room is None:
+            return payload
+        for field_name in (
+            "school", "name", "program", "ratio_group", "licensed_capacity", "display_order"
+        ):
+            path = f"{key}.{field_name}"
+            if remote_room.get(field_name) == base_room.get(field_name) or path in keep_local_fields:
+                payload[field_name] = getattr(local_room, field_name)
+        return payload
+
+    def _publish_conflict_resolution(self, conflict: StaffingChangeConflict) -> None:
+        if self.change_stage is None or not conflict.conflicting_fields:
+            return
+        values: dict[str, Any] = {}
+        targets: dict[str, int] = {}
+        for field_path in conflict.conflicting_fields:
+            entity_key, field_name = field_path.rsplit(".", 1)
+            if entity_key.startswith("assignment:"):
+                entity_id = int(entity_key.split(":", 1)[1])
+                entity = asdict(self.store.get_assignment(entity_id))
+                with self.store.connect() as conn:
+                    row = conn.execute("SELECT active FROM assignments WHERE id = ?", (entity_id,)).fetchone()
+                entity["active"] = bool(row["active"]) if row is not None else False
+            elif entity_key.startswith("person:"):
+                entity_id = int(conflict.remote_payload.get("person_id", 0) or 0)
+                person = next((item for item in self.store.list_people() if item.id == entity_id), None)
+                if person is None:
+                    raise ValueError("Staffing conflict resolution person was not found.")
+                entity = asdict(person)
+            elif entity_key.startswith("classroom:"):
+                entity_id = int(conflict.remote_payload.get("classroom_id", 0) or 0)
+                room = next((item for item in self.store.list_classrooms() if item.id == entity_id), None)
+                if room is None:
+                    raise ValueError("Staffing conflict resolution classroom was not found.")
+                entity = asdict(room)
+            else:
+                raise ValueError("Unsupported staffing conflict resolution target.")
+            values[field_path] = entity.get(field_name)
+            targets[entity_key] = entity_id
+        resolved_at = self.clock()
+        event_id = self.change_stage.publish(
+            source_replica=self.publisher,
+            source_database=self.replica,
+            school=conflict.school,
+            operation="resolve_change_conflict",
+            payload={
+                "schema_version": 1,
+                "conflict_event_id": conflict.event_id,
+                "resolved_at": resolved_at,
+                "fields": list(conflict.conflicting_fields),
+                "values": values,
+                "targets": targets,
+            },
+        )
+        for field_path in conflict.conflicting_fields:
+            self.store.record_sync_resolution(
+                entity_field=field_path,
+                resolved_at=resolved_at,
+                event_id=event_id,
+            )
+
+    def _apply_conflict_resolution(self, event: StaffingChangeEvent) -> None:
+        payload = event.payload
+        if payload.get("schema_version") != 1:
+            raise ValueError("Unsupported staffing conflict resolution.")
+        resolved_at = str(payload.get("resolved_at") or "").strip()
+        fields = payload.get("fields")
+        values = payload.get("values")
+        targets = payload.get("targets", {})
+        if (
+            not resolved_at or not isinstance(fields, list)
+            or not isinstance(values, dict) or not isinstance(targets, dict)
+        ):
+            raise ValueError("Invalid staffing conflict resolution.")
+        applicable = [
+            str(field_path)
+            for field_path in fields
+            if isinstance(field_path, str)
+            and field_path in values
+            and self.store.sync_resolution_is_newer(
+                entity_field=field_path,
+                resolved_at=resolved_at,
+                event_id=event.id,
+            )
+        ]
+        if not applicable:
+            return
+        entity_keys = {field_path.split(".", 1)[0] for field_path in applicable}
+        if len(entity_keys) != 1:
+            raise ValueError("Unsupported staffing conflict resolution target.")
+        entity_key = next(iter(entity_keys))
+        if entity_key.startswith("person:"):
+            self._apply_person_resolution(
+                entity_key, applicable, values, targets=targets,
+                resolved_at=resolved_at, event_id=event.id,
+            )
+            return
+        if entity_key.startswith("classroom:"):
+            self._apply_classroom_resolution(
+                entity_key, applicable, values, targets=targets,
+                resolved_at=resolved_at, event_id=event.id,
+            )
+            return
+        if not entity_key.startswith("assignment:"):
+            raise ValueError("Unsupported staffing conflict resolution target.")
+        assignment_id = int(entity_key.split(":", 1)[1])
+        current = self.store.get_assignment(assignment_id)
+        updates = {
+            field_path.rsplit(".", 1)[-1]: values[field_path]
+            for field_path in applicable
+        }
+        active_value = updates.pop("active", None)
+        if active_value is not None:
+            with self.store.connect() as conn:
+                row = conn.execute(
+                    "SELECT active FROM assignments WHERE id = ?", (assignment_id,)
+                ).fetchone()
+            if row is None:
+                raise ValueError("Staffing conflict resolution assignment was not found.")
+            current_active = bool(row["active"])
+            target_active = bool(active_value)
+            if current_active != target_active:
+                if target_active:
+                    self.store.set_assignment_active(assignment_id, active=True, now=resolved_at)
+                else:
+                    self.store.delete_assignment(assignment_id, now=resolved_at)
+        kwargs: dict[str, Any] = {
+            "classroom": current.classroom,
+            "classroom_program": current.classroom_program,
+            "position_name": current.position_name,
+            "position_type": current.position_type,
+            "status": current.status,
+            "person_name": current.person_name or None,
+            "start_date": current.start_date,
+            "shift_start": current.shift_start,
+            "shift_end": current.shift_end,
+            "permit_status": current.permit_status or None,
+            "notes": current.notes,
+        }
+        for field_name, value in updates.items():
+            if field_name not in kwargs:
+                raise ValueError("Unsupported staffing conflict resolution field.")
+            kwargs[field_name] = value
+        if updates:
+            self._update_assignment_details_impl(assignment_id, **kwargs)
+        for field_path in applicable:
+            self.store.record_sync_resolution(
+                entity_field=field_path,
+                resolved_at=resolved_at,
+                event_id=event.id,
+            )
+
+    def _apply_person_resolution(
+        self,
+        entity_key: str,
+        fields: list[str],
+        values: dict[str, Any],
+        *,
+        targets: dict[str, Any],
+        resolved_at: str,
+        event_id: str,
+    ) -> None:
+        person_id = int(targets.get(entity_key, 0) or 0)
+        current = next((item for item in self.store.list_people() if item.id == person_id), None)
+        if current is None:
+            raise ValueError("Staffing conflict resolution person was not found.")
+        updates = {field.rsplit(".", 1)[-1]: values[field] for field in fields}
+        allowed = {"name", "role", "permit_status", "units"}
+        if not set(updates) <= allowed:
+            raise ValueError("Unsupported staffing person conflict resolution field.")
+        self.update_person(
+            person_id,
+            name=str(updates.get("name", current.name)),
+            role=str(updates.get("role", current.role)),
+            permit_status=str(updates.get("permit_status", current.permit_status)),
+            units=updates.get("units", current.units),
+        )
+        for field_path in fields:
+            self.store.record_sync_resolution(
+                entity_field=field_path, resolved_at=resolved_at, event_id=event_id
+            )
+
+    def _apply_classroom_resolution(
+        self,
+        entity_key: str,
+        fields: list[str],
+        values: dict[str, Any],
+        *,
+        targets: dict[str, Any],
+        resolved_at: str,
+        event_id: str,
+    ) -> None:
+        classroom_id = int(targets.get(entity_key, 0) or 0)
+        current = next((item for item in self.store.list_classrooms() if item.id == classroom_id), None)
+        if current is None:
+            raise ValueError("Staffing conflict resolution classroom was not found.")
+        updates = {field.rsplit(".", 1)[-1]: values[field] for field in fields}
+        allowed = {"school", "name", "program", "ratio_group", "licensed_capacity", "display_order"}
+        if not set(updates) <= allowed:
+            raise ValueError("Unsupported staffing classroom conflict resolution field.")
+        self.store.update_classroom(
+            classroom_id=classroom_id,
+            school=str(updates.get("school", current.school)),
+            name=str(updates.get("name", current.name)),
+            program=str(updates.get("program", current.program)),
+            ratio_group=str(updates.get("ratio_group", current.ratio_group)),
+            licensed_capacity=updates.get("licensed_capacity", current.licensed_capacity),
+            display_order=int(updates.get("display_order", current.display_order)),
+        )
+        for field_path in fields:
+            self.store.record_sync_resolution(
+                entity_field=field_path, resolved_at=resolved_at, event_id=event_id
+            )
 
     def _change_snapshot(self, payload: dict[str, Any], *, assignment_id: int | None) -> dict[str, Any]:
         assignment_ids: list[int] = []
@@ -1945,6 +2355,9 @@ class StaffingService:
             try:
                 assignment = asdict(self.store.get_assignment(item_id))
                 assignment.pop("updated_at", None)
+                with self.store.connect() as conn:
+                    row = conn.execute("SELECT active FROM assignments WHERE id = ?", (item_id,)).fetchone()
+                assignment["active"] = bool(row["active"]) if row is not None else False
                 snapshot[f"assignment:{item_id}"] = assignment
             except ValueError:
                 snapshot[f"assignment:{item_id}"] = None
