@@ -2,7 +2,7 @@ module:
   name: onboarding_workspace_v2
   language: python
   path: src/onboarding_workspace_v2.py
-  version: 1.9.0
+  version: 1.10.0
   description: Complete role-aware Onboarding v2 UI with responsive task/employee drawers, immutable template/package/mapping workflows, communications, density persistence, and guarded sensitive edits.
 functions: []
 classes:
@@ -32,6 +32,12 @@ classes:
     returns: {type: None}
     exceptions: [ValueError, TypeError]
     side_effects: Registers the ONBOARDING section and role-authorized lazy pages with the shared shell; the Tasks page exposes authorized queue filters and version-guarded inline editing through OnboardingService.
+  - name: build_page
+    inputs:
+      factory_key: {type: str, required: true}
+    returns: {type: QWidget}
+    exceptions: [ValueError]
+    side_effects: Builds one requested Onboarding page through its existing page factory after the shared host's lazy provider is activated.
   - name: request_navigation_away
     inputs: {}
     returns: {type: bool}

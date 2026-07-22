@@ -2,8 +2,8 @@ module:
   name: cross_database_change_stage
   language: python
   path: src/cross_database_change_stage.py
-  version: 1.2.0
-  description: Domain-neutral immutable JSON event outboxes, causal predecessor chains, and delivery receipts for lock-isolated SQLite replicas.
+  version: 1.3.0
+  description: Domain-neutral immutable JSON event outboxes, causal predecessor chains, delivery receipts, and destination-proof reconciliation for lock-isolated SQLite replicas.
 functions:
 - name: _utc_now_iso
   locked: false
@@ -56,6 +56,15 @@ classes:
     returns: {type: 'list[CrossDatabaseChangeEvent]'}
     exceptions: [ValueError, OSError]
     side_effects: Validates and reads domain event and receipt artifacts, ignores divergent conflict copies while retaining canonical events, and returns causally ordered unacknowledged events.
+  - name: reconciliation_for
+    inputs:
+      replica: {type: str, required: true}
+      operations: {type: 'set[str]', required: true}
+      destination_proofs: {type: 'set[str]', required: true}
+      school: {type: str, required: false, default: ''}
+    returns: {type: 'list[CrossDatabaseChangeEvent]'}
+    exceptions: [ValueError, OSError]
+    side_effects: Validates and reads domain event and receipt artifacts, then returns acknowledged peer events in requested operations whose target SQLite replica lacks a durable destination proof.
   - name: acknowledge
     inputs:
       event_id: {type: str, required: true}

@@ -2,7 +2,7 @@ module:
   name: staffing_dashboard_host
   language: python
   path: src/staffing_dashboard_host.py
-  version: 1.8.0
+  version: 1.9.0
   description: Shared role-aware Staffing v2 host used by embedded admin/director mode and standalone director launchers; owns Staffing and lazy Onboarding workspace composition, school-scoped candidate-report authorization, curated notification test payload enrichment, report opening, and privacy-safe failures.
 functions: []
 classes:
@@ -41,7 +41,33 @@ classes:
       app_version: {type: str, required: false, default: ''}
     returns: {type: None}
     exceptions: [ValueError]
-    side_effects: Builds the shared dashboard; enabled Onboarding wires portable encrypted sync, shared email/directory reminders, and the Admin-only automatic scheduler.
+    side_effects: Builds the shared dashboard and registers enabled Onboarding navigation providers without opening its encrypted store, vault, sync coordinator, workspace, or scheduler until first navigation or timed warmup.
+  - name: _register_lazy_onboarding_pages
+    inputs: {}
+    returns: {type: None}
+    exceptions: [ValueError, TypeError]
+    side_effects: Registers role-authorized Onboarding navigation with one-time providers and a shared leave guard without constructing Onboarding services or widgets.
+  - name: _before_leaving_onboarding
+    inputs: {}
+    returns: {type: bool}
+    exceptions: []
+    side_effects: Returns true before Onboarding initialization or delegates to its Save/Discard/Stay navigation guard afterward.
+  - name: _onboarding_page_widget
+    inputs:
+      factory_key: {type: str, required: true}
+    returns: {type: QWidget}
+    exceptions: [ValueError, VaultIntegrityError, OSError]
+    side_effects: Action-initializes the shared Onboarding workspace and builds the requested page for the dashboard's one-time provider cache.
+  - name: ensure_onboarding_workspace
+    inputs: {}
+    returns: {type: 'OnboardingDashboardV2Workspace | None'}
+    exceptions: [ValueError, VaultIntegrityError, OSError]
+    side_effects: Once per enabled host, migrates portable artifacts, opens the encrypted store and vault, replays sync, constructs the workspace and Admin scheduler, and starts periodic sync; returns the cached workspace thereafter.
+  - name: warm_onboarding
+    inputs: {}
+    returns: {type: bool}
+    exceptions: []
+    side_effects: Performs best-effort timed Onboarding core initialization while suppressing storage, validation, and SQLite failures so action-triggered initialization can retry with visible feedback.
   - name: request_onboarding_close
     inputs: {}
     returns: {type: bool}

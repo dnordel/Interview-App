@@ -2,7 +2,7 @@ module:
   name: setup_and_run
   language: powershell
   path: setup_and_run.ps1
-  version: 2.0.3
+  version: 2.1.0
   description: Windows launcher bootstrap that checks prerequisites, installs Python
     3.11 when needed, provisions a per-user virtual environment that can reuse system
     site packages under LOCALAPPDATA instead of the repository folder, installs
@@ -10,7 +10,7 @@ module:
     PySide as the selected UI mode, starts the
     PySide interview app through the runtime wrapper, and can launch the full
     PySide app in director staffing-only mode filtered to one school while reusing
-    the same setup path. The root admin VBS launcher stays minimal for antivirus
+    the same setup path. Repeat launches use a validated fingerprint/path/venv fast path that skips unchanged setup and hardware probes. The root admin VBS launcher stays minimal for antivirus
     compatibility and invokes this setup path in PySide mode with its console window
     hidden; setup creates or repairs its desktop shortcut with the bundled Staffing icon.
 functions:
@@ -353,6 +353,35 @@ functions:
   exceptions:
   - Exception
   side_effects: reads requirements.txt metadata and contents
+- name: Get-FastLaunchContext
+  description: Return a daily-launch context only when the managed venv, app and wrapper paths, required module availability, cached GPU vendor, and applicable requirement fingerprints all validate; otherwise request full setup by returning null.
+  locked: false
+  inputs:
+    Cfg:
+      type: pscustomobject
+      required: true
+  returns:
+    type: pscustomobject | null
+  exceptions: []
+  side_effects: Reads trusted local paths and requirement files, runs one combined dependency availability probe, and logs validation fallback failures without launching anything.
+- name: Add-CudaRuntimePaths
+  description: Add installed managed-venv NVIDIA CUDA runtime directories to PATH only for a cached NVIDIA profile.
+  locked: false
+  inputs:
+    VenvPy: {type: string, required: true}
+    GpuVendor: {type: string, required: true}
+  returns: {type: void}
+  exceptions: []
+  side_effects: May prepend validated existing managed-venv CUDA directories to process PATH and write launcher diagnostics.
+- name: Start-InterviewApplication
+  description: Launch the selected app through runtime_wrapper with shared director/debug argument forwarding for both validated fast launch and full setup paths.
+  locked: false
+  inputs:
+    VenvPy: {type: string, required: true}
+    AppPath: {type: string, required: true}
+  returns: {type: System.Diagnostics.Process}
+  exceptions: [Exception]
+  side_effects: Starts the Python GUI process, temporarily sets debug environment state when requested, and writes launcher diagnostics.
 - name: Ensure-VenvAndDeps
   description: Create or repair the per-user virtual environment under LOCALAPPDATA
     with system site packages enabled, fingerprint requirements files for setup

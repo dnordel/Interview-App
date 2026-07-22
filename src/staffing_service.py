@@ -15,6 +15,7 @@ from staffing_models import (
     DIRECTOR_REFERRAL_OUTCOMES,
     PERMIT_STATUSES,
     TEACHER_OFFER_POSITION_IDS,
+    director_interview_position_options,
     StaffingAssignment,
     StaffingClassroom,
     StaffingDirectorCandidate,
@@ -782,19 +783,27 @@ class StaffingService:
         shift_end = ""
         classroom = ""
         clean_offer_position_id = ""
+        with self.store.connect() as conn:
+            referral = self.store.director_candidate_context(conn, int(referral_id))
         if clean_decision == "hire":
             shift_start = _valid_shift_time(proposed_shift_start, "Shift start")
             shift_end = _valid_shift_time(proposed_shift_end, "Shift end")
-            classroom = str(proposed_classroom or "").strip()
-            if not classroom:
-                raise ValueError("Proposed classroom is required for hire decisions.")
             clean_offer_position_id = str(offer_position_id or "").strip()
             if not clean_offer_position_id:
                 raise ValueError("Offer position is required for hire decisions.")
-            if clean_offer_position_id not in TEACHER_OFFER_POSITION_IDS:
-                raise ValueError("Offer position must be Lead Teacher, Teacher, or Teacher/Floater.")
-        with self.store.connect() as conn:
-            referral = self.store.director_candidate_context(conn, int(referral_id))
+            allowed_position_ids = {
+                position_id
+                for position_id, _label in director_interview_position_options(
+                    self.store.list_assignments(),
+                    referral.school,
+                )
+            }
+            if clean_offer_position_id not in allowed_position_ids:
+                raise ValueError("Proposed position is not available for this school.")
+            if clean_offer_position_id in TEACHER_OFFER_POSITION_IDS:
+                classroom = str(proposed_classroom or "").strip()
+                if not classroom:
+                    raise ValueError("Proposed classroom is required for teacher hire decisions.")
         email = str(candidate_email or referral.candidate_email or "").strip()
         phone = str(candidate_phone or referral.candidate_phone or "").strip()
         if clean_decision == "hire":
@@ -1705,10 +1714,37 @@ class StaffingService:
         if self.change_stage is None or self._replaying_staged_changes:
             return 0
         events = self.change_stage.pending_for(replica=self.replica, school=self.school_scope)
+        proof_ids = self.store.list_change_delivery_proof_ids(
+            operation="record_director_interview"
+        )
+        repair_events = self.change_stage.reconciliation_for(
+            replica=self.replica,
+            operations={"record_director_interview"},
+            destination_proofs=proof_ids,
+            school=self.school_scope,
+        )
+        events = sorted(
+            {event.id: event for event in [*repair_events, *events]}.values(),
+            key=lambda event: (event.created_at, event.id),
+        )
         applied = 0
         self._replaying_staged_changes = True
         try:
             for event in events:
+                destination_verified = False
+                if event.operation == "record_director_interview":
+                    try:
+                        destination_verified = self.store.verify_and_record_director_interview_delivery(
+                            event_id=event.id,
+                            payload=event.payload,
+                            verified_at=self.clock(),
+                        )
+                    except StaffingEditLock:
+                        break
+                if destination_verified:
+                    self.change_stage.acknowledge(event.id, replica=self.replica)
+                    applied += 1
+                    continue
                 conflict = self._conflict_for_event(event)
                 if conflict is not None:
                     if self.conflict_resolver is None:
@@ -1723,6 +1759,17 @@ class StaffingService:
                     break
                 except (TypeError, ValueError, KeyError):
                     break
+                if event.operation == "record_director_interview":
+                    try:
+                        destination_verified = self.store.verify_and_record_director_interview_delivery(
+                            event_id=event.id,
+                            payload=event.payload,
+                            verified_at=self.clock(),
+                        )
+                    except StaffingEditLock:
+                        break
+                    if not destination_verified:
+                        break
                 self.change_stage.acknowledge(event.id, replica=self.replica)
                 applied += 1
         finally:

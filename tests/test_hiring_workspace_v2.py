@@ -575,6 +575,142 @@ def test_existing_candidate_offer_prefers_visible_report_qualification(tmp_path:
     app.processEvents()
 
 
+@pytest.mark.pyside_gui
+def test_generate_offer_for_existing_candidate_preserves_review_facts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import sqlite3
+
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6 import QtCore, QtWidgets
+    from candidate_report import CandidateReportRepository
+    from data_store import SchoolOfferSettingsStore
+    import hiring_workspace_v2
+    from hiring_workspace_v2 import HiringWorkspaceV2Page
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    template = tmp_path / "full-time-offer.docx"
+    template.write_bytes(b"template")
+    settings_path = tmp_path / "school-offer-settings.json"
+    SchoolOfferSettingsStore(settings_path).save(
+        {
+            "Palmdale": {
+                "full_time_template": str(template),
+                "part_time_template": str(tmp_path / "part-time-offer.docx"),
+                "offer_output_dir": str(tmp_path / "offers"),
+            }
+        }
+    )
+    monkeypatch.setattr(hiring_workspace_v2, "SCHOOL_OFFER_SETTINGS_PATH", settings_path)
+    monkeypatch.setattr(hiring_workspace_v2, "DEFAULT_BASE_DIR", tmp_path)
+
+    history_path = tmp_path / "existing-candidate-review.sqlite3"
+    service = HiringWorkflowService(HiringPipelineStore(history_path))
+    prior = service.start_application(
+        legal_name="Maya Patel",
+        email="maya@example.com",
+        phone="",
+        school="Palmdale",
+        position="Teacher",
+        actor="Admin",
+    )
+    service.finalize_initial_interview(
+        prior.application_id,
+        history_id="hist-existing-review",
+        score=88,
+        outcome="Hire",
+        actor="Admin",
+    )
+    service.record_director_decision(prior.application_id, decision="Hire", actor="Director")
+    qualification = {
+        "has_degree": True,
+        "degree_type": "BA",
+        "degree_in_ece": True,
+        "ece_units_completed": None,
+        "infant_toddler_class_completed": True,
+        "total_units_completed": None,
+        "years_experience": 6,
+    }
+    repository = CandidateReportRepository(history_path)
+    repository.initialize()
+    with sqlite3.connect(repository.db_path) as conn:
+        CandidateReportRepository.insert_initial_on_connection(
+            conn,
+            "hist-existing-review",
+            {
+                "candidate": {"qualification": qualification},
+                "scoring": {"percent_of_max": 88},
+                "questions": [
+                    {"question_id": "Pay", "interviewer_notes": "$24.50 per hour"}
+                ],
+            },
+            actor="Admin",
+        )
+        conn.commit()
+    service.create_offer_draft(
+        prior.application_id,
+        terms={
+            "qualification_snapshot": qualification,
+            "director_rating": "4.5",
+            "requested_pay_raw": "$24.50 per hour",
+            "proposed_classroom": "Chef",
+        },
+        actor="Admin",
+    )
+    page = HiringWorkspaceV2Page(
+        QtCore=QtCore,
+        QtWidgets=QtWidgets,
+        service=service,
+        school_options=["Palmdale"],
+        actions={
+            "candidate_offer_prefill": lambda _application: {
+                "director_rating": "4.75",
+                "proposed_classroom": "Harmony 1",
+                "start_time": "07:30 AM",
+                "end_time": "04:30 PM",
+                "position_id": "teacher_floater",
+            }
+        },
+    )
+
+    def complete_dialog(dialog):
+        picker = dialog.findChild(QtWidgets.QComboBox, "HiringV2OfferCandidatePicker")
+        index = next(
+            index
+            for index in range(picker.count())
+            if picker.itemData(index) == prior.candidate_id
+        )
+        picker.setCurrentIndex(index)
+        submit = next(
+            button
+            for button in dialog.findChildren(QtWidgets.QPushButton)
+            if button.text() == "Submit for approval"
+        )
+        submit.click()
+        return dialog.result()
+
+    monkeypatch.setattr(QtWidgets.QDialog, "exec", complete_dialog)
+    values = page._external_offer_editor_values()
+    assert values is not None
+    assert values["start_time"] == "07:30 AM"
+    assert values["end_time"] == "04:30 PM"
+    assert values["position_id"] == "teacher_floater"
+    submitted = page.perform_action(
+        "create_external_offer",
+        prior,
+        values=values,
+    )
+
+    assert submitted.terms["initial_interview_score"] == 88
+    assert submitted.terms["director_rating"] == "4.75"
+    assert submitted.terms["requested_pay_raw"] == "$24.50 per hour"
+    assert submitted.terms["proposed_classroom"] == "Harmony 1"
+    assert submitted.terms["position_id"] == "teacher_floater"
+    assert submitted.terms["position"] == "Teacher/Floater"
+    page.widget.close()
+    app.processEvents()
+
+
 def test_pending_offer_row_has_direct_review_offer_button_beside_menu(tmp_path: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     from PySide6 import QtCore, QtTest, QtWidgets
@@ -920,6 +1056,49 @@ def test_offer_approval_dialog_embeds_pdf_and_gates_approval(tmp_path: Path) -> 
     assert approval.hourly_pay() == "25.50"
     approval.change_pay_button.click()
     assert approval.change_pay_requested() is True
+    approval.close()
+
+
+def test_offer_approval_dialog_requests_degree_in_ece_correction(tmp_path: Path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6 import QtCore, QtGui, QtPdf, QtPdfWidgets, QtWidgets
+    from hiring_workspace_v2 import HiringOfferApprovalDialog
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    pdf_path = tmp_path / "approved-offer.pdf"
+    writer = QtGui.QPdfWriter(str(pdf_path))
+    painter = QtGui.QPainter(writer)
+    painter.drawText(100, 100, "Exact approved offer")
+    painter.end()
+
+    approval = HiringOfferApprovalDialog(
+        QtCore=QtCore,
+        QtPdf=QtPdf,
+        QtPdfWidgets=QtPdfWidgets,
+        QtWidgets=QtWidgets,
+        parent=None,
+        title="Approve offer v1",
+        summary="Candidate and terms",
+        rendered_email="Rendered candidate email",
+        pdf_path=pdf_path,
+        hourly_pay="19.00",
+        degree_in_ece=False,
+        approve_label="Approve",
+    )
+    approval.dialog.show()
+    for _ in range(10):
+        app.processEvents()
+        if approval.pdf_document.pageCount() > 0:
+            break
+
+    approval.approver_input.setText("Executive Approver")
+    approval.degree_in_ece_input.setChecked(True)
+    app.processEvents()
+
+    assert approval.degree_in_ece() is True
+    assert approval.correct_qualification_button.isEnabled() is True
+    approval.correct_qualification_button.click()
+    assert approval.qualification_change_requested() is True
     approval.close()
 
 

@@ -150,10 +150,11 @@ def test_primary_admin_vbs_stays_thin_and_setup_creates_portable_shortcut() -> N
 
 def test_setup_and_run_launches_runtime_wrapper_with_venv_python() -> None:
     script_text = SETUP_SCRIPT.read_text(encoding="utf-8")
+    launch_body = _script_functions()["Start-InterviewApplication"][1]
 
     assert 'Join-Path (Join-Path $AppDir "src") "runtime_wrapper.py"' in script_text
-    assert '$wrapperArgs = @("--target", $appFull, "--app-root", $AppDir)' in script_text
-    assert '-PythonExe $venvPy' in script_text
+    assert '$wrapperArgs = @("--target", $appFull, "--app-root", $AppDir)' in launch_body
+    assert '-PythonExe $VenvPy' in launch_body
 
 
 def test_setup_and_run_defaults_to_pyside_and_versions_ui_mode() -> None:
@@ -204,6 +205,22 @@ def test_setup_and_run_skips_dependency_installs_when_fingerprints_are_unchanged
     assert "$gpuDepsNeedInstall = $needRecreate -or ($cfg.Tools.GpuRequirementsFingerprint -ne $gpuRequirementsFingerprint)" in script_text
     assert "$openVinoDepsNeedInstall = $needRecreate -or ($cfg.Tools.OpenVinoRequirementsFingerprint -ne $openVinoRequirementsFingerprint)" in script_text
     assert "skip unchanged dependency installs on healthy cached environments" in descriptions
+
+
+def test_setup_and_run_uses_validated_fast_path_before_setup_ui() -> None:
+    script_text = SETUP_SCRIPT.read_text(encoding="utf-8")
+    functions = _script_functions()
+
+    assert "Get-FastLaunchContext" in functions
+    assert "Start-InterviewApplication" in functions
+    fast_body = functions["Get-FastLaunchContext"][1]
+    assert "Get-RequirementsFingerprint" in fast_body
+    assert "RequirementsFingerprint" in fast_body
+    assert "Test-VenvUsesSystemSitePackages" in fast_body
+    assert "runtime_wrapper.py" in fast_body
+    assert script_text.index("Get-FastLaunchContext -Cfg") < script_text.index(
+        '$form = New-Object System.Windows.Forms.Form'
+    )
 
 
 def test_setup_and_run_keeps_nvidia_packages_out_of_base_requirements() -> None:
@@ -279,14 +296,10 @@ def test_setup_and_run_configures_whisper_cpp_for_amd_when_present() -> None:
 
 
 def test_setup_and_run_adds_cuda_paths_only_with_nvidia_gpu() -> None:
-    script_text = SETUP_SCRIPT.read_text(encoding="utf-8")
+    cuda_block = _script_functions()["Add-CudaRuntimePaths"][1]
 
-    cuda_comment_index = script_text.index("# Expose CUDA runtime DLLs for faster-whisper")
-    vbcable_index = script_text.index("# VB-CABLE handling based on detection + user answer")
-    cuda_block = script_text[cuda_comment_index:vbcable_index]
-
-    assert "if (Test-NvidiaGPU) {" in cuda_block
-    assert "Skipping CUDA PATH setup because no NVIDIA GPU was detected." in cuda_block
+    assert '$GpuVendor -ne "nvidia"' in cuda_block
+    assert '"Lib\\site-packages\\nvidia"' in cuda_block
 
 
 def test_setup_and_run_fails_when_pyside_import_fails() -> None:

@@ -1,4 +1,4 @@
-last_updated: '2026-07-21'
+last_updated: '2026-07-22'
 sections:
 - name: interview_runtime
   tests:
@@ -12,7 +12,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-21T20:21:42.962729+00:00'
+generated_at_utc: '2026-07-22T17:27:15.030260+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -210,6 +210,15 @@ entries:
     - return_type
 - contract: contracts/app_branding.contract.yaml
   symbol: app_branding.apply_staffing_app_icon
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/app_branding.contract.yaml
+  symbol: app_branding.set_windows_app_user_model_id
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -525,6 +534,15 @@ entries:
     - return_type
 - contract: contracts/cross_database_change_stage.contract.yaml
   symbol: cross_database_change_stage.CrossDatabaseChangeStage.publish
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/cross_database_change_stage.contract.yaml
+  symbol: cross_database_change_stage.CrossDatabaseChangeStage.reconciliation_for
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -1559,6 +1577,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/hiring_pipeline.contract.yaml
+  symbol: hiring_pipeline.HiringPipelineStore.materialize_offer_template
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/hiring_pipeline.contract.yaml
   symbol: hiring_pipeline.HiringPipelineStore.profile_count
   kind: method
   tests:
@@ -1614,6 +1641,15 @@ entries:
     - return_type
 - contract: contracts/hiring_pipeline.contract.yaml
   symbol: hiring_pipeline.HiringPipelineStore.set_offer_status
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/hiring_pipeline.contract.yaml
+  symbol: hiring_pipeline.HiringPipelineStore.snapshot_offer_template
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -1892,6 +1928,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/hiring_pipeline.contract.yaml
+  symbol: hiring_pipeline.HiringWorkflowService.revise_pending_offer_qualification
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/hiring_pipeline.contract.yaml
   symbol: hiring_pipeline.HiringWorkflowService.search_candidate_profiles
   kind: method
   tests:
@@ -2072,6 +2117,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/hiring_workspace_v2.contract.yaml
+  symbol: hiring_workspace_v2.HiringOfferApprovalDialog.degree_in_ece
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/hiring_workspace_v2.contract.yaml
   symbol: hiring_workspace_v2.HiringOfferApprovalDialog.exec
   kind: method
   tests:
@@ -2082,6 +2136,15 @@ entries:
     - return_type
 - contract: contracts/hiring_workspace_v2.contract.yaml
   symbol: hiring_workspace_v2.HiringOfferApprovalDialog.hourly_pay
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/hiring_workspace_v2.contract.yaml
+  symbol: hiring_workspace_v2.HiringOfferApprovalDialog.qualification_change_requested
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -7462,6 +7525,16 @@ entries:
     - return_type
     - security_validation
 - contract: contracts/onboarding_workspace_v2.contract.yaml
+  symbol: onboarding_workspace_v2.OnboardingDashboardV2Workspace.build_page
+  kind: method
+  tests:
+  - path: tests/test_onboarding_contract_interfaces.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+    - security_validation
+- contract: contracts/onboarding_workspace_v2.contract.yaml
   symbol: onboarding_workspace_v2.OnboardingDashboardV2Workspace.mark_dirty
   kind: method
   tests:
@@ -8504,6 +8577,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._build_hiring_v2_pages
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._build_staffing_settings_v2_page
   kind: method
   tests:
@@ -8567,6 +8649,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._director_interview_offer_prefill
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._director_offer_terms
   kind: method
   tests:
@@ -8577,6 +8668,15 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._emit_pyside_rating_notification
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._ensure_hiring_workspace_for_action
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -8640,6 +8740,15 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._hiring_candidates_workspace
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._hiring_v2_page_widget
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -8766,6 +8875,15 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._offer_qualification
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._open_hiring_interview_from_navigation
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -8981,6 +9099,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._register_hiring_v2_pages
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._render_live_footer
   kind: method
   tests:
@@ -9135,6 +9262,15 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._schedule_close_pyside_finalize_progress
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._schedule_onboarding_warmup
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -9405,6 +9541,15 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._update_review_rating
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._warm_onboarding_core
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -11425,6 +11570,15 @@ entries:
     - return_type
     - security_controls
 - contract: contracts/setup_and_run.contract.yaml
+  symbol: setup_and_run.Add-CudaRuntimePaths
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_and_run.contract.yaml
   symbol: setup_and_run.Ensure-ConfigShape
   kind: function
   tests:
@@ -11543,6 +11697,15 @@ entries:
     - return_type
 - contract: contracts/setup_and_run.contract.yaml
   symbol: setup_and_run.Get-ConfigPath
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_and_run.contract.yaml
+  symbol: setup_and_run.Get-FastLaunchContext
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -11678,6 +11841,15 @@ entries:
     - return_type
 - contract: contracts/setup_and_run.contract.yaml
   symbol: setup_and_run.Show-VBCablePrompt
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/setup_and_run.contract.yaml
+  symbol: setup_and_run.Start-InterviewApplication
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -11884,6 +12056,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/staffing_change_stage.contract.yaml
+  symbol: staffing_change_stage.StaffingChangeStage.reconciliation_for
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_change_stage.contract.yaml
   symbol: staffing_change_stage._required_text
   kind: function
   tests:
@@ -11929,6 +12110,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/staffing_dashboard_host.contract.yaml
+  symbol: staffing_dashboard_host.StaffingDashboardHost._before_leaving_onboarding
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_host.contract.yaml
   symbol: staffing_dashboard_host.StaffingDashboardHost._default_onboarding_store_path
   kind: method
   tests:
@@ -11965,6 +12155,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/staffing_dashboard_host.contract.yaml
+  symbol: staffing_dashboard_host.StaffingDashboardHost._onboarding_page_widget
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_host.contract.yaml
   symbol: staffing_dashboard_host.StaffingDashboardHost._open_legacy_report
   kind: method
   tests:
@@ -11975,6 +12174,15 @@ entries:
     - return_type
 - contract: contracts/staffing_dashboard_host.contract.yaml
   symbol: staffing_dashboard_host.StaffingDashboardHost._prompt_onboarding_secret
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_host.contract.yaml
+  symbol: staffing_dashboard_host.StaffingDashboardHost._register_lazy_onboarding_pages
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -12002,6 +12210,15 @@ entries:
     - return_type
 - contract: contracts/staffing_dashboard_host.contract.yaml
   symbol: staffing_dashboard_host.StaffingDashboardHost.cleanup_onboarding
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_host.contract.yaml
+  symbol: staffing_dashboard_host.StaffingDashboardHost.ensure_onboarding_workspace
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -12038,6 +12255,15 @@ entries:
     - return_type
 - contract: contracts/staffing_dashboard_host.contract.yaml
   symbol: staffing_dashboard_host.StaffingDashboardHost.resume_onboarding
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_dashboard_host.contract.yaml
+  symbol: staffing_dashboard_host.StaffingDashboardHost.warm_onboarding
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -14151,6 +14377,24 @@ entries:
     - behavior
     - parameter_validation
     - return_type
+- contract: contracts/staffing_models.contract.yaml
+  symbol: staffing_models.director_interview_classroom_options
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_models.contract.yaml
+  symbol: staffing_models.director_interview_position_options
+  kind: function
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
 - contract: contracts/staffing_referral_queue.contract.yaml
   symbol: staffing_referral_queue.StaffingReferralQueueStore._ensure_legacy_imported
   kind: method
@@ -14809,6 +15053,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/staffing_store.contract.yaml
+  symbol: staffing_store.StaffingStore.list_change_delivery_proof_ids
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_store.contract.yaml
   symbol: staffing_store.StaffingStore.list_classrooms
   kind: method
   tests:
@@ -14972,6 +15225,15 @@ entries:
     - return_type
 - contract: contracts/staffing_store.contract.yaml
   symbol: staffing_store.StaffingStore.upsert_director_candidate_referral
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_store.contract.yaml
+  symbol: staffing_store.StaffingStore.verify_and_record_director_interview_delivery
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py

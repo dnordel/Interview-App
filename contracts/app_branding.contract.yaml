@@ -2,9 +2,17 @@ module:
   name: app_branding
   language: python
   path: src/app_branding.py
-  version: 1.0.0
+  version: 1.1.0
   description: Shared repo-owned Staffing app icon and stable Windows taskbar identity for admin and director PySide entrypoints.
 functions:
+- name: set_windows_app_user_model_id
+  description: Set the stable Windows process AppUserModelID during initial startup before Qt creates native windows so the taskbar uses the Staffing identity; return false on non-Windows or unsupported systems.
+  locked: false
+  inputs: {}
+  returns:
+    type: bool
+  exceptions: []
+  side_effects: May set the current Windows process AppUserModelID.
 - name: apply_staffing_app_icon
   description: Apply the bundled Staffing icon to a Qt application and optional window, plus a stable Windows AppUserModelID when supported.
   locked: false

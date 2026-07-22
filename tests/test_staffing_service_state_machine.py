@@ -726,6 +726,41 @@ def test_director_interview_completion_is_school_scoped_and_does_not_fill_positi
     assert service.list_completed_director_interviews(school="Hawthorne")[0].candidate_name == "Jordan Lee"
 
 
+def test_director_interview_records_school_non_teacher_position_without_classroom(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    store.seed_assignment(
+        school="Palmdale",
+        classroom="Chef",
+        position_name="Chef",
+        position_type="Support",
+    )
+    service = StaffingService(store)
+    referral = service.upsert_director_candidate_referral(
+        history_id="hist-chef",
+        candidate_name="Jordan Lee",
+        school="Palmdale",
+        interviewer_outcome="hire",
+        candidate_email="candidate@example.org",
+    )
+
+    result = service.record_director_interview(
+        referral.id,
+        director_name="Avery Director",
+        completed_date="2026-07-21",
+        rating=9,
+        decision="hire",
+        decision_notes="Strong fit for kitchen role.",
+        proposed_shift_start="7:00 AM",
+        proposed_shift_end="3:30 PM",
+        proposed_classroom="Chef",
+        offer_position_id="chef",
+    )
+
+    assert result.offer_position_id == "chef"
+    assert result.proposed_classroom == ""
+
+
 def test_director_interview_validation_requires_notes_and_hire_shift_details(tmp_path: Path) -> None:
     store = StaffingStore(tmp_path / "staffing.sqlite3")
     store.initialize()

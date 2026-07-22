@@ -6,7 +6,7 @@ layers:
 - infrastructure
 services:
   hiring_pipeline_service:
-    description: Canonical seven-stage candidate application pipeline, teacher qualification and versioned starting-pay calculation, audit timeline, Staffing v2 decision synchronization, numbered offers with pre-generated DOCX/PDF artifacts, increment-enforced Admin pay revisions, approval without candidate email, delayed email delivery, safely constrained offer-only deletion, negotiation, acceptance, and archive controls.
+    description: Canonical seven-stage candidate application pipeline, teacher qualification and versioned starting-pay calculation, audit timeline, Staffing v2 decision synchronization, numbered offers with pre-generated DOCX/PDF artifacts and version-bound SQL template snapshots, increment-enforced Admin pay revisions, approval without candidate email, delayed email delivery, safely constrained offer-only deletion, negotiation, acceptance, and archive controls.
     modules:
     - dashboard_v2_ui
     - hiring_pipeline
@@ -52,7 +52,7 @@ services:
     - notification_service
     - notification_templates
   staffing_dashboard_service:
-    description: Lock-isolated SQLite staffing assignment state machines synchronized through immutable per-user JSON event outboxes, predecessor chains that tolerate delayed/out-of-order Dropbox delivery, and per-database receipts with causal conflict prompts, plus the shared Staffing v2 shell, theme, cards, overlays, navigation, and dashboard surfaces including notification rule management and test-send UI.
+    description: Lock-isolated SQLite staffing assignment state machines synchronized through immutable per-user JSON event outboxes, predecessor chains that tolerate delayed/out-of-order Dropbox delivery, per-database receipts, and atomic destination proofs that self-repair missing/partial Director Interview deliveries, with causal conflict prompts, plus the shared Staffing v2 shell, theme, cards, overlays, navigation, and dashboard surfaces including notification rule management and test-send UI.
     modules:
     - dashboard_v2_ui
     - staffing_models
@@ -135,7 +135,7 @@ datastores:
     - staffing_dashboard_host
   staffing_change_event_files:
     type: file_system_json
-    description: Immutable UUID-named, predecessor-linked cross-database staffing events in separate per-user outbox directories plus immutable per-database delivery receipts, stored beside staffing_dashboard.sqlite3 and merged safely by Dropbox without shared DB locks or out-of-order applies.
+    description: Immutable UUID-named, predecessor-linked cross-database staffing events in separate per-user outbox directories plus immutable per-database delivery receipts, reconciled against atomic destination proofs inside each staffing SQLite database so acknowledged-but-missing Director Interview writes are self-repaired, stored beside staffing_dashboard.sqlite3 and merged safely by Dropbox without shared DB locks or out-of-order applies.
     used_by:
     - staffing_change_stage
     - staffing_service
@@ -143,7 +143,7 @@ datastores:
     - director_staffing_app
   interview_history_db:
     type: sqlite
-    description: Canonical finalized interview history lives in user_artifacts/interview_history.sqlite3; legacy JSON rows are imported when the database is empty.
+    description: Canonical finalized interview history, Hiring v2 state, and validated school-scoped/version-bound offer-template BLOB snapshots live in user_artifacts/interview_history.sqlite3; legacy JSON rows are imported when the database is empty.
     used_by:
     - data_store
     - pyside_interview_app

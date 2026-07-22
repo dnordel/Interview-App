@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any, Callable, Sequence
 
 from notification_service import NotificationService, NOTIFICATION_RULES_PATH
-from app_branding import apply_staffing_app_icon
+from app_branding import apply_staffing_app_icon, set_windows_app_user_model_id
 from staffing_referral_queue import StaffingReferralQueueStore
 from staffing_change_stage import StaffingChangeStage
 from staffing_dashboard_host import StaffingDashboardAccess, StaffingDashboardHost
@@ -363,13 +363,15 @@ def install_director_window_close_guard(
 
 
 def launch_director_staffing_app(*, director_school: str = "") -> int:
+    set_windows_app_user_model_id()
     from PySide6 import QtCore, QtGui, QtWidgets
 
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv)
+    apply_staffing_app_icon(QtGui, app)
     apply_staffing_v2_light_theme(QtWidgets, QtGui, app)
     window = QtWidgets.QMainWindow()
     window.setWindowTitle("Director Staffing Dashboard")
-    apply_staffing_app_icon(QtGui, app, window)
+    window.setWindowIcon(app.windowIcon())
     staffing_path = staffing_db_path_for_school(director_school)
     bootstrap_school_staffing_db_from_base(director_school, staffing_path)
     store = StaffingStore(staffing_path)

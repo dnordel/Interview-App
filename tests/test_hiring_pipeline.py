@@ -3,6 +3,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from docx import Document
 
 from data_store import InterviewHistoryStore
 from hiring_pipeline import (
@@ -15,6 +16,107 @@ from hiring_pipeline import (
 )
 from onboarding_service import OnboardingAccess, OnboardingService
 from onboarding_store import OnboardingStore
+
+
+def test_offer_template_snapshot_survives_missing_dropbox_source(tmp_path: Path) -> None:
+    store = HiringPipelineStore(tmp_path / "interview_history.sqlite3")
+    source = tmp_path / "Dropbox" / "offer-template.docx"
+    source.parent.mkdir()
+    Document().save(source)
+    expected = source.read_bytes()
+
+    template_id = store.snapshot_offer_template(
+        school="Palmdale",
+        template_kind="full_time",
+        source_path=source,
+    )
+    source.unlink()
+
+    materialized = store.materialize_offer_template(
+        school="Palmdale",
+        template_kind="full_time",
+        destination_dir=tmp_path / "template-cache",
+    )
+
+    assert template_id
+    assert materialized.parent == (tmp_path / "template-cache").resolve()
+    assert materialized.suffix == ".docx"
+    assert materialized.read_bytes() == expected
+
+
+def test_offer_version_uses_its_exact_template_snapshot_after_active_template_changes(
+    tmp_path: Path,
+) -> None:
+    store = HiringPipelineStore(tmp_path / "interview_history.sqlite3")
+    first = tmp_path / "first.docx"
+    first_doc = Document()
+    first_doc.add_paragraph("first template")
+    first_doc.save(first)
+    second = tmp_path / "second.docx"
+    second_doc = Document()
+    second_doc.add_paragraph("second template")
+    second_doc.save(second)
+
+    store.snapshot_offer_template(
+        school="Palmdale",
+        template_kind="full_time",
+        source_path=first,
+        version_id="offer-v1",
+    )
+    store.snapshot_offer_template(
+        school="Palmdale",
+        template_kind="full_time",
+        source_path=second,
+        version_id="offer-v2",
+    )
+
+    exact = store.materialize_offer_template(
+        school="Palmdale",
+        template_kind="full_time",
+        destination_dir=tmp_path / "exact-cache",
+        version_id="offer-v1",
+    )
+    active = store.materialize_offer_template(
+        school="Palmdale",
+        template_kind="full_time",
+        destination_dir=tmp_path / "active-cache",
+    )
+
+    assert exact.read_bytes() == first.read_bytes()
+    assert active.read_bytes() == second.read_bytes()
+
+
+def test_offer_template_version_binding_cannot_cross_school_scope(tmp_path: Path) -> None:
+    store = HiringPipelineStore(tmp_path / "interview_history.sqlite3")
+    source = tmp_path / "template.docx"
+    Document().save(source)
+    store.snapshot_offer_template(
+        school="Palmdale",
+        template_kind="full_time",
+        source_path=source,
+        version_id="offer-v1",
+    )
+
+    with pytest.raises(ValueError, match="No stored full-time offer template"):
+        store.materialize_offer_template(
+            school="Hawthorne",
+            template_kind="full_time",
+            destination_dir=tmp_path / "cache",
+            version_id="offer-v1",
+        )
+
+
+def test_offer_template_snapshot_rejects_non_word_content(tmp_path: Path) -> None:
+    store = HiringPipelineStore(tmp_path / "interview_history.sqlite3")
+    source = tmp_path / "fake.docx"
+    source.write_bytes(b"not a Word package")
+
+    with pytest.raises(ValueError, match="not a valid Word document"):
+        store.snapshot_offer_template(
+            school="Palmdale",
+            template_kind="full_time",
+            source_path=source,
+        )
 
 
 def test_offer_approval_artifact_stage_promotes_previewed_bytes_unchanged(tmp_path: Path) -> None:
@@ -340,6 +442,50 @@ def test_external_offer_calculates_pay_from_qualification_snapshot(tmp_path: Pat
     assert created.terms["position"] == "Teacher"
     assert created.terms["hourly_pay"] == "19.00"
     assert created.terms["pay_calculation"]["career_lattice_level"] == 5
+
+
+def test_correcting_pending_offer_qualification_recalculates_numbered_version(
+    tmp_path: Path,
+) -> None:
+    service = HiringWorkflowService(HiringPipelineStore(tmp_path / "history.sqlite3"))
+    original = service.create_calculated_external_offer(
+        legal_name="Allison Example",
+        email="allison@example.org",
+        phone="",
+        school="Palmdale",
+        position_id="teacher",
+        qualification={
+            "has_degree": True,
+            "degree_type": "AA",
+            "degree_in_ece": False,
+            "ece_units_completed": "18",
+            "total_units_completed": None,
+            "years_experience": 4,
+        },
+        terms={"weekly_hours": "40"},
+        actor="Admin",
+    )
+
+    corrected = service.revise_pending_offer_qualification(
+        original.application_id,
+        original.version_id,
+        qualification={
+            **original.terms["qualification_snapshot"],
+            "degree_in_ece": True,
+        },
+        actor="Executive",
+    )
+
+    versions = service.store.list_offer_versions(original.application_id)
+    assert [(version.version_number, version.status) for version in versions] == [
+        (1, "superseded"),
+        (2, "pending_approval"),
+    ]
+    assert corrected.terms["qualification_snapshot"]["degree_in_ece"] is True
+    assert corrected.terms["pay_calculation"]["career_lattice_level"] == 6
+    assert corrected.terms["pay_calculation"]["base_hourly_rate"] == "19.00"
+    assert corrected.terms["pay_calculation"]["experience_adjustment"] == "1.50"
+    assert corrected.terms["hourly_pay"] == "20.50"
 
 
 def test_approved_offer_advances_only_after_pdf_delivery(tmp_path: Path) -> None:

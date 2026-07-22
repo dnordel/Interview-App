@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 9.3.1
+  version: 9.6.1
   description: PySide6 operations shell and headless view-model builder for a mockup-driven
     New Interview setup/live flow using shared candidate and qualification capture, Candidates-owned pipeline/history, candidate reports,
     onboarding, staffing, notifications, and admin-only
@@ -276,7 +276,7 @@ functions:
   exceptions: []
   side_effects: none
 - name: launch_pyside_interview_app
-  description: Launch the PySide6 redesigned desktop shell using the supplied model or current repository configuration, optionally in director staffing-only mode, applying the shared Staffing app/taskbar icon and showing the first navigation page before secondary pages are built.
+  description: Launch the PySide6 redesigned desktop shell using the supplied model or current repository configuration, optionally in director staffing-only mode, applying the Windows taskbar identity and shared Staffing icon before constructing the main window, then showing the first navigation page before secondary pages are built.
   locked: false
   inputs:
     model:
@@ -295,8 +295,8 @@ functions:
     type: int
   exceptions:
   - PySide6UnavailableError
-  side_effects: Creates a QApplication, applies Staffing v2's forced light Qt theme
-    and shared repo-owned icon/Windows taskbar identity, opens the redesigned desktop
+  side_effects: Sets the Windows taskbar identity before Qt creates native windows, creates a QApplication, applies Staffing v2's forced light Qt theme
+    and shared repo-owned icon, opens the redesigned desktop
     window, and defers secondary page construction until navigation.
 - name: parse_args
   description: Parse PySide app CLI arguments including director staffing-only mode and optional director school filter.
@@ -737,8 +737,48 @@ classes:
     admin_studio:
       type: AdminStudio
   methods:
+  - name: _register_hiring_v2_pages
+    description: Register Hiring navigation immediately using shared one-time providers without constructing its service, history backfill, or Qt workspace.
+    locked: false
+    inputs:
+      dashboard: {type: StaffingDashboardV2Page, required: true}
+    returns: {type: None}
+    exceptions: [ValueError, TypeError]
+    side_effects: Adds Interviews, Candidates, and Offers lazy providers to the shared Staffing shell.
+  - name: _hiring_v2_page_widget
+    description: Build all shared Hiring workspace widgets on first Hiring navigation and return the requested cached widget thereafter.
+    locked: false
+    inputs:
+      dashboard: {type: StaffingDashboardV2Page, required: true}
+      page_id: {type: str, required: true}
+    returns: {type: QWidget}
+    exceptions: [KeyError]
+    side_effects: May initialize Hiring service, backfill history, retry pending notifications, synchronize decisions, and construct Hiring widgets once.
+  - name: _ensure_hiring_workspace_for_action
+    description: Ensure hidden Hiring widgets exist when a direct interview action reaches the controller before navigation has activated its provider.
+    locked: false
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: May action-initialize the shared Hiring workspace once; otherwise none.
+  - name: _open_hiring_interview_from_navigation
+    description: Activate the lazily initialized Interview guide and reset blank setup state after Interviews navigation.
+    locked: false
+    inputs:
+      dashboard: {type: StaffingDashboardV2Page, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Ensures Hiring workspace, unlocks full navigation, selects Interview Home, and may reset setup widgets.
+  - name: _build_hiring_v2_pages
+    description: Construct and cache shared Hiring service, interview router, candidate workspace, and offers widget after a Hiring provider is activated.
+    locked: false
+    inputs:
+      dashboard: {type: StaffingDashboardV2Page, required: true}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Backfills Hiring history, retries pending notifications, synchronizes decisions, and constructs Qt workspaces.
   - name: _generate_hiring_offer_artifacts
-    description: Generate one versioned offer DOCX and same-stem PDF together for persistence before approval review.
+    description: Generate one versioned offer DOCX and same-stem PDF together for persistence before approval review, using the offer-version position instead of the original interview track, snapshotting locally available templates into canonical SQLite and falling back to an exact version-bound or active school-scoped SQL copy when machine-specific Dropbox paths are unavailable.
     locked: false
     inputs:
       application: {type: HiringApplication, required: true}
@@ -746,9 +786,9 @@ classes:
       version: {type: OfferVersion, required: true}
     returns: {type: 'tuple[Path, Path]'}
     exceptions: [ValueError, OSError]
-    side_effects: Writes a versioned DOCX and PDF to the configured school offer folder; preserves the DOCX and fails closed if PDF conversion fails.
+    side_effects: May read current school offer Settings, store or materialize a validated SQL template snapshot, writes a versioned DOCX and PDF to the resolved school offer folder, preserves the DOCX, and fails closed if template validation or PDF conversion fails.
   - name: _review_hiring_offer_approval
-    description: Preview and approve a persisted pending Hiring v2 PDF without requiring candidate email, showing nine candidate and offer facts in a compact review grid, with typed approver identity and an optional Change Pay & Approve path that regenerates a numbered offer version before approval.
+    description: Preview and approve a persisted pending Hiring v2 PDF without requiring candidate email, showing nine candidate and offer facts in a compact review grid and using a preserved interview-score fallback for manually generated offers, with typed approver identity plus optional qualification-correction or Change Pay paths that regenerate a numbered offer version before approval.
     locked: false
     inputs:
       service:
@@ -760,7 +800,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Reuses or generates DOCX/PDF artifacts, renders notification preview, optionally regenerates a numbered offer at edited pay, persists approval, sends only when candidate email exists, and refreshes Hiring v2.
+    side_effects: Reuses or generates DOCX/PDF artifacts, renders notification preview, optionally recalculates a numbered offer after degree-in-ECE correction or regenerates one at edited pay, persists approval, sends only when candidate email exists, and refreshes Hiring v2.
   - name: _send_hiring_offer_with_email
     description: Prompt for missing candidate email and send one selected approved offer.
     locked: false
@@ -900,13 +940,13 @@ classes:
     exceptions: []
     side_effects: none
   - name: show
-    description: Expand the redesigned PySide6 main window to current usable screen geometry before showing it maximized, start source-version polling, then schedule startup notification draining and recording-interface preload after first paint for full interview launches while skipping those interview/audio warmups for director staffing-only launches.
+    description: Expand the redesigned PySide6 main window to current usable screen geometry before showing it maximized, start source-version polling, schedule Onboarding core warmup for every role, then stagger notification draining and recording-interface preload for full interview launches.
     locked: false
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Updates QMainWindow geometry to the current taskbar-safe work area, displays it maximized, starts five-second source-version polling, then schedules non-director notification draining and recording-interface preload while director staffing-only launches skip those interview warmups.
+    side_effects: Updates QMainWindow geometry, displays it maximized, starts source polling, schedules Onboarding core at 4.5 seconds, then for non-director mode schedules notification drain at 1.5 seconds and audio preload at 3 seconds.
   - name: _start_source_update_monitoring
     description: Capture the current source-version stamp and start one five-second poll timer.
     locked: false
@@ -929,13 +969,13 @@ classes:
     exceptions: []
     side_effects: May save/stop current app state, launch a replacement process, close the current window, or display Restart Failed while leaving it open.
   - name: _schedule_startup_notifications
-    description: Schedule the best-effort due-notification drain once through the Qt event loop after the main window has been shown so notification I/O does not block first paint.
+    description: Schedule the best-effort due-notification drain once 1.5 seconds after the main window has been shown so notification I/O does not compete with first paint.
     locked: false
     inputs: {}
     returns:
       type: None
     exceptions: []
-    side_effects: Uses QTimer.singleShot to call _run_due_notifications_safely once per window.
+    side_effects: Uses a 1.5-second QTimer.singleShot to call _run_due_notifications_safely once per window.
   - name: _schedule_recording_interface_preload
     description: Schedule a one-time post-startup warmup for recording runtime and
       Windows audio device probing so Begin Interview can reuse cached recorder
@@ -945,8 +985,21 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Uses QTimer.singleShot to call _preload_recording_interface_async
-      once per window.
+    side_effects: Uses a 3-second QTimer.singleShot to call _preload_recording_interface_async once per window.
+  - name: _schedule_onboarding_warmup
+    description: Schedule one best-effort Onboarding core warmup 4.5 seconds after first paint while allowing earlier user action to initialize the same cached workspace.
+    locked: false
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: Registers one delayed Qt callback per window.
+  - name: _warm_onboarding_core
+    description: Invoke host best-effort Onboarding warmup, falling back to direct once-only initialization for compatible hosts.
+    locked: false
+    inputs: {}
+    returns: {type: None}
+    exceptions: []
+    side_effects: May initialize encrypted Onboarding storage, sync, scheduler, and workspace controller without building any Onboarding page widget.
   - name: _recording_runtime_settings
     description: Return PySide recording runtime settings shared by startup preload
       and Begin Interview recording startup.
@@ -1495,7 +1548,7 @@ classes:
     inputs: {}
     returns: {type: QWidget}
     exceptions: []
-    side_effects: Lazily loads AdminStudio state, builds StaffingSettingsV2Page inside the shared Staffing v2 shell, and registers notification-service invalidation after email save.
+    side_effects: Action-loads Onboarding core when needed for settings, loads AdminStudio state, builds StaffingSettingsV2Page, and registers notification-service invalidation after email save.
   - name: _before_leaving_staffing_settings
     inputs: {}
     returns: {type: bool}
@@ -1515,7 +1568,7 @@ classes:
       director_name: {type: str, required: true}
     returns: {type: Any}
     exceptions: [ValueError, OSError, sqlite3.DatabaseError]
-    side_effects: Idempotently hands accepted offer into OnboardingService and invalidates inactive Onboarding pages for fresh display.
+    side_effects: Action-loads Onboarding core when needed, idempotently hands accepted offer into OnboardingService, and invalidates inactive Onboarding pages for fresh display.
   - name: _invalidate_notification_service
     inputs: {}
     returns: {type: None}
@@ -1906,6 +1959,14 @@ classes:
     returns: {type: None}
     exceptions: []
     side_effects: Reads staffing/history/settings stores; initializes/migrates existing staffing databases before director-decision reads; may update canonical candidate contact, hiring stage/attention, and create one pending-approval offer version.
+  - name: _director_interview_offer_prefill
+    description: Return director-selected offer position, rating, classroom, and editable shift defaults from the exact completed hire Director interview matching a past candidate application history ID and school.
+    locked: false
+    inputs:
+      application: {type: Any, required: true}
+    returns: {type: 'dict[str, str]'}
+    exceptions: []
+    side_effects: Reads school-specific then shared Staffing databases; corrupted or unavailable databases fail closed to no prefill.
   - name: _director_offer_terms
     description: Build normalized offer terms from candidate qualification, exact finalized teacher position and shift/classroom, calculated starting pay, and configured school template/output paths; preserve director rating, qualification, and requested-pay snapshots for approval review.
     locked: false

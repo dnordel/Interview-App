@@ -60,6 +60,7 @@ class HiringOfferApprovalDialog:
         pdf_path: Path,
         review_details: dict[str, str] | None = None,
         hourly_pay: str = "",
+        degree_in_ece: bool = False,
         approve_label: str = "Approve and send",
     ) -> None:
         self.QtPdf = QtPdf
@@ -112,6 +113,11 @@ class HiringOfferApprovalDialog:
         layout.addWidget(self.pay_input)
         self._initial_hourly_pay = self.hourly_pay()
         self._change_pay_requested = False
+        self.degree_in_ece_input = QtWidgets.QCheckBox("Degree is in ECE/CD")
+        self.degree_in_ece_input.setChecked(bool(degree_in_ece))
+        layout.addWidget(self.degree_in_ece_input)
+        self._initial_degree_in_ece = self.degree_in_ece()
+        self._qualification_change_requested = False
         layout.addWidget(QtWidgets.QLabel("Approver name"))
         self.approver_input = QtWidgets.QLineEdit()
         self.approver_input.setPlaceholderText("Required approver name")
@@ -119,20 +125,29 @@ class HiringOfferApprovalDialog:
         controls = QtWidgets.QHBoxLayout()
         controls.addStretch(1)
         cancel_button = QtWidgets.QPushButton("Cancel")
+        self.correct_qualification_button = QtWidgets.QPushButton(
+            "Correct Qualification & Approve"
+        )
+        self.correct_qualification_button.setEnabled(False)
         self.change_pay_button = QtWidgets.QPushButton("Change Pay & Approve")
         self.change_pay_button.setEnabled(False)
         self.approve_button = QtWidgets.QPushButton(approve_label)
         self.approve_button.setDefault(True)
         self.approve_button.setEnabled(False)
         controls.addWidget(cancel_button)
+        controls.addWidget(self.correct_qualification_button)
         controls.addWidget(self.change_pay_button)
         controls.addWidget(self.approve_button)
         layout.addLayout(controls)
         cancel_button.clicked.connect(self.dialog.reject)
         self.approve_button.clicked.connect(self.dialog.accept)
+        self.correct_qualification_button.clicked.connect(
+            self._accept_qualification_change
+        )
         self.change_pay_button.clicked.connect(self._accept_pay_change)
         self.approver_input.textChanged.connect(self._sync_readiness)
         self.pay_input.textChanged.connect(self._sync_readiness)
+        self.degree_in_ece_input.toggled.connect(self._sync_readiness)
         self.pdf_document.statusChanged.connect(self._sync_readiness)
         self.pdf_document.load(str(Path(pdf_path).resolve()))
         self._sync_readiness()
@@ -157,6 +172,9 @@ class HiringOfferApprovalDialog:
             and self._valid_hourly_pay()
             and self.hourly_pay() != self._initial_hourly_pay
         )
+        self.correct_qualification_button.setEnabled(
+            approver_ready and self.degree_in_ece() != self._initial_degree_in_ece
+        )
 
     def _valid_hourly_pay(self) -> bool:
         try:
@@ -170,6 +188,10 @@ class HiringOfferApprovalDialog:
         self._change_pay_requested = True
         self.dialog.accept()
 
+    def _accept_qualification_change(self) -> None:
+        self._qualification_change_requested = True
+        self.dialog.accept()
+
     def approver_name(self) -> str:
         return self.approver_input.text().strip()
 
@@ -178,6 +200,12 @@ class HiringOfferApprovalDialog:
 
     def change_pay_requested(self) -> bool:
         return self._change_pay_requested
+
+    def degree_in_ece(self) -> bool:
+        return self.degree_in_ece_input.isChecked()
+
+    def qualification_change_requested(self) -> bool:
+        return self._qualification_change_requested
 
     def exec(self) -> bool:
         return self.dialog.exec() == self.dialog.DialogCode.Accepted
@@ -1130,15 +1158,20 @@ class HiringWorkspaceV2Page:
         cancel.clicked.connect(dialog.reject)
 
         candidate_by_id = {candidate.candidate_id: candidate for candidate in candidates}
+        selected_candidate_prefill: dict[str, Any] = {}
 
         def load_candidate(index: int) -> None:
             candidate_id = str(candidate_picker.itemData(index) or "").strip()
+            selected_candidate_prefill.clear()
             if not candidate_id:
                 identity_editor.set_values({})
                 qualification_editor.set_values({})
+                start_time.setText("08:00 AM")
+                end_time.setText("05:00 PM")
                 return
             candidate = candidate_by_id[candidate_id]
             prefill = self._external_offer_candidate_prefill(candidate_id)
+            selected_candidate_prefill.update(prefill)
             identity_editor.set_values(
                 {
                     **prefill,
@@ -1149,6 +1182,8 @@ class HiringWorkspaceV2Page:
                 }
             )
             qualification_editor.set_values(dict(prefill.get("qualification", {})))
+            start_time.setText(str(prefill.get("start_time") or "08:00 AM"))
+            end_time.setText(str(prefill.get("end_time") or "05:00 PM"))
 
         candidate_picker.currentIndexChanged.connect(load_candidate)
         accepted_values: dict[str, Any] = {}
@@ -1175,6 +1210,16 @@ class HiringWorkspaceV2Page:
                 return
             accepted_values.update(
                 {
+                    **{
+                        key: selected_candidate_prefill[key]
+                        for key in (
+                            "initial_interview_score",
+                            "director_rating",
+                            "requested_pay_raw",
+                            "proposed_classroom",
+                        )
+                        if key in selected_candidate_prefill
+                    },
                     **identity_values,
                     "candidate_id": str(candidate_picker.currentData() or "").strip(),
                     "start_time": start_time.text().strip(),
@@ -1211,6 +1256,7 @@ class HiringWorkspaceV2Page:
                 if latest.position.casefold() == label.casefold():
                     prefill["position_id"] = position_id
                     break
+        report_qualification: dict[str, Any] | None = None
         for application in reversed(applications):
             history_id = str(application.history_id or "").strip()
             repository = CandidateReportRepository(self.service.store.history_path)
@@ -1220,14 +1266,64 @@ class HiringWorkspaceV2Page:
             candidate = report.snapshot.get("candidate")
             qualification = candidate.get("qualification") if isinstance(candidate, dict) else None
             if isinstance(qualification, dict):
-                prefill["qualification"] = dict(qualification)
-                return prefill
+                report_qualification = dict(qualification)
+            scoring = report.snapshot.get("scoring")
+            if isinstance(scoring, dict) and scoring.get("percent_of_max") is not None:
+                prefill["initial_interview_score"] = scoring["percent_of_max"]
+            questions = report.snapshot.get("questions")
+            for question in questions if isinstance(questions, list) else []:
+                if not isinstance(question, dict):
+                    continue
+                question_id = str(question.get("question_id") or question.get("id") or "").strip()
+                if question_id.casefold() == "pay":
+                    requested_pay = str(question.get("interviewer_notes") or "").strip()
+                    if requested_pay:
+                        prefill["requested_pay_raw"] = requested_pay
+                    break
+            if report_qualification is not None:
+                break
+        prior_versions = [
+            version
+            for application in reversed(applications)
+            for version in reversed(self.service.store.list_offer_versions(application.application_id))
+        ]
         for application in reversed(applications):
-            for version in reversed(self.service.store.list_offer_versions(application.application_id)):
-                qualification = version.terms.get("qualification_snapshot")
-                if isinstance(qualification, dict):
-                    prefill["qualification"] = dict(qualification)
-                    return prefill
+            if "initial_interview_score" not in prefill:
+                for event in reversed(self.service.store.list_events(application.application_id)):
+                    if (
+                        event.event_type == "initial_interview_completed"
+                        and event.payload.get("score") is not None
+                    ):
+                        prefill["initial_interview_score"] = event.payload["score"]
+                        break
+            if "initial_interview_score" in prefill:
+                break
+        for version in prior_versions:
+            qualification = version.terms.get("qualification_snapshot")
+            if report_qualification is None and isinstance(qualification, dict):
+                report_qualification = dict(qualification)
+            for key in ("director_rating", "requested_pay_raw", "proposed_classroom"):
+                value = version.terms.get(key)
+                if key not in prefill and value not in (None, ""):
+                    prefill[key] = value
+        director_prefill = self.actions.get("candidate_offer_prefill")
+        if callable(director_prefill):
+            for application in reversed(applications):
+                values = director_prefill(application)
+                if not isinstance(values, dict) or not values:
+                    continue
+                for key in (
+                    "director_rating",
+                    "proposed_classroom",
+                    "start_time",
+                    "end_time",
+                    "position_id",
+                ):
+                    if values.get(key) not in (None, ""):
+                        prefill[key] = values[key]
+                break
+        if report_qualification is not None:
+            prefill["qualification"] = report_qualification
         return prefill
 
     def _set_action_state(self, state: str, message: str) -> None:

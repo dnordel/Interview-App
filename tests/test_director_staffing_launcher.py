@@ -122,6 +122,18 @@ def test_director_entrypoint_uses_staffing_only_modules_and_requirements() -> No
         assert package not in director_requirements
 
 
+def test_director_requirements_include_windows_vault_dependency() -> None:
+    director_requirements = (ROOT / "requirements-director.txt").read_text(encoding="utf-8")
+
+    assert 'pywin32==312; sys_platform == "win32"' in director_requirements
+
+
+def test_director_setup_repairs_existing_environment_missing_windows_vault_dependency() -> None:
+    script_text = Path("setup_director_staffing.ps1").read_text(encoding="utf-8")
+
+    assert '@("-c", "import PySide6, docx, win32crypt")' in script_text
+
+
 def test_director_setup_installs_docx_without_full_app_audio_installers() -> None:
     script_text = Path("setup_director_staffing.ps1").read_text(encoding="utf-8")
 
@@ -132,7 +144,7 @@ def test_director_setup_installs_docx_without_full_app_audio_installers() -> Non
     assert "-WindowStyle Hidden" not in script_text
     assert "setup_and_run.ps1" not in script_text
     assert "requirements.txt" not in script_text
-    assert '@("-c", "import PySide6, docx")' in script_text
+    assert '@("-c", "import PySide6, docx, win32crypt")' in script_text
     for forbidden in ("Ensure-FFmpeg", "VB-CABLE", "requirements-openvino", "requirements-gpu"):
         assert forbidden not in script_text
 

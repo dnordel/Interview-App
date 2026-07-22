@@ -154,7 +154,7 @@ function Ensure-DirectorDependencies {
   if (-not (Test-Path $requirements)) {
     throw "requirements-director.txt not found."
   }
-  $probe = Run-Proc -File $VenvPy -Args @("-c", "import PySide6, docx")
+  $probe = Run-Proc -File $VenvPy -Args @("-c", "import PySide6, docx, win32crypt")
   if ($probe -eq 0) { return }
   $ec = Run-Proc -File $VenvPy -Args @("-m", "pip", "install", "-r", $requirements)
   if ($ec -ne 0) { throw "Failed to install director staffing dependencies." }

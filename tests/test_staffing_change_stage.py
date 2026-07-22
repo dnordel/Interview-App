@@ -601,6 +601,224 @@ def test_completed_director_interview_replays_by_history_id(tmp_path: Path) -> N
     ]
 
 
+def test_acknowledged_director_interview_self_repairs_missing_destination(tmp_path: Path) -> None:
+    admin_path = tmp_path / "staffing_dashboard.sqlite3"
+    director_path = tmp_path / "staffing_dashboard_palmdale.sqlite3"
+    admin_store = StaffingStore(admin_path)
+    admin_store.initialize()
+    referral = StaffingService(admin_store).upsert_director_candidate_referral(
+        history_id="hist-repair",
+        candidate_name="Candidate Repair",
+        school="Palmdale",
+        interviewer_rating=8.5,
+        interviewer_outcome="hire",
+        candidate_email="candidate@example.org",
+    )
+    shutil.copy2(admin_path, director_path)
+    stage = StaffingChangeStage(tmp_path / "staffing_change_events")
+    director = StaffingService(
+        StaffingStore(director_path),
+        change_stage=stage,
+        replica="director:palmdale",
+        school_scope="Palmdale",
+    )
+    admin = StaffingService(admin_store, change_stage=stage, replica="admin")
+    director.record_director_interview(
+        referral.id,
+        director_name="Director One",
+        completed_date="2026-07-21",
+        rating=9,
+        decision="hire",
+        decision_notes="Strong fit",
+        proposed_shift_start="08:00",
+        proposed_shift_end="16:30",
+        proposed_classroom="Harmony",
+        offer_position_id="teacher",
+    )
+    event = stage.pending_for(replica="admin")[0]
+    stage.acknowledge(event.id, replica="admin")
+    assert stage.pending_for(replica="admin") == []
+    assert admin.list_completed_director_interviews(school="Palmdale") == []
+
+    assert admin.replay_staged_changes() == 1
+    completed = admin.list_completed_director_interviews(school="Palmdale")
+    assert [(row.history_id, row.completed_date, row.offer_position_id) for row in completed] == [
+        ("hist-repair", "2026-07-21", "teacher")
+    ]
+    assert admin.replay_staged_changes() == 0
+
+
+def test_acknowledged_director_interview_self_repair_defers_when_destination_is_locked(
+    tmp_path: Path,
+) -> None:
+    admin_path = tmp_path / "staffing_dashboard.sqlite3"
+    director_path = tmp_path / "staffing_dashboard_palmdale.sqlite3"
+    admin_store = StaffingStore(admin_path)
+    admin_store.initialize()
+    referral = StaffingService(admin_store).upsert_director_candidate_referral(
+        history_id="hist-locked-repair",
+        candidate_name="Candidate Locked Repair",
+        school="Palmdale",
+        interviewer_rating=8.5,
+        interviewer_outcome="hire",
+        candidate_email="candidate@example.org",
+    )
+    shutil.copy2(admin_path, director_path)
+    stage = StaffingChangeStage(tmp_path / "staffing_change_events")
+    director = StaffingService(
+        StaffingStore(director_path),
+        change_stage=stage,
+        replica="director:palmdale",
+        school_scope="Palmdale",
+    )
+    admin = StaffingService(admin_store, change_stage=stage, replica="admin")
+    director.record_director_interview(
+        referral.id,
+        director_name="Director One",
+        completed_date="2026-07-21",
+        rating=9,
+        decision="hire",
+        decision_notes="Strong fit",
+        proposed_shift_start="08:00",
+        proposed_shift_end="16:30",
+        proposed_classroom="Harmony",
+        offer_position_id="teacher",
+    )
+    event = stage.pending_for(replica="admin")[0]
+    stage.acknowledge(event.id, replica="admin")
+
+    with admin_store.write_connection("other_editor"):
+        assert admin.replay_staged_changes() == 0
+
+    assert admin.replay_staged_changes() == 1
+
+
+def test_acknowledged_director_interview_repairs_partial_destination_contact(tmp_path: Path) -> None:
+    admin_path = tmp_path / "staffing_dashboard.sqlite3"
+    director_path = tmp_path / "staffing_dashboard_palmdale.sqlite3"
+    admin_store = StaffingStore(admin_path)
+    admin_store.initialize()
+    referral = StaffingService(admin_store).upsert_director_candidate_referral(
+        history_id="hist-contact-repair",
+        candidate_name="Candidate Contact Repair",
+        school="Palmdale",
+        interviewer_rating=8.5,
+        interviewer_outcome="hire",
+        candidate_email="wrong@example.org",
+    )
+    shutil.copy2(admin_path, director_path)
+    stage = StaffingChangeStage(tmp_path / "staffing_change_events")
+    director = StaffingService(
+        StaffingStore(director_path),
+        change_stage=stage,
+        replica="director:palmdale",
+        school_scope="Palmdale",
+    )
+    admin = StaffingService(admin_store, change_stage=stage, replica="admin")
+    interview_values = {
+        "director_name": "Director One",
+        "completed_date": "2026-07-21",
+        "rating": 9,
+        "decision": "hire",
+        "decision_notes": "Strong fit",
+        "proposed_shift_start": "8:00 AM",
+        "proposed_shift_end": "4:30 PM",
+        "proposed_classroom": "Harmony",
+        "offer_position_id": "teacher",
+    }
+    director.record_director_interview(
+        referral.id,
+        **interview_values,
+        candidate_email="correct@example.org",
+        candidate_phone="555-123-4567",
+    )
+    admin_store.record_director_interview(
+        referral.id,
+        **interview_values,
+        candidate_email="wrong@example.org",
+        candidate_phone="",
+        now="2026-07-21T12:00:00Z",
+    )
+    event = stage.pending_for(replica="admin")[0]
+    stage.acknowledge(event.id, replica="admin")
+
+    assert admin.replay_staged_changes() == 1
+    repaired = admin_store.list_director_candidate_referrals(
+        school="Palmdale",
+        include_completed=True,
+    )[0]
+    assert (repaired.candidate_email, repaired.candidate_phone) == (
+        "correct@example.org",
+        "(555) 123-4567",
+    )
+    assert admin.replay_staged_changes() == 0
+
+
+def test_acknowledged_director_interview_records_proof_without_duplicate_replay(tmp_path: Path) -> None:
+    admin_path = tmp_path / "staffing_dashboard.sqlite3"
+    director_path = tmp_path / "staffing_dashboard_palmdale.sqlite3"
+    admin_store = StaffingStore(admin_path)
+    admin_store.initialize()
+    referral = StaffingService(admin_store).upsert_director_candidate_referral(
+        history_id="hist-proof-repair",
+        candidate_name="Candidate Proof Repair",
+        school="Palmdale",
+        interviewer_rating=8.5,
+        interviewer_outcome="hire",
+        candidate_email="candidate@example.org",
+    )
+    shutil.copy2(admin_path, director_path)
+    stage = StaffingChangeStage(tmp_path / "staffing_change_events")
+    director = StaffingService(
+        StaffingStore(director_path),
+        change_stage=stage,
+        replica="director:palmdale",
+        school_scope="Palmdale",
+    )
+    admin = StaffingService(admin_store, change_stage=stage, replica="admin")
+    interview_values = {
+        "director_name": "Director One",
+        "completed_date": "2026-07-21",
+        "rating": 9,
+        "decision": "hire",
+        "decision_notes": "Strong fit",
+        "proposed_shift_start": "8:00 AM",
+        "proposed_shift_end": "4:30 PM",
+        "proposed_classroom": "Harmony",
+        "offer_position_id": "teacher",
+    }
+    director.record_director_interview(
+        referral.id,
+        **interview_values,
+        candidate_email="candidate@example.org",
+        candidate_phone="555-123-4567",
+    )
+    admin_store.record_director_interview(
+        referral.id,
+        **interview_values,
+        candidate_email="candidate@example.org",
+        candidate_phone="(555) 123-4567",
+        now="2026-07-21T12:00:00Z",
+    )
+    event = stage.pending_for(replica="admin")[0]
+    stage.acknowledge(event.id, replica="admin")
+    with admin_store.connect() as conn:
+        versions_before = int(
+            conn.execute("SELECT COUNT(*) FROM director_interview_versions").fetchone()[0]
+        )
+
+    assert admin.replay_staged_changes() == 1
+    with admin_store.connect() as conn:
+        versions_after = int(
+            conn.execute("SELECT COUNT(*) FROM director_interview_versions").fetchone()[0]
+        )
+    assert versions_after == versions_before
+    assert admin_store.list_change_delivery_proof_ids(
+        operation="record_director_interview"
+    ) == {event.id}
+    assert admin.replay_staged_changes() == 0
+
+
 def test_completed_director_interview_replay_preserves_typed_contact_for_hire(tmp_path: Path) -> None:
     admin_path = tmp_path / "staffing_dashboard.sqlite3"
     director_path = tmp_path / "staffing_dashboard_palmdale.sqlite3"

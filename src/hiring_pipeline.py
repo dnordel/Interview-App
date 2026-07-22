@@ -6,6 +6,7 @@ import os
 import re
 import sqlite3
 import uuid
+import zipfile
 from collections import Counter
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
@@ -306,6 +307,10 @@ def _now_utc() -> str:
 
 
 class HiringPipelineStore:
+    MAX_OFFER_TEMPLATE_BYTES = 20 * 1024 * 1024
+    MAX_OFFER_TEMPLATE_UNCOMPRESSED_BYTES = 100 * 1024 * 1024
+    OFFER_TEMPLATE_KINDS = {"full_time", "part_time", "contractor"}
+
     def __init__(self, history_path: Path) -> None:
         self.history_path = Path(history_path)
         self.db_path = (
@@ -422,6 +427,160 @@ class HiringPipelineStore:
     def profile_count(self) -> int:
         with sqlite3.connect(self.db_path) as conn:
             return int(conn.execute("SELECT COUNT(*) FROM candidate_profiles").fetchone()[0])
+
+    def snapshot_offer_template(
+        self,
+        *,
+        school: str,
+        template_kind: str,
+        source_path: Path,
+        version_id: str = "",
+    ) -> str:
+        clean_school = _normalized_text(school)
+        clean_kind = str(template_kind or "").strip().casefold()
+        if not clean_school:
+            raise ValueError("Offer template school is required.")
+        if clean_kind not in self.OFFER_TEMPLATE_KINDS:
+            raise ValueError("Offer template kind is invalid.")
+        source = Path(source_path).expanduser().resolve()
+        suffix = source.suffix.casefold()
+        if suffix not in {".docx", ".docm"}:
+            raise ValueError("Offer template must be a .docx or .docm file.")
+        if not source.is_file():
+            raise ValueError(f"Offer template was not found: {source}")
+        size = source.stat().st_size
+        if size <= 0 or size > self.MAX_OFFER_TEMPLATE_BYTES:
+            raise ValueError("Offer template size is invalid.")
+        content = source.read_bytes()
+        if len(content) != size or len(content) > self.MAX_OFFER_TEMPLATE_BYTES:
+            raise ValueError("Offer template changed while it was being read.")
+        self._validate_offer_template_bytes(content)
+        content_sha256 = hashlib.sha256(content).hexdigest()
+        normalized_school = _match_text(clean_school)
+        template_id = hashlib.sha256(
+            f"{normalized_school}\0{clean_kind}\0{content_sha256}".encode("utf-8")
+        ).hexdigest()
+        now = _now_utc()
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO offer_template_snapshots (
+                    template_id, school, normalized_school, template_kind, filename,
+                    suffix, content_sha256, content_blob, byte_size, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    template_id,
+                    clean_school,
+                    normalized_school,
+                    clean_kind,
+                    source.name,
+                    suffix,
+                    content_sha256,
+                    content,
+                    size,
+                    now,
+                ),
+            )
+            conn.execute(
+                """
+                INSERT INTO active_offer_templates (
+                    normalized_school, template_kind, template_id, updated_at
+                ) VALUES (?, ?, ?, ?)
+                ON CONFLICT(normalized_school, template_kind) DO UPDATE SET
+                    template_id = excluded.template_id,
+                    updated_at = excluded.updated_at
+                """,
+                (normalized_school, clean_kind, template_id, now),
+            )
+            clean_version_id = str(version_id or "").strip()
+            if clean_version_id:
+                conn.execute(
+                    """
+                    INSERT INTO offer_version_templates (version_id, template_id, created_at)
+                    VALUES (?, ?, ?)
+                    ON CONFLICT(version_id) DO UPDATE SET
+                        template_id = excluded.template_id,
+                        created_at = excluded.created_at
+                    """,
+                    (clean_version_id, template_id, now),
+                )
+            conn.commit()
+        return template_id
+
+    def materialize_offer_template(
+        self,
+        *,
+        school: str,
+        template_kind: str,
+        destination_dir: Path,
+        version_id: str = "",
+    ) -> Path:
+        normalized_school = _match_text(school)
+        clean_kind = str(template_kind or "").strip().casefold()
+        if not normalized_school:
+            raise ValueError("Offer template school is required.")
+        if clean_kind not in self.OFFER_TEMPLATE_KINDS:
+            raise ValueError("Offer template kind is invalid.")
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            row = None
+            clean_version_id = str(version_id or "").strip()
+            if clean_version_id:
+                row = conn.execute(
+                    """
+                    SELECT snapshots.*
+                    FROM offer_version_templates AS binding
+                    JOIN offer_template_snapshots AS snapshots
+                      ON snapshots.template_id = binding.template_id
+                    WHERE binding.version_id = ?
+                      AND snapshots.normalized_school = ?
+                      AND snapshots.template_kind = ?
+                    """,
+                    (clean_version_id, normalized_school, clean_kind),
+                ).fetchone()
+            if row is None:
+                row = conn.execute(
+                    """
+                    SELECT snapshots.*
+                    FROM active_offer_templates AS active
+                    JOIN offer_template_snapshots AS snapshots
+                      ON snapshots.template_id = active.template_id
+                    WHERE active.normalized_school = ? AND active.template_kind = ?
+                    """,
+                    (normalized_school, clean_kind),
+                ).fetchone()
+        if row is None:
+            raise ValueError(f"No stored {clean_kind.replace('_', '-')} offer template is available for {school}.")
+        content = bytes(row["content_blob"])
+        if len(content) != int(row["byte_size"]):
+            raise ValueError("Stored offer template size validation failed.")
+        if hashlib.sha256(content).hexdigest() != str(row["content_sha256"]):
+            raise ValueError("Stored offer template integrity validation failed.")
+        self._validate_offer_template_bytes(content)
+        target_dir = Path(destination_dir).expanduser().resolve()
+        target_dir.mkdir(parents=True, exist_ok=True)
+        target = target_dir / f"offer-template-{str(row['template_id'])[:16]}{row['suffix']}"
+        temporary = target.with_name(f".{target.name}.{uuid.uuid4().hex}.tmp")
+        temporary.write_bytes(content)
+        os.replace(temporary, target)
+        return target
+
+    @classmethod
+    def _validate_offer_template_bytes(cls, content: bytes) -> None:
+        from io import BytesIO
+
+        stream = BytesIO(content)
+        if not zipfile.is_zipfile(stream):
+            raise ValueError("Offer template is not a valid Word document.")
+        stream.seek(0)
+        with zipfile.ZipFile(stream) as archive:
+            entries = archive.infolist()
+            names = {entry.filename for entry in entries}
+            if sum(entry.file_size for entry in entries) > cls.MAX_OFFER_TEMPLATE_UNCOMPRESSED_BYTES:
+                raise ValueError("Offer template expanded size is invalid.")
+        if "[Content_Types].xml" not in names or "word/document.xml" not in names:
+            raise ValueError("Offer template is missing required Word document content.")
 
     def archive_application(self, application_id: str) -> HiringApplication:
         with sqlite3.connect(self.db_path) as conn:
@@ -1255,6 +1414,31 @@ class HiringPipelineStore:
                     superseded_at TEXT NOT NULL DEFAULT '',
                     UNIQUE(application_id, version_number)
                 );
+                CREATE TABLE IF NOT EXISTS offer_template_snapshots (
+                    template_id TEXT PRIMARY KEY,
+                    school TEXT NOT NULL,
+                    normalized_school TEXT NOT NULL,
+                    template_kind TEXT NOT NULL CHECK(template_kind IN ('full_time', 'part_time', 'contractor')),
+                    filename TEXT NOT NULL,
+                    suffix TEXT NOT NULL CHECK(suffix IN ('.docx', '.docm')),
+                    content_sha256 TEXT NOT NULL,
+                    content_blob BLOB NOT NULL,
+                    byte_size INTEGER NOT NULL CHECK(byte_size > 0),
+                    created_at TEXT NOT NULL,
+                    UNIQUE(normalized_school, template_kind, content_sha256)
+                );
+                CREATE TABLE IF NOT EXISTS active_offer_templates (
+                    normalized_school TEXT NOT NULL,
+                    template_kind TEXT NOT NULL CHECK(template_kind IN ('full_time', 'part_time', 'contractor')),
+                    template_id TEXT NOT NULL REFERENCES offer_template_snapshots(template_id),
+                    updated_at TEXT NOT NULL,
+                    PRIMARY KEY(normalized_school, template_kind)
+                );
+                CREATE TABLE IF NOT EXISTS offer_version_templates (
+                    version_id TEXT PRIMARY KEY,
+                    template_id TEXT NOT NULL REFERENCES offer_template_snapshots(template_id),
+                    created_at TEXT NOT NULL
+                );
                 CREATE INDEX IF NOT EXISTS idx_hiring_offer_versions_application
                     ON hiring_offer_versions(application_id, version_number);
                 """
@@ -1809,6 +1993,54 @@ class HiringWorkflowService:
         self.store.append_event(
             application_id,
             "pending_offer_pay_revised",
+            actor=actor,
+            payload={
+                "version_id": previewed.version_id,
+                "version_number": previewed.version_number,
+                "supersedes_version_id": prior.version_id,
+            },
+        )
+        return previewed
+
+    def revise_pending_offer_qualification(
+        self,
+        application_id: str,
+        version_id: str,
+        *,
+        qualification: dict[str, Any],
+        actor: str,
+    ) -> OfferVersion:
+        application = self.store.get_application(application_id)
+        prior = self.store.get_offer_version(version_id)
+        if application.stage is not HiringStage.EXECUTIVE_APPROVAL:
+            raise ValueError("Application is not awaiting executive approval.")
+        if prior.application_id != application_id or prior.status != "pending_approval":
+            raise ValueError("Only the selected pending offer may be revised.")
+        position_id = str(prior.terms.get("position_id") or "").strip()
+        pay_input = qualification_input_from_mapping(position_id, qualification)
+        pay_result = calculate_offer_pay(pay_input, load_starting_pay_settings())
+        if pay_result.status != "calculated" or pay_result.starting_hourly_pay is None:
+            raise ValueError(pay_result.qualification_explanation)
+        terms = dict(prior.terms)
+        terms.update(
+            {
+                "qualification_snapshot": dict(qualification),
+                "pay_calculation": pay_result.to_dict(),
+                "hourly_pay": format(pay_result.starting_hourly_pay, ".2f"),
+                "compensation_review_required": False,
+            }
+        )
+        revision = self.store.create_offer_version(application_id, terms=terms, actor=actor)
+        submitted = self.store.set_offer_status(revision.version_id, "pending_approval")
+        try:
+            previewed = self._prepare_pending_offer_artifacts(submitted)
+        except Exception:
+            self.store.set_offer_status(revision.version_id, "failed")
+            raise
+        self.store.set_offer_status(prior.version_id, "superseded")
+        self.store.append_event(
+            application_id,
+            "pending_offer_qualification_revised",
             actor=actor,
             payload={
                 "version_id": previewed.version_id,

@@ -2,7 +2,7 @@ module:
   name: data_store
   language: python
   path: src/data_store.py
-  version: 3.0.0
+  version: 3.0.1
   description: SQLite-backed interview history store plus JSON-backed stores and
     loaders for interview runtime and onboarding settings.
 functions:
@@ -39,7 +39,7 @@ functions:
   - ValueError
   side_effects: none
 - name: resolve_offer_template_path
-  description: Resolve the configured full-time or part-time template against the current Dropbox root using the 30-hour boundary.
+  description: Resolve the configured full-time or part-time template against the current computer's Dropbox root using the 30-hour boundary, including remapping absolute Dropbox paths saved on another computer.
   locked: false
   inputs:
     base_dir:
@@ -61,7 +61,7 @@ functions:
   - ValueError
   side_effects: none
 - name: resolve_offer_output_dir
-  description: Resolve a school's configured offer output folder against the current Dropbox root.
+  description: Resolve a school's configured offer output folder against the current computer's Dropbox root, including remapping absolute Dropbox paths saved on another computer.
   locked: false
   inputs:
     base_dir:

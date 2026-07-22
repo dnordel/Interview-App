@@ -7,7 +7,6 @@ from typing import Any, Callable
 
 from onboarding_service import OnboardingService
 from onboarding_package_editor import DocumentPackageDraftEditor
-from onboarding_pdf_fill import detect_acroform_fields
 from onboarding_pdf_mapper_v2 import OnboardingPdfMapperCanvas
 from staffing_dashboard_v2 import configure_v2_scroll_areas
 
@@ -102,6 +101,12 @@ class OnboardingDashboardV2Workspace:
                 provider=self._page_factories[factory_key],
                 before_leave=self.request_navigation_away,
             )
+
+    def build_page(self, factory_key: str) -> Any:
+        key = str(factory_key or "").strip()
+        if key not in self._page_factories:
+            raise ValueError(f"Unknown Onboarding workspace page: {key}")
+        return self._page_factories[key]()
 
     def request_navigation_away(self) -> bool:
         self._remask_sensitive_values()
@@ -1843,6 +1848,8 @@ class OnboardingDashboardV2Workspace:
                 ).casefold())
 
         def load_mapper() -> None:
+            from onboarding_pdf_fill import detect_acroform_fields
+
             selected = choose_pdf()
             if selected is None:
                 return

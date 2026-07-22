@@ -129,6 +129,15 @@ def _resolve_configured_dropbox_path(base_dir: Path, configured: str) -> Path:
     configured_path = PureWindowsPath(str(configured or "").strip())
     if configured_path.drive:
         _reject_unsafe_path_parts(configured_path.parts)
+        dropbox_indexes = [
+            index
+            for index, part in enumerate(configured_path.parts)
+            if "dropbox" in str(part).casefold()
+        ]
+        if dropbox_indexes:
+            portable_parts = list(configured_path.parts[dropbox_indexes[-1] + 1 :])
+            _reject_unsafe_path_parts(portable_parts)
+            return _find_dropbox_root(Path(base_dir)).joinpath(*portable_parts)
         return Path(str(configured_path)).expanduser()
     parts = _portable_dropbox_path_parts(str(configured_path))
     if not parts:
