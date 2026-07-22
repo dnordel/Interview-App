@@ -222,7 +222,7 @@ Each action button remains keyboard reachable in tab order and includes an inlin
 3. Admin may preview and import legacy onboarding JSON from Templates; import requires typed `IMPORT` and creates a digest-bound backup.
 4. Admin creates global or school-override task-template versions, may attach validated encrypted files, and previews PDF mapping fit with synthetic data before publish/generation.
 5. Employee drawer exposes authorized task/package progress plus confirmed, audited filled-package Open/Export actions.
-4. Director launchers remain school-scoped. Palmdale is enabled by default; later schools require recorded rollout approval.
+6. Director launchers remain school-scoped. Palmdale is enabled by default; later schools require recorded rollout approval.
 
 Pilot evidence is stored under `user_artifacts/onboarding/pilot/` without names, contacts, or raw device IDs. Example commands:
 
